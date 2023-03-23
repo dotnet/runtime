@@ -1312,7 +1312,7 @@ PhaseStatus LinearScan::doLinearScan()
     initVarRegMaps();
 
 #ifdef TARGET_ARM64
-    if (compiler->info.needsConsecutiveRegisters)
+    if (compiler->info.compNeedsConsecutiveRegisters)
     {
         allocateRegisters<true>();
     }
@@ -2287,7 +2287,6 @@ void LinearScan::checkLastUses(BasicBlock* block)
                             loc);
                     foundDiff = true;
                 }
-
                 VarSetOps::AddElemD(compiler, computedLive, varIndex);
             }
             else if (currentRefPosition->lastUse)

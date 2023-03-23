@@ -10038,7 +10038,7 @@ public:
         unsigned compHandleHistogramProbeCount;
 
 #ifdef TARGET_ARM64
-        bool needsConsecutiveRegisters;
+        bool compNeedsConsecutiveRegisters;
 #endif
 
     } info;

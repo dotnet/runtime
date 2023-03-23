@@ -1893,9 +1893,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (op1->TypeGet() == TYP_STRUCT)
             {
+                info.compNeedsConsecutiveRegisters = true;
                 unsigned fieldCount = info.compCompHnd->getClassNumInstanceFields(argClass);
-
-                info.needsConsecutiveRegisters = true;
 
                 if (!op1->OperIs(GT_LCL_VAR))
                 {
@@ -1934,7 +1933,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (op2->TypeGet() == TYP_STRUCT)
             {
-                info.needsConsecutiveRegisters = true;
+                info.compNeedsConsecutiveRegisters = true;
                 unsigned fieldCount            = info.compCompHnd->getClassNumInstanceFields(argClass);
 
                 if (!op2->OperIs(GT_LCL_VAR))

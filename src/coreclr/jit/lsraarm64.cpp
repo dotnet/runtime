@@ -36,7 +36,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 {
-    assert(compiler->info.needsConsecutiveRegisters);
+    assert(compiler->info.compNeedsConsecutiveRegisters);
     RefPosition* nextRefPosition;
     assert(refPosition->needsConsecutive);
     nextConsecutiveRefPositionMap->Lookup(refPosition, &nextRefPosition);
@@ -63,7 +63,7 @@ RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 //
 void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regNumber firstRegAssigned)
 {
-    assert(compiler->info.needsConsecutiveRegisters);
+    assert(compiler->info.compNeedsConsecutiveRegisters);
     assert(firstRefPosition->assignedReg() == firstRegAssigned);
     assert(firstRefPosition->isFirstRefPositionOfConsecutiveRegisters());
     assert(emitter::isVectorRegister(firstRegAssigned));
@@ -127,7 +127,7 @@ bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition
     int          registersCount  = firstRefPosition->regCount;
     RefPosition* nextRefPosition = firstRefPosition;
     regNumber    regToAssign     = firstRegAssigned;
-    assert(compiler->info.needsConsecutiveRegisters && registersCount > 1);
+    assert(compiler->info.compNeedsConsecutiveRegisters && registersCount > 1);
     assert(emitter::isVectorRegister(firstRegAssigned));
 
     int i = 1;
@@ -259,7 +259,7 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
                                                RefPosition* refPosition,
                                                regMaskTP*   busyCandidates)
 {
-    assert(compiler->info.needsConsecutiveRegisters);
+    assert(compiler->info.compNeedsConsecutiveRegisters);
     assert(refPosition->isFirstRefPositionOfConsecutiveRegisters());
     regMaskTP freeCandidates = allCandidates & m_AvailableRegs;
     if (freeCandidates == RBM_NONE)
@@ -1515,7 +1515,7 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode)
     int srcCount = 0;
     if (treeNode->OperIsFieldList())
     {
-        assert(compiler->info.needsConsecutiveRegisters);
+        assert(compiler->info.compNeedsConsecutiveRegisters);
 
         unsigned     regCount    = 0;
         RefPosition* firstRefPos = nullptr;

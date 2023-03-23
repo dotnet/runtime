@@ -1455,7 +1455,7 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     lvaGenericsContextInUse |= InlineeCompiler->lvaGenericsContextInUse;
 
 #ifdef TARGET_ARM64
-    info.needsConsecutiveRegisters |= InlineeCompiler->info.needsConsecutiveRegisters;
+    info.compNeedsConsecutiveRegisters |= InlineeCompiler->info.compNeedsConsecutiveRegisters;
 #endif
 
     // If the inlinee compiler encounters switch tables, disable hot/cold splitting in the root compiler.

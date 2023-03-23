@@ -6683,7 +6683,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #endif
 
 #ifdef TARGET_ARM64
-    info.needsConsecutiveRegisters = false;
+    info.compNeedsConsecutiveRegisters = false;
 #endif
 
     /* Initialize emitter */
