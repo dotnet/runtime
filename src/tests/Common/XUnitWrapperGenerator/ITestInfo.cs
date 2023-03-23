@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis;
 
 namespace XUnitWrapperGenerator;
 
-interface ITestInfo
+public interface ITestInfo
 {
     string TestNameExpression { get; }
     string DisplayNameForFiltering { get; }
@@ -20,14 +20,14 @@ interface ITestInfo
     CodeBuilder GenerateTestExecution(ITestReporterWrapper testReporterWrapper);
 }
 
-interface ITestReporterWrapper
+public interface ITestReporterWrapper
 {
     CodeBuilder WrapTestExecutionWithReporting(CodeBuilder testExecution, ITestInfo test);
 
     string GenerateSkippedTestReporting(ITestInfo skippedTest);
 }
 
-sealed class BasicTestMethod : ITestInfo
+public sealed class BasicTestMethod : ITestInfo
 {
     public BasicTestMethod(IMethodSymbol method, string externAlias, ImmutableArray<string> arguments = default, string? displayNameExpression = null)
     {
@@ -65,8 +65,19 @@ sealed class BasicTestMethod : ITestInfo
             && ContainingType == other.ContainingType
             && ExecutionStatement == other.ExecutionStatement;
     }
+
+    public override int GetHashCode()
+    {
+        int hash = 17;
+        hash = hash * 23 + (TestNameExpression?.GetHashCode() ?? 0);
+        hash = hash * 23 + (Method?.GetHashCode() ?? 0);
+        hash = hash * 23 + (ContainingType?.GetHashCode() ?? 0);
+        hash = hash * 23 + (ExecutionStatement?.GetHashCode() ?? 0);
+        return hash;
+    }
 }
-sealed class LegacyStandaloneEntryPointTestMethod : ITestInfo
+
+public sealed class LegacyStandaloneEntryPointTestMethod : ITestInfo
 {
     public LegacyStandaloneEntryPointTestMethod(IMethodSymbol method, string externAlias)
     {
@@ -96,9 +107,18 @@ sealed class LegacyStandaloneEntryPointTestMethod : ITestInfo
             && Method == other.Method
             && ContainingType == other.ContainingType; ;
     }
+
+    public override int GetHashCode()
+    {
+        int hash = 17;
+        hash = hash * 23 + (TestNameExpression?.GetHashCode() ?? 0);
+        hash = hash * 23 + (Method?.GetHashCode() ?? 0);
+        hash = hash * 23 + (ContainingType?.GetHashCode() ?? 0);
+        return hash;
+    }
 }
 
-sealed class ConditionalTest : ITestInfo
+public sealed class ConditionalTest : ITestInfo
 {
     private ITestInfo _innerTest;
     private string _condition;
@@ -148,6 +168,17 @@ sealed class ConditionalTest : ITestInfo
             && ContainingType == other.ContainingType
             && _condition == other._condition
             && _innerTest.Equals(other._innerTest);
+    }
+
+    public override int GetHashCode()
+    {
+        int hash = 17;
+        hash = hash * 23 + (TestNameExpression?.GetHashCode() ?? 0);
+        hash = hash * 23 + (Method?.GetHashCode() ?? 0);
+        hash = hash * 23 + (ContainingType?.GetHashCode() ?? 0);
+        hash = hash * 23 + (_condition?.GetHashCode() ?? 0);
+        hash = hash * 23 + (_innerTest?.GetHashCode() ?? 0);
+        return hash;
     }
 
     private static string GetPlatformConditionFromTestPlatform(Xunit.TestPlatforms platform)
@@ -205,7 +236,7 @@ sealed class ConditionalTest : ITestInfo
     }
 }
 
-sealed class MemberDataTest : ITestInfo
+public sealed class MemberDataTest : ITestInfo
 {
     private ITestInfo _innerTest;
     private string _memberInvocation;
@@ -223,8 +254,8 @@ sealed class MemberDataTest : ITestInfo
         _memberInvocation = referencedMember switch
         {
             IPropertySymbol { IsStatic: true } => $"{externAlias}::{containingType}.{referencedMember.Name}",
-            IMethodSymbol { IsStatic: true, Parameters: { Length: 0 } } => $"{externAlias}::{containingType}.{referencedMember.Name}()",
-            _ => throw new ArgumentException()
+            IMethodSymbol { IsStatic: true, Parameters.Length: 0 } => $"{externAlias}::{containingType}.{referencedMember.Name}()",
+            _ => throw new ArgumentException("MemberDataTest only supports properties and parameterless methods", nameof(referencedMember))
         };
     }
 
@@ -253,9 +284,19 @@ sealed class MemberDataTest : ITestInfo
             && ContainingType == other.ContainingType
             && _innerTest.Equals(other._innerTest);
     }
+
+    public override int GetHashCode()
+    {
+        int hash = 17;
+        hash = hash * 23 + (TestNameExpression?.GetHashCode() ?? 0);
+        hash = hash * 23 + (Method?.GetHashCode() ?? 0);
+        hash = hash * 23 + (ContainingType?.GetHashCode() ?? 0);
+        hash = hash * 23 + (_innerTest?.GetHashCode() ?? 0);
+        return hash;
+    }
 }
 
-sealed class OutOfProcessTest : ITestInfo
+public sealed class OutOfProcessTest : ITestInfo
 {
     public OutOfProcessTest(string displayName, string relativeAssemblyPath)
     {
@@ -292,9 +333,17 @@ sealed class OutOfProcessTest : ITestInfo
         && DisplayNameForFiltering == other.DisplayNameForFiltering
         && RelativeAssemblyPath == other.RelativeAssemblyPath;
     }
+
+    public override int GetHashCode()
+    {
+        int hash = 17;
+        hash = hash * 23 + (DisplayNameForFiltering?.GetHashCode() ?? 0);
+        hash = hash * 23 + (RelativeAssemblyPath?.GetHashCode() ?? 0);
+        return hash;
+    }
 }
 
-sealed class TestWithCustomDisplayName : ITestInfo
+public sealed class TestWithCustomDisplayName : ITestInfo
 {
     private ITestInfo _inner;
 
@@ -325,16 +374,24 @@ sealed class TestWithCustomDisplayName : ITestInfo
             && _inner.Equals(other._inner)
             && DisplayNameForFiltering == other.DisplayNameForFiltering;
     }
+
+    public override int GetHashCode()
+    {
+        int hash = 17;
+        hash = hash * 23 + (_inner?.GetHashCode() ?? 0);
+        hash = hash * 23 + (DisplayNameForFiltering?.GetHashCode() ?? 0);
+        return hash;
+    }
 }
 
-sealed class NoTestReporting : ITestReporterWrapper
+public sealed class NoTestReporting : ITestReporterWrapper
 {
     public CodeBuilder WrapTestExecutionWithReporting(CodeBuilder testExecution, ITestInfo test) => testExecution;
 
     public string GenerateSkippedTestReporting(ITestInfo skippedTest) => string.Empty;
 }
 
-sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
+public sealed class WrapperLibraryTestSummaryReporting : ITestReporterWrapper
 {
     private readonly string _summaryLocalIdentifier;
     private readonly string _filterLocalIdentifier;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
 using System;
 using System.IO;
@@ -10,15 +9,15 @@ namespace XUnitWrapperLibrary;
 
 public class TestSummary
 {
-    readonly record struct TestResult
+    public readonly record struct TestResult
     {
-        readonly string Name;
-        readonly string ContainingTypeName;
-        readonly string MethodName;
-        readonly TimeSpan Duration;
-        readonly Exception? Exception;
-        readonly string? SkipReason;
-        readonly string? Output;
+        public readonly string Name;
+        public readonly string ContainingTypeName;
+        public readonly string MethodName;
+        public readonly TimeSpan Duration;
+        public readonly Exception? Exception;
+        public readonly string? SkipReason;
+        public readonly string? Output;
 
         public TestResult(string name,
                           string containingTypeName,
@@ -97,10 +96,10 @@ public class TestSummary
         }
     }
 
-    public int PassedTests { get; private set; } = 0;
-    public int FailedTests { get; private set; } = 0;
-    public int SkippedTests { get; private set; } = 0;
-    public int TotalTests { get; private set; } = 0;
+    public int PassedTests { get; private set; }
+    public int FailedTests { get; private set; }
+    public int SkippedTests { get; private set; }
+    public int TotalTests { get; private set; }
 
     private readonly List<TestResult> _testResults = new();
     private DateTime _testRunStart = DateTime.Now;

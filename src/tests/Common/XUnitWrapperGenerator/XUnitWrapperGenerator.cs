@@ -25,7 +25,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     node.IsKind(SyntaxKind.MethodDeclaration)
                         && node is MethodDeclarationSyntax method
                         && method.AttributeLists.Count > 0,
-                static (context, ct) => (IMethodSymbol)context.SemanticModel.GetDeclaredSymbol(context.Node)!);
+                static (context, ct) => (IMethodSymbol)context.SemanticModel.GetDeclaredSymbol(context.Node, ct)!);
 
         var outOfProcessTests = context.AdditionalTextsProvider.Combine(context.AnalyzerConfigOptionsProvider).SelectMany((data, ct) =>
         {
@@ -141,8 +141,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 }
                 else
                 {
-                    string consoleType = "System.Console";
-                    context.AddSource("SimpleRunner.g.cs", GenerateStandaloneSimpleTestRunner(methods, aliasMap, consoleType));
+                    context.AddSource("SimpleRunner.g.cs", GenerateStandaloneSimpleTestRunner(methods, aliasMap));
                 }
             });
     }
@@ -373,7 +372,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         return builder.GetCode();
     }
 
-    private static string GenerateStandaloneSimpleTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap, string consoleType)
+    private static string GenerateStandaloneSimpleTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap)
     {
         ITestReporterWrapper reporter = new NoTestReporting();
         CodeBuilder builder = new();
@@ -404,7 +403,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         return builder.GetCode();
     }
 
-    private class ExternallyReferencedTestMethodsVisitor : SymbolVisitor<IEnumerable<IMethodSymbol>>
+    private sealed class ExternallyReferencedTestMethodsVisitor : SymbolVisitor<IEnumerable<IMethodSymbol>>
     {
         public override IEnumerable<IMethodSymbol>? VisitAssembly(IAssemblySymbol symbol)
         {
