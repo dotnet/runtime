@@ -1,12 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-  </PropertyGroup>
-  <PropertyGroup>
-    <DebugType>PdbOnly</DebugType>
+    <DebugType>None</DebugType>
     <Optimize>True</Optimize>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildProjectName).cs" />
+    <Compile Include="$(MSBuildProjectName).cs">
+      <HasDisasmCheck>true</HasDisasmCheck>
+    </Compile>
+
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
   </ItemGroup>
 </Project>

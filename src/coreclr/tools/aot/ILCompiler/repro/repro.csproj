@@ -23,6 +23,7 @@
       <ReproResponseLines Include="-r:$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
       <ReproResponseLines Include="-g" />
       <ReproResponseLines Include="-O" Condition="'$(Optimize)' == 'true'" />
+      <ReproResponseLines Include="--generateunmanagedentrypoints:System.Private.CoreLib" />
       <ReproResponseLines Include="--initassembly:System.Private.CoreLib" />
       <ReproResponseLines Include="--initassembly:System.Private.StackTraceMetadata" />
       <ReproResponseLines Include="--initassembly:System.Private.TypeLoader" />

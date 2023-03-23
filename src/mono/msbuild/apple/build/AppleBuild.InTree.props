@@ -1,7 +1,7 @@
 <Project>
   <!-- This depends on the root Directory.Build.props imported this file -->
 
-  <Import Project="$(MSBuildThisFileDirectory)AndroidApp.props" />
+  <Import Project="$(MSBuildThisFileDirectory)AppleBuild.props" />
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>

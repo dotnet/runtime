@@ -12,11 +12,11 @@ namespace ILCompiler
     /// <summary>
     /// Computes a set of roots based on managed and unmanaged methods exported from a module.
     /// </summary>
-    public class ExportedMethodsRootProvider : ICompilationRootProvider
+    public class UnmanagedEntryPointsRootProvider : ICompilationRootProvider
     {
         private EcmaModule _module;
 
-        public ExportedMethodsRootProvider(EcmaModule module)
+        public UnmanagedEntryPointsRootProvider(EcmaModule module)
         {
             _module = module;
         }
