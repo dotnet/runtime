@@ -448,15 +448,11 @@ namespace System.Threading
 
             if (timer is TimerQueueTimer tqt)
             {
-                tqt.Change(millisecondsDelay, Timeout.UnsignedInfinite, throwIfDisposed: false);
+                tqt.Change(millisecondsDelay, Timeout.UnsignedInfinite);
             }
             else
             {
-                try
-                {
-                    timer.Change(TimeSpan.FromMilliseconds(millisecondsDelay), Timeout.InfiniteTimeSpan);
-                }
-                catch (ObjectDisposedException) { }
+                timer.Change(TimeSpan.FromMilliseconds(millisecondsDelay), Timeout.InfiniteTimeSpan);
             }
         }
 
@@ -492,7 +488,7 @@ namespace System.Threading
                 // fired by the time we successfully changed it, and so check to see whether that's possibly the case.
                 // If we successfully reset it and it never fired, then we can be sure it won't trigger cancellation.
                 bool reset = _timer is null ||
-                    (_timer is TimerQueueTimer timer && timer.Change(Timeout.UnsignedInfinite, Timeout.UnsignedInfinite, throwIfDisposed: false) && !timer._everQueued);
+                    (_timer is TimerQueueTimer timer && timer.Change(Timeout.UnsignedInfinite, Timeout.UnsignedInfinite) && !timer._everQueued);
 
                 if (reset)
                 {

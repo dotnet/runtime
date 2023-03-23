@@ -33,7 +33,6 @@ namespace System.Threading.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => timer.Period = TimeSpan.FromMilliseconds(uint.MaxValue));
 
             timer.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => timer.Period = TimeSpan.FromMilliseconds(100));
         }
 
         [Fact]

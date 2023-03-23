@@ -10,7 +10,7 @@ namespace System
     /// <summary>Provides an abstraction for time.</summary>
     public abstract class TimeProvider
     {
-        private readonly double _tickFrequency;
+        private readonly double _timeToTicksRatio;
 
         /// <summary>
         /// Gets a <see cref="TimeProvider"/> that provides a clock based on <see cref="DateTimeOffset.UtcNow"/>,
@@ -23,12 +23,12 @@ namespace System
         /// Initializes the instance with the timestamp frequency.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">The value of <paramref name="timestampFrequency"/> is negative or zero.</exception>
-        /// <param name="timestampFrequency">Frequency of the values returned from <see cref="GetTimestamp"/> method. </param>
+        /// <param name="timestampFrequency">Frequency of the values returned from <see cref="GetTimestamp"/> method.</param>
         protected TimeProvider(long timestampFrequency)
         {
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(timestampFrequency);
             TimestampFrequency = timestampFrequency;
-            _tickFrequency = (double)TimeSpan.TicksPerSecond / TimestampFrequency;
+            _timeToTicksRatio = (double)TimeSpan.TicksPerSecond / TimestampFrequency;
         }
 
         /// <summary>
@@ -76,6 +76,7 @@ namespace System
         /// </summary>
         /// <param name="timeZone">The time zone to use in getting the local time using <see cref="LocalNow"/>. </param>
         /// <returns>A new instance of <see cref="TimeProvider"/>. </returns>
+        /// <exception cref="ArgumentNullException"><paramref name="timeZone"/> is null.</exception>
         public static TimeProvider FromLocalTimeZone(TimeZoneInfo timeZone)
         {
             ArgumentNullException.ThrowIfNull(timeZone);
@@ -95,7 +96,7 @@ namespace System
         /// <param name="endingTimestamp">The timestamp marking the end of the time period.</param>
         /// <returns>A <see cref="TimeSpan"/> for the elapsed time between the starting and ending timestamps.</returns>
         public TimeSpan GetElapsedTime(long startingTimestamp, long endingTimestamp) =>
-            new TimeSpan((long)((endingTimestamp - startingTimestamp) * _tickFrequency));
+            new TimeSpan((long)((endingTimestamp - startingTimestamp) * _timeToTicksRatio));
 
         /// <summary>Creates a new <see cref="ITimer"/> instance, using <see cref="TimeSpan"/> values to measure time intervals.</summary>
         /// <param name="callback">
@@ -170,8 +171,6 @@ namespace System
             /// </remarks>
             private sealed class SystemTimeProviderTimer : ITimer
             {
-                private const uint MaxSupportedTimeout = 0xfffffffe;
-
                 private readonly TimerQueueTimer _timer;
 
                 public SystemTimeProviderTimer(TimeSpan dueTime, TimeSpan period, TimerCallback callback, object? state)
@@ -194,14 +193,13 @@ namespace System
                 {
                     long dueTm = (long)dueTime.TotalMilliseconds;
                     ArgumentOutOfRangeException.ThrowIfLessThan(dueTm, -1, nameof(dueTime));
-                    ArgumentOutOfRangeException.ThrowIfGreaterThan(dueTm, MaxSupportedTimeout, nameof(dueTime));
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(dueTm, Timer.MaxSupportedTimeout, nameof(dueTime));
 
                     long periodTm = (long)periodTime.TotalMilliseconds;
                     ArgumentOutOfRangeException.ThrowIfLessThan(periodTm, -1, nameof(periodTime));
-                    ArgumentOutOfRangeException.ThrowIfGreaterThan(periodTm, MaxSupportedTimeout, nameof(periodTime));
+                    ArgumentOutOfRangeException.ThrowIfGreaterThan(periodTm, Timer.MaxSupportedTimeout, nameof(periodTime));
 
                     return ((uint)dueTm, (uint)periodTm);
-
                 }
             }
         }

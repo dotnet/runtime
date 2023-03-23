@@ -2792,6 +2792,7 @@ namespace System.Threading.Tasks
         /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
         /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret <paramref name="timeout"/>.</param>
         /// <returns>The <see cref="Task"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="timeProvider"/> argument is null.</exception>
         public Task WaitAsync(TimeSpan timeout, TimeProvider timeProvider)
         {
             ArgumentNullException.ThrowIfNull(timeProvider);
@@ -2810,6 +2811,7 @@ namespace System.Threading.Tasks
         /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret <paramref name="timeout"/>.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
         /// <returns>The <see cref="Task"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="timeProvider"/> argument is null.</exception>
         public Task WaitAsync(TimeSpan timeout, TimeProvider timeProvider, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(timeProvider);
@@ -5560,6 +5562,7 @@ namespace System.Threading.Tasks
         /// <returns>A task that represents the time delay.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="delay"/> represents a negative time interval other than <see cref="Timeout.InfiniteTimeSpan"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="delay"/>'s <see cref="TimeSpan.TotalMilliseconds"/> property is greater than 4294967294.</exception>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="timeProvider"/> argument is null.</exception>
         public static Task Delay(TimeSpan delay, TimeProvider timeProvider) => Delay(delay, timeProvider, default);
 
         /// <summary>
@@ -5590,8 +5593,12 @@ namespace System.Threading.Tasks
         /// <returns>A task that represents the time delay.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="delay"/> represents a negative time interval other than <see cref="Timeout.InfiniteTimeSpan"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="delay"/>'s <see cref="TimeSpan.TotalMilliseconds"/> property is greater than 4294967294.</exception>
-        public static Task Delay(TimeSpan delay, TimeProvider timeProvider, CancellationToken cancellationToken) =>
-            Delay(ValidateTimeout(delay, ExceptionArgument.delay), timeProvider, cancellationToken);
+        /// <exception cref="System.ArgumentNullException">The <paramref name="timeProvider"/> argument is null.</exception>
+        public static Task Delay(TimeSpan delay, TimeProvider timeProvider, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(timeProvider);
+            return Delay(ValidateTimeout(delay, ExceptionArgument.delay), timeProvider, cancellationToken);
+        }
 
         /// <summary>
         /// Creates a Task that will complete after a time delay.
@@ -5656,7 +5663,7 @@ namespace System.Threading.Tasks
         private class DelayPromise : Task
         {
             private static readonly TimerCallback s_timerCallback = TimerCallback;
-             private readonly ITimer? _timer;
+            private readonly ITimer? _timer;
 
             internal DelayPromise(uint millisecondsDelay, TimeProvider timeProvider)
             {

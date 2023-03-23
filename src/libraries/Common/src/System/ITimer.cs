@@ -20,8 +20,10 @@ namespace System.Threading
         /// Specify <see cref="Timeout.InfiniteTimeSpan"/> to disable periodic signaling.
         /// </param>
         /// <returns><see langword="true"/> if the timer was successfully updated; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ObjectDisposedException">The timer has already been disposed.</exception>
         /// <exception cref="ArgumentOutOfRangeException">The <paramref name="dueTime"/> or <paramref name="period"/> parameter, in milliseconds, is less than -1 or greater than 4294967294.</exception>
+        /// <remarks>
+        /// It is the responsibility of the implementer of the ITimer interface to ensure thread safety.
+        /// </remarks>
         bool Change(TimeSpan dueTime, TimeSpan period);
     }
 }

@@ -536,7 +536,7 @@ namespace System.Threading
         public bool Change(TimeSpan dueTime, TimeSpan period) =>
             Change(GetMilliseconds(dueTime), GetMilliseconds(period));
 
-        internal bool Change(uint dueTime, uint period, bool throwIfDisposed = true)
+        internal bool Change(uint dueTime, uint period)
         {
             bool success;
 
@@ -544,7 +544,6 @@ namespace System.Threading
             {
                 if (_canceled)
                 {
-                    ObjectDisposedException.ThrowIf(throwIfDisposed, this);
                     return false;
                 }
 

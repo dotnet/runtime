@@ -443,17 +443,9 @@ namespace System.Net.Http
         /// <summary>Sets <see cref="_cleaningTimer"/> and <see cref="_timerIsRunning"/> based on the specified timeout.</summary>
         private void SetCleaningTimer(TimeSpan timeout)
         {
-            try
+            if (_cleaningTimer!.Change(timeout, Timeout.InfiniteTimeSpan))
             {
-                _cleaningTimer!.Change(timeout, Timeout.InfiniteTimeSpan);
                 _timerIsRunning = timeout != Timeout.InfiniteTimeSpan;
-            }
-            catch (ObjectDisposedException)
-            {
-                // In a rare race condition where the timer callback was queued
-                // or executed and then the pool manager was disposed, the timer
-                // would be disposed and then calling Change on it could result
-                // in an ObjectDisposedException.  We simply eat that.
             }
         }
 
