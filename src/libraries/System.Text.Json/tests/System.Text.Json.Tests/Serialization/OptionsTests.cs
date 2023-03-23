@@ -559,6 +559,7 @@ namespace System.Text.Json.Serialization.Tests
             }, options).Dispose();
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData(false)]
         [InlineData(true)]
