@@ -726,12 +726,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		attr = class_has_inlinearray_attribute (klass);
 		if (attr.has_attr) {
 			klass->is_inlinearray = 1;
-			// TODO: Struct shouldn't be larger than 1MB
-			if (*(intptr_t*)attr.value > G_MAXUINT32 || *(gint32*)attr.value <= 0) {
-				mono_class_set_type_load_failure (klass, "Inline array length out of bounds");
-				goto parent_failure;
-			}
-			klass->inlinearray_value = *(guint32*)attr.value;
+			klass->inlinearray_value = GPOINTER_TO_UINT32 (attr.value);
 		}
 	}
 
@@ -792,7 +787,9 @@ has_wellknown_attribute_func (MonoImage *image, guint32 typeref_scope_token, con
 				uint32_t data_size = mono_metadata_decode_value (data, &data);
 				MonoDecodeCustomAttr *decoded_attr = mono_reflection_create_custom_attr_data_args_noalloc (image, ctor, (guchar*)data, data_size, &error);
 				mono_error_assert_ok (&error);
-				attr->value = decoded_attr->typed_args[0]->value.primitive;
+				g_assert (decoded_attr->named_args_num == 0 && decoded_attr->typed_args_num == 1);
+				attr->value = *(gpointer*)decoded_attr->typed_args [0]->value.primitive;
+				g_free (decoded_attr);
 			} else {
 				g_warning ("Can't find custom attr constructor image: %s mtoken: 0x%08x due to: %s", image->name, method_token, mono_error_get_message (&error));
 			}
@@ -2229,7 +2226,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			real_size = MONO_ABI_SIZEOF (MonoObject);
 		}
 
-		gboolean is_inlined = FALSE;
+		guint32 inlined_fields = 0;
 		for (pass = 0; pass < passes; ++pass) {
 			for (i = 0; i < top; i++){
 				gint32 align;
@@ -2264,11 +2261,12 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 
 				size = mono_type_size (field->type, &align);
 				if (m_class_is_inlinearray (klass)) {
-					if (!is_inlined) {
-						size *= m_class_inlinearray_value (klass);
-						is_inlined = TRUE;
-					} else {
-						mono_class_set_type_load_failure (klass, "Inline array struct must have a single field.");
+					// limit the max size of array instance to 1MiB
+					const guint32 struct_max_size = 1024 * 1024;
+					size *= m_class_inlinearray_value (klass);
+					inlined_fields++;
+					if(size <= 0 || size > struct_max_size) {
+						mono_class_set_type_load_failure (klass, "Inline array struct size out of bounds.");
 						break;
 					}
 				}
@@ -2299,8 +2297,8 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				instance_size &= ~(min_align - 1);
 			}
 		}
-		if (m_class_is_inlinearray (klass) && !is_inlined)
-			mono_class_set_type_load_failure (klass, "Inline array struct cannot be empty.");
+		if (m_class_is_inlinearray (klass) && inlined_fields != 1)
+			mono_class_set_type_load_failure (klass, "Inline array struct must have a single field.");
 		break;
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT: {
 		real_size = 0;
