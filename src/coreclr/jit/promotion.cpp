@@ -14,10 +14,10 @@ PhaseStatus Compiler::PromoteStructsNew()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    //if (!compStressCompile(STRESS_GENERALIZED_PROMOTION))
-    //{
-    //    return PhaseStatus::MODIFIED_NOTHING;
-    //}
+    if (!compStressCompile(STRESS_GENERALIZED_PROMOTION, 25))
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
 
 #ifdef DEBUG
     static ConfigMethodRange s_range;
