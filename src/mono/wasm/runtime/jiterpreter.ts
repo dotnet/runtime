@@ -69,7 +69,9 @@ export const
     // Always grab method full names
     useFullNames = false,
     // Use the mono_debug_count() API (set the COUNT=n env var) to limit the number of traces to compile
-    useDebugCount = false;
+    useDebugCount = false,
+    // Web browsers limit synchronous module compiles to 4KB
+    maxModuleSize = 4080;
 
 export const callTargetCounts : { [method: number] : number } = {};
 
@@ -349,7 +351,8 @@ function initialize_builder (builder: WasmBuilder) {
     builder.defineType(
         "trace", {
             "frame": WasmValtype.i32,
-            "pLocals": WasmValtype.i32
+            "pLocals": WasmValtype.i32,
+            "cinfo": WasmValtype.i32,
         }, WasmValtype.i32, true
     );
     builder.defineType(
@@ -593,6 +596,7 @@ function initialize_builder (builder: WasmBuilder) {
             "trace": WasmValtype.i32,
             "frame": WasmValtype.i32,
             "locals": WasmValtype.i32,
+            "cinfo": WasmValtype.i32,
         }, WasmValtype.i32, true
     );
     builder.defineType(
@@ -716,7 +720,7 @@ function generate_wasm (
                 if (getU16(ip) !== MintOpcode.MINT_TIER_PREPARE_JITERPRETER)
                     throw new Error(`Expected *ip to be MINT_TIER_PREPARE_JITERPRETER but was ${getU16(ip)}`);
 
-                builder.cfg.initialize(startOfBody, backwardBranchTable, !!instrument);
+                builder.cfg.initialize(startOfBody, backwardBranchTable, instrument ? 1 : 0);
 
                 // TODO: Call generate_wasm_body before generating any of the sections and headers.
                 // This will allow us to do things like dynamically vary the number of locals, in addition
@@ -752,6 +756,10 @@ function generate_wasm (
         if (trace > 0)
             console.log(`${(<any>(builder.base)).toString(16)} ${methodFullName || traceName} generated ${buffer.length} byte(s) of wasm`);
         counters.bytesGenerated += buffer.length;
+        if (buffer.length >= maxModuleSize) {
+            console.warn(`MONO_WASM: Jiterpreter generated too much code (${buffer.length} bytes) for trace ${traceName}. Please report this issue.`);
+            return 0;
+        }
         const traceModule = new WebAssembly.Module(buffer);
 
         const traceInstance = new WebAssembly.Instance(traceModule, {
@@ -969,7 +977,8 @@ export function jiterpreter_dump_stats (b?: boolean, concise?: boolean) {
 
     console.log(`// jitted ${counters.bytesGenerated} bytes; ${counters.tracesCompiled} traces (${counters.traceCandidates} candidates, ${(counters.tracesCompiled / counters.traceCandidates * 100).toFixed(1)}%); ${counters.jitCallsCompiled} jit_calls (${(counters.directJitCallsCompiled / counters.jitCallsCompiled * 100).toFixed(1)}% direct); ${counters.entryWrappersCompiled} interp_entries`);
     const backBranchHitRate = (counters.backBranchesEmitted / (counters.backBranchesEmitted + counters.backBranchesNotEmitted)) * 100;
-    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} null checks eliminated. ${counters.backBranchesEmitted} back-branches emitted (${counters.backBranchesNotEmitted} failed, ${backBranchHitRate.toFixed(1)}%)`);
+    const tracesRejected = cwraps.mono_jiterp_get_rejected_trace_count();
+    console.log(`// time: ${elapsedTimes.generation | 0}ms generating, ${elapsedTimes.compilation | 0}ms compiling wasm. ${counters.nullChecksEliminated} cknulls removed. ${counters.backBranchesEmitted} back-branches (${counters.backBranchesNotEmitted} failed, ${backBranchHitRate.toFixed(1)}%), ${tracesRejected} traces rejected`);
     if (concise)
         return;
 

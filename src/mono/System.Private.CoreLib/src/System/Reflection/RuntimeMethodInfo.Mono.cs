@@ -622,11 +622,11 @@ namespace System.Reflection
             ArgumentNullException.ThrowIfNull(methodInstantiation);
 
             if (!IsGenericMethodDefinition)
-                throw new InvalidOperationException("not a generic method definition");
+                throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this));
 
             /*FIXME add GetGenericArgumentsLength() internal vcall to speed this up*/
             if (GetGenericArguments().Length != methodInstantiation.Length)
-                throw new ArgumentException("Incorrect length");
+                throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, GetGenericArguments().Length, methodInstantiation.Length));
 
             bool hasUserType = false;
             foreach (Type type in methodInstantiation)
@@ -642,12 +642,12 @@ namespace System.Reflection
                 if (RuntimeFeature.IsDynamicCodeSupported)
                     return new MethodOnTypeBuilderInstantiation(this, methodInstantiation);
 
-                throw new NotSupportedException("User types are not supported under full aot");
+                throw new NotSupportedException(SR.PlatformNotSupported_ReflectionEmit);
             }
 
             MethodInfo ret = MakeGenericMethod_impl(methodInstantiation);
             if (ret == null)
-                throw new ArgumentException(string.Format("The method has {0} generic parameter(s) but {1} generic argument(s) were provided.", GetGenericArguments().Length, methodInstantiation.Length));
+                throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, GetGenericArguments().Length, methodInstantiation.Length));
             return ret;
         }
 
