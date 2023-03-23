@@ -987,6 +987,15 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 	delegate = (MonoDelegate *)mono_arch_get_this_arg_from_call (regs, code);
 	g_assert (mono_class_has_parent (mono_object_class (delegate), mono_defaults.multicastdelegate_class));
 
+	/*
+	 * The 'arg' argument might point to a MonoDelegateTrampInfo which
+	 * has no method set, if the trampoline was created by
+	 * mono_create_delegate_trampoline (). Use the more precise info
+	 * from the delegate itself.
+	 */
+	if (delegate->invoke_info)
+		tramp_info = (MonoDelegateTrampInfo*)delegate->invoke_info;
+
 	if (delegate->method) {
 		method = delegate->method;
 
