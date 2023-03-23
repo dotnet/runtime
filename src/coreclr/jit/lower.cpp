@@ -1842,7 +1842,7 @@ GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
             {
                 if (arg.IsArgAddedLate())
                 {
-                    BlockRange().Remove(arg.GetNode());
+                    arg.GetNode()->SetUnusedValue();
                 }
             }
 

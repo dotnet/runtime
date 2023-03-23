@@ -1615,18 +1615,20 @@ CallArg* CallArgs::GetArgByIndex(unsigned index)
 //   A pointer to the argument.
 //
 // Remarks:
-//   This function assumes enough arguments exist.
+//   This function assumes enough arguments exist. The current implementation
+//   doesn't ignore return buffers and type arguments.
 //
 CallArg* CallArgs::GetUserArgByIndex(unsigned index)
 {
     CallArg* cur = m_head;
+    assert((cur != nullptr) && "Not enough user arguments in GetUserArgByIndex");
     for (unsigned i = 0; i < index || cur->IsArgAddedLate();)
     {
         if (!cur->IsArgAddedLate())
         {
             i++;
         }
-        assert((cur != nullptr) && "Not enough arguments in GetArgByIndex");
+        assert((cur != nullptr) && "Not enough user arguments in GetUserArgByIndex");
         cur = cur->GetNext();
     }
 

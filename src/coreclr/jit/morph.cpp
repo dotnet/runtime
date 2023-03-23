@@ -3058,6 +3058,9 @@ unsigned CallArgs::CountArgs()
 // CountArgs: Count the number of arguments ignoring non-user ones, e.g.
 //    r2r cell argument in a user function.
 //
+// Remarks:
+//   The current implementation doesn't ignore return buffers and type arguments.
+//
 unsigned CallArgs::CountUserArgs()
 {
     unsigned numArgs = 0;
