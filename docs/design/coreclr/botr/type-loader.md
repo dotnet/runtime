@@ -195,6 +195,9 @@ Code that runs in `ClassLoader::DoIncrementalLoad` follows a fairly straightforw
 #### 2.1.1.3 Code within `PushFinalLevels`
 The final two levels of type loading are handled via `PushFinalLevels` which follows a different set of rules. `PushFinalLevels` runs code which in order to raise the level can only depend on other types being loaded to a level below the level that is desired. However, before marking the type as reaching a higher level, `PushFinalLevels` can require other types to also complete the `PushFinalLevels` algorithm to the new level. Only once all of the types are confirmed to have reached the new level can the entire set of types be marked as reaching the new level.
 
+### 2.1.2 Usage of load levels outside of the type loader.
+In the general case, its preferable to simply ignore load levels when not operating code that is part of the type loader, and to simply ask for fully loaded types. This should be the default, and always functionally correct choice. However, for performance reasons, it is possible to only require partially loaded types, which then requires the user of the type to ensure that their code does not have any dependencies on a fully loaded state.
+
 ## 2.2 Generics
 
 In the generics-free world, everything is nice and everyone is happy because every ordinary (not represented by a `TypeDesc`) type has one `MethodTable` pointing to its associated `EEClass` which in turn points back to the `MethodTable`. All instances of the type contain a pointer to the `MethodTable` as their first field at offset 0, i.e. at the address seen as the reference value. To conserve space, `MethodDesc`s representing methods declared by the type are organized in a linked list of chunks pointed to by the `EEClass`<sup>4</sup>.
