@@ -2820,6 +2820,34 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             assert(block->bbNext == nullptr || (block->bbNum + 1 == block->bbNext->bbNum));
         }
 
+        for (Statement* stmt : block->Statements())
+        {
+            struct Visit : GenTreeVisitor<Visit>
+            {
+                enum
+                {
+                    DoPreOrder = true,
+                };
+
+                Visit(Compiler* comp) : GenTreeVisitor(comp)
+                {
+                }
+
+                fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+                {
+                    if ((*use)->OperIs(GT_ASG))
+                    {
+                        assert(!(*use)->gtGetOp1()->OperIs(GT_COMMA));
+                    }
+
+                    return WALK_CONTINUE;
+                }
+            };
+
+            Visit v(this);
+            v.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+
         // If the block is a BBJ_COND, a BBJ_SWITCH or a
         // lowered GT_SWITCH_TABLE node then make sure it
         // ends with a conditional jump or a GT_SWITCH

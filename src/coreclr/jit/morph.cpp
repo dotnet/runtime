@@ -9824,69 +9824,6 @@ DONE_MORPHING_CHILDREN:
                 }
             }
 #endif // TARGET_ARM
-
-            // Only do this optimization when we are in the global optimizer. Doing this after value numbering
-            // could result in an invalid value number for the newly generated GT_IND node.
-            if ((op1->OperGet() == GT_COMMA) && fgGlobalMorph)
-            {
-                // Perform the transform IND(COMMA(x, ..., z)) -> COMMA(x, ..., IND(z)).
-                // TBD: this transformation is currently necessary for correctness -- it might
-                // be good to analyze the failures that result if we don't do this, and fix them
-                // in other ways.  Ideally, this should be optional.
-                GenTree*     commaNode = op1;
-                GenTreeFlags treeFlags = tree->gtFlags;
-                commaNode->gtType      = typ;
-                commaNode->gtFlags     = (treeFlags & ~GTF_REVERSE_OPS); // Bashing the GT_COMMA flags here is
-                                                                         // dangerous, clear the GTF_REVERSE_OPS at
-                                                                         // least.
-#ifdef DEBUG
-                commaNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
-                while (commaNode->AsOp()->gtOp2->gtOper == GT_COMMA)
-                {
-                    commaNode         = commaNode->AsOp()->gtOp2;
-                    commaNode->gtType = typ;
-                    commaNode->gtFlags =
-                        (treeFlags & ~GTF_REVERSE_OPS & ~GTF_ASG & ~GTF_CALL); // Bashing the GT_COMMA flags here is
-                    // dangerous, clear the GTF_REVERSE_OPS, GT_ASG, and GT_CALL at
-                    // least.
-                    commaNode->gtFlags |= ((commaNode->AsOp()->gtOp1->gtFlags | commaNode->AsOp()->gtOp2->gtFlags) &
-                                           (GTF_ASG | GTF_CALL));
-#ifdef DEBUG
-                    commaNode->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
-                }
-
-                tree          = op1;
-                GenTree* addr = commaNode->AsOp()->gtOp2;
-                // TODO-1stClassStructs: we often create a struct IND without a handle, fix it.
-                op1 = gtNewIndir(typ, addr);
-
-                // GTF_GLOB_EFFECT flags can be recomputed from the child
-                // nodes. GTF_ORDER_SIDEEFF may be set already and indicate no
-                // reordering is allowed with sibling nodes, so we cannot
-                // recompute that.
-                //
-                op1->gtFlags |= treeFlags & ~GTF_GLOB_EFFECT;
-                op1->gtFlags |= (addr->gtFlags & GTF_ALL_EFFECT);
-
-                // if this was a non-faulting indir, clear GTF_EXCEPT,
-                // unless we inherit it from the addr.
-                //
-                if (((treeFlags & GTF_IND_NONFAULTING) != 0) && ((addr->gtFlags & GTF_EXCEPT) == 0))
-                {
-                    op1->gtFlags &= ~GTF_EXCEPT;
-                }
-
-                op1->gtFlags |= treeFlags & GTF_GLOB_REF;
-
-#ifdef DEBUG
-                op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif
-                commaNode->AsOp()->gtOp2 = op1;
-                commaNode->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
-                return tree;
-            }
         }
         break;
 
@@ -10048,21 +9985,25 @@ DONE_MORPHING_CHILDREN:
     // nodes may have CSE defs/uses in them.
     if (fgGlobalMorph && (oper != GT_ASG) && (oper != GT_COLON))
     {
-        if ((op1 != nullptr) && fgIsCommaThrow(op1, true))
+        bool mightBeLocation = (tree->OperIsIndir() || tree->OperIsLocal()) && ((tree->gtFlags & GTF_DONT_CSE) != 0);
+        if (!mightBeLocation)
         {
-            GenTree* propagatedThrow = fgPropagateCommaThrow(tree, op1->AsOp(), GTF_EMPTY);
-            if (propagatedThrow != nullptr)
+            if ((op1 != nullptr) && fgIsCommaThrow(op1, true))
             {
-                return propagatedThrow;
+                GenTree* propagatedThrow = fgPropagateCommaThrow(tree, op1->AsOp(), GTF_EMPTY);
+                if (propagatedThrow != nullptr)
+                {
+                    return propagatedThrow;
+                }
             }
-        }
 
-        if ((op2 != nullptr) && fgIsCommaThrow(op2, true))
-        {
-            GenTree* propagatedThrow = fgPropagateCommaThrow(tree, op2->AsOp(), op1->gtFlags & GTF_ALL_EFFECT);
-            if (propagatedThrow != nullptr)
+            if ((op2 != nullptr) && fgIsCommaThrow(op2, true))
             {
-                return propagatedThrow;
+                GenTree* propagatedThrow = fgPropagateCommaThrow(tree, op2->AsOp(), op1->gtFlags & GTF_ALL_EFFECT);
+                if (propagatedThrow != nullptr)
+                {
+                    return propagatedThrow;
+                }
             }
         }
     }
