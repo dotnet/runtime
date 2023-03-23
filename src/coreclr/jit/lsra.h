@@ -1168,13 +1168,9 @@ private:
 #ifdef DEBUG
     const char* getScoreName(RegisterScore score);
 #endif
-#ifdef TARGET_ARM64
     template <bool needsConsecutiveRegisters = false>
-#endif
     regNumber allocateReg(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
-#ifdef TARGET_ARM64
     template <bool needsConsecutiveRegisters = false>
-#endif
     regNumber assignCopyReg(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
@@ -1243,10 +1239,8 @@ private:
     public:
         RegisterSelection(LinearScan* linearScan);
 
-// Perform register selection and update currentInterval or refPosition
-#ifdef TARGET_ARM64
+        // Perform register selection and update currentInterval or refPosition
         template <bool hasConsecutiveRegister = false>
-#endif
         FORCEINLINE regMaskTP select(Interval*    currentInterval,
                                      RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 

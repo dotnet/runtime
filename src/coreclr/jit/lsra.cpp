@@ -2841,24 +2841,13 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 //        of all but also has a weight lower than 'refPosition'.  If there is
 //        no such ref position, no register will be allocated.
 //
-#ifdef TARGET_ARM64
 template <bool needsConsecutiveRegisters>
-#endif
 regNumber LinearScan::allocateReg(Interval*    currentInterval,
                                   RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
-    regMaskTP foundRegBit;
+    regMaskTP foundRegBit =
+        regSelector->select<needsConsecutiveRegisters>(currentInterval, refPosition DEBUG_ARG(registerScore));
 
-#ifdef TARGET_ARM64
-    if (needsConsecutiveRegisters)
-    {
-        foundRegBit = regSelector->select<true>(currentInterval, refPosition DEBUG_ARG(registerScore));
-    }
-    else
-#endif // TARGET_ARM64
-    {
-        foundRegBit = regSelector->select(currentInterval, refPosition DEBUG_ARG(registerScore));
-    }
     if (foundRegBit == RBM_NONE)
     {
         return REG_NA;
@@ -3132,9 +3121,7 @@ bool LinearScan::isSpillCandidate(Interval* current, RefPosition* refPosition, R
 // Prefer a free register that's got the earliest next use.
 // Otherwise, spill something with the farthest next use
 //
-#ifdef TARGET_ARM64
 template <bool needsConsecutiveRegisters>
-#endif
 regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
 {
     Interval* currentInterval = refPosition->getInterval();
@@ -3157,18 +3144,9 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
     refPosition->copyReg = true;
 
     RegisterScore registerScore = NONE;
-    regNumber     allocatedReg;
-#ifdef TARGET_ARM64
-    if (needsConsecutiveRegisters)
-    {
-        assert(refPosition->needsConsecutive);
-        allocatedReg = allocateReg<true>(currentInterval, refPosition DEBUG_ARG(&registerScore));
-    }
-    else
-#endif
-    {
-        allocatedReg = allocateReg(currentInterval, refPosition DEBUG_ARG(&registerScore));
-    }
+    regNumber     allocatedReg =
+        allocateReg<needsConsecutiveRegisters>(currentInterval, refPosition DEBUG_ARG(&registerScore));
+
     assert(allocatedReg != REG_NA);
 
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_COPY_REG, currentInterval, allocatedReg, nullptr, registerScore));
@@ -12002,9 +11980,7 @@ void LinearScan::RegisterSelection::calculateCoversSets()
 //  Return Values:
 //      Register bit selected (a single register) and REG_NA if no register was selected.
 //
-#ifdef TARGET_ARM64
 template <bool needsConsecutiveRegisters>
-#endif
 regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
                                                 RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore))
 {
@@ -12213,10 +12189,9 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     // Eliminate candidates that are in-use or busy.
     if (!found)
     {
-        /*
-        * we assign same registerAssignment to UPPER_RESTORE and the next USE. When we allocate for
-        * USE, we see that the same register is now busy and so don't have candidates left.
-        */
+        // TODO-CQ: We assign same registerAssignment to UPPER_RESTORE and the next USE.
+        // When we allocate for USE, we see that the register is busy at current location
+        // and we end up with that candidate is no longer available.
         regMaskTP busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
         candidates &= ~busyRegs;
 
