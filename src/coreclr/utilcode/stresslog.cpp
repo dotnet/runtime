@@ -744,30 +744,13 @@ FORCEINLINE void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const cha
         moduleIndex++;
     }
 
-    // _ASSERTE ( offs < StressMsg::maxOffset );
-    if (offs >= StressMsg::maxOffset)
-    {
-#ifdef _DEBUG
-        DebugBreak(); // in lieu of the above _ASSERTE
-#endif // _DEBUG
-
-        // Set it to this string instead.
-        offs =
-#ifdef _DEBUG
-            (size_t)"<BUG: StressLog format string beyond maxOffset>";
-#else // _DEBUG
-            0; // a 0 offset is ignored by StressLog::Dump
-#endif // _DEBUG else
-    }
-
     // Get next available slot
     StressMsg* msg = AdvanceWrite(cArgs);
 
     msg->timeStamp = getTimeStamp();
     msg->facility = facility;
     msg->formatOffset = offs;
-    msg->numberOfArgs = cArgs & 0x7;
-    msg->numberOfArgsX = cArgs >> 3;
+    msg->numberOfArgs = (uint8_t)cArgs;
 
     for ( int i = 0; i < cArgs; ++i )
     {

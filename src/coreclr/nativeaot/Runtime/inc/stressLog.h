@@ -489,33 +489,19 @@ public:
 
 //==========================================================================================
 // StressMsg
-//
 // The order of fields is important.  Keep the prefix length as the first field.
-// And make sure the timeStamp field is naturally aligned, so we don't waste
+// And make sure the timeStamp field is naturally aligned if possible, so we don't waste
 // space on 32-bit platforms
-//
 struct StressMsg {
-    static const size_t formatOffsetBits = 26;
-    union {
-        struct {
-            uint32_t numberOfArgs  : 3;   // at most 7 arguments
-            uint32_t formatOffset  : formatOffsetBits;    // offset of string in mscorwks
-            uint32_t numberOfArgsX : 3;                   // extend number of args in a backward compat way
-        };
-        uint32_t fmtOffsCArgs;            // for optimized access
-    };
-    uint32_t     facility;                // facility used to log the entry
-    unsigned __int64 timeStamp;         // time when mssg was logged
-    void*     args[0];                  // size given by numberOfArgs
+    uint32_t facility;                      // facility used to log the entry
+    size_t   formatOffset;                  // offset of the format string in the module
+    uint64_t timeStamp;                     // time when mssg was logged
+    uint8_t numberOfArgs;                   // number of arguments
+    void*     args[0];                      // size given by numberOfArgs
 
     static const size_t maxArgCnt = 63;
-    static const size_t maxOffset = 1 << formatOffsetBits;
     static size_t maxMsgSize ()
     { return sizeof(StressMsg) + maxArgCnt*sizeof(void*); }
-
-    friend void PopulateDebugHeaders();
-    friend class ThreadStressLog;
-    friend class StressLog;
 };
 
 #ifdef _WIN64

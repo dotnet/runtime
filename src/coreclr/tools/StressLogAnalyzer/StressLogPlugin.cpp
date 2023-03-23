@@ -1105,7 +1105,7 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
                         fIgnoreMessage = true;
                     }
                 }
-                int numberOfArgs = (msg->numberOfArgsX << 3) + msg->numberOfArgs;
+                int numberOfArgs = msg->numberOfArgs;
                 if (!fIgnoreMessage)
                 {
                     bool fIncludeMessage = s_showAllMessages || FilterMessage(hdr, tsl, msg->facility, format, deltaTime, numberOfArgs, msg->args);
@@ -1186,7 +1186,7 @@ static void PrintMessage(CorClrData& corClrData, FILE *outputFile, uint64_t thre
 {
     void* argBuffer[StressMsg::maxArgCnt];
     char* format = (char*)(s_hdr->moduleImage + msg->formatOffset);
-    int numberOfArgs = (msg->numberOfArgsX << 3) + msg->numberOfArgs;
+    int numberOfArgs = msg->numberOfArgs;
     for (int i = 0; i < numberOfArgs; i++)
     {
         argBuffer[i] = msg->args[i];
