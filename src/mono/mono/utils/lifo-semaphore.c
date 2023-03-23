@@ -213,7 +213,7 @@ mono_lifo_js_semaphore_prepare_wait (LifoJSSemaphore *sem,
 	wait_entry->thread = pthread_self();
 	wait_entry->state = LIFO_JS_WAITING;
         wait_entry->refcount = 1; // timeout owns the wait entry
-	wait_entry->js_timeout_id = emscripten_set_timeout (lifo_js_wait_entry_on_timeout, (double)timeout_ms, &wait_entry);
+	wait_entry->js_timeout_id = emscripten_set_timeout (lifo_js_wait_entry_on_timeout, (double)timeout_ms, wait_entry);
 	lifo_js_wait_entry_push (&sem->head, wait_entry);
 	mono_coop_mutex_unlock (&sem->mutex);
 	return;
