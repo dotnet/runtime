@@ -825,6 +825,13 @@ int getSlotNumber(ScanContext* sc)
     return (IsServerHeap() ? sc->thread_number : 0);
 }
 
+int getThreadCount(ScanContext* sc)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return sc->thread_count;
+}
+
 // <TODO> - reexpress as complete only like hndtable does now!!! -fmh</REVISIT_TODO>
 void Ref_EndSynchronousGC(uint32_t condemned, uint32_t maxgen)
 {
@@ -947,7 +954,7 @@ uint32_t CompareExchangeVariableHandleType(OBJECTHANDLE handle, uint32_t oldType
  * Convenience function for tracing variable-strength handles.
  * Wraps HndScanHandlesForGC.
  */
-void TraceVariableHandles(HANDLESCANPROC pfnTrace, uintptr_t lp1, uintptr_t lp2, uint32_t uEnableMask, uint32_t condemned, uint32_t maxgen, uint32_t flags)
+void TraceVariableHandles(HANDLESCANPROC pfnTrace, ScanContext *sc, uintptr_t lp2, uint32_t uEnableMask, uint32_t condemned, uint32_t maxgen, uint32_t flags)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -960,11 +967,19 @@ void TraceVariableHandles(HANDLESCANPROC pfnTrace, uintptr_t lp1, uintptr_t lp2,
         for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i++)
             if (walk->pBuckets[i] != NULL)
             {
-                HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber((ScanContext*) lp1)];
-                if (hTable)
+                int uCPUindex = getSlotNumber(sc);
+                int uCPUlimit = getNumberOfSlots();
+                assert(uCPUlimit > 0);
+                int uCPUstep = getThreadCount(sc);
+                HHANDLETABLE* pTable = walk->pBuckets[i]->pTable;
+                for ( ; uCPUindex < uCPUlimit; uCPUindex += uCPUstep)
                 {
-                    HndScanHandlesForGC(hTable, VariableTraceDispatcher,
-                                        lp1, (uintptr_t)&info, &type, 1, condemned, maxgen, HNDGCF_EXTRAINFO | flags);
+                    HHANDLETABLE hTable = pTable[uCPUindex];
+                    if (hTable)
+                    {
+                        HndScanHandlesForGC(hTable, VariableTraceDispatcher,
+                                            (uintptr_t)sc, (uintptr_t)&info, &type, 1, condemned, maxgen, HNDGCF_EXTRAINFO | flags);
+                    }
                 }
             }
         walk = walk->pNext;
@@ -1024,23 +1039,31 @@ void Ref_TracePinningRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc,
         for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++)
             if (walk->pBuckets[i] != NULL)
             {
-                HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber((ScanContext*) sc)];
-                if (hTable)
+                int uCPUindex = getSlotNumber(sc);
+                int uCPUlimit = getNumberOfSlots();
+                assert(uCPUlimit > 0);
+                int uCPUstep = getThreadCount(sc);
+                HHANDLETABLE* pTable = walk->pBuckets[i]->pTable;
+                for ( ; uCPUindex < uCPUlimit; uCPUindex += uCPUstep)
                 {
-                    // Pinned handles and async pinned handles are scanned in separate passes, since async pinned
-                    // handles may require a callback into the EE in order to fully trace an async pinned
-                    // object's object graph.
-                    HndScanHandlesForGC(hTable, PinObject, uintptr_t(sc), uintptr_t(fn), &types[0], 1, condemned, maxgen, flags);
+                    HHANDLETABLE hTable = pTable[uCPUindex];
+                    if (hTable)
+                    {
+                        // Pinned handles and async pinned handles are scanned in separate passes, since async pinned
+                        // handles may require a callback into the EE in order to fully trace an async pinned
+                        // object's object graph.
+                        HndScanHandlesForGC(hTable, PinObject, uintptr_t(sc), uintptr_t(fn), &types[0], 1, condemned, maxgen, flags);
 #ifdef FEATURE_ASYNC_PINNED_HANDLES
-                    HndScanHandlesForGC(hTable, AsyncPinObject, uintptr_t(sc), uintptr_t(fn), &types[1], 1, condemned, maxgen, flags);
+                        HndScanHandlesForGC(hTable, AsyncPinObject, uintptr_t(sc), uintptr_t(fn), &types[1], 1, condemned, maxgen, flags);
 #endif
+                    }
                 }
             }
         walk = walk->pNext;
     }
 
     // pin objects pointed to by variable handles whose dynamic type is VHT_PINNED
-    TraceVariableHandles(PinObject, uintptr_t(sc), uintptr_t(fn), VHT_PINNED, condemned, maxgen, flags);
+    TraceVariableHandles(PinObject, sc, uintptr_t(fn), VHT_PINNED, condemned, maxgen, flags);
 }
 
 
@@ -1061,17 +1084,25 @@ void Ref_TraceNormalRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, 
         for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++)
             if (walk->pBuckets[i] != NULL)
             {
-                HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(sc)];
-                if (hTable)
+                int uCPUindex = getSlotNumber(sc);
+                int uCPUlimit = getNumberOfSlots();
+                assert(uCPUlimit > 0);
+                int uCPUstep = getThreadCount(sc);
+                HHANDLETABLE* pTable = walk->pBuckets[i]->pTable;
+                for ( ; uCPUindex < uCPUlimit; uCPUindex += uCPUstep)
                 {
-                    HndScanHandlesForGC(hTable, PromoteObject, uintptr_t(sc), uintptr_t(fn), types, uTypeCount, condemned, maxgen, flags);
+                    HHANDLETABLE hTable = pTable[uCPUindex];
+                    if (hTable)
+                    {
+                        HndScanHandlesForGC(hTable, PromoteObject, uintptr_t(sc), uintptr_t(fn), types, uTypeCount, condemned, maxgen, flags);
+                    }
                 }
             }
         walk = walk->pNext;
     }
 
     // promote objects pointed to by variable handles whose dynamic type is VHT_STRONG
-    TraceVariableHandles(PromoteObject, uintptr_t(sc), uintptr_t(fn), VHT_STRONG, condemned, maxgen, flags);
+    TraceVariableHandles(PromoteObject, sc, uintptr_t(fn), VHT_STRONG, condemned, maxgen, flags);
 
 
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS) || defined(FEATURE_OBJCMARSHAL) || defined(FEATURE_NATIVEAOT)
@@ -1086,9 +1117,17 @@ void Ref_TraceNormalRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, 
             for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++)
                 if (walk->pBuckets[i] != NULL)
                 {
-                    HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(sc)];
-                    if (hTable)
-                        HndScanHandlesForGC(hTable, PromoteRefCounted, uintptr_t(sc), uintptr_t(fn), &type, 1, condemned, maxgen, flags );
+                    int uCPUindex = getSlotNumber(sc);
+                    int uCPUlimit = getNumberOfSlots();
+                    assert(uCPUlimit > 0);
+                    int uCPUstep = getThreadCount(sc);
+                    HHANDLETABLE* pTable = walk->pBuckets[i]->pTable;
+                    for ( ; uCPUindex < uCPUlimit; uCPUindex += uCPUstep)
+                    {
+                        HHANDLETABLE hTable = pTable[uCPUindex];
+                        if (hTable)
+                            HndScanHandlesForGC(hTable, PromoteRefCounted, uintptr_t(sc), uintptr_t(fn), &type, 1, condemned, maxgen, flags );
+                    }
                 }
             walk = walk->pNext;
         }
@@ -1130,7 +1169,7 @@ void Ref_TraceRefCountHandles(HANDLESCANPROC callback, uintptr_t lParam1, uintpt
 
 
 
-void Ref_CheckReachable(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
+void Ref_CheckReachable(uint32_t condemned, uint32_t maxgen, ScanContext *sc)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1146,25 +1185,32 @@ void Ref_CheckReachable(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
     };
 
     // check objects pointed to by short weak handles
-    uint32_t flags = (((ScanContext*) lp1)->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
-    int uCPUindex = getSlotNumber((ScanContext*) lp1);
+    uint32_t flags = sc->concurrent ? HNDGCF_ASYNC : HNDGCF_NORMAL;
 
     HandleTableMap *walk = &g_HandleTableMap;
     while (walk) {
         for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++)
         {
             if (walk->pBuckets[i] != NULL)
-           {
-                HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
-                if (hTable)
-                    HndScanHandlesForGC(hTable, CheckPromoted, lp1, 0, types, ARRAY_SIZE(types), condemned, maxgen, flags);
-        }
+            {
+                int uCPUindex = getSlotNumber(sc);
+                int uCPUlimit = getNumberOfSlots();
+                assert(uCPUlimit > 0);
+                int uCPUstep = getThreadCount(sc);
+                HHANDLETABLE* pTable = walk->pBuckets[i]->pTable;
+                for ( ; uCPUindex < uCPUlimit; uCPUindex += uCPUstep)
+                {
+                    HHANDLETABLE hTable = pTable[uCPUindex];
+                    if (hTable)
+                        HndScanHandlesForGC(hTable, CheckPromoted, (uintptr_t)sc, 0, types, ARRAY_SIZE(types), condemned, maxgen, flags);
+                }
+            }
         }
         walk = walk->pNext;
     }
 
     // check objects pointed to by variable handles whose dynamic type is VHT_WEAK_LONG
-    TraceVariableHandles(CheckPromoted, lp1, 0, VHT_WEAK_LONG, condemned, maxgen, flags);
+    TraceVariableHandles(CheckPromoted, sc, 0, VHT_WEAK_LONG, condemned, maxgen, flags);
 }
 
 //
@@ -1235,17 +1281,25 @@ bool Ref_ScanDependentHandlesForPromotion(DhContext *pDhContext)
             {
                 if (walk->pBuckets[i] != NULL)
                 {
-                    HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(pDhContext->m_pScanContext)];
-                    if (hTable)
+                    int uCPUindex = getSlotNumber(pDhContext->m_pScanContext);
+                    int uCPUlimit = getNumberOfSlots();
+                    assert(uCPUlimit > 0);
+                    int uCPUstep = getThreadCount(pDhContext->m_pScanContext);
+                    HHANDLETABLE* pTable = walk->pBuckets[i]->pTable;
+                    for ( ; uCPUindex < uCPUlimit; uCPUindex += uCPUstep)
                     {
-                        HndScanHandlesForGC(hTable,
-                                            PromoteDependentHandle,
-                                            uintptr_t(pDhContext->m_pScanContext),
-                                            uintptr_t(pDhContext->m_pfnPromoteFunction),
-                                            &type, 1,
-                                            pDhContext->m_iCondemned,
-                                            pDhContext->m_iMaxGen,
-                                            flags );
+                        HHANDLETABLE hTable = pTable[uCPUindex];
+                        if (hTable)
+                        {
+                            HndScanHandlesForGC(hTable,
+                                                PromoteDependentHandle,
+                                                uintptr_t(pDhContext->m_pScanContext),
+                                                uintptr_t(pDhContext->m_pfnPromoteFunction),
+                                                &type, 1,
+                                                pDhContext->m_iCondemned,
+                                                pDhContext->m_iMaxGen,
+                                                flags );
+                        }
                     }
                 }
             }
@@ -1276,10 +1330,18 @@ void Ref_ScanDependentHandlesForClearing(uint32_t condemned, uint32_t maxgen, Sc
         {
             if (walk->pBuckets[i] != NULL)
             {
-                HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(sc)];
-                if (hTable)
+                int uCPUindex = getSlotNumber(sc);
+                int uCPUlimit = getNumberOfSlots();
+                assert(uCPUlimit > 0);
+                int uCPUstep = getThreadCount(sc);
+                HHANDLETABLE* pTable = walk->pBuckets[i]->pTable;
+                for ( ; uCPUindex < uCPUlimit; uCPUindex += uCPUstep)
                 {
-                    HndScanHandlesForGC(hTable, ClearDependentHandle, uintptr_t(sc), 0, &type, 1, condemned, maxgen, flags );
+                    HHANDLETABLE hTable = pTable[uCPUindex];
+                    if (hTable)
+                    {
+                        HndScanHandlesForGC(hTable, ClearDependentHandle, uintptr_t(sc), 0, &type, 1, condemned, maxgen, flags );
+                    }
                 }
             }
         }
@@ -1302,10 +1364,18 @@ void Ref_ScanDependentHandlesForRelocation(uint32_t condemned, uint32_t maxgen, 
         {
             if (walk->pBuckets[i] != NULL)
             {
-                HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(sc)];
-                if (hTable)
+                int uCPUindex = getSlotNumber(sc);
+                int uCPUlimit = getNumberOfSlots();
+                assert(uCPUlimit > 0);
+                int uCPUstep = getThreadCount(sc);
+                HHANDLETABLE* pTable = walk->pBuckets[i]->pTable;
+                for ( ; uCPUindex < uCPUlimit; uCPUindex += uCPUstep)
                 {
-                    HndScanHandlesForGC(hTable, UpdateDependentHandle, uintptr_t(sc), uintptr_t(fn), &type, 1, condemned, maxgen, flags );
+                    HHANDLETABLE hTable = pTable[uCPUindex];
+                    if (hTable)
+                    {
+                        HndScanHandlesForGC(hTable, UpdateDependentHandle, uintptr_t(sc), uintptr_t(fn), &type, 1, condemned, maxgen, flags );
+                    }
                 }
             }
         }
@@ -1348,7 +1418,6 @@ void ScanSizedRefByCPU(uint32_t maxgen, HANDLESCANPROC scanProc, ScanContext* sc
 {
     HandleTableMap *walk = &g_HandleTableMap;
     uint32_t type = HNDTYPE_SIZEDREF;
-    int uCPUindex = getSlotNumber(sc);
 
     while (walk)
     {
@@ -1356,10 +1425,18 @@ void ScanSizedRefByCPU(uint32_t maxgen, HANDLESCANPROC scanProc, ScanContext* sc
         {
         	if (walk->pBuckets[i] != NULL)
 	        {
-                HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
-                if (hTable)
+                int uCPUindex = getSlotNumber(sc);
+                int uCPUlimit = getNumberOfSlots();
+                assert(uCPUlimit > 0);
+                int uCPUstep = getThreadCount(sc);
+                HHANDLETABLE* pTable = walk->pBuckets[i]->pTable;
+                for ( ; uCPUindex < uCPUlimit; uCPUindex += uCPUstep)
                 {
-                    HndScanHandlesForGC(hTable, scanProc, uintptr_t(sc), uintptr_t(fn), &type, 1, maxgen, maxgen, flags);
+                    HHANDLETABLE hTable = pTable[uCPUindex];
+                    if (hTable)
+                    {
+                        HndScanHandlesForGC(hTable, scanProc, uintptr_t(sc), uintptr_t(fn), &type, 1, maxgen, maxgen, flags);
+                    }
                 }
             }
         }
@@ -1377,7 +1454,7 @@ void Ref_ScanSizedRefHandles(uint32_t condemned, uint32_t maxgen, ScanContext* s
     ScanSizedRefByCPU(maxgen, CalculateSizedRefSize, sc, fn, flags);
 }
 
-void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
+void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, ScanContext *sc)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1391,9 +1468,8 @@ void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
         , HNDTYPE_WEAK_NATIVE_COM
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
     };
-    uint32_t flags = (((ScanContext*) lp1)->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
+    uint32_t flags = sc->concurrent ? HNDGCF_ASYNC : HNDGCF_NORMAL;
 
-    int uCPUindex = getSlotNumber((ScanContext*) lp1);
     HandleTableMap *walk = &g_HandleTableMap;
     while (walk)
     {
@@ -1401,15 +1477,23 @@ void Ref_CheckAlive(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
         {
             if (walk->pBuckets[i] != NULL)
             {
-                HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
-                if (hTable)
-                    HndScanHandlesForGC(hTable, CheckPromoted, lp1, 0, types, ARRAY_SIZE(types), condemned, maxgen, flags);
+                int uCPUindex = getSlotNumber(sc);
+                int uCPUlimit = getNumberOfSlots();
+                assert(uCPUlimit > 0);
+                int uCPUstep = getThreadCount(sc);
+                HHANDLETABLE* pTable = walk->pBuckets[i]->pTable;
+                for ( ; uCPUindex < uCPUlimit; uCPUindex += uCPUstep)
+                {
+                    HHANDLETABLE hTable = pTable[uCPUindex];
+                    if (hTable)
+                        HndScanHandlesForGC(hTable, CheckPromoted, (uintptr_t)sc, 0, types, ARRAY_SIZE(types), condemned, maxgen, flags);
+                }
             }
         }
         walk = walk->pNext;
     }
     // check objects pointed to by variable handles whose dynamic type is VHT_WEAK_SHORT
-    TraceVariableHandles(CheckPromoted, lp1, 0, VHT_WEAK_SHORT, condemned, maxgen, flags);
+    TraceVariableHandles(CheckPromoted, sc, 0, VHT_WEAK_SHORT, condemned, maxgen, flags);
 }
 
 static VOLATILE(int32_t) uCount = 0;
@@ -1460,15 +1544,23 @@ void Ref_UpdatePointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Re
         for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++)
             if (walk->pBuckets[i] != NULL)
             {
-                HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(sc)];
-                if (hTable)
-                    HndScanHandlesForGC(hTable, UpdatePointer, uintptr_t(sc), uintptr_t(fn), types, ARRAY_SIZE(types), condemned, maxgen, flags);
+                int uCPUindex = getSlotNumber(sc);
+                int uCPUlimit = getNumberOfSlots();
+                assert(uCPUlimit > 0);
+                int uCPUstep = getThreadCount(sc);
+                HHANDLETABLE* pTable = walk->pBuckets[i]->pTable;
+                for ( ; uCPUindex < uCPUlimit; uCPUindex += uCPUstep)
+                {
+                    HHANDLETABLE hTable = pTable[uCPUindex];
+                    if (hTable)
+                        HndScanHandlesForGC(hTable, UpdatePointer, uintptr_t(sc), uintptr_t(fn), types, ARRAY_SIZE(types), condemned, maxgen, flags);
+                }
             }
         walk = walk->pNext;
     }
 
     // update pointers in variable handles whose dynamic type is VHT_WEAK_SHORT, VHT_WEAK_LONG or VHT_STRONG
-    TraceVariableHandles(UpdatePointer, uintptr_t(sc), uintptr_t(fn), VHT_WEAK_SHORT | VHT_WEAK_LONG | VHT_STRONG, condemned, maxgen, flags);
+    TraceVariableHandles(UpdatePointer, sc, uintptr_t(fn), VHT_WEAK_SHORT | VHT_WEAK_LONG | VHT_STRONG, condemned, maxgen, flags);
 }
 
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
@@ -1617,19 +1709,27 @@ void Ref_UpdatePinnedPointers(uint32_t condemned, uint32_t maxgen, ScanContext* 
         for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++)
             if (walk->pBuckets[i] != NULL)
             {
-                HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(sc)];
-                if (hTable)
-                    HndScanHandlesForGC(hTable, UpdatePointerPinned, uintptr_t(sc), uintptr_t(fn), types, ARRAY_SIZE(types), condemned, maxgen, flags);
+                int uCPUindex = getSlotNumber(sc);
+                int uCPUlimit = getNumberOfSlots();
+                assert(uCPUlimit > 0);
+                int uCPUstep = getThreadCount(sc);
+                HHANDLETABLE* pTable = walk->pBuckets[i]->pTable;
+                for ( ; uCPUindex < uCPUlimit; uCPUindex += uCPUstep)
+                {
+                    HHANDLETABLE hTable = pTable[uCPUindex];
+                    if (hTable)
+                        HndScanHandlesForGC(hTable, UpdatePointerPinned, uintptr_t(sc), uintptr_t(fn), types, ARRAY_SIZE(types), condemned, maxgen, flags);
+                }
             }
         walk = walk->pNext;
     }
 
     // update pointers in variable handles whose dynamic type is VHT_PINNED
-    TraceVariableHandles(UpdatePointerPinned, uintptr_t(sc), uintptr_t(fn), VHT_PINNED, condemned, maxgen, flags);
+    TraceVariableHandles(UpdatePointerPinned, sc, uintptr_t(fn), VHT_PINNED, condemned, maxgen, flags);
 }
 
 
-void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
+void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1657,23 +1757,30 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
         HNDTYPE_SIZEDREF,
     };
 
-    int uCPUindex = getSlotNumber((ScanContext*) lp1);
     // perform a multi-type scan that ages the handles
     HandleTableMap *walk = &g_HandleTableMap;
     while (walk) {
         for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++)
             if (walk->pBuckets[i] != NULL)
             {
-                HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
-                if (hTable)
-                    HndScanHandlesForGC(hTable, NULL, 0, 0, types, ARRAY_SIZE(types), condemned, maxgen, HNDGCF_AGE);
+                int uCPUindex = getSlotNumber(sc);
+                int uCPUlimit = getNumberOfSlots();
+                assert(uCPUlimit > 0);
+                int uCPUstep = getThreadCount(sc);
+                HHANDLETABLE* pTable = walk->pBuckets[i]->pTable;
+                for ( ; uCPUindex < uCPUlimit; uCPUindex += uCPUstep)
+                {
+                    HHANDLETABLE hTable = pTable[uCPUindex];
+                    if (hTable)
+                        HndScanHandlesForGC(hTable, NULL, 0, 0, types, ARRAY_SIZE(types), condemned, maxgen, HNDGCF_AGE);
+                }
             }
         walk = walk->pNext;
     }
 }
 
 
-void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
+void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1702,16 +1809,23 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
         HNDTYPE_SIZEDREF,
     };
 
-    int uCPUindex = getSlotNumber((ScanContext*) lp1);
     // reset the ages of these handles
     HandleTableMap *walk = &g_HandleTableMap;
     while (walk) {
         for (uint32_t i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; i ++)
             if (walk->pBuckets[i] != NULL)
             {
-                HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
-                if (hTable)
-                    HndResetAgeMap(hTable, types, ARRAY_SIZE(types), condemned, maxgen, HNDGCF_NORMAL);
+                int uCPUindex = getSlotNumber(sc);
+                int uCPUlimit = getNumberOfSlots();
+                assert(uCPUlimit > 0);
+                int uCPUstep = getThreadCount(sc);
+                HHANDLETABLE* pTable = walk->pBuckets[i]->pTable;
+                for ( ; uCPUindex < uCPUlimit; uCPUindex += uCPUstep)
+                {
+                    HHANDLETABLE hTable = pTable[uCPUindex];
+                    if (hTable)
+                        HndResetAgeMap(hTable, types, ARRAY_SIZE(types), condemned, maxgen, HNDGCF_NORMAL);
+                }
             }
         walk = walk->pNext;
     }
@@ -1755,9 +1869,17 @@ void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
         {
             if (walk->pBuckets[i] != NULL)
             {
-                HHANDLETABLE hTable = walk->pBuckets[i]->pTable[getSlotNumber(sc)];
-                if (hTable)
-                    HndVerifyTable(hTable, types, ARRAY_SIZE(types), condemned, maxgen, HNDGCF_NORMAL);
+                int uCPUindex = getSlotNumber(sc);
+                int uCPUlimit = getNumberOfSlots();
+                assert(uCPUlimit > 0);
+                int uCPUstep = getThreadCount(sc);
+                HHANDLETABLE* pTable = walk->pBuckets[i]->pTable;
+                for ( ; uCPUindex < uCPUlimit; uCPUindex += uCPUstep)
+                {
+                    HHANDLETABLE hTable = pTable[uCPUindex];
+                    if (hTable)
+                        HndVerifyTable(hTable, types, ARRAY_SIZE(types), condemned, maxgen, HNDGCF_NORMAL);
+                }
             }
         }
         walk = walk->pNext;

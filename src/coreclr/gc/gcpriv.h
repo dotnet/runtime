@@ -4038,6 +4038,7 @@ private:
 
     // Loosely maintained,can be reinit-ed in grow_mark_list.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t mark_list_size;
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t g_mark_list_total_size;
 
     // Loosely maintained,can be reinit-ed in grow_mark_list.
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint8_t** g_mark_list;
@@ -4094,6 +4095,7 @@ private:
     // of GC's book keeping datastructures.
     // Loosely maintained, can be reinit-ed in grow_mark_list_piece
     PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t g_mark_list_piece_size;
+    PER_HEAP_ISOLATED_FIELD_MAINTAINED size_t g_mark_list_piece_total_size;
     PER_HEAP_ISOLATED_FIELD_MAINTAINED uint8_t*** g_mark_list_piece;
 
     PER_HEAP_ISOLATED_FIELD_MAINTAINED region_free_list global_regions_to_decommit[count_free_region_kinds];
