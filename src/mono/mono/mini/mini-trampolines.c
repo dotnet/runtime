@@ -969,7 +969,8 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 	MonoMethod *m;
 	MonoMethod *method = NULL;
 	ERROR_DECL (error);
-	gboolean multicast, callvirt = FALSE, closed_over_null = FALSE;
+	gboolean multicast, callvirt = FALSE;
+	gboolean closed_static = FALSE, closed_over_null = FALSE;
 	gboolean need_rgctx_tramp = FALSE;
 	gboolean need_unbox_tramp = FALSE;
 	gboolean enable_caching = TRUE;
@@ -978,7 +979,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 	guint8 *impl_this = (guint8 *)tramp_info->impl_this;
 	guint8 *impl_nothis = (guint8 *)tramp_info->impl_nothis;
 	MonoMethodSignature *sig;
-	gpointer addr, compiled_method;
+	gpointer addr, invoke_impl, compiled_method;
 
 	UnlockedIncrement (&trampoline_calls);
 
@@ -1040,6 +1041,8 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 		callvirt = !delegate->target && sig->hasthis;
 		if (callvirt)
 			closed_over_null = tramp_info->invoke_sig->param_count == sig->param_count;
+		if (m_method_is_static (method) && sig->param_count == tramp_info->invoke_sig->param_count + 1)
+			closed_static = TRUE;
 
 		if (callvirt && !closed_over_null) {
 			/*
@@ -1051,7 +1054,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 			 * If the call doesn't return a valuetype, then the vcall uses the same calling
 			 * convention as a normal call.
 			 */
-			if ((mono_class_is_sealed (method->klass) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)) && !MONO_TYPE_ISSTRUCT (sig->ret)) {
+			if ((mono_class_is_sealed (method->klass) || !m_method_is_virtual (method)) && !MONO_TYPE_ISSTRUCT (sig->ret)) {
 				callvirt = FALSE;
 				enable_caching = FALSE;
 			}
@@ -1066,7 +1069,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 			enable_caching = FALSE;
 		}
 
-		if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
+		if (m_method_is_synchronized (method))
 			method = mono_marshal_get_synchronized_wrapper (method);
 
 		if (method == tramp_info->method)
@@ -1097,38 +1100,36 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 			delegate->method_ptr = mono_create_static_rgctx_trampoline (method, delegate->method_ptr);
 	}
 
-	/* Necessary for !code condition to fallback to slow path */
-	code = NULL;
+	invoke_impl = NULL;
 
 	multicast = ((MonoMulticastDelegate*)delegate)->delegates != NULL;
 	if (!multicast && !callvirt) {
-		if (method && (method->flags & METHOD_ATTRIBUTE_STATIC) && mono_method_signature_internal (method)->param_count == mono_method_signature_internal (invoke)->param_count + 1)
-			/* Closed static delegate */
-			code = impl_this;
+		if (closed_static)
+			invoke_impl = impl_this;
 		else
-			code = delegate->target ? impl_this : impl_nothis;
+			invoke_impl = delegate->target ? impl_this : impl_nothis;
 	}
 
-	if (!code) {
+	if (!invoke_impl) {
 		/* The general, unoptimized case */
 		m = mono_marshal_get_delegate_invoke (invoke, delegate);
-		code = (guint8 *)mono_jit_compile_method (m, error);
+		invoke_impl = (guint8 *)mono_jit_compile_method (m, error);
 		if (!is_ok (error)) {
 			mono_error_set_pending_exception (error);
 			return NULL;
 		}
-		code = (guint8 *)mini_add_method_trampoline (m, code, mono_method_needs_static_rgctx_invoke (m, FALSE), FALSE);
+		invoke_impl = (guint8 *)mini_add_method_trampoline (m, invoke_impl, mono_method_needs_static_rgctx_invoke (m, FALSE), FALSE);
 	}
 
 	mono_memory_barrier ();
 
-	delegate->invoke_impl = mono_get_addr_from_ftnptr (code);
+	delegate->invoke_impl = mono_get_addr_from_ftnptr (invoke_impl);
 	if (enable_caching && !callvirt && tramp_info->method) {
 		tramp_info->method_ptr = delegate->method_ptr;
 		tramp_info->invoke_impl = delegate->invoke_impl;
 	}
 
-	return code;
+	return invoke_impl;
 }
 
 /*
