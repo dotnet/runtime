@@ -221,5 +221,23 @@ namespace System.Text.Json.Serialization.Tests
         {
             Assert.Throws<ArgumentNullException>(() => (new JsonSerializerOptions()).GetConverter(typeToConvert: null!));
         }
+
+        [Fact]
+        public static void ErrorMessageContainsExpectedType()
+        {
+            JsonSerializerOptions options = new();
+            options.Converters.Add(new InvalidJsonConverterFactory());
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new TestInfo("Hello"), options));
+        }
+
+        private sealed record TestInfo(string Name);
+
+        private sealed class InvalidJsonConverterFactory : JsonConverterFactory
+        {
+            public override bool CanConvert(Type typeToConvert) => true;
+
+            public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+                => new MyBoolEnumConverter();
+        }
     }
 }

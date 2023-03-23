@@ -156,7 +156,7 @@ namespace System.Text.Json.Serialization.Metadata
             converter = options.ExpandConverterFactory(converter, typeToConvert);
             if (!converter.TypeToConvert.IsInSubtypeRelationshipWith(typeToConvert))
             {
-                ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), converter.TypeToConvert);
+                ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), typeToConvert);
             }
 
             JsonSerializerOptions.CheckConverterNullabilityIsSameAsPropertyType(converter, typeToConvert);
