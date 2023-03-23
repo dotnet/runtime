@@ -67,7 +67,7 @@ public class CoreCLR
         psi.Arguments = "clr.paltests";
         Utils.RunProcess(psi, gConfig);
 
-        string osString = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "OSX" : "Linux";
+        string osString = RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "OSX" : "linux";
         NPath paltests = Paths.Artifacts.Combine("bin", "coreclr", $"{osString}.{gConfig.Architecture}.Debug", "paltests");
         psi.FileName = paltests.Combine("runpaltests.sh");
         psi.Arguments = paltests;
