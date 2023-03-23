@@ -585,7 +585,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
     // Set up GC information
     if (CorTypeInfo::IsObjRef(elemType) ||
-        (elemType == ELEMENT_TYPE_VALUETYPE) && pElemMT->IsAllGCPointers())
+        ((elemType == ELEMENT_TYPE_VALUETYPE) && pElemMT->IsAllGCPointers()))
     {
         pMT->SetContainsPointers();
 
