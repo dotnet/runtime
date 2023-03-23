@@ -513,6 +513,7 @@ extract_i8: dest:i src1:x len:4
 extract_r4: dest:f src1:x len:4
 extract_r8: dest:f src1:x len:4
 arm64_xaddv: dest:x src1:x len:8
+xop_ovr_x_x: dest:x src1:x len:4
 
 generic_class_init: src1:a len:44 clob:c
 gc_safe_point: src1:i len:12 clob:c
