@@ -1593,6 +1593,12 @@ GenTree* Compiler::fgMorphInitBlock(GenTree* tree)
 //
 GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
 {
+    if (!tree->Data()->OperIs(GT_CNS_INT, GT_INIT_VAL))
+    {
+        // Data is a location.
+        tree->Data()->gtFlags |= GTF_DONT_CSE;
+    }
+
     tree->Addr()        = fgMorphTree(tree->Addr());
     tree->Data()        = fgMorphTree(tree->Data());
     tree->gtDynamicSize = fgMorphTree(tree->gtDynamicSize);
