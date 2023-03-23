@@ -1628,8 +1628,8 @@ CallArg* CallArgs::GetUserArgByIndex(unsigned index)
         {
             i++;
         }
-        assert((cur != nullptr) && "Not enough user arguments in GetUserArgByIndex");
         cur = cur->GetNext();
+        assert((cur != nullptr) && "Not enough user arguments in GetUserArgByIndex");
     }
 
     return cur;
