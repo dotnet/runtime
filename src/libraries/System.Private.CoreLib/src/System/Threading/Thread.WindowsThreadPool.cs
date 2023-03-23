@@ -3,486 +3,495 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
-// PR-Comment: This implementation comes from Thread.NativeAot.Windows.cs,
-// not sure if it should be called Thread.WindowsThreadPool.cs or Thread.NativeAot.WindowsThreadPool.cs or something else
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
-    using OSThreadPriority = Interop.Kernel32.ThreadPriority;
-
     public sealed partial class Thread
     {
-        partial void PlatformSpecificInitialize();
+        // Extra bits used in _threadState
+        private const ThreadState ThreadPoolThread = (ThreadState)0x1000;
 
-        // Platform-specific initialization of foreign threads, i.e. threads not created by Thread.Start
-        private void PlatformSpecificInitializeExistingThread()
+        // Bits of _threadState that are returned by the ThreadState property
+        private const ThreadState PublicThreadStateMask = (ThreadState)0x1FF;
+
+        internal ExecutionContext? _executionContext;
+        internal SynchronizationContext? _synchronizationContext;
+
+        private volatile int _threadState = (int)ThreadState.Unstarted;
+        private ThreadPriority _priority;
+        private ManagedThreadId _managedThreadId;
+        private string? _name;
+        private StartHelper? _startHelper;
+        private Exception? _startException;
+
+        // Protects starting the thread and setting its priority
+        private Lock _lock = new Lock();
+
+        // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
+        // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
+        // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
+        private bool _mayNeedResetForThreadPool;
+
+        // so far the only place we initialize it is `WaitForForegroundThreads`
+        // and only in the case when there are running foreground threads
+        // by the moment of `StartupCodeHelpers.Shutdown()` invocation
+        private static ManualResetEvent s_allDone;
+
+        private static int s_foregroundRunningCount;
+
+        private void Initialize()
         {
-            _osHandle = GetOSHandleForCurrentThread();
+            _priority = ThreadPriority.Normal;
+            _managedThreadId = new ManagedThreadId();
+
+            PlatformSpecificInitialize();
+            RegisterThreadExitCallback();
         }
 
-        private static SafeWaitHandle GetOSHandleForCurrentThread()
+        private static unsafe void RegisterThreadExitCallback()
         {
-            IntPtr currentProcHandle = Interop.Kernel32.GetCurrentProcess();
-            IntPtr currentThreadHandle = Interop.Kernel32.GetCurrentThread();
-            SafeWaitHandle threadHandle;
-
-            if (Interop.Kernel32.DuplicateHandle(currentProcHandle, currentThreadHandle, currentProcHandle,
-                out threadHandle, 0, false, Interop.Kernel32.DUPLICATE_SAME_ACCESS))
-            {
-                return threadHandle;
-            }
-
-            // Throw an ApplicationException for compatibility with CoreCLR. First save the error code.
-            int errorCode = Marshal.GetLastWin32Error();
-            var ex = new ApplicationException();
-            ex.HResult = errorCode;
-            throw ex;
+            RuntimeImports.RhSetThreadExitCallback(&OnThreadExit);
         }
 
-        private static ThreadPriority MapFromOSPriority(OSThreadPriority priority)
+        internal static ulong CurrentOSThreadId
         {
-            if (priority <= OSThreadPriority.Lowest)
+            get
             {
-                // OS thread priorities in the [Idle,Lowest] range are mapped to ThreadPriority.Lowest
-                return ThreadPriority.Lowest;
-            }
-            switch (priority)
-            {
-                case OSThreadPriority.BelowNormal:
-                    return ThreadPriority.BelowNormal;
-
-                case OSThreadPriority.Normal:
-                    return ThreadPriority.Normal;
-
-                case OSThreadPriority.AboveNormal:
-                    return ThreadPriority.AboveNormal;
-
-                case OSThreadPriority.ErrorReturn:
-                    Debug.Fail("GetThreadPriority failed");
-                    return ThreadPriority.Normal;
-            }
-            // Handle OSThreadPriority.ErrorReturn value before this check!
-            if (priority >= OSThreadPriority.Highest)
-            {
-                // OS thread priorities in the [Highest,TimeCritical] range are mapped to ThreadPriority.Highest
-                return ThreadPriority.Highest;
-            }
-            Debug.Fail("Unreachable");
-            return ThreadPriority.Normal;
-        }
-
-        private static OSThreadPriority MapToOSPriority(ThreadPriority priority)
-        {
-            switch (priority)
-            {
-                case ThreadPriority.Lowest:
-                    return OSThreadPriority.Lowest;
-
-                case ThreadPriority.BelowNormal:
-                    return OSThreadPriority.BelowNormal;
-
-                case ThreadPriority.Normal:
-                    return OSThreadPriority.Normal;
-
-                case ThreadPriority.AboveNormal:
-                    return OSThreadPriority.AboveNormal;
-
-                case ThreadPriority.Highest:
-                    return OSThreadPriority.Highest;
-
-                default:
-                    Debug.Fail("Unreachable");
-                    return OSThreadPriority.Normal;
+                return RuntimeImports.RhCurrentOSThreadId();
             }
         }
 
-        private ThreadPriority GetPriorityLive()
+        // Slow path executed once per thread
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Thread InitializeCurrentThread()
         {
-            Debug.Assert(!_osHandle.IsInvalid);
-            return MapFromOSPriority(Interop.Kernel32.GetThreadPriority(_osHandle));
-        }
+            Debug.Assert(t_currentThread == null);
 
-        private bool SetPriorityLive(ThreadPriority priority)
-        {
-            Debug.Assert(!_osHandle.IsInvalid);
-            return Interop.Kernel32.SetThreadPriority(_osHandle, (int)MapToOSPriority(priority));
-        }
+            var currentThread = new Thread();
+            Debug.Assert(currentThread._threadState == (int)ThreadState.Unstarted);
 
-        [UnmanagedCallersOnly]
-        private static void OnThreadExit()
-        {
-            Thread? currentThread = t_currentThread;
-            if (currentThread != null)
+            ThreadState state = 0;
+
+            // The main thread is foreground, other ones are background
+            if (currentThread._managedThreadId.Id != System.Threading.ManagedThreadId.IdMainThread)
             {
-                StopThread(currentThread);
-            }
-        }
-
-        private bool JoinInternal(int millisecondsTimeout)
-        {
-            // This method assumes the thread has been started
-            Debug.Assert(!GetThreadStateBit(ThreadState.Unstarted) || (millisecondsTimeout == 0));
-            SafeWaitHandle waitHandle = _osHandle;
-
-            // If an OS thread is terminated and its Thread object is resurrected, _osHandle may be finalized and closed
-            if (waitHandle.IsClosed)
-            {
-                return true;
-            }
-
-            // Handle race condition with the finalizer
-            try
-            {
-                waitHandle.DangerousAddRef();
-            }
-            catch (ObjectDisposedException)
-            {
-                return true;
-            }
-
-            try
-            {
-                int result;
-
-                if (millisecondsTimeout == 0)
-                {
-                    result = (int)Interop.Kernel32.WaitForSingleObject(waitHandle.DangerousGetHandle(), 0);
-                }
-                else
-                {
-                    result = WaitHandle.WaitOneCore(waitHandle.DangerousGetHandle(), millisecondsTimeout);
-                }
-
-                return result == (int)Interop.Kernel32.WAIT_OBJECT_0;
-            }
-            finally
-            {
-                waitHandle.DangerousRelease();
-            }
-        }
-
-        private unsafe bool CreateThread(GCHandle thisThreadHandle)
-        {
-            const int AllocationGranularity = 0x10000;  // 64 KiB
-
-            int stackSize = _startHelper._maxStackSize;
-            if ((0 < stackSize) && (stackSize < AllocationGranularity))
-            {
-                // If StackSizeParamIsAReservation flag is set and the reserve size specified by CreateThread's
-                // dwStackSize parameter is less than or equal to the initially committed stack size specified in
-                // the executable header, the reserve size will be set to the initially committed size rounded up
-                // to the nearest multiple of 1 MiB. In all cases the reserve size is rounded up to the nearest
-                // multiple of the system's allocation granularity (typically 64 KiB).
-                //
-                // To prevent overreservation of stack memory for small stackSize values, we increase stackSize to
-                // the allocation granularity. We assume that the SizeOfStackCommit field of IMAGE_OPTIONAL_HEADER
-                // is strictly smaller than the allocation granularity (the field's default value is 4 KiB);
-                // otherwise, at least 1 MiB of memory will be reserved. Note that the desktop CLR increases
-                // stackSize to 256 KiB if it is smaller than that.
-                stackSize = AllocationGranularity;
-            }
-
-            _osHandle = Interop.Kernel32.CreateThread(IntPtr.Zero, (IntPtr)stackSize,
-                &ThreadEntryPoint, (IntPtr)thisThreadHandle,
-                Interop.Kernel32.CREATE_SUSPENDED | Interop.Kernel32.STACK_SIZE_PARAM_IS_A_RESERVATION,
-                out _);
-
-            if (_osHandle.IsInvalid)
-            {
-                return false;
-            }
-
-            // CoreCLR ignores OS errors while setting the priority, so do we
-            SetPriorityLive(_priority);
-
-            Interop.Kernel32.ResumeThread(_osHandle);
-            return true;
-        }
-
-        /// <summary>
-        /// This is an entry point for managed threads created by application
-        /// </summary>
-        [UnmanagedCallersOnly]
-        private static uint ThreadEntryPoint(IntPtr parameter)
-        {
-            StartThread(parameter);
-            return 0;
-        }
-
-        private ApartmentState GetApartmentStateCore()
-        {
-            if (this != CurrentThread)
-            {
-                if (HasStarted())
-                    throw new ThreadStateException();
-                return _initialApartmentState;
-            }
-
-            switch (GetCurrentApartmentType())
-            {
-                case ApartmentType.STA:
-                    return ApartmentState.STA;
-                case ApartmentType.MTA:
-                    return ApartmentState.MTA;
-                default:
-                    return ApartmentState.Unknown;
-            }
-        }
-
-        /*
-        private bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
-        {
-            ApartmentState retState;
-
-            if (this != CurrentThread)
-            {
-                using (LockHolder.Hold(_lock))
-                {
-                    if (HasStarted())
-                        throw new ThreadStateException();
-
-                    // Compat: Disallow resetting the initial apartment state
-                    if (_initialApartmentState == ApartmentState.Unknown)
-                        _initialApartmentState = state;
-
-                    retState = _initialApartmentState;
-                }
+                state |= ThreadState.Background;
             }
             else
             {
+                Interlocked.Increment(ref s_foregroundRunningCount);
+            }
 
-                if ((t_comState & ComState.Locked) == 0)
+            currentThread._threadState = (int)(state | ThreadState.Running);
+            currentThread.PlatformSpecificInitializeExistingThread();
+            currentThread._priority = currentThread.GetPriorityLive();
+            t_currentThread = currentThread;
+
+            return currentThread;
+        }
+
+        /// <summary>
+        /// Returns true if the underlying OS thread has been created and started execution of managed code.
+        /// </summary>
+        private bool HasStarted()
+        {
+            return !GetThreadStateBit(ThreadState.Unstarted);
+        }
+
+        public bool IsAlive
+        {
+            get
+            {
+                return ((ThreadState)_threadState & (ThreadState.Unstarted | ThreadState.Stopped | ThreadState.Aborted)) == 0;
+            }
+        }
+
+        private bool IsDead()
+        {
+            return ((ThreadState)_threadState & (ThreadState.Stopped | ThreadState.Aborted)) != 0;
+        }
+
+        public bool IsBackground
+        {
+            get
+            {
+                if (IsDead())
                 {
-                    if (state != ApartmentState.Unknown)
+                    throw new ThreadStateException(SR.ThreadState_Dead_State);
+                }
+                return GetThreadStateBit(ThreadState.Background);
+            }
+            set
+            {
+                if (IsDead())
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_State);
+                }
+                // we changing foreground count only for started threads
+                // on thread start we count its state in `StartThread`
+                if (value)
+                {
+                    int threadState = SetThreadStateBit(ThreadState.Background);
+                    // was foreground and has started
+                    if ((threadState & ((int)ThreadState.Background | (int)ThreadState.Unstarted | (int)ThreadState.Stopped)) == 0)
                     {
-                        InitializeCom(state);
+                        DecrementRunningForeground();
                     }
-                    else
+                }
+                else
+                {
+                    int threadState = ClearThreadStateBit(ThreadState.Background);
+                    // was background and has started
+                    if ((threadState & ((int)ThreadState.Background | (int)ThreadState.Unstarted | (int)ThreadState.Stopped)) == (int)ThreadState.Background)
                     {
-                        UninitializeCom();
+                        IncrementRunningForeground();
+                        _mayNeedResetForThreadPool = true;
+                    }
+                }
+            }
+        }
+
+        public bool IsThreadPoolThread
+        {
+            get
+            {
+                if (IsDead())
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_State);
+                }
+                return GetThreadStateBit(ThreadPoolThread);
+            }
+            internal set
+            {
+                if (IsDead())
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_State);
+                }
+                if (value)
+                {
+                    SetThreadStateBit(ThreadPoolThread);
+                }
+                else
+                {
+                    ClearThreadStateBit(ThreadPoolThread);
+                }
+            }
+        }
+
+        public int ManagedThreadId
+        {
+            [Intrinsic]
+            get => _managedThreadId.Id;
+        }
+
+        // TODO: Inform the debugger and the profiler
+        // private void ThreadNameChanged(string? value) {}
+
+        public ThreadPriority Priority
+        {
+            get
+            {
+                if (IsDead())
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_Priority);
+                }
+                if (!HasStarted())
+                {
+                    // The thread has not been started yet; return the value assigned to the Priority property.
+                    // Race condition with setting the priority or starting the thread is OK, we may return an old value.
+                    return _priority;
+                }
+                // The priority might have been changed by external means. Obtain the actual value from the OS
+                // rather than using the value saved in _priority.
+                return GetPriorityLive();
+            }
+            set
+            {
+                if ((value < ThreadPriority.Lowest) || (ThreadPriority.Highest < value))
+                {
+                    throw new ArgumentOutOfRangeException(SR.Argument_InvalidFlag);
+                }
+                if (IsDead())
+                {
+                    throw new ThreadStateException(SR.ThreadState_Dead_Priority);
+                }
+
+                // Prevent race condition with starting this thread
+                using (LockHolder.Hold(_lock))
+                {
+                    if (HasStarted() && !SetPriorityLive(value))
+                    {
+                        throw new ThreadStateException(SR.ThreadState_SetPriorityFailed);
+                    }
+                    _priority = value;
+                }
+
+                if (value != ThreadPriority.Normal)
+                {
+                    _mayNeedResetForThreadPool = true;
+                }
+            }
+        }
+
+        public ThreadState ThreadState => ((ThreadState)_threadState & PublicThreadStateMask);
+
+        private bool GetThreadStateBit(ThreadState bit)
+        {
+            Debug.Assert((bit & ThreadState.Stopped) == 0, "ThreadState.Stopped bit may be stale; use GetThreadState instead.");
+            return (_threadState & (int)bit) != 0;
+        }
+
+        private int SetThreadStateBit(ThreadState bit)
+        {
+            int oldState, newState;
+            do
+            {
+                oldState = _threadState;
+                newState = oldState | (int)bit;
+            } while (Interlocked.CompareExchange(ref _threadState, newState, oldState) != oldState);
+            return oldState;
+        }
+
+        private int ClearThreadStateBit(ThreadState bit)
+        {
+            int oldState, newState;
+            do
+            {
+                oldState = _threadState;
+                newState = oldState & ~(int)bit;
+            } while (Interlocked.CompareExchange(ref _threadState, newState, oldState) != oldState);
+            return oldState;
+        }
+
+        private void SetWaitSleepJoinStateCore()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(!GetThreadStateBit(ThreadState.WaitSleepJoin));
+
+            SetThreadStateBit(ThreadState.WaitSleepJoin);
+        }
+
+        private void ClearWaitSleepJoinStateCore()
+        {
+            Debug.Assert(this == CurrentThread);
+            Debug.Assert(GetThreadStateBit(ThreadState.WaitSleepJoin));
+
+            ClearThreadStateBit(ThreadState.WaitSleepJoin);
+        }
+
+        private static int VerifyTimeoutMilliseconds(int millisecondsTimeout)
+        {
+            if (millisecondsTimeout < -1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(millisecondsTimeout),
+                    millisecondsTimeout,
+                    SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+            }
+            return millisecondsTimeout;
+        }
+
+        private bool JoinCore(int millisecondsTimeout)
+        {
+            VerifyTimeoutMilliseconds(millisecondsTimeout);
+            if (GetThreadStateBit(ThreadState.Unstarted))
+            {
+                throw new ThreadStateException(SR.ThreadState_NotStarted);
+            }
+            return JoinInternal(millisecondsTimeout);
+        }
+
+        /// <summary>
+        /// Max value to be passed into <see cref="SpinWait(int)"/> for optimal delaying. Currently, the value comes from
+        /// defaults in CoreCLR's Thread::InitializeYieldProcessorNormalized(). This value is supposed to be normalized to be
+        /// appropriate for the processor.
+        /// TODO: See issue https://github.com/dotnet/corert/issues/4430
+        /// </summary>
+        internal const int OptimalMaxSpinWaitsPerSpinIteration = 8;
+
+        // Max iterations to be done in RhSpinWait.
+        // RhSpinWait does not switch GC modes and we want to avoid native spinning in coop mode for too long.
+        private const int SpinWaitCoopThreshold = 1024;
+
+        private static void SpinWaitInternalCore(int iterations)
+        {
+            Debug.Assert(iterations <= SpinWaitCoopThreshold);
+            if (iterations > 0)
+            {
+                RuntimeImports.RhSpinWait(iterations);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
+        private static void LongSpinWait(int iterations)
+        {
+            RuntimeImports.RhLongSpinWait(iterations);
+        }
+
+        private static void SpinWaitCore(int iterations)
+        {
+            if (iterations > SpinWaitCoopThreshold)
+            {
+                LongSpinWait(iterations);
+            }
+            else
+            {
+                SpinWaitInternal(iterations);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
+        private static bool YieldCore() => RuntimeImports.RhYield();
+
+        private void StartCore()
+        {
+            using (LockHolder.Hold(_lock))
+            {
+                if (!GetThreadStateBit(ThreadState.Unstarted))
+                {
+                    throw new ThreadStateException(SR.ThreadState_AlreadyStarted);
+                }
+
+                bool waitingForThreadStart = false;
+                GCHandle threadHandle = GCHandle.Alloc(this);
+
+                try
+                {
+                    if (!CreateThread(threadHandle))
+                    {
+                        throw new OutOfMemoryException();
+                    }
+
+                    // Skip cleanup if any asynchronous exception happens while waiting for the thread start
+                    waitingForThreadStart = true;
+
+                    // Wait until the new thread either dies or reports itself as started
+                    while (GetThreadStateBit(ThreadState.Unstarted) && !JoinInternal(0))
+                    {
+                        Yield();
+                    }
+
+                    waitingForThreadStart = false;
+                }
+                finally
+                {
+                    Debug.Assert(!waitingForThreadStart, "Leaked threadHandle");
+                    if (!waitingForThreadStart)
+                    {
+                        threadHandle.Free();
                     }
                 }
 
-                // Clear the cache and check whether new state matches the desired state
-                t_apartmentType = ApartmentType.Unknown;
-
-                retState = GetApartmentState();
-            }
-
-            if (retState != state)
-            {
-                if (throwOnError)
+                if (GetThreadStateBit(ThreadState.Unstarted))
                 {
-                    string msg = SR.Format(SR.Thread_ApartmentState_ChangeFailed, retState);
-                    throw new InvalidOperationException(msg);
+                    Exception? startException = _startException;
+                    _startException = null;
+
+                    throw new ThreadStartException(startException ?? new OutOfMemoryException());
                 }
 
-                return false;
+                Debug.Assert(_startException == null);
             }
-
-            return true;
-        }
-        */
-
-        private void InitializeComOnNewThread()
-        {
-            InitializeCom(_initialApartmentState);
         }
 
-        private static void InitializeComForFinalizerThreadCore()
+        private static void StartThread(IntPtr parameter)
         {
-            InitializeCom();
+            GCHandle threadHandle = (GCHandle)parameter;
+            Thread thread = (Thread)threadHandle.Target!;
 
-            // Prevent re-initialization of COM model on finalizer thread
-            t_comState |= ComState.Locked;
-
-            s_comInitializedOnFinalizerThread = true;
-        }
-
-        private static void InitializeComForThreadPoolThread()
-        {
-            // Initialized COM - take advantage of implicit MTA initialized by the finalizer thread
-            SpinWait sw = new SpinWait();
-            while (!s_comInitializedOnFinalizerThread)
+            try
             {
-                RuntimeImports.RhInitializeFinalizerThread();
-                sw.SpinOnce(0);
+                t_currentThread = thread;
+                System.Threading.ManagedThreadId.SetForCurrentThread(thread._managedThreadId);
+                thread.InitializeComOnNewThread();
             }
+            catch (Exception e)
+            {
+                thread._startException = e;
 
-            // Prevent re-initialization of COM model on threadpool threads
-            t_comState |= ComState.Locked;
-        }
-
-        private static void InitializeCom(ApartmentState state = ApartmentState.MTA)
-        {
-            if ((t_comState & ComState.InitializedByUs) != 0)
-                return;
-
-#if ENABLE_WINRT
-            int hr = Interop.WinRT.RoInitialize(
-                (state == ApartmentState.STA) ? Interop.WinRT.RO_INIT_SINGLETHREADED
-                    : Interop.WinRT.RO_INIT_MULTITHREADED);
-#else
-            int hr = Interop.Ole32.CoInitializeEx(IntPtr.Zero,
-                (state == ApartmentState.STA) ? Interop.Ole32.COINIT_APARTMENTTHREADED
-                    : Interop.Ole32.COINIT_MULTITHREADED);
+#if TARGET_UNIX
+                // This should go away once OnThreadExit stops using t_currentThread to signal
+                // shutdown of the thread on Unix.
+                thread._stopped!.Set();
 #endif
-            if (hr < 0)
-            {
-                // RPC_E_CHANGED_MODE indicates this thread has been already initialized with a different
-                // concurrency model. We stay away and let whoever else initialized the COM to be in control.
-                if (hr == HResults.RPC_E_CHANGED_MODE)
-                    return;
-
-                // CoInitializeEx returns E_NOTIMPL on Windows Nano Server for STA
-                if (hr == HResults.E_NOTIMPL)
-                    throw new PlatformNotSupportedException();
-
-                throw new OutOfMemoryException();
-            }
-
-            t_comState |= ComState.InitializedByUs;
-
-            // If the thread has already been CoInitialized to the proper mode, then
-            // we don't want to leave an outstanding CoInit so we CoUninit.
-            if (hr > 0)
-                UninitializeCom();
-        }
-
-        private static void UninitializeCom()
-        {
-            if ((t_comState & ComState.InitializedByUs) == 0)
+                // Terminate the current thread. The creator thread will throw a ThreadStartException.
                 return;
-
-#if ENABLE_WINRT
-            Interop.WinRT.RoUninitialize();
-#else
-            Interop.Ole32.CoUninitialize();
-#endif
-
-            t_comState &= ~ComState.InitializedByUs;
-        }
-
-        private static Thread InitializeExistingThreadPoolThread()
-        {
-            ThreadPool.InitializeForThreadPoolThread();
-
-            InitializeComForThreadPoolThread();
-
-            Thread thread = CurrentThread;
-            thread.SetThreadStateBit(ThreadPoolThread);
-            return thread;
-        }
-
-        // Use ThreadPoolCallbackWrapper instead of calling this function directly
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Thread EnsureThreadPoolThreadInitializedCore()
-        {
-            Thread? thread = t_currentThread;
-            if (thread != null && thread.GetThreadStateBit(ThreadPoolThread))
-                return thread;
-            return InitializeExistingThreadPoolThread();
-        }
-
-        private void InterruptCore() { throw new PlatformNotSupportedException(); }
-
-        //
-        // Suppresses reentrant waits on the current thread, until a matching call to RestoreReentrantWaits.
-        // This should be used by code that's expected to be called inside the STA message pump, so that it won't
-        // reenter itself.  In an ASTA, this should only be the CCW implementations of IUnknown and IInspectable.
-        //
-        private static void SuppressReentrantWaitsCore()
-        {
-            t_reentrantWaitSuppressionCount++;
-        }
-
-        private static void RestoreReentrantWaitsCore()
-        {
-            Debug.Assert(t_reentrantWaitSuppressionCount > 0);
-            t_reentrantWaitSuppressionCount--;
-        }
-
-        private static bool ReentrantWaitsEnabled =>
-            GetCurrentApartmentType() == ApartmentType.STA && t_reentrantWaitSuppressionCount == 0;
-
-        private static ApartmentType GetCurrentApartmentTypeCore()
-        {
-            ApartmentType currentThreadType = t_apartmentType;
-            if (currentThreadType != ApartmentType.Unknown)
-                return currentThreadType;
-
-            Interop.APTTYPE aptType;
-            Interop.APTTYPEQUALIFIER aptTypeQualifier;
-            int result = Interop.Ole32.CoGetApartmentType(out aptType, out aptTypeQualifier);
-
-            ApartmentType type = ApartmentType.Unknown;
-
-            switch (result)
-            {
-                case HResults.CO_E_NOTINITIALIZED:
-                    type = ApartmentType.None;
-                    break;
-
-                case HResults.S_OK:
-                    switch (aptType)
-                    {
-                        case Interop.APTTYPE.APTTYPE_STA:
-                        case Interop.APTTYPE.APTTYPE_MAINSTA:
-                            type = ApartmentType.STA;
-                            break;
-
-                        case Interop.APTTYPE.APTTYPE_MTA:
-                            type = ApartmentType.MTA;
-                            break;
-
-                        case Interop.APTTYPE.APTTYPE_NA:
-                            switch (aptTypeQualifier)
-                            {
-                                case Interop.APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_MTA:
-                                case Interop.APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_IMPLICIT_MTA:
-                                    type = ApartmentType.MTA;
-                                    break;
-
-                                case Interop.APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_STA:
-                                case Interop.APTTYPEQUALIFIER.APTTYPEQUALIFIER_NA_ON_MAINSTA:
-                                    type = ApartmentType.STA;
-                                    break;
-
-                                default:
-                                    Debug.Fail("NA apartment without NA qualifier");
-                                    break;
-                            }
-                            break;
-                    }
-                    break;
-
-                default:
-                    Debug.Fail("bad return from CoGetApartmentType");
-                    break;
             }
 
-            if (type != ApartmentType.Unknown)
-                t_apartmentType = type;
-            return type;
+            // Report success to the creator thread, which will free threadHandle
+            int state = thread.ClearThreadStateBit(ThreadState.Unstarted);
+            if ((state & (int)ThreadState.Background) == 0)
+            {
+                IncrementRunningForeground();
+            }
+
+            try
+            {
+                StartHelper? startHelper = thread._startHelper;
+                Debug.Assert(startHelper != null);
+                thread._startHelper = null;
+
+                startHelper.Run();
+            }
+            finally
+            {
+                thread.SetThreadStateBit(ThreadState.Stopped);
+            }
         }
 
-        internal enum ApartmentType : byte
+        private static void StopThread(Thread thread)
         {
-            Unknown = 0,
-            None,
-            STA,
-            MTA
+            if ((thread._threadState & (int)(ThreadState.Stopped | ThreadState.Aborted)) == 0)
+            {
+                thread.SetThreadStateBit(ThreadState.Stopped);
+            }
+
+            int state = thread.ClearThreadStateBit(ThreadState.Background);
+            if ((state & (int)ThreadState.Background) == 0)
+            {
+                DecrementRunningForeground();
+            }
         }
 
-        [Flags]
-        internal enum ComState : byte
+        private static void IncrementRunningForegroundCore()
         {
-            InitializedByUs = 1,
-            Locked = 2,
+            Interlocked.Increment(ref s_foregroundRunningCount);
+        }
+
+        private static void DecrementRunningForegroundCore()
+        {
+            if (Interlocked.Decrement(ref s_foregroundRunningCount) == 0)
+            {
+                // Interlocked.Decrement issues full memory barrier
+                // so most recent write to s_allDone should be visible here
+                s_allDone?.Set();
+            }
+        }
+
+        private static void WaitForForegroundThreadsCore()
+        {
+            Thread.CurrentThread.IsBackground = true;
+            // last read/write inside `IsBackground` issues full barrier no matter of logic flow
+            // so we can just read `s_foregroundRunningCount`
+            if (s_foregroundRunningCount == 0)
+            {
+                // current thread is the last foreground thread, so let the runtime finish
+                return;
+            }
+            Volatile.Write(ref s_allDone, new ManualResetEvent(false));
+            // other foreground threads could have their job finished meanwhile
+            // Volatile.Write above issues release barrier
+            // but we need acquire barrier to observe most recent write to s_foregroundRunningCount
+            if (Volatile.Read(ref s_foregroundRunningCount) == 0)
+            {
+                return;
+            }
+            s_allDone.WaitOne();
         }
     }
 }
