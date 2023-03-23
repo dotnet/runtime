@@ -224,7 +224,7 @@ The `hostfxr_initialize_parameters` structure stores parameters which are common
 * `size` - the size of the structure. This is used for versioning. Should be set to `sizeof(hostfxr_initialize_parameters)`.
 * `host_path` - path to the native host (typically the `.exe`). This value is not used for anything by the hosting components. It's just passed to the CoreCLR as the path to the executable. It can point to a file which is not executable itself, if such file doesn't exist (for example in COM activation scenarios this points to the `comhost.dll`). This is used by PAL to initialize internal command line structures, process name and so on.
 * `dotnet_root` - Optional. Path to the root of the .NET Core installation in use. This typically points to the install location from which the `hostfxr` has been loaded. For example on Windows this would typically point to `C:\Program Files\dotnet`. The path is used to search for shared frameworks and potentially SDKs.
-  * If not specified, `hostfxr` will determine the root based on its own location - the same directory if the runtime (`coreclr`) exists next to it (as in self-contained applications), otherwise a relative path per the [install layout](https://github.com/dotnet/designs/blob/a0166fd2210399351822d79e3100a87b9da20f72/accepted/2020/install-locations.md#net-core-install-layout).
+  * If not specified, `hostfxr` will determine the root based on its own location - the same directory if the runtime (`coreclr`) exists next to it (as in self-contained applications), otherwise a relative path per the [install layout](https://github.com/dotnet/designs/blob/main/accepted/2020/install-locations.md#net-core-install-layout).
 
 
 ``` C
