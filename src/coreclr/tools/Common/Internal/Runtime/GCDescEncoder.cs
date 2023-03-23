@@ -51,18 +51,9 @@ namespace Internal.Runtime
                 var defType = (MetadataType)type;
                 if (defType.ContainsGCPointers)
                 {
-                    GCPointerMap pointerMap = GCPointerMap.FromInstanceLayout(defType);
-                    if (pointerMap.IsAllGCPointers)
-                    {
-                        // For efficiency this is special cased and encoded as one serie
-                        return 3 * type.Context.Target.PointerSize;
-                    }
-                    else
-                    {
-                        int numSeries = pointerMap.NumSeries;
-                        Debug.Assert(numSeries > 0);
-                        return (numSeries * 2 + 1) * type.Context.Target.PointerSize;
-                    }
+                    int numSeries = GCPointerMap.FromInstanceLayout(defType).NumSeries;
+                    Debug.Assert(numSeries > 0);
+                    return (numSeries * 2 + 1) * type.Context.Target.PointerSize;
                 }
             }
 
@@ -113,22 +104,13 @@ namespace Internal.Runtime
                 var defType = (MetadataType)type;
                 if (defType.ContainsGCPointers)
                 {
-                    GCPointerMap pointerMap = GCPointerMap.FromInstanceLayout(defType);
-                    if (pointerMap.IsAllGCPointers)
-                    {
-                        int offsetToData = builder.TargetPointerSize;
-                        EncodeAllGCPointersGCDesc(ref builder, offsetToData);
-                    }
-                    else
-                    {
-                        // Pointer map for value types is for the unboxed version, so need to add an offset
-                        int offs = defType.IsValueType ? builder.TargetPointerSize : 0;
+                    // Computing the layout for the boxed version if this is a value type.
+                    int offs = defType.IsValueType ? builder.TargetPointerSize : 0;
 
-                        // Include syncblock
-                        int objectSize = defType.InstanceByteCount.AsInt + offs + builder.TargetPointerSize;
+                    // Include syncblock
+                    int objectSize = defType.InstanceByteCount.AsInt + offs + builder.TargetPointerSize;
 
-                        EncodeStandardGCDesc(ref builder, GCPointerMap.FromInstanceLayout(defType), objectSize, offs);
-                    }
+                    EncodeStandardGCDesc(ref builder, GCPointerMap.FromInstanceLayout(defType), objectSize, offs);
                 }
             }
 
