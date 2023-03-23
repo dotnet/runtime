@@ -1565,6 +1565,9 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 #define arm_neon_fsqrt_4s(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_FULL, 0b1, 0b10 | SIZE_1, 0b11101, (rd), (rn))
 #define arm_neon_fsqrt_2d(p, rd, rn) arm_neon_2mvec_opcode ((p), VREG_FULL, 0b1, 0b10 | SIZE_2, 0b11101, (rd), (rn))
 
+#define arm_neon_frintm(p, width, type, rd, rn) arm_neon_2mvec_opcode ((p), (width), 0b0, (type), 0b11001, (rd), (rn))
+#define arm_neon_frintp(p, width, type, rd, rn) arm_neon_2mvec_opcode ((p), (width), 0b0, 0b10 | (type), 0b11000, (rd), (rn))
+
 /* NEON :: across lanes */
 #define arm_neon_xln_opcode(p, q, u, size, opcode, rd, rn) arm_neon_opcode_2reg ((p), (q), 0b00001110001100000000100000000000 | (u) << 29 | (size) << 22 | (opcode) << 12, (rd), (rn))
 #define arm_neon_addv(p, width, type, rd, rn) arm_neon_xln_opcode ((p), (width), 0b0, (type), 0b11011, (rd), (rn))
