@@ -5,6 +5,7 @@
 #define _PROMOTION_H
 
 class Compiler;
+struct Replacement;
 
 class Promotion
 {
@@ -13,6 +14,7 @@ class Promotion
     friend class LocalsUseVisitor;
     friend class ReplaceVisitor;
 
+    void InsertInitialReadBack(unsigned lclNum, const jitstd::vector<Replacement>& replacements, Statement** prevStmt);
 public:
     explicit Promotion(Compiler* compiler) : m_compiler(compiler)
     {

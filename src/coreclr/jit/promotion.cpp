@@ -392,8 +392,8 @@ public:
 
         weight_t   countReadBacksWtd = 0;
         LclVarDsc* lcl               = comp->lvaGetDesc(lclNum);
-        // For parameters we need an initial read back
-        if (lcl->lvIsParam)
+        // For parameters or OSR locals we need an initial read back
+        if (lcl->lvIsParam || lcl->lvIsOSRLocal)
         {
             countReadBacksWtd += comp->fgFirstBB->getBBWeight(comp);
         }
@@ -1022,31 +1022,47 @@ PhaseStatus Promotion::Run()
         }
     }
 
-    Statement* prevParamLoadStmt = nullptr;
-    for (unsigned i = 0; i < m_compiler->info.compArgsCount; i++)
+    Statement* prevInitialReadBackStmt = nullptr;
+    for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
     {
-        for (unsigned j = 0; j < replacements[i].size(); j++)
+        InsertInitialReadBack(lclNum, replacements[lclNum], &prevInitialReadBackStmt);
+    }
+
+    if (m_compiler->opts.IsOSR())
+    {
+        for (unsigned lclNum = m_compiler->info.compArgsCount; lclNum < m_compiler->lvaCount; lclNum++)
         {
-            Replacement& rep = replacements[i][j];
-
-            m_compiler->fgEnsureFirstBBisScratch();
-
-            GenTree*   dst  = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
-            GenTree*   src  = m_compiler->gtNewLclFldNode(i, rep.AccessType, rep.Offset);
-            GenTree*   asg  = m_compiler->gtNewAssignNode(dst, src);
-            Statement* stmt = m_compiler->fgNewStmtFromTree(asg);
-            if (prevParamLoadStmt != nullptr)
+            if (m_compiler->lvaGetDesc(lclNum)->lvIsOSRLocal)
             {
-                m_compiler->fgInsertStmtAfter(m_compiler->fgFirstBB, prevParamLoadStmt, stmt);
+                InsertInitialReadBack(lclNum, replacements[lclNum], &prevInitialReadBackStmt);
             }
-            else
-            {
-                m_compiler->fgInsertStmtAtBeg(m_compiler->fgFirstBB, stmt);
-            }
-
-            prevParamLoadStmt = stmt;
         }
     }
 
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+void Promotion::InsertInitialReadBack(unsigned lclNum, const jitstd::vector<Replacement>& replacements, Statement** prevStmt)
+{
+    for (unsigned i = 0; i < replacements.size(); i++)
+    {
+        const Replacement& rep = replacements[i];
+
+        m_compiler->fgEnsureFirstBBisScratch();
+
+        GenTree* dst = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
+        GenTree* src = m_compiler->gtNewLclFldNode(lclNum, rep.AccessType, rep.Offset);
+        GenTree* asg = m_compiler->gtNewAssignNode(dst, src);
+        Statement* stmt = m_compiler->fgNewStmtFromTree(asg);
+        if (*prevStmt != nullptr)
+        {
+            m_compiler->fgInsertStmtAfter(m_compiler->fgFirstBB, *prevStmt, stmt);
+        }
+        else
+        {
+            m_compiler->fgInsertStmtAtBeg(m_compiler->fgFirstBB, stmt);
+        }
+
+        *prevStmt = stmt;
+    }
 }
