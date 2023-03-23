@@ -28,7 +28,6 @@
 #include <mono/utils/mono-memory-model.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/tokentype.h>
-#include "llvm-intrinsics-types.h"
 
 #include "interp/interp.h"
 
