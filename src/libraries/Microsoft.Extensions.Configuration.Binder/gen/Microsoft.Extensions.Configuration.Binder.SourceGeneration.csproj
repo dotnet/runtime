@@ -5,9 +5,7 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
-  </PropertyGroup>
-
-  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants Condition="'$(LaunchDebugger)' == 'true'">$(DefineConstants);LAUNCH_DEBUGGER</DefineConstants>
   </PropertyGroup>
 
@@ -34,6 +32,7 @@
     <Compile Include="PopulationStrategy.cs" />
     <Compile Include="PropertySpec.cs" />
     <Compile Include="SourceGenerationSpec.cs" />
+    <Compile Include="SourceWriter.cs" />
     <Compile Include="TypeSpecKind.cs" />
     <Compile Include="TypeSpec.cs" />
   </ItemGroup>

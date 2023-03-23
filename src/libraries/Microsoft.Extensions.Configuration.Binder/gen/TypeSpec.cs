@@ -7,14 +7,26 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     internal record TypeSpec
     {
+        private static readonly SymbolDisplayFormat s_minimalDisplayFormat = new SymbolDisplayFormat(
+            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
+            genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+            miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
+
         public TypeSpec(ITypeSymbol type)
         {
-            DisplayString = type.ToDisplayString();
+            FullyQualifiedDisplayString = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            MinimalDisplayString = type.ToDisplayString(s_minimalDisplayFormat);
+            Namespace = type.ContainingNamespace?.ToDisplayString();
             SpecialType = type.SpecialType;
             IsValueType = type.IsValueType;
         }
 
-        public string DisplayString { get; }
+        public string FullyQualifiedDisplayString { get; }
+
+        public string MinimalDisplayString { get; }
+
+        public string? Namespace { get; }
 
         public SpecialType SpecialType { get; }
 

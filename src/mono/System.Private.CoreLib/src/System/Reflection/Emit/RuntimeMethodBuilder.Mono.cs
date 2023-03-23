@@ -91,9 +91,10 @@ namespace System.Reflection.Emit
                 this.call_conv |= CallingConventions.HasThis;
             if (parameterTypes != null)
             {
-                for (int i = 0; i < parameterTypes.Length; ++i)
-                    if (parameterTypes[i] == null)
-                        throw new ArgumentException("Elements of the parameterTypes array cannot be null", nameof(parameterTypes));
+                foreach (Type t in parameterTypes)
+                {
+                    ArgumentNullException.ThrowIfNull(t, nameof(parameterTypes));
+                }
 
                 this.parameters = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);
@@ -316,7 +317,7 @@ namespace System.Reflection.Emit
                  MethodImplAttributes.IL) ||
                 ((iattrs & MethodImplAttributes.ManagedMask) !=
                  MethodImplAttributes.Managed))
-                throw new InvalidOperationException("Method body should not exist.");
+                throw new InvalidOperationException(SR.InvalidOperation_ShouldNotHaveMethodBody);
             if (ilgen != null)
                 return ilgen;
             ilgen = new ILGenerator(type.Module, ((RuntimeModuleBuilder)type.Module).GetTokenGenerator(), size);
@@ -346,7 +347,7 @@ namespace System.Reflection.Emit
                 foreach (MethodInfo m in override_methods)
                 {
                     if (m.IsVirtual && !IsVirtual)
-                        throw new TypeLoadException(string.Format("Method '{0}' override '{1}' but it is not virtual", name, m));
+                        throw new TypeLoadException(SR.Format(SR.TypeLoad_MethodOverrideNotVirtual, name, m));
                 }
             }
         }
@@ -357,9 +358,7 @@ namespace System.Reflection.Emit
             {
                 // do not allow zero length method body on MS.NET 2.0 (and higher)
                 if (((ilgen == null) || (ilgen.ILOffset == 0)) && (code == null || code.Length == 0))
-                    throw new InvalidOperationException(
-                                         string.Format("Method '{0}.{1}' does not have a method body.",
-                                                DeclaringType!.FullName, Name));
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadEmptyMethodBody, Name));
             }
             ilgen?.label_fixup(this);
         }
@@ -411,7 +410,7 @@ namespace System.Reflection.Emit
 
                     pi_dll = (string?)attr.ctorArgs[0];
                     if (pi_dll == null || pi_dll.Length == 0)
-                        throw new ArgumentException("DllName cannot be empty");
+                        throw new ArgumentException(SR.Arg_DllNameCannotBeEmpty);
 
                     native_cc = Runtime.InteropServices.CallingConvention.Winapi;
 
@@ -536,7 +535,7 @@ namespace System.Reflection.Emit
         public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
             if (!IsGenericMethodDefinition)
-                throw new InvalidOperationException("Method is not a generic method definition");
+                throw new InvalidOperationException(SR.Argument_NeedGenericMethodDefinition);
             ArgumentNullException.ThrowIfNull(typeArguments);
             foreach (Type type in typeArguments)
             {
@@ -601,9 +600,10 @@ namespace System.Reflection.Emit
         {
             if (parameterTypes != null)
             {
-                for (int i = 0; i < parameterTypes.Length; ++i)
-                    if (parameterTypes[i] == null)
-                        throw new ArgumentNullException(nameof(parameterTypes), "Elements of the parameterTypes array cannot be null");
+                foreach (Type t in parameterTypes)
+                {
+                    ArgumentNullException.ThrowIfNull(t, nameof(parameterTypes));
+                }
 
                 this.parameters = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);

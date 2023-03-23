@@ -122,7 +122,7 @@ r8const: dest:f len:20
 label: len:0
 store_membase_imm: dest:b len:20
 store_membase_reg: dest:b src1:i len:20
-storex_membase: dest:b src1:x len:12
+storex_membase: dest:b src1:x len:16
 storei1_membase_imm: dest:b len:20
 storei1_membase_reg: dest:b src1:i len:12
 storei2_membase_imm: dest:b len:20

@@ -2875,6 +2875,10 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 	if (g_list_find (td->dont_inline, method))
 		return FALSE;
 
+	// temp workaround for https://github.com/dotnet/runtime/issues/83792 -kg
+	if (mono_interp_jit_call_supported(method, csignature))
+		return FALSE;
+
 	return TRUE;
 }
 

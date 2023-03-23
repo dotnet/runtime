@@ -763,21 +763,24 @@
       "owners": [
         "ajcvickers",
         "david-engel",
-        "davoudeshtehari"
+        "davoudeshtehari",
+        "roji"
       ],
       "label": "area-System.Data"
     },
     {
       "lead": "ajcvickers",
       "owners": [
-        "ajcvickers"
+        "ajcvickers",
+        "roji"
       ],
       "label": "area-System.Data.Odbc"
     },
     {
       "lead": "ajcvickers",
       "owners": [
-        "ajcvickers"
+        "ajcvickers",
+        "roji"
       ],
       "label": "area-System.Data.OleDB"
     },
@@ -1513,7 +1516,8 @@
     {
       "lead": "ajcvickers",
       "owners": [
-        "roji"
+        "roji",
+		"ajcvickers"
       ],
       "label": "area-System.Transactions"
     },
