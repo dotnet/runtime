@@ -327,7 +327,7 @@ function(generate_exports_file)
   list(GET INPUT_LIST -1 outputFilename)
   list(REMOVE_AT INPUT_LIST -1)
 
-  if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+  if(CLR_CMAKE_TARGET_APPLE)
     set(SCRIPT_NAME generateexportedsymbols.sh)
   else()
     set(SCRIPT_NAME generateversionscript.sh)
@@ -366,7 +366,7 @@ endfunction()
 
 function (get_symbol_file_name targetName outputSymbolFilename)
   if (CLR_CMAKE_HOST_UNIX)
-    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    if (CLR_CMAKE_TARGET_APPLE)
       set(strip_destination_file $<TARGET_FILE:${targetName}>.dwarf)
     else ()
       set(strip_destination_file $<TARGET_FILE:${targetName}>.dbg)
@@ -386,7 +386,7 @@ function(strip_symbols targetName outputFilename)
   if (CLR_CMAKE_HOST_UNIX)
     set(strip_source_file $<TARGET_FILE:${targetName}>)
 
-    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    if (CLR_CMAKE_TARGET_APPLE)
 
       # Ensure that dsymutil and strip are present
       find_program(DSYMUTIL dsymutil)
@@ -423,9 +423,9 @@ function(strip_symbols targetName outputFilename)
         VERBATIM
         COMMAND ${DSYMUTIL} ${DSYMUTIL_OPTS} ${strip_source_file}
         COMMAND ${strip_command}
-        COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
+        COMMAND sh -c "echo Stripping symbols from $(basename '${strip_source_file}') into $(basename '${strip_destination_file}')"
         )
-    else (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    else (CLR_CMAKE_TARGET_APPLE)
 
       add_custom_command(
         TARGET ${targetName}
@@ -434,9 +434,9 @@ function(strip_symbols targetName outputFilename)
         COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
         COMMAND ${CMAKE_OBJCOPY} --strip-debug --strip-unneeded ${strip_source_file}
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
-        COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
+        COMMAND sh -c "echo Stripping symbols from $(basename '${strip_source_file}') into $(basename '${strip_destination_file}')"
         )
-    endif (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    endif (CLR_CMAKE_TARGET_APPLE)
   endif(CLR_CMAKE_HOST_UNIX)
 endfunction()
 
@@ -446,7 +446,7 @@ function(install_with_stripped_symbols targetName kind destination)
       install_symbol_file(${symbol_file} ${destination} ${ARGN})
     endif()
 
-    if ((CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS) AND ("${kind}" STREQUAL "TARGETS"))
+    if (CLR_CMAKE_TARGET_APPLE AND ("${kind}" STREQUAL "TARGETS"))
       # We want to avoid the kind=TARGET install behaviors which corrupt code signatures on osx-arm64
       set(kind PROGRAMS)
     endif()
@@ -615,7 +615,6 @@ function(link_natvis_sources_for_target targetName linkKind)
         endif()
         get_filename_component(extension "${source}" EXT)
         if ("${extension}" STREQUAL ".natvis")
-            message("Embedding natvis ${source}")
             # Since natvis embedding is only supported on Windows
             # we can use target_link_options since our minimum version is high enough
             target_link_options(${targetName} "${linkKind}" "-NATVIS:${source}")

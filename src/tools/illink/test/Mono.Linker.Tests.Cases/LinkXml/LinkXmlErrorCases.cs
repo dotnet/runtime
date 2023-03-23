@@ -17,12 +17,13 @@ namespace Mono.Linker.Tests.Cases.LinkXml
 	[ExpectedWarning ("IL2017", "NonExistentProperty", "TypeWithNoProperties", FileName = "LinkXmlErrorCases.xml", SourceLine = 21, SourceColumn = 8)]
 	[ExpectedWarning ("IL2018", "SetOnlyProperty", "TypeWithProperties", FileName = "LinkXmlErrorCases.xml", SourceLine = 25, SourceColumn = 8)]
 	[ExpectedWarning ("IL2019", "GetOnlyProperty", "TypeWithProperties", FileName = "LinkXmlErrorCases.xml", SourceLine = 26, SourceColumn = 8)]
-
-	[ExpectedWarning ("IL2025", "Method", FileName = "LinkXmlErrorCases.xml", SourceLine = 39, SourceColumn = 8)]
-	[ExpectedWarning ("IL2025", "Event", FileName = "LinkXmlErrorCases.xml", SourceLine = 40, SourceColumn = 8)]
-	[ExpectedWarning ("IL2025", "Field", FileName = "LinkXmlErrorCases.xml", SourceLine = 41, SourceColumn = 8)]
-	[ExpectedWarning ("IL2025", "Property", FileName = "LinkXmlErrorCases.xml", SourceLine = 42, SourceColumn = 8)]
-	[ExpectedWarning ("IL2100", FileName = "LinkXmlErrorCases.xml", SourceLine = 50, SourceColumn = 4)]
+	[ExpectedWarning ("IL2025", "Method", FileName = "LinkXmlErrorCases.xml", SourceLine = 39, SourceColumn = 8, ProducedBy = Tool.Trimmer)]
+	[ExpectedWarning ("IL2025", "Event", FileName = "LinkXmlErrorCases.xml", SourceLine = 40, SourceColumn = 8, ProducedBy = Tool.Trimmer)]
+	[ExpectedWarning ("IL2025", "Field", FileName = "LinkXmlErrorCases.xml", SourceLine = 41, SourceColumn = 8, ProducedBy = Tool.Trimmer)]
+	[ExpectedWarning ("IL2025", "Property", FileName = "LinkXmlErrorCases.xml", SourceLine = 42, SourceColumn = 8, ProducedBy = Tool.Trimmer)]
+	// NativeAOT doesn't support wildcard * and will skip usages of it, including if they would warn
+	// https://github.com/dotnet/runtime/issues/80466
+	[ExpectedWarning ("IL2100", FileName = "LinkXmlErrorCases.xml", SourceLine = 50, SourceColumn = 4, ProducedBy = Tool.Trimmer)]
 	class LinkXmlErrorCases
 	{
 		public static void Main ()

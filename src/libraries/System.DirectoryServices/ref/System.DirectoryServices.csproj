@@ -10,7 +10,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\ref\System.Security.Permissions.csproj" />
+    <!-- Use of 'PrivateAssets=all' removes the package reference to S.S.P since S.S.P has references to other packages that are not desired.
+    S.S.P only contains DirectoryServices obsolete types including DirectoryServicesPermission.-->
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\ref\System.Security.Permissions.csproj" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">

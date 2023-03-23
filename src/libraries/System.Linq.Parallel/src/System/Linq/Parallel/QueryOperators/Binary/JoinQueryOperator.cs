@@ -225,7 +225,7 @@ namespace System.Linq.Parallel
         /// <summary>
         /// Adds TElement,TOrderKey values to a HashLookup of HashLookupValueLists.
         /// </summary>
-        private struct JoinBaseHashBuilder : IBaseHashBuilder<TElement, TOrderKey>
+        private readonly struct JoinBaseHashBuilder : IBaseHashBuilder<TElement, TOrderKey>
         {
             private readonly HashLookup<THashKey, HashLookupValueList<TElement, TOrderKey>> _base;
 

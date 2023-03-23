@@ -14,6 +14,7 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <TieredCompilation>false</TieredCompilation>
+    <EventSourceSupport>true</EventSourceSupport>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -46,6 +47,7 @@
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'osx.11.0-arm64'">$(runtimeosx110arm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'osx.10.12-x64'">$(runtimeosx1012x64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
     <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'freebsd-x64'">$(runtimefreebsdx64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
+    <ObjWriterVersion Condition="'$(ObjWriterVersion)' == '' and '$(ObjWriterRid)' == 'freebsd-arm64'">$(runtimefreebsdarm64MicrosoftNETCoreRuntimeObjWriterVersion)</ObjWriterVersion>
 
     <!-- CoreDisTools are used in debugging visualizers. -->
     <IncludeCoreDisTools Condition="'$(Configuration)' != 'Release' and '$(CrossHostArch)' == ''">true</IncludeCoreDisTools>
@@ -87,6 +89,7 @@
   <ItemGroup>
     <Compile Include="..\..\Common\CommandLineHelpers.cs" Link="CommandLineHelpers.cs" />
     <Compile Include="..\..\Common\InstructionSetHelpers.cs" Link="InstructionSetHelpers.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\HelperExtensions.cs" Link="HelperExtensions.cs" />
   </ItemGroup>
 
   <ItemGroup>

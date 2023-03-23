@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using ILCompiler;
@@ -58,21 +59,29 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					entrypointModule = module;
 				}
 
-				compilationRoots.Add (new ExportedMethodsRootProvider (module));
+				compilationRoots.Add (new UnmanagedEntryPointsRootProvider (module));
 			}
 
-			compilationRoots.Add (new MainMethodRootProvider (entrypointModule, CreateInitializerList (typeSystemContext, options)));
+			compilationRoots.Add (new MainMethodRootProvider (entrypointModule, CreateInitializerList (typeSystemContext, options), generateLibraryAndModuleInitializers: true));
 
 			ILProvider ilProvider = new NativeAotILProvider ();
+
+			Logger logger = new Logger (
+				logWriter,
+				ilProvider,
+				isVerbose: true,
+				suppressedWarnings: Enumerable.Empty<int> (),
+				options.SingleWarn,
+				singleWarnEnabledModules: Enumerable.Empty<string> (),
+				singleWarnDisabledModules: Enumerable.Empty<string> (),
+				suppressedCategories: Enumerable.Empty<string> ());
 
 			foreach (var descriptor in options.Descriptors) {
 				if (!File.Exists (descriptor))
 					throw new FileNotFoundException ($"'{descriptor}' doesn't exist");
 				compilationRoots.Add (new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode (descriptor));
 			}
-
-			Logger logger = new Logger (logWriter, ilProvider, isVerbose: true);
-
+			
 			ilProvider = new FeatureSwitchManager (ilProvider, logger, options.FeatureSwitches);
 
 			CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState (ilProvider, logger);

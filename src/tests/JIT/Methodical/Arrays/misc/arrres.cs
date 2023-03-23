@@ -9,12 +9,12 @@ namespace GCTest_arrres_cs
     public class Test
     {
         private int _indx;
-        public bool m_die = false;
+        public bool m_die;
         private static Test[] s_arr = new Test[50];
 
         public Test(int indx) { _indx = indx; }
 
-        public virtual void CheckValid()
+        internal virtual void CheckValid()
         {
             if (s_arr[_indx] != this)
                 throw new Exception();

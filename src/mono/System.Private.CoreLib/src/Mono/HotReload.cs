@@ -38,9 +38,9 @@ internal sealed class InstanceFieldTable
         return _singleton.GetOrCreateInstanceFields(inst).LookupOrAdd(new RuntimeTypeHandle (type), fielddef_token);
     }
 
-    private static InstanceFieldTable _singleton = new();
+    private static readonly InstanceFieldTable _singleton = new();
 
-    private ConditionalWeakTable<object, InstanceFields> _table;
+    private readonly ConditionalWeakTable<object, InstanceFields> _table;
 
     private InstanceFieldTable()
     {
@@ -52,8 +52,8 @@ internal sealed class InstanceFieldTable
 
     private sealed class InstanceFields
     {
-        private Dictionary<uint, FieldStore> _fields;
-        private object _lock;
+        private readonly Dictionary<uint, FieldStore> _fields;
+        private readonly object _lock;
 
         public InstanceFields()
         {
@@ -90,7 +90,7 @@ internal sealed class InstanceFieldTable
 internal sealed class FieldStore
 {
     // keep in sync with hot_reload-internals.h
-    private object? _loc;
+    private readonly object? _loc;
 
     private FieldStore (object? loc)
     {
@@ -107,7 +107,7 @@ internal sealed class FieldStore
         else if (t.IsClass || t.IsInterface)
             loc = null;
         else
-            throw new ArgumentException("EnC: Expected a primitive, valuetype, class or interface field");
+            throw new ArgumentException(SR.Arg_EnC_ExpectedPrimitive);
         /* FIXME: do we want FieldStore to be pinned? */
         return new FieldStore(loc);
     }

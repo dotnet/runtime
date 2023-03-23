@@ -92,19 +92,6 @@ namespace System.Reflection.TypeLoading.Ecma
             return methodSig;
         }
 
-        public MethodSig<RoType> SpecializeCustomModifiers(in TypeContext typeContext)
-        {
-            MethodSignature<RoType> sig = MethodDefinition.DecodeSignature(new EcmaModifiedTypeProvider(_module), typeContext);
-            int numParameters = sig.RequiredParameterCount;
-            MethodSig<RoType> methodSig = new MethodSig<RoType>(numParameters);
-            for (int position = -1; position < numParameters; position++)
-            {
-                RoType roType = position == -1 ? sig.ReturnType : sig.ParameterTypes[position];
-                methodSig[position] = roType;
-            }
-            return methodSig;
-        }
-
         public MethodSig<string> SpecializeMethodSigStrings(in TypeContext typeContext)
         {
             ISignatureTypeProvider<string, TypeContext> typeProvider = EcmaSignatureTypeProviderForToString.Instance;

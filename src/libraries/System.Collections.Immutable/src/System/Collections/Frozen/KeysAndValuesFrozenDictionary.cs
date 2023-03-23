@@ -25,12 +25,12 @@ namespace System.Collections.Frozen
             _values = new TValue[entries.Length];
 
             _hashTable = FrozenHashTable.Create(
-                entries,
-                pair => Comparer.GetHashCode(pair.Key),
-                (index, pair) =>
+                entries.Length,
+                index => Comparer.GetHashCode(entries[index].Key),
+                (destIndex, srcIndex) =>
                 {
-                    _keys[index] = pair.Key;
-                    _values[index] = pair.Value;
+                    _keys[destIndex] = entries[srcIndex].Key;
+                    _values[destIndex] = entries[srcIndex].Value;
                 },
                 optimizeForReading);
         }

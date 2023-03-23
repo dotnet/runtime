@@ -20,7 +20,12 @@
 // NOT_JITTED indicates that the trace was not jitted and it should be turned into a NOP
 #define JITERPRETER_NOT_JITTED 1
 
-typedef const ptrdiff_t (*JiterpreterThunk) (void *frame, void *pLocals);
+typedef struct {
+	gint32 backward_branch_taken;
+	gint32 bailout_opcode_count;
+} JiterpreterCallInfo;
+
+typedef const ptrdiff_t (*JiterpreterThunk) (void *frame, void *pLocals, JiterpreterCallInfo *cinfo);
 typedef void (*WasmJitCallThunk) (void *ret_sp, void *sp, void *ftndesc, gboolean *thrown);
 typedef void (*WasmDoJitCall) (gpointer cb, gpointer arg, gboolean *out_thrown);
 
@@ -34,7 +39,7 @@ jiterp_preserve_module ();
 
 // HACK: Pass void* so that this header can include safely in files without definition for TransformData
 void
-jiterp_insert_entry_points (void *td);
+jiterp_insert_entry_points (void *imethod, void *td);
 
 // used by the typescript JIT implementation to notify the runtime that it has finished jitting a thunk
 //  for a specific callsite, since it can take a while before it happens
@@ -52,10 +57,18 @@ mono_interp_jit_wasm_entry_trampoline (
 	int unbox, int has_this, int has_return, const char *name, void *default_implementation
 );
 
+// Fast-path implemented in C
+JiterpreterThunk
+mono_interp_tier_prepare_jiterpreter_fast (
+	void *frame, MonoMethod *method, const guint16 *ip,
+	const guint16 *start_of_body, int size_of_body
+);
+
 // HACK: Pass void* so that this header can include safely in files without definition for InterpFrame
+// Slow-path implemented in TypeScript, actually performs JIT
 extern JiterpreterThunk
 mono_interp_tier_prepare_jiterpreter (
-	void *frame, MonoMethod *method, const guint16 *ip,
+	void *frame, MonoMethod *method, const guint16 *ip, gint32 trace_index,
 	const guint16 *start_of_body, int size_of_body
 );
 
@@ -116,11 +129,23 @@ typedef struct {
 	JiterpEntryDataCache cache;
 } JiterpEntryData;
 
+volatile size_t *
+mono_jiterp_get_polling_required_address (void);
+
 void
-mono_jiterp_auto_safepoint (InterpFrame *frame, guint16 *ip);
+mono_jiterp_do_safepoint (InterpFrame *frame, guint16 *ip);
 
 void
 mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res);
+
+gpointer
+mono_jiterp_imethod_to_ftnptr (InterpMethod *imethod);
+
+void
+mono_jiterp_enum_hasflag (MonoClass *klass, gint32 *dest, stackval *sp1, stackval *sp2);
+
+ptrdiff_t
+mono_jiterp_monitor_trace (const guint16 *ip, void *frame, void *locals);
 
 #endif // __MONO_MINI_INTERPRETER_INTERNALS_H__
 

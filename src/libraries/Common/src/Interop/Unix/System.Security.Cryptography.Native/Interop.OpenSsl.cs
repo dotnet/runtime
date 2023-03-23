@@ -5,7 +5,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Security;
@@ -25,7 +24,6 @@ internal static partial class Interop
         private const string TlsCacheSizeCtxName = "System.Net.Security.TlsCacheSize";
         private const string TlsCacheSizeEnvironmentVariable = "DOTNET_SYSTEM_NET_SECURITY_TLSCACHESIZE";
         private const SslProtocols FakeAlpnSslProtocol = (SslProtocols)1;   // used to distinguish server sessions with ALPN
-        private static readonly IdnMapping s_idnMapping = new IdnMapping();
         private static readonly ConcurrentDictionary<SslProtocols, SafeSslContextHandle> s_clientSslContexts = new ConcurrentDictionary<SslProtocols, SafeSslContextHandle>();
 
         #region internal methods
@@ -52,7 +50,7 @@ internal static partial class Interop
             return bindingHandle;
         }
 
-        private static int s_cacheSize = GetCacheSize();
+        private static readonly int s_cacheSize = GetCacheSize();
 
         private static volatile int s_disableTlsResume = -1;
 
@@ -385,21 +383,22 @@ internal static partial class Interop
 
                 if (sslAuthenticationOptions.IsClient)
                 {
-                    // The IdnMapping converts unicode input into the IDNA punycode sequence.
-                    string punyCode = string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost) ? string.Empty : s_idnMapping.GetAscii(sslAuthenticationOptions.TargetHost!);
-
-                    // Similar to windows behavior, set SNI on openssl by default for client context, ignore errors.
-                    if (!Ssl.SslSetTlsExtHostName(sslHandle, punyCode))
+                    if (!string.IsNullOrEmpty(sslAuthenticationOptions.TargetHost))
                     {
-                        Crypto.ErrClearError();
-                    }
+                        // Similar to windows behavior, set SNI on openssl by default for client context, ignore errors.
+                        if (!Ssl.SslSetTlsExtHostName(sslHandle, sslAuthenticationOptions.TargetHost))
+                        {
+                            Crypto.ErrClearError();
+                        }
 
-                    if (cacheSslContext && !string.IsNullOrEmpty(punyCode))
-                    {
-                        sslCtxHandle.TrySetSession(sslHandle, punyCode);
-                        bool ignored = false;
-                        sslCtxHandle.DangerousAddRef(ref ignored);
-                        sslHandle.SslContextHandle = sslCtxHandle;
+
+                        if (cacheSslContext)
+                        {
+                            sslCtxHandle.TrySetSession(sslHandle, sslAuthenticationOptions.TargetHost);
+                            bool ignored = false;
+                            sslCtxHandle.DangerousAddRef(ref ignored);
+                            sslHandle.SslContextHandle = sslCtxHandle;
+                        }
                     }
 
                     // relevant to TLS 1.3 only: if user supplied a client cert or cert callback,
@@ -683,6 +682,11 @@ internal static partial class Interop
             *outlen = 0;
             IntPtr sslData = Ssl.SslGetData(ssl);
 
+            if (sslData == IntPtr.Zero)
+            {
+                return Ssl.SSL_TLSEXT_ERR_ALERT_FATAL;
+            }
+
             // reset application data to avoid dangling pointer.
             Ssl.SslSetData(ssl, IntPtr.Zero);
 
@@ -740,16 +744,18 @@ internal static partial class Interop
             Debug.Assert(session != IntPtr.Zero);
 
             IntPtr ptr = Ssl.SslGetData(ssl);
-            Debug.Assert(ptr != IntPtr.Zero);
-            GCHandle gch = GCHandle.FromIntPtr(ptr);
-
-            SafeSslContextHandle? ctxHandle = gch.Target as SafeSslContextHandle;
-            // There is no relation between SafeSslContextHandle and SafeSslHandle so the handle
-            // may be released while the ssl session is still active.
-            if (ctxHandle != null && ctxHandle.TryAddSession(Ssl.SslGetServerName(ssl), session))
+            if (ptr != IntPtr.Zero)
             {
-                // offered session was stored in our cache.
-                return 1;
+                GCHandle gch = GCHandle.FromIntPtr(ptr);
+
+                SafeSslContextHandle? ctxHandle = gch.Target as SafeSslContextHandle;
+                // There is no relation between SafeSslContextHandle and SafeSslHandle so the handle
+                // may be released while the ssl session is still active.
+                if (ctxHandle != null && ctxHandle.TryAddSession(Ssl.SslGetServerName(ssl), session))
+                {
+                    // offered session was stored in our cache.
+                    return 1;
+                }
             }
 
             // OpenSSL will destroy session.

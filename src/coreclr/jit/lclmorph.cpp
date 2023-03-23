@@ -464,6 +464,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         None,
         Nop,
         BitCast,
+        NarrowCast,
 #ifdef FEATURE_HW_INTRINSICS
         GetElement,
         WithElement,
@@ -891,7 +892,7 @@ private:
                 defFlag = GTF_VAR_DEF;
 
                 if ((val.Offset() != 0) ||
-                    (varDsc->lvExactSize != m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize()))
+                    (varDsc->lvExactSize() != m_compiler->typGetObjLayout(callUser->gtRetClsHnd)->GetSize()))
                 {
                     defFlag |= GTF_VAR_USEASG;
                 }
@@ -987,7 +988,7 @@ private:
                 {
                     isWide = endOffset.Value() > m_compiler->lvaLclExactSize(lclNum);
 
-                    if (varDsc->TypeGet() == TYP_BLK)
+                    if ((varDsc->TypeGet() == TYP_STRUCT) && varDsc->GetLayout()->IsBlockLayout())
                     {
                         // TODO-CQ: TYP_BLK used to always be exposed here. This is in principle not necessary, but
                         // not doing so would require VN changes. For now, exposing gets better CQ as otherwise the
@@ -1138,6 +1139,7 @@ private:
         unsigned             lclNum      = val.LclNum();
         LclVarDsc*           varDsc      = m_compiler->lvaGetDesc(lclNum);
         GenTreeLclVarCommon* lclNode     = nullptr;
+        bool                 isDef = (user != nullptr) && user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir);
 
         switch (transform)
         {
@@ -1152,20 +1154,36 @@ private:
 
             case IndirTransform::BitCast:
                 indir->ChangeOper(GT_BITCAST);
-                lclNode = BashToLclVar(indir->gtGetOp1(), lclNum);
+                lclNode = indir->gtGetOp1()->BashToLclVar(m_compiler, lclNum);
                 break;
 
 #ifdef FEATURE_HW_INTRINSICS
+            // We have two cases we want to handle:
+            // 1. Vector2/3/4 and Quaternion where we have 4x float fields
+            // 2. Plane where we have 1x Vector3 and 1x float field
+
             case IndirTransform::GetElement:
             {
+                GenTree*  hwiNode     = nullptr;
                 var_types elementType = indir->TypeGet();
-                assert(elementType == TYP_FLOAT);
+                lclNode               = indir->gtGetOp1()->BashToLclVar(m_compiler, lclNum);
 
-                lclNode            = BashToLclVar(indir->gtGetOp1(), lclNum);
-                GenTree* indexNode = m_compiler->gtNewIconNode(val.Offset() / genTypeSize(elementType));
-                GenTree* hwiNode   = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode,
-                                                                       CORINFO_TYPE_FLOAT, genTypeSize(varDsc),
-                                                                       /* isSimdAsHWIntrinsic */ false);
+                if (elementType == TYP_FLOAT)
+                {
+                    GenTree* indexNode = m_compiler->gtNewIconNode(val.Offset() / genTypeSize(elementType));
+                    hwiNode = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode, CORINFO_TYPE_FLOAT,
+                                                                  genTypeSize(varDsc),
+                                                                  /* isSimdAsHWIntrinsic */ true);
+                }
+                else
+                {
+                    assert(elementType == TYP_SIMD12);
+                    assert(genTypeSize(varDsc) == 16);
+                    hwiNode =
+                        m_compiler->gtNewSimdHWIntrinsicNode(elementType, lclNode, NI_Vector128_AsVector3,
+                                                             CORINFO_TYPE_FLOAT, 16, /* isSimdAsHWIntrinsic */ true);
+                }
+
                 indir      = hwiNode;
                 *val.Use() = hwiNode;
             }
@@ -1174,17 +1192,43 @@ private:
             case IndirTransform::WithElement:
             {
                 assert(user->OperIs(GT_ASG) && (user->gtGetOp1() == indir));
-                var_types elementType = indir->TypeGet();
-                assert(elementType == TYP_FLOAT);
 
-                lclNode              = BashToLclVar(indir, lclNum);
-                GenTree* simdLclNode = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
-                GenTree* indexNode   = m_compiler->gtNewIconNode(val.Offset() / genTypeSize(elementType));
-                GenTree* elementNode = user->gtGetOp2();
-                user->AsOp()->gtOp2 =
-                    m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode, elementNode,
-                                                         CORINFO_TYPE_FLOAT, genTypeSize(varDsc),
-                                                         /* isSimdAsHWIntrinsic */ false);
+                GenTree*  hwiNode     = nullptr;
+                var_types elementType = indir->TypeGet();
+                lclNode               = indir->BashToLclVar(m_compiler, lclNum);
+                GenTree* simdLclNode  = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
+                GenTree* elementNode  = user->gtGetOp2();
+
+                if (elementType == TYP_FLOAT)
+                {
+                    GenTree* indexNode = m_compiler->gtNewIconNode(val.Offset() / genTypeSize(elementType));
+                    hwiNode            = m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode,
+                                                                   elementNode, CORINFO_TYPE_FLOAT, genTypeSize(varDsc),
+                                                                   /* isSimdAsHWIntrinsic */ true);
+                }
+                else
+                {
+                    assert(elementType == TYP_SIMD12);
+                    assert(varDsc->TypeGet() == TYP_SIMD16);
+
+                    // If we are not doing struct promotion and we have zero-initialization,
+                    // then we need to produce a VecCon(0).
+                    if (elementNode->IsIntegralConst(0))
+                    {
+                        DEBUG_DESTROY_NODE(elementNode);
+                        elementNode = m_compiler->gtNewZeroConNode(TYP_SIMD12);
+                    }
+
+                    // We inverse the operands here and take elementNode as the main value and simdLclNode[3] as the
+                    // new value. This gives us a new TYP_SIMD16 with all elements in the right spots
+
+                    GenTree* indexNode = m_compiler->gtNewIconNode(3, TYP_INT);
+                    hwiNode =
+                        m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode, simdLclNode,
+                                                             CORINFO_TYPE_FLOAT, 16, /* isSimdAsHWIntrinsic */ true);
+                }
+
+                user->AsOp()->gtOp2 = hwiNode;
                 user->ChangeType(varDsc->TypeGet());
             }
             break;
@@ -1200,6 +1244,16 @@ private:
                 indir->ChangeOper(GT_LCL_VAR);
                 indir->AsLclVar()->SetLclNum(lclNum);
                 lclNode = indir->AsLclVarCommon();
+                break;
+
+            case IndirTransform::NarrowCast:
+                assert(varTypeIsIntegral(indir));
+                assert(varTypeIsIntegral(varDsc));
+                assert(genTypeSize(varDsc) >= genTypeSize(indir));
+                assert(!isDef);
+
+                lclNode    = indir->gtGetOp1()->BashToLclVar(m_compiler, lclNum);
+                *val.Use() = m_compiler->gtNewCastNode(genActualType(indir), lclNode, false, indir->TypeGet());
                 break;
 
             case IndirTransform::LclFld:
@@ -1224,7 +1278,7 @@ private:
 
         GenTreeFlags lclNodeFlags = GTF_EMPTY;
 
-        if (user->OperIs(GT_ASG) && (user->AsOp()->gtGetOp1() == indir))
+        if (isDef)
         {
             lclNodeFlags |= (GTF_VAR_DEF | GTF_DONT_CSE);
 
@@ -1300,12 +1354,34 @@ private:
             }
 
 #ifdef FEATURE_HW_INTRINSICS
-            if (varTypeIsSIMD(varDsc) && indir->TypeIs(TYP_FLOAT) && ((val.Offset() % genTypeSize(TYP_FLOAT)) == 0) &&
-                m_compiler->IsBaselineSimdIsaSupported())
+            if (varTypeIsSIMD(varDsc))
             {
-                return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
+                // We have two cases we want to handle:
+                // 1. Vector2/3/4 and Quaternion where we have 4x float fields
+                // 2. Plane where we have 1x Vector3 and 1x float field
+
+                if (indir->TypeIs(TYP_FLOAT))
+                {
+                    if (((val.Offset() % genTypeSize(TYP_FLOAT)) == 0) && m_compiler->IsBaselineSimdIsaSupported())
+                    {
+                        return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
+                    }
+                }
+                else if (indir->TypeIs(TYP_SIMD12))
+                {
+                    if ((val.Offset() == 0) && m_compiler->IsBaselineSimdIsaSupported())
+                    {
+                        return isDef ? IndirTransform::WithElement : IndirTransform::GetElement;
+                    }
+                }
             }
 #endif // FEATURE_HW_INTRINSICS
+
+            // Turn this into a narrow-cast if we can.
+            if (!isDef && varTypeIsIntegral(indir) && varTypeIsIntegral(varDsc))
+            {
+                return IndirTransform::NarrowCast;
+            }
 
             // Turn this into a bitcast if we can.
             if ((genTypeSize(indir) == genTypeSize(varDsc)) && (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)))
@@ -1515,40 +1591,42 @@ public:
         // handled in fgCanFastTailCall and fgMakeOutgoingStructArgCopy.
         //
         // CALL(OBJ(LCL_VAR_ADDR...))
-        bool isArgToCall   = false;
-        bool keepSearching = true;
-        for (int i = 0; i < m_ancestors.Height() && keepSearching; i++)
+        // -or-
+        // CALL(LCL_VAR)
+
+        // TODO-1stClassStructs: We've removed most, but not all, cases where OBJ(LCL_VAR_ADDR)
+        // is introduced (it was primarily from impNormStructVal). But until all cases are gone
+        // we still want to handle it as well.
+
+        if (m_ancestors.Height() < 2)
         {
-            GenTree* node = m_ancestors.Top(i);
-            switch (i)
-            {
-                case 0:
-                {
-                    keepSearching = node->OperIs(GT_LCL_VAR_ADDR);
-                }
-                break;
-
-                case 1:
-                {
-                    keepSearching = node->OperIs(GT_OBJ);
-                }
-                break;
-
-                case 2:
-                {
-                    keepSearching = false;
-                    isArgToCall   = node->IsCall();
-                }
-                break;
-                default:
-                {
-                    keepSearching = false;
-                }
-                break;
-            }
+            return;
         }
 
-        if (isArgToCall)
+        GenTree* node = m_ancestors.Top(0);
+
+        if (node->OperIs(GT_LCL_VAR))
+        {
+            node = m_ancestors.Top(1);
+        }
+        else if (node->OperIs(GT_LCL_VAR_ADDR))
+        {
+            if (m_ancestors.Height() < 3)
+            {
+                return;
+            }
+
+            node = m_ancestors.Top(1);
+
+            if (!node->OperIs(GT_OBJ))
+            {
+                return;
+            }
+
+            node = m_ancestors.Top(2);
+        }
+
+        if (node->IsCall())
         {
             JITDUMP("LocalAddressVisitor incrementing weighted ref count from " FMT_WT " to " FMT_WT
                     " for implicit by-ref V%02d arg passed to call\n",
@@ -1590,27 +1668,6 @@ private:
     static bool IsUnused(GenTree* node, GenTree* user)
     {
         return (user == nullptr) || (user->OperIs(GT_COMMA) && (user->AsOp()->gtGetOp1() == node));
-    }
-
-    //------------------------------------------------------------------------
-    // BashToLclVar: Bash node to a LCL_VAR.
-    //
-    // Arguments:
-    //    node   - the node to bash
-    //    lclNum - the local's number
-    //
-    // Return Value:
-    //    The bashed node.
-    //
-    GenTreeLclVar* BashToLclVar(GenTree* node, unsigned lclNum)
-    {
-        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
-
-        node->ChangeOper(GT_LCL_VAR);
-        node->ChangeType(varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc));
-        node->AsLclVar()->SetLclNum(lclNum);
-
-        return node->AsLclVar();
     }
 
     void SequenceLocal(GenTreeLclVarCommon* lcl)

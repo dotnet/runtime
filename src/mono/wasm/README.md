@@ -194,7 +194,6 @@ Example use of the `wasmconsole` template:
 > dotnet publish
 > cd bin/Debug/net7.0/browser-wasm/AppBundle
 > node main.mjs
-mono_wasm_runtime_ready fe00e07a-5519-4dfe-b35a-f867dbaf2e28
 Hello World!
 Args:
 ```
@@ -313,6 +312,8 @@ npm update --lockfile-version=1
 
 * `runtime-extra-platforms` does not run any wasm jobs on PRs
 * `high resource aot` runs a few specific library tests with AOT, that require more memory to AOT.
+
+* `runtime-wasm-dbgtests` runs all the debugger test jobs
 
 ## Rolling build (twice a day):
 

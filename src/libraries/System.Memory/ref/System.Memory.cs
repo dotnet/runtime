@@ -208,6 +208,8 @@ namespace System
         public static System.ReadOnlySpan<char> AsSpan(this string? text) { throw null; }
         public static System.ReadOnlySpan<char> AsSpan(this string? text, int start) { throw null; }
         public static System.ReadOnlySpan<char> AsSpan(this string? text, int start, int length) { throw null; }
+        public static System.ReadOnlySpan<char> AsSpan(this string? text, System.Index startIndex) { throw null; }
+        public static System.ReadOnlySpan<char> AsSpan(this string? text, System.Range range) { throw null; }
         public static System.Span<T> AsSpan<T>(this System.ArraySegment<T> segment) { throw null; }
         public static System.Span<T> AsSpan<T>(this System.ArraySegment<T> segment, System.Index startIndex) { throw null; }
         public static System.Span<T> AsSpan<T>(this System.ArraySegment<T> segment, int start) { throw null; }
@@ -306,6 +308,7 @@ namespace System
         public static bool Overlaps<T>(this System.Span<T> span, System.ReadOnlySpan<T> other) { throw null; }
         public static bool Overlaps<T>(this System.Span<T> span, System.ReadOnlySpan<T> other, out int elementOffset) { throw null; }
         public static void Replace<T>(this System.Span<T> span, T oldValue, T newValue) where T : System.IEquatable<T>? { }
+        public static void Replace<T>(this System.ReadOnlySpan<T> source, System.Span<T> destination, T oldValue, T newValue) where T : System.IEquatable<T>? { }
         public static void Reverse<T>(this System.Span<T> span) { }
         public static int SequenceCompareTo<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> other) where T : System.IComparable<T>? { throw null; }
         public static int SequenceCompareTo<T>(this System.Span<T> span, System.ReadOnlySpan<T> other) where T : System.IComparable<T>? { throw null; }
@@ -438,6 +441,10 @@ namespace System.Buffers.Binary
         public static int ReadInt32LittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static long ReadInt64BigEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static long ReadInt64LittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Int128 ReadInt128BigEndian(System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Int128 ReadInt128LittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
+        public static nint ReadIntPtrBigEndian(System.ReadOnlySpan<byte> source) { throw null; }
+        public static nint ReadIntPtrLittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static float ReadSingleBigEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static float ReadSingleLittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -452,6 +459,14 @@ namespace System.Buffers.Binary
         public static ulong ReadUInt64BigEndian(System.ReadOnlySpan<byte> source) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong ReadUInt64LittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.UInt128 ReadUInt128BigEndian(System.ReadOnlySpan<byte> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.UInt128 ReadUInt128LittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static nuint ReadUIntPtrBigEndian(System.ReadOnlySpan<byte> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static nuint ReadUIntPtrLittleEndian(System.ReadOnlySpan<byte> source) { throw null; }
         public static byte ReverseEndianness(byte value) { throw null; }
         public static short ReverseEndianness(short value) { throw null; }
         public static int ReverseEndianness(int value) { throw null; }
@@ -495,6 +510,10 @@ namespace System.Buffers.Binary
         public static bool TryReadInt32LittleEndian(System.ReadOnlySpan<byte> source, out int value) { throw null; }
         public static bool TryReadInt64BigEndian(System.ReadOnlySpan<byte> source, out long value) { throw null; }
         public static bool TryReadInt64LittleEndian(System.ReadOnlySpan<byte> source, out long value) { throw null; }
+        public static bool TryReadInt128BigEndian(System.ReadOnlySpan<byte> source, out System.Int128 value) { throw null; }
+        public static bool TryReadInt128LittleEndian(System.ReadOnlySpan<byte> source, out System.Int128 value) { throw null; }
+        public static bool TryReadIntPtrBigEndian(System.ReadOnlySpan<byte> source, out nint value) { throw null; }
+        public static bool TryReadIntPtrLittleEndian(System.ReadOnlySpan<byte> source, out nint value) { throw null; }
         public static bool TryReadSingleBigEndian(System.ReadOnlySpan<byte> source, out float value) { throw null; }
         public static bool TryReadSingleLittleEndian(System.ReadOnlySpan<byte> source, out float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -509,6 +528,14 @@ namespace System.Buffers.Binary
         public static bool TryReadUInt64BigEndian(System.ReadOnlySpan<byte> source, out ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryReadUInt64LittleEndian(System.ReadOnlySpan<byte> source, out ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryReadUInt128BigEndian(System.ReadOnlySpan<byte> source, out System.UInt128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryReadUInt128LittleEndian(System.ReadOnlySpan<byte> source, out System.UInt128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryReadUIntPtrBigEndian(System.ReadOnlySpan<byte> source, out nuint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryReadUIntPtrLittleEndian(System.ReadOnlySpan<byte> source, out nuint value) { throw null; }
         public static bool TryWriteDoubleBigEndian(System.Span<byte> destination, double value) { throw null; }
         public static bool TryWriteDoubleLittleEndian(System.Span<byte> destination, double value) { throw null; }
         public static bool TryWriteHalfBigEndian(System.Span<byte> destination, System.Half value) { throw null; }
@@ -519,6 +546,10 @@ namespace System.Buffers.Binary
         public static bool TryWriteInt32LittleEndian(System.Span<byte> destination, int value) { throw null; }
         public static bool TryWriteInt64BigEndian(System.Span<byte> destination, long value) { throw null; }
         public static bool TryWriteInt64LittleEndian(System.Span<byte> destination, long value) { throw null; }
+        public static bool TryWriteInt128BigEndian(System.Span<byte> destination, System.Int128 value) { throw null; }
+        public static bool TryWriteInt128LittleEndian(System.Span<byte> destination, System.Int128 value) { throw null; }
+        public static bool TryWriteIntPtrBigEndian(System.Span<byte> destination, nint value) { throw null; }
+        public static bool TryWriteIntPtrLittleEndian(System.Span<byte> destination, nint value) { throw null; }
         public static bool TryWriteSingleBigEndian(System.Span<byte> destination, float value) { throw null; }
         public static bool TryWriteSingleLittleEndian(System.Span<byte> destination, float value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -533,6 +564,14 @@ namespace System.Buffers.Binary
         public static bool TryWriteUInt64BigEndian(System.Span<byte> destination, ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryWriteUInt64LittleEndian(System.Span<byte> destination, ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryWriteUInt128BigEndian(System.Span<byte> destination, System.UInt128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryWriteUInt128LittleEndian(System.Span<byte> destination, System.UInt128 value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryWriteUIntPtrBigEndian(System.Span<byte> destination, nuint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryWriteUIntPtrLittleEndian(System.Span<byte> destination, nuint value) { throw null; }
         public static void WriteDoubleBigEndian(System.Span<byte> destination, double value) { }
         public static void WriteDoubleLittleEndian(System.Span<byte> destination, double value) { }
         public static void WriteHalfBigEndian(System.Span<byte> destination, System.Half value) { }
@@ -543,6 +582,10 @@ namespace System.Buffers.Binary
         public static void WriteInt32LittleEndian(System.Span<byte> destination, int value) { }
         public static void WriteInt64BigEndian(System.Span<byte> destination, long value) { }
         public static void WriteInt64LittleEndian(System.Span<byte> destination, long value) { }
+        public static void WriteInt128BigEndian(System.Span<byte> destination, System.Int128 value) { }
+        public static void WriteInt128LittleEndian(System.Span<byte> destination, System.Int128 value) { }
+        public static void WriteIntPtrBigEndian(System.Span<byte> destination, nint value) { }
+        public static void WriteIntPtrLittleEndian(System.Span<byte> destination, nint value) { }
         public static void WriteSingleBigEndian(System.Span<byte> destination, float value) { }
         public static void WriteSingleLittleEndian(System.Span<byte> destination, float value) { }
         [System.CLSCompliantAttribute(false)]
@@ -557,6 +600,14 @@ namespace System.Buffers.Binary
         public static void WriteUInt64BigEndian(System.Span<byte> destination, ulong value) { }
         [System.CLSCompliantAttribute(false)]
         public static void WriteUInt64LittleEndian(System.Span<byte> destination, ulong value) { }
+        [System.CLSCompliantAttribute(false)]
+        public static void WriteUInt128BigEndian(System.Span<byte> destination, System.UInt128 value) { }
+        [System.CLSCompliantAttribute(false)]
+        public static void WriteUInt128LittleEndian(System.Span<byte> destination, System.UInt128 value) { }
+        [System.CLSCompliantAttribute(false)]
+        public static void WriteUIntPtrBigEndian(System.Span<byte> destination, nuint value) { }
+        [System.CLSCompliantAttribute(false)]
+        public static void WriteUIntPtrLittleEndian(System.Span<byte> destination, nuint value) { }
     }
 }
 namespace System.Buffers.Text

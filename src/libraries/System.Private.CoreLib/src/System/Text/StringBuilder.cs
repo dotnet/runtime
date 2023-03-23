@@ -1077,7 +1077,7 @@ namespace System.Text
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <param name="handler">The interpolated string to append.</param>
         /// <returns>A reference to this instance after the append operation has completed.</returns>
-        public StringBuilder Append(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", "provider")] ref AppendInterpolatedStringHandler handler) => this;
+        public StringBuilder Append(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", nameof(provider))] ref AppendInterpolatedStringHandler handler) => this;
 
         /// <summary>Appends the specified interpolated string followed by the default line terminator to the end of the current StringBuilder object.</summary>
         /// <param name="handler">The interpolated string to append.</param>
@@ -1088,7 +1088,7 @@ namespace System.Text
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <param name="handler">The interpolated string to append.</param>
         /// <returns>A reference to this instance after the append operation has completed.</returns>
-        public StringBuilder AppendLine(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", "provider")] ref AppendInterpolatedStringHandler handler) => AppendLine();
+        public StringBuilder AppendLine(IFormatProvider? provider, [InterpolatedStringHandlerArgument("", nameof(provider))] ref AppendInterpolatedStringHandler handler) => AppendLine();
 
         #region AppendJoin
 
@@ -1568,7 +1568,7 @@ namespace System.Text
 
                 if ((uint)index >= (uint)args.Length)
                 {
-                    throw new FormatException(SR.Format_IndexOutOfRange);
+                    ThrowHelper.ThrowFormatIndexOutOfRange();
                 }
                 object? arg = args[index];
 

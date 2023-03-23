@@ -14,6 +14,7 @@
 #include "errorhandling.h"
 #include "hash.h"
 #include "agnostic.h"
+#include <minipal/types.h>
 
 extern bool g_debugRec;
 extern bool g_debugRep;

@@ -384,31 +384,6 @@ VOID MethodDesc::GetFullMethodInfo(SString& fullMethodSigName)
 #endif
 
 //*******************************************************************************
-BOOL MethodDesc::MightHaveName(ULONG nameHashValue)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // We only have space for a name hash when we are using the packed slot layout
-    if (RequiresFullSlotNumber())
-    {
-        return TRUE;
-    }
-
-    WORD thisHashValue = m_wSlotNumber & enum_packedSlotLayout_NameHashMask;
-
-    // A zero value might mean no hash has ever been set
-    // (checking this way is better than dedicating a bit to tell us)
-    if (thisHashValue == 0)
-    {
-        return TRUE;
-    }
-
-    WORD testHashValue = (WORD) nameHashValue & enum_packedSlotLayout_NameHashMask;
-
-    return (thisHashValue == testHashValue);
-}
-
-//*******************************************************************************
 void MethodDesc::GetSig(PCCOR_SIGNATURE *ppSig, DWORD *pcSig)
 {
     CONTRACTL
@@ -2014,9 +1989,8 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     if (IsWrapperStub() || IsEnCAddedMethod())
         return GetStableEntryPoint();
 
-
     // For EnC always just return the stable entrypoint so we can update the code
-    if (IsEnCMethod())
+    if (InEnCEnabledModule())
         return GetStableEntryPoint();
 
     // If the method has already been jitted, we can give out the direct address
@@ -2109,17 +2083,6 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
     RangeSection* pRS = ExecutionManager::FindCodeRange(entryPoint, ExecutionManager::GetScanFlags());
     if (pRS == NULL)
     {
-        TADDR pInstr = PCODEToPINSTR(entryPoint);
-        if (PrecodeStubManager::g_pManager->GetStubPrecodeRangeList()->IsInRange(entryPoint))
-        {
-            return (MethodDesc*)((StubPrecode*)pInstr)->GetMethodDesc();
-        }
-
-        if (PrecodeStubManager::g_pManager->GetFixupPrecodeRangeList()->IsInRange(entryPoint))
-        {
-            return (MethodDesc*)((FixupPrecode*)pInstr)->GetMethodDesc();
-        }
-
         // Is it an FCALL?
         MethodDesc* pFCallMD = ECall::MapTargetBackToMethod(entryPoint);
         if (pFCallMD != NULL)
@@ -2130,16 +2093,38 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
         return NULL;
     }
 
+    // Inlined fast path for fixup precode and stub precode from RangeList implementation
+    if (pRS->_flags == RangeSection::RANGE_SECTION_RANGELIST)
+    {
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_FIXUPPRECODE)
+        {
+            return (MethodDesc*)((FixupPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+        }
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
+        {
+            return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+        }
+    }
+
     MethodDesc* pMD;
-    if (pRS->pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
+    if (pRS->_pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
         return pMD;
 
-    if (pRS->pjit->GetStubCodeBlockKind(pRS, entryPoint) == STUB_CODE_BLOCK_PRECODE)
-        return MethodDesc::GetMethodDescFromStubAddr(entryPoint);
+    auto stubCodeBlockKind = pRS->_pjit->GetStubCodeBlockKind(pRS, entryPoint);
 
-    // We should never get here
-    _ASSERTE(!"NonVirtualEntry2MethodDesc failed for RangeSection");
-    return NULL;
+    switch(stubCodeBlockKind)
+    {
+    case STUB_CODE_BLOCK_PRECODE:
+        return MethodDesc::GetMethodDescFromStubAddr(entryPoint);
+    case STUB_CODE_BLOCK_FIXUPPRECODE:
+        return (MethodDesc*)((FixupPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+    case STUB_CODE_BLOCK_STUBPRECODE:
+        return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(entryPoint))->GetMethodDesc();
+    default:
+        // We should never get here
+        _ASSERTE(!"NonVirtualEntry2MethodDesc failed for RangeSection");
+        return NULL;
+    }
 }
 
 //*******************************************************************************
@@ -2203,7 +2188,7 @@ void MethodDesc::Reset()
     // different pieces of data non-atomically.
     // Use this only if you can guarantee thread-safety somehow.
 
-    _ASSERTE(IsEnCMethod() || // The process is frozen by the debugger
+    _ASSERTE(InEnCEnabledModule() || // The process is frozen by the debugger
              IsDynamicMethod() || // These are used in a very restricted way
              GetLoaderModule()->IsReflection()); // Rental methods
 
@@ -2298,7 +2283,7 @@ BOOL MethodDesc::RequiresStableEntryPoint(BOOL fEstimateForChunk /*=FALSE*/)
         return TRUE;
 
     // Create precodes for edit and continue to make methods updateable
-    if (IsEnCMethod() || IsEnCAddedMethod())
+    if (InEnCEnabledModule() || IsEnCAddedMethod())
         return TRUE;
 
     // Precreate precodes for LCG methods so we do not leak memory when the method descs are recycled
@@ -2391,8 +2376,6 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
             // First restore method table pointer in singleton chunk;
             // it might be out-of-module
             ClassLoader::EnsureLoaded(TypeHandle(GetMethodTable()), level);
-
-            pIMD->m_wFlags2 = pIMD->m_wFlags2 & ~InstantiatedMethodDesc::Unrestored;
 
             if (ETW_PROVIDER_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER))
             {
@@ -3375,7 +3358,7 @@ void *NDirectMethodDesc::ResolveAndSetNDirectTarget(_In_ NDirectMethodDesc* pMD)
 
 }
 
-BOOL NDirectMethodDesc::TryResolveNDirectTargetForNoGCTransition(_In_ MethodDesc* pMD, _Out_ void** ndirectTarget)
+BOOL NDirectMethodDesc::TryGetResolvedNDirectTarget(_In_ NDirectMethodDesc* pMD, _Out_ void** ndirectTarget)
 {
     CONTRACTL
     {
@@ -3387,11 +3370,17 @@ BOOL NDirectMethodDesc::TryResolveNDirectTargetForNoGCTransition(_In_ MethodDesc
     }
     CONTRACTL_END
 
+    if (!pMD->NDirectTargetIsImportThunk())
+    {
+        // This is an early out to handle already resolved targets
+        *ndirectTarget = pMD->GetNDirectTarget();
+        return TRUE;
+    }
+
     if (!pMD->ShouldSuppressGCTransition())
         return FALSE;
 
-    _ASSERTE(pMD->IsNDirect());
-    *ndirectTarget = ResolveAndSetNDirectTarget((NDirectMethodDesc*)pMD);
+    *ndirectTarget = ResolveAndSetNDirectTarget(pMD);
     return TRUE;
 
 }

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,13 +6,31 @@
     <AssemblyName>illink</AssemblyName>
     <Description>IL Linker</Description>
     <RootNamespace>Mono.Linker</RootNamespace>
+    <IsPackable>true</IsPackable>
+    <IsShipping>false</IsShipping>
+    <PackageId>Microsoft.NET.ILLink</PackageId>
+    <!-- Disabling baseline validation since this is a brand new package.
+       Once this package has shipped a stable version, the following line
+       should be removed in order to re-enable validation. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <!-- There are currently no translations, so the satellite assemblies are a waste of space. -->
     <EnableXlfLocalization>false</EnableXlfLocalization>
     <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
     <ContractProject>$(MSBuildThisFileDirectory)ref\Mono.Linker.csproj</ContractProject>
     <RollForward>Major</RollForward>
     <UseAppHost>false</UseAppHost>
+    <NoWarn>$(NoWarn);NU5131</NoWarn>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_AddReferenceAssemblyToPackage</TargetsForTfmSpecificContentInPackage>
+    <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
   </PropertyGroup>
+
+  <!-- The default pack logic will include the implementation assembly in lib.
+       This also adds the reference assembly under ref. -->
+  <Target Name="_AddReferenceAssemblyToPackage" DependsOnTargets="ResolveProjectReferences">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="@(ResolvedMatchingContract)" PackagePath="ref\$(TargetFramework)" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <AdditionalFiles Include="BannedSymbols.txt" />
@@ -25,8 +43,7 @@
       <PrivateAssets>all</PrivateAssets>
       <ExcludeAssets>contentfiles</ExcludeAssets> <!-- We include our own copy of the ClosedAttribute to work in source build -->
     </PackageReference>
-    <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" PrivateAssets="All" Publish="True" />
-    <PackageReference Include="Microsoft.DotNet.Cecil.Pdb" Version="$(MicrosoftDotNetCecilPdbVersion)" PrivateAssets="All" Publish="True" />
+    <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" Publish="True" />
   </ItemGroup>
 
   <ItemGroup>

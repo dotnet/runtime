@@ -16,10 +16,7 @@ namespace System.Globalization
         private const double LongitudeSpring = 0.0;
         private const double TwoDegreesAfterSpring = 2.0;
         private const int SecondsPerDay = 24 * 60 * 60; // 24 hours * 60 minutes * 60 seconds
-
         private const int DaysInUniformLengthCentury = 36525;
-        private const int SecondsPerMinute = 60;
-        private const int MinutesPerDegree = 60;
 
         private static readonly long s_startOf1810 = GetNumberOfDays(new DateTime(1810, 1, 1));
         private static readonly long s_startOf1900Century = GetNumberOfDays(new DateTime(1900, 1, 1));
@@ -33,8 +30,7 @@ namespace System.Globalization
         private static ReadOnlySpan<double> EccentricityCoefficients => new double[] { 0.016708617, -0.000042037, -0.0000001236 };
         private static ReadOnlySpan<double> CoefficientsA => new double[] { 124.90, -1934.134, 0.002063 };
         private static ReadOnlySpan<double> CoefficientsB => new double[] { 201.11, 72001.5377, 0.00057 };
-
-        private static readonly double[] s_coefficients = new double[] { Angle(23, 26, 21.448), Angle(0, 0, -46.8150), Angle(0, 0, -0.00059), Angle(0, 0, 0.001813) };
+        private static ReadOnlySpan<double> Coefficients => new double[4] { 23.43929111111111, -0.013004166666666667, -1.638888888888889E-07, 5.03611111111111E-07 };
 
         private static double RadiansFromDegrees(double degree)
         {
@@ -50,19 +46,15 @@ namespace System.Globalization
         {
             return Math.Cos(RadiansFromDegrees(degree));
         }
+
         private static double TanOfDegree(double degree)
         {
             return Math.Tan(RadiansFromDegrees(degree));
         }
 
-        public static double Angle(int degrees, int minutes, double seconds)
-        {
-            return ((seconds / SecondsPerMinute + minutes) / MinutesPerDegree) + degrees;
-        }
-
         private static double Obliquity(double julianCenturies)
         {
-            return PolynomialSum(s_coefficients, julianCenturies);
+            return PolynomialSum(Coefficients, julianCenturies);
         }
 
         internal static long GetNumberOfDays(DateTime date)
@@ -85,7 +77,7 @@ namespace System.Globalization
             Year1620to1699
         }
 
-        private struct EphemerisCorrectionAlgorithmMap
+        private readonly struct EphemerisCorrectionAlgorithmMap
         {
             public EphemerisCorrectionAlgorithmMap(int year, CorrectionAlgorithm algorithm)
             {
@@ -93,8 +85,8 @@ namespace System.Globalization
                 _algorithm = algorithm;
             }
 
-            internal int _lowestYear;
-            internal CorrectionAlgorithm _algorithm;
+            internal readonly int _lowestYear;
+            internal readonly CorrectionAlgorithm _algorithm;
         }
 
         private static readonly EphemerisCorrectionAlgorithmMap[] s_ephemerisCorrectionTable = new EphemerisCorrectionAlgorithmMap[]

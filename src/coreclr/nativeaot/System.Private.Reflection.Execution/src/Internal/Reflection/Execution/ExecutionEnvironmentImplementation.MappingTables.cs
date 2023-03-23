@@ -924,6 +924,7 @@ namespace Internal.Reflection.Execution
             }
             else
             {
+#if FEATURE_SHARED_LIBRARY
                 uint nameAndSigOffset = entryMethodHandleOrNameAndSigRaw;
                 MethodNameAndSignature nameAndSig;
                 if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(mappingTableModule.Handle, nameAndSigOffset, out nameAndSig))
@@ -937,6 +938,9 @@ namespace Internal.Reflection.Execution
                     Debug.Assert(false);
                     return false;
                 }
+#else
+                throw NotImplemented.ByDesign;
+#endif
             }
 
             return true;

@@ -3,28 +3,27 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <!-- don't need to run this on helix -->
     <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
-    <WasmMainJSPath>main.js</WasmMainJSPath>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <EnableAggressiveTrimming Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</EnableAggressiveTrimming>
     <PublishTrimmed Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</PublishTrimmed>
     <RunAOTCompilation Condition="'$(EnableAOTAndTrimming)' != ''">$(EnableAOTAndTrimming)</RunAOTCompilation>
-    <TrimMode>partial</TrimMode>
   </PropertyGroup>
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
+    <WasmExtraFilesToDeploy Include="main.js" />
     <WasmExtraFilesToDeploy Include="appstart-frame.html" />
     <WasmExtraFilesToDeploy Include="frame-main.js" />
     <WasmExtraFilesToDeploy Include="style.css" />
     <Compile Remove="Console/Console.cs" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <_SampleProject>Wasm.Browser.Bench.Sample.csproj</_SampleProject>
-    <_SampleAssembly> Wasm.Browser.Bench.Sample.dll</_SampleAssembly>
-  </PropertyGroup>
-
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\libraries\System.Text.Json\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj"
+                      ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer" />
+  </ItemGroup>
 </Project>

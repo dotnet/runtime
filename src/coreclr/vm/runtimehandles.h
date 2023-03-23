@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-
 #ifndef _RUNTIMEHANDLES_H_
 #define _RUNTIMEHANDLES_H_
 
@@ -105,8 +103,6 @@ public:
 
 extern "C" BOOL QCALLTYPE MdUtf8String_EqualsCaseInsensitive(LPCUTF8 szLhs, LPCUTF8 szRhs, INT32 stringNumBytes);
 
-extern "C" ULONG QCALLTYPE MdUtf8String_HashCaseInsensitive(LPCUTF8 sz, INT32 stringNumBytes);
-
 class RuntimeTypeHandle;
 
 typedef RuntimeTypeHandle FCALLRuntimeTypeHandle;
@@ -137,6 +133,9 @@ public:
     static FCDECL1(FC_BOOL_RET, IsValueType, ReflectClassBaseObject* pType);
     static FCDECL1(FC_BOOL_RET, IsInterface, ReflectClassBaseObject* pType);
     static FCDECL1(FC_BOOL_RET, IsByRefLike, ReflectClassBaseObject* pType);
+
+    static FCDECL1(Object *, GetArgumentTypesFromFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
+    static FCDECL1(FC_BOOL_RET, IsUnmanagedFunctionPointer, ReflectClassBaseObject *pTypeUNSAFE);
 
     static FCDECL2(FC_BOOL_RET, CanCastTo, ReflectClassBaseObject *pType, ReflectClassBaseObject *pTarget);
     static FCDECL2(FC_BOOL_RET, IsInstanceOfType, ReflectClassBaseObject *pType, Object *object);
@@ -254,7 +253,6 @@ public:
     static FCDECL1(INT32, GetMethodDef, ReflectMethodObject *pMethodUNSAFE);
     static FCDECL1(StringObject*, GetName, MethodDesc *pMethod);
     static FCDECL1(LPCUTF8, GetUtf8Name, MethodDesc *pMethod);
-    static FCDECL2(FC_BOOL_RET, MatchesNameHash, MethodDesc * pMethod, ULONG hash);
     static
     FCDECL1(FC_BOOL_RET, HasMethodInstantiation, MethodDesc *pMethod);
 
@@ -308,7 +306,6 @@ public:
     static FCDECL5(void, SetValueDirect, ReflectFieldObject *pFieldUNSAFE, ReflectClassBaseObject *pFieldType, TypedByRef *pTarget, Object *valueUNSAFE, ReflectClassBaseObject *pContextType);
     static FCDECL1(StringObject*, GetName, ReflectFieldObject *pFieldUNSAFE);
     static FCDECL1(LPCUTF8, GetUtf8Name, FieldDesc *pField);
-    static FCDECL2(FC_BOOL_RET, MatchesNameHash, FieldDesc * pField, ULONG hash);
 
     static FCDECL1(INT32, GetAttributes, FieldDesc *pField);
     static FCDECL1(ReflectClassBaseObject*, GetApproxDeclaringType, FieldDesc *pField);
@@ -373,9 +370,16 @@ public:
         PCCOR_SIGNATURE pCorSig, DWORD cCorSig,
         FieldDesc *pFieldDesc, ReflectMethodObject *pMethodUNSAFE,
         ReflectClassBaseObject *pDeclaringType);
-    static FCDECL3(Object *, GetCustomModifiers, SignatureNative* pSig, INT32 parameter, CLR_BOOL fRequired);
+
     static FCDECL2(FC_BOOL_RET, CompareSig, SignatureNative* pLhs, SignatureNative* pRhs);
 
+    static FCDECL2(INT32, GetParameterOffset, SignatureNative* pSig, INT32 parameterIndex);
+
+    static FCDECL3(INT32, GetTypeParameterOffset, SignatureNative* pSig, INT32 offset, INT32 index);
+
+    static FCDECL2(FC_INT8_RET, GetCallingConventionFromFunctionPointerAtOffset, SignatureNative* pSig, INT32 offset);
+
+    static FCDECL3(Object *, GetCustomModifiersAtOffset, SignatureNative* pSig, INT32 offset, CLR_BOOL fRequired);
 
     BOOL HasThis() { LIMITED_METHOD_CONTRACT; return (m_managedCallingConvention & CALLCONV_HasThis); }
     INT32 NumFixedArgs() { WRAPPER_NO_CONTRACT; return m_PtrArrayarguments->GetNumComponents(); }
@@ -556,4 +560,3 @@ public:
 };
 
 #endif
-

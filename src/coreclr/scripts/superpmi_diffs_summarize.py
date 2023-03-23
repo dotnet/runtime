@@ -147,13 +147,83 @@ def main(main_args):
                     full_file_path = os.path.join(dirpath, file_name)
                     append_diff_file(f, arch, file_name, full_file_path, False)
 
-    print("##vso[task.uploadsummary]{}".format(final_md_path))
-
     with open(final_md_path, "r") as f:
         print(f.read())
 
+    # AzDO does not support syntax highlighting in fenced blocks. This hack rewrites ```diff blocks to HTML for AzDO purposes.
+    print("Coloring for AzDO...")
+    with open(final_md_path, "r") as f:
+        lines = f.read().splitlines()
+
+    inside_diff = False
+    cur_diff_lines = []
+    new_lines = []
+    for line in lines:
+        if line.startswith("```diff"):
+            inside_diff = True
+            cur_diff_lines = []
+        elif inside_diff and line.startswith("```"):
+            inside_diff = False
+            new_lines.append(html_color_diff(cur_diff_lines))
+        elif inside_diff:
+            cur_diff_lines.append(line)
+        else:
+            new_lines.append(line)
+
+    with open(final_md_path, "w") as f:
+        for line in new_lines:
+            f.write(line)
+            f.write("\n")
+
+    print("##vso[task.uploadsummary]{}".format(final_md_path))
+
     return 0
 
+def html_color_diff(lines):
+    new_text = ""
+
+    addition_line_color = "rgba(46,160,67,0.15)"
+    deletion_line_color = "rgba(248,81,73,0.15)"
+
+    cur_block = None
+    cur_block_color = None
+
+    def commit_block():
+        nonlocal new_text, cur_block, cur_block_color
+        if cur_block is None:
+            return
+
+        style = ""
+
+        if cur_block_color is not None:
+            style = ' style="background-color:{}"'.format(cur_block_color)
+
+        new_block_text = '<div{}>'.format(style) + cur_block + "</div>"
+        new_text += new_block_text
+
+    def add_block_line(line, color):
+        nonlocal cur_block, cur_block_color
+
+        if cur_block_color != color:
+            commit_block()
+            cur_block_color = color
+            cur_block = line
+        else:
+            if cur_block is None:
+                cur_block = line
+            else:
+                cur_block += "\n" + line
+
+    for line in lines:
+        if line.startswith("+"):
+            add_block_line(line, addition_line_color)
+        elif line.startswith("-"):
+            add_block_line(line, deletion_line_color)
+        else:
+            add_block_line(line, None)
+
+    commit_block()
+    return "<pre><code>" + new_text + "</code></pre>"
 
 if __name__ == "__main__":
     args = parser.parse_args()

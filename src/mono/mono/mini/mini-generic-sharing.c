@@ -703,7 +703,8 @@ inflate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoTempl
 	}
 	case MONO_RGCTX_INFO_VIRT_METHOD:
 	case MONO_RGCTX_INFO_VIRT_METHOD_CODE:
-	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE: {
+	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE:
+	case MONO_RGCTX_INFO_GSHAREDVT_CONSTRAINED_CALL_INFO: {
 		MonoJumpInfoVirtMethod *info = (MonoJumpInfoVirtMethod *)data;
 		MonoJumpInfoVirtMethod *res;
 		MonoType *t;
@@ -2288,7 +2289,6 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		g_assert (m_class_get_vtable (info->klass));
 		method = m_class_get_vtable (info->klass) [ioffset + slot];
 
-
 		if (info->method->is_inflated) {
 			MonoGenericContext *method_ctx = mono_method_get_context (info->method);
 			if (method_ctx->method_inst != NULL) {
@@ -2616,16 +2616,78 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		return res;
 	}
 	case MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO: {
-		MonoDelegateClassMethodPair *dele_info = (MonoDelegateClassMethodPair*)data;
-		gpointer trampoline;
+		MonoDelegateClassMethodPair *del_info = (MonoDelegateClassMethodPair*)data;
 
-		if (dele_info->is_virtual)
-			trampoline = mono_create_delegate_virtual_trampoline (dele_info->klass, dele_info->method);
-		else
-			trampoline = mono_create_delegate_trampoline_info (dele_info->klass, dele_info->method);
-
+		gpointer trampoline = mono_create_delegate_trampoline_info (del_info->klass, del_info->method, del_info->is_virtual);
 		g_assert (trampoline);
 		return trampoline;
+	}
+	case MONO_RGCTX_INFO_GSHAREDVT_CONSTRAINED_CALL_INFO: {
+		MonoJumpInfoVirtMethod *info = (MonoJumpInfoVirtMethod *)data;
+		MonoMethod *cmethod = info->method;
+		MonoMethod *m = NULL;
+		int vt_slot, iface_offset;
+		int call_type = MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_OTHER;
+		gpointer addr = NULL;
+
+		klass = info->klass;
+
+		if (mono_class_is_interface (klass) || (!m_class_is_valuetype (klass) && !m_class_is_sealed (klass))) {
+			/*
+			 * The method that needs to be invoke depends on the actual class of the receiver, so it can only be
+			 * resolved at call time.
+			 */
+		} else if (!mono_method_signature_internal (cmethod)->pinvoke && m_method_is_virtual (cmethod)) {
+			/* Lookup the virtual method */
+			mono_class_setup_vtable (klass);
+			g_assert (m_class_get_vtable (klass));
+			vt_slot = mono_method_get_vtable_slot (cmethod);
+			if (mono_class_is_interface (cmethod->klass)) {
+				iface_offset = mono_class_interface_offset (klass, cmethod->klass);
+				g_assert (iface_offset != -1);
+				vt_slot += iface_offset;
+			}
+			m = m_class_get_vtable (klass) [vt_slot];
+			if (cmethod->is_inflated) {
+				m = mono_class_inflate_generic_method_full_checked (m, NULL, mono_method_get_context (cmethod), error);
+				return_val_if_nok (error, NULL);
+			}
+
+			if (m_class_is_valuetype (klass) && (m->klass == mono_defaults.object_class || m->klass == m_class_get_parent (mono_defaults.enum_class) || m->klass == mono_defaults.enum_class)) {
+				/* Calling a non-vtype method with a vtype receiver, has to box. */
+				call_type = MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_BOX;
+			} else if (m_class_is_valuetype (klass)) {
+				/* Calling a vtype method with a vtype receiver */
+				call_type = MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_VTYPE;
+			} else {
+				/* The class is sealed because of the check above, so we can resolve the method here */
+				call_type = MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_REF;
+			}
+		}
+
+		if (call_type != MONO_GSHAREDVT_CONSTRAINT_CALL_TYPE_OTHER) {
+			if (mono_llvm_only) {
+				gpointer arg = NULL;
+				addr = mini_llvmonly_load_method (m, FALSE, FALSE, &arg, error);
+
+				/* Returns an ftndesc */
+				addr = mini_llvmonly_create_ftndesc (m, addr, arg);
+			} else {
+				addr = mono_compile_method_checked (m, error);
+				return_val_if_nok (error, NULL);
+
+				addr = mini_add_method_trampoline (m, addr, mono_method_needs_static_rgctx_invoke (m, FALSE), FALSE);
+			}
+		}
+
+		// FIXME:
+		MonoGsharedvtConstrainedCallInfo *res = g_new0 (MonoGsharedvtConstrainedCallInfo, 1);
+		res->call_type = call_type;
+		res->klass = klass;
+		res->method = m;
+		res->code = addr;
+
+		return res;
 	}
 	default:
 		g_assert_not_reached ();
@@ -2883,10 +2945,11 @@ mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type)
 	case MONO_RGCTX_INFO_METHOD_DELEGATE_CODE:
 		return MONO_PATCH_INFO_METHOD;
 	case MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO:
-		return MONO_PATCH_INFO_DELEGATE_TRAMPOLINE;
+		return MONO_PATCH_INFO_DELEGATE_INFO;
 	case MONO_RGCTX_INFO_VIRT_METHOD:
 	case MONO_RGCTX_INFO_VIRT_METHOD_CODE:
 	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE:
+	case MONO_RGCTX_INFO_GSHAREDVT_CONSTRAINED_CALL_INFO:
 		return MONO_PATCH_INFO_VIRT_METHOD;
 	case MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO:
 		return MONO_PATCH_INFO_GSHAREDVT_METHOD;
@@ -4437,7 +4500,7 @@ mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
 		entry_data = info;
 		break;
 	}
-	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE: {
+	case MONO_PATCH_INFO_DELEGATE_INFO: {
 		MonoDelegateClassMethodPair *info;
 		MonoDelegateClassMethodPair *oinfo = entry->data->data.del_tramp;
 
@@ -4464,7 +4527,7 @@ mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
 		switch (entry->data->type) {
 		case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		case MONO_PATCH_INFO_VIRT_METHOD:
-		case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+		case MONO_PATCH_INFO_DELEGATE_INFO:
 			g_free (entry_data);
 			break;
 		case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
@@ -4789,6 +4852,12 @@ MonoMethod*
 mini_method_to_shared (MonoMethod *method)
 {
 	return NULL;
+}
+
+gboolean
+mini_is_gsharedvt_inst (MonoGenericInst *inst)
+{
+	return FALSE;
 }
 
 #endif /* !MONO_ARCH_GSHAREDVT_SUPPORTED */

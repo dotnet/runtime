@@ -3,15 +3,15 @@
 
 import { mono_assert, MonoType, MonoMethod } from "./types";
 import { NativePointer, Int32Ptr, VoidPtr } from "./types/emscripten";
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import {
-    getU8, getI32, getU32, setU32_unchecked
+    getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked
 } from "./memory";
 import { WasmOpcode } from "./jiterpreter-opcodes";
 import {
     WasmValtype, WasmBuilder, addWasmFunctionPointer as addWasmFunctionPointer,
     _now, elapsedTimes, counters, getWasmFunctionTable, applyOptions,
-    recordFailure, shortNameBase, getOptions
+    recordFailure, getOptions
 } from "./jiterpreter-support";
 import cwraps from "./cwraps";
 
@@ -98,11 +98,11 @@ class TrampolineInfo {
         this.rmethod = rmethod;
         this.catchExceptions = catch_exceptions;
         this.cinfo = cinfo;
-        this.addr = getU32(<any>cinfo + offsetOfAddr);
-        this.wrapper = getU32(<any>cinfo + offsetOfWrapper);
-        this.signature = <any>getU32(<any>cinfo + offsetOfSig);
+        this.addr = getU32_unaligned(<any>cinfo + offsetOfAddr);
+        this.wrapper = getU32_unaligned(<any>cinfo + offsetOfWrapper);
+        this.signature = <any>getU32_unaligned(<any>cinfo + offsetOfSig);
         this.noWrapper = getU8(<any>cinfo + offsetOfNoWrapper) !== 0;
-        this.hasReturnValue = getI32(<any>cinfo + offsetOfRetMt) !== -1;
+        this.hasReturnValue = getI32_unaligned(<any>cinfo + offsetOfRetMt) !== -1;
 
         this.returnType = cwraps.mono_jiterp_get_signature_return_type(this.signature);
         this.paramCount = cwraps.mono_jiterp_get_signature_param_count(this.signature);
@@ -111,13 +111,13 @@ class TrampolineInfo {
         const ptr = cwraps.mono_jiterp_get_signature_params(this.signature);
         this.paramTypes = new Array(this.paramCount);
         for (let i = 0; i < this.paramCount; i++)
-            this.paramTypes[i] = <any>getU32(<any>ptr + (i * 4));
+            this.paramTypes[i] = <any>getU32_unaligned(<any>ptr + (i * 4));
 
         // See initialize_arg_offsets for where this array is built
         const argOffsetCount = this.paramCount + (this.hasThisReference ? 1 : 0);
         this.argOffsets = new Array(this.paramCount);
         for (let i = 0; i < argOffsetCount; i++)
-            this.argOffsets[i] = <any>getU32(<any>arg_offsets + (i * 4));
+            this.argOffsets[i] = <any>getU32_unaligned(<any>arg_offsets + (i * 4));
 
         this.target = this.noWrapper ? this.addr : this.wrapper;
         this.result = 0;
@@ -156,6 +156,9 @@ class TrampolineInfo {
     }
 }
 
+// this is cached replacements for Module.getWasmTableEntry();
+// we could add <EmccExportedLibraryFunction Include="$getWasmTableEntry" /> and <EmccExportedRuntimeMethod Include="getWasmTableEntry" /> 
+// if we need to export the original
 function getWasmTableEntry (index: number) {
     let result = fnCache[index];
     if (!result) {
@@ -172,8 +175,6 @@ function getWasmTableEntry (index: number) {
 export function mono_interp_invoke_wasm_jit_call_trampoline (
     thunkIndex: number, ret_sp: number, sp: number, ftndesc: number, thrown: NativePointer
 ) {
-    // FIXME: It's impossible to get emscripten to export this for some reason
-    // const thunk = <Function>Module.getWasmTableEntry(thunkIndex);
     const thunk = <Function>getWasmTableEntry(thunkIndex);
     try {
         thunk(ret_sp, sp, ftndesc, thrown);
@@ -191,7 +192,7 @@ export function mono_interp_jit_wasm_jit_call_trampoline (
     //  we want to immediately store its pointer into the cinfo, otherwise we add it to
     //  a queue inside the info object so that all the cinfos will get updated once a
     //  jit operation happens
-    const cacheKey = getU32(<any>cinfo + offsetOfAddr),
+    const cacheKey = getU32_unaligned(<any>cinfo + offsetOfAddr),
         existing = targetCache[cacheKey];
     if (existing) {
         if (existing.result > 0)
@@ -256,6 +257,7 @@ function getIsWasmEhSupported () : boolean {
 export function mono_jiterp_do_jit_call_indirect (
     jit_call_cb: number, cb_data: VoidPtr, thrown: Int32Ptr
 ) : void {
+    mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
     const table = getWasmFunctionTable();
     const jitCallCb = table.get(jit_call_cb);
 
@@ -265,7 +267,6 @@ export function mono_jiterp_do_jit_call_indirect (
         try {
             jitCallCb(_cb_data);
         } catch (exc) {
-            console.error("uncaught in jit_call_cb", exc);
             setU32_unchecked(_thrown, 1);
         }
     };
@@ -310,25 +311,23 @@ export function mono_jiterp_do_jit_call_indirect (
     do_jit_call_indirect_js(jit_call_cb, cb_data, thrown);
 }
 
-const wrapperNames : string[] = [];
-
-export function mono_jiterp_trace_wrapper_entry (nameIndex: number, expected: number, actual: number) {
-    if (actual === expected)
-        return;
-    const actualFn = getWasmTableEntry(actual),
-        expectedFn = getWasmTableEntry(expected);
-    console.error(`Wrapper '${wrapperNames[nameIndex]}' compiled for call target #${expected}`, expectedFn, `but got call target #${actual}`, actualFn);
-    // throw new Error("Wrapper call target mismatch");
-}
-
 export function mono_interp_flush_jitcall_queue () : void {
     if (jitQueue.length === 0)
         return;
 
     let builder = trampBuilder;
-    if (!builder)
+    if (!builder) {
         trampBuilder = builder = new WasmBuilder(0);
-    else
+        // Function type for compiled trampolines
+        builder.defineType(
+            "trampoline", {
+                "ret_sp": WasmValtype.i32,
+                "sp": WasmValtype.i32,
+                "ftndesc": WasmValtype.i32,
+                "thrown": WasmValtype.i32,
+            }, WasmValtype.void, true
+        );
+    } else
         builder.clear(0);
 
     if (builder.options.wasmBytesLimit <= counters.bytesGenerated) {
@@ -359,16 +358,6 @@ export function mono_interp_flush_jitcall_queue () : void {
         builder.appendU32(0x6d736100);
         builder.appendU32(1);
 
-        // Function type for compiled trampolines
-        builder.defineType(
-            "trampoline", {
-                "ret_sp": WasmValtype.i32,
-                "sp": WasmValtype.i32,
-                "ftndesc": WasmValtype.i32,
-                "thrown": WasmValtype.i32,
-            }, WasmValtype.void
-        );
-
         for (let i = 0; i < jitQueue.length; i++) {
             const info = jitQueue[i];
 
@@ -393,7 +382,7 @@ export function mono_interp_flush_jitcall_queue () : void {
             }
 
             builder.defineType(
-                info.name, sig, info.enableDirect ? info.wasmNativeReturnType : WasmValtype.void
+                info.name, sig, info.enableDirect ? info.wasmNativeReturnType : WasmValtype.void, false
             );
 
             const callTarget = getWasmTableEntry(info.target);
@@ -402,14 +391,12 @@ export function mono_interp_flush_jitcall_queue () : void {
         }
 
         builder.generateTypeSection();
+        builder.compressImportNames = true;
 
-        const compress = true;
         // Emit function imports
-        for (let i = 0; i < trampImports.length; i++) {
-            const wasmName = compress ? i.toString(shortNameBase) : undefined;
-            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], wasmName);
-        }
-        builder.generateImportSection();
+        for (let i = 0; i < trampImports.length; i++)
+            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], true, false, trampImports[i][2]);
+        builder._generateImportSection();
 
         // Function section
         builder.beginSection(3);
@@ -445,6 +432,7 @@ export function mono_interp_flush_jitcall_queue () : void {
             if (!ok)
                 throw new Error(`Failed to generate ${info.name}`);
             builder.appendU8(WasmOpcode.end);
+            builder.endFunction(true);
         }
 
         builder.endSection();
@@ -456,16 +444,8 @@ export function mono_interp_flush_jitcall_queue () : void {
         counters.bytesGenerated += buffer.length;
         const traceModule = new WebAssembly.Module(buffer);
 
-        const imports : any = {
-        };
-        // Place our function imports into the import dictionary
-        for (let i = 0; i < trampImports.length; i++) {
-            const wasmName = compress ? i.toString(shortNameBase) : trampImports[i][0];
-            imports[wasmName] = trampImports[i][2];
-        }
-
         const traceInstance = new WebAssembly.Instance(traceModule, {
-            i: imports,
+            i: builder.getImportedFunctionTable(),
             c: <any>builder.getConstants(),
             m: { h: (<any>Module).asm.memory }
         });
@@ -690,7 +670,7 @@ function generate_wasm_body (
     for (let i = 0; i < info.paramCount; i++) {
         // FIXME: STACK_ADD_BYTES does alignment, but we probably don't need to?
         const svalOffset = info.argOffsets[stack_index + i];
-        const argInfoOffset = getU32(<any>info.cinfo + offsetOfArgInfo) + i;
+        const argInfoOffset = getU32_unaligned(<any>info.cinfo + offsetOfArgInfo) + i;
         const argInfo = getU8(argInfoOffset);
 
         if (argInfo == JIT_ARG_BYVAL) {

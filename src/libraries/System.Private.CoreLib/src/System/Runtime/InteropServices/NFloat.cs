@@ -164,7 +164,7 @@ namespace System.Runtime.InteropServices
         /// <summary>Multiplies two values together to compute their product.</summary>
         /// <param name="left">The value which <paramref name="right" /> multiplies.</param>
         /// <param name="right">The value which multiplies <paramref name="left" />.</param>
-        /// <returns>The product of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
+        /// <returns>The product of <paramref name="left" /> multiplied-by <paramref name="right" />.</returns>
         [NonVersionable]
         public static NFloat operator *(NFloat left, NFloat right) => new NFloat(left._value * right._value);
 
