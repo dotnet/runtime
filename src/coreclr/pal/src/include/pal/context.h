@@ -359,19 +359,19 @@ using asm_sigcontext::_xstate;
 // the processor xstate bit vector register, so the value is OS independent.
 
 #ifndef XFEATURE_MASK_YMM
-#define XFEATURE_MASK_YMM (1 << 2)
+#define XFEATURE_MASK_YMM (1 << XSTATE_AVX)
 #endif // XFEATURE_MASK_YMM
 
 #ifndef XFEATURE_MASK_OPMASK
-#define XFEATURE_MASK_OPMASK (1 << 5)
+#define XFEATURE_MASK_OPMASK (1 << XSTATE_AVX512_KMASK)
 #endif // XFEATURE_MASK_OPMASK
 
 #ifndef XFEATURE_MASK_ZMM_Hi256
-#define XFEATURE_MASK_ZMM_Hi256 (1 << 6)
+#define XFEATURE_MASK_ZMM_Hi256 (1 << XSTATE_AVX512_ZMM_H)
 #endif // XFEATURE_MASK_ZMM_Hi256
 
 #ifndef XFEATURE_MASK_Hi16_ZMM
-#define XFEATURE_MASK_Hi16_ZMM (1 << 7)
+#define XFEATURE_MASK_Hi16_ZMM (1 << XSTATE_AVX512_ZMM)
 #endif // XFEATURE_MASK_Hi16_ZMM
 
 #ifndef XFEATURE_MASK_AVX512
@@ -458,9 +458,9 @@ inline bool FPREG_HasYmmRegisters(const ucontext_t *uc)
     return (FPREG_FpxSwBytes_xfeatures(uc) & XFEATURE_MASK_YMM) == XFEATURE_MASK_YMM;
 }
 
-inline void *FPREG_Xstate_ExtendedFeature(const ucontext_t *uc, uint32_t *sz, uint32_t featureIndex)
+inline void *FPREG_Xstate_ExtendedFeature(const ucontext_t *uc, uint32_t *featureSize, uint32_t featureIndex)
 {
-    _ASSERTE(sz != nullptr);
+    _ASSERTE(featureSize != nullptr);
     _ASSERTE(featureIndex < (sizeof(Xstate_ExtendedFeatures) / sizeof(Xstate_ExtendedFeature)));
     _ASSERT(FPREG_Xstate_ExtendedStateArea_Offset == 576);
 
@@ -496,14 +496,14 @@ inline void *FPREG_Xstate_ExtendedFeature(const ucontext_t *uc, uint32_t *sz, ui
         extendedFeature->initialized = true;
     }
 
-    *sz = extendedFeature->size;
+    *featureSize = extendedFeature->size;
     return (FPREG_Xstate_ExtendedStateArea(uc) + extendedFeature->offset);
 }
 
-inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc, uint32_t *sz)
+inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc, uint32_t *featureSize)
 {
     _ASSERTE(FPREG_HasYmmRegisters(uc));
-    return FPREG_Xstate_ExtendedFeature(uc, sz, 2);
+    return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_AVX);
 }
 
 inline bool FPREG_HasAvx512Registers(const ucontext_t *uc)
@@ -522,22 +522,22 @@ inline bool FPREG_HasAvx512Registers(const ucontext_t *uc)
     return true;
 }
 
-inline void *FPREG_Xstate_Opmask(const ucontext_t *uc, uint32_t *sz)
+inline void *FPREG_Xstate_Opmask(const ucontext_t *uc, uint32_t *featureSize)
 {
     _ASSERTE(FPREG_HasAvx512Registers(uc));
-    return FPREG_Xstate_ExtendedFeature(uc, sz, 5);
+    return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_AVX512_KMASK);
 }
 
-inline void *FPREG_Xstate_ZmmHi256(const ucontext_t *uc, uint32_t *sz)
+inline void *FPREG_Xstate_ZmmHi256(const ucontext_t *uc, uint32_t *featureSize)
 {
     _ASSERTE(FPREG_HasAvx512Registers(uc));
-    return FPREG_Xstate_ExtendedFeature(uc, sz, 6);
+    return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_AVX512_ZMM_H);
 }
 
-inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *sz)
+inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
 {
     _ASSERTE(FPREG_HasAvx512Registers(uc));
-    return FPREG_Xstate_ExtendedFeature(uc, sz, 7);
+    return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_AVX512_ZMM);
 }
 #endif // XSTATE_SUPPORTED
 
@@ -830,12 +830,12 @@ inline bool FPREG_HasYmmRegisters(const ucontext_t *uc)
 
 static_assert_no_msg(offsetof(_STRUCT_X86_AVX_STATE64, __fpu_ymmh0) == offsetof(_STRUCT_X86_AVX512_STATE64, __fpu_ymmh0));
 
-inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc, uint32_t *sz)
+inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc, uint32_t *featureSize)
 {
     _ASSERTE(FPREG_HasYmmRegisters(uc));
-    _ASSERTE(sz != nullptr);
+    _ASSERTE(featureSize != nullptr);
 
-    *sz = sizeof(_STRUCT_XMM_REG) * 16;
+    *featureSize = sizeof(_STRUCT_XMM_REG) * 16;
     return reinterpret_cast<void *>(&((_STRUCT_X86_AVX_STATE64&)FPSTATE(uc)).__fpu_ymmh0);
 }
 
@@ -845,30 +845,30 @@ inline bool FPREG_HasAvx512Registers(const ucontext_t *uc)
     return (uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX512_64));
 }
 
-inline void *FPREG_Xstate_Opmask(const ucontext_t *uc, uint32_t *sz)
+inline void *FPREG_Xstate_Opmask(const ucontext_t *uc, uint32_t *featureSize)
 {
     _ASSERTE(FPREG_HasAvx512Registers(uc));
-    _ASSERTE(sz != nullptr);
+    _ASSERTE(featureSize != nullptr);
 
-    *sz = sizeof(_STRUCT_OPMASK_REG) * 8;
+    *featureSize = sizeof(_STRUCT_OPMASK_REG) * 8;
     return reinterpret_cast<void *>(&((_STRUCT_X86_AVX512_STATE64&)FPSTATE(uc)).__fpu_k0);
 }
 
-inline void *FPREG_Xstate_ZmmHi256(const ucontext_t *uc, uint32_t *sz)
+inline void *FPREG_Xstate_ZmmHi256(const ucontext_t *uc, uint32_t *featureSize)
 {
     _ASSERTE(FPREG_HasAvx512Registers(uc));
-    _ASSERTE(sz != nullptr);
+    _ASSERTE(featureSize != nullptr);
 
-    *sz = sizeof(_STRUCT_YMM_REG) * 16;
+    *featureSize = sizeof(_STRUCT_YMM_REG) * 16;
     return reinterpret_cast<void *>(&((_STRUCT_X86_AVX512_STATE64&)FPSTATE(uc)).__fpu_zmmh0);
 }
 
-inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *sz)
+inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
 {
     _ASSERTE(FPREG_HasAvx512Registers(uc));
-    _ASSERTE(sz != nullptr);
+    _ASSERTE(featureSize != nullptr);
 
-    *sz = sizeof(_STRUCT_ZMM_REG) * 16;
+    *featureSize = sizeof(_STRUCT_ZMM_REG) * 16;
     return reinterpret_cast<void *>(&((_STRUCT_X86_AVX512_STATE64&)FPSTATE(uc)).__fpu_zmm16);
 }
 #else //TARGET_OSX
