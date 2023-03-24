@@ -647,6 +647,12 @@ namespace System.ServiceProcess
 
         public void Stop()
         {
+            if (_status.currentState == ServiceControlStatus.STATE_STOPPED || _status.currentState == default)
+            {
+                // nothing to do if the service is already stopped or never started
+                return;
+            }
+
             DeferredStop();
         }
 

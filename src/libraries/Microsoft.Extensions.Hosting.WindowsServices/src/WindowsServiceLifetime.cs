@@ -18,6 +18,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
     public class WindowsServiceLifetime : ServiceBase, IHostLifetime
     {
         private readonly TaskCompletionSource<object?> _delayStart = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<object?> _serviceStopped = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly ManualResetEventSlim _delayStop = new ManualResetEventSlim();
         private readonly HostOptions _hostOptions;
 
@@ -92,14 +93,14 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             {
                 _delayStart.TrySetException(ex);
             }
+            _serviceStopped.TrySetResult(null);
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            // Avoid deadlock where host waits for StopAsync before firing ApplicationStopped,
-            // and Stop waits for ApplicationStopped.
+            // Stop will cause the ServiceBase.Run method to complete and return, which completes _serviceStopped.
             Task.Run(Stop, CancellationToken.None);
-            return Task.CompletedTask;
+            return _serviceStopped.Task;
         }
 
         // Called by base.Run when the service is ready to start.
