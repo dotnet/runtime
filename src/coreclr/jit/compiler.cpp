@@ -4721,6 +4721,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_STR_ADRLCL, &Compiler::fgMarkAddressExposedLocals);
 
+    // For OSR, we no longer need to keep the parts of the method
+    // that may not ever be reached.
+    //
+    if (opts.IsOSR())
+    {
+        assert(fgEntryBB->bbFlags & BBF_DONT_REMOVE);
+        fgEntryBB->bbFlags &= ~BBF_DONT_REMOVE;
+        DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
+    }
+
     // Do an early pass of liveness for forward sub and morph. This data is
     // valid until after morph.
     //

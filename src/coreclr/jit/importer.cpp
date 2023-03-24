@@ -12624,6 +12624,15 @@ void Compiler::impImport()
     // which we should verify over when we find jump targets.
     impImportBlockPending(entryBlock);
 
+    if (opts.IsOSR())
+    {
+        // We now import all the IR and keep it around so we can
+        // analyze address exposure more robustly.
+        //
+        impImportBlockPending(fgEntryBB);
+        fgEntryBB->bbFlags |= BBF_DONT_REMOVE;
+    }
+
     /* Import blocks in the worker-list until there are no more */
 
     while (impPendingList)
