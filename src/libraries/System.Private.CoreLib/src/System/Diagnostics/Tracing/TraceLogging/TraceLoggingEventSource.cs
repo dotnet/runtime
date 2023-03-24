@@ -24,7 +24,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW
         private byte[]? m_providerMetadata;
         private protected virtual ReadOnlySpan<byte> ProviderMetadata => m_providerMetadata;
-        private const string EventSourceRequiresUnreferenceMessage = "EventSource will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type";
+        private const string EventSourceRequiresUnreferenceMessage = "EventSource will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed.";
         private const string EventSourceSuppressMessage = "Parameters to this method are primitive and are trimmer safe";
 #endif
 
