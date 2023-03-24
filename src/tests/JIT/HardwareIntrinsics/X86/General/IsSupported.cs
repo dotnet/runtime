@@ -56,7 +56,7 @@ namespace IntelHardwareIntrinsicTest.General
             {
                 result = false;
             }
-            Assert.Equal(true, result);
+            Assert.True(result);
         }
     }
 }

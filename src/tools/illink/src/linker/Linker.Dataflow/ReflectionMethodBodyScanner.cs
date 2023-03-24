@@ -269,6 +269,11 @@ namespace Mono.Linker.Dataflow
 			case IntrinsicId.Marshal_PtrToStructure:
 			case IntrinsicId.Marshal_DestroyStructure:
 			case IntrinsicId.Marshal_GetDelegateForFunctionPointer:
+			case IntrinsicId.Assembly_get_Location:
+			case IntrinsicId.Assembly_GetFile:
+			case IntrinsicId.Assembly_GetFiles:
+			case IntrinsicId.AssemblyName_get_CodeBase:
+			case IntrinsicId.AssemblyName_get_EscapedCodeBase:
 				// These intrinsics are not interesting for trimmer (they are interesting for AOT and that's why they are recognized)
 				break;
 
@@ -339,7 +344,7 @@ namespace Mono.Linker.Dataflow
 			//    For all other cases, the trimming tools would have already produced a warning.
 
 			default:
-				throw new NotImplementedException ("Unhandled intrinsic");
+				throw new NotImplementedException ($"Unhandled intrinsic: {intrinsicId}");
 			}
 
 			// If we get here, we handled this as an intrinsic.  As a convenience, if the code above

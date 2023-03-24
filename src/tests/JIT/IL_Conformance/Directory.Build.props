@@ -6,4 +6,8 @@
   </PropertyGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <RunAnalyzers>true</RunAnalyzers>
+  </PropertyGroup>
 </Project>

@@ -75,7 +75,7 @@ The .NET Foundation licenses this file to you under the MIT license.
 
     <NativeObject>$(NativeIntermediateOutputPath)$(TargetName)$(NativeObjectExt)</NativeObject>
     <NativeBinary>$(NativeOutputPath)$(TargetName)$(NativeBinaryExt)</NativeBinary>
-    <IlcExportUnmanagedEntrypoints Condition="'$(NativeLib)' == 'Shared'">true</IlcExportUnmanagedEntrypoints>
+    <IlcExportUnmanagedEntrypoints Condition="'$(IlcExportUnmanagedEntrypoints)' == '' and '$(NativeLib)' == 'Shared'">true</IlcExportUnmanagedEntrypoints>
     <ExportsFile Condition="$(IlcExportUnmanagedEntrypoints) == 'true' and $(ExportsFile) == ''">$(NativeIntermediateOutputPath)$(TargetName)$(ExportsFileExt)</ExportsFile>
 
     <IlcCompileOutput>$(NativeObject)</IlcCompileOutput>
@@ -98,6 +98,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   </PropertyGroup>
 
   <ItemGroup Condition="$(IlcSystemModule) == ''">
+    <UnmanagedEntryPointsAssembly Include="System.Private.CoreLib" />
     <AutoInitializedAssemblies Include="System.Private.CoreLib" />
     <AutoInitializedAssemblies Include="System.Private.StackTraceMetadata" Condition="$(IlcDisableReflection) != 'true' or $(IlcGenerateStackTraceData) == 'true'" />
     <AutoInitializedAssemblies Include="System.Private.TypeLoader" />
@@ -232,6 +233,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(TrimmerSingleWarn) == 'true'" Include="--singlewarn" />
       <IlcArg Condition="$(SuppressTrimAnalysisWarnings) == 'true'" Include="--notrimwarn" />
       <IlcArg Condition="$(SuppressAotAnalysisWarnings) == 'true'" Include="--noaotwarn" />
+      <IlcArg Condition="$(IlcVerboseLogging) == 'true'" Include="--verbose" />
       <IlcArg Condition="$(IlcTrimMetadata) == 'false'" Include="--reflectiondata:all" />
       <IlcArg Condition="'$(ControlFlowGuard)' == 'Guard' and '$(_targetOS)' == 'win'" Include="--guard:cf" />
       <IlcArg Include="@(_IlcRootedAssemblies->'--root:%(Identity)')" />
@@ -240,6 +242,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="@(_IlcNoSingleWarnAssemblies->'--nosinglewarnassembly:%(Filename)')" />
       <IlcArg Condition="'$(TrimmerDefaultAction)' == 'copyused' or '$(TrimmerDefaultAction)' == 'copy' or '$(TrimMode)' == 'partial'" Include="--defaultrooting" />
       <IlcArg Include="--resilient" />
+      <IlcArg Include="@(UnmanagedEntryPointsAssembly->'--generateunmanagedentrypoints:%(Identity)')" />
 
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Reflection.IsReflectionExecutionAvailable=false" />
 
@@ -309,12 +312,13 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CustomLinkerArg Include="/LIBPATH:&quot;%(AdditionalNativeLibraryDirectories.Identity)&quot;" Condition="'$(_targetOS)' == 'win' and '@(AdditionalNativeLibraryDirectories->Count())' &gt; 0" />
       <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(_IsApplePlatform)' == 'true' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="-Wl,--version-script=$(ExportsFile)" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and $(ExportsFile) != ''" />
+      <CustomLinkerArg Include="-Wl,--export-dynamic" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(IlcExportUnmanagedEntrypoints)' == 'true' and '$(NativeLib)' == ''" />
       <CustomLinkerArg Condition="Exists('$(_Win32ResFile)')" Include="&quot;$(_Win32ResFile)&quot;" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>
     <ItemGroup Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'">
       <CustomLinkerArg Include="-Wl,--discard-all" />
-      <CustomLinkerArg Include="-Wl,--gc-sections" Condition="'$(UseLLVMLinker)' != 'true'" />
+      <CustomLinkerArg Include="-Wl,--gc-sections" Condition="'$(LinkerFlavor)' == '' or '$(LinkerFlavor)' == 'bfd'" />
     </ItemGroup>
     <ItemGroup>
       <CustomLibArg Include="-crs &quot;$(NativeBinary)&quot;" Condition="'$(_targetOS)' != 'win'" />

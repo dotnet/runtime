@@ -1,6 +1,8 @@
 <Project>
 
   <PropertyGroup>
+    <!-- NoTargets SDK shouldn't copy files into the intermediate/output directory. -->
+    <SkipCopyFilesMarkedCopyLocal>true</SkipCopyFilesMarkedCopyLocal>
     <!-- NoTargets SDK needs a TFM set. Set a default if the project doesn't multi target. -->
     <TargetFramework Condition="'$(TargetFramework)' == '' and '$(TargetFrameworks)' == ''">$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>

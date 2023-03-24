@@ -1694,6 +1694,42 @@ MethodTableBuilder::BuildMethodTableThrowing(
         &pByValueClassCache, bmtMFDescs, bmtFP,
         &totalDeclaredFieldSize);
 
+    if (IsValueClass())
+    {
+        const void* pVal;                  // The custom value.
+        ULONG       cbVal;                 // Size of the custom value.
+        HRESULT hr = GetCustomAttribute(bmtInternal->pType->GetTypeDefToken(),
+            WellKnownAttribute::InlineArrayAttribute,
+            &pVal, &cbVal);
+
+        if (hr != S_FALSE)
+        {
+            if (bmtEnumFields->dwNumInstanceFields != 1)
+            {
+                BuildMethodTableThrowException(IDS_CLASSLOAD_INLINE_ARRAY_FIELD_COUNT);
+            }
+
+            if (cbVal >= (sizeof(INT32) + 2))
+            {
+                INT32 repeat = GET_UNALIGNED_VAL32((byte*)pVal + 2);
+                if (repeat > 0)
+                {
+                    bmtFP->NumInlineArrayElements = repeat;
+                    GetHalfBakedClass()->SetIsInlineArray();
+                }
+                else
+                {
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_INLINE_ARRAY_LENGTH);
+                }
+
+                if (HasExplicitFieldOffsetLayout())
+                {
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT);
+                }
+            }
+        }
+    }
+
     // Place regular static fields
     PlaceRegularStaticFields();
 
@@ -1712,6 +1748,11 @@ MethodTableBuilder::BuildMethodTableThrowing(
         bmtFP->NumInstanceGCPointerFields = 0;
 
         _ASSERTE(HasLayout());
+
+        if (bmtFP->NumInlineArrayElements != 0)
+        {
+            GetLayoutInfo()->m_cbManagedSize *= bmtFP->NumInlineArrayElements;
+        }
 
         bmtFP->NumInstanceFieldBytes = GetLayoutInfo()->m_cbManagedSize;
 
@@ -1822,8 +1863,8 @@ MethodTableBuilder::BuildMethodTableThrowing(
         // Perform relevant GC calculations for value classes
         HandleGCForValueClasses(pByValueClassCache);
 
-        // GC reqires the series to be sorted.
-        // TODO: fix it so that we emit them in the correct order in the first place.
+    // GC reqires the series to be sorted.
+    // TODO: fix it so that we emit them in the correct order in the first place.
     if (pMT->ContainsPointers())
     {
         CGCDesc* gcDesc = CGCDesc::GetCGCDescFromMT(pMT);
@@ -3764,9 +3805,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
         if (!IsFdPublic(dwMemberAttrs))
             SetHasNonPublicFields();
 
-        if (IsFdNotSerialized(dwMemberAttrs))
-            SetCannotBeBlittedByObjectCloner();
-
         IfFailThrow(pInternalImport->GetSigOfFieldDef(bmtMetaData->pFields[i], &cMemberSignature, &pMemberSignature));
         // Signature validation
         IfFailThrow(validateTokenSig(bmtMetaData->pFields[i],pMemberSignature,cMemberSignature,dwMemberAttrs,pInternalImport));
@@ -3956,8 +3994,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 if (!fIsStatic)
                 {
                     SetHasFieldsWhichMustBeInited();
-                    if (ElementType != ELEMENT_TYPE_STRING)
-                        SetCannotBeBlittedByObjectCloner();
                 }
                 else
                 {   // EnumerateFieldDescs already counted the total number of static vs. instance
@@ -8006,6 +8042,8 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
         FieldDesc *pFieldDescList = GetHalfBakedClass()->GetFieldDescList();
         DWORD   dwCumulativeInstanceFieldPos;
 
+        bool isAllGCPointers = true;
+
         // Instance fields start right after the parent
         if (HasParent())
         {
@@ -8021,6 +8059,11 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
             else
             {
                 dwCumulativeInstanceFieldPos = pParentMT->GetNumInstanceFieldBytes();
+            }
+
+            if (pParentMT->GetNumInstanceFields() != 0 && !pParentMT->IsAllGCPointers())
+            {
+                isAllGCPointers = false;
             }
         }
         else
@@ -8264,6 +8307,11 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                     // Add pointer series for by-value classes
                     dwNumGCPointerSeries += (DWORD)CGCDesc::GetCGCDescFromMT(pByValueMT)->GetNumSeries();
                 }
+
+                if (!pByValueMT->ContainsPointers() || !pByValueMT->IsAllGCPointers())
+                {
+                    isAllGCPointers = false;
+                }
             }
             else
             {
@@ -8271,6 +8319,11 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
                 // This does not account for types that are marked IsAlign8Candidate due to 8-byte fields
                 // but that is explicitly handled when we calculate the final alignment for the type.
                 largestAlignmentRequirement = max(largestAlignmentRequirement, TARGET_POINTER_SIZE);
+
+                if (!pFieldDescList[i].IsObjRef())
+                {
+                    isAllGCPointers = false;
+                }
             }
         }
 
@@ -8279,14 +8332,17 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
 
         if (IsValueClass())
         {
-                 // Like C++ we enforce that there can be no 0 length structures.
-                // Thus for a value class with no fields, we 'pad' the length to be 1
+            // Like C++ we enforce that there can be no 0 length structures.
+            // Thus for a value class with no fields, we 'pad' the length to be 1
             if (dwNumInstanceFieldBytes == 0)
+            {
                 dwNumInstanceFieldBytes = 1;
+                isAllGCPointers = false;
+            }
 
-                // The JITs like to copy full machine words,
-                //  so if the size is bigger than a void* round it up to minAlign
-                // and if the size is smaller than void* round it up to next power of two
+            // The JITs like to copy full machine words,
+            //  so if the size is bigger than a void* round it up to minAlign
+            // and if the size is smaller than void* round it up to next power of two
             unsigned minAlign;
 
 #ifdef FEATURE_64BIT_ALIGNMENT
@@ -8316,6 +8372,31 @@ VOID    MethodTableBuilder::PlaceInstanceFields(MethodTable ** pByValueClassCach
 
         if (dwNumInstanceFieldBytes > FIELD_OFFSET_LAST_REAL_OFFSET) {
             BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
+        }
+
+        if (bmtFP->NumInlineArrayElements > 1)
+        {
+            INT64 extendedSize = (INT64)dwNumInstanceFieldBytes * (INT64)bmtFP->NumInlineArrayElements;
+            // limit the max size of array instance to 1MiB
+            const INT64 maxSize = 1024 * 1024;
+            if (extendedSize > maxSize)
+            {
+                BuildMethodTableThrowException(IDS_CLASSLOAD_FIELDTOOLARGE);
+            }
+
+            dwNumInstanceFieldBytes = (DWORD)extendedSize;
+
+            if (pFieldDescList[0].IsByValue())
+            {
+                dwNumGCPointerSeries *= bmtFP->NumInlineArrayElements;
+            }
+        }
+
+        bmtFP->fIsAllGCPointers = isAllGCPointers && dwNumGCPointerSeries;
+        if (bmtFP->fIsAllGCPointers)
+        {
+            // we can use optimized form of GCDesc taking one serie
+            dwNumGCPointerSeries = 1;
         }
 
         bmtFP->NumInstanceFieldBytes = dwNumInstanceFieldBytes;
@@ -8969,6 +9050,10 @@ void MethodTableBuilder::FindPointerSeriesExplicit(UINT instanceSliceSize,
 
     bmtFP->NumGCPointerSeries = bmtParent->NumParentPointerSeries + bmtGCSeries->numSeries;
 
+    // since the GC series are computed from a ref map,
+    // in most cases where optimized GCDesc could be used, that is what we will compute anyways,
+    // so we will not try optimizing this case.
+    bmtFP->fIsAllGCPointers = false;
 }
 
 //*******************************************************************************
@@ -11482,8 +11567,27 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
 
         pMT->SetContainsPointers();
 
-        // Copy the pointer series map from the parent
         CGCDesc::Init( (PVOID) pMT, bmtFP->NumGCPointerSeries );
+
+        // special case when all instance fields are objects - we can encode that as one serie.
+        if (bmtFP->fIsAllGCPointers)
+        {
+            _ASSERTE(bmtFP->NumGCPointerSeries == 1);
+
+            CGCDescSeries* pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries();
+
+            // the data is right after the method table ptr
+            int offsetToData = TARGET_POINTER_SIZE;
+
+            // Set the size as the negative of the BaseSize (the GC always adds the total
+            // size of the object, so what you end up with is the size of the data portion of the instance)
+            pSeries->SetSeriesSize(-(SSIZE_T)(offsetToData + TARGET_POINTER_SIZE));
+            pSeries->SetSeriesOffset(offsetToData);
+
+            return;
+        }
+
+        // Copy the pointer series map from the parent
         if (bmtParent->NumParentPointerSeries != 0)
         {
             size_t ParentGCSize = CGCDesc::ComputeSize(bmtParent->NumParentPointerSeries);
@@ -11494,12 +11598,18 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
 
         }
 
-        // Build the pointer series map for this pointers in this instance
+        DWORD repeat = 1;
+        if (bmtFP->NumInlineArrayElements > 1)
+        {
+            repeat = bmtFP->NumInlineArrayElements;
+        }
+
+        // Build the pointer series map for pointers in this instance
         pSeries = ((CGCDesc*)pMT)->GetLowestSeries();
         if (bmtFP->NumInstanceGCPointerFields)
         {
             // See gcdesc.h for an explanation of why we adjust by subtracting BaseSize
-            pSeries->SetSeriesSize( (size_t) (bmtFP->NumInstanceGCPointerFields * TARGET_POINTER_SIZE) - (size_t) pMT->GetBaseSize());
+            pSeries->SetSeriesSize((size_t)(bmtFP->NumInstanceGCPointerFields * repeat * TARGET_POINTER_SIZE) - (size_t)pMT->GetBaseSize());
             pSeries->SetSeriesOffset(bmtFP->GCPointerFieldStart + OBJECT_SIZE);
             pSeries++;
         }
@@ -11509,44 +11619,53 @@ VOID MethodTableBuilder::HandleGCForValueClasses(MethodTable ** pByValueClassCac
         {
             if (pFieldDescList[i].IsByValue())
             {
-                MethodTable *pByValueMT = pByValueClassCache[i];
+                MethodTable* pByValueMT = pByValueClassCache[i];
 
                 if (pByValueMT->ContainsPointers())
                 {
                     // Offset of the by value class in the class we are building, does NOT include Object
                     DWORD       dwCurrentOffset = pFieldDescList[i].GetOffset_NoLogging();
+                    DWORD       dwElementSize = pByValueMT->GetBaseSize() - OBJECT_BASESIZE;
 
-                    // The by value class may have more than one pointer series
-                    CGCDescSeries * pByValueSeries = CGCDesc::GetCGCDescFromMT(pByValueMT)->GetLowestSeries();
-                    SIZE_T dwNumByValueSeries = CGCDesc::GetCGCDescFromMT(pByValueMT)->GetNumSeries();
-
-                    for (SIZE_T j = 0; j < dwNumByValueSeries; j++)
+                    // if we have an inline array, we will have only one formal instance field,
+                    // but will have to replicate the layout "repeat" times.
+                    for (DWORD r = 0; r < repeat; r++)
                     {
-                        size_t cbSeriesSize;
-                        size_t cbSeriesOffset;
+                        // The by value class may have more than one pointer series
+                        CGCDescSeries* pByValueSeries = CGCDesc::GetCGCDescFromMT(pByValueMT)->GetLowestSeries();
+                        SIZE_T dwNumByValueSeries = CGCDesc::GetCGCDescFromMT(pByValueMT)->GetNumSeries();
 
-                        _ASSERTE(pSeries <= CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries());
+                        for (SIZE_T j = 0; j < dwNumByValueSeries; j++)
+                        {
+                            size_t cbSeriesSize;
+                            size_t cbSeriesOffset;
 
-                        cbSeriesSize = pByValueSeries->GetSeriesSize();
+                            _ASSERTE(pSeries <= CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries());
 
-                        // Add back the base size of the by value class, since it's being transplanted to this class
-                        cbSeriesSize += pByValueMT->GetBaseSize();
+                            cbSeriesSize = pByValueSeries->GetSeriesSize();
 
-                        // Subtract the base size of the class we're building
-                        cbSeriesSize -= pMT->GetBaseSize();
+                            // Add back the base size of the by value class, since it's being transplanted to this class
+                            cbSeriesSize += pByValueMT->GetBaseSize();
 
-                        // Set current series we're building
-                        pSeries->SetSeriesSize(cbSeriesSize);
+                            // Subtract the base size of the class we're building
+                            cbSeriesSize -= pMT->GetBaseSize();
 
-                        // Get offset into the value class of the first pointer field (includes a +Object)
-                        cbSeriesOffset = pByValueSeries->GetSeriesOffset();
+                            // Set current series we're building
+                            pSeries->SetSeriesSize(cbSeriesSize);
 
-                        // Add it to the offset of the by value class in our class
-                        cbSeriesOffset += dwCurrentOffset;
+                            // Get offset into the value class of the first pointer field (includes a +Object)
+                            cbSeriesOffset = pByValueSeries->GetSeriesOffset();
 
-                        pSeries->SetSeriesOffset(cbSeriesOffset); // Offset of field
-                        pSeries++;
-                        pByValueSeries++;
+                            // Add element N offset
+                            cbSeriesOffset += r * dwElementSize;
+
+                            // Add it to the offset of the by value class in our class
+                            cbSeriesOffset += dwCurrentOffset;
+
+                            pSeries->SetSeriesOffset(cbSeriesOffset); // Offset of field
+                            pSeries++;
+                            pByValueSeries++;
+                        }
                     }
                 }
             }

@@ -73,8 +73,8 @@
 #define JIT_IS_ALIGNED
 #endif
 
-// ALLOW_SXS_JIT enables AltJit support for JIT-ing, via COMPlus_AltJit / COMPlus_AltJitName.
-// ALLOW_SXS_JIT_NGEN enables AltJit support for NGEN, via COMPlus_AltJitNgen / COMPlus_AltJitName.
+// ALLOW_SXS_JIT enables AltJit support for JIT-ing, via DOTNET_AltJit / DOTNET_AltJitName.
+// ALLOW_SXS_JIT_NGEN enables AltJit support for NGEN, via DOTNET_AltJitNgen / DOTNET_AltJitName.
 // Note that if ALLOW_SXS_JIT_NGEN is defined, then ALLOW_SXS_JIT must be defined.
 #define ALLOW_SXS_JIT
 #define ALLOW_SXS_JIT_NGEN
@@ -133,7 +133,7 @@
 #define FEATURE_JIT_TIMER
 
 // This feature in RyuJIT supersedes the FEATURE_JIT_TIMER. In addition to supporting the time log file, this
-// feature also supports using COMPlus_JitTimeLogCsv=a.csv, which will dump method-level and phase-level timing
+// feature also supports using DOTNET_JitTimeLogCsv=a.csv, which will dump method-level and phase-level timing
 // statistics. Also see comments on FEATURE_JIT_TIMER.
 #define FEATURE_JIT_METHOD_PERF
 
@@ -145,7 +145,7 @@
 #endif
 
 // Enables a mode in which GC is completely conservative in stacks and registers: all stack slots and registers
-// are treated as potential pinned interior pointers. When enabled, the runtime flag COMPLUS_GCCONSERVATIVE
+// are treated as potential pinned interior pointers. When enabled, the runtime flag DOTNET_GCCONSERVATIVE
 // determines dynamically whether GC is conservative. Note that appdomain unload, LCG and unloadable assemblies
 // do not work reliably with conservative GC.
 #define FEATURE_CONSERVATIVE_GC 1

@@ -130,6 +130,7 @@ RegisterOrder IsOptimizableLdrStrWithPair(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
 bool ReplaceLdrStrWithPairInstr(
     instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
+bool IsOptimizableLdrToMov(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
 
 // Try to optimize a Ldr or Str with an alternative instruction.
 inline bool OptimizeLdrStr(instruction ins,
@@ -156,11 +157,21 @@ inline bool OptimizeLdrStr(instruction ins,
         return true;
     }
 
+    // Register 2 needs conversion to unencoded value for following optimisation checks.
+    reg2 = encodingZRtoSP(reg2);
+
     // If the previous instruction was a matching load/store, then try to replace it instead of emitting.
     // Don't do this if either instruction had a local variable.
     if ((emitLastIns->idIns() == ins) && !localVar && !emitLastIns->idIsLclVar() &&
         ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt))
     {
+        return true;
+    }
+
+    // If we have a second LDR instruction from the same source, then try to replace it with a MOV.
+    if (IsOptimizableLdrToMov(ins, reg1, reg2, imm, size, fmt))
+    {
+        emitIns_Mov(INS_mov, reg1Attr, reg1, emitLastIns->idReg1(), true);
         return true;
     }
 

@@ -8,4 +8,9 @@
   <ItemGroup>
     <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <RunAnalyzers>true</RunAnalyzers>
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+  </PropertyGroup>
 </Project>

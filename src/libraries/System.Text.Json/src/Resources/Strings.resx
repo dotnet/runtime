@@ -246,8 +246,11 @@
   <data name="JsonElementHasWrongType" xml:space="preserve">
     <value>The requested operation requires an element of type '{0}', but the target element has type '{1}'.</value>
   </data>
-  <data name="TypeInfoResolverImmutable" xml:space="preserve">
+  <data name="DefaultTypeInfoResolverImmutable" xml:space="preserve">
     <value>Cannot add callbacks to the 'Modifiers' property after the resolver has been used for the first time.</value>
+  </data>
+  <data name="TypeInfoResolverChainImmutable" xml:space="preserve">
+    <value>The specified IJsonTypeInfoResolver chain cannot be modified.</value>
   </data>
   <data name="TypeInfoImmutable" xml:space="preserve">
     <value>This JsonTypeInfo instance is marked read-only or has already been used in serialization or deserialization.</value>
@@ -338,6 +341,9 @@
   </data>
   <data name="SerializerOptionsReadOnly" xml:space="preserve">
     <value>This JsonSerializerOptions instance is read-only or has already been used in serialization or deserialization.</value>
+  </data>
+  <data name="SerializerOptions_InvalidChainedResolver" xml:space="preserve">
+    <value>Cannot insert the values of 'TypeInfoResolver' or 'TypeInfoResolverChain' to 'TypeInfoResolverChain'.</value>
   </data>
   <data name="StreamNotWritable" xml:space="preserve">
     <value>Stream is not writable.</value>
@@ -588,7 +594,10 @@
     <value>The generic type of the converter for property '{0}.{1}' must match with the specified converter type '{2}'. The converter must not be 'null'.</value>
   </data>
   <data name="NoMetadataForType" xml:space="preserve">
-    <value>Metadata for type '{0}' was not provided by TypeInfoResolver of type '{1}'. If using source generation, ensure that all root types passed to the serializer have been indicated with 'JsonSerializableAttribute', along with any types that might be serialized polymorphically.</value>
+    <value>JsonTypeInfo metadata for type '{0}' was not provided by TypeInfoResolver of type '{1}'. If using source generation, ensure that all root types passed to the serializer have been annotated with 'JsonSerializableAttribute', along with any types that might be serialized polymorphically.</value>
+  </data>
+  <data name="AmbiguousMetadataForType" xml:space="preserve">
+    <value>Ambiguous matches when resolving JsonTypeInfo metadata for type '{0}': '{1}', '{2}'. Consider either explicitly providing metadata for the type or removing one of its interface implementations.</value>
   </data>
   <data name="CollectionIsReadOnly" xml:space="preserve">
     <value>Collection is read-only.</value>

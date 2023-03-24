@@ -151,7 +151,6 @@ static const Entry s_QCall[] =
     DllImportEntry(TypeBuilder_SetConstantValue)
     DllImportEntry(TypeBuilder_DefineCustomAttribute)
     DllImportEntry(MdUtf8String_EqualsCaseInsensitive)
-    DllImportEntry(MdUtf8String_HashCaseInsensitive)
     DllImportEntry(TypeName_ReleaseTypeNameParser)
     DllImportEntry(TypeName_CreateTypeNameParser)
     DllImportEntry(TypeName_GetNames)

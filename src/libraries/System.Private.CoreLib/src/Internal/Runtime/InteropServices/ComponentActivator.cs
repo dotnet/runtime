@@ -140,26 +140,34 @@ namespace Internal.Runtime.InteropServices
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "The same feature switch applies to GetFunctionPointer and this function. We rely on the warning from GetFunctionPointer.")]
-            static void LoadAssemblyLocal(string assemblyPath)
+            static void LoadAssemblyLocal(string assemblyPath) => LoadAssemblyImpl(assemblyPath);
+        }
+
+        [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
+        private static void LoadAssemblyImpl(string assemblyPath)
+        {
+            lock(s_loadedInDefaultContext)
             {
-                lock(s_loadedInDefaultContext)
-                {
-                    if (s_loadedInDefaultContext.Contains(assemblyPath))
-                        return;
+                if (s_loadedInDefaultContext.Contains(assemblyPath))
+                    return;
 
-                    var resolver = new AssemblyDependencyResolver(assemblyPath);
-                    AssemblyLoadContext.Default.Resolving +=
-                        (context, assemblyName) =>
-                        {
-                            string? assemblyPath = resolver.ResolveAssemblyToPath(assemblyName);
-                            return assemblyPath != null
-                                ? context.LoadFromAssemblyPath(assemblyPath)
-                                : null;
-                        };
+                var resolver = new AssemblyDependencyResolver(assemblyPath);
+                AssemblyLoadContext.Default.Resolving +=
+                    (context, assemblyName) =>
+                    {
+                        string? assemblyPath = resolver.ResolveAssemblyToPath(assemblyName);
+                        return assemblyPath != null
+                            ? context.LoadFromAssemblyPath(assemblyPath)
+                            : null;
+                    };
 
-                    AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyPath);
-                    s_loadedInDefaultContext.Add(assemblyPath);
-                }
+                AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyPath);
+                s_loadedInDefaultContext.Add(assemblyPath);
             }
         }
 

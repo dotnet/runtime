@@ -1,0 +1,32 @@
+name: CI Known Issue Report
+description: Create a known issue directly
+labels: ["blocking-clean-ci","Known Build Error"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to report issues currently affecting PR stability, be it build or test failures.
+  - type: textarea
+    id: background
+    attributes:
+      label: Error Blob
+      description: Please identify a clear error string that can help identify future instances of this issue. For more information on how to fill this check https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/KnownIssues.md#filling-out-known-issues-json-blob
+      value: |
+        ```json
+        {
+          "ErrorMessage": "",
+          "BuildRetry": false,
+          "ErrorPattern": "",
+          "ExcludeConsoleLog": true
+        }
+        ```
+    validations:
+      required: true
+  - type: textarea
+    id: repro-steps
+    attributes:
+      label: Reproduction Steps
+      description: |
+        If possible describe where you observe the issue with links and any other relevant details.
+    validations:
+      required: false

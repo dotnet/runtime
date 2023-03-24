@@ -8,9 +8,10 @@ using Internal.TypeSystem;
 
 using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysisFramework;
-
-using ILLink.Shared.TrimAnalysis;
 using ILCompiler.Logging;
+
+using ILLink.Shared;
+using ILLink.Shared.TrimAnalysis;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -26,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public static void GetDependencies(ref DependencyList dependencies, NodeFactory factory, FlowAnnotations flowAnnotations, TypeDesc type)
         {
-            bool foundGenericParameterAnnotation = false;
+            bool needsDataflowAnalysis = false;
 
             type = type.GetTypeDefinition();
 
@@ -34,14 +35,18 @@ namespace ILCompiler.DependencyAnalysis
             {
                 if (type.HasBaseType)
                 {
-                    foundGenericParameterAnnotation |= GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, type.BaseType);
+                    if (type.BaseType.DoesTypeRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) &&
+                        !type.DoesTypeRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _))
+                        needsDataflowAnalysis = true;
+
+                    needsDataflowAnalysis |= GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, type.BaseType);
                 }
 
                 if (type is MetadataType metadataType)
                 {
                     foreach (var interfaceType in metadataType.ExplicitlyImplementedInterfaces)
                     {
-                        foundGenericParameterAnnotation |= GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, interfaceType);
+                        needsDataflowAnalysis |= GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, interfaceType);
                     }
                 }
             }
@@ -51,10 +56,10 @@ namespace ILCompiler.DependencyAnalysis
                 // This likely won't compile either, so we don't care about missing dependencies.
             }
 
-            if (foundGenericParameterAnnotation)
+            if (needsDataflowAnalysis)
             {
                 dependencies ??= new DependencyList();
-                dependencies.Add(factory.DataflowAnalyzedTypeDefinition(type), "Generic parameter dataflow");
+                dependencies.Add(factory.DataflowAnalyzedTypeDefinition(type), "Dataflow for type definition");
             }
         }
 
@@ -64,6 +69,15 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_typeDefinition.HasBaseType)
             {
+                if (_typeDefinition.BaseType.DoesTypeRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out var requiresAttribute) &&
+                    !_typeDefinition.DoesTypeRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _))
+                {
+                    UsageBasedMetadataManager metadataManager = (UsageBasedMetadataManager)factory.MetadataManager;
+                    string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresAttribute.Value));
+                    string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresAttribute.Value));
+                    metadataManager.Logger.LogWarning(new MessageOrigin(_typeDefinition), DiagnosticId.RequiresUnreferencedCodeOnBaseClass, _typeDefinition.GetDisplayName(), _typeDefinition.BaseType.GetDisplayName(), arg1, arg2);
+                }
+
                 GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_typeDefinition), _typeDefinition.BaseType, _typeDefinition);
             }
 

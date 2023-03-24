@@ -218,7 +218,7 @@ namespace System.Net
     {
         System.Net.NetworkCredential? GetCredential(string host, int port, string authenticationType);
     }
-    public partial class IPAddress
+    public partial class IPAddress : ISpanFormattable, ISpanParsable<IPAddress>
     {
         public static readonly System.Net.IPAddress Any;
         public static readonly System.Net.IPAddress Broadcast;
@@ -256,10 +256,16 @@ namespace System.Net
         public static long NetworkToHostOrder(long network) { throw null; }
         public static System.Net.IPAddress Parse(System.ReadOnlySpan<char> ipSpan) { throw null; }
         public static System.Net.IPAddress Parse(string ipString) { throw null; }
+        static IPAddress ISpanParsable<IPAddress>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) { throw null; }
+        static IPAddress IParsable<IPAddress>.Parse(string s, IFormatProvider? provider) { throw null; }
         public override string ToString() { throw null; }
+        string IFormattable.ToString(string? format, IFormatProvider? formatProvider) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten) { throw null; }
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> ipSpan, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPAddress? address) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? ipString, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPAddress? address) { throw null; }
+        static bool ISpanParsable<IPAddress>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out IPAddress result) { throw null; }
+        static bool IParsable<IPAddress>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out IPAddress? result) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public partial class IPEndPoint : System.Net.EndPoint

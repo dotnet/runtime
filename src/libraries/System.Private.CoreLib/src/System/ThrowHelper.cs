@@ -962,6 +962,8 @@ namespace System
                     return SR.ArgumentOutOfRange_Year;
                 case ExceptionResource.Arg_ArrayPlusOffTooSmall:
                     return SR.Arg_ArrayPlusOffTooSmall;
+                case ExceptionResource.Arg_ByteArrayTooSmallForValue:
+                    return SR.Arg_ByteArrayTooSmallForValue;
                 case ExceptionResource.NotSupported_ReadOnlyCollection:
                     return SR.NotSupported_ReadOnlyCollection;
                 case ExceptionResource.Arg_RankMultiDimNotSupported:
@@ -1090,6 +1092,8 @@ namespace System
                     return SR.Argument_AlignmentMustBePow2;
                 case ExceptionResource.ArgumentOutOfRange_NotGreaterThanBufferLength:
                     return SR.ArgumentOutOfRange_NotGreaterThanBufferLength;
+                case ExceptionResource.InvalidOperation_SpanOverlappedOperation:
+                    return SR.InvalidOperation_SpanOverlappedOperation;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1215,6 +1219,7 @@ namespace System
         ArgumentOutOfRange_Count,
         ArgumentOutOfRange_Year,
         Arg_ArrayPlusOffTooSmall,
+        Arg_ByteArrayTooSmallForValue,
         NotSupported_ReadOnlyCollection,
         Arg_RankMultiDimNotSupported,
         Arg_NonZeroLowerBound,
@@ -1279,5 +1284,6 @@ namespace System
         Argument_InvalidFlag,
         CancellationTokenSource_Disposed,
         Argument_AlignmentMustBePow2,
+        InvalidOperation_SpanOverlappedOperation,
     }
 }

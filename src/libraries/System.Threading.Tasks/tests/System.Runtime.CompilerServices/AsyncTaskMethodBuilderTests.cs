@@ -662,6 +662,19 @@ namespace System.Threading.Tasks.Tests
             }).Dispose();
         }
 
+        [Fact]
+        public void AsyncTaskMethodBuilder_NullStateEvenAfterSuspend()
+        {
+            Task t = AwaitSomething();
+            Assert.Null(t.AsyncState);
+
+            static async Task AwaitSomething()
+            {
+                Assert.NotNull(ExecutionContext.Capture());
+                await new TaskCompletionSource().Task;
+            }
+        }
+
         #region Helper Methods / Classes
 
         [MethodImpl(MethodImplOptions.NoInlining)]

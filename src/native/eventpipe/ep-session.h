@@ -110,7 +110,7 @@ ep_session_enable_rundown (EventPipeSession *session);
 void
 ep_session_execute_rundown (
 	EventPipeSession *session,
-	ep_rt_execution_checkpoint_array_t *execution_checkpoints);
+	dn_vector_ptr_t *execution_checkpoints);
 
 // Force all in-progress writes to either finish or cancel
 // This is required to ensure we can safely flush and delete the buffers

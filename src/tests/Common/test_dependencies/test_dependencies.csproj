@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Tools.RuntimeClient" Version="$(MicrosoftDiagnosticsToolsRuntimeClientVersion)" />
+    <PackageReference Include="xunit.analyzers" Version="$(XUnitAnalyzersVersion)" />
   </ItemGroup>
 
   <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />

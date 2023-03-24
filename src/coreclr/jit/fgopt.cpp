@@ -363,13 +363,16 @@ void Compiler::fgComputeEnterBlocksSet()
     assert(fgFirstBB->bbNum == 1);
 
     /* Also 'or' in the handler basic blocks */
-    for (EHblkDsc* const HBtab : EHClauses(this))
+    if (!compIsForInlining())
     {
-        if (HBtab->HasFilter())
+        for (EHblkDsc* const HBtab : EHClauses(this))
         {
-            BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdFilter->bbNum);
+            if (HBtab->HasFilter())
+            {
+                BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdFilter->bbNum);
+            }
+            BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdHndBeg->bbNum);
         }
-        BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdHndBeg->bbNum);
     }
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
@@ -789,6 +792,20 @@ void Compiler::fgDfsReversePostorder()
         }
     }
 
+    // If there are still unvisited blocks (say isolated cycles), visit them too.
+    //
+    if (preorderIndex != fgBBcount + 1)
+    {
+        JITDUMP("DFS: flow graph has some isolated cycles, doing extra traversals\n");
+        for (BasicBlock* const block : Blocks())
+        {
+            if (!BlockSetOps::IsMember(this, visited, block->bbNum))
+            {
+                fgDfsReversePostorderHelper(block, visited, preorderIndex, postorderIndex);
+            }
+        }
+    }
+
     // After the DFS reverse postorder is completed, we must have visited all the basic blocks.
     noway_assert(preorderIndex == fgBBcount + 1);
     noway_assert(postorderIndex == fgBBcount + 1);
@@ -846,7 +863,7 @@ BlockSet_ValRet_T Compiler::fgDomFindStartNodes()
 }
 
 //------------------------------------------------------------------------
-// fgDfsReversevPostorderHelper: Helper to assign post-order numbers to blocks.
+// fgDfsReversePostorderHelper: Helper to assign post-order numbers to blocks.
 //
 // Arguments:
 //    block   - The starting entry block
@@ -866,64 +883,79 @@ void Compiler::fgDfsReversePostorderHelper(BasicBlock* block,
     // Assume we haven't visited this node yet (callers ensure this).
     assert(!BlockSetOps::IsMember(this, visited, block->bbNum));
 
+    struct DfsBlockEntry
+    {
+    public:
+        DfsBlockEntry(Compiler* comp, BasicBlock* block) : m_block(block), m_nSucc(block->NumSucc(comp)), m_iter(0)
+        {
+        }
+
+        BasicBlock* getBlock()
+        {
+            return m_block;
+        }
+
+        BasicBlock* getNextSucc(Compiler* comp)
+        {
+            if (m_iter >= m_nSucc)
+            {
+                return nullptr;
+            }
+            return m_block->GetSucc(m_iter++, comp);
+        }
+
+    private:
+        BasicBlock* m_block;
+        unsigned    m_nSucc;
+        unsigned    m_iter;
+    };
+
     // Allocate a local stack to hold the DFS traversal actions necessary
     // to compute pre/post-ordering of the control flowgraph.
     ArrayStack<DfsBlockEntry> stack(getAllocator(CMK_ArrayStack));
 
-    // Push the first block on the stack to seed the traversal.
-    stack.Push(DfsBlockEntry(DSS_Pre, block));
-
-    // Flag the node we just visited to avoid backtracking.
+    // Push the first block on the stack to seed the traversal, mark it visited to avoid backtracking,
+    // and give it a preorder number.
+    stack.Emplace(this, block);
     BlockSetOps::AddElemD(this, visited, block->bbNum);
+    block->bbPreorderNum = preorderIndex++;
 
     // The search is terminated once all the actions have been processed.
     while (!stack.Empty())
     {
-        DfsBlockEntry current      = stack.Pop();
-        BasicBlock*   currentBlock = current.dfsBlock;
+        DfsBlockEntry&    current = stack.TopRef();
+        BasicBlock* const succ    = current.getNextSucc(this);
 
-        if (current.dfsStackState == DSS_Pre)
+        if (succ == nullptr)
         {
-            // This is a pre-visit that corresponds to the first time the
-            // node is encountered in the spanning tree and receives pre-order
-            // numberings. By pushing the post-action on the stack here we
-            // are guaranteed to only process it after all of its successors
-            // pre and post actions are processed.
-            stack.Push(DfsBlockEntry(DSS_Post, currentBlock));
-            currentBlock->bbPreorderNum = preorderIndex;
-            preorderIndex++;
+            BasicBlock* const block = current.getBlock();
 
-            for (BasicBlock* const succ : currentBlock->Succs(this))
-            {
-                // If this is a node we haven't seen before, go ahead and process
-                if (!BlockSetOps::IsMember(this, visited, succ->bbNum))
-                {
-                    // Push a pre-visit action for this successor onto the stack and
-                    // mark it as visited in case this block has multiple successors
-                    // to the same node (multi-graph).
-                    stack.Push(DfsBlockEntry(DSS_Pre, succ));
-                    BlockSetOps::AddElemD(this, visited, succ->bbNum);
-                }
-            }
-        }
-        else
-        {
-            // This is a post-visit that corresponds to the last time the
-            // node is visited in the spanning tree and only happens after
-            // all descendents in the spanning tree have had pre and post
-            // actions applied.
+            // Final visit to this node
+            //
+            block->bbPostorderNum = postorderIndex;
 
-            assert(current.dfsStackState == DSS_Post);
-            currentBlock->bbPostorderNum = postorderIndex;
-
-            // Compute the index of this in the reverse postorder and
+            // Compute the index of block in the reverse postorder and
             // update the reverse postorder accordingly.
             //
             assert(postorderIndex <= fgBBcount);
             unsigned reversePostorderIndex              = fgBBcount - postorderIndex + 1;
-            fgBBReversePostorder[reversePostorderIndex] = currentBlock;
+            fgBBReversePostorder[reversePostorderIndex] = block;
             postorderIndex++;
+
+            stack.Pop();
+            continue;
         }
+
+        if (BlockSetOps::IsMember(this, visited, succ->bbNum))
+        {
+            // Already visited this succ
+            //
+            continue;
+        }
+
+        stack.Emplace(this, succ);
+        BlockSetOps::AddElemD(this, visited, succ->bbNum);
+        succ->bbPreorderNum = preorderIndex++;
     }
 }
 
@@ -2192,34 +2224,42 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
     }
 
-    // If either block or bNext has a profile weight
+    // If bNext is BBJ_THROW, block will become run rarely.
+    //
+    // Otherwise, if either block or bNext has a profile weight
     // or if both block and bNext have non-zero weights
     // then we will use the max weight for the block.
     //
-    const bool hasProfileWeight = block->hasProfileWeight() || bNext->hasProfileWeight();
-    const bool hasNonZeroWeight = (block->bbWeight > BB_ZERO_WEIGHT) || (bNext->bbWeight > BB_ZERO_WEIGHT);
-
-    if (hasProfileWeight || hasNonZeroWeight)
+    if (bNext->bbJumpKind == BBJ_THROW)
     {
-        weight_t const newWeight = max(block->bbWeight, bNext->bbWeight);
-
-        if (hasProfileWeight)
-        {
-            block->setBBProfileWeight(newWeight);
-        }
-        else
-        {
-            assert(newWeight != BB_ZERO_WEIGHT);
-            block->bbWeight = newWeight;
-            block->bbFlags &= ~BBF_RUN_RARELY;
-        }
+        block->bbSetRunRarely();
     }
-    // otherwise if either block has a zero weight we select the zero weight
     else
     {
-        noway_assert((block->bbWeight == BB_ZERO_WEIGHT) || (bNext->bbWeight == BB_ZERO_WEIGHT));
-        block->bbWeight = BB_ZERO_WEIGHT;
-        block->bbFlags |= BBF_RUN_RARELY; // Set the RarelyRun flag
+        const bool hasProfileWeight = block->hasProfileWeight() || bNext->hasProfileWeight();
+        const bool hasNonZeroWeight = (block->bbWeight > BB_ZERO_WEIGHT) || (bNext->bbWeight > BB_ZERO_WEIGHT);
+
+        if (hasProfileWeight || hasNonZeroWeight)
+        {
+            weight_t const newWeight = max(block->bbWeight, bNext->bbWeight);
+
+            if (hasProfileWeight)
+            {
+                block->setBBProfileWeight(newWeight);
+            }
+            else
+            {
+                assert(newWeight != BB_ZERO_WEIGHT);
+                block->bbWeight = newWeight;
+                block->bbFlags &= ~BBF_RUN_RARELY;
+            }
+        }
+        // otherwise if either block has a zero weight we select the zero weight
+        else
+        {
+            noway_assert((block->bbWeight == BB_ZERO_WEIGHT) || (bNext->bbWeight == BB_ZERO_WEIGHT));
+            block->bbSetRunRarely();
+        }
     }
 
     /* set the right links */
@@ -2358,6 +2398,15 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         default:
             noway_assert(!"Unexpected bbJumpKind");
             break;
+    }
+
+    if ((bNext->bbJumpDest != nullptr) && bNext->bbJumpDest->isLoopAlign())
+    {
+        // `bNext` has a backward target to some block which mean bNext is part of a loop.
+        // `block` into which `bNext` is compacted should be updated with its loop number
+        JITDUMP("Updating loop number for " FMT_BB " from " FMT_LP " to " FMT_LP ".\n", block->bbNum,
+                block->bbNatLoopNum, bNext->bbNatLoopNum);
+        block->bbNatLoopNum = bNext->bbNatLoopNum;
     }
 
     if (bNext->isLoopAlign())

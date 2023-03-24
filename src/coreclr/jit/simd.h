@@ -4,38 +4,6 @@
 #ifndef _SIMD_H_
 #define _SIMD_H_
 
-// Underlying hardware information
-// This type is used to control
-// 1. The length of System.Numerics.Vector<T>.
-// 2. Codegen of System.Numerics.Vectors.
-// 3. Codegen of floating-point arithmetics (VEX-encoding or not).
-//
-// Note
-// - Hardware SIMD support is classified to the levels. Do not directly use
-//   InstructionSet (instr.h) for System.Numerics.Vectors.
-// - Values of SIMDLevel have strictly increasing order that each SIMD level
-//   is a superset of the previous levels.
-enum SIMDLevel
-{
-    SIMD_Not_Supported = 0,
-#ifdef TARGET_XARCH
-    // SSE2 - The min bar of SIMD ISA on x86/x64.
-    // Vector<T> length is 128-bit.
-    // Floating-point instructions are legacy SSE encoded.
-    SIMD_SSE2_Supported = 1,
-
-    // SSE4 - RyuJIT may generate SSE3, SSSE3, SSE4.1 and SSE4.2 instructions for certain intrinsics.
-    // Vector<T> length is 128-bit.
-    // Floating-point instructions are legacy SSE encoded.
-    SIMD_SSE4_Supported = 2,
-
-    // AVX2 - Hardware has AVX and AVX2 instruction set.
-    // Vector<T> length is 256-bit and SIMD instructions are VEX-256 encoded.
-    // Floating-point instructions are VEX-128 encoded.
-    SIMD_AVX2_Supported = 3
-#endif
-};
-
 struct simd8_t
 {
     union {
@@ -58,7 +26,31 @@ struct simd8_t
 
     bool operator!=(const simd8_t& other) const
     {
-        return (u64[0] != other.u64[0]);
+        return !(*this == other);
+    }
+
+    static simd8_t AllBitsSet()
+    {
+        simd8_t result;
+
+        result.u64[0] = 0xFFFFFFFFFFFFFFFF;
+
+        return result;
+    }
+
+    bool IsAllBitsSet() const
+    {
+        return *this == AllBitsSet();
+    }
+
+    bool IsZero() const
+    {
+        return *this == Zero();
+    }
+
+    static simd8_t Zero()
+    {
+        return {};
     }
 };
 
@@ -88,7 +80,33 @@ struct simd12_t
 
     bool operator!=(const simd12_t& other) const
     {
-        return (u32[0] != other.u32[0]) || (u32[1] != other.u32[1]) || (u32[2] != other.u32[2]);
+        return !(*this == other);
+    }
+
+    static simd12_t AllBitsSet()
+    {
+        simd12_t result;
+
+        result.u32[0] = 0xFFFFFFFF;
+        result.u32[1] = 0xFFFFFFFF;
+        result.u32[2] = 0xFFFFFFFF;
+
+        return result;
+    }
+
+    bool IsAllBitsSet() const
+    {
+        return *this == AllBitsSet();
+    }
+
+    bool IsZero() const
+    {
+        return *this == Zero();
+    }
+
+    static simd12_t Zero()
+    {
+        return {};
     }
 };
 
@@ -110,15 +128,41 @@ struct simd16_t
 
     bool operator==(const simd16_t& other) const
     {
-        return (u64[0] == other.u64[0]) && (u64[1] == other.u64[1]);
+        return (v64[0] == other.v64[0]) && (v64[1] == other.v64[1]);
     }
 
     bool operator!=(const simd16_t& other) const
     {
-        return (u64[0] != other.u64[0]) || (u64[1] != other.u64[1]);
+        return !(*this == other);
+    }
+
+    static simd16_t AllBitsSet()
+    {
+        simd16_t result;
+
+        result.v64[0] = simd8_t::AllBitsSet();
+        result.v64[1] = simd8_t::AllBitsSet();
+
+        return result;
+    }
+
+    bool IsAllBitsSet() const
+    {
+        return *this == AllBitsSet();
+    }
+
+    bool IsZero() const
+    {
+        return *this == Zero();
+    }
+
+    static simd16_t Zero()
+    {
+        return {};
     }
 };
 
+#if defined(TARGET_XARCH)
 struct simd32_t
 {
     union {
@@ -138,16 +182,98 @@ struct simd32_t
 
     bool operator==(const simd32_t& other) const
     {
-        return (u64[0] == other.u64[0]) && (u64[1] == other.u64[1]) && (u64[2] == other.u64[2]) &&
-               (u64[3] == other.u64[3]);
+        return (v128[0] == other.v128[0]) && (v128[1] == other.v128[1]);
     }
 
     bool operator!=(const simd32_t& other) const
     {
-        return (u64[0] != other.u64[0]) || (u64[1] != other.u64[1]) || (u64[2] != other.u64[2]) ||
-               (u64[3] != other.u64[3]);
+        return !(*this == other);
+    }
+
+    static simd32_t AllBitsSet()
+    {
+        simd32_t result;
+
+        result.v128[0] = simd16_t::AllBitsSet();
+        result.v128[1] = simd16_t::AllBitsSet();
+
+        return result;
+    }
+
+    bool IsAllBitsSet() const
+    {
+        return *this == AllBitsSet();
+    }
+
+    bool IsZero() const
+    {
+        return *this == Zero();
+    }
+
+    static simd32_t Zero()
+    {
+        return {};
     }
 };
+
+struct simd64_t
+{
+    union {
+        float    f32[16];
+        double   f64[8];
+        int8_t   i8[64];
+        int16_t  i16[32];
+        int32_t  i32[16];
+        int64_t  i64[8];
+        uint8_t  u8[64];
+        uint16_t u16[32];
+        uint32_t u32[16];
+        uint64_t u64[8];
+        simd8_t  v64[8];
+        simd16_t v128[4];
+        simd32_t v256[2];
+    };
+
+    bool operator==(const simd64_t& other) const
+    {
+        return (v256[0] == other.v256[0]) && (v256[1] == other.v256[1]);
+    }
+
+    bool operator!=(const simd64_t& other) const
+    {
+        return !(*this == other);
+    }
+
+    static simd64_t AllBitsSet()
+    {
+        simd64_t result;
+
+        result.v256[0] = simd32_t::AllBitsSet();
+        result.v256[1] = simd32_t::AllBitsSet();
+
+        return result;
+    }
+
+    bool IsAllBitsSet() const
+    {
+        return *this == AllBitsSet();
+    }
+
+    bool IsZero() const
+    {
+        return *this == Zero();
+    }
+
+    static simd64_t Zero()
+    {
+        return {};
+    }
+};
+
+typedef simd64_t simd_t;
+#else
+typedef simd16_t simd_t;
+#endif
 
 template <typename TBase>
 TBase EvaluateUnaryScalarSpecialized(genTreeOps oper, TBase arg0)
