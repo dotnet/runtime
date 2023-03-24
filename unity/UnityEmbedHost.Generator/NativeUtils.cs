@@ -9,7 +9,11 @@ namespace UnityEmbedHost.Generator;
 static class NativeUtils
 {
     public static string NativeWrapperName(this IMethodSymbol methodSymbol)
-        => $"mono_{methodSymbol.Name}";
+    {
+        if (methodSymbol.TryFirstAttributeValue<string>(NativeGeneration.NativeWrapperNameAttributeName, out var value))
+            return value!;
+        return $"mono_{methodSymbol.Name}";
+    }
 
     public static string NativeCallbackName(this IMethodSymbol methodSymbol)
         => methodSymbol.Name;

@@ -18,6 +18,9 @@ static class Utils
     public static bool TryReturnTypeFirstAttributeValue<T>(this IMethodSymbol methodSymbol, string attributeName, out T? value)
         => methodSymbol.GetReturnTypeAttributes().TryFirstAttributeValue(attributeName, out value);
 
+    public static bool TryFirstAttributeValue<T>(this IMethodSymbol methodSymbol, string attributeName, out T? value)
+        => methodSymbol.GetAttributes().TryFirstAttributeValue<T>(attributeName, out value);
+
     public static bool TryFirstAttributeValue<T>(this ImmutableArray<AttributeData> attributes, string attributeName, out T? value)
     {
         var explicitNativeTypeAttribute = attributes.FirstOrDefault(attr => attr.AttributeClass!.Name == attributeName);
