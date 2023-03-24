@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-echo "Changing owner of workspace to vscode"
-sudo chown -R vscode:vscode /workspaces
 set -e
 
 # bump the dotnet sdk version to get msbuild bugfix: https://github.com/dotnet/msbuild/issues/8531
