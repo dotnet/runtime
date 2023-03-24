@@ -3443,6 +3443,49 @@ size_t CEEInfo::getClassModuleIdForStatics(CORINFO_CLASS_HANDLE clsHnd, CORINFO_
 }
 
 /*********************************************************************/
+size_t CEEInfo::getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls, bool isGc, InfoAccessType* pAccessType, size_t* pStaticBase, uint8_t* pIsInitedMask)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    size_t result;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    TypeHandle VMClsHnd(cls);
+    PTR_MethodTable pMT = VMClsHnd.AsMethodTable();
+
+    *pAccessType = IAT_VALUE;
+
+    UINT32 clsIndex = 0;
+    if (pMT->IsDynamicStatics())
+    {
+        clsIndex = (UINT32)pMT->GetModuleDynamicEntryID();
+    }
+    else
+    {
+        clsIndex = (UINT32)pMT->GetClassIndex();
+    }
+
+    Module* pModule = pMT->GetModuleForStatics();
+    size_t moduleId = pModule->GetModuleID();
+    result = (size_t)((UINT8*)moduleId + DomainLocalModule::GetOffsetOfDataBlob() + clsIndex);
+
+    *pIsInitedMask = ClassInitFlags::INITIALIZED_FLAG;
+    {
+        GCX_COOP();
+        *pStaticBase = (size_t)(isGc ? pMT->GetGCStaticsBasePointer() : pMT->GetNonGCStaticsBasePointer());
+    }
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return result;
+}
+
+/*********************************************************************/
 bool CEEInfo::isValueClass(CORINFO_CLASS_HANDLE clsHnd)
 {
     CONTRACTL {

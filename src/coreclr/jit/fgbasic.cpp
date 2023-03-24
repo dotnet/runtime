@@ -6065,6 +6065,22 @@ BasicBlock* Compiler::fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool
     return newBlk;
 }
 
+BasicBlock* Compiler::fgNewBBFromTreeAfter(
+    BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, bool updateSideEffects)
+{
+    BasicBlock* newBlock = fgNewBBafter(jumpKind, block, true);
+    newBlock->bbFlags |= BBF_INTERNAL;
+    Statement* stmt = fgNewStmtFromTree(tree, debugInfo);
+    fgInsertStmtAtEnd(newBlock, stmt);
+    newBlock->bbCodeOffs    = block->bbCodeOffsEnd;
+    newBlock->bbCodeOffsEnd = block->bbCodeOffsEnd;
+    if (updateSideEffects)
+    {
+        gtUpdateStmtSideEffects(stmt);
+    }
+    return newBlock;
+}
+
 /*****************************************************************************
  *  Inserts basic block before existing basic block.
  *

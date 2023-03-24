@@ -2082,6 +2082,14 @@ namespace Internal.JitInterface
         private UIntPtr getClassModuleIdForStatics(CORINFO_CLASS_STRUCT_* cls, CORINFO_MODULE_STRUCT_** pModule, void** ppIndirection)
         { throw new NotImplementedException("getClassModuleIdForStatics"); }
 
+#pragma warning disable CA1822 // Mark members as static
+        private UIntPtr getIsClassInitedFieldAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref InfoAccessType pAccessType, UIntPtr* pStaticBase, byte* pIsInitedMask)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            // TODO: Implement
+            return 0;
+        }
+
         private uint getClassSize(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);

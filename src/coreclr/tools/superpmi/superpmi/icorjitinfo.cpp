@@ -503,6 +503,16 @@ size_t MyICJI::getClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
     return jitInstance->mc->repGetClassModuleIdForStatics(cls, pModule, ppIndirection);
 }
 
+size_t MyICJI::getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls,
+                                            bool                 isGc,
+                                            InfoAccessType*      pAccessType,
+                                            size_t*              pStaticBase,
+                                            uint8_t*             pIsInitedMask)
+{
+    jitInstance->mc->cr->AddCall("getIsClassInitedFieldAddress");
+    return jitInstance->mc->repGetIsClassInitedFieldAddress(cls, isGc, pAccessType, pStaticBase, pIsInitedMask);
+}
+
 // return the number of bytes needed by an instance of the class
 unsigned MyICJI::getClassSize(CORINFO_CLASS_HANDLE cls)
 {

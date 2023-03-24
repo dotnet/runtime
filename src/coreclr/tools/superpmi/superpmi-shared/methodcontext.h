@@ -565,6 +565,19 @@ public:
                                          CORINFO_MODULE_HANDLE* pModule,
                                          void**                 ppIndirection);
 
+    void recGetIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls,
+                                         bool                 isGc,
+                                         InfoAccessType*      pAccessType,
+                                         size_t*              pStaticBase,
+                                         uint8_t*             pIsInitedMask,
+                                         size_t               result);
+    void dmpGetIsClassInitedFieldAddress(DLD key, const Agnostic_GetIsClassInitedFieldAddress& value);
+    size_t repGetIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls,
+                                           bool                 isGc,
+                                           InfoAccessType*      pAccessType,
+                                           size_t*              pStaticBase,
+                                           uint8_t*             pIsInitedMask);
+
     void recGetThreadTLSIndex(void** ppIndirection, DWORD result);
     void dmpGetThreadTLSIndex(DWORD key, DLD value);
     DWORD repGetThreadTLSIndex(void** ppIndirection);
@@ -1162,6 +1175,7 @@ enum mcPackets
     Packet_GetArrayOrStringLength = 202,
     Packet_IsEnum = 203,
     Packet_GetStringChar = 204,
+    Packet_GetIsClassInitedFieldAddress = 205,
 };
 
 void SetDebugDumpVariables();

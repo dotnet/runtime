@@ -511,6 +511,19 @@ size_t WrapICorJitInfo::getClassModuleIdForStatics(
     return temp;
 }
 
+size_t WrapICorJitInfo::getIsClassInitedFieldAddress(
+          CORINFO_CLASS_HANDLE cls,
+          bool isGc,
+          InfoAccessType* pAccessType,
+          size_t* pStaticBase,
+          uint8_t* pIsInitedMask)
+{
+    API_ENTER(getIsClassInitedFieldAddress);
+    size_t temp = wrapHnd->getIsClassInitedFieldAddress(cls, isGc, pAccessType, pStaticBase, pIsInitedMask);
+    API_LEAVE(getIsClassInitedFieldAddress);
+    return temp;
+}
+
 unsigned WrapICorJitInfo::getClassSize(
           CORINFO_CLASS_HANDLE cls)
 {

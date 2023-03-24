@@ -62,6 +62,7 @@ struct JitInterfaceCallbacks
     void* (* LongLifetimeMalloc)(void * thisHandle, CorInfoExceptionClass** ppException, size_t sz);
     void (* LongLifetimeFree)(void * thisHandle, CorInfoExceptionClass** ppException, void* obj);
     size_t (* getClassModuleIdForStatics)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE* pModule, void** ppIndirection);
+    size_t (* getIsClassInitedFieldAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, bool isGc, InfoAccessType* pAccessType, size_t* pStaticBase, uint8_t* pIsInitedMask);
     unsigned (* getClassSize)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     unsigned (* getHeapClassSize)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     bool (* canAllocateOnStack)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
@@ -700,6 +701,19 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     size_t temp = _callbacks->getClassModuleIdForStatics(_thisHandle, &pException, cls, pModule, ppIndirection);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual size_t getIsClassInitedFieldAddress(
+          CORINFO_CLASS_HANDLE cls,
+          bool isGc,
+          InfoAccessType* pAccessType,
+          size_t* pStaticBase,
+          uint8_t* pIsInitedMask)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    size_t temp = _callbacks->getIsClassInitedFieldAddress(_thisHandle, &pException, cls, isGc, pAccessType, pStaticBase, pIsInitedMask);
     if (pException != nullptr) throw pException;
     return temp;
 }

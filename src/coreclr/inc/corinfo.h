@@ -2376,6 +2376,14 @@ public:
             void **ppIndirection
             ) = 0;
 
+    virtual size_t getIsClassInitedFieldAddress(
+            CORINFO_CLASS_HANDLE cls,
+            bool                 isGc,
+            InfoAccessType*      pAccessType,
+            size_t*              pStaticBase,
+            uint8_t*             pIsInitedMask
+            ) = 0;
+
     // return the number of bytes needed by an instance of the class
     virtual unsigned getClassSize (
             CORINFO_CLASS_HANDLE        cls

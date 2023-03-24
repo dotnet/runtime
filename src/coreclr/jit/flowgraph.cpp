@@ -436,6 +436,228 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
     return createdPollBlocks ? bottom : block;
 }
 
+//------------------------------------------------------------------------------
+// fgExpandStaticInit: Partially expand static initialization calls, e.g.:
+//
+//    tmp = CORINFO_HELP_X_NONGCSTATIC_BASE();
+//
+// into:
+//
+//    tmp = isClassAlreadyInited ? fastPath : CORINFO_HELP_X_NONGCSTATIC_BASE():
+//
+// Notes:
+//    The current implementation is focused on NativeAOT where we can't skip static
+//    initializations in run-time (e.g. in Tier1), although, can be enabled for JIT/CG as well.
+//
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
+//
+PhaseStatus Compiler::fgExpandStaticInit()
+{
+    PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
+
+    if (!doesMethodHaveStaticInit())
+    {
+        // TP: nothing to expand in the current method
+        JITDUMP("Nothing to expand.\n")
+        return result;
+    }
+
+    if (opts.OptimizationDisabled() || (opts.compCodeOpt == SMALL_CODE))
+    {
+        // It doesn't make sense to expand them for -Od or -Os
+        // since it's just a perf optimization that comes with a codegen size increase
+        JITDUMP("Optimizations aren't allowed or small code is requested - bail out.\n")
+        return result;
+    }
+
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+    SCAN_BLOCK_AGAIN:
+        for (Statement* const stmt : block->NonPhiStatements())
+        {
+            if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
+            {
+                // TP: Stmt has no calls - bail out
+                continue;
+            }
+
+            for (GenTree* const tree : stmt->TreeList())
+            {
+                bool isGc = false;
+                if (!IsStaticHelperEligibleForExpansion(tree, &isGc))
+                {
+                    continue;
+                }
+
+                GenTreeCall* call = tree->AsCall();
+                if (call->IsTailCall())
+                {
+                    // It is very unlikely, but just in case
+                    continue;
+                }
+
+                assert(call->gtRetClsHnd != NO_CLASS_HANDLE);
+                JITDUMP("Expanding static initialization for %s\n", eeGetClassName(call->gtRetClsHnd))
+
+                UINT8          isInitMask;
+                InfoAccessType staticBaseAccessType;
+                size_t         staticBase;
+                size_t         staticInitAddr =
+                    info.compCompHnd->getIsClassInitedFieldAddress(call->gtRetClsHnd, isGc, &staticBaseAccessType,
+                                                                   &staticBase, &isInitMask);
+                if (staticInitAddr == 0)
+                {
+                    continue;
+                }
+                assert((staticBase != 0) && (isInitMask != 0));
+
+                DebugInfo debugInfo = stmt->GetDebugInfo();
+
+                // Split block right before the call tree
+                BasicBlock* prevBb       = block;
+                GenTree**   callUse      = nullptr;
+                Statement*  newFirstStmt = nullptr;
+                block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
+                assert(prevBb != nullptr && block != nullptr);
+
+                // Block ops inserted by the split need to be morphed here since we are after morph.
+                // We cannot morph stmt yet as we may modify it further below, and the morphing
+                // could invalidate callUse.
+                while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
+                {
+                    fgMorphStmtBlockOps(block, newFirstStmt);
+                    newFirstStmt = newFirstStmt->GetNextStmt();
+                }
+
+                // Define a local for the result
+                const unsigned resultNum   = lvaGrabTemp(true DEBUGARG("static init"));
+                lvaTable[resultNum].lvType = call->TypeGet();
+                GenTreeLclVar* resultLcl   = gtNewLclvNode(resultNum, call->TypeGet());
+
+                // Replace current use with a temp local. That local will be set in either
+                // fastPathBb or fallbackBb
+                *callUse = gtClone(resultLcl);
+
+                fgMorphStmtBlockOps(block, stmt);
+                gtUpdateStmtSideEffects(stmt);
+
+                //
+                // Create new blocks. Essentially, we want to transform this:
+                //
+                //     result = helperCall();
+                //
+                // into:
+                //
+                //     if (isInited)
+                //     {
+                //         goto fastPathBb;
+                //     }
+                //     result = helperCall();
+                //     goto block;
+                // fastPathBb:
+                //     result = fastPath;
+                // block:
+                //
+
+                // TODO: do we need double-indirect for staticBaseAccessType == IAT_PVALUE ?
+                GenTree* isInitAdrNode = gtNewCastNode(TYP_INT, gtNewIndOfIconHandleNode(TYP_UBYTE, staticInitAddr,
+                                                                                         GTF_ICON_CONST_PTR, true),
+                                                       true, TYP_UINT);
+
+                // "((uint)*isInitAddr) & isInitMask != 0"
+                isInitAdrNode        = gtNewOperNode(GT_AND, TYP_INT, isInitAdrNode, gtNewIconNode(isInitMask));
+                GenTree* isInitedCmp = gtNewOperNode(GT_NE, TYP_INT, isInitAdrNode, gtNewIconNode(0));
+                isInitedCmp->gtFlags |= GTF_RELOP_JMP_USED;
+                BasicBlock* isInitedBb =
+                    fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp), debugInfo);
+
+                // Fast-path basic block
+                GenTree* asgFastpathValue;
+                if (staticBaseAccessType == IAT_VALUE)
+                {
+                    asgFastpathValue = gtNewIconHandleNode(staticBase, GTF_ICON_STATIC_HDL);
+                }
+                else
+                {
+                    assert(staticBaseAccessType == IAT_PVALUE);
+                    asgFastpathValue = gtNewIndOfIconHandleNode(TYP_I_IMPL, staticBase, GTF_ICON_STATIC_ADDR_PTR, true);
+                }
+                BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_NONE, isInitedBb, asgFastpathValue, debugInfo);
+
+                // Fallback basic block
+                GenTree*    asgFallbackValue = gtNewAssignNode(gtClone(resultLcl), call);
+                BasicBlock* fallbackBb =
+                    fgNewBBFromTreeAfter(BBJ_ALWAYS, isInitedBb, asgFallbackValue, debugInfo, true);
+
+                //
+                // Update preds in all new blocks
+                //
+
+                // Unlink block and prevBb
+                fgRemoveRefPred(block, prevBb);
+
+                // Block has two preds now: either fastPathBb or fallbackBb
+                fgAddRefPred(block, fastPathBb);
+                fgAddRefPred(block, fallbackBb);
+
+                // prevBb always flow into isInitedBb
+                fgAddRefPred(isInitedBb, prevBb);
+
+                // Both fastPathBb and fallbackBb have a single common pred - isInitedBb
+                fgAddRefPred(fastPathBb, isInitedBb);
+                fgAddRefPred(fallbackBb, isInitedBb);
+
+                // if isInitedBb condition is true we jump to fastPathBb
+                isInitedBb->bbJumpDest = fastPathBb;
+
+                // fallbackBb unconditionally jumps to the last block (jumps over fastPathBb)
+                fallbackBb->bbJumpDest = block;
+
+                //
+                // Re-distribute weights
+                //
+
+                block->inheritWeight(prevBb);
+                isInitedBb->inheritWeight(prevBb);
+                // 80% chance we pass isInitedBb. NOTE: we don't want to make it "run-rarely" to avoid
+                // regressions for startup time
+                fastPathBb->inheritWeightPercentage(isInitedBb, 80);
+                // 20% chance we fail isInitedBb
+                fallbackBb->inheritWeightPercentage(isInitedBb, 20);
+
+                //
+                // Update loop info if loop table is known to be valid
+                //
+
+                if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+                {
+                    isInitedBb->bbNatLoopNum = prevBb->bbNatLoopNum;
+                    fastPathBb->bbNatLoopNum = prevBb->bbNatLoopNum;
+                    fallbackBb->bbNatLoopNum = prevBb->bbNatLoopNum;
+                    // Update lpBottom after block split
+                    if (optLoopTable[prevBb->bbNatLoopNum].lpBottom == prevBb)
+                    {
+                        optLoopTable[prevBb->bbNatLoopNum].lpBottom = block;
+                    }
+                }
+
+                // All blocks are expected to be in the same EH region
+                assert(BasicBlock::sameEHRegion(prevBb, block));
+                assert(BasicBlock::sameEHRegion(prevBb, isInitedBb));
+                assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
+
+                result = PhaseStatus::MODIFIED_EVERYTHING;
+
+                // We've modified the graph and the current "block" might still have
+                // more non-expanded static initializations to visit
+                goto SCAN_BLOCK_AGAIN;
+            }
+        }
+    }
+    return result;
+}
+
 //------------------------------------------------------------------------
 // fgCanSwitchToOptimized: Determines if conditions are met to allow switching the opt level to optimized
 //
@@ -790,6 +1012,9 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         result = gtNewHelperCallNode(helper, type, opModuleIDArg);
     }
 
+    // Re-use gtRetClsHnd field to store information about the class this helper is initialized
+    // (it is difficult to restore that from arguments)
+    result->gtRetClsHnd = cls;
     result->gtFlags |= callFlags;
 
     // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default

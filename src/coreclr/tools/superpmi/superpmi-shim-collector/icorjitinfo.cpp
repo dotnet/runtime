@@ -590,6 +590,18 @@ size_t interceptor_ICJI::getClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
     return temp;
 }
 
+size_t interceptor_ICJI::getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls,
+                                                      bool                 isGc,
+                                                      InfoAccessType*      pAccessType,
+                                                      size_t*              pStaticBase,
+                                                      uint8_t*             pIsInitedMask)
+{
+    mc->cr->AddCall("getIsClassInitedFieldAddress");
+    size_t temp = original_ICorJitInfo->getIsClassInitedFieldAddress(cls, isGc, pAccessType, pStaticBase, pIsInitedMask);
+    mc->recGetIsClassInitedFieldAddress(cls, isGc, pAccessType, pStaticBase, pIsInitedMask, temp);
+    return temp;
+}
+
 // return the number of bytes needed by an instance of the class
 unsigned interceptor_ICJI::getClassSize(CORINFO_CLASS_HANDLE cls)
 {

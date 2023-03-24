@@ -4263,6 +4263,29 @@ size_t MethodContext::repGetClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
     return (size_t)value.result;
 }
 
+void MethodContext::recGetIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls,
+                                                    bool                 isGc,
+                                                    InfoAccessType*      pAccessType,
+                                                    size_t*              pStaticBase,
+                                                    uint8_t*             pIsInitedMask,
+                                                    size_t               result)
+{
+    // TODO: implement in this PR
+}
+void MethodContext::dmpGetIsClassInitedFieldAddress(DLD key, const Agnostic_GetIsClassInitedFieldAddress& value)
+{
+    // TODO: implement in this PR
+}
+size_t MethodContext::repGetIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls,
+                                                      bool                 isGc,
+                                                      InfoAccessType*      pAccessType,
+                                                      size_t*              pStaticBase,
+                                                      uint8_t*             pIsInitedMask)
+{
+    // TODO: implement in this PR
+    return 0;
+}
+
 void MethodContext::recGetThreadTLSIndex(void** ppIndirection, DWORD result)
 {
     if (GetThreadTLSIndex == nullptr)

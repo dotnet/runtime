@@ -463,6 +463,14 @@ struct Agnostic_GetClassModuleIdForStatics
     DWORDLONG result;
 };
 
+struct Agnostic_GetIsClassInitedFieldAddress
+{
+    DWORDLONG cls;
+    DWORDLONG staticBase;
+    DWORD     accessType;
+    DWORD     isInitedMask;
+};
+
 struct Agnostic_IsCompatibleDelegate
 {
     DWORDLONG objCls;

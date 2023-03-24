@@ -424,6 +424,17 @@ size_t interceptor_ICJI::getClassModuleIdForStatics(
     return original_ICorJitInfo->getClassModuleIdForStatics(cls, pModule, ppIndirection);
 }
 
+size_t interceptor_ICJI::getIsClassInitedFieldAddress(
+          CORINFO_CLASS_HANDLE cls,
+          bool isGc,
+          InfoAccessType* pAccessType,
+          size_t* pStaticBase,
+          uint8_t* pIsInitedMask)
+{
+    mcs->AddCall("getIsClassInitedFieldAddress");
+    return original_ICorJitInfo->getIsClassInitedFieldAddress(cls, isGc, pAccessType, pStaticBase, pIsInitedMask);
+}
+
 unsigned interceptor_ICJI::getClassSize(
           CORINFO_CLASS_HANDLE cls)
 {
