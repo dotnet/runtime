@@ -316,7 +316,7 @@ typedef int __ptrace_request;
         ASSIGN_CONTROL_REGS \
         ASSIGN_INTEGER_REGS \
 
-#if defined(XSTATE_SUPPORTED) || (defined(HOST_64BIT) && defined(TARGET_OSX))
+#if defined(XSTATE_SUPPORTED) || (defined(HOST_AMD64) && defined(TARGET_OSX))
 bool Xstate_IsAvx512Supported()
 {
     static int Xstate_Avx512Supported = -1;
@@ -368,7 +368,7 @@ bool Xstate_IsAvx512Supported()
 
     return Xstate_Avx512Supported == 1;
 }
-#endif // XSTATE_SUPPORTED || (HOST_64BIT && TARGET_OSX)
+#endif // XSTATE_SUPPORTED || (HOST_AMD64 && TARGET_OSX)
 
 #if !HAVE_MACH_EXCEPTIONS
 

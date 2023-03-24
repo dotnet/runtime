@@ -54,9 +54,9 @@ using asm_sigcontext::_xstate;
 #include <mach/mach_port.h>
 #endif // !HAVE_MACH_EXCEPTIONS else
 
-#if defined(XSTATE_SUPPORTED) || (defined(HOST_64BIT) && defined(TARGET_OSX))
+#if defined(XSTATE_SUPPORTED) || (defined(HOST_AMD64) && defined(TARGET_OSX))
 bool Xstate_IsAvx512Supported();
-#endif // XSTATE_SUPPORTED || (HOST_64BIT && TARGET_OSX)
+#endif // XSTATE_SUPPORTED || (HOST_AMD64 && TARGET_OSX)
 
 #ifdef HOST_S390X
 
