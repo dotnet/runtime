@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
@@ -44,7 +45,7 @@ namespace System.Threading
 
             private static readonly ThreadStart s_workerThreadStart = WorkerThreadStart;
 
-            private sealed record SemaphoreWaitState(PortableThreadPool ThreadPoolInstance, LowLevelLock ThreadAdjustmentLock)
+            private sealed record SemaphoreWaitState(PortableThreadPool ThreadPoolInstance, LowLevelLock ThreadAdjustmentLock, WebWorkerEventLoop.KeepaliveToken KeepaliveToken)
             {
                 public bool SpinWait = true;
 
@@ -66,14 +67,13 @@ namespace System.Threading
                 }
 
                 LowLevelLock threadAdjustmentLock = threadPoolInstance._threadAdjustmentLock;
-                SemaphoreWaitState state = new(threadPoolInstance, threadAdjustmentLock) { SpinWait = true };
+                var keepaliveToken = WebWorkerEventLoop.KeepalivePush();
+                SemaphoreWaitState state = new(threadPoolInstance, threadAdjustmentLock, keepaliveToken) { SpinWait = true };
                 // set up the callbacks for semaphore waits, tell
                 // emscripten to keep the thread alive, and return to
                 // the JS event loop.
                 WaitForWorkLoop(s_semaphore, state);
-                WebWorkerEventLoop.KeepalivePush();
                 // return from thread start with keepalive - the thread will stay alive in the JS event loop
-                // WebWorkerEventLoop.UnwindToJs(); // FIXME: this is a bad idea - it doesn't run C# finally clauses and maybe leaks Mono interpreter frames
             }
 
             private static readonly Action<LowLevelJSSemaphore, object?> s_WorkLoopSemaphoreSuccess = new(WorkLoopSemaphoreSuccess);
@@ -82,6 +82,8 @@ namespace System.Threading
             private static void WaitForWorkLoop(LowLevelJSSemaphore semaphore, SemaphoreWaitState state)
             {
                 semaphore.PrepareWait(ThreadPoolThreadTimeoutMs, s_WorkLoopSemaphoreSuccess, s_WorkLoopSemaphoreTimedOut, state);
+                // thread should still be kept alive
+                Debug.Assert(state.KeepaliveToken.Valid);
             }
 
             private static void WorkLoopSemaphoreSuccess(LowLevelJSSemaphore semaphore, object? stateObject)
@@ -98,9 +100,10 @@ namespace System.Threading
                 if (WorkerTimedOutMaybeStop(state.ThreadPoolInstance, state.ThreadAdjustmentLock)) {
                     // we're done, kill the thread.
 
-                    // we're wrapped in an emscripten eventloop handler which will consult the keepalive count, destroy the thread and run the TLS dtor which will unregister the thread from Mono
-                    WebWorkerEventLoop.KeepalivePop();
-                    //WebWorkerEventLoop.ThreadExit(); // FIXME: will this clean up the interpreter stack
+                    // we're wrapped in an emscripten eventloop handler which will consult the
+                    // keepalive count, destroy the thread and run the TLS dtor which will
+                    // unregister the thread from Mono
+                    state.KeepaliveToken.Pop();
                     return;
                 } else {
                     // more work showed up while we were shutting down, go around one more time
@@ -350,12 +353,15 @@ namespace System.Threading
             private static void CreateWorkerThread()
             {
                 // Thread pool threads must start in the default execution context without transferring the context, so
-                // using UnsafeStart() instead of Start()
+                // using captureContext: false.
                 Thread workerThread = new Thread(s_workerThreadStart);
                 workerThread.IsThreadPoolThread = true;
                 workerThread.IsBackground = true;
                 // thread name will be set in thread proc
-                workerThread.UnsafeStart();
+
+                // This thread will return to the JS event loop - tell the runtime not to cleanup
+                // after the start function returns, if the Emscripten keepalive is non-zero.
+                WebWorkerEventLoop.StartExitable(workerThread, captureContext: false);
             }
         }
     }
