@@ -1792,6 +1792,9 @@ GenTree* Lowering::AddrGen(void* addr)
 // Arguments:
 //    tree - GenTreeCall node to replace with STORE_BLK
 //
+// Return Value:
+//    nullptr if no changes were made
+//
 GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
 {
     JITDUMP("Considering Memmove [%06d] for unrolling.. ", comp->dspTreeID(call))

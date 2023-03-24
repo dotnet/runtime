@@ -3059,19 +3059,18 @@ unsigned CallArgs::CountArgs()
 //    r2r cell argument in a user function.
 //
 // Remarks:
-//   The current implementation doesn't ignore return buffers and type arguments.
+//   See IsUserArg's comments
 //
 unsigned CallArgs::CountUserArgs()
 {
     unsigned numArgs = 0;
     for (CallArg& arg : Args())
     {
-        if (!arg.IsArgAddedLate())
+        if (arg.IsUserArg())
         {
             numArgs++;
         }
     }
-
     return numArgs;
 }
 

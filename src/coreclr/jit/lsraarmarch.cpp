@@ -735,8 +735,8 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 #ifdef TARGET_ARM64
 
                     // Prepare SIMD/GPR registers needed to perform an unrolled memmove. The idea that
-                    // we can ignore the fact that dst and src might overlap if we save the whole dst
-                    // to temp regs in advance, e.g. for memmove(rax, rcx, 120):
+                    // we can ignore the fact that src and dst might overlap if we save the whole src
+                    // to temp regs in advance.
 
                     // Lowering was expected to get rid of memmove in case of zero
                     assert(size > 0);
@@ -757,19 +757,16 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                             buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
                         }
                     }
+                    else if (isPow2(size))
+                    {
+                        // Single GPR for 1,2,4,8
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                    }
                     else
                     {
-                        if (isPow2(size))
-                        {
-                            // Single GPR for 1,2,4,8
-                            buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
-                        }
-                        else
-                        {
-                            // Any size from 3 to 15 can be handled via two GPRs
-                            buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
-                            buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
-                        }
+                        // Any size from 3 to 15 can be handled via two GPRs
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
                     }
 #else // TARGET_ARM64
                     unreached();

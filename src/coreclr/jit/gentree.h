@@ -4644,6 +4644,8 @@ public:
 
     bool IsArgAddedLate() const;
 
+    bool IsUserArg() const;
+
 #ifdef DEBUG
     void Dump(Compiler* comp);
     // Check that the value of 'AbiInfo.IsStruct' is consistent.

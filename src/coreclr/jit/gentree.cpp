@@ -1419,6 +1419,27 @@ bool CallArg::IsArgAddedLate() const
     }
 }
 
+//---------------------------------------------------------------
+// IsUserArg: Check if this is an argument that can be treated as
+//   user-defined (in IL).
+//
+// Remarks:
+//   "this" and ShiftLow/ShiftHigt are recognized as user-defined
+//
+bool CallArg::IsUserArg() const
+{
+    switch (static_cast<WellKnownArg>(m_wellKnownArg))
+    {
+        case WellKnownArg::None:
+        case WellKnownArg::ShiftLow:
+        case WellKnownArg::ShiftHigh:
+        case WellKnownArg::ThisPointer:
+            return true;
+        default:
+            return false;
+    }
+}
+
 #ifdef DEBUG
 //---------------------------------------------------------------
 // CheckIsStruct: Verify that the struct ABI information is consistent with the IR node.
@@ -1615,23 +1636,22 @@ CallArg* CallArgs::GetArgByIndex(unsigned index)
 //   A pointer to the argument.
 //
 // Remarks:
-//   This function assumes enough arguments exist. The current implementation
-//   doesn't ignore return buffers and type arguments.
+//   This function assumes enough arguments exist. Also, see IsUserArg's
+//   comments
 //
 CallArg* CallArgs::GetUserArgByIndex(unsigned index)
 {
     CallArg* cur = m_head;
     assert((cur != nullptr) && "Not enough user arguments in GetUserArgByIndex");
-    for (unsigned i = 0; i < index || cur->IsArgAddedLate();)
+    for (unsigned i = 0; i < index || !cur->IsUserArg();)
     {
-        if (!cur->IsArgAddedLate())
+        if (cur->IsUserArg())
         {
             i++;
         }
         cur = cur->GetNext();
         assert((cur != nullptr) && "Not enough user arguments in GetUserArgByIndex");
     }
-
     return cur;
 }
 

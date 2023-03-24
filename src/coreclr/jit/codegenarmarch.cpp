@@ -3135,7 +3135,7 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
                 }
                 if ((size - offset) < simdSize)
                 {
-                    // Overlap with the previously processed data. We'll always use SIMD for that for simplicity
+                    // Overlap with the previously processed data. We'll always use SIMD for simplicity
                     // TODO-CQ: Consider using smaller SIMD reg or GPR for the remainder.
                     offset = size - simdSize;
                 }

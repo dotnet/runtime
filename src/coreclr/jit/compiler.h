@@ -8989,13 +8989,13 @@ public:
         // | arm         |    32  |    16  | no SIMD support
         // | loongarch64 |    64  |    32  | no SIMD support
         //
-        // We might want to use a different multiplier for trully hot/cold blocks based on PGO data
+        // We might want to use a different multiplier for truly hot/cold blocks based on PGO data
         //
         threshold *= 4;
 
         if (type == UnrollKind::Memmove)
         {
-            // NOTE: Memmove's unrolling is currently limitted with LSRA -
+            // NOTE: Memmove's unrolling is currently limited with LSRA -
             // up to LinearScan::MaxInternalCount number of temp regs, e.g. 5*16=80 bytes on arm64
             threshold = maxRegSize * 4;
         }
