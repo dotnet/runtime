@@ -1424,7 +1424,7 @@ bool CallArg::IsArgAddedLate() const
 //   user-defined (in IL).
 //
 // Remarks:
-//   "this" and ShiftLow/ShiftHigt are recognized as user-defined
+//   "this" and ShiftLow/ShiftHigh are recognized as user-defined
 //
 bool CallArg::IsUserArg() const
 {
