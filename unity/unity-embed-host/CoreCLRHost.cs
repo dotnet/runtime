@@ -99,6 +99,20 @@ static unsafe partial class CoreCLRHost
     public static IntPtr object_get_class([NativeCallbackType("MonoObject*")] IntPtr obj)
         => obj.ToManagedRepresentation().TypeHandleIntPtr();
 
+    [return: NativeCallbackType("MonoArray*")]
+    public static IntPtr array_new([NativeCallbackType("MonoDomain*")] IntPtr domain, [NativeCallbackType("MonoClass*")] IntPtr klass, [NativeCallbackType("guint32")] int n)
+        => Array.CreateInstance(klass.TypeFromHandleIntPtr(), n).ToNativeRepresentation();
+
+    [return: NativeCallbackType("MonoArray*")]
+    public static IntPtr unity_array_new_2d([NativeCallbackType("MonoDomain*")] IntPtr domain, [NativeCallbackType("MonoClass*")] IntPtr klass,
+        [NativeCallbackType("size_t")] int size0, [NativeCallbackType("size_t")] int size1)
+        => Array.CreateInstance(klass.TypeFromHandleIntPtr(), size0, size1).ToNativeRepresentation();
+
+    [return: NativeCallbackType("MonoArray*")]
+    public static IntPtr unity_array_new_3d([NativeCallbackType("MonoDomain*")] IntPtr domain, [NativeCallbackType("MonoClass*")] IntPtr klass,
+        [NativeCallbackType("size_t")] int size0, [NativeCallbackType("size_t")] int size1, [NativeCallbackType("size_t")] int size2)
+        => Array.CreateInstance(klass.TypeFromHandleIntPtr(), size0, size1, size2).ToNativeRepresentation();
+
     static StringPtr StringToPtr(string s)
     {
         // Return raw object pointer for now with the NullGC.
