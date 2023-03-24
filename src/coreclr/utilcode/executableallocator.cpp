@@ -24,10 +24,10 @@ ExecutableAllocator::FatalErrorHandler ExecutableAllocator::g_fatalErrorHandler 
 ExecutableAllocator* ExecutableAllocator::g_instance = NULL;
 
 #ifndef VARIABLE_SIZED_CACHEDMAPPING_SIZE
-int ExecutableAllocator::g_cachedMappingSize = 0;
-
 #define EXECUTABLE_ALLOCATOR_CACHE_SIZE ARRAY_SIZE(m_cachedMapping)
 #else
+int ExecutableAllocator::g_cachedMappingSize = 0;
+
 #define EXECUTABLE_ALLOCATOR_CACHE_SIZE ExecutableAllocator::g_cachedMappingSize
 #endif
 
