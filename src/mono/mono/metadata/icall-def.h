@@ -578,8 +578,8 @@ NOHANDLES(ICALL(JSSEM_4, "ReleaseInternal", ves_icall_System_Threading_LowLevelJ
 ICALL_TYPE(LIFOSEM, "System.Threading.LowLevelLifoSemaphore", LIFOSEM_1)
 NOHANDLES(ICALL(LIFOSEM_1, "DeleteInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal))
 NOHANDLES(ICALL(LIFOSEM_2, "InitInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal))
-NOHANDLES(ICALL(LIFOSEM_3, "TimedWaitInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal))
-NOHANDLES(ICALL(LIFOSEM_4, "ReleaseInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal))
+NOHANDLES(ICALL(LIFOSEM_3, "ReleaseInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal))
+NOHANDLES(ICALL(LIFOSEM_4, "TimedWaitInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal))
 
 ICALL_TYPE(MONIT, "System.Threading.Monitor", MONIT_0)
 HANDLES(MONIT_0, "Enter", ves_icall_System_Threading_Monitor_Monitor_Enter, void, 1, (MonoObject))
