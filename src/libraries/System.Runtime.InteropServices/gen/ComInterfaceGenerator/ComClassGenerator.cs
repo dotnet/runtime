@@ -42,18 +42,24 @@ namespace Microsoft.Interop
                             new(names.ToImmutable()));
                     });
 
-            var classInfoType = attributedClasses.Select(static (info, ct) => GenerateClassInfoType(info)).SelectNormalized();
+            var className = attributedClasses.Select(static (info, ct) => info.ClassName);
 
-            var attribute = attributedClasses.Select(static (info, ct) => GenerateClassInfoAttributeOnUserType(info)).SelectNormalized();
+            var classInfoType = attributedClasses
+                .Select(static (info, ct) => new { info.ClassName, info.ImplementedInterfacesNames })
+                .Select(static (info, ct) => GenerateClassInfoType(info.ClassName, info.ImplementedInterfacesNames.Array).NormalizeWhitespace());
 
-            context.RegisterSourceOutput(attributedClasses.Zip(classInfoType).Zip(attribute), static (context, classInfo) =>
+            var attribute = attributedClasses
+                .Select(static (info, ct) => new { info.ContainingSyntaxContext, info.ClassSyntax })
+                .Select(static (info, ct) => GenerateClassInfoAttributeOnUserType(info.ContainingSyntaxContext, info.ClassSyntax).NormalizeWhitespace());
+
+            context.RegisterSourceOutput(className.Zip(classInfoType).Zip(attribute), static (context, classInfo) =>
             {
-                var ((comClassInfo, classInfoType), attribute) = classInfo;
+                var ((className, classInfoType), attribute) = classInfo;
                 StringWriter writer = new();
                 writer.WriteLine(classInfoType.ToFullString());
                 writer.WriteLine();
                 writer.WriteLine(attribute);
-                context.AddSource(comClassInfo.ClassName, writer.ToString());
+                context.AddSource(className, writer.ToString());
             });
         }
 
@@ -64,13 +70,13 @@ namespace Microsoft.Interop
                 GenericName(TypeNames.ComExposedClassAttribute)
                     .AddTypeArgumentListArguments(
                         IdentifierName(ClassInfoTypeName)));
-        private static MemberDeclarationSyntax GenerateClassInfoAttributeOnUserType(ComClassInfo info) =>
-            info.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(
-                TypeDeclaration(info.ClassSyntax.TypeKind, info.ClassSyntax.Identifier)
-                    .WithModifiers(info.ClassSyntax.Modifiers)
-                    .WithTypeParameterList(info.ClassSyntax.TypeParameters)
+        private static MemberDeclarationSyntax GenerateClassInfoAttributeOnUserType(ContainingSyntaxContext containingSyntaxContext, ContainingSyntax classSyntax) =>
+            containingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(
+                TypeDeclaration(classSyntax.TypeKind, classSyntax.Identifier)
+                    .WithModifiers(classSyntax.Modifiers)
+                    .WithTypeParameterList(classSyntax.TypeParameters)
                     .AddAttributeLists(AttributeList(SingletonSeparatedList(s_comExposedClassAttributeTemplate))));
-        private static ClassDeclarationSyntax GenerateClassInfoType(ComClassInfo info)
+        private static ClassDeclarationSyntax GenerateClassInfoType(string className, ImmutableArray<string> implementedInterfaces)
         {
             const string vtablesField = "s_vtables";
             const string vtablesLocal = "vtables";
@@ -110,14 +116,14 @@ namespace Microsoft.Interop
                                                 ParseTypeName(TypeNames.System_Runtime_CompilerServices_RuntimeHelpers),
                                                 IdentifierName("AllocateTypeAssociatedMemory")))
                                         .AddArgumentListArguments(
-                                            Argument(TypeOfExpression(ParseTypeName(info.ClassName))),
+                                            Argument(TypeOfExpression(ParseTypeName(className))),
                                             Argument(
                                                 BinaryExpression(
                                                     SyntaxKind.MultiplyExpression,
                                                     SizeOfExpression(ParseTypeName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry)),
                                                     LiteralExpression(
                                                         SyntaxKind.NumericLiteralExpression,
-                                                        Literal(info.ImplementedInterfacesNames.Array.Length))))))))))),
+                                                        Literal(implementedInterfaces.Length))))))))))),
                 // IIUnknownDerivedDetails details;
                 LocalDeclarationStatement(
                     VariableDeclaration(
@@ -125,9 +131,9 @@ namespace Microsoft.Interop
                         SingletonSeparatedList(
                             VariableDeclarator(detailsTempLocal))))
             };
-            for (int i = 0; i < info.ImplementedInterfacesNames.Array.Length; i++)
+            for (int i = 0; i < implementedInterfaces.Length; i++)
             {
-                string ifaceName = info.ImplementedInterfacesNames.Array[i];
+                string ifaceName = implementedInterfaces[i];
 
                 // details = StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(<ifaceName>).TypeHandle);
                 vtableInitializationBlock.Add(
@@ -194,7 +200,7 @@ namespace Microsoft.Interop
                     AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
                         IdentifierName(countIdentifier),
                         LiteralExpression(SyntaxKind.NumericLiteralExpression,
-                            Literal(info.ImplementedInterfacesNames.Array.Length)))),
+                            Literal(implementedInterfaces.Length)))),
                 // if (s_vtable == null)
                 //   { initializer block }
                 IfStatement(

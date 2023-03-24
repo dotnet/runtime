@@ -10,8 +10,16 @@ using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
+    /// <summary>
+    /// Details about a managed class type exposed to COM.
+    /// </summary>
     public unsafe interface IComExposedDetails
     {
+        /// <summary>
+        /// Get the COM interface information to provide to a <see cref="ComWrappers"/> instance to expose this type to COM.
+        /// </summary>
+        /// <param name="count">The number of COM interfaces this type implements.</param>
+        /// <returns>The interface entry information for the interfaces the type implements.</returns>
         ComWrappers.ComInterfaceEntry* GetComInterfaceEntries(out int count);
 
         internal static IComExposedDetails? GetFromAttribute(RuntimeTypeHandle handle)
