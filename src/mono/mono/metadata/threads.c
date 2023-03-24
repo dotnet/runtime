@@ -4997,21 +4997,15 @@ ves_icall_System_Threading_LowLevelJSSemaphore_ReleaseInternal (gpointer sem_ptr
 }
 
 void
-ves_icall_System_Threading_PortableThreadPool_WorkerThread_EmscriptenKeepalivePop (void)
-{
-	emscripten_runtime_keepalive_pop();
-}
-
-void
-ves_icall_System_Threading_PortableThreadPool_WorkerThread_EmscriptenKeepalivePush (void)
+ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void)
 {
 	emscripten_runtime_keepalive_push();
 }
 
 void
-ves_icall_System_Threading_PortableThreadPool_WorkerThread_EmscriptenUnwindToJsEventLoop (void)
+ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
 {
-	emscripten_unwind_to_js_event_loop();
+	emscripten_runtime_keepalive_pop();
 }
 
 #endif /* HOST_BROWSER && !DISABLE_THREADS */

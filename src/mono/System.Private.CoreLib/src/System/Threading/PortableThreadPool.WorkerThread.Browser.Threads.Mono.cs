@@ -71,20 +71,10 @@ namespace System.Threading
                 // emscripten to keep the thread alive, and return to
                 // the JS event loop.
                 WaitForWorkLoop(s_semaphore, state);
-                EmscriptenKeepalivePush();
-                EmscriptenUnwindToJsEventLoop();
+                WebWorkerEventLoop.KeepalivePush();
+                // return from thread start with keepalive - the thread will stay alive in the JS event loop
+                // WebWorkerEventLoop.UnwindToJs(); // FIXME: this is a bad idea - it doesn't run C# finally clauses and maybe leaks Mono interpreter frames
             }
-
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            private static extern void EmscriptenKeepalivePush();
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            private static extern void EmscriptenKeepalivePop();
-            [DoesNotReturn]
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            private static extern void EmscriptenUnwindToJsEventLoop();
-            [DoesNotReturn]
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            private static extern void MonoThreadExit(); // FIXME: this is not Emscripten, it's just mono_thread_exit();
 
             private static readonly Action<LowLevelJSSemaphore, object?> s_WorkLoopSemaphoreSuccess = new(WorkLoopSemaphoreSuccess);
             private static readonly Action<LowLevelJSSemaphore, object?> s_WorkLoopSemaphoreTimedOut = new(WorkLoopSemaphoreTimedOut);
@@ -108,8 +98,9 @@ namespace System.Threading
                 if (WorkerTimedOutMaybeStop(state.ThreadPoolInstance, state.ThreadAdjustmentLock)) {
                     // we're done, kill the thread.
 
-                    EmscriptenKeepalivePop();
-                    MonoThreadExit();
+                    // we're wrapped in an emscripten eventloop handler which will consult the keepalive count, destroy the thread and run the TLS dtor which will unregister the thread from Mono
+                    WebWorkerEventLoop.KeepalivePop();
+                    //WebWorkerEventLoop.ThreadExit(); // FIXME: will this clean up the interpreter stack
                     return;
                 } else {
                     // more work showed up while we were shutting down, go around one more time
