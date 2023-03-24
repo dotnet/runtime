@@ -43,6 +43,8 @@
       <InnerBuildArgs Condition="'$(ContinuousIntegrationBuild)' != ''">$(InnerBuildArgs) /p:ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(SourceBuildUseMonoRuntime)' == 'true'">$(InnerBuildArgs) /p:PrimaryRuntimeFlavor=Mono /p:RuntimeFlavor=Mono</InnerBuildArgs>
+      <!-- Unset NetFrameworkMinimum property, to disable netfx projects. -->
+      <InnerBuildArgs>$(InnerBuildArgs) /p:NetFrameworkMinimum=</InnerBuildArgs>
     </PropertyGroup>
   </Target>
 
