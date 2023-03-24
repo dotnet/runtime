@@ -72,6 +72,14 @@
         },
         {
           "labels": [
+            "area-System.DateTime"
+          ],
+          "mentionees": [
+            "dotnet/area-system-datetime"
+          ]
+        },
+        {
+          "labels": [
             "area-Debugger-mono"
           ],
           "mentionees": [
@@ -523,6 +531,14 @@
         },
         {
           "labels": [
+            "area-System.Formats.Tar"
+          ],
+          "mentionees": [
+            "dotnet/area-system-formats-tar"
+          ]
+        },
+        {
+          "labels": [
             "area-System.Globalization"
           ],
           "mentionees": [
@@ -543,6 +559,24 @@
           ],
           "mentionees": [
             "dotnet/area-system-io-compression"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.IO.Hashing"
+          ],
+          "mentionees": [
+            "dotnet/area-system-io-hashing",
+            "bartonjs",
+            "vcsjones"
+          ]
+        },
+        {
+          "labels": [
+            "area-System.IO.Ports"
+          ],
+          "mentionees": [
+            "dotnet/area-system-io-ports"
           ]
         },
         {
