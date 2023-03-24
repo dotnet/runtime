@@ -13,6 +13,7 @@
           ],
           "mentionees": [
             "dotnet/area-system-security",
+            "bartonjs",
             "vcsjones"
           ]
         },
@@ -331,6 +332,7 @@
           ],
           "mentionees": [
             "dotnet/ncl",
+            "bartonjs",
             "vcsjones"
           ]
         },
@@ -433,6 +435,7 @@
           ],
           "mentionees": [
             "dotnet/area-system-formats-cbor",
+            "bartonjs",
             "vcsjones"
           ]
         },
@@ -442,6 +445,7 @@
           ],
           "mentionees": [
             "dotnet/area-system-formats-asn1",
+            "bartonjs",
             "vcsjones"
           ]
         },
