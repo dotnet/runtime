@@ -9,7 +9,7 @@
   .ver 4:0:0:0
 }
 .assembly legacy library calli2 {}
-.class private auto ansi beforefieldinit calli2
+.class public auto ansi beforefieldinit calli2
        extends [mscorlib]System.Object
 {
   .field private static int32 a

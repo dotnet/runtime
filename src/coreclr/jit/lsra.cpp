@@ -8746,8 +8746,8 @@ const char* LinearScan::getStatName(unsigned stat)
 #include "lsra_stats.h"
 #undef LSRA_STAT_DEF
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId) #stat,
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
     };
 
     assert(stat < ArrLen(lsraStatNames));
@@ -8761,8 +8761,8 @@ LsraStat LinearScan::getLsraStatFromScore(RegisterScore registerScore)
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     case RegisterScore::stat:                                                                                          \
         return LsraStat::STAT_##stat;
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
         default:
             return LsraStat::STAT_FREE;
     }
@@ -9064,8 +9064,8 @@ const char* LinearScan::getScoreName(RegisterScore score)
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     case stat:                                                                                                         \
         return shortname;
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
         default:
             return "  -  ";
     }
@@ -11060,8 +11060,8 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     mappingTable->Set(stat, &LinearScan::RegisterSelection::try_##stat);
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
 
     LPCWSTR ordering = JitConfig.JitLsraOrdering();
     if (ordering == nullptr)
@@ -11080,8 +11080,8 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
     case orderSeqId:                                                                                                   \
         RegSelectionOrder[orderId] = enum_name;                                                                        \
         break;
+#define BUSY_REG_SEL_DEF(enum_name, value, shortname, orderSeqId) REG_SEL_DEF(enum_name, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
             default:
                 assert(!"Invalid lsraOrdering value.");
         }
@@ -12070,13 +12070,24 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         }
     }
 #else // RELEASE
-// In release, just invoke the default order
 
+    // In release, just invoke the default order
+    if (freeCandidates != RBM_NONE)
+    {
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     try_##stat();                                                                                                      \
     IF_FOUND_GOTO_DONE
+
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
+    }
+
+#define REG_SEL_DEF(stat, value, shortname, orderSeqId)
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                           \
+    try_##stat();                                                                                                      \
+    IF_FOUND_GOTO_DONE
+#include "lsra_score.h"
+
 #endif // DEBUG
 #undef IF_FOUND_GOTO_DONE
 
