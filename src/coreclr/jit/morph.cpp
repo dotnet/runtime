@@ -9827,8 +9827,8 @@ DONE_MORPHING_CHILDREN:
 
             // Only do this optimization when we are in the global optimizer. Doing this after value numbering
             // could result in an invalid value number for the newly generated GT_IND node.
-            bool mightBeLocation = (tree->gtFlags & GTF_DONT_CSE) != 0;
-            if ((op1->OperGet() == GT_COMMA) && fgGlobalMorph && !mightBeLocation)
+            // We skip INDs with GTF_DONT_CSE which is set if the IND is a location.
+            if (op1->OperIs(GT_COMMA) && fgGlobalMorph && ((tree->gtFlags & GTF_DONT_CSE) == 0))
             {
                 // Perform the transform IND(COMMA(x, ..., z)) -> COMMA(x, ..., IND(z)).
                 GenTree*     commaNode = op1;
@@ -10046,25 +10046,21 @@ DONE_MORPHING_CHILDREN:
     // nodes may have CSE defs/uses in them.
     if (fgGlobalMorph && (oper != GT_ASG) && (oper != GT_COLON))
     {
-        bool mightBeLocation = (tree->OperIsIndir() || tree->OperIsLocal()) && ((tree->gtFlags & GTF_DONT_CSE) != 0);
-        if (!mightBeLocation)
+        if ((op1 != nullptr) && fgIsCommaThrow(op1, true))
         {
-            if ((op1 != nullptr) && fgIsCommaThrow(op1, true))
+            GenTree* propagatedThrow = fgPropagateCommaThrow(tree, op1->AsOp(), GTF_EMPTY);
+            if (propagatedThrow != nullptr)
             {
-                GenTree* propagatedThrow = fgPropagateCommaThrow(tree, op1->AsOp(), GTF_EMPTY);
-                if (propagatedThrow != nullptr)
-                {
-                    return propagatedThrow;
-                }
+                return propagatedThrow;
             }
+        }
 
-            if ((op2 != nullptr) && fgIsCommaThrow(op2, true))
+        if ((op2 != nullptr) && fgIsCommaThrow(op2, true))
+        {
+            GenTree* propagatedThrow = fgPropagateCommaThrow(tree, op2->AsOp(), op1->gtFlags & GTF_ALL_EFFECT);
+            if (propagatedThrow != nullptr)
             {
-                GenTree* propagatedThrow = fgPropagateCommaThrow(tree, op2->AsOp(), op1->gtFlags & GTF_ALL_EFFECT);
-                if (propagatedThrow != nullptr)
-                {
-                    return propagatedThrow;
-                }
+                return propagatedThrow;
             }
         }
     }
@@ -11505,6 +11501,13 @@ GenTree* Compiler::fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow,
     // Comma throw propagation does not preserve VNs, and deletes nodes.
     assert(fgGlobalMorph);
     assert(fgIsCommaThrow(commaThrow));
+
+    bool mightBeLocation = (parent->OperIsLocal() || parent->OperIsIndir()) && ((parent->gtFlags & GTF_DONT_CSE) != 0);
+
+    if (mightBeLocation)
+    {
+        return nullptr;
+    }
 
     if ((commaThrow->gtFlags & GTF_COLON_COND) == 0)
     {
