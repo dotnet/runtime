@@ -5,7 +5,8 @@
 #include "asmconstants.h"
 #include "asmmacros.h"
 
-#define STUB_PAGE_SIZE 0x4000
+; STUB_PAGE_SIZE must match the behavior of GetStubCodePageSize() on this architecture/os
+#define STUB_PAGE_SIZE 16384
 
 #define DATA_SLOT(stub, field) (stub##Code + STUB_PAGE_SIZE + stub##Data__##field)
 

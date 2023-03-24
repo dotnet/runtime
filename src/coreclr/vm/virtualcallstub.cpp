@@ -564,6 +564,8 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
             if (dwWastedReserveMemSize != 0)
             {
                 DWORD cWastedPages = dwWastedReserveMemSize / GetOsPageSize();
+
+                // Split the wasted pages over the 2 LoaderHeaps that we allocate as part of a VirtualCallStubManager
                 DWORD cPagesPerHeap = cWastedPages / 2;
                 DWORD cPagesRemainder = cWastedPages % 2; // We'll throw this at the cache entry heap
 

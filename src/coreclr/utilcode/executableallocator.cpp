@@ -4,11 +4,7 @@
 #include "pedecoder.h"
 #include "executableallocator.h"
 
-#ifdef ENABLE_MAPRW_STATISTICS
-static int ExecutableAllocator_MapRW_Calls = 0;
-static int ExecutableAllocator_MapRW_CallsWithCacheMiss = 0;
-static int ExecutableAllocator_MapRW_LinkedListWalkDepth = 0;
-static int ExecutableAllocator_LinkedListTotalDepth = 0;
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
 #endif
 
 #ifdef VARIABLE_SIZED_CACHEDMAPPING_SIZE
@@ -45,6 +41,10 @@ int64_t ExecutableAllocator::g_mapFindRXTimeSum = 0;
 int64_t ExecutableAllocator::g_mapCreateTimeSum = 0;
 int64_t ExecutableAllocator::g_releaseCount = 0;
 int64_t ExecutableAllocator::g_reserveCount = 0;
+int64_t ExecutableAllocator::g_MapRW_Calls = 0;
+int64_t ExecutableAllocator::g_MapRW_CallsWithCacheMiss = 0;
+int64_t ExecutableAllocator::g_MapRW_LinkedListWalkDepth = 0;
+int64_t ExecutableAllocator::g_LinkedListTotalDepth = 0;
 
 ExecutableAllocator::LogEntry ExecutableAllocator::s_usageLog[256];
 int ExecutableAllocator::s_logMaxIndex = 0;
@@ -107,6 +107,12 @@ void ExecutableAllocator::DumpHolderUsage()
 
     fprintf(stderr, "Reserve count: %lld\n", g_reserveCount);
     fprintf(stderr, "Release count: %lld\n", g_releaseCount);
+
+    printf("g_MapRW_Calls: %lld\n", g_MapRW_Calls);
+    printf("g_MapRW_CallsWithCacheMiss: %lld\n", g_MapRW_CallsWithCacheMiss);
+    printf("g_MapRW_LinkedListWalkDepth: %lld\n", g_MapRW_LinkedListWalkDepth);
+    printf("g_MapRW_LinkedListAverageDepth: %f\n", (double)g_MapRW_LinkedListWalkDepth/(double)g_MapRW_CallsWithCacheMiss);
+    printf("g_LinkedListTotalDepth: %lld\n", g_LinkedListTotalDepth);
 
     fprintf(stderr, "ExecutableWriterHolder usage:\n");
 
@@ -235,24 +241,9 @@ ExecutableAllocator::~ExecutableAllocator()
     }
 }
 
-#ifdef ENABLE_MAPRW_STATISTICS
-void DumpMapRWStatistics()
-{
-    printf("ExecutableAllocator_MapRW_Calls: %d\n", ExecutableAllocator_MapRW_Calls);
-    printf("ExecutableAllocator_MapRW_CallsWithCacheMiss: %d\n", ExecutableAllocator_MapRW_CallsWithCacheMiss);
-    printf("ExecutableAllocator_MapRW_LinkedListWalkDepth: %d\n", ExecutableAllocator_MapRW_LinkedListWalkDepth);
-    printf("ExecutableAllocator_MapRW_LinkedListAverageDepth: %f\n", (double)ExecutableAllocator_MapRW_LinkedListWalkDepth/(double)ExecutableAllocator_MapRW_CallsWithCacheMiss);
-    printf("ExecutableAllocator_LinkedListTotalDepth: %d\n", ExecutableAllocator_LinkedListTotalDepth);
-}
-#endif
-
 HRESULT ExecutableAllocator::StaticInitialize(FatalErrorHandler fatalErrorHandler)
 {
     LIMITED_METHOD_CONTRACT;
-
-#ifdef ENABLE_MAPRW_STATISTICS
-    atexit(DumpMapRWStatistics);
-#endif
 
 #ifdef VARIABLE_SIZED_CACHEDMAPPING_SIZE
     ExecutableAllocator_CachedMappingSize = ARRAY_SIZE(m_cachedMapping);
@@ -260,7 +251,7 @@ HRESULT ExecutableAllocator::StaticInitialize(FatalErrorHandler fatalErrorHandle
     if (envString != NULL)
     {
         int customCacheSize = atoi(envString);
-        if(customCacheSize != 0)
+        if (customCacheSize != 0)
         {
             if ((customCacheSize > ARRAY_SIZE(m_cachedMapping)) || (customCacheSize <= 0))
             {
@@ -318,7 +309,7 @@ void ExecutableAllocator::RemoveCachedMapping(size_t index)
     if (index == 0)
         return;
 
-    BlockRW*& cachedMapping = m_cachedMapping[index - 1];
+    BlockRW* cachedMapping = m_cachedMapping[index - 1];
 
     if (cachedMapping == NULL)
         return;
@@ -335,7 +326,7 @@ void ExecutableAllocator::RemoveCachedMapping(size_t index)
         g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the RW mapping failed"));
     }
 
-    cachedMapping = NULL;
+    m_cachedMapping[index - 1] = NULL;
 #endif // ENABLE_CACHED_MAPPINGS
 }
 
@@ -344,7 +335,7 @@ size_t ExecutableAllocator::FindOverlappingCachedMapping(BlockRX* pBlock)
 {
     for (size_t index = 0; index < EXECUTABLE_ALLOCATOR_CACHE_SIZE; index++)
     {
-        BlockRW*& cachedMapping = m_cachedMapping[index];
+        BlockRW* cachedMapping = m_cachedMapping[index];
         if (cachedMapping != NULL)
         {
             // In case the cached mapping maps the region being released, it needs to be removed
@@ -366,14 +357,14 @@ void ExecutableAllocator::UpdateCachedMapping(BlockRW* pBlock)
     {
         if (pBlock == m_cachedMapping[index])
         {
-            // Move the found mapping to the front
+            // Move the found mapping to the front - note the overlapping memory, use memmove.
             memmove(&m_cachedMapping[1], &m_cachedMapping[0], sizeof(m_cachedMapping[0]) * index);
             m_cachedMapping[0] = pBlock;
             return;
         }
     }
 
-    // Must insert mapping in front
+    // Must insert mapping in front - note the overlapping memory, use memmove.
     RemoveCachedMapping(EXECUTABLE_ALLOCATOR_CACHE_SIZE);
     memmove(&m_cachedMapping[1], &m_cachedMapping[0], sizeof(m_cachedMapping[0]) * (EXECUTABLE_ALLOCATOR_CACHE_SIZE - 1));
     m_cachedMapping[0] = pBlock;
@@ -496,8 +487,8 @@ void ExecutableAllocator::AddRXBlock(BlockRX* pBlock)
     pBlock->next = m_pFirstBlockRX;
     m_pFirstBlockRX = pBlock;
 
-#ifdef ENABLE_MAPRW_STATISTICS
-    ExecutableAllocator_LinkedListTotalDepth++;
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    ExecutableAllocator::g_LinkedListTotalDepth++;
 #endif
 }
 
@@ -544,8 +535,8 @@ void ExecutableAllocator::Release(void* pRX)
                     pPrevBlock->next = pBlock->next;
                 }
 
-#ifdef ENABLE_MAPRW_STATISTICS
-                ExecutableAllocator_LinkedListTotalDepth--;
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+                ExecutableAllocator::g_LinkedListTotalDepth--;
 #endif
                 break;
             }
@@ -871,8 +862,8 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size, CacheableMapping cacheM
 #endif
 
     CRITSEC_Holder csh(m_CriticalSection);
-#ifdef ENABLE_MAPRW_STATISTICS
-    ExecutableAllocator_MapRW_Calls++;
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    ExecutableAllocator::g_MapRW_Calls++;
 #endif
 
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
@@ -887,15 +878,15 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size, CacheableMapping cacheM
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
     StopWatch sw2(&g_mapFindRXTimeSum);
 #endif
-#ifdef ENABLE_MAPRW_STATISTICS
-    ExecutableAllocator_MapRW_CallsWithCacheMiss++;
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+    ExecutableAllocator::g_MapRW_CallsWithCacheMiss++;
 #endif
 
     for (BlockRX** ppBlock = &m_pFirstBlockRX; *ppBlock != NULL; ppBlock = &((*ppBlock)->next))
     {
         BlockRX* pBlock = *ppBlock;
-#ifdef ENABLE_MAPRW_STATISTICS
-        ExecutableAllocator_MapRW_LinkedListWalkDepth++;
+#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
+        ExecutableAllocator::g_MapRW_LinkedListWalkDepth++;
 #endif
         if (pRX >= pBlock->baseRX && ((size_t)pRX + size) <= ((size_t)pBlock->baseRX + pBlock->size))
         {

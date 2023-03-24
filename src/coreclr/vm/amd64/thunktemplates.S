@@ -5,6 +5,7 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
+; PAGE_SIZE must match the behavior of GetStubCodePageSize() on this architecture/os
 PAGE_SIZE = 16384
 
 #define DATA_SLOT(stub, field) C_FUNC(stub##Code) + PAGE_SIZE + stub##Data__##field

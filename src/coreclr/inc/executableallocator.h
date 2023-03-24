@@ -71,6 +71,11 @@ private:
 
     static int64_t g_releaseCount;
     static int64_t g_reserveCount;
+
+    static int64_t g_MapRW_Calls;
+    static int64_t g_MapRW_CallsWithCacheMiss;
+    static int64_t g_MapRW_LinkedListWalkDepth;
+    static int64_t g_LinkedListTotalDepth;
 #endif
     // Instance of the allocator
     static ExecutableAllocator* g_instance;
@@ -114,7 +119,6 @@ private:
 
 // Uncomment these to gather information to better choose caching parameters
 //#define VARIABLE_SIZED_CACHEDMAPPING_SIZE
-//#define ENABLE_MAPRW_STATISTICS
 
     // Last RW mappings cached so that it can be reused for the next mapping
     // request if it goes into the same range.
@@ -343,7 +347,7 @@ public:
 
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
 #undef ExecutableWriterHolder
-#ifdef TARGET_UNIX
+#ifdef HOST_UNIX
 #define ExecutableWriterHolder ExecutableAllocator::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__); ExecutableWriterHolderNoLog
 #define AssignExecutableWriterHolder(addressRX, size) AssignExecutableWriterHolder(addressRX, size); ExecutableAllocator::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__); 
 #else
