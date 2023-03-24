@@ -16,14 +16,12 @@ namespace System.Diagnostics.Tracing
     {
         private readonly EventSource _eventSource;
         private readonly List<DiagnosticCounter> _counters;
-        private int _refCount;
         private static readonly object s_counterGroupLock = new object();
 
         internal CounterGroup(EventSource eventSource)
         {
             _eventSource = eventSource;
             _counters = new List<DiagnosticCounter>();
-            _refCount = 0;
             RegisterCommandCallback();
         }
 
@@ -48,52 +46,35 @@ namespace System.Diagnostics.Tracing
 
         private void OnEventSourceCommand(object? sender, EventCommandEventArgs e)
         {
+            // Should only be enable or disable
+            Debug.Assert(e.Command == EventCommand.Enable || e.Command == EventCommand.Disable);
+
             lock (s_counterGroupLock)      // Lock the CounterGroup
             {
+                float intervalValue = 1.0f;
                 if (e.Command == EventCommand.Enable)
                 {
                     Debug.Assert(e.Arguments != null);
 
-                    float intervalValue = 1.0f;
                     if (e.Arguments.TryGetValue("EventCounterIntervalSec", out string? valueStr)
                         && float.TryParse(valueStr, out float value))
                     {
                         intervalValue = value;
                     }
-
-                    if (intervalValue > 0)
-                    {
-                        Debug.Assert(_refCount >= 0);
-                        ++_refCount;
-                        EnableTimer(intervalValue);
-                    }
-                    else
-                    {
-                        Debug.Assert(_refCount >= 1);
-                        --_refCount;
-                        DisableTimer();
-                    }
                 }
-                else if (e.Command == EventCommand.Disable)
+
+                if ((e.Command == EventCommand.Disable && !_eventSource.IsEnabled()) || intervalValue <= 0)
                 {
-                    Debug.Assert(_refCount >= 1);
-                    --_refCount;
-                    if (_refCount == 0)
-                    {
-                        DisableTimer();
-                    }
+                    DisableTimer();
                 }
                 else
                 {
-                    // Should only be enable or disable
-                    Debug.Assert(false);
+                    EnableTimer(intervalValue);
                 }
 
-                // Sanity checks. It is possible that an EventSource could be enabled without the counter group being enabled,
-                // so we can't assert that. But we know if the counter group is enabled the EventSource must be.
-                Debug.Assert((s_counterGroupEnabledList == null && _refCount == 0)
-                                || (s_counterGroupEnabledList!.Contains(this) && _refCount > 0 && _eventSource.IsEnabled())
-                                || (!s_counterGroupEnabledList!.Contains(this) && _refCount == 0));
+                Debug.Assert((s_counterGroupEnabledList == null && !_eventSource.IsEnabled())
+                                || (_eventSource.IsEnabled() && s_counterGroupEnabledList!.Contains(this))
+                                || (!_eventSource.IsEnabled() && !s_counterGroupEnabledList!.Contains(this)));
             }
         }
 
@@ -148,6 +129,7 @@ namespace System.Diagnostics.Tracing
 
         private void EnableTimer(float pollingIntervalInSeconds)
         {
+            Debug.Assert(pollingIntervalInSeconds > 0);
             Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
             if (_pollingIntervalInMilliseconds == 0 || pollingIntervalInSeconds * 1000 < _pollingIntervalInMilliseconds)
             {

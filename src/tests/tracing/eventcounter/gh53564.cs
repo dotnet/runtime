@@ -33,7 +33,6 @@ namespace gh53564Tests
                 // first set interval to 1 seconds
                 refreshInterval["EventCounterIntervalSec"] = "1";
                 EnableEvents(source, EventLevel.Informational, (EventKeywords)(-1), refreshInterval);
-                DisableEvents(source);
 
                 // wait a moment to get some events
                 Thread.Sleep(TimeSpan.FromSeconds(3));
@@ -42,7 +41,6 @@ namespace gh53564Tests
                 Console.WriteLine($"[{DateTime.UtcNow:hh:mm:ss.fff}] OnEventSourceCreated :: Setting interval to 0");
                 refreshInterval["EventCounterIntervalSec"] = "0";
                 EnableEvents(source, EventLevel.Informational, (EventKeywords)(-1), refreshInterval);
-                DisableEvents(source);
                 setToZeroTimestamp = DateTime.UtcNow + TimeSpan.FromSeconds(1); // Stash timestamp 1 second after setting to 0
                 setToZero.Set();
 
@@ -51,7 +49,6 @@ namespace gh53564Tests
                 Console.WriteLine($"[{DateTime.UtcNow:hh:mm:ss.fff}] OnEventSourceCreated :: Setting interval to 1");
                 refreshInterval["EventCounterIntervalSec"] = "1";
                 EnableEvents(source, EventLevel.Informational, (EventKeywords)(-1), refreshInterval);
-                DisableEvents(source);
             }
         }
 
