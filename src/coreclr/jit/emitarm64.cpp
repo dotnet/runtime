@@ -16369,7 +16369,7 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
 //                        instruction into a cheaper "mov" instruction.
 //
 // Examples:            ldr     w1, [x20, #0x10]
-//                      ldr     w2, [x20, #0x10]    =>  mov     w1, w2
+//                      ldr     w2, [x20, #0x10]    =>  mov     w2, w1
 //
 // Arguments:
 //     ins  - The instruction code
@@ -16398,7 +16398,7 @@ bool emitter::IsOptimizableLdrToMov(
     }
 
     regNumber prevReg1   = emitLastIns->idReg1();
-    regNumber prevReg2   = emitLastIns->idReg2();
+    regNumber prevReg2   = encodingZRtoSP(emitLastIns->idReg2());
     insFormat lastInsFmt = emitLastIns->idInsFmt();
     emitAttr  prevSize   = emitLastIns->idOpSize();
     ssize_t   prevImm    = emitGetInsSC(emitLastIns);
@@ -16418,8 +16418,7 @@ bool emitter::IsOptimizableLdrToMov(
 
     if (!isGeneralRegister(reg1) || !isGeneralRegister(prevReg1))
     {
-        // Either register 1 or previous register 1 is not a general register
-        // or the zero register, so we cannot optimise.
+        // We cannot optimise when register 1 or previous register 1 is a general register.
         return false;
     }
 
