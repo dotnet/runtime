@@ -606,6 +606,17 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     ConfigureConstructorParameters();
                 }
+
+                // Check for misuse of required properties
+                // Ideally this check should be done during property.EnsureConfigured but at that point we have no knowledge about parametrized constructors
+                // and we cannot check if property is read-only correctly
+                foreach (KeyValuePair<string, JsonPropertyInfo> jsonPropertyInfoKv in PropertyCache.List)
+                {
+                    JsonPropertyInfo jsonPropertyInfo = jsonPropertyInfoKv.Value;
+                    jsonPropertyInfo.ValidateRequiredPropertyConfiguration();
+                }
+
+                ExtensionDataProperty?.ValidateRequiredPropertyConfiguration();
             }
 
             if (ElementType != null)
@@ -1006,6 +1017,7 @@ namespace System.Text.Json.Serialization.Metadata
             public JsonPropertyInfo JsonPropertyInfo { get; }
         }
 
+        [MemberNotNull(nameof(PropertyCache))]
         internal void ConfigureProperties()
         {
             Debug.Assert(Kind == JsonTypeInfoKind.Object);

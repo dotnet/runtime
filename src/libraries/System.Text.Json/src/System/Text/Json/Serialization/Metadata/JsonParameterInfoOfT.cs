@@ -21,6 +21,8 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(parameterInfoValues.ParameterType == typeof(T));
             Debug.Assert(matchingPropertyInfo.IsConfigured);
 
+            matchingPropertyInfo.MarkAsConstructorParameter();
+
             MatchingProperty = matchingPropertyInfo;
             DefaultValue = parameterInfoValues.HasDefaultValue && parameterInfoValues.DefaultValue is not null
                 ? (T)parameterInfoValues.DefaultValue

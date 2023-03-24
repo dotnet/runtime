@@ -286,6 +286,67 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async void ClassWithReadOnlyRequiredMemberInitializedInParameterizedCtor()
+        {
+            JsonSerializerOptions options = JsonSerializerOptions.Default;
+            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithReadOnlyRequiredMemberInitializedInParameterizedCtor>(options),
+                nameof(PersonWithReadOnlyRequiredMemberInitializedInParameterizedCtor.Name));
+
+            var obj = new PersonWithReadOnlyRequiredMemberInitializedInParameterizedCtor("foo");
+
+            string json = await Serializer.SerializeWrapper(obj, options);
+            Assert.Equal("""{"Name":"foo"}""", json);
+
+            var deserialized = await Serializer.DeserializeWrapper<PersonWithReadOnlyRequiredMemberInitializedInParameterizedCtor>(json, options);
+            Assert.Equal(obj.Name, deserialized.Name);
+
+            json = "{}";
+            JsonException exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithReadOnlyRequiredMemberInitializedInParameterizedCtor>(json, options));
+            Assert.Contains("Name", exception.Message);
+        }
+
+        public class PersonWithReadOnlyRequiredMemberInitializedInParameterizedCtor
+        {
+            [JsonRequired]
+            public string Name { get; }
+
+            public PersonWithReadOnlyRequiredMemberInitializedInParameterizedCtor(string name)
+            {
+                Name = name;
+            }
+        }
+
+        [Fact]
+        public async void ClassWithInitOnlyRequiredMemberInitializedInParameterizedCtor()
+        {
+            JsonSerializerOptions options = JsonSerializerOptions.Default;
+            AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithInitOnlyRequiredMemberInitializedInParameterizedCtor>(options),
+                nameof(PersonWithInitOnlyRequiredMemberInitializedInParameterizedCtor.Name));
+
+            var obj = new PersonWithReadOnlyRequiredMemberInitializedInParameterizedCtor("foo");
+
+            string json = await Serializer.SerializeWrapper(obj, options);
+            Assert.Equal("""{"Name":"foo"}""", json);
+
+            var deserialized = await Serializer.DeserializeWrapper<PersonWithInitOnlyRequiredMemberInitializedInParameterizedCtor>(json, options);
+            Assert.Equal(obj.Name, deserialized.Name);
+
+            json = "{}";
+            JsonException exception = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<PersonWithInitOnlyRequiredMemberInitializedInParameterizedCtor>(json, options));
+            Assert.Contains("Name", exception.Message);
+        }
+
+        public class PersonWithInitOnlyRequiredMemberInitializedInParameterizedCtor
+        {
+            public required string Name { get; init; }
+
+            public PersonWithInitOnlyRequiredMemberInitializedInParameterizedCtor(string name)
+            {
+                Name = name;
+            }
+        }
+
+        [Fact]
         public async Task ClassWithRequiredKeywordAndSetsRequiredMembersOnCtorWorks()
         {
             AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembersAndSetsRequiredMembers>(Serializer.DefaultOptions)
@@ -492,20 +553,19 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task RequiredNonDeserializablePropertyThrows()
         {
-            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(static ti =>
-            {
-                for (int i = 0; i < ti.Properties.Count; i++)
-                {
-                    if (ti.Properties[i].Name == nameof(PersonWithRequiredMembers.FirstName))
-                    {
-                        ti.Properties[i].Set = null;
-                    }
-                }
-            });
-
+            JsonSerializerOptions options = JsonSerializerOptions.Default;
             string json = """{"FirstName":"foo","MiddleName":"","LastName":"bar"}""";
-            InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredMembers>(json, options));
-            Assert.Contains(nameof(PersonWithRequiredMembers.FirstName), exception.Message);
+            InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<PersonWithRequiredReadOnlyMember>(json, options));
+            Assert.Contains(nameof(PersonWithRequiredReadOnlyMember.FirstName), exception.Message);
+        }
+
+        public class PersonWithRequiredReadOnlyMember
+        {
+            [JsonRequired]
+            public string FirstName { get; }
+            public string MiddleName { get; set; } = "";
+            [JsonRequired]
+            public string LastName { get; set; }
         }
 
         [Fact]

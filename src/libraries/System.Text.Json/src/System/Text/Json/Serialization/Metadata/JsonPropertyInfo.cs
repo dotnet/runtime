@@ -178,6 +178,15 @@ namespace System.Text.Json.Serialization.Metadata
         internal bool IsVirtual { get; set; }
 
         /// <summary>
+        /// Provides information if property is initialized when constructor is called
+        /// </summary>
+        /// <remarks>
+        /// This property is modified after property's Configure but before its parent's JsonTypeInfo Configure is finished.
+        /// This is due to parameterized constructor logic needing properties to be Configured.
+        /// </remarks>
+        internal bool IsConstructorParameter { get; private set; }
+
+        /// <summary>
         /// Specifies whether the current property is a special extension data property.
         /// </summary>
         /// <exception cref="InvalidOperationException">
@@ -263,6 +272,12 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         public Type PropertyType { get; }
 
+        internal void MarkAsConstructorParameter()
+        {
+            Debug.Assert(!IsConstructorParameter);
+            IsConstructorParameter = true;
+        }
+
         private protected void VerifyMutable()
         {
             ParentTypeInfo?.VerifyMutable();
@@ -302,9 +317,14 @@ namespace System.Text.Json.Serialization.Metadata
                 CacheNameAsUtf8BytesAndEscapedNameSection();
             }
 
+            IsConfigured = true;
+        }
+
+        internal void ValidateRequiredPropertyConfiguration()
+        {
             if (IsRequired)
             {
-                if (!CanDeserialize)
+                if (!CanDeserialize && !IsConstructorParameter)
                 {
                     ThrowHelper.ThrowInvalidOperationException_JsonPropertyRequiredAndNotDeserializable(this);
                 }
@@ -316,8 +336,6 @@ namespace System.Text.Json.Serialization.Metadata
 
                 Debug.Assert(!IgnoreNullTokensOnRead);
             }
-
-            IsConfigured = true;
         }
 
         private protected abstract void DetermineEffectiveConverter(JsonTypeInfo jsonTypeInfo);
