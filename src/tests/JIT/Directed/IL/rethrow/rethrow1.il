@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly rethrow1
+.assembly 'Rethrow1'
 {
 }
 
@@ -75,8 +76,12 @@
   // Exception count 1
 } // end of global method '?test@@YAHXZ'
 
+.class public auto ansi rethrow1 {
 .method public static int32 main() il managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   // Method begins at RVA 0x10a0
   // Code size       145 (0x91)
   .entrypoint
@@ -140,3 +145,4 @@
   IL_0090:  ret
   // Exception count 1
 } // end of global method 'main'
+}

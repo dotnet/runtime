@@ -3,10 +3,12 @@
 //
 
 using System;
+using Xunit;
 
-internal class Simple2_Array_Test
+public class Simple2_Array_Test
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine("Starting...");
         int SIZE = 10;

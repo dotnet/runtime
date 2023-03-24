@@ -3,9 +3,10 @@
 //
 
 using System;
+using Xunit;
 namespace A
 {
-    internal class B
+    public class B
     {
         public static int downBy1ge(int amount)
         {
@@ -161,7 +162,8 @@ namespace A
             return sum + i;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool failed = false;
 

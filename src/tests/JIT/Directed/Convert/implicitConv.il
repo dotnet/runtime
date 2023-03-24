@@ -11,7 +11,7 @@
 .assembly 'implicitConv' {}
 .assembly extern mscorlib{auto}
 
-.class ILGEN_0xc60e022c {
+.class public ILGEN_0xc60e022c {
 
 .method static int16  Method_0xf7bb2d95() {
 .zeroinit 
@@ -22,7 +22,7 @@
     conv.i4
     ret
 }
-.method static int32 Main() {
+.method public static int32 Main() {
 .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
     01 00 00 00
 )

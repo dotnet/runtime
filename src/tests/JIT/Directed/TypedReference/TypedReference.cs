@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 
 public class BringUpTest_TypedReference
@@ -12,7 +13,8 @@ public class BringUpTest_TypedReference
     const string Apple = "apple";
     const string Orange = "orange";
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int i = Fail;
         F(__makeref(i));

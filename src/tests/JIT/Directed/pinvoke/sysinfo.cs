@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 namespace JitTest
 {
     using System;
     using System.Runtime.InteropServices;
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct SYSTEM_INFO
+    public struct SYSTEM_INFO
     {
         private uint _dwOemId;
         private uint _dwPageSize;
@@ -23,7 +24,8 @@ namespace JitTest
         [DllImport("kernel32", CharSet = CharSet.Ansi)]
         public extern static void GetSystemInfo(ref SYSTEM_INFO si);
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             SYSTEM_INFO si = new SYSTEM_INFO();
             try

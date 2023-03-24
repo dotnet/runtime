@@ -10,6 +10,7 @@ using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct S16
 {
@@ -48,7 +49,7 @@ class HeapInt
     public override string ToString() => $"{Value}";
 }
 
-internal class Program
+public class Program
 {
     private static readonly IntPtr s_calcStaticCalli;
     private static readonly IntPtr s_calcStaticCalliOther;
@@ -84,7 +85,8 @@ internal class Program
         s_instanceMethodOnValueType = instanceMethodOnValueType;
     }
 
-    private static int Main()
+    [Fact]
+    public static int Main()
     {
         const int numCalcIters = 1000000;
         const int countUpIters = 1000000;

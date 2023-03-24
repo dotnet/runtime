@@ -3,12 +3,13 @@
 
  .module 'rethrow.exe'
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'rethrow'// as "rethrow"
+.assembly 'leave1'
 {
   
   
@@ -55,7 +56,7 @@
   .size 40
 } // end of class '$MultiByte$40'
 
-.class value explicit ansi sealed $MultiByte$28
+.class public value explicit ansi sealed $MultiByte$28
 {
   .pack 1
   .size 28
@@ -133,9 +134,12 @@ ldstr "In Catch"
   IL_005b:  ret
 } // end of global method 'test'
 
-.method public static int32 
-        main() il managed
+.class public auto ansi leave1 {
+.method public static int32 main() il managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .vtentry 1 : 1
 .entrypoint
   // Code size       110 (0x6e)
@@ -195,4 +199,4 @@ ldstr "!!! HMM...."
   IL_006c:  ldc.i4.0
   IL_006d:  ret
 } // end of global method 'main'
-
+}

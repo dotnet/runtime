@@ -14,9 +14,10 @@ unsafe class ThisCallNative
     public static extern int ThisCallWithEmptySignature();
 }
 
-unsafe class EmptyThisCallTest
+public unsafe class EmptyThisCallTest
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

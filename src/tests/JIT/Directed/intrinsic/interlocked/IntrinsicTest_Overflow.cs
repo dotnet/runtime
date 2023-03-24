@@ -7,6 +7,7 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class IntrinsicTest
 {
     private static int s_counter = 3245;
@@ -129,7 +130,8 @@ public class IntrinsicTest
         return fail;
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (MainTest())
         {

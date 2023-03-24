@@ -10,7 +10,7 @@
 .assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
 .assembly legacy library 'nullsdarr' { }
-.class private auto ansi beforefieldinit nullsdarr
+.class public auto ansi beforefieldinit nullsdarr
        extends [mscorlib]System.Object
 {
   .method public static void f() cil managed

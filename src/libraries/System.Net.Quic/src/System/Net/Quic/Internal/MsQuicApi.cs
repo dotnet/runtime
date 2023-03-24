@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Quic;
-
 using static Microsoft.Quic.MsQuic;
 
 #if TARGET_WINDOWS

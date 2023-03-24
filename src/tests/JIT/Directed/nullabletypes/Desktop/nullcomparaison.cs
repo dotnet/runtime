@@ -3,6 +3,7 @@
 
 using System.Runtime.InteropServices;
 using System;
+using Xunit;
 
 
 internal class NullableTest1
@@ -1553,9 +1554,10 @@ internal class NullableTest45
 
 
 
-internal class Test_nullcomparaison
+public class Test_nullcomparaison
 {
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

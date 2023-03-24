@@ -21,47 +21,6 @@
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }
-// MVID: {DA4EAAAA-684F-4AB1-AC9B-90B895DBBD60}
-.imagebase 0x00400000
-.subsystem 0x00000003
-.file alignment 512
-.corflags 0x00000001
-// Image base: 0x06e80000
-//
-// ============== CLASS STRUCTURE DECLARATION ==================
-//
-.namespace ShiftTest
-{
-  .class public auto ansi beforefieldinit CL
-         extends [mscorlib]System.Object
-  {
-  } // end of class CL
-
-  .class public sequential ansi sealed beforefieldinit VT
-         extends [mscorlib]System.ValueType
-  {
-  } // end of class VT
-
-  .class public auto ansi beforefieldinit byte32Test
-         extends [mscorlib]System.Object
-  {
-  } // end of class byte32Test
-
-} // end of namespace ShiftTest
-
-
-// =============================================================
-
-
-// =============== GLOBAL FIELDS AND METHODS ===================
-
-
-// =============================================================
-
-
-// =============== CLASS MEMBERS DECLARATION ===================
-//   note that class flags, 'extends' and 'implements' clauses
-//          are provided here for information only
 
 .namespace ShiftTest
 {
@@ -132,8 +91,7 @@
       IL_000b:  ret
     } // end of method byte32Test::f2
 
-    .method public hidebysig static int32
-            Main() cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

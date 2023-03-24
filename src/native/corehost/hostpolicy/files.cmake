@@ -17,6 +17,7 @@ list(APPEND SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/hostpolicy.cpp
     ${CMAKE_CURRENT_LIST_DIR}/hostpolicy_init.cpp
     ${CMAKE_CURRENT_LIST_DIR}/shared_store.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/version.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../bundle/dir_utils.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../bundle/extractor.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../bundle/file_entry.cpp
@@ -34,6 +35,7 @@ list(APPEND HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/hostpolicy_context.h
     ${CMAKE_CURRENT_LIST_DIR}/hostpolicy_init.h
     ${CMAKE_CURRENT_LIST_DIR}/shared_store.h
+    ${CMAKE_CURRENT_LIST_DIR}/version.h
     ${CMAKE_CURRENT_LIST_DIR}/../hostpolicy.h
     ${CMAKE_CURRENT_LIST_DIR}/../corehost_context_contract.h
     ${CMAKE_CURRENT_LIST_DIR}/../bundle/dir_utils.h

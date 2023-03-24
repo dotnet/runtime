@@ -3,10 +3,12 @@
 //
 
 using System;
+using Xunit;
 
-internal class AA
+public class AA
 {
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         uint SMALL1 = 0x00000100;
         uint SMALL2 = 0x7fffffff;

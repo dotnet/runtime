@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-internal class ConcatTest
+public class ConcatTest
 {
     static string strA = "A";
     static string strB = "B";
@@ -19,7 +20,8 @@ internal class ConcatTest
 
     static int iReturn = 100;
 
-    static public int Main()
+    [Fact]
+    static public int TestEntryPoint()
     {
         iReturn = 100;
         try
