@@ -1087,6 +1087,9 @@ void emitter::emitIns_I_la(emitAttr size, regNumber reg, ssize_t imm)
 {
     assert(!EA_IS_RELOC(size));
     assert(isGeneralRegister(reg));
+
+    // TODO-CQ-RISCV: at least for imm=-2*1024*1024*1024 (and similar ones) code can be simplified to "lui rd, 0x80000"
+
     if (0 == ((imm + 0x800) >> 31))
     {
         if (((imm + 0x800) >> 12) != 0)
