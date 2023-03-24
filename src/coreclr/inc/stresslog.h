@@ -597,14 +597,14 @@ struct StressLogChunk
 
     void * operator new (size_t size) throw()
     {
-        if (IsInCantAllocStressLogRegion ())
-        {
-            return NULL;
-        }
 #ifdef MEMORY_MAPPED_STRESSLOG
         if (s_memoryMapped)
             return StressLog::AllocMemoryMapped(size);
 #endif //MEMORY_MAPPED_STRESSLOG
+        if (IsInCantAllocStressLogRegion ())
+        {
+            return NULL;
+        }
 #ifdef HOST_WINDOWS
         _ASSERTE(s_LogChunkHeap);
         return HeapAlloc(s_LogChunkHeap, 0, size);

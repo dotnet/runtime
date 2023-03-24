@@ -122,10 +122,10 @@ namespace System
                 throw new RankException(SR.Rank_MultiDimNotSupported);
 
             if (sourceIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(sourceIndex), "Value has to be >= 0.");
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (destinationIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(destinationIndex), "Value has to be >= 0.");
+                throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             var src = sourceArray;
             var dst = destinationArray;

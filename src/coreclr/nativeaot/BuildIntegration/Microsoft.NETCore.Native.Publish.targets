@@ -41,7 +41,6 @@
   <Target Name="_ComputeAssembliesToCompileToNative" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
     <Warning Condition="Exists($(UserRuntimeConfig))" Text="The published project has a runtimeconfig.template.json that is not supported by PublishAot. Move the configuration to the project file using RuntimeHostConfigurationOption." />
-    
     <!-- Fail with descriptive error message for common mistake. -->
     <Error Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '6.0.0'))" Text=".NET SDK 6+ is required for native compilation." />
     <Error Condition="$([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '6.0'))" Text="For native compilation, the project needs to target .NET 6 or higher." />

@@ -27,6 +27,7 @@
 #include <mono/utils/mono-memory-model.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/tokentype.h>
+#include "llvm-intrinsics-types.h"
 
 #include "interp/interp.h"
 
@@ -35,9 +36,12 @@
 #define PARENTHESIZE(...) (__VA_ARGS__)
 #define EXPAND_FUN(m, ...) EXPAND(m PARENTHESIZE(__VA_ARGS__))
 #define OPFMT_WDSS _w, dreg, sreg1, sreg2
+#define OPFMT_WTDS _w, _t, dreg, sreg1
 #define OPFMT_WTDSS _w, _t, dreg, sreg1, sreg2
+#define OPFMT_WTDS _w, _t, dreg, sreg1
 #define OPFMT_WTDSS_REV _w, _t, dreg, sreg2, sreg1
 #define _UNDEF(...) g_assert_not_reached ()
+#define _SKIP(...) goto manual_instruction_emit
 #define SIMD_OP_CODE(reg_w, op, c) ((reg_w << 31) | (op) << 16 | (c))
 #define VREG_64 VREG_LOW
 #define VREG_128 VREG_FULL
@@ -84,6 +88,7 @@ MONO_DISABLE_WARNING(4334)
 
 #define FP_TEMP_REG ARMREG_D16
 #define FP_TEMP_REG2 ARMREG_D17
+#define NEON_TMP_REG FP_TEMP_REG
 
 #define THUNK_SIZE (4 * 4)
 
@@ -166,14 +171,16 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 	MINI_BEGIN_CODEGEN ();
 
 	if (has_target) {
-		start = code = mono_global_codeman_reserve (12);
+		int size = 16;
+		start = code = mono_global_codeman_reserve (size);
 
 		/* Replace the this argument with the target */
+		arm_dmb (code, ARM_DMB_ISHLD);
 		arm_ldrx (code, ARMREG_IP0, ARMREG_R0, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
 		arm_ldrx (code, ARMREG_R0, ARMREG_R0, MONO_STRUCT_OFFSET (MonoDelegate, target));
 		code = mono_arm_emit_brx (code, ARMREG_IP0);
 
-		g_assert ((code - start) <= 12);
+		g_assert ((code - start) <= size);
 	} else {
 		int size, i;
 
@@ -863,6 +870,50 @@ emit_ldrfpq (guint8 *code, int rt, int rn, int imm)
 		code = emit_imm (code, ARMREG_IP0, imm);
 		arm_addx (code, ARMREG_IP0, rn, ARMREG_IP0);
 		arm_ldrfpq (code, rt, ARMREG_IP0, 0);
+	}
+	return code;
+}
+
+static WARN_UNUSED_RESULT guint8*
+emit_smax_i8 (guint8 *code, int width, int type, int rd, int rn, int rm)
+{
+	g_assert (rd == rn);
+	if (rn != rm) {
+		arm_neon_cmgt (code, width, type, NEON_TMP_REG, rn, rm);
+		arm_neon_bif (code, width, rd, rm, NEON_TMP_REG);
+	}
+	return code;
+}
+
+static WARN_UNUSED_RESULT guint8*
+emit_umax_i8 (guint8 *code, int width, int type, int rd, int rn, int rm)
+{
+	g_assert (rd == rn);
+	if (rn != rm) {
+		arm_neon_cmhi (code, width, type, NEON_TMP_REG, rn, rm);
+		arm_neon_bif (code, width, rd, rm, NEON_TMP_REG);
+	}
+	return code;
+}
+
+static WARN_UNUSED_RESULT guint8*
+emit_smin_i8 (guint8 *code, int width, int type, int rd, int rn, int rm)
+{
+	g_assert (rd == rn);
+	if (rn != rm) {
+		arm_neon_cmgt (code, width, type, NEON_TMP_REG, rm, rn);
+		arm_neon_bif (code, width, rd, rm, NEON_TMP_REG);
+	}
+	return code;
+}
+
+static WARN_UNUSED_RESULT guint8*
+emit_umin_i8 (guint8 *code, int width, int type, int rd, int rn, int rm)
+{
+	g_assert (rd == rn);
+	if (rn != rm) {
+		arm_neon_cmhi (code, width, type, NEON_TMP_REG, rm, rn);
+		arm_neon_bif (code, width, rd, rm, NEON_TMP_REG);
 	}
 	return code;
 }
@@ -3350,6 +3401,27 @@ emit_move_return_value (MonoCompile *cfg, guint8 * code, MonoInst *ins)
 	return code;
 }
 
+static guint8*
+emit_xextract (guint8* code, int width, int mode, int dreg, int sreg1)
+{
+	switch (mode) {
+	case SIMD_EXTR_IS_ANY_SET:
+		arm_neon_umaxv (code, width, TYPE_I8, FP_TEMP_REG, sreg1);
+		arm_neon_umov_b (code, dreg, FP_TEMP_REG, 0);
+		arm_lsrw(code, dreg, dreg, 7); // dreg contains 0xff for TRUE or 0x0 for FALSE, normalize to 0x1/0x0
+		break;
+	case SIMD_EXTR_ARE_ALL_SET:
+		arm_neon_uminv (code, width, TYPE_I8, FP_TEMP_REG, sreg1);
+		arm_neon_umov_b (code, dreg, FP_TEMP_REG, 0);
+		arm_lsrw(code, dreg, dreg, 7);
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+
+	return code;
+}
+
 /*
  * emit_branch_island:
  *
@@ -3397,6 +3469,12 @@ static gboolean
 is_type_float_macro (MonoTypeEnum type)
 {
 	return (type == MONO_TYPE_R4 || type == MONO_TYPE_R8); 
+}
+
+static gboolean
+is_type_unsigned_macro (MonoTypeEnum type)
+{
+	return (type == MONO_TYPE_U1 || type == MONO_TYPE_U2 || type == MONO_TYPE_U4 || type == MONO_TYPE_U8);
 }
 
 static int
@@ -3502,7 +3580,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			goto after_instruction_emit;
 		}
-		
+
+	manual_instruction_emit:
 		switch (ins->opcode) {
 		case OP_ICONST:
 			code = emit_imm (code, dreg, ins->inst_c0);
@@ -3665,7 +3744,59 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
+		case OP_XCAST:
+			break;
 
+		case OP_EXTRACT_I1:
+		case OP_EXTRACT_I2:
+		case OP_EXTRACT_I4:
+		case OP_EXTRACT_I8: {
+			const int t = get_type_size_macro (ins->inst_c1);
+			// smov is not defined for i64
+			if (is_type_unsigned_macro (ins->inst_c1) || t == TYPE_I64) {
+				arm_neon_umov (code, t, ins->dreg, ins->sreg1, ins->inst_c0);
+			} else {
+				arm_neon_smov (code, t, ins->dreg, ins->sreg1, ins->inst_c0);
+			}
+			break;
+		}
+		case OP_EXTRACT_R4:
+		case OP_EXTRACT_R8:
+			if (ins->dreg != ins->sreg1 || ins->inst_c0 != 0) {
+				const int t = get_type_size_macro (ins->inst_c1);
+				// Technically, this broadcasts element #inst_c0 to all dest XREG elements; whereas it should
+				// set the FREG to the said element. Since FREG and XREG pool is the same on arm64 and the rest
+				// of the F/XREG is ignored in FREG mode, this operation remains valid.
+				arm_neon_fdup_e (code, VREG_FULL, t, ins->dreg, ins->sreg1, ins->inst_c0);
+			}
+			break;
+		case OP_ARM64_XADDV: {
+			switch (ins->inst_c0) {
+			case INTRINS_AARCH64_ADV_SIMD_FADDV:
+				if (ins->inst_c1 == MONO_TYPE_R8) {
+					arm_neon_faddp (code, VREG_FULL, TYPE_F64, ins->dreg, ins->sreg1, ins->sreg1);
+				} else if (ins->inst_c1 == MONO_TYPE_R4) {
+					arm_neon_faddp (code, VREG_FULL, TYPE_F32, ins->dreg, ins->sreg1, ins->sreg1);
+					arm_neon_faddp (code, VREG_FULL, TYPE_F32, ins->dreg, ins->dreg, ins->dreg);
+				} else {
+					g_assert_not_reached ();
+				} 
+				break;
+
+			case INTRINS_AARCH64_ADV_SIMD_UADDV:
+			case INTRINS_AARCH64_ADV_SIMD_SADDV: 
+				if (get_type_size_macro (ins->inst_c1) == TYPE_I64) 
+					arm_neon_addp (code, VREG_FULL, TYPE_I64, ins->dreg, ins->sreg1, ins->sreg1);
+				else
+					g_assert_not_reached (); // remaining int types are handled through the codegen table
+				break;
+
+			default:
+				g_assert_not_reached ();
+			}
+			break;
+		}
+		
 			/* BRANCH */
 		case OP_BR:
 			mono_add_patch_info_rel (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb, MONO_R_ARM64_B);
@@ -3740,7 +3871,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			/* SIMD that is not table-generated */
 			/* TODO: once https://github.com/dotnet/runtime/issues/83252 is done,
-			 * move these to the codegen table in simd-arm64.h
+			 * move the following two to the codegen table in simd-arm64.h
 			 */
 		case OP_ONES_COMPLEMENT:
 			arm_neon_not (code, get_vector_size_macro (ins), dreg, sreg1);
@@ -3752,8 +3883,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				arm_neon_neg (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1);
 			}
 			break;
+		case OP_XBINOP:
+			switch (ins->inst_c0) {
+			case OP_IMAX:
+				code = emit_smax_i8 (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
+				break;
+			case OP_IMAX_UN:
+				code = emit_umax_i8 (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
+				break;
+			case OP_IMIN:
+				code = emit_smin_i8 (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
+				break;
+			case OP_IMIN_UN:
+				code = emit_umin_i8 (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+			break;
 		case OP_XZERO:
 			arm_neon_eor_16b (code, dreg, dreg, dreg);
+			break;
+		case OP_XEXTRACT: 
+			code = emit_xextract (code, VREG_FULL, ins->inst_c0, dreg, sreg1);
 			break;
 
 			/* ALU */

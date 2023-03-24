@@ -1831,12 +1831,15 @@ private:
     RefPosition* tgtPrefUse  = nullptr;
     RefPosition* tgtPrefUse2 = nullptr;
 
+public:
     // The following keep track of information about internal (temporary register) intervals
     // during the building of a single node.
     static const int MaxInternalCount = 5;
-    RefPosition*     internalDefs[MaxInternalCount];
-    int              internalCount = 0;
-    bool             setInternalRegsDelayFree;
+
+private:
+    RefPosition* internalDefs[MaxInternalCount];
+    int          internalCount = 0;
+    bool         setInternalRegsDelayFree;
 
     // When a RefTypeUse is marked as 'delayRegFree', we also want to mark the RefTypeDef
     // in the next Location as 'hasInterferingUses'. This is accomplished by setting this

@@ -7322,6 +7322,7 @@ public:
         BlkOpKindRepInstr,
 #endif
         BlkOpKindUnroll,
+        BlkOpKindUnrollMemmove,
     } gtBlkOpKind;
 
 #ifndef JIT32_GCENCODER

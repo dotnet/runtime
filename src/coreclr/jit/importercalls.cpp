@@ -2893,7 +2893,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree* indexClone     = nullptr;
                 GenTree* ptrToSpanClone = nullptr;
                 assert(genActualType(index) == TYP_INT);
-                assert(ptrToSpan->TypeGet() == TYP_BYREF);
+                assert(ptrToSpan->TypeGet() == TYP_BYREF || ptrToSpan->TypeGet() == TYP_I_IMPL);
 
 #if defined(DEBUG)
                 if (verbose)
@@ -3807,6 +3807,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_GC_KeepAlive:
             {
                 retNode = impKeepAliveIntrinsic(impPopStack().val);
+                break;
+            }
+
+            case NI_System_Buffer_Memmove:
+            {
+                // We'll try to unroll this in lower for constant input.
+                isSpecial = true;
                 break;
             }
 
@@ -7901,6 +7908,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "UInt64BitsToDouble") == 0)
                         {
                             result = NI_System_BitConverter_Int64BitsToDouble;
+                        }
+                    }
+                    else if (strcmp(className, "Buffer") == 0)
+                    {
+                        if (strcmp(methodName, "Memmove") == 0)
+                        {
+                            result = NI_System_Buffer_Memmove;
                         }
                     }
                     break;

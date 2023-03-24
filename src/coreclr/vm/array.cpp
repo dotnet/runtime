@@ -584,59 +584,65 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 
     // Set up GC information
-    if (elemType == ELEMENT_TYPE_VALUETYPE || elemType == ELEMENT_TYPE_VOID)
+    if (CorTypeInfo::IsObjRef(elemType) ||
+        ((elemType == ELEMENT_TYPE_VALUETYPE) && pElemMT->IsAllGCPointers()))
+    {
+        pMT->SetContainsPointers();
+
+        // This array is all GC Pointers
+        CGCDesc::GetCGCDescFromMT(pMT)->Init( pMT, 1 );
+
+        CGCDescSeries* pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries();
+
+        int offsetToData = ArrayBase::GetDataPtrOffset(pMT);
+        // For arrays, the size is the negative of the BaseSize (the GC always adds the total
+        // size of the object, so what you end up with is the size of the data portion of the array)
+        pSeries->SetSeriesSize(-(SSIZE_T)(offsetToData + sizeof(size_t)));
+        pSeries->SetSeriesOffset(offsetToData);
+    }
+    else if (elemType == ELEMENT_TYPE_VALUETYPE)
     {
         // If it's an array of value classes, there is a different format for the GCDesc if it contains pointers
         if (pElemMT->ContainsPointers())
         {
-            CGCDescSeries  *pSeries;
-
-            // There must be only one series for value classes
-            CGCDescSeries  *pByValueSeries = CGCDesc::GetCGCDescFromMT(pElemMT)->GetHighestSeries();
-
             pMT->SetContainsPointers();
+
+            CGCDescSeries* pElemSeries = CGCDesc::GetCGCDescFromMT(pElemMT)->GetHighestSeries();
 
             // negative series has a special meaning, indicating a different form of GCDesc
             SSIZE_T nSeries = (SSIZE_T) CGCDesc::GetCGCDescFromMT(pElemMT)->GetNumSeries();
             CGCDesc::GetCGCDescFromMT(pMT)->InitValueClassSeries(pMT, nSeries);
 
-            pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries();
+            CGCDescSeries* pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries();
 
-            // sort by offset
-            SSIZE_T AllocSizeSeries;
-            if (!ClrSafeInt<SSIZE_T>::multiply(sizeof(CGCDescSeries*), nSeries, AllocSizeSeries))
-                COMPlusThrowOM();
-            CGCDescSeries** sortedSeries = (CGCDescSeries**) _alloca(AllocSizeSeries);
-            int index;
-            for (index = 0; index < nSeries; index++)
-                sortedSeries[index] = &pByValueSeries[-index];
-
-            // section sort
-            for (int i = 0; i < nSeries; i++) {
-                for (int j = i+1; j < nSeries; j++)
-                    if (sortedSeries[j]->GetSeriesOffset() < sortedSeries[i]->GetSeriesOffset())
-                    {
-                        CGCDescSeries* temp = sortedSeries[i];
-                        sortedSeries[i] = sortedSeries[j];
-                        sortedSeries[j] = temp;
-                    }
+#if _DEBUG
+            // GC series must be sorted by the offset
+            // we will validate that here just in case.
+            size_t prevOffset = pElemSeries[0].GetSeriesOffset();
+            for (int index = 1; index < nSeries; index++)
+            {
+                size_t offset = pElemSeries[-index].GetSeriesOffset();
+                _ASSERTE((offset - prevOffset) > 0);
+                prevOffset = offset;
             }
+#endif // _DEBUG
 
             // Offset of the first pointer in the array
             // This equals the offset of the first pointer if this were an array of entirely pointers, plus the offset of the
             // first pointer in the value class
             pSeries->SetSeriesOffset(ArrayBase::GetDataPtrOffset(pMT)
-                + (sortedSeries[0]->GetSeriesOffset()) - OBJECT_SIZE);
-            for (index = 0; index < nSeries; index ++)
+                + (pElemSeries[0].GetSeriesOffset()) - OBJECT_SIZE);
+
+            for (int index = 0; index < nSeries; index ++)
             {
-                size_t numPtrsInBytes = sortedSeries[index]->GetSeriesSize()
+                size_t numPtrsInBytes = pElemSeries[-index].GetSeriesSize()
                     + pElemMT->GetBaseSize();
                 size_t currentOffset;
                 size_t skip;
-                currentOffset = sortedSeries[index]->GetSeriesOffset()+numPtrsInBytes;
+                currentOffset = pElemSeries[-index].GetSeriesOffset()+numPtrsInBytes;
                 if (index != nSeries-1)
                 {
-                    skip = sortedSeries[index+1]->GetSeriesOffset()-currentOffset;
+                    skip = pElemSeries[-(index+1)].GetSeriesOffset()-currentOffset;
                 }
                 else if (index == 0)
                 {
@@ -644,7 +650,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
                 }
                 else
                 {
-                    skip = sortedSeries[0]->GetSeriesOffset() + pElemMT->GetBaseSize()
+                    skip = pElemSeries[0].GetSeriesOffset() + pElemMT->GetBaseSize()
                          - OBJECT_BASESIZE - currentOffset;
                 }
 
@@ -664,22 +670,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
                 val_item->set_val_serie_item (NumPtrs, (unsigned short)skip);
             }
         }
-    }
-    else if (CorTypeInfo::IsObjRef(elemType))
-    {
-        CGCDescSeries  *pSeries;
-
-        pMT->SetContainsPointers();
-
-        // This array is all GC Pointers
-        CGCDesc::GetCGCDescFromMT(pMT)->Init( pMT, 1 );
-
-        pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries();
-
-        pSeries->SetSeriesOffset(ArrayBase::GetDataPtrOffset(pMT));
-        // For arrays, the size is the negative of the BaseSize (the GC always adds the total
-        // size of the object, so what you end up with is the size of the data portion of the array)
-        pSeries->SetSeriesSize(-(SSIZE_T)(pMT->GetBaseSize()));
     }
 
     // If we get here we are assuming that there was no truncation. If this is not the case then

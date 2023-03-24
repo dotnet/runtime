@@ -223,7 +223,7 @@ namespace System.Buffers
                     char c = cur;
                     if (TNegator.NegateIfNeeded(Contains(valuesSpan, c)))
                     {
-                        return (int)(Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
+                        return (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref cur) / sizeof(char));
                     }
 
                     cur = ref Unsafe.Add(ref cur, 1);

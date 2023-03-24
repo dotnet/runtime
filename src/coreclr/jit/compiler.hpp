@@ -255,18 +255,19 @@ inline regMaskTP genFindLowestReg(regMaskTP value)
  *  A rather simple routine that counts the number of bits in a given number.
  */
 
-template <typename T>
-inline unsigned genCountBits(T bits)
+inline unsigned genCountBits(uint64_t bits)
 {
-    unsigned cnt = 0;
+    return BitOperations::PopCount(bits);
+}
 
-    while (bits)
-    {
-        cnt++;
-        bits -= genFindLowestBit(bits);
-    }
+/*****************************************************************************
+ *
+ *  A rather simple routine that counts the number of bits in a given number.
+ */
 
-    return cnt;
+inline unsigned genCountBits(uint32_t bits)
+{
+    return BitOperations::PopCount(bits);
 }
 
 /*****************************************************************************
@@ -1027,27 +1028,6 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
     }
 
     return result;
-}
-
-//------------------------------------------------------------------------------
-// gtNewRuntimeLookupHelperCallNode : Helper to create a runtime lookup call helper node.
-//
-//
-// Arguments:
-//    helper    - Call helper
-//    type      - Type of the node
-//    args      - Call args
-//
-// Return Value:
-//    New CT_HELPER node
-
-inline GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_LOOKUP* pRuntimeLookup,
-                                                               GenTree*                ctxTree,
-                                                               void*                   compileTimeHandle)
-{
-    GenTree* argNode  = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
-    GenTreeCall* call = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree, argNode);
-    return call;
 }
 
 //------------------------------------------------------------------------
@@ -4388,6 +4368,11 @@ inline static bool StructHasCustomLayout(DWORD attribs)
 inline static bool StructHasDontDigFieldsFlagSet(DWORD attribs)
 {
     return ((attribs & CORINFO_FLG_DONT_DIG_FIELDS) != 0);
+}
+
+inline static bool StructHasIndexableFields(DWORD attribs)
+{
+    return ((attribs & CORINFO_FLG_INDEXABLE_FIELDS) != 0);
 }
 
 //------------------------------------------------------------------------------
