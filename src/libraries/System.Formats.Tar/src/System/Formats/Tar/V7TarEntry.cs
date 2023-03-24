@@ -19,9 +19,11 @@ namespace System.Formats.Tar
         /// </summary>
         /// <param name="entryType">The type of the entry.</param>
         /// <param name="entryName">A string with the path and file name of this entry.</param>
-        /// <exception cref="ArgumentException"><paramref name="entryName"/> is null or empty.</exception>
-        /// <exception cref="InvalidOperationException">The entry type is not supported for creating an entry.</exception>
         /// <remarks>When creating an instance using the <see cref="V7TarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/> and <see cref="TarEntryType.V7RegularFile"/>.</remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="entryName"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><para><paramref name="entryName"/> is empty.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="entryType"/> is not supported for creating an entry.</para></exception>
         public V7TarEntry(TarEntryType entryType, string entryName)
             : base(entryType, entryName, TarEntryFormat.V7, isGea: false)
         {
@@ -30,6 +32,9 @@ namespace System.Formats.Tar
         /// <summary>
         /// Initializes a new <see cref="V7TarEntry"/> instance by converting the specified <paramref name="other"/> entry into the V7 format.
         /// </summary>
+        /// <exception cref="ArgumentException"><para><paramref name="other"/> is a <see cref="PaxGlobalExtendedAttributesTarEntry"/> and cannot be converted.</para>
+        /// <para>-or-</para>
+        /// <para>The entry type of <paramref name="other"/> is not supported for conversion to the V7 format.</para></exception>
         public V7TarEntry(TarEntry other)
             : base(other, TarEntryFormat.V7)
         {

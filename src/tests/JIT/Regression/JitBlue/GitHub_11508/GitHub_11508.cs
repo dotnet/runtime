@@ -26,10 +26,10 @@ namespace TestApp
         }
     }
 
-    class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.NoOptimization)]
-        static int Main(string[] args)
+        public static int Main()
         {
             var comparer = EqualityComparer<StructWithValue>.Default;
 

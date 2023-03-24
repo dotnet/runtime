@@ -33,7 +33,7 @@ namespace BinaryPrimitivesReverseEndianness
         private static readonly byte[] s_bufferLESigned64 = new byte[] { 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0x1e };
         private static readonly byte[] s_bufferBESigned64 = new byte[] { 0x1e, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10 };
 
-        static int Main(string[] args)
+        static int Main()
         {
             /*
              * CONST VALUE TESTS

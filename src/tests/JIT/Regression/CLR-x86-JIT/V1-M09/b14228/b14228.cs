@@ -9,7 +9,7 @@ namespace DefaultNamespace
 {
     public class MainClass
     {
-        public static int Main(String[] argv)
+        public static int Main()
         {
             Decimal c1 = new Decimal();
 

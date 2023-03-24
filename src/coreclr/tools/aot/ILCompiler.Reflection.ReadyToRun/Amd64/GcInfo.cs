@@ -13,7 +13,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
     public class GcInfo : BaseGcInfo
     {
         /// <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/gcinfodecoder.h">src/inc/gcinfodecoder.h</a> GcInfoHeaderFlags
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcinfodecoder.h">src/inc/gcinfodecoder.h</a> GcInfoHeaderFlags
         /// </summary>
         private enum GcInfoHeaderFlags
         {
@@ -84,7 +84,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         public GcInfo() { }
 
         /// <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/gcinfodecoder.cpp">GcInfoDecoder::GcInfoDecoder</a>
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/gcinfodecoder.cpp">GcInfoDecoder::GcInfoDecoder</a>
         /// </summary>
         public GcInfo(byte[] image, int offset, Machine machine, ushort majorVersion)
         {
@@ -305,7 +305,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         }
 
         /// <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/gcinfodecoder.cpp">GcInfoDecoder::GcInfoDecoder</a>
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/gcinfodecoder.cpp">GcInfoDecoder::GcInfoDecoder</a>
         /// </summary>
         private void ParseHeaderFlags(byte[] image, ref int bitOffset)
         {
@@ -347,7 +347,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         }
 
         /// <summary>
-        /// based on beginning of <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/gcinfodecoder.cpp">GcInfoDecoder::EnumerateLiveSlots</a>
+        /// based on beginning of <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/gcinfodecoder.cpp">GcInfoDecoder::EnumerateLiveSlots</a>
         /// </summary>
         private List<InterruptibleRange> EnumerateInterruptibleRanges(byte[] image, int interruptibleRangeDelta1EncBase, int interruptibleRangeDelta2EncBase, ref int bitOffset)
         {
@@ -484,7 +484,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
         }
 
         /// <summary>
-        /// based on end of <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/gcinfodecoder.cpp">GcInfoDecoder::EnumerateLiveSlots and GcInfoEncoder::Build</a>
+        /// based on end of <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/gcinfodecoder.cpp">GcInfoDecoder::EnumerateLiveSlots and GcInfoEncoder::Build</a>
         /// </summary>
         private Dictionary<int, List<BaseGcTransition>> GetTransitions(byte[] image, ref int bitOffset)
         {

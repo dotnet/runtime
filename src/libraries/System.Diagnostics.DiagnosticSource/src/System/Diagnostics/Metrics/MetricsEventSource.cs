@@ -7,6 +7,7 @@ using System.Diagnostics.Tracing;
 using System.Globalization;
 using System.Runtime.Versioning;
 using System.Text;
+using System.Threading;
 
 namespace System.Diagnostics.Metrics
 {
@@ -60,12 +61,21 @@ namespace System.Diagnostics.Metrics
             public const EventKeywords InstrumentPublishing = (EventKeywords)0x4;
         }
 
-        private CommandHandler _handler;
+        private CommandHandler? _handler;
 
-        private MetricsEventSource()
+        private CommandHandler Handler
         {
-            _handler = new CommandHandler();
+            get
+            {
+                if (_handler == null)
+                {
+                    Interlocked.CompareExchange(ref _handler, new CommandHandler(this), null);
+                }
+                return _handler;
+            }
         }
+
+        private MetricsEventSource() { }
 
         /// <summary>
         /// Used to send ad-hoc diagnostics to humans.
@@ -181,6 +191,14 @@ namespace System.Diagnostics.Metrics
             WriteEvent(15, runningSessionId);
         }
 
+        [Event(16, Keywords = Keywords.TimeSeriesValues)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                            Justification = "This calls WriteEvent with all primitive arguments which is safe. Primitives are always serialized properly.")]
+        public void UpDownCounterRateValuePublished(string sessionId, string meterName, string? meterVersion, string instrumentName, string? unit, string tags, string rate)
+        {
+            WriteEvent(16, sessionId, meterName, meterVersion ?? "", instrumentName, unit ?? "", tags, rate);
+        }
+
         /// <summary>
         /// Called when the EventSource gets a command from a EventListener or ETW.
         /// </summary>
@@ -189,7 +207,7 @@ namespace System.Diagnostics.Metrics
         {
             lock (this)
             {
-                _handler.OnEventCommand(command);
+                Handler.OnEventCommand(command);
             }
         }
 
@@ -201,6 +219,13 @@ namespace System.Diagnostics.Metrics
         {
             private AggregationManager? _aggregationManager;
             private string _sessionId = "";
+
+            public CommandHandler(MetricsEventSource parent)
+            {
+                Parent = parent;
+            }
+
+            public MetricsEventSource Parent { get; private set;}
 
             public void OnEventCommand(EventCommandEventArgs command)
             {
@@ -215,7 +240,7 @@ namespace System.Diagnostics.Metrics
                         // This limitation shouldn't really matter because browser also doesn't support out-of-proc EventSource communication
                         // which is the intended scenario for this EventSource. If it matters in the future AggregationManager can be
                         // modified to have some other fallback path that works for browser.
-                        Log.Error("", "System.Diagnostics.Metrics EventSource not supported on browser");
+                        Parent.Error("", "System.Diagnostics.Metrics EventSource not supported on browser");
                         return;
                     }
 #endif
@@ -233,13 +258,13 @@ namespace System.Diagnostics.Metrics
                                 // one other listener is active. In the future we might be able to figure out how
                                 // to infer the changes from the info we do have or add a better API but for now
                                 // I am taking the simple route  and not supporting it.
-                                Log.MultipleSessionsNotSupportedError(_sessionId);
+                                Parent.MultipleSessionsNotSupportedError(_sessionId);
                                 return;
                             }
 
                             _aggregationManager.Dispose();
                             _aggregationManager = null;
-                            Log.Message($"Previous session with id {_sessionId} is stopped");
+                            Parent.Message($"Previous session with id {_sessionId} is stopped");
                         }
                         _sessionId = "";
                     }
@@ -249,12 +274,12 @@ namespace System.Diagnostics.Metrics
                         if (command.Arguments!.TryGetValue("SessionId", out string? id))
                         {
                             _sessionId = id!;
-                            Log.Message($"SessionId argument received: {_sessionId}");
+                            Parent.Message($"SessionId argument received: {_sessionId}");
                         }
                         else
                         {
                             _sessionId = System.Guid.NewGuid().ToString();
-                            Log.Message($"New session started. SessionId auto-generated: {_sessionId}");
+                            Parent.Message($"New session started. SessionId auto-generated: {_sessionId}");
                         }
 
 
@@ -263,21 +288,21 @@ namespace System.Diagnostics.Metrics
                         double refreshIntervalSecs;
                         if (command.Arguments!.TryGetValue("RefreshInterval", out string? refreshInterval))
                         {
-                            Log.Message($"RefreshInterval argument received: {refreshInterval}");
+                            Parent.Message($"RefreshInterval argument received: {refreshInterval}");
                             if (!double.TryParse(refreshInterval, out refreshIntervalSecs))
                             {
-                                Log.Message($"Failed to parse RefreshInterval. Using default {defaultIntervalSecs}s.");
+                                Parent.Message($"Failed to parse RefreshInterval. Using default {defaultIntervalSecs}s.");
                                 refreshIntervalSecs = defaultIntervalSecs;
                             }
                             else if (refreshIntervalSecs < AggregationManager.MinCollectionTimeSecs)
                             {
-                                Log.Message($"RefreshInterval too small. Using minimum interval {AggregationManager.MinCollectionTimeSecs} seconds.");
+                                Parent.Message($"RefreshInterval too small. Using minimum interval {AggregationManager.MinCollectionTimeSecs} seconds.");
                                 refreshIntervalSecs = AggregationManager.MinCollectionTimeSecs;
                             }
                         }
                         else
                         {
-                            Log.Message($"No RefreshInterval argument received. Using default {defaultIntervalSecs}s.");
+                            Parent.Message($"No RefreshInterval argument received. Using default {defaultIntervalSecs}s.");
                             refreshIntervalSecs = defaultIntervalSecs;
                         }
 
@@ -285,16 +310,16 @@ namespace System.Diagnostics.Metrics
                         int maxTimeSeries;
                         if (command.Arguments!.TryGetValue("MaxTimeSeries", out string? maxTimeSeriesString))
                         {
-                            Log.Message($"MaxTimeSeries argument received: {maxTimeSeriesString}");
+                            Parent.Message($"MaxTimeSeries argument received: {maxTimeSeriesString}");
                             if (!int.TryParse(maxTimeSeriesString, out maxTimeSeries))
                             {
-                                Log.Message($"Failed to parse MaxTimeSeries. Using default {defaultMaxTimeSeries}");
+                                Parent.Message($"Failed to parse MaxTimeSeries. Using default {defaultMaxTimeSeries}");
                                 maxTimeSeries = defaultMaxTimeSeries;
                             }
                         }
                         else
                         {
-                            Log.Message($"No MaxTimeSeries argument received. Using default {defaultMaxTimeSeries}");
+                            Parent.Message($"No MaxTimeSeries argument received. Using default {defaultMaxTimeSeries}");
                             maxTimeSeries = defaultMaxTimeSeries;
                         }
 
@@ -302,16 +327,16 @@ namespace System.Diagnostics.Metrics
                         int maxHistograms;
                         if (command.Arguments!.TryGetValue("MaxHistograms", out string? maxHistogramsString))
                         {
-                            Log.Message($"MaxHistograms argument received: {maxHistogramsString}");
+                            Parent.Message($"MaxHistograms argument received: {maxHistogramsString}");
                             if (!int.TryParse(maxHistogramsString, out maxHistograms))
                             {
-                                Log.Message($"Failed to parse MaxHistograms. Using default {defaultMaxHistograms}");
+                                Parent.Message($"Failed to parse MaxHistograms. Using default {defaultMaxHistograms}");
                                 maxHistograms = defaultMaxHistograms;
                             }
                         }
                         else
                         {
-                            Log.Message($"No MaxHistogram argument received. Using default {defaultMaxHistograms}");
+                            Parent.Message($"No MaxHistogram argument received. Using default {defaultMaxHistograms}");
                             maxHistograms = defaultMaxHistograms;
                         }
 
@@ -320,27 +345,27 @@ namespace System.Diagnostics.Metrics
                             maxTimeSeries,
                             maxHistograms,
                             (i, s) => TransmitMetricValue(i, s, sessionId),
-                            (startIntervalTime, endIntervalTime) => Log.CollectionStart(sessionId, startIntervalTime, endIntervalTime),
-                            (startIntervalTime, endIntervalTime) => Log.CollectionStop(sessionId, startIntervalTime, endIntervalTime),
-                            i => Log.BeginInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
-                            i => Log.EndInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
-                            i => Log.InstrumentPublished(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
-                            () => Log.InitialInstrumentEnumerationComplete(sessionId),
-                            e => Log.Error(sessionId, e.ToString()),
-                            () => Log.TimeSeriesLimitReached(sessionId),
-                            () => Log.HistogramLimitReached(sessionId),
-                            e => Log.ObservableInstrumentCallbackError(sessionId, e.ToString()));
+                            (startIntervalTime, endIntervalTime) => Parent.CollectionStart(sessionId, startIntervalTime, endIntervalTime),
+                            (startIntervalTime, endIntervalTime) => Parent.CollectionStop(sessionId, startIntervalTime, endIntervalTime),
+                            i => Parent.BeginInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
+                            i => Parent.EndInstrumentReporting(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
+                            i => Parent.InstrumentPublished(sessionId, i.Meter.Name, i.Meter.Version, i.Name, i.GetType().Name, i.Unit, i.Description),
+                            () => Parent.InitialInstrumentEnumerationComplete(sessionId),
+                            e => Parent.Error(sessionId, e.ToString()),
+                            () => Parent.TimeSeriesLimitReached(sessionId),
+                            () => Parent.HistogramLimitReached(sessionId),
+                            e => Parent.ObservableInstrumentCallbackError(sessionId, e.ToString()));
 
                         _aggregationManager.SetCollectionPeriod(TimeSpan.FromSeconds(refreshIntervalSecs));
 
                         if (command.Arguments!.TryGetValue("Metrics", out string? metricsSpecs))
                         {
-                            Log.Message($"Metrics argument received: {metricsSpecs}");
+                            Parent.Message($"Metrics argument received: {metricsSpecs}");
                             ParseSpecs(metricsSpecs);
                         }
                         else
                         {
-                            Log.Message("No Metrics argument received");
+                            Parent.Message("No Metrics argument received");
                         }
 
                         _aggregationManager.Start();
@@ -354,7 +379,7 @@ namespace System.Diagnostics.Metrics
 
             private bool LogError(Exception e)
             {
-                Log.Error(_sessionId, e.ToString());
+                Parent.Error(_sessionId, e.ToString());
                 // this code runs as an exception filter
                 // returning false ensures the catch handler isn't run
                 return false;
@@ -369,24 +394,19 @@ namespace System.Diagnostics.Metrics
                 {
                     return;
                 }
+
                 string[] specStrings = metricsSpecs.Split(s_instrumentSeparators, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string specString in specStrings)
                 {
-                    if (!MetricSpec.TryParse(specString, out MetricSpec spec))
+                    MetricSpec spec = MetricSpec.Parse(specString);
+                    Parent.Message($"Parsed metric: {spec}");
+                    if (spec.InstrumentName != null)
                     {
-                        Log.Message($"Failed to parse metric spec: {specString}");
+                        _aggregationManager!.Include(spec.MeterName, spec.InstrumentName);
                     }
                     else
                     {
-                        Log.Message($"Parsed metric: {spec}");
-                        if (spec.InstrumentName != null)
-                        {
-                            _aggregationManager!.Include(spec.MeterName, spec.InstrumentName);
-                        }
-                        else
-                        {
-                            _aggregationManager!.Include(spec.MeterName);
-                        }
+                        _aggregationManager!.Include(spec.MeterName);
                     }
                 }
             }
@@ -395,8 +415,16 @@ namespace System.Diagnostics.Metrics
             {
                 if (stats.AggregationStatistics is RateStatistics rateStats)
                 {
-                    Log.CounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels),
-                        rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "");
+                    if (rateStats.IsMonotonic)
+                    {
+                        Log.CounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels),
+                            rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "");
+                    }
+                    else
+                    {
+                        Log.UpDownCounterRateValuePublished(sessionId, instrument.Meter.Name, instrument.Meter.Version, instrument.Name, instrument.Unit, FormatTags(stats.Labels),
+                            rateStats.Delta.HasValue ? rateStats.Delta.Value.ToString(CultureInfo.InvariantCulture) : "");
+                    }
                 }
                 else if (stats.AggregationStatistics is LastValueStatistics lastValueStats)
                 {
@@ -414,7 +442,7 @@ namespace System.Diagnostics.Metrics
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < labels.Length; i++)
                 {
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "{0}={1}", labels[i].Key, labels[i].Value);
+                    sb.Append(labels[i].Key).Append('=').Append(labels[i].Value);
                     if (i != labels.Length - 1)
                     {
                         sb.Append(',');
@@ -428,7 +456,7 @@ namespace System.Diagnostics.Metrics
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < quantiles.Length; i++)
                 {
-                    sb.AppendFormat(CultureInfo.InvariantCulture, "{0}={1}", quantiles[i].Quantile, quantiles[i].Value);
+                    sb.Append(quantiles[i].Quantile).Append('=').Append(quantiles[i].Value);
                     if (i != quantiles.Length - 1)
                     {
                         sb.Append(';');
@@ -450,20 +478,18 @@ namespace System.Diagnostics.Metrics
                 InstrumentName = instrumentName;
             }
 
-            public static bool TryParse(string text, out MetricSpec spec)
+            public static MetricSpec Parse(string text)
             {
                 int slashIdx = text.IndexOf(MeterInstrumentSeparator);
-                if (slashIdx == -1)
+                if (slashIdx < 0)
                 {
-                    spec = new MetricSpec(text.Trim(), null);
-                    return true;
+                    return new MetricSpec(text.Trim(), null);
                 }
                 else
                 {
-                    string meterName = text.Substring(0, slashIdx).Trim();
-                    string? instrumentName = text.Substring(slashIdx + 1).Trim();
-                    spec = new MetricSpec(meterName, instrumentName);
-                    return true;
+                    string meterName = text.AsSpan(0, slashIdx).Trim().ToString();
+                    string? instrumentName = text.AsSpan(slashIdx + 1).Trim().ToString();
+                    return new MetricSpec(meterName, instrumentName);
                 }
             }
 

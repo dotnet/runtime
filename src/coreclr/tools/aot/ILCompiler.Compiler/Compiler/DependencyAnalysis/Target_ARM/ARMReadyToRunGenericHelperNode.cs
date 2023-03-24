@@ -11,7 +11,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    partial class ReadyToRunGenericHelperNode
+    public partial class ReadyToRunGenericHelperNode
     {
         protected Register GetContextRegister(ref /* readonly */ ARMEmitter encoder)
         {
@@ -30,7 +30,11 @@ namespace ILCompiler.DependencyAnalysis
             if (!relocsOnly)
             {
                 // The concrete slot won't be known until we're emitting data - don't ask for it in relocsOnly.
-                dictionarySlot = factory.GenericDictionaryLayout(_dictionaryOwner).GetSlotForEntry(lookup);
+                if (!factory.GenericDictionaryLayout(_dictionaryOwner).TryGetSlotForEntry(lookup, out dictionarySlot))
+                {
+                    encoder.EmitMOV(result, 0);
+                    return;
+                }
             }
 
             // Load the generic dictionary cell
@@ -70,8 +74,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Result, _lookupSignature, relocsOnly);
 
-                        MetadataType target = (MetadataType)_target;
-                        if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                        if (!TriggersLazyStaticConstructor(factory))
                         {
                             encoder.EmitRET();
                         }
@@ -99,7 +102,7 @@ namespace ILCompiler.DependencyAnalysis
                         encoder.EmitLDR(encoder.TargetRegister.Result, encoder.TargetRegister.Result);
 
                         MetadataType target = (MetadataType)_target;
-                        if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                        if (!TriggersLazyStaticConstructor(factory))
                         {
                             encoder.EmitRET();
                         }
@@ -132,7 +135,7 @@ namespace ILCompiler.DependencyAnalysis
                         EmitDictionaryLookup(factory, ref encoder, encoder.TargetRegister.Arg0, encoder.TargetRegister.Arg1, _lookupSignature, relocsOnly);
 
                         ISymbolNode helperEntrypoint;
-                        if (factory.PreinitializationManager.HasLazyStaticConstructor(target))
+                        if (TriggersLazyStaticConstructor(factory))
                         {
                             // There is a lazy class constructor. We need the non-GC static base because that's where the
                             // class constructor context lives.
@@ -214,7 +217,7 @@ namespace ILCompiler.DependencyAnalysis
         }
     }
 
-    partial class ReadyToRunGenericLookupFromTypeNode
+    public partial class ReadyToRunGenericLookupFromTypeNode
     {
         protected override void EmitLoadGenericContext(NodeFactory factory, ref ARMEmitter encoder, bool relocsOnly)
         {

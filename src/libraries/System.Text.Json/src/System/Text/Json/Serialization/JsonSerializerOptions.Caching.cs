@@ -6,9 +6,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
-using System.Threading;
 
 namespace System.Text.Json
 {
@@ -18,6 +18,15 @@ namespace System.Text.Json
         /// Encapsulates all cached metadata referenced by the current <see cref="JsonSerializerOptions" /> instance.
         /// Context can be shared across multiple equivalent options instances.
         /// </summary>
+        internal CachingContext CacheContext
+        {
+            get
+            {
+                Debug.Assert(IsReadOnly);
+                return _cachingContext ??= TrackedCachingContexts.GetOrCreate(this);
+            }
+        }
+
         private CachingContext? _cachingContext;
 
         // Simple LRU cache for the public (de)serialize entry points that avoid some lookups in _cachingContext.
@@ -53,13 +62,19 @@ namespace System.Text.Json
         /// <summary>
         /// Same as GetTypeInfo but without validation and additional knobs.
         /// </summary>
-        internal JsonTypeInfo GetTypeInfoInternal(Type type, bool ensureConfigured = true, bool resolveIfMutable = false)
+        internal JsonTypeInfo GetTypeInfoInternal(
+            Type type,
+            bool ensureConfigured = true,
+            bool resolveIfMutable = false,
+            bool fallBackToNearestAncestorType = false)
         {
+            Debug.Assert(!fallBackToNearestAncestorType || IsReadOnly, "ancestor resolution should only be invoked in read-only options.");
+
             JsonTypeInfo? typeInfo = null;
 
-            if (IsImmutable)
+            if (IsReadOnly)
             {
-                typeInfo = GetCachingContext()?.GetOrAddJsonTypeInfo(type);
+                typeInfo = CacheContext.GetOrAddTypeInfo(type, fallBackToNearestAncestorType);
                 if (ensureConfigured)
                 {
                     typeInfo?.EnsureConfigured();
@@ -86,24 +101,38 @@ namespace System.Text.Json
                 return false;
             }
 
-            return _cachingContext.TryGetJsonTypeInfo(type, out typeInfo);
+            return _cachingContext.TryGetTypeInfo(type, out typeInfo);
         }
 
         /// <summary>
         /// Return the TypeInfo for root API calls.
         /// This has an LRU cache that is intended only for public API calls that specify the root type.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal JsonTypeInfo GetTypeInfoForRootType(Type type)
+        internal JsonTypeInfo GetTypeInfoForRootType(Type type, bool fallBackToNearestAncestorType = false)
         {
             JsonTypeInfo? jsonTypeInfo = _lastTypeInfo;
 
             if (jsonTypeInfo?.Type != type)
             {
-                _lastTypeInfo = jsonTypeInfo = GetTypeInfoInternal(type);
+                _lastTypeInfo = jsonTypeInfo = GetTypeInfoInternal(type, fallBackToNearestAncestorType: fallBackToNearestAncestorType);
             }
 
             return jsonTypeInfo;
+        }
+
+        internal bool TryGetPolymorphicTypeInfoForRootType(object rootValue, [NotNullWhen(true)] out JsonTypeInfo? polymorphicTypeInfo)
+        {
+            Debug.Assert(rootValue != null);
+
+            Type runtimeType = rootValue.GetType();
+            if (runtimeType != JsonTypeInfo.ObjectType)
+            {
+                polymorphicTypeInfo = GetTypeInfoForRootType(runtimeType, fallBackToNearestAncestorType: true);
+                return true;
+            }
+
+            polymorphicTypeInfo = null;
+            return false;
         }
 
         // Caches the resolved JsonTypeInfo<object> for faster access during root-level object type serialization.
@@ -111,7 +140,7 @@ namespace System.Text.Json
         {
             get
             {
-                Debug.Assert(IsImmutable);
+                Debug.Assert(IsReadOnly);
                 return _objectTypeInfo ??= GetTypeInfoInternal(JsonTypeInfo.ObjectType);
             }
         }
@@ -125,13 +154,6 @@ namespace System.Text.Json
             _objectTypeInfo = null;
         }
 
-        private CachingContext? GetCachingContext()
-        {
-            Debug.Assert(IsImmutable);
-
-            return _cachingContext ??= TrackedCachingContexts.GetOrCreate(this);
-        }
-
         /// <summary>
         /// Stores and manages all reflection caches for one or more <see cref="JsonSerializerOptions"/> instances.
         /// NB the type encapsulates the original options instance and only consults that one when building new types;
@@ -140,169 +162,271 @@ namespace System.Text.Json
         /// </summary>
         internal sealed class CachingContext
         {
-            private readonly ConcurrentDictionary<Type, JsonTypeInfo?> _jsonTypeInfoCache = new();
+            private readonly ConcurrentDictionary<Type, CacheEntry> _cache = new();
+#if !NETCOREAPP
+            private readonly Func<Type, CacheEntry> _cacheEntryFactory;
+#endif
 
-            public CachingContext(JsonSerializerOptions options)
+            public CachingContext(JsonSerializerOptions options, int hashCode)
             {
                 Options = options;
+                HashCode = hashCode;
+#if !NETCOREAPP
+                _cacheEntryFactory = type => CreateCacheEntry(type, this);
+#endif
             }
 
             public JsonSerializerOptions Options { get; }
+            public int HashCode { get; }
             // Property only accessed by reflection in testing -- do not remove.
             // If changing please ensure that src/ILLink.Descriptors.LibraryBuild.xml is up-to-date.
-            public int Count => _jsonTypeInfoCache.Count;
+            public int Count => _cache.Count;
 
-            public JsonTypeInfo? GetOrAddJsonTypeInfo(Type type) => _jsonTypeInfoCache.GetOrAdd(type, Options.GetTypeInfoNoCaching);
-            public bool TryGetJsonTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo) => _jsonTypeInfoCache.TryGetValue(type, out typeInfo);
+            public JsonTypeInfo? GetOrAddTypeInfo(Type type, bool fallBackToNearestAncestorType = false)
+            {
+                CacheEntry entry = GetOrAddCacheEntry(type);
+                return fallBackToNearestAncestorType && !entry.HasResult
+                    ? FallBackToNearestAncestor(type, entry)
+                    : entry.GetResult();
+            }
+
+            public bool TryGetTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
+            {
+                _cache.TryGetValue(type, out CacheEntry? entry);
+                typeInfo = entry?.TypeInfo;
+                return typeInfo is not null;
+            }
 
             public void Clear()
             {
-                _jsonTypeInfoCache.Clear();
+                _cache.Clear();
+            }
+
+            private CacheEntry GetOrAddCacheEntry(Type type)
+            {
+#if NETCOREAPP
+                return _cache.GetOrAdd(type, CreateCacheEntry, this);
+#else
+                return _cache.GetOrAdd(type, _cacheEntryFactory);
+#endif
+            }
+
+            private static CacheEntry CreateCacheEntry(Type type, CachingContext context)
+            {
+                try
+                {
+                    JsonTypeInfo? typeInfo = context.Options.GetTypeInfoNoCaching(type);
+                    return new CacheEntry(typeInfo);
+                }
+                catch (Exception ex)
+                {
+                    ExceptionDispatchInfo edi = ExceptionDispatchInfo.Capture(ex);
+                    return new CacheEntry(edi);
+                }
+            }
+
+            private JsonTypeInfo? FallBackToNearestAncestor(Type type, CacheEntry entry)
+            {
+                Debug.Assert(!entry.HasResult);
+
+                CacheEntry? nearestAncestor = entry.IsNearestAncestorResolved
+                    ? entry.NearestAncestor
+                    : DetermineNearestAncestor(type, entry);
+
+                return nearestAncestor?.GetResult();
+            }
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+                Justification = "We only need to examine the interface types that are supported by the underlying resolver.")]
+            private CacheEntry? DetermineNearestAncestor(Type type, CacheEntry entry)
+            {
+                // In cases where the underlying TypeInfoResolver returns `null` for a given type,
+                // this method traverses the hierarchy above the given type to determine potential
+                // ancestors for which the resolver does provide metadata. This can be useful in
+                // cases where we're using a source generator and are trying to serialize private
+                // implementations of an interface that is supported by the source generator.
+                // NB this algorithm runs lazily and unsynchronized *after* the CacheEntry has been looked up
+                // from the global cache, so care should be taken to avoid potential race conditions.
+                //
+                // IMPORTANT: nearest-ancestor resolution should be reserved for weakly-typed serialization.
+                // Attempting to use it in strongly typed operations or deserialization will invariably
+                // result in an invalid cast exception, so use with caution.
+
+                Debug.Assert(!entry.HasResult);
+                CacheEntry? candidate = null;
+                Type? candidateType = null;
+
+                for (Type? current = type.BaseType; current != null; current = current.BaseType)
+                {
+                    if (current == JsonTypeInfo.ObjectType)
+                    {
+                        // Avoid falling back to the contract for object since it's polymorphic
+                        // and it would try to send us back to the runtime type that isn't supported.
+                        break;
+                    }
+
+                    candidate = GetOrAddCacheEntry(current);
+                    if (candidate.HasResult)
+                    {
+                        // We found a type in the class hierarchy that has a contract -- stop looking further up.
+                        candidateType = current;
+                        break;
+                    }
+                }
+
+                foreach (Type interfaceType in type.GetInterfaces())
+                {
+                    CacheEntry interfaceEntry = GetOrAddCacheEntry(interfaceType);
+                    if (interfaceEntry.HasResult)
+                    {
+                        if (candidateType != null)
+                        {
+                            if (interfaceType.IsAssignableFrom(candidateType))
+                            {
+                                // The previous candidate is more derived than the
+                                // current interface -- keep our previous choice.
+                                continue;
+                            }
+                            else if (candidateType.IsAssignableFrom(interfaceType))
+                            {
+                                // The current interface is more derived than the
+                                // previous candidate -- replace the candidate value.
+                            }
+                            else
+                            {
+                                // We have found two possible ancestors that are not in subtype relationship.
+                                // This indicates we have encountered a diamond ambiguity -- abort search and record an exception.
+                                NotSupportedException nse = ThrowHelper.GetNotSupportedException_AmbiguousMetadataForType(type, candidateType, interfaceType);
+                                candidate = new CacheEntry(ExceptionDispatchInfo.Capture(nse));
+                                break;
+                            }
+                        }
+
+                        candidate = interfaceEntry;
+                        candidateType = interfaceType;
+                    }
+                }
+
+                entry.NearestAncestor = candidate;
+                entry.IsNearestAncestorResolved = true;
+                return candidate;
+            }
+
+            private sealed class CacheEntry
+            {
+                public readonly bool HasResult;
+                public readonly JsonTypeInfo? TypeInfo;
+                public readonly ExceptionDispatchInfo? ExceptionDispatchInfo;
+
+                public volatile bool IsNearestAncestorResolved;
+                public CacheEntry? NearestAncestor;
+
+                public CacheEntry(JsonTypeInfo? typeInfo)
+                {
+                    TypeInfo = typeInfo;
+                    HasResult = typeInfo is not null;
+                }
+
+                public CacheEntry(ExceptionDispatchInfo exception)
+                {
+                    ExceptionDispatchInfo = exception;
+                    HasResult = true;
+                }
+
+                public JsonTypeInfo? GetResult()
+                {
+                    ExceptionDispatchInfo?.Throw();
+                    return TypeInfo;
+                }
             }
         }
 
         /// <summary>
         /// Defines a cache of CachingContexts; instead of using a ConditionalWeakTable which can be slow to traverse
-        /// this approach uses a concurrent dictionary pointing to weak references of <see cref="CachingContext"/>.
-        /// Relevant caching contexts are looked up using the equality comparison defined by <see cref="EqualityComparer"/>.
+        /// this approach uses a fixed-size array of weak references of <see cref="CachingContext"/> that can be looked up lock-free.
+        /// Relevant caching contexts are looked up by linear traversal using the equality comparison defined by <see cref="EqualityComparer"/>.
         /// </summary>
         internal static class TrackedCachingContexts
         {
             private const int MaxTrackedContexts = 64;
-            private static readonly ConcurrentDictionary<JsonSerializerOptions, WeakReference<CachingContext>> s_cache =
-                new(concurrencyLevel: 1, capacity: MaxTrackedContexts, new EqualityComparer());
-
-            private const int EvictionCountHistory = 16;
-            private static readonly Queue<int> s_recentEvictionCounts = new(EvictionCountHistory);
-            private static int s_evictionRunsToSkip;
+            private static readonly WeakReference<CachingContext>?[] s_trackedContexts = new WeakReference<CachingContext>[MaxTrackedContexts];
+            private static readonly EqualityComparer s_optionsComparer = new();
 
             public static CachingContext GetOrCreate(JsonSerializerOptions options)
             {
-                Debug.Assert(options.IsImmutable, "Cannot create caching contexts for mutable JsonSerializerOptions instances");
+                Debug.Assert(options.IsReadOnly, "Cannot create caching contexts for mutable JsonSerializerOptions instances");
                 Debug.Assert(options._typeInfoResolver != null);
 
-                ConcurrentDictionary<JsonSerializerOptions, WeakReference<CachingContext>> cache = s_cache;
+                int hashCode = s_optionsComparer.GetHashCode(options);
 
-                if (cache.TryGetValue(options, out WeakReference<CachingContext>? wr) && wr.TryGetTarget(out CachingContext? ctx))
+                if (TryGetContext(options, hashCode, out int firstUnpopulatedIndex, out CachingContext? result))
                 {
-                    return ctx;
+                    return result;
+                }
+                else if (firstUnpopulatedIndex < 0)
+                {
+                    // Cache is full; return a fresh instance.
+                    return new CachingContext(options, hashCode);
                 }
 
-                lock (cache)
+                lock (s_trackedContexts)
                 {
-                    if (cache.TryGetValue(options, out wr))
+                    if (TryGetContext(options, hashCode, out firstUnpopulatedIndex, out result))
                     {
-                        if (!wr.TryGetTarget(out ctx))
-                        {
-                            // Found a dangling weak reference; replenish with a fresh instance.
-                            ctx = new CachingContext(options);
-                            wr.SetTarget(ctx);
-                        }
-
-                        return ctx;
+                        return result;
                     }
 
-                    if (cache.Count == MaxTrackedContexts)
+                    var ctx = new CachingContext(options, hashCode);
+
+                    if (firstUnpopulatedIndex >= 0)
                     {
-                        if (!TryEvictDanglingEntries())
+                        // Cache has capacity -- store the context in the first available index.
+                        ref WeakReference<CachingContext>? weakRef = ref s_trackedContexts[firstUnpopulatedIndex];
+
+                        if (weakRef is null)
                         {
-                            // Cache is full; return a fresh instance.
-                            return new CachingContext(options);
+                            weakRef = new(ctx);
+                        }
+                        else
+                        {
+                            Debug.Assert(weakRef.TryGetTarget(out _) is false);
+                            weakRef.SetTarget(ctx);
                         }
                     }
-
-                    Debug.Assert(cache.Count < MaxTrackedContexts);
-
-                    // Use a defensive copy of the options instance as key to
-                    // avoid capturing references to any caching contexts.
-                    var key = new JsonSerializerOptions(options);
-                    Debug.Assert(key._cachingContext == null);
-
-                    ctx = new CachingContext(options);
-                    bool success = cache.TryAdd(key, new WeakReference<CachingContext>(ctx));
-                    Debug.Assert(success);
 
                     return ctx;
                 }
             }
 
-            public static void Clear()
+            private static bool TryGetContext(
+                JsonSerializerOptions options,
+                int hashCode,
+                out int firstUnpopulatedIndex,
+                [NotNullWhen(true)] out CachingContext? result)
             {
-                lock (s_cache)
+                WeakReference<CachingContext>?[] trackedContexts = s_trackedContexts;
+
+                firstUnpopulatedIndex = -1;
+                for (int i = 0; i < trackedContexts.Length; i++)
                 {
-                    s_cache.Clear();
-                    s_recentEvictionCounts.Clear();
-                    s_evictionRunsToSkip = 0;
-                }
-            }
+                    WeakReference<CachingContext>? weakRef = trackedContexts[i];
 
-            private static bool TryEvictDanglingEntries()
-            {
-                // Worst case scenario, the cache has been filled with permanent entries.
-                // Evictions are synchronized and each run is in the order of microseconds,
-                // so we want to avoid triggering runs every time an instance is initialized,
-                // For this reason we use a backoff strategy to average out the cost of eviction
-                // across multiple initializations. The backoff count is determined by the eviction
-                // rates of the most recent runs.
-
-                Debug.Assert(Monitor.IsEntered(s_cache));
-
-                if (s_evictionRunsToSkip > 0)
-                {
-                    --s_evictionRunsToSkip;
-                    return false;
-                }
-
-                int currentEvictions = 0;
-                foreach (KeyValuePair<JsonSerializerOptions, WeakReference<CachingContext>> kvp in s_cache)
-                {
-                    if (!kvp.Value.TryGetTarget(out _))
+                    if (weakRef is null || !weakRef.TryGetTarget(out CachingContext? ctx))
                     {
-                        bool result = s_cache.TryRemove(kvp.Key, out _);
-                        Debug.Assert(result);
-                        currentEvictions++;
+                        if (firstUnpopulatedIndex < 0)
+                        {
+                            firstUnpopulatedIndex = i;
+                        }
+                    }
+                    else if (hashCode == ctx.HashCode && s_optionsComparer.Equals(options, ctx.Options))
+                    {
+                        result = ctx;
+                        return true;
                     }
                 }
 
-                s_evictionRunsToSkip = EstimateEvictionRunsToSkip(currentEvictions);
-                return currentEvictions > 0;
-
-                // Estimate the number of eviction runs to skip based on recent eviction rates.
-                static int EstimateEvictionRunsToSkip(int latestEvictionCount)
-                {
-                    Queue<int> recentEvictionCounts = s_recentEvictionCounts;
-
-                    if (recentEvictionCounts.Count < EvictionCountHistory - 1)
-                    {
-                        // Insufficient data points to determine a skip count.
-                        recentEvictionCounts.Enqueue(latestEvictionCount);
-                        return 0;
-                    }
-                    else if (recentEvictionCounts.Count == EvictionCountHistory)
-                    {
-                        recentEvictionCounts.Dequeue();
-                    }
-
-                    recentEvictionCounts.Enqueue(latestEvictionCount);
-
-                    // Calculate the total number of eviction in the latest runs
-                    // - If we have at least one eviction per run, on average,
-                    //   do not skip any future eviction runs.
-                    // - Otherwise, skip ~the number of runs needed per one eviction.
-
-                    int totalEvictions = 0;
-                    foreach (int evictionCount in recentEvictionCounts)
-                    {
-                        totalEvictions += evictionCount;
-                    }
-
-                    int evictionRunsToSkip =
-                        totalEvictions >= EvictionCountHistory ? 0 :
-                        (int)Math.Round((double)EvictionCountHistory / Math.Max(totalEvictions, 1));
-
-                    Debug.Assert(0 <= evictionRunsToSkip && evictionRunsToSkip <= EvictionCountHistory);
-                    return evictionRunsToSkip;
-                }
+                result = null;
+                return false;
             }
         }
 
@@ -326,6 +450,7 @@ namespace System.Text.Json
                     left._defaultIgnoreCondition == right._defaultIgnoreCondition &&
                     left._numberHandling == right._numberHandling &&
                     left._unknownTypeHandling == right._unknownTypeHandling &&
+                    left._unmappedMemberHandling == right._unmappedMemberHandling &&
                     left._defaultBufferSize == right._defaultBufferSize &&
                     left._maxDepth == right._maxDepth &&
                     left._allowTrailingCommas == right._allowTrailingCommas &&
@@ -338,8 +463,16 @@ namespace System.Text.Json
                     left._typeInfoResolver == right._typeInfoResolver &&
                     CompareLists(left._converters, right._converters);
 
-                static bool CompareLists<TValue>(ConfigurationList<TValue> left, ConfigurationList<TValue> right)
+                static bool CompareLists<TValue>(ConfigurationList<TValue>? left, ConfigurationList<TValue>? right)
+                    where TValue : class?
                 {
+                    // equates null with empty lists
+                    if (left is null)
+                        return right is null || right.Count == 0;
+
+                    if (right is null)
+                        return left.Count == 0;
+
                     int n;
                     if ((n = left.Count) != right.Count)
                     {
@@ -348,7 +481,7 @@ namespace System.Text.Json
 
                     for (int i = 0; i < n; i++)
                     {
-                        if (!left[i]!.Equals(right[i]))
+                        if (left[i] != right[i])
                         {
                             return false;
                         }
@@ -362,35 +495,54 @@ namespace System.Text.Json
             {
                 HashCode hc = default;
 
-                hc.Add(options._dictionaryKeyPolicy);
-                hc.Add(options._jsonPropertyNamingPolicy);
-                hc.Add(options._readCommentHandling);
-                hc.Add(options._referenceHandler);
-                hc.Add(options._encoder);
-                hc.Add(options._defaultIgnoreCondition);
-                hc.Add(options._numberHandling);
-                hc.Add(options._unknownTypeHandling);
-                hc.Add(options._defaultBufferSize);
-                hc.Add(options._maxDepth);
-                hc.Add(options._allowTrailingCommas);
-                hc.Add(options._ignoreNullValues);
-                hc.Add(options._ignoreReadOnlyProperties);
-                hc.Add(options._ignoreReadonlyFields);
-                hc.Add(options._includeFields);
-                hc.Add(options._propertyNameCaseInsensitive);
-                hc.Add(options._writeIndented);
-                hc.Add(options._typeInfoResolver);
-                GetHashCode(ref hc, options._converters);
+                AddHashCode(ref hc, options._dictionaryKeyPolicy);
+                AddHashCode(ref hc, options._jsonPropertyNamingPolicy);
+                AddHashCode(ref hc, options._readCommentHandling);
+                AddHashCode(ref hc, options._referenceHandler);
+                AddHashCode(ref hc, options._encoder);
+                AddHashCode(ref hc, options._defaultIgnoreCondition);
+                AddHashCode(ref hc, options._numberHandling);
+                AddHashCode(ref hc, options._unknownTypeHandling);
+                AddHashCode(ref hc, options._unmappedMemberHandling);
+                AddHashCode(ref hc, options._defaultBufferSize);
+                AddHashCode(ref hc, options._maxDepth);
+                AddHashCode(ref hc, options._allowTrailingCommas);
+                AddHashCode(ref hc, options._ignoreNullValues);
+                AddHashCode(ref hc, options._ignoreReadOnlyProperties);
+                AddHashCode(ref hc, options._ignoreReadonlyFields);
+                AddHashCode(ref hc, options._includeFields);
+                AddHashCode(ref hc, options._propertyNameCaseInsensitive);
+                AddHashCode(ref hc, options._writeIndented);
+                AddHashCode(ref hc, options._typeInfoResolver);
+                AddListHashCode(ref hc, options._converters);
 
-                static void GetHashCode<TValue>(ref HashCode hc, ConfigurationList<TValue> list)
+                return hc.ToHashCode();
+
+                static void AddListHashCode<TValue>(ref HashCode hc, ConfigurationList<TValue>? list)
                 {
-                    for (int i = 0; i < list.Count; i++)
+                    // equates null with empty lists
+                    if (list is null)
+                        return;
+
+                    int n = list.Count;
+                    for (int i = 0; i < n; i++)
                     {
-                        hc.Add(list[i]);
+                        AddHashCode(ref hc, list[i]);
                     }
                 }
 
-                return hc.ToHashCode();
+                static void AddHashCode<TValue>(ref HashCode hc, TValue? value)
+                {
+                    if (typeof(TValue).IsValueType)
+                    {
+                        hc.Add(value);
+                    }
+                    else
+                    {
+                        Debug.Assert(!typeof(TValue).IsSealed, "Sealed reference types like string should not use this method.");
+                        hc.Add(RuntimeHelpers.GetHashCode(value));
+                    }
+                }
             }
 
 #if !NETCOREAPP

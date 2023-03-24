@@ -51,6 +51,12 @@ namespace System
     internal static class ThrowHelper
     {
         [DoesNotReturn]
+        internal static void ThrowAccessViolationException()
+        {
+            throw new AccessViolationException();
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArrayTypeMismatchException()
         {
             throw new ArrayTypeMismatchException();
@@ -432,15 +438,21 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowArgumentException_Argument_InvalidArrayType()
+        internal static void ThrowArgumentException_Argument_IncompatibleArrayType()
         {
-            throw new ArgumentException(SR.Argument_InvalidArrayType);
+            throw new ArgumentException(SR.Argument_IncompatibleArrayType);
         }
 
         [DoesNotReturn]
         internal static void ThrowArgumentException_InvalidHandle(string? paramName)
         {
             throw new ArgumentException(SR.Arg_InvalidHandle, paramName);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowUnexpectedStateForKnownCallback(object? state)
+        {
+            throw new ArgumentOutOfRangeException(nameof(state), state, SR.Argument_UnexpectedStateForKnownCallback);
         }
 
         [DoesNotReturn]
@@ -557,6 +569,12 @@ namespace System
             throw new FormatException(SR.Format_InvalidString);
         }
 
+        [DoesNotReturn]
+        internal static void ThrowFormatIndexOutOfRange()
+        {
+            throw new FormatException(SR.Format_IndexOutOfRange);
+        }
+
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
         {
             if (array == null)
@@ -633,7 +651,8 @@ namespace System
         // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ThrowForUnsupportedNumericsVectorBaseType<T>() where T : struct
+        internal static void ThrowForUnsupportedNumericsVectorBaseType<T>()
+            where T : struct
         {
             if (!Vector<T>.IsSupported)
             {
@@ -645,7 +664,8 @@ namespace System
         // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ThrowForUnsupportedIntrinsicsVector64BaseType<T>() where T : struct
+        internal static void ThrowForUnsupportedIntrinsicsVector64BaseType<T>()
+            where T : struct
         {
             if (!Vector64<T>.IsSupported)
             {
@@ -657,7 +677,8 @@ namespace System
         // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ThrowForUnsupportedIntrinsicsVector128BaseType<T>() where T : struct
+        internal static void ThrowForUnsupportedIntrinsicsVector128BaseType<T>()
+            where T : struct
         {
             if (!Vector128<T>.IsSupported)
             {
@@ -669,9 +690,23 @@ namespace System
         // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ThrowForUnsupportedIntrinsicsVector256BaseType<T>() where T : struct
+        internal static void ThrowForUnsupportedIntrinsicsVector256BaseType<T>()
+            where T : struct
         {
             if (!Vector256<T>.IsSupported)
+            {
+                ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+            }
+        }
+
+        // Throws if 'T' is disallowed in Vector512<T> in the Intrinsics namespace.
+        // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
+        // is supported and we're on an optimized release build.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ThrowForUnsupportedIntrinsicsVector512BaseType<T>()
+            where T : struct
+        {
+            if (!Vector512<T>.IsSupported)
             {
                 ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }
@@ -682,7 +717,7 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string GetArgumentName(ExceptionArgument argument)
         {
-            Debug.Assert(Enum.IsDefined(typeof(ExceptionArgument), argument),
+            Debug.Assert(Enum.IsDefined(argument),
                 "The enum value is not defined, please check the ExceptionArgument Enum.");
 
             return argument.ToString();
@@ -773,8 +808,6 @@ namespace System
                     return "comparable";
                 case ExceptionArgument.source:
                     return "source";
-                case ExceptionArgument.state:
-                    return "state";
                 case ExceptionArgument.length:
                     return "length";
                 case ExceptionArgument.comparisonType:
@@ -791,6 +824,8 @@ namespace System
                     return "function";
                 case ExceptionArgument.scheduler:
                     return "scheduler";
+                case ExceptionArgument.continuation:
+                    return "continuation";
                 case ExceptionArgument.continuationAction:
                     return "continuationAction";
                 case ExceptionArgument.continuationFunction:
@@ -902,7 +937,7 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string GetResourceString(ExceptionResource resource)
         {
-            Debug.Assert(Enum.IsDefined(typeof(ExceptionResource), resource),
+            Debug.Assert(Enum.IsDefined(resource),
                 "The enum value is not defined, please check the ExceptionResource Enum.");
 
             return SR.GetResourceString(resource.ToString());
@@ -927,6 +962,8 @@ namespace System
                     return SR.ArgumentOutOfRange_Year;
                 case ExceptionResource.Arg_ArrayPlusOffTooSmall:
                     return SR.Arg_ArrayPlusOffTooSmall;
+                case ExceptionResource.Arg_ByteArrayTooSmallForValue:
+                    return SR.Arg_ByteArrayTooSmallForValue;
                 case ExceptionResource.NotSupported_ReadOnlyCollection:
                     return SR.NotSupported_ReadOnlyCollection;
                 case ExceptionResource.Arg_RankMultiDimNotSupported:
@@ -1055,6 +1092,8 @@ namespace System
                     return SR.Argument_AlignmentMustBePow2;
                 case ExceptionResource.ArgumentOutOfRange_NotGreaterThanBufferLength:
                     return SR.ArgumentOutOfRange_NotGreaterThanBufferLength;
+                case ExceptionResource.InvalidOperation_SpanOverlappedOperation:
+                    return SR.InvalidOperation_SpanOverlappedOperation;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1107,7 +1146,6 @@ namespace System
         comparer,
         comparable,
         source,
-        state,
         length,
         comparisonType,
         manager,
@@ -1116,6 +1154,7 @@ namespace System
         creationOptions,
         function,
         scheduler,
+        continuation,
         continuationAction,
         continuationFunction,
         tasks,
@@ -1180,6 +1219,7 @@ namespace System
         ArgumentOutOfRange_Count,
         ArgumentOutOfRange_Year,
         Arg_ArrayPlusOffTooSmall,
+        Arg_ByteArrayTooSmallForValue,
         NotSupported_ReadOnlyCollection,
         Arg_RankMultiDimNotSupported,
         Arg_NonZeroLowerBound,
@@ -1244,5 +1284,6 @@ namespace System
         Argument_InvalidFlag,
         CancellationTokenSource_Disposed,
         Argument_AlignmentMustBePow2,
+        InvalidOperation_SpanOverlappedOperation,
     }
 }

@@ -46,7 +46,7 @@ namespace System.Text.Json.Reflection
         public static bool HasRequiredMemberAttribute(this ICustomAttributeProvider memberInfo)
         {
             // For compiler related attributes we should only look at full type name rather than trying to do something different for version when attribute was introduced.
-            // I.e. library is targetting netstandard2.0 with polyfilled attributes and is being consumed by app targetting net7.0.
+            // I.e. library is targeting netstandard2.0 with polyfilled attributes and is being consumed by an app targeting net7.0 or greater.
             return memberInfo.HasCustomAttributeWithName("System.Runtime.CompilerServices.RequiredMemberAttribute", inherit: true);
         }
 

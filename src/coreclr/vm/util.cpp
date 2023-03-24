@@ -175,50 +175,6 @@ void NPrintToHandleA(HANDLE Handle, const char *pszString, size_t BytesToWrite)
 
 }
 
-static
-void PrintToHandleA(HANDLE Handle, const char *pszString)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    size_t len = strlen(pszString);
-    NPrintToHandleA(Handle, pszString, len);
-}
-
-void PrintToStdOutA(const char *pszString) {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    HANDLE  Handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    PrintToHandleA(Handle, pszString);
-}
-
-
-void PrintToStdOutW(const WCHAR *pwzString)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END
-
-    MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pStr, pwzString, GetConsoleOutputCP());
-
-    PrintToStdOutA(pStr);
-}
-
 void PrintToStdErrA(const char *pszString) {
     CONTRACTL
     {
@@ -229,9 +185,10 @@ void PrintToStdErrA(const char *pszString) {
     CONTRACTL_END
 
     HANDLE  Handle = GetStdHandle(STD_ERROR_HANDLE);
-    PrintToHandleA(Handle, pszString);
-}
 
+    size_t len = strlen(pszString);
+    NPrintToHandleA(Handle, pszString, len);
+}
 
 void PrintToStdErrW(const WCHAR *pwzString)
 {
@@ -246,69 +203,6 @@ void PrintToStdErrW(const WCHAR *pwzString)
     MAKE_MULTIBYTE_FROMWIDE_BESTFIT(pStr, pwzString, GetConsoleOutputCP());
 
     PrintToStdErrA(pStr);
-}
-
-
-
-void NPrintToStdOutA(const char *pszString, size_t nbytes) {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    HANDLE  Handle = GetStdHandle(STD_OUTPUT_HANDLE);
-    NPrintToHandleA(Handle, pszString, nbytes);
-}
-
-
-void NPrintToStdOutW(const WCHAR *pwzString, size_t nchars)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END
-
-    LPSTR pStr;
-    MAKE_MULTIBYTE_FROMWIDEN_BESTFIT(pStr, pwzString, (int)nchars, nbytes, GetConsoleOutputCP());
-
-    NPrintToStdOutA(pStr, nbytes);
-}
-
-void NPrintToStdErrA(const char *pszString, size_t nbytes) {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    HANDLE  Handle = GetStdHandle(STD_ERROR_HANDLE);
-    NPrintToHandleA(Handle, pszString, nbytes);
-}
-
-
-void NPrintToStdErrW(const WCHAR *pwzString, size_t nchars)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END
-
-    LPSTR pStr;
-
-    MAKE_MULTIBYTE_FROMWIDEN_BESTFIT(pStr, pwzString, (int)nchars, nbytes, GetConsoleOutputCP());
-
-    NPrintToStdErrA(pStr, nbytes);
 }
 //----------------------------------------------------------------------------
 

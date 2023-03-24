@@ -12,7 +12,6 @@ namespace System.Text.Json.Serialization.Tests
     {
         [Fact]
         [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72862", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidX86))]
         public async Task ReadSimpleObjectAsync()
         {
             if (StreamingSerializer is null)
@@ -66,7 +65,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/72862", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroidX86))]
         public async Task ReadSimpleObjectWithTrailingTriviaAsync()
         {
             if (StreamingSerializer is null)
@@ -120,7 +118,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async Task Cannot_DeserializeAsync_ObjectWith_Ctor_With_65_Params()
+        public async Task Can_DeserializeAsync_ObjectWith_Ctor_With_65_Params()
         {
             if (StreamingSerializer is null)
             {
@@ -139,6 +137,7 @@ namespace System.Text.Json.Serialization.Tests
                 sb.Append("}");
 
                 string input = sb.ToString();
+                T value;
 
                 using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(input)))
                 {
@@ -147,7 +146,7 @@ namespace System.Text.Json.Serialization.Tests
                         DefaultBufferSize = 1
                     };
 
-                    await Assert.ThrowsAsync<NotSupportedException>(async () => await StreamingSerializer.DeserializeWrapper<T>(stream, options));
+                    value = await StreamingSerializer.DeserializeWrapper<T>(stream, options);
                 }
 
                 using (MemoryStream stream = new MemoryStream("{}"u8.ToArray()))
@@ -157,7 +156,7 @@ namespace System.Text.Json.Serialization.Tests
                         DefaultBufferSize = 1
                     };
 
-                    await Assert.ThrowsAsync<NotSupportedException>(async () => await StreamingSerializer.DeserializeWrapper<T>(stream, options));
+                    value = await StreamingSerializer.DeserializeWrapper<T>(stream, options);
                 }
             }
 

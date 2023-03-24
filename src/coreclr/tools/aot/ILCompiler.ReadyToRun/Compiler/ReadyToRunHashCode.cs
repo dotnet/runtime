@@ -17,7 +17,7 @@ namespace ILCompiler
     public static class ReadyToRunHashCode
     {
         /// <summary>
-        /// CoreCLR <a href="https://github.com/dotnet/coreclr/blob/030e0af89bb897554acef575075c69aaf5176268/src/vm/typehashingalgorithms.h#L15">ComputeNameHashCode</a>
+        /// CoreCLR <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/typehashingalgorithms.h#L14">ComputeNameHashCode</a>
         /// </summary>
         /// <param name="name">Name string to hash</param>
         public static int NameHashCode(string name)
@@ -53,7 +53,7 @@ namespace ILCompiler
 
         /// <summary>
         /// Calculate hash code for a namespace - name combination.
-        /// CoreCLR 2-parameter <a href="https://github.com/dotnet/coreclr/blob/030e0af89bb897554acef575075c69aaf5176268/src/vm/typehashingalgorithms.h#L42">ComputeNameHashCode</a>
+        /// CoreCLR 2-parameter <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/typehashingalgorithms.h#L41">ComputeNameHashCode</a>
         /// DIFFERENT FROM NATIVEAOT: NativeAOT hashes the full name as one string ("namespace.name"),
         /// as the full name is already available. In CoreCLR we normally only have separate
         /// strings for namespace and name, thus we hash them separately.
@@ -66,7 +66,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// CoreCLR 3-parameter <a href="https://github.com/dotnet/coreclr/blob/030e0af89bb897554acef575075c69aaf5176268/src/vm/versionresilienthashcode.cpp#L9">GetVersionResilientTypeHashCode</a>
+        /// CoreCLR 3-parameter <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/versionresilienthashcode.cpp#L9">GetVersionResilientTypeHashCode</a>
         /// </summary>
         /// <param name="type">Type to hash</param>
         public static int TypeTableHashCode(DefType type)
@@ -82,7 +82,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// CoreCLR 1-parameter <a href="https://github.com/dotnet/coreclr/blob/030e0af89bb897554acef575075c69aaf5176268/src/vm/versionresilienthashcode.cpp#L76">GetVersionResilientTypeHashCode</a>
+        /// CoreCLR 1-parameter <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/versionresilienthashcode.cpp#L109">GetVersionResilientTypeHashCode</a>
         /// </summary>
         /// <param name="type">Type to hash</param>
         public static int TypeHashCode(TypeDesc type)
@@ -124,7 +124,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// CoreCLR <a href="https://github.com/dotnet/coreclr/blob/030e0af89bb897554acef575075c69aaf5176268/src/vm/typehashingalgorithms.h#L80">ComputeNestedTypeHashCode</a>
+        /// CoreCLR <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/typehashingalgorithms.h#L79">ComputeNestedTypeHashCode</a>
         /// </summary>
         /// <param name="enclosingTypeHashcode">Hash code of the enclosing type</param>
         /// <param name="nestedTypeNameHash">Hash code of the nested type name</param>
@@ -134,7 +134,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// CoreCLR <a href="https://github.com/dotnet/coreclr/blob/030e0af89bb897554acef575075c69aaf5176268/src/vm/typehashingalgorithms.h#L52">ComputeArrayTypeHashCode</a>
+        /// CoreCLR <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/typehashingalgorithms.h#L51">ComputeArrayTypeHashCode</a>
         /// </summary>
         /// <param name="elementTypeHashcode">Hash code representing the array element type</param>
         /// <param name="rank">Array rank</param>
@@ -152,7 +152,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// CoreCLR <a href="https://github.com/dotnet/coreclr/blob/030e0af89bb897554acef575075c69aaf5176268/src/vm/typehashingalgorithms.h#L66">ComputePointerTypeHashCode</a>
+        /// CoreCLR <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/typehashingalgorithms.h#L65">ComputePointerTypeHashCode</a>
         /// </summary>
         /// <param name="pointeeTypeHashcode">Hash code of the pointee type</param>
         private static int PointerTypeHashCode(int pointeeTypeHashcode)
@@ -161,7 +161,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// CoreCLR <a href="https://github.com/dotnet/coreclr/blob/030e0af89bb897554acef575075c69aaf5176268/src/vm/typehashingalgorithms.h#L73">ComputeByrefTypeHashCode</a>
+        /// CoreCLR <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/typehashingalgorithms.h#L72">ComputeByrefTypeHashCode</a>
         /// </summary>
         /// <param name="parameterTypeHashCode">Hash code representing the parameter type</param>
         private static int ByrefTypeHashCode(int parameterTypeHashcode)
@@ -170,7 +170,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// CoreCLR <a href="https://github.com/dotnet/coreclr/blob/030e0af89bb897554acef575075c69aaf5176268/src/vm/typehashingalgorithms.h#L88">ComputeGenericInstanceHashCode</a>
+        /// CoreCLR <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/typehashingalgorithms.h#L87">ComputeGenericInstanceHashCode</a>
         /// </summary>
         /// <param name="hashcode">Base hash code</param>
         /// <param name="instantiation">Instantiation to include in the hash</param>
@@ -185,7 +185,7 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// CoreCLR <a href="https://github.com/dotnet/coreclr/blob/030e0af89bb897554acef575075c69aaf5176268/src/vm/versionresilienthashcode.cpp#L129">GetVersionResilientMethodHashCode</a>
+        /// CoreCLR <a href="https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/vm/versionresilienthashcode.cpp#L161">GetVersionResilientMethodHashCode</a>
         /// </summary>
         /// <param name="method">Method to hash</param>
         public static int MethodHashCode(MethodDesc method)

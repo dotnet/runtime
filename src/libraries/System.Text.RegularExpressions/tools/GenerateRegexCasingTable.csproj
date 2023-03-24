@@ -2,8 +2,8 @@
 
   <PropertyGroup>
       <OutputType>Exe</OutputType>
-      <TargetFramework>net6.0</TargetFramework>
-      <LangVersion>latest</LangVersion>
+      <!-- SDK maximum supported version. -->
+      <TargetFramework>net7.0</TargetFramework>
       <Nullable>enable</Nullable>
   </PropertyGroup>
 

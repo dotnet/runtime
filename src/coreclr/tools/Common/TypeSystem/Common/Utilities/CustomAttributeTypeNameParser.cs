@@ -78,7 +78,7 @@ namespace Internal.TypeSystem
             if (typeDef == null)
                 return null;
 
-            ArrayBuilder<TypeDesc> genericArgs = new ArrayBuilder<TypeDesc>();
+            ArrayBuilder<TypeDesc> genericArgs = default(ArrayBuilder<TypeDesc>);
 
             // Followed by generic instantiation parameters (but check for the array case)
             if (ch < nameEnd && ch.Current == '[' && (ch + 1) < nameEnd && (ch + 1).Current != ']' && (ch + 1).Current != ',')
@@ -184,7 +184,9 @@ namespace Internal.TypeSystem
                 if (ch.Current == '&')
                 {
                     loadedType = loadedType.MakeByRefType();
+#pragma warning disable IDE0059 // Unnecessary assignment of a value
                     ch++;
+#pragma warning restore IDE0059 // Unnecessary assignment of a value
                 }
             }
 
@@ -232,7 +234,7 @@ namespace Internal.TypeSystem
                         {
                             if (throwIfNotFound)
                                 ThrowHelper.ThrowTypeLoadException(typeName.ToString(), outerType.Module);
-                            
+
                             return null;
                         }
                     }
@@ -374,7 +376,7 @@ namespace Internal.TypeSystem
             return new StringIterator(s, s.Length);
         }
 
-        struct StringIterator
+        private struct StringIterator : IEquatable<StringIterator>
         {
             private string _string;
             private int _index;
@@ -396,46 +398,46 @@ namespace Internal.TypeSystem
 
             public static string Substring(StringIterator it1, StringIterator it2)
             {
-                Debug.Assert(Object.ReferenceEquals(it1._string, it2._string));
+                Debug.Assert(ReferenceEquals(it1._string, it2._string));
                 return it1._string.Substring(it1._index, it2._index - it1._index);
             }
 
-            public static StringIterator operator++(StringIterator it)
+            public static StringIterator operator ++(StringIterator it)
             {
                 return new StringIterator(it._string, ++it._index);
             }
 
             public static bool operator <(StringIterator it1, StringIterator it2)
             {
-                Debug.Assert(Object.ReferenceEquals(it1._string, it2._string));
+                Debug.Assert(ReferenceEquals(it1._string, it2._string));
                 return it1._index < it2._index;
             }
 
             public static bool operator >(StringIterator it1, StringIterator it2)
             {
-                Debug.Assert(Object.ReferenceEquals(it1._string, it2._string));
+                Debug.Assert(ReferenceEquals(it1._string, it2._string));
                 return it1._index > it2._index;
             }
 
-            public static StringIterator operator+(StringIterator it, int val)
+            public static StringIterator operator +(StringIterator it, int val)
             {
                 return new StringIterator(it._string, it._index + val);
             }
 
-            public static StringIterator operator-(StringIterator it, int val)
+            public static StringIterator operator -(StringIterator it, int val)
             {
                 return new StringIterator(it._string, it._index - val);
             }
 
-            public static bool operator==(StringIterator it1, StringIterator it2)
+            public static bool operator ==(StringIterator it1, StringIterator it2)
             {
-                Debug.Assert(Object.ReferenceEquals(it1._string, it2._string));
+                Debug.Assert(ReferenceEquals(it1._string, it2._string));
                 return it1._index == it2._index;
             }
 
             public static bool operator !=(StringIterator it1, StringIterator it2)
             {
-                Debug.Assert(Object.ReferenceEquals(it1._string, it2._string));
+                Debug.Assert(ReferenceEquals(it1._string, it2._string));
                 return it1._index != it2._index;
             }
 
@@ -445,6 +447,11 @@ namespace Internal.TypeSystem
             }
 
             public override int GetHashCode()
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool Equals(StringIterator other)
             {
                 throw new NotImplementedException();
             }

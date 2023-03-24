@@ -1,8 +1,35 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputPath>$(RuntimeBinDir)ilc/</OutputPath>
-    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
   </PropertyGroup>
 
   <Import Project="ILCompiler.props" />
+
+
+  <!-- BEGIN: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
+  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
+    <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
+    <NativeAotSupported Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'linux' and '$(TargetOS)' != 'osx'">false</NativeAotSupported>
+    <NativeAotSupported Condition="'$(TargetArchitecture)' != 'x64'">false</NativeAotSupported>
+    <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>
+    <PublishReadyToRun Condition="'$(NativeAotSupported)' != 'true'">true</PublishReadyToRun>
+    <PublishSingleFile Condition="'$(NativeAotSupported)' != 'true'">true</PublishSingleFile>
+    <PublishTrimmed Condition="'$(NativeAotSupported)' != 'true'">true</PublishTrimmed>
+  </PropertyGroup>
+
+  <Target Name="PublishCompiler"
+          Condition="'$(BuildingInsideVisualStudio)' != 'true'"
+          AfterTargets="Build"
+          DependsOnTargets="Publish;StompSingleFileHostPath" />
+
+  <!--  HACK: liveBuilds stomps over SingleFileHostSourcePath, setting it to the host that we just built.
+        That's unfortunate because it's not the host we're supposed to use here. -->
+  <Target Name="StompSingleFileHostPath"
+          BeforeTargets="ResolveFrameworkReferences">
+    <PropertyGroup>
+      <SingleFileHostSourcePath></SingleFileHostSourcePath>
+    </PropertyGroup>
+  </Target>
+  <!-- END: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
 </Project>

@@ -49,10 +49,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
             get => _order;
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 _order = value;
             }

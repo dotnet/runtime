@@ -19,7 +19,7 @@
 // Image base: 0x04800000
 
 
-.class private auto ansi beforefieldinit Test_b89409
+.class public auto ansi beforefieldinit Test_b89409
        extends [mscorlib]System.Object
 {
 
@@ -51,7 +51,7 @@
   IL_0006:  ret
 } // end of method Test::.ctor
 
-.method private hidebysig static int32 Main() cil managed
+.method public hidebysig static int32 Main() cil managed
 {
   .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
       01 00 00 00

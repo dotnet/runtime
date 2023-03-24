@@ -12,19 +12,19 @@ namespace LibraryImportGenerator.IntegrationTests
 {
     partial class NativeExportsNE
     {
-        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "unicode_return_as_uint", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "ushort_return_as_uint", StringMarshalling = StringMarshalling.Utf16)]
         public static partial uint ReturnUnicodeAsUInt(char input);
 
         [LibraryImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_uint", StringMarshalling = StringMarshalling.Utf16)]
         public static partial char ReturnUIntAsUnicode(uint input);
 
-        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refuint", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refushort", StringMarshalling = StringMarshalling.Utf16)]
         public static partial void ReturnUIntAsUnicode_Ref(uint input, ref char res);
 
-        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refuint", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refushort", StringMarshalling = StringMarshalling.Utf16)]
         public static partial void ReturnUIntAsUnicode_Out(uint input, out char res);
 
-        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refuint", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_refushort", StringMarshalling = StringMarshalling.Utf16)]
         public static partial void ReturnUIntAsUnicode_In(uint input, in char res);
 
         [LibraryImport(NativeExportsNE_Binary, EntryPoint = "char_return_as_uint", StringMarshalling = StringMarshalling.Utf8)]
@@ -46,9 +46,9 @@ namespace LibraryImportGenerator.IntegrationTests
             yield return new object[] { 'A', 0x41 };
             yield return new object[] { 'E', 0x45 };
             yield return new object[] { 'J', 0x4a };
-            yield return new object[] { 'ß', 0xdf };
-            yield return new object[] { '✅', 0x2705 };
-            yield return new object[] { '鸟', 0x9e1f };
+            yield return new object[] { '\u00DF', 0xdf };
+            yield return new object[] { '\u2705', 0x2705 };
+            yield return new object[] { '\u9E1F', 0x9e1f };
         }
 
         [Theory]

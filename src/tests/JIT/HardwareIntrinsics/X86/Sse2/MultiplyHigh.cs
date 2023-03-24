@@ -5,15 +5,14 @@
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.SSE2
 {
-    internal static partial class Program
+    public partial class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
-
-        internal static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void MultiplyHigh()
         {
             int testResult = Pass;
             int testsCount = 21;
@@ -60,7 +59,7 @@ namespace IntelHardwareIntrinsicTest
                 Console.WriteLine($"Sse2.IsSupported: {Sse2.IsSupported}, skipped tests of {typeof(Sse2)}.{methodUnderTestName}");
             }
 
-            return testResult;
+            Assert.Equal(Pass, testResult);
         }
     }
 }

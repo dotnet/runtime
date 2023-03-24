@@ -130,7 +130,7 @@ namespace System.Security.AccessControl
             }
         }
 
-        internal void Persist(SafeFileHandle handle, string fullPath)
+        internal void Persist(SafeFileHandle handle, string _ /*fullPath*/)
         {
             WriteLock();
 

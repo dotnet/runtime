@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using ILCompiler.DependencyAnalysis;
+using ILCompiler.DependencyAnalysisFramework;
 
 using Internal.TypeSystem;
 
@@ -11,7 +12,7 @@ namespace ILCompiler
 {
     internal delegate void RootAdder(object o, string reason);
 
-    internal class RootingServiceProvider : IRootingServiceProvider
+    internal sealed class RootingServiceProvider : IRootingServiceProvider
     {
         private readonly NodeFactory _factory;
         private readonly RootAdder _rootAdder;
@@ -40,16 +41,34 @@ namespace ILCompiler
             _rootAdder(_factory.MaximallyConstructableType(type), reason);
         }
 
+        public void AddReflectionRoot(TypeDesc type, string reason)
+        {
+            _factory.TypeSystemContext.EnsureLoadableType(type);
+            _rootAdder(_factory.ReflectedType(type), reason);
+        }
+
         public void AddReflectionRoot(MethodDesc method, string reason)
         {
             if (!_factory.MetadataManager.IsReflectionBlocked(method))
-                _rootAdder(_factory.ReflectableMethod(method), reason);
+            {
+                _factory.TypeSystemContext.EnsureLoadableMethod(method);
+                _rootAdder(_factory.ReflectedMethod(method), reason);
+            }
         }
 
         public void AddReflectionRoot(FieldDesc field, string reason)
         {
             if (!_factory.MetadataManager.IsReflectionBlocked(field))
-                _rootAdder(_factory.ReflectableField(field), reason);
+            {
+                _factory.TypeSystemContext.EnsureLoadableType(field.OwningType);
+                _rootAdder(_factory.ReflectedField(field), reason);
+            }
+        }
+
+        public void AddCompilationRoot(object o, string reason)
+        {
+            Debug.Assert(o is IDependencyNode<NodeFactory>);
+            _rootAdder(o, reason);
         }
 
         public void RootThreadStaticBaseForType(TypeDesc type, string reason)

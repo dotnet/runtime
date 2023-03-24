@@ -9,7 +9,7 @@ using System.Text;
 
 internal class Program
 {
-    private static int Main(string[] args)
+    private static int Main()
     {
         Console.WriteLine("this test is designed to hang if jit cse doesnt honor volatile");
         if (TestCSE.Test()) return 100;

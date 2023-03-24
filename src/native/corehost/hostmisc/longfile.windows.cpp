@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//The logic in this file was ported from https://github.com/dotnet/coreclr/blob/54891e0650e69f08832f75a40dc102efc6115d38/src/utilcode/longfilepathwrappers.cpp
+//The logic in this file was ported from https://github.com/dotnet/runtime/blob/17154bd7b8f21d6d8d6fca71b89d7dcb705ec32b/src/coreclr/utilcode/longfilepathwrappers.cpp
 //Please reflect any change here into the above file too!
 #include "pal.h"
 #include "trace.h"
@@ -33,7 +33,7 @@ bool ShouldNormalizeWorker(const pal::string_t& path)
 
 //For longpath names on windows, if the paths are normalized they are always prefixed with
 //extended syntax, Windows does not do any more normalizations on this string and uses it as is
-//So we should ensure that there are NO adjacent DirectorySeparatorChar 
+//So we should ensure that there are NO adjacent DirectorySeparatorChar
 bool AssertRepeatingDirSeparator(const pal::string_t& path)
 {
     if (path.empty())

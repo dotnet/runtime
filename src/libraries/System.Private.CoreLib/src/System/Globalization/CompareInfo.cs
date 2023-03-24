@@ -381,15 +381,11 @@ namespace System.Globalization
             // We know a bounds check error occurred. Now we just need to figure
             // out the correct error message to surface.
 
-            if (length1 < 0 || length2 < 0)
-            {
-                throw new ArgumentOutOfRangeException((length1 < 0) ? nameof(length1) : nameof(length2), SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(length1);
+            ArgumentOutOfRangeException.ThrowIfNegative(length2);
 
-            if (offset1 < 0 || offset2 < 0)
-            {
-                throw new ArgumentOutOfRangeException((offset1 < 0) ? nameof(offset1) : nameof(offset2), SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset1);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset2);
 
             if (offset1 > (string1 == null ? 0 : string1.Length) - length1)
             {

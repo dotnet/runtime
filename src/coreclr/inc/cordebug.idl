@@ -6805,18 +6805,18 @@ interface ICorDebugArrayValue : ICorDebugHeapValue
                            length_is(cdim)] ULONG32 dims[]);
 
     /*
-     * HasBaseIndices returns whether or not the array has base indices.
+     * HasBaseIndicies returns whether or not the array has base indices.
      * If the answer is no, then all dimensions have a base index of 0.
      */
 
-    HRESULT HasBaseIndices([out] BOOL *pbHasBaseIndices);
+    HRESULT HasBaseIndicies([out] BOOL *pbHasBaseIndicies);
 
     /*
-     * GetBaseIndices returns the base index of each dimension in
+     * GetBaseIndicies returns the base index of each dimension in
      * the array
      */
 
-    HRESULT GetBaseIndices([in] ULONG32 cdim,
+    HRESULT GetBaseIndicies([in] ULONG32 cdim,
                             [out, size_is(cdim),
                             length_is(cdim)] ULONG32 indices[]);
 

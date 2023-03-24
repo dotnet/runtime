@@ -20,8 +20,8 @@ namespace System.Composition.Hosting
     public class ContainerConfiguration
     {
         private AttributedModelProvider _defaultAttributeContext;
-        private readonly IList<ExportDescriptorProvider> _addedSources = new List<ExportDescriptorProvider>();
-        private readonly IList<Tuple<IEnumerable<Type>, AttributedModelProvider>> _types = new List<Tuple<IEnumerable<Type>, AttributedModelProvider>>();
+        private readonly List<ExportDescriptorProvider> _addedSources = new List<ExportDescriptorProvider>();
+        private readonly List<Tuple<IEnumerable<Type>, AttributedModelProvider>> _types = new List<Tuple<IEnumerable<Type>, AttributedModelProvider>>();
 
         /// <summary>
         /// Create the container. The value returned from this method provides

@@ -8,6 +8,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <IsShipping>false</IsShipping>
     <OutputPath>$(RuntimeBinDir)\InjectResource</OutputPath>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>

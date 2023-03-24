@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Threading;
 
 namespace Microsoft.Extensions.Primitives
@@ -99,9 +98,12 @@ namespace Microsoft.Extensions.Primitives
                 {
                     return;
                 }
-
                 IDisposable registraton = token.RegisterChangeCallback(s => ((ChangeTokenRegistration<TState>?)s)!.OnChangeTokenFired(), this);
-
+                if (token.HasChanged && token.ActiveChangeCallbacks)
+                {
+                    registraton?.Dispose();
+                    return;
+                }
                 SetDisposable(registraton);
             }
 

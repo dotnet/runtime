@@ -5,7 +5,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler
 {
-    partial class CompilationModuleGroup : IInliningPolicy
+    public partial class CompilationModuleGroup : IInliningPolicy
     {
         /// <summary>
         /// If true, type dictionary of "type" is in the module to be compiled
@@ -25,13 +25,13 @@ namespace ILCompiler
         /// </summary>
         public abstract bool IsSingleFileCompilation { get; }
         /// <summary>
-        /// If true, the full type should be generated. This occurs in situations where the type is 
+        /// If true, the full type should be generated. This occurs in situations where the type is
         /// shared between modules (generics, parameterized types), or the type lives in a different module
         /// and therefore needs a full VTable
         /// </summary>
         public abstract bool ShouldProduceFullVTable(TypeDesc type);
         /// <summary>
-        /// If true, the necessary type should be promoted to a full type should be generated. 
+        /// If true, the necessary type should be promoted to a full type should be generated.
         /// </summary>
         public abstract bool ShouldPromoteToFullType(TypeDesc type);
         /// <summary>
@@ -55,5 +55,11 @@ namespace ILCompiler
         /// If true, instance methods will only be generated once their owning type is created.
         /// </summary>
         public abstract bool AllowInstanceMethodOptimization(MethodDesc method);
+
+        /// <summary>
+        /// If true, virtual methods on abstract types will only be generated once a non-abstract derived
+        /// type that doesn't override the virtual method is created.
+        /// </summary>
+        public abstract bool AllowVirtualMethodOnAbstractTypeOptimization(MethodDesc method);
     }
 }

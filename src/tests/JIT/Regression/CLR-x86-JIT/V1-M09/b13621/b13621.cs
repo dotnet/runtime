@@ -5,13 +5,13 @@ using System;
 using System.Runtime.InteropServices;
 namespace DefaultNamespace
 {
-    internal class RootMem
+    public class RootMem
     {
         internal long[] l;
         internal static GCHandle[] root;
         internal static int n;
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             int iSize = 1000;
             root = new GCHandle[iSize];

@@ -46,6 +46,48 @@ namespace System.Net.Http.Json.Functional.Tests
                 server => server.HandleRequestAsync(headers: _headers, content: json));
         }
 
+        [Theory]
+        [MemberData(nameof(ReadFromJsonTestData))]
+        public async Task HttpContentGetFromJsonAsyncOverloadsWithoutJsonSerializerOptionsBehaveTheSameAsWithDefaultValue(string json)
+        {
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
+                {
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        static void AssertPersonEquality(Person first, Person second)
+                        {
+                            Assert.Equal(first.Age, second.Age);
+                            Assert.Equal(first.Name, second.Name);
+                            Assert.Equal(first.Parent, second.Parent);
+                            Assert.Equal(first.PlaceOfBirth, second.PlaceOfBirth);
+                        }
+                        var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        HttpResponseMessage response = await client.SendAsync(request);
+                        Person per1 = (Person) await response.Content.ReadFromJsonAsync(typeof(Person));
+                        per1.Validate();
+
+                        request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        response = await client.SendAsync(request);
+                        Person per2 = (Person) await response.Content.ReadFromJsonAsync(typeof(Person), options: null);
+                        per2.Validate();
+                        AssertPersonEquality(per1, per2);
+
+                        request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        response = await client.SendAsync(request);
+                        per1 = await response.Content.ReadFromJsonAsync<Person>();
+                        per1.Validate();
+
+                        request = new HttpRequestMessage(HttpMethod.Get, uri);
+                        response = await client.SendAsync(request);
+                        per2 = await response.Content.ReadFromJsonAsync<Person>(options:null);
+                        per2.Validate();
+                        AssertPersonEquality(per1, per2);
+                    }
+                },
+                server => server.HandleRequestAsync(headers: _headers, content: json));
+        }
+
         public static IEnumerable<object[]> ReadFromJsonTestData()
         {
             Person per = Person.Create();

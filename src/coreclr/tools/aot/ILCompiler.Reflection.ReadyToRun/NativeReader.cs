@@ -128,7 +128,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         // <summary>
         /// Decode variable length numbers
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/gcinfodecoder.h">src\inc\gcinfodecoder.h</a> DecodeVarLengthUnsigned
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcinfodecoder.h">src\inc\gcinfodecoder.h</a> DecodeVarLengthUnsigned
         /// </summary>
         /// <param name="image">PE image</param>
         /// <param name="len">Number of bits to read</param>
@@ -153,7 +153,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         // <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/gcinfodecoder.h">src\inc\gcinfodecoder.h</a> DecodeVarLengthSigned
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcinfodecoder.h">src\inc\gcinfodecoder.h</a> DecodeVarLengthSigned
         /// </summary>
         public static int DecodeVarLengthSigned(byte[] image, int len, ref int bitOffset)
         {
@@ -175,7 +175,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         // <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/nativeformatreader.h">src\vm\nativeformatreader.h</a> DecodeUnsigned
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/nativeformatreader.h">src\vm\nativeformatreader.h</a> DecodeUnsigned
         /// </summary>
         public static uint DecodeUnsigned(byte[] image, uint offset, ref uint pValue)
         {
@@ -234,7 +234,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         // <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/nativeformatreader.h">src\vm\nativeformatreader.h</a> DecodeSigned
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/nativeformatreader.h">src\vm\nativeformatreader.h</a> DecodeSigned
         /// </summary>
         public static uint DecodeSigned(byte[] image, uint offset, ref int pValue)
         {
@@ -320,7 +320,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         /// <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> decodeUnsigned
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> decodeUnsigned
         /// </summary>
         public static uint DecodeUnsignedGc(byte[] image, ref int start)
         {
@@ -338,7 +338,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         /// <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> decodeSigned
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> decodeSigned
         /// </summary>
         public static int DecodeSignedGc(byte[] image, ref int start)
         {
@@ -360,7 +360,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         /// <summary>
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> decodeUDelta
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcdecoder.cpp">src\inc\gcdecoder.cpp</a> decodeUDelta
         /// </summary>
         public static uint DecodeUDelta(byte[] image, ref int start, uint lastValue)
         {

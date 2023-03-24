@@ -125,7 +125,7 @@ namespace Issue_4115
             } 
         }
 
-        static int Main(string[] args)
+        public static int Main()
         {
             MainClass mainClass = new MainClass();
             mainClass._head = mainClass._tail = new MyClass();

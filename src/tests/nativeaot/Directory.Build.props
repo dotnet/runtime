@@ -1,7 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- SDK Style projects auto-magically include this file. -->
+  <Import Project="..\Directory.Build.props" />
+
   <PropertyGroup>
-    <TrimmerDefaultAction>link</TrimmerDefaultAction>
+    <!-- NativeAOT tests don't need this xunit Assert compat quirk.
+         The tests explicitly test customer scenarios with eager type construction checks present. -->
+    <EagerlyValidateTypeConstruction>false</EagerlyValidateTypeConstruction>
+
+    <!-- We expect trimming to be fully enabled in these tests -->
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
   </PropertyGroup>
-  <Import Project="../Directory.Build.props" />
 </Project>

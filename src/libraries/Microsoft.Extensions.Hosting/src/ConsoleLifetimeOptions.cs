@@ -3,6 +3,9 @@
 
 namespace Microsoft.Extensions.Hosting
 {
+    /// <summary>
+    /// Provides option flags for <see cref="Internal.ConsoleLifetime"/>.
+    /// </summary>
     public class ConsoleLifetimeOptions
     {
         /// <summary>

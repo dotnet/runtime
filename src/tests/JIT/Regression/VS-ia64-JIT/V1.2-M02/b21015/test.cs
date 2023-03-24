@@ -26,7 +26,7 @@ struct T
     }
 }
 
-class Tester
+public class Tester
 {
     public static int Main()
     {
@@ -41,7 +41,7 @@ class Tester
         return 100;
     }
 
-    public static void bar(T t)
+    static void bar(T t)
     {
         Console.WriteLine(t.TheString);
     }

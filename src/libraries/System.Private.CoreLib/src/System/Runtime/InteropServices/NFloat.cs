@@ -164,7 +164,7 @@ namespace System.Runtime.InteropServices
         /// <summary>Multiplies two values together to compute their product.</summary>
         /// <param name="left">The value which <paramref name="right" /> multiplies.</param>
         /// <param name="right">The value which multiplies <paramref name="left" />.</param>
-        /// <returns>The product of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
+        /// <returns>The product of <paramref name="left" /> multiplied-by <paramref name="right" />.</returns>
         [NonVersionable]
         public static NFloat operator *(NFloat left, NFloat right) => new NFloat(left._value * right._value);
 
@@ -1164,6 +1164,9 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(NFloat x) => NativeType.ILogB(x._value);
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
+        public static NFloat Lerp(NFloat value1, NFloat value2, NFloat amount) => new NFloat(NativeType.Lerp(value1._value, value2._value, amount._value));
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static NFloat ReciprocalEstimate(NFloat x) => new NFloat(NativeType.ReciprocalEstimate(x._value));
 
@@ -1492,14 +1495,14 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<NFloat>.TryConvertToChecked<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<NFloat>.TryConvertToChecked<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1605,26 +1608,26 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<NFloat>.TryConvertToSaturating<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<NFloat>.TryConvertToSaturating<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo<TOther>(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<NFloat>.TryConvertToTruncating<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<NFloat>.TryConvertToTruncating<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo<TOther>(value, out result);
         }
 
-        private static bool TryConvertTo<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
+        private static bool TryConvertTo<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
@@ -1754,7 +1757,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
@@ -1763,6 +1766,7 @@ namespace System.Runtime.InteropServices
         // IParsable
         //
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out NFloat result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
 
         //

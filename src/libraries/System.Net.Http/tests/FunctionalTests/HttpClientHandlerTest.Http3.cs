@@ -41,10 +41,10 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(10)] // 2 bytes settings value.
-        [InlineData(100)] // 4 bytes settings value.
-        [InlineData(10_000_000)] // 8 bytes settings value.
-        public async Task ClientSettingsReceived_Success(int headerSizeLimit)
+        [InlineData(10, 10240)] // 2 bytes settings value.
+        [InlineData(100, 102400)] // 4 bytes settings value.
+        [InlineData(10_000_000, int.MaxValue)] // 8 bytes settings value.
+        public async Task ClientSettingsReceived_Success(int headerSizeLimit, int expectedHeaderSizeLimitBytes)
         {
             using Http3LoopbackServer server = CreateHttp3LoopbackServer();
 
@@ -58,7 +58,7 @@ namespace System.Net.Http.Functional.Tests
                 await using (requestStream)
                 {
                     Assert.False(settingsStream.CanWrite, "Expected unidirectional control stream.");
-                    Assert.Equal(headerSizeLimit * 1024L, connection.MaxHeaderListSize);
+                    Assert.Equal(expectedHeaderSizeLimitBytes, connection.MaxHeaderListSize);
 
                     await requestStream.ReadRequestDataAsync();
                     await requestStream.SendResponseAsync();
@@ -285,10 +285,9 @@ namespace System.Net.Http.Functional.Tests
                 await using Http3LoopbackConnection connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
                 await using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
 
-                await stream.SendFrameAsync(ReservedHttp2PriorityFrameId, new byte[8]);
-
                 QuicException ex = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionAborted, async () =>
                 {
+                    await stream.SendFrameAsync(ReservedHttp2PriorityFrameId, new byte[8]);
                     await stream.HandleRequestAsync();
                     await using Http3LoopbackStream stream2 = await connection.AcceptRequestStreamAsync();
                 });
@@ -794,6 +793,11 @@ namespace System.Net.Http.Functional.Tests
                     using HttpResponseMessage responseA = await client.SendAsync(requestA).WaitAsync(TimeSpan.FromSeconds(20));
                     Assert.Equal(HttpStatusCode.OK, responseA.StatusCode);
                     Assert.NotEqual(3, responseA.Version.Major);
+                }
+                catch (TimeoutException ex)
+                {
+                    _output.WriteLine($"Unable to establish non-H/3 connection to {uri}: {ex}");
+                    return;
                 }
                 catch (HttpRequestException ex) when
                     (ex.InnerException is SocketException se &&

@@ -18,10 +18,10 @@ namespace System.Security.Cryptography
         private readonly ICryptoTransform _transform;
         private byte[] _inputBuffer;  // read from _stream before _Transform
         private int _inputBufferIndex;
-        private int _inputBlockSize;
+        private readonly int _inputBlockSize;
         private byte[] _outputBuffer; // buffered output of _Transform
         private int _outputBufferIndex;
-        private int _outputBlockSize;
+        private readonly int _outputBlockSize;
         private bool _canRead;
         private bool _canWrite;
         private bool _finalBlockTransformed;
@@ -249,10 +249,10 @@ namespace System.Security.Cryptography
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         public override int EndRead(IAsyncResult asyncResult) =>
-            TaskToApm.End<int>(asyncResult);
+            TaskToAsyncResult.End<int>(asyncResult);
 
         public override int ReadByte()
         {
@@ -488,15 +488,38 @@ namespace System.Security.Cryptography
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         public override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToApm.End(asyncResult);
+            TaskToAsyncResult.End(asyncResult);
 
         public override void Write(byte[] buffer, int offset, int count)
         {
             CheckWriteArguments(buffer, offset, count);
             WriteAsyncCore(buffer.AsMemory(offset, count), default, useAsync: false).AsTask().GetAwaiter().GetResult();
+        }
+
+        /// <inheritdoc/>
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            // Logically this is doing the same thing as the base Stream, however CryptoStream clears arrays before
+            // returning them to the pool, whereas the base Stream does not.
+            // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
+            byte[] sharedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
+
+            try
+            {
+                buffer.CopyTo(sharedBuffer);
+
+                // We want to keep calling the virtual Write(byte[]...) so that derived CryptoStream types continue
+                // to get the array overload called from the span one.
+                Write(sharedBuffer, 0, buffer.Length);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(sharedBuffer.AsSpan(0, buffer.Length));
+                ArrayPool<byte>.Shared.Return(sharedBuffer);
+            }
         }
 
         private void CheckWriteArguments(byte[] buffer, int offset, int count)
@@ -719,21 +742,13 @@ namespace System.Security.Cryptography
         private void CheckCopyToArguments(Stream destination, int bufferSize)
         {
             ArgumentNullException.ThrowIfNull(destination);
-
-            EnsureNotDisposed(destination, nameof(destination));
+            ObjectDisposedException.ThrowIf(!destination.CanRead && !destination.CanWrite, destination);
 
             if (!destination.CanWrite)
                 throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-            if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(bufferSize);
             if (!CanRead)
                 throw new NotSupportedException(SR.NotSupported_UnreadableStream);
-        }
-
-        private static void EnsureNotDisposed(Stream stream, string objectName)
-        {
-            if (!stream.CanRead && !stream.CanWrite)
-                throw new ObjectDisposedException(objectName);
         }
 
         public void Clear()

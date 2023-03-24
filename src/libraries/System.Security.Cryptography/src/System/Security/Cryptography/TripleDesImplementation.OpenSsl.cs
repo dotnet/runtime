@@ -24,9 +24,8 @@ namespace System.Security.Cryptography
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
 
-        private static ILiteSymmetricCipher CreateLiteCipher(
+        private static OpenSslCipherLite CreateLiteCipher(
             CipherMode cipherMode,
-            PaddingMode paddingMode,
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> iv,
             int blockSize,
@@ -39,7 +38,6 @@ namespace System.Security.Cryptography
 
             return new OpenSslCipherLite(
                 algorithm,
-                cipherMode,
                 blockSize,
                 paddingSize,
                 key,

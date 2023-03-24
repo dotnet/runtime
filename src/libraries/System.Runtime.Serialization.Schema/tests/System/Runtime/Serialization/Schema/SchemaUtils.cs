@@ -14,8 +14,7 @@ namespace System.Runtime.Serialization.Schema.Tests
         static XmlWriterSettings writerSettings = new XmlWriterSettings() { Indent = true };
 
         #region Test Data
-        internal static XmlSchemaSet PositiveSchemas = SchemaUtils.ReadStringsIntoSchemaSet(
-            new string[] {
+        private static string[] _positiveSchemas = new string[] {
                     @"<?xml version='1.0' encoding='utf-8'?><schema elementFormDefault='qualified' targetNamespace='http://schemas.datacontract.org/2004/07/fooNs' xmlns:tns='http://schemas.datacontract.org/2004/07/fooNs' xmlns:ser='http://schemas.microsoft.com/2003/10/Serialization/' xmlns='http://www.w3.org/2001/XMLSchema'>
                       <complexType name='ValidType'><sequence><element name='member' nillable='true' type='string' /></sequence></complexType>
                       <element name='ValidType' nillable='true' type='tns:ValidType' />
@@ -30,10 +29,10 @@ namespace System.Runtime.Serialization.Schema.Tests
                       <complexType name='NonAttributedSquare'><sequence><element minOccurs='0' name='Length' type='int' /></sequence></complexType>
                       <element name='NonAttributedSquare' nillable='true' type='tns:NonAttributedSquare' />
                     </schema>",
-            });
+            };
+        internal static XmlSchemaSet PositiveSchemas => ReadStringsIntoSchemaSet(_positiveSchemas);
 
-        internal static XmlSchemaSet IsReferenceSchemas = SchemaUtils.ReadStringsIntoSchemaSet(
-            new string[] {
+        private static string[] _isReferenceSchemas = new string[] {
                     @"<?xml version='1.0' encoding='utf-8'?>
                     <xs:schema xmlns:tns='http://schemas.datacontract.org/2004/07/Suites.SchemaImport.ReferencedTypes' xmlns:ser='http://schemas.microsoft.com/2003/10/Serialization/' elementFormDefault='qualified' targetNamespace='http://schemas.datacontract.org/2004/07/Suites.SchemaImport.ReferencedTypes' xmlns:xs='http://www.w3.org/2001/XMLSchema'>
                       <xs:import namespace='http://schemas.microsoft.com/2003/10/Serialization/' />
@@ -53,10 +52,10 @@ namespace System.Runtime.Serialization.Schema.Tests
                         </xs:sequence>
                       </xs:complexType>
                     </xs:schema>",
-            });
+            };
+        internal static XmlSchemaSet IsReferenceSchemas => ReadStringsIntoSchemaSet(_isReferenceSchemas);
 
-        internal static XmlSchemaSet MixedSchemas = SchemaUtils.ReadStringsIntoSchemaSet(
-            new string[] {
+        private static string[] _mixedSchemas = new string[] {
                     @"<?xml version='1.0' encoding='utf-8'?><schema elementFormDefault='qualified' targetNamespace='http://schemas.datacontract.org/2004/07/fooNs' xmlns:tns='http://schemas.datacontract.org/2004/07/fooNs' xmlns:ser='http://schemas.microsoft.com/2003/10/Serialization/' xmlns='http://www.w3.org/2001/XMLSchema'>
                       <complexType name='InvalidType'><all /></complexType>
                       <element name='InvalidType' nillable='true' type='tns:InvalidType' />
@@ -67,7 +66,8 @@ namespace System.Runtime.Serialization.Schema.Tests
                       <complexType name='AnotherValidType'><sequence><element name='member' nillable='true' type='string' minOccurs='0' /></sequence></complexType>
                       <element name='AnotherValidType' nillable='true' type='tns:AnotherValidType' />
                     </schema>",
-        });
+        };
+        internal static XmlSchemaSet MixedSchemas => ReadStringsIntoSchemaSet(_mixedSchemas);
 
         internal static string[] NegativeSchemaStrings =
             new string[] {

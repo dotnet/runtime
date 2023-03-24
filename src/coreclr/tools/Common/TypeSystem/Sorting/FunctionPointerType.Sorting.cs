@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Functionality related to deterministic ordering of types
-    partial class FunctionPointerType
+    public partial class FunctionPointerType
     {
         protected internal override int ClassCode => -914739489;
 

@@ -247,10 +247,7 @@ namespace System.IO
                 access |= FileAccess.Write;
             }
 
-            if (access == 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(rights));
-            }
+            ArgumentOutOfRangeException.ThrowIfZero((int)access, nameof(rights));
 
             return access;
         }
@@ -282,7 +279,7 @@ namespace System.IO
             {
                 fixed (byte* pSecurityDescriptor = security.GetSecurityDescriptorBinaryForm())
                 {
-                    secAttrs.lpSecurityDescriptor = (IntPtr)pSecurityDescriptor;
+                    secAttrs.lpSecurityDescriptor = pSecurityDescriptor;
                     handle = CreateFileHandleInternal(fullPath, mode, rights, share, flagsAndAttributes, &secAttrs);
                 }
             }
@@ -316,7 +313,7 @@ namespace System.IO
                 // NT5 oddity - when trying to open "C:\" as a FileStream,
                 // we usually get ERROR_PATH_NOT_FOUND from the OS.  We should
                 // probably be consistent w/ every other directory.
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
 
                 if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && fullPath.Length == Path.GetPathRoot(fullPath)!.Length)
                 {

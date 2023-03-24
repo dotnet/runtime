@@ -15,16 +15,6 @@ namespace System.Runtime
                                                                  ushort itfSlotNumber,
                                                                  /* out */ MethodTable** ppGenericContext)
         {
-            DynamicModule* dynamicModule = pTgtType->DynamicModule;
-
-            // Use the dynamic module resolver if it's present
-            if (dynamicModule != null)
-            {
-                delegate*<MethodTable*, MethodTable*, ushort, IntPtr> resolver = dynamicModule->DynamicTypeSlotDispatchResolve;
-                if (resolver != null)
-                    return resolver(pTgtType, pItfType, itfSlotNumber);
-            }
-
             // Start at the current type and work up the inheritance chain
             MethodTable* pCur = pTgtType;
 

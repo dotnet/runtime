@@ -4,11 +4,10 @@
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
+using DependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    using DependencyListEntry = DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>.DependencyListEntry;
-
     /// <summary>
     /// Represents a node whose dependencies are runtime determined (they depend on the generic context)
     /// and which provides means to compute concrete dependencies when given the generic context.

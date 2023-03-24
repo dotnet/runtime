@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Xml
 
         internal NamespaceFrame GetScopeAt(int i)
         {
-            return (NamespaceFrame)_ancestorStack[i];
+            return (NamespaceFrame)_ancestorStack[i]!;
         }
 
         internal NamespaceFrame GetCurrentScope()
@@ -20,9 +20,9 @@ namespace System.Security.Cryptography.Xml
             return GetScopeAt(_ancestorStack.Count - 1);
         }
 
-        protected XmlAttribute GetNearestRenderedNamespaceWithMatchingPrefix(string nsPrefix, out int depth)
+        protected XmlAttribute? GetNearestRenderedNamespaceWithMatchingPrefix(string nsPrefix, out int depth)
         {
-            XmlAttribute attr;
+            XmlAttribute? attr;
             depth = -1;
             for (int i = _ancestorStack.Count - 1; i >= 0; i--)
             {
@@ -35,9 +35,9 @@ namespace System.Security.Cryptography.Xml
             return null;
         }
 
-        protected XmlAttribute GetNearestUnrenderedNamespaceWithMatchingPrefix(string nsPrefix, out int depth)
+        protected XmlAttribute? GetNearestUnrenderedNamespaceWithMatchingPrefix(string nsPrefix, out int depth)
         {
-            XmlAttribute attr;
+            XmlAttribute? attr;
             depth = -1;
             for (int i = _ancestorStack.Count - 1; i >= 0; i--)
             {

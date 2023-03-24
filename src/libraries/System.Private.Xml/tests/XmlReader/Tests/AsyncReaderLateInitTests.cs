@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Threading.Tests;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlReaderTests
 {
     public static class AsyncReaderLateInitTests
     {

@@ -9,7 +9,7 @@ namespace Internal.TypeSystem
 {
     public class MetadataVirtualMethodAlgorithm : VirtualMethodAlgorithm
     {
-        private class MethodDescHashtable : LockFreeReaderHashtable<MethodDesc, MethodDesc>
+        private sealed class MethodDescHashtable : LockFreeReaderHashtable<MethodDesc, MethodDesc>
         {
             protected override int GetKeyHashCode(MethodDesc key)
             {
@@ -24,13 +24,13 @@ namespace Internal.TypeSystem
             protected override bool CompareKeyToValue(MethodDesc key, MethodDesc value)
             {
                 Debug.Assert(key.Context == value.Context);
-                return object.ReferenceEquals(key, value);
+                return ReferenceEquals(key, value);
             }
 
             protected override bool CompareValueToValue(MethodDesc value1, MethodDesc value2)
             {
                 Debug.Assert(value1.Context == value2.Context);
-                return object.ReferenceEquals(value1, value2);
+                return ReferenceEquals(value1, value2);
             }
 
             protected override MethodDesc CreateValueFromKey(MethodDesc key)
@@ -39,7 +39,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        private class UnificationGroup
+        private sealed class UnificationGroup
         {
             private MethodDesc[] _members = MethodDesc.EmptyMethods;
             private int _memberCount;
@@ -415,13 +415,21 @@ namespace Internal.TypeSystem
             return FindMatchingVirtualMethodOnTypeByNameAndSig(method, currentType, reverseMethodSearch, nameSigMatchMethodIsValidCandidate: s_VerifyMethodsHaveTheSameVirtualSlot);
         }
 
-        private static Func<MethodDesc, MethodDesc, bool> s_VerifyMethodsHaveTheSameVirtualSlot = VerifyMethodsHaveTheSameVirtualSlot;
+        private static readonly Func<MethodDesc, MethodDesc, bool> s_VerifyMethodsHaveTheSameVirtualSlot = VerifyMethodsHaveTheSameVirtualSlot;
 
         // Return true if the slot that defines methodToVerify matches slotDefiningMethod
         private static bool VerifyMethodsHaveTheSameVirtualSlot(MethodDesc slotDefiningMethod, MethodDesc methodToVerify)
         {
             MethodDesc slotDefiningMethodOfMethodToVerify = FindSlotDefiningMethodForVirtualMethod(methodToVerify);
             return slotDefiningMethodOfMethodToVerify == slotDefiningMethod;
+        }
+
+        private static readonly Func<MethodDesc, MethodDesc, bool> s_VerifyMethodIsPublic = VerifyMethodIsPublic;
+
+        // Return true if the method to verify is public
+        private static bool VerifyMethodIsPublic(MethodDesc slotDefiningMethod, MethodDesc methodToVerify)
+        {
+            return methodToVerify.IsPublic;
         }
 
         private static void FindBaseUnificationGroup(MetadataType currentType, UnificationGroup unificationGroup)
@@ -467,8 +475,7 @@ namespace Internal.TypeSystem
                 MethodDesc nameSigMatchMemberMethod = FindMatchingVirtualMethodOnTypeByNameAndSigWithSlotCheck(memberMethod, currentType, reverseMethodSearch: true);
                 if (nameSigMatchMemberMethod != null && nameSigMatchMemberMethod != memberMethod)
                 {
-                    if (separatedMethods == null)
-                        separatedMethods = new MethodDescHashtable();
+                    separatedMethods ??= new MethodDescHashtable();
                     separatedMethods.AddOrGetExisting(memberMethod);
                 }
             }
@@ -491,8 +498,7 @@ namespace Internal.TypeSystem
                 {
                     unificationGroup.RemoveFromGroup(declSlot);
 
-                    if (separatedMethods == null)
-                        separatedMethods = new MethodDescHashtable();
+                    separatedMethods ??= new MethodDescHashtable();
                     separatedMethods.AddOrGetExisting(declSlot);
 
                     if (unificationGroup.RequiresSlotUnification(declSlot) || implSlot.RequiresSlotUnification())
@@ -617,7 +623,7 @@ namespace Internal.TypeSystem
             {
                 MethodDesc foundOnCurrentType = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType,
                     reverseMethodSearch: false, /* When searching for name/sig overrides on a type that explicitly defines an interface, search through the type in the forward direction*/
-                    nameSigMatchMethodIsValidCandidate :null);
+                    nameSigMatchMethodIsValidCandidate: s_VerifyMethodIsPublic);
                 foundOnCurrentType = FindSlotDefiningMethodForVirtualMethod(foundOnCurrentType);
 
                 if (baseType == null)
@@ -655,7 +661,7 @@ namespace Internal.TypeSystem
                 {
                     MethodDesc foundOnCurrentType = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType,
                                             reverseMethodSearch: false, /* When searching for name/sig overrides on a type that is the first type in the hierarchy to require the interface, search through the type in the forward direction*/
-                                            nameSigMatchMethodIsValidCandidate: null);
+                                            nameSigMatchMethodIsValidCandidate: s_VerifyMethodIsPublic);
 
                     foundOnCurrentType = FindSlotDefiningMethodForVirtualMethod(foundOnCurrentType);
 
@@ -731,7 +737,7 @@ namespace Internal.TypeSystem
 
                 MethodDesc nameSigOverride = FindMatchingVirtualMethodOnTypeByNameAndSig(interfaceMethod, currentType,
                     reverseMethodSearch: true, /* When searching for a name sig match for an interface on parent types search in reverse order of declaration */
-                    nameSigMatchMethodIsValidCandidate:null);
+                    nameSigMatchMethodIsValidCandidate: s_VerifyMethodIsPublic);
 
                 if (nameSigOverride != null)
                 {
@@ -907,8 +913,6 @@ namespace Internal.TypeSystem
         /// <returns>MethodDesc of the resolved virtual static method, null when not found (runtime lookup must be used)</returns>
         public static MethodDesc ResolveInterfaceMethodToStaticVirtualMethodOnType(MethodDesc interfaceMethod, MetadataType currentType)
         {
-            TypeDesc interfaceType = interfaceMethod.OwningType;
-
             // Search for match on a per-level in the type hierarchy
             for (MetadataType typeToCheck = currentType; typeToCheck != null; typeToCheck = typeToCheck.MetadataBaseType)
             {

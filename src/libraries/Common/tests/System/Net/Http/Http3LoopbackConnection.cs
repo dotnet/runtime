@@ -14,7 +14,7 @@ using System.Threading;
 
 namespace System.Net.Test.Common
 {
-    internal sealed class Http3LoopbackConnection : GenericLoopbackConnection
+    public sealed class Http3LoopbackConnection : GenericLoopbackConnection
     {
         public const long H3_NO_ERROR = 0x100;
         public const long H3_GENERAL_PROTOCOL_ERROR = 0x101;
@@ -188,11 +188,11 @@ namespace System.Net.Test.Common
             return (controlStream, requestStream);
         }
 
-        public async Task EstablishControlStreamAsync()
+        public async Task EstablishControlStreamAsync(SettingsEntry[] settingsEntries)
         {
             _outboundControlStream = await OpenUnidirectionalStreamAsync();
             await _outboundControlStream.SendUnidirectionalStreamTypeAsync(Http3LoopbackStream.ControlStream);
-            await _outboundControlStream.SendSettingsFrameAsync();
+            await _outboundControlStream.SendSettingsFrameAsync(settingsEntries);
         }
 
         public override async Task<byte[]> ReadRequestBodyAsync()

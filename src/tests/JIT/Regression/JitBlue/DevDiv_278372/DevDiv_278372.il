@@ -12,7 +12,7 @@
 // In this case, genFnProlog was attempting to zero-init V on the stack.
 //
 // It was difficult to construct a repro; this repro requires that the test
-// be run with COMPlus_JitStressRegs=0x200 (which changes the location of
+// be run with DOTNET_JitStressRegs=0x200 (which changes the location of
 // variables at block boundaries).
 
 
@@ -34,7 +34,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private auto ansi beforefieldinit DevDiv_278372
+.class public auto ansi beforefieldinit DevDiv_278372
        extends [System.Runtime]System.Object
 {
   .method public hidebysig static bool  check(int32& dummy) cil managed noinlining

@@ -10,11 +10,17 @@ namespace System.Text.Json.Serialization.Metadata
     /// Provides JSON serialization-related metadata about a type.
     /// </summary>
     /// <typeparam name="T">The generic definition of the type.</typeparam>
-    public abstract class JsonTypeInfo<T> : JsonTypeInfo
+    public sealed partial class JsonTypeInfo<T> : JsonTypeInfo
     {
         private Action<Utf8JsonWriter, T>? _serialize;
 
         private Func<T>? _typedCreateObject;
+
+        internal JsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
+            : base(typeof(T), converter, options)
+        {
+            EffectiveConverter = converter.CreateCastingConverter<T>();
+        }
 
         /// <summary>
         /// A Converter whose declared type always matches that of the current JsonTypeInfo.
@@ -93,24 +99,6 @@ namespace System.Text.Json.Serialization.Metadata
             _typedCreateObject = typedCreateObject;
         }
 
-        private protected void SetCreateObjectIfCompatible(Delegate? createObject)
-        {
-            Debug.Assert(!IsConfigured);
-
-            // Guard against the reflection resolver/source generator attempting to pass
-            // a CreateObject delegate to converters/metadata that do not support it.
-            if (Converter.SupportsCreateObjectDelegate && !Converter.ConstructorIsParameterized)
-            {
-                SetCreateObject(createObject);
-            }
-        }
-
-        internal JsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
-            : base(typeof(T), converter, options)
-        {
-            EffectiveConverter = converter.CreateCastingConverter<T>();
-        }
-
         /// <summary>
         /// Serializes an instance of <typeparamref name="T"/> using
         /// <see cref="JsonSourceGenerationOptionsAttribute"/> values specified at design time.
@@ -123,11 +111,11 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 return _serialize;
             }
-            private protected set
+            internal set
             {
-                Debug.Assert(!IsConfigured, "We should not mutate configured JsonTypeInfo");
+                Debug.Assert(!IsReadOnly, "We should not mutate read-only JsonTypeInfo");
                 _serialize = value;
-                CanUseSerializeHandler = value != null;
+                HasSerializeHandler = value != null;
             }
         }
 
@@ -135,7 +123,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             return new JsonPropertyInfo<T>(
                 declaringType: typeof(T),
-                declaringTypeInfo: null,
+                declaringTypeInfo: this,
                 Options)
             {
                 JsonTypeInfo = this,
@@ -149,44 +137,6 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 JsonTypeInfo = this
             };
-        }
-
-        private protected void PopulatePolymorphismMetadata()
-        {
-            JsonPolymorphismOptions? options = JsonPolymorphismOptions.CreateFromAttributeDeclarations(Type);
-            if (options != null)
-            {
-                options.DeclaringTypeInfo = this;
-                _polymorphismOptions = options;
-            }
-        }
-
-        private protected void MapInterfaceTypesToCallbacks()
-        {
-            // Callbacks currently only supported in object kinds
-            // TODO: extend to collections/dictionaries
-            if (Kind == JsonTypeInfoKind.Object)
-            {
-                if (typeof(IJsonOnSerializing).IsAssignableFrom(typeof(T)))
-                {
-                    OnSerializing = static obj => ((IJsonOnSerializing)obj).OnSerializing();
-                }
-
-                if (typeof(IJsonOnSerialized).IsAssignableFrom(typeof(T)))
-                {
-                    OnSerialized = static obj => ((IJsonOnSerialized)obj).OnSerialized();
-                }
-
-                if (typeof(IJsonOnDeserializing).IsAssignableFrom(typeof(T)))
-                {
-                    OnDeserializing = static obj => ((IJsonOnDeserializing)obj).OnDeserializing();
-                }
-
-                if (typeof(IJsonOnDeserialized).IsAssignableFrom(typeof(T)))
-                {
-                    OnDeserialized = static obj => ((IJsonOnDeserialized)obj).OnDeserialized();
-                }
-            }
         }
     }
 }

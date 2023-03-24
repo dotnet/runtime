@@ -9,7 +9,7 @@ namespace ConsoleApplication3
 {
     class Program
     {
-        static int Main(string[] args)
+        static int Main()
         {
 	    try{
 	            Repro<Program>(null);

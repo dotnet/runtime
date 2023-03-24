@@ -2,8 +2,7 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ForceManagedImplementation>false</ForceManagedImplementation>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
-    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -61,14 +60,16 @@
              Link="Common\System\StringExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.Associate.cs"
+             Link="Common\System\Net\Logging\NetEventSource.Common.Associate.cs" />
+    <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.DumpBuffer.cs"
+             Link="Common\System\Net\Logging\NetEventSource.Common.DumpBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\CookieComparer.cs"
              Link="Common\System\Net\CookieComparer.cs" />
     <Compile Include="$(CommonPath)System\Net\CookieFields.cs"
              Link="Common\System\Net\CookieFields.cs" />
     <Compile Include="$(CommonPath)System\Net\CookieParser.cs"
              Link="Common\System\Net\CookieParser.cs" />
-    <Compile Include="$(CommonPath)System\Net\CaseInsensitiveAscii.cs"
-             Link="Common\System\Net\CaseInsensitiveAscii.cs" />
     <Compile Include="$(CommonPath)System\Net\ExceptionCheck.cs"
              Link="Common\System\Net\ExceptionCheck.cs" />
     <Compile Include="$(CommonPath)System\Net\HttpStatusDescription.cs"
@@ -158,8 +159,6 @@
              Link="Common\Interop\Windows\Kernel32\Interop.LoadLibraryEx_IntPtr.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs"
              Link="Common\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs" />
-    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs"
-             Link="Common\Microsoft\Win32\SafeHandles\SafeLocalAllocHandle.cs" />
     <!-- Add NTAuthentication -->
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs"
              Link="Common\System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs" />
@@ -183,8 +182,6 @@
              Link="Common\System\Net\Security\SafeCredentialReference.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs"
              Link="Common\System\Net\Security\SSPIHandleCache.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\NetEventSource.Security.cs"
-             Link="Common\System\Net\Security\NetEventSource.Security.cs" />
     <!-- Windows specific NTAuthentication -->
     <Compile Include="$(CommonPath)System\Net\Security\SecurityContextTokenHandle.cs"
              Link="Common\System\Net\Security\SecurityContextTokenHandle.cs" />
@@ -251,7 +248,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\SSPIWrapper.cs"
              Link="Common\Interop\Windows\SspiCli\SSPIWrapper.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(ForceManagedImplementation)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(ForceManagedImplementation)' == 'true'">
     <Compile Include="System\Net\Managed\HttpEndPointListener.cs" />
     <Compile Include="System\Net\Managed\HttpEndPointManager.cs" />
     <Compile Include="System\Net\Managed\HttpConnection.cs" />
@@ -270,8 +267,6 @@
     <Compile Include="System\Net\Managed\ChunkStream.cs" />
     <Compile Include="System\Net\Managed\HttpResponseStream.Managed.cs" />
     <Compile Include="System\Net\Managed\WebSockets\HttpWebSocket.Managed.cs" />
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Net.ServicePoint" />
     <Reference Include="System.Threading.ThreadPool" />

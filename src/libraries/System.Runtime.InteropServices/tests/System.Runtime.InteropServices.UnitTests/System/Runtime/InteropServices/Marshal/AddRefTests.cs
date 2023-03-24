@@ -10,6 +10,7 @@ namespace System.Runtime.InteropServices.Tests
     {
         [Fact]
         [SkipOnMono("ComWrappers are not supported on Mono")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/76005", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsNotWindows))]
         public void AddRef_ValidPointer_Success()
         {
             var cw = new ComWrappersImpl();

@@ -151,7 +151,7 @@ mono_log_write_logfile (const char *log_domain, GLogLevelFlags level, mono_bool 
  * Close the log file
  */
 void
-mono_log_close_logfile()
+mono_log_close_logfile(void)
 {
 	if (logFile) {
 		if (logFile != stdout)

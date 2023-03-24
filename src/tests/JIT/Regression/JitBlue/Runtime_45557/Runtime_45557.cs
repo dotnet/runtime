@@ -77,9 +77,9 @@ namespace Runtime_45557
         }
     }
 
-    class Program
+    public class Program
     {
-        static int Main(string[] args)
+        public static int Main()
         {
             ObjectBinderSnapshot o = ObjectBinder.GetSnapshot();
             Console.WriteLine($"Test output: {o.SomeValue}");

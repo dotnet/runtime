@@ -1,12 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.IO;
-using System.Security.Cryptography;
-using System.Xml;
-
-using Internal.Text;
+using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysis;
 
@@ -14,31 +9,14 @@ using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler
 {
-    public class ObjectDumper : IObjectDumper
+    public abstract class ObjectDumper : IObjectDumper
     {
-        private readonly string _fileName;
-        private SHA256 _sha256;
-        private XmlWriter _writer;
+        internal abstract void Begin();
+        internal abstract void End();
+        void IObjectDumper.DumpObjectNode(NameMangler mangler, ObjectNode node, ObjectData objectData) => DumpObjectNode(mangler, node, objectData);
+        protected abstract void DumpObjectNode(NameMangler mangler, ObjectNode node, ObjectData objectData);
 
-        public ObjectDumper(string fileName)
-        {
-            _fileName = fileName;
-        }
-
-        internal void Begin()
-        {
-            var settings = new XmlWriterSettings
-            {
-                CloseOutput = true,
-                Indent = true,
-            };
-
-            _sha256 = SHA256.Create();
-            _writer = XmlWriter.Create(File.CreateText(_fileName), settings);
-            _writer.WriteStartElement("ObjectNodes");
-        }
-
-        private static string GetObjectNodeName(ObjectNode node)
+        protected static string GetObjectNodeName(ObjectNode node)
         {
             string name = node.GetType().Name;
 
@@ -54,46 +32,42 @@ namespace ILCompiler
             return name;
         }
 
-        void IObjectDumper.DumpObjectNode(NameMangler mangler, ObjectNode node, ObjectData objectData)
+        public static ObjectDumper Compose(IEnumerable<ObjectDumper> dumpers)
         {
-            string name = null;
+            var dumpersList = default(ArrayBuilder<ObjectDumper>);
 
-            _writer.WriteStartElement(GetObjectNodeName(node));
+            foreach (var dumper in dumpers)
+                dumpersList.Add(dumper);
 
-            var symbolNode = node as ISymbolNode;
-            if (symbolNode != null)
+            return dumpersList.Count switch
             {
-                Utf8StringBuilder sb = new Utf8StringBuilder();
-                symbolNode.AppendMangledName(mangler, sb);
-                name = sb.ToString();
-                _writer.WriteAttributeString("Name", name);
-            }
-
-            _writer.WriteAttributeString("Length", objectData.Data.Length.ToStringInvariant());
-            _writer.WriteAttributeString("Hash", HashData(objectData.Data));
-            _writer.WriteEndElement();
-
-            var nodeWithCodeInfo = node as INodeWithCodeInfo;
-            if (nodeWithCodeInfo != null)
-            {
-                _writer.WriteStartElement("GCInfo");
-                _writer.WriteAttributeString("Name", name);
-                _writer.WriteAttributeString("Length", nodeWithCodeInfo.GCInfo.Length.ToStringInvariant());
-                _writer.WriteAttributeString("Hash", HashData(nodeWithCodeInfo.GCInfo));
-                _writer.WriteEndElement();
-            }
+                0 => null,
+                1 => dumpersList[0],
+                _ => new ComposedObjectDumper(dumpersList.ToArray()),
+            };
         }
 
-        private string HashData(byte[] data)
+        private sealed class ComposedObjectDumper : ObjectDumper
         {
-            return BitConverter.ToString(_sha256.ComputeHash(data)).Replace("-", "").ToLower();
-        }
+            private readonly ObjectDumper[] _dumpers;
 
-        internal void End()
-        {
-            _writer.WriteEndElement();
-            _writer.Dispose();
-            _writer = null;
+            public ComposedObjectDumper(ObjectDumper[] dumpers) => _dumpers = dumpers;
+
+            protected override void DumpObjectNode(NameMangler mangler, ObjectNode node, ObjectData objectData)
+            {
+                foreach (var d in _dumpers)
+                    d.DumpObjectNode(mangler, node, objectData);
+            }
+            internal override void Begin()
+            {
+                foreach (var d in _dumpers)
+                    d.Begin();
+            }
+            internal override void End()
+            {
+                foreach (var d in _dumpers)
+                    d.End();
+            }
         }
     }
 }

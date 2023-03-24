@@ -142,11 +142,13 @@ namespace System.Reflection
                 {
                     Debug.Assert(parameters != null);
                     StackAllocedArguments argStorage = default;
-                    Span<object?> copyOfParameters = new(ref argStorage._arg0, argCount);
-                    Span<ParameterCopyBackAction> shouldCopyBackParameters = new(ref argStorage._copyBack0, argCount);
+                    Span<object?> copyOfParameters = argStorage._args.AsSpan(argCount);
+                    Span<ParameterCopyBackAction> shouldCopyBackParameters = argStorage._copyBacks.AsSpan(argCount);
 
                     StackAllocatedByRefs byrefStorage = default;
+#pragma warning disable 8500
                     IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
+#pragma warning restore 8500
 
                     CheckArguments(
                         copyOfParameters,
@@ -158,11 +160,7 @@ namespace System.Reflection
                         culture,
                         invokeAttr);
 
-#if MONO // Temporary until Mono is updated.
-                    Invoker.InlinedInvoke(obj, copyOfParameters, invokeAttr);
-#else
                     Invoker.InlinedInvoke(obj, pByRefStorage, invokeAttr);
-#endif
 
                     // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
                     for (int i = 0; i < argCount; i++)
@@ -228,11 +226,7 @@ namespace System.Reflection
                     culture,
                     invokeAttr);
 
-#if MONO // Temporary until Mono is updated.
-                ci.Invoker.InlinedInvoke(obj, copyOfParameters, invokeAttr);
-#else
                 ci.Invoker.InlinedInvoke(obj, pByRefStorage, invokeAttr);
-#endif
             }
             finally
             {
@@ -295,11 +289,13 @@ namespace System.Reflection
                 {
                     Debug.Assert(parameters != null);
                     StackAllocedArguments argStorage = default;
-                    Span<object?> copyOfParameters = new(ref argStorage._arg0, argCount);
-                    Span<ParameterCopyBackAction> shouldCopyBackParameters = new(ref argStorage._copyBack0, argCount);
+                    Span<object?> copyOfParameters = argStorage._args.AsSpan(argCount);
+                    Span<ParameterCopyBackAction> shouldCopyBackParameters = argStorage._copyBacks.AsSpan(argCount);
 
                     StackAllocatedByRefs byrefStorage = default;
+#pragma warning disable 8500
                     IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
+#pragma warning restore 8500
 
                     CheckArguments(
                         copyOfParameters,
@@ -311,11 +307,7 @@ namespace System.Reflection
                         culture,
                         invokeAttr);
 
-#if MONO // Temporary until Mono is updated.
-                    retValue = Invoker.InlinedInvoke(obj: null, copyOfParameters, invokeAttr);
-#else
                     retValue = Invoker.InlinedInvoke(obj: null, pByRefStorage, invokeAttr);
-#endif
 
                     // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
                     for (int i = 0; i < argCount; i++)
@@ -384,11 +376,7 @@ namespace System.Reflection
                     culture,
                     invokeAttr);
 
-#if MONO // Temporary until Mono is updated.
-                retValue = ci.Invoker.InlinedInvoke(obj: null, copyOfParameters, invokeAttr);
-#else
                 retValue = ci.Invoker.InlinedInvoke(obj: null, pByRefStorage, invokeAttr);
-#endif
             }
             finally
             {

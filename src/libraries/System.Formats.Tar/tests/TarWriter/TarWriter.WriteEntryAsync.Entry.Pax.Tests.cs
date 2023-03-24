@@ -378,7 +378,9 @@ namespace System.Formats.Tar.Tests
             await using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
             {
                 PaxGlobalExtendedAttributesTarEntry gea = new PaxGlobalExtendedAttributesTarEntry(new Dictionary<string, string>());
+                Assert.Equal("PaxGlobalExtendedAttributesTarEntry", gea.Name);
                 await writer.WriteEntryAsync(gea);
+                Assert.Matches(@".*/GlobalHead\.\d+\.\d+", gea.Name);
             }
 
             archive.Seek(0, SeekOrigin.Begin);
@@ -504,6 +506,16 @@ namespace System.Formats.Tar.Tests
                 DateTimeOffset actualCTime = GetDateTimeOffsetFromTimestampString(readEntry.ExtendedAttributes, PaxEaCTime);
                 Assert.Equal(overLimitTimestamp, actualCTime);
             }
+        }
+
+        [Theory]
+        [InlineData(TarEntryType.HardLink)]
+        [InlineData(TarEntryType.SymbolicLink)]
+        public async Task Write_LinkEntry_EmptyLinkName_Throws_Async(TarEntryType entryType)
+        {
+            await using MemoryStream archiveStream = new MemoryStream();
+            await using TarWriter writer = new TarWriter(archiveStream, leaveOpen: false);
+            await Assert.ThrowsAsync<ArgumentException>("entry", () => writer.WriteEntryAsync(new PaxTarEntry(entryType, "link")));
         }
     }
 }

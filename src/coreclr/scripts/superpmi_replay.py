@@ -7,7 +7,7 @@
 #
 # Notes:
 #
-# Script to run "superpmi replay" for various collections under various COMPlus_JitStressRegs values.
+# Script to run "superpmi replay" for various collections under various DOTNET_JitStressRegs values.
 #
 ################################################################################
 ################################################################################

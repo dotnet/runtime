@@ -495,7 +495,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void TestIgnoreKanaAndWidthCases()
         {
-            for (char c = '\uFF41'; c <= '\uFF5A'; c++) // Full width 'ａ' to `ｚ`
+            for (char c = '\uFF41'; c <= '\uFF5A'; c++)
             {
                 Assert.False(string.Equals(new string(c, 1), new string((char) (c - 0x20), 1), StringComparison.InvariantCulture), $"Expected '{(int)c:x4}' != '{c - 0x20:x4}'");
                 Assert.True(string.Equals(new string(c, 1), new string((char) (c - 0x20), 1), StringComparison.InvariantCultureIgnoreCase), $"Expected '{(int)c:x4}' == '{c - 0x20:x4}'");

@@ -124,7 +124,7 @@
       ret
     } // end of method MyClass::.ctor
 
-    .method private static int32 Main(string[] args)
+    .method private static int32 Main()
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

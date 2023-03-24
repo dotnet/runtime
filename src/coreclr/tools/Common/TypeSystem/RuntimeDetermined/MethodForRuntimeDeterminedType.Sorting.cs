@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Functionality related to deterministic ordering of types
-    partial class MethodForRuntimeDeterminedType
+    public partial class MethodForRuntimeDeterminedType
     {
         protected internal override int ClassCode => 719937490;
 

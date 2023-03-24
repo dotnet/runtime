@@ -1362,7 +1362,7 @@ namespace System.Data
 
         internal void CheckColumnConstraint(DataRow row, DataRowAction action)
         {
-            if (DataTable.UpdatingCurrent(row, action))
+            if (DataTable.UpdatingCurrent(action))
             {
                 CheckNullable(row);
                 CheckMaxLength(row);
@@ -1472,7 +1472,7 @@ namespace System.Data
             return _storage.Compare(record1, record2);
         }
 
-        internal bool CompareValueTo(int record1, object value, bool checkType)
+        internal bool CompareValueToChecked(int record1, object value)
         {
             // this method is used to make sure value and exact type match.
             int valuesMatch = CompareValueTo(record1, value);
@@ -1485,7 +1485,7 @@ namespace System.Data
                 // if strings, then do exact character by character check
                 if (leftType == typeof(string) && rightType == typeof(string))
                 {
-                    return string.CompareOrdinal((string)_storage.Get(record1), (string)value) == 0 ? true : false;
+                    return (string)_storage.Get(record1) == (string)value;
                 }
                 // make sure same type
                 else if (leftType == rightType)

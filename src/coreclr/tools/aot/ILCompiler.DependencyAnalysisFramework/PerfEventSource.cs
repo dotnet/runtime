@@ -33,7 +33,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             public static StartStopEvents GraphProcessingEvents()
             {
                 if (!Log.IsEnabled())
-                    return new StartStopEvents();
+                    return default(StartStopEvents);
 
                 Log.GraphProcessingStart();
                 return new StartStopEvents(Log.GraphProcessingStop);
@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             public static StartStopEvents DependencyAnalysisEvents()
             {
                 if (!Log.IsEnabled())
-                    return new StartStopEvents();
+                    return default(StartStopEvents);
 
                 Log.DependencyAnalysisStart();
                 return new StartStopEvents(Log.DependencyAnalysisStop);

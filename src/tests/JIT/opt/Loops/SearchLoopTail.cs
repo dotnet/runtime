@@ -135,7 +135,7 @@ namespace N
             return (n == 9 && m == 13);
         }
 
-        public static int Main(string[] args)
+        public static int Main()
         {
             if (HasPrimeUnderTwenty(22, 36) || !HasPrimeUnderTwenty(-1, 4))
             {

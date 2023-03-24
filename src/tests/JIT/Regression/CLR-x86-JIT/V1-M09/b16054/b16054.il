@@ -10,7 +10,7 @@
 .assembly b16054
 {
 }
-.class _div {
+.class public _div {
 	.method static	void _div(float64, float64) {
 	.maxstack		3
 call        class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()
@@ -23,7 +23,7 @@ call        class [mscorlib]System.IO.TextWriter [System.Console]System.Console:
 		ret
 	}
 
-	.method static int32 main(class [mscorlib]System.String[]) {
+	.method public static int32 main() {
 	.entrypoint
 	.maxstack		20
 		ldc.r8		float64(0xFFF0000000000000)

@@ -12,8 +12,8 @@ namespace System
     {
         public sealed override string? GetEnumName(object value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
+
             ulong rawValue;
             if (!Enum.TryGetUnboxedValueOfEnumOrInteger(value, out rawValue))
                 throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
@@ -22,9 +22,9 @@ namespace System
             // Do a value-preserving cast of both it and the enum values and do a 64-bit compare.
 
             if (!IsActualEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum);
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            return Enum.GetEnumName(this, rawValue);
+            return Enum.GetName(this, rawValue);
         }
 
         public sealed override string[] GetEnumNames()
@@ -32,7 +32,7 @@ namespace System
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            string[] ret = Enum.InternalGetNames(this);
+            string[] ret = Enum.GetNamesNoCopy(this);
 
             // Make a copy since we can't hand out the same array since users can modify them
             return new ReadOnlySpan<string>(ret).ToArray();
@@ -48,8 +48,7 @@ namespace System
 
         public sealed override bool IsEnumDefined(object value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
@@ -87,7 +86,7 @@ namespace System
                         throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, value.GetType(), underlyingType));
                 }
 
-                return Enum.GetEnumName(this, rawValue) != null;
+                return Enum.GetName(this, rawValue) != null;
             }
         }
 
@@ -97,16 +96,16 @@ namespace System
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            Array values = Enum.GetEnumInfo(this).ValuesAsUnderlyingType;
+            Array values = Enum.GetValuesAsUnderlyingTypeNoCopy(this);
             int count = values.Length;
+
             // Without universal shared generics, chances are slim that we'll have the appropriate
             // array type available. Offer an escape hatch that avoids a missing metadata exception
             // at the cost of a small appcompat risk.
-            Array result;
-            if (AppContext.TryGetSwitch("Switch.System.Enum.RelaxedGetValues", out bool isRelaxed) && isRelaxed)
-                result = Array.CreateInstance(Enum.InternalGetUnderlyingType(this), count);
-            else
-                result = Array.CreateInstance(this, count);
+            Array result = AppContext.TryGetSwitch("Switch.System.Enum.RelaxedGetValues", out bool isRelaxed) && isRelaxed ?
+                Array.CreateInstance(Enum.InternalGetUnderlyingType(this), count) :
+                Array.CreateInstance(this, count);
+
             Array.Copy(values, result, values.Length);
             return result;
         }
@@ -116,7 +115,7 @@ namespace System
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            return (Array)Enum.GetEnumInfo(this).ValuesAsUnderlyingType.Clone();
+            return Enum.GetValuesAsUnderlyingType(this);
         }
 
         internal bool IsActualEnum

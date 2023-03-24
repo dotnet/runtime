@@ -21,9 +21,9 @@ namespace System.Security.Cryptography.Xml
             _rendered.Add(Utils.GetNamespacePrefix(attr), attr);
         }
 
-        internal XmlAttribute GetRendered(string nsPrefix)
+        internal XmlAttribute? GetRendered(string nsPrefix)
         {
-            return (XmlAttribute)_rendered[nsPrefix];
+            return (XmlAttribute?)_rendered[nsPrefix];
         }
 
         internal void AddUnrendered(XmlAttribute attr)
@@ -31,9 +31,9 @@ namespace System.Security.Cryptography.Xml
             _unrendered.Add(Utils.GetNamespacePrefix(attr), attr);
         }
 
-        internal XmlAttribute GetUnrendered(string nsPrefix)
+        internal XmlAttribute? GetUnrendered(string nsPrefix)
         {
-            return (XmlAttribute)_unrendered[nsPrefix];
+            return (XmlAttribute?)_unrendered[nsPrefix];
         }
 
         internal Hashtable GetUnrendered()

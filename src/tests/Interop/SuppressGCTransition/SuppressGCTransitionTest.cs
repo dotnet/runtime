@@ -94,7 +94,7 @@ unsafe static class SuppressGCTransitionNative
             $"lib{nameof(SuppressGCTransitionNative)}.dylib",
         };
 
-        string binDir = AppContext.BaseDirectory;
+        string binDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         foreach (var ln in libNames)
         {
             if (NativeLibrary.TryLoad(Path.Combine(binDir, ln), out IntPtr mod))

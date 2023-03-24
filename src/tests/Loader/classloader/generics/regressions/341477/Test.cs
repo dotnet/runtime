@@ -9,7 +9,7 @@ using System;
 class Test
 {
 
-	static int Main(string[] args)
+	static int Main()
 	{
 		Hello<string> mystr = new Hello<string>("PASS");
 
@@ -25,18 +25,18 @@ public class A
 	public A() {}
 }
 
-public class Hello<liıİ>
+public class Hello<li\u0131\u0130>
 {
-	public liıİ a;
-	public Hello (liıİ t)
+	public li\u0131\u0130 a;
+	public Hello (li\u0131\u0130 t)
 	{
 		a = t;
 		Console.WriteLine (a.ToString ());
 	}
 
-	public один InstanceMethod<один> () where один : new()
+	public \u043E\u0434\u0438\u043D InstanceMethod<\u043E\u0434\u0438\u043D> () where \u043E\u0434\u0438\u043D : new()
 	{
-		return new один();
+		return new \u043E\u0434\u0438\u043D();
 
 	}
 }

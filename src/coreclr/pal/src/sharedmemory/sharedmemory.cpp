@@ -62,6 +62,7 @@ DWORD SharedMemoryException::GetErrorCode() const
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SharedMemoryHelpers
 
+const mode_t SharedMemoryHelpers::PermissionsMask_CurrentUser_ReadWrite = S_IRUSR | S_IWUSR;
 const mode_t SharedMemoryHelpers::PermissionsMask_CurrentUser_ReadWriteExecute = S_IRUSR | S_IWUSR | S_IXUSR;
 const mode_t SharedMemoryHelpers::PermissionsMask_AllUsers_ReadWrite =
     S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
@@ -96,6 +97,8 @@ SIZE_T SharedMemoryHelpers::AlignUp(SIZE_T value, SIZE_T alignment)
 bool SharedMemoryHelpers::EnsureDirectoryExists(
     const char *path,
     bool isGlobalLockAcquired,
+    bool hasCurrentUserAccessOnly,
+    bool setStickyFlag,
     bool createIfNotExist,
     bool isSystemDirectory)
 {
@@ -103,6 +106,13 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
     _ASSERTE(!(isSystemDirectory && createIfNotExist)); // should not create or change permissions on system directories
     _ASSERTE(SharedMemoryManager::IsCreationDeletionProcessLockAcquired());
     _ASSERTE(!isGlobalLockAcquired || SharedMemoryManager::IsCreationDeletionFileLockAcquired());
+    _ASSERTE(!(setStickyFlag && hasCurrentUserAccessOnly)); // Sticky bit doesn't make sense with current user access only
+
+    mode_t mode = hasCurrentUserAccessOnly ? PermissionsMask_CurrentUser_ReadWriteExecute : PermissionsMask_AllUsers_ReadWriteExecute;
+    if (setStickyFlag)
+    {
+        mode |= S_ISVTX;
+    }
 
     // Check if the path already exists
     struct stat statInfo;
@@ -123,11 +133,11 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
 
         if (isGlobalLockAcquired)
         {
-            if (mkdir(path, PermissionsMask_AllUsers_ReadWriteExecute) != 0)
+            if (mkdir(path, mode) != 0)
             {
                 throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
             }
-            if (chmod(path, PermissionsMask_AllUsers_ReadWriteExecute) != 0)
+            if (chmod(path, mode) != 0)
             {
                 rmdir(path);
                 throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
@@ -142,7 +152,7 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
         {
             throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
         }
-        if (chmod(tempPath, PermissionsMask_AllUsers_ReadWriteExecute) != 0)
+        if (chmod(tempPath, mode) != 0)
         {
             rmdir(tempPath);
             throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
@@ -182,13 +192,18 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
     // For non-system directories (such as gSharedFilesPath/SHARED_MEMORY_RUNTIME_TEMP_DIRECTORY_NAME),
     // require sufficient permissions for all users and try to update them if requested to create the directory, so that
     // shared memory files may be shared by all processes on the system.
-    if ((statInfo.st_mode & PermissionsMask_AllUsers_ReadWriteExecute) == PermissionsMask_AllUsers_ReadWriteExecute)
+    if ((statInfo.st_mode & mode) == mode)
     {
         return true;
     }
-    if (!createIfNotExist || chmod(path, PermissionsMask_AllUsers_ReadWriteExecute) != 0)
+    if (!createIfNotExist || chmod(path, mode) != 0)
     {
-        throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
+        // We were not asked to create the path or we weren't able to set the new permissions.
+        // As a last resort, check that at least the current user has full access.
+        if ((statInfo.st_mode & PermissionsMask_CurrentUser_ReadWriteExecute) != PermissionsMask_CurrentUser_ReadWriteExecute)
+        {
+            throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
+        }
     }
     return true;
 }
@@ -238,7 +253,7 @@ int SharedMemoryHelpers::OpenDirectory(LPCSTR path)
     return fileDescriptor;
 }
 
-int SharedMemoryHelpers::CreateOrOpenFile(LPCSTR path, bool createIfNotExist, bool *createdRef)
+int SharedMemoryHelpers::CreateOrOpenFile(LPCSTR path, bool createIfNotExist, bool isSessionScope, bool *createdRef)
 {
     _ASSERTE(path != nullptr);
     _ASSERTE(path[0] != '\0');
@@ -268,12 +283,13 @@ int SharedMemoryHelpers::CreateOrOpenFile(LPCSTR path, bool createIfNotExist, bo
 
     // File does not exist, create the file
     openFlags |= O_CREAT | O_EXCL;
-    fileDescriptor = Open(path, openFlags, PermissionsMask_AllUsers_ReadWrite);
+    mode_t mode = isSessionScope ? PermissionsMask_CurrentUser_ReadWrite : PermissionsMask_AllUsers_ReadWrite;
+    fileDescriptor = Open(path, openFlags, mode);
     _ASSERTE(fileDescriptor != -1);
 
     // The permissions mask passed to open() is filtered by the process' permissions umask, so open() may not set all of
     // the requested permissions. Use chmod() to set the proper permissions.
-    if (chmod(path, PermissionsMask_AllUsers_ReadWrite) != 0)
+    if (chmod(path, mode) != 0)
     {
         CloseFile(fileDescriptor);
         unlink(path);
@@ -659,7 +675,7 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
     SharedMemoryHelpers::VerifyStringOperation(SharedMemoryManager::CopySharedMemoryBasePath(filePath));
     SharedMemoryHelpers::VerifyStringOperation(filePath.Append('/'));
     SharedMemoryHelpers::VerifyStringOperation(id.AppendSessionDirectoryName(filePath));
-    if (!SharedMemoryHelpers::EnsureDirectoryExists(filePath, true /* isGlobalLockAcquired */, createIfNotExist))
+    if (!SharedMemoryHelpers::EnsureDirectoryExists(filePath, true /* isGlobalLockAcquired */, id.IsSessionScope(), false /* setStickyFlag */, createIfNotExist))
     {
         _ASSERTE(!createIfNotExist);
         return nullptr;
@@ -672,7 +688,7 @@ SharedMemoryProcessDataHeader *SharedMemoryProcessDataHeader::CreateOrOpen(
     SharedMemoryHelpers::VerifyStringOperation(filePath.Append(id.GetName(), id.GetNameCharCount()));
 
     bool createdFile;
-    int fileDescriptor = SharedMemoryHelpers::CreateOrOpenFile(filePath, createIfNotExist, &createdFile);
+    int fileDescriptor = SharedMemoryHelpers::CreateOrOpenFile(filePath, createIfNotExist, id.IsSessionScope(), &createdFile);
     if (fileDescriptor == -1)
     {
         _ASSERTE(!createIfNotExist);
@@ -1147,6 +1163,8 @@ void SharedMemoryManager::AcquireCreationDeletionFileLock()
         if (!SharedMemoryHelpers::EnsureDirectoryExists(
                 *gSharedFilesPath,
                 false /* isGlobalLockAcquired */,
+                false /* hasCurrentUserAccessOnly */,
+                true /* setStickyFlag */,
                 false /* createIfNotExist */,
                 true /* isSystemDirectory */))
         {
@@ -1154,10 +1172,14 @@ void SharedMemoryManager::AcquireCreationDeletionFileLock()
         }
         SharedMemoryHelpers::EnsureDirectoryExists(
             *s_runtimeTempDirectoryPath,
-            false /* isGlobalLockAcquired */);
+            false /* isGlobalLockAcquired */,
+            false /* hasCurrentUserAccessOnly */,
+            false /* setStickyFlag */);
         SharedMemoryHelpers::EnsureDirectoryExists(
             *s_sharedMemoryDirectoryPath,
-            false /* isGlobalLockAcquired */);
+            false /* isGlobalLockAcquired */,
+            false /* hasCurrentUserAccessOnly */,
+            true /* setStickyFlag */);
         s_creationDeletionLockFileDescriptor = SharedMemoryHelpers::OpenDirectory(*s_sharedMemoryDirectoryPath);
         if (s_creationDeletionLockFileDescriptor == -1)
         {

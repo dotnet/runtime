@@ -30,13 +30,11 @@ namespace System.Security.Cryptography
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
 
-        private static ILiteSymmetricCipher CreateLiteCipher(
+        private static AppleCCCryptorLite CreateLiteCipher(
             CipherMode cipherMode,
-            PaddingMode paddingMode,
             ReadOnlySpan<byte> key,
             ReadOnlySpan<byte> iv,
             int blockSize,
-            int feedbackSizeInBytes,
             int paddingSize,
             bool encrypting)
         {
@@ -47,7 +45,7 @@ namespace System.Security.Cryptography
                 key,
                 iv,
                 encrypting,
-                feedbackSizeInBytes,
+                feedbackSizeInBytes: 0,
                 paddingSize);
         }
     }

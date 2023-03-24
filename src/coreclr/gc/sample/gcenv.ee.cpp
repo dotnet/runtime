@@ -358,3 +358,7 @@ uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
 void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
 {
 }
+
+void GCToEEInterface::LogErrorToHost(const char *message)
+{
+}

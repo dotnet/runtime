@@ -97,7 +97,7 @@ namespace Microsoft.NET.HostModel.AppHost
 
                 if (accessor.Capacity < peHeaderOffset + SubsystemOffset + sizeof(ushort))
                 {
-                    throw new AppHostNotPEFileException();
+                    throw new AppHostNotPEFileException("Subsystem offset out of file range.");
                 }
 
                 ushort* subsystem = ((ushort*)(bytes + peHeaderOffset + SubsystemOffset));
@@ -106,7 +106,7 @@ namespace Microsoft.NET.HostModel.AppHost
                 // The subsystem of the prebuilt apphost should be set to CUI
                 if (subsystem[0] != WindowsCUISubsystem)
                 {
-                    throw new AppHostNotCUIException();
+                    throw new AppHostNotCUIException(subsystem[0]);
                 }
 
                 // Set the subsystem to GUI
@@ -150,7 +150,7 @@ namespace Microsoft.NET.HostModel.AppHost
 
                 if (accessor.Capacity < peHeaderOffset + SubsystemOffset + sizeof(ushort))
                 {
-                    throw new AppHostNotPEFileException();
+                    throw new AppHostNotPEFileException("Subsystem offset out of file range.");
                 }
 
                 ushort* subsystem = ((ushort*)(bytes + peHeaderOffset + SubsystemOffset));

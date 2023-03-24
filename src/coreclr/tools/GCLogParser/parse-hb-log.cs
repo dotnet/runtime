@@ -20,19 +20,19 @@
 // pass-zero-pass1-nX-ia1-thread.txt
 //
 // thread tells you the thread index running on each proc at each timestamp.
-// 4240| 63₉ | 65₉ | 62₉ | 56₁₀| 87₁₀|109₁₀| 59₉ | 70₁₀| 78₉ | 64₉ | 71₁₀|107₁₀|
+// 4240| 63\u2089 | 65\u2089 | 62\u2089 | 56\u2081\u2080| 87\u2081\u2080|109\u2081\u2080| 59\u2089 | 70\u2081\u2080| 78\u2089 | 64\u2089 | 71\u2081\u2080|107\u2081\u2080|
 //
 // 4240 is the 4240th ms since we started recording.
 // the numbers following are the thread indices and the subscript is the # of samples
 // observed during that ms. The tool can do a time unit that's larger than 1ms.
 //
 // alloc tells you which alloc heap the each proc, for the same timestamp
-// 4240| 56  | 57  | 58ⁱ | 59  | 60  | 61  | 62  | 63  | 64  | 65  | 66  | 67  |
+// 4240| 56  | 57  | 58\u2071 | 59  | 60  | 61  | 62  | 63  | 64  | 65  | 66  | 67  |
 // 56 means heap 56. The subscript i means we did a SetIdealProcessor during this
 // ms. You may also see
-// ᵖ meaning we went through the balancing logic due to the proc for the thread changed
+// \u1D56 meaning we went through the balancing logic due to the proc for the thread changed
 // from the home heap.
-// ᵐ meaning while we were going through balancing logic the proc switched.
+// \u1D50 meaning while we were going through balancing logic the proc switched.
 
 using System;
 using System.Collections.Generic;
@@ -637,15 +637,15 @@ namespace parse_hb_log
             string strFormattedFlags = "";
             if ((flags & (int)HeapBalanceFlagMask.MutipleProcs) != 0)
             {
-                strFormattedFlags += "ᵐ";
+                strFormattedFlags += "\u1D50";
             }
             if ((flags & (int)HeapBalanceFlagMask.EnterDueToProc) != 0)
             {
-                strFormattedFlags += "ᵖ";
+                strFormattedFlags += "\u1D56";
             }
             if ((flags & (int)HeapBalanceFlagMask.SetIdeal) != 0)
             {
-                strFormattedFlags += "ⁱ";
+                strFormattedFlags += "\u2071";
             }
 
             return strFormattedFlags;
@@ -696,7 +696,7 @@ namespace parse_hb_log
 
                 // see https://en.wikipedia.org/wiki/Unicode_subscripts_and_superscripts
                 // for subscript characters
-                // ᵐ,ᵖ,ⁱ
+                // \u1D50,\u1D56,\u2071
                 if (fPrint)
                 {
                     int procsHadSamples = 0;

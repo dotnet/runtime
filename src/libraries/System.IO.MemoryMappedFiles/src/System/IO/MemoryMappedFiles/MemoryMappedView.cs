@@ -43,17 +43,13 @@ namespace System.IO.MemoryMappedFiles
             get { return _access; }
         }
 
-        private void Dispose(bool disposing)
+        public void Dispose()
         {
             if (!_viewHandle.IsClosed)
             {
                 _viewHandle.Dispose();
             }
-        }
 
-        public void Dispose()
-        {
-            Dispose(true);
             GC.SuppressFinalize(this);
         }
 

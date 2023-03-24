@@ -120,7 +120,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
             {
                 Handle typeHandle = ctorTypeHandles[index];
                 Exception? exception = null;
-                RuntimeTypeInfo? argumentType = typeHandle.TryResolve(_reader, new TypeContext(null, null), ref exception);
+                RuntimeTypeInfo? argumentType = typeHandle.TryResolve(_reader, AttributeType.CastToRuntimeTypeInfo().TypeContext, ref exception);
                 if (argumentType == null)
                 {
                     if (throwIfMissingMetadata)
@@ -162,7 +162,7 @@ namespace System.Reflection.Runtime.CustomAttributes.NativeFormat
                 bool isField = (namedArgument.Flags == NamedArgumentMemberKind.Field);
 
                 Exception? exception = null;
-                RuntimeTypeInfo? argumentType = namedArgument.Type.TryResolve(_reader, new TypeContext(null, null), ref exception);
+                RuntimeTypeInfo? argumentType = namedArgument.Type.TryResolve(_reader, AttributeType.CastToRuntimeTypeInfo().TypeContext, ref exception);
                 if (argumentType == null)
                 {
                     if (throwIfMissingMetadata)

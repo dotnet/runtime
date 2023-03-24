@@ -3,7 +3,7 @@
 
 using System.IO;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlSchemaValidatorApiTests
 {
     public class XmlTestSettings
     {
@@ -29,11 +29,11 @@ namespace System.Xml.Tests
 
         public static string GetTestDataPath()
         {
-            return Path.Combine(GetDataPath(), "TestFiles", "TestData");
+            return Path.Combine(GetDataPath(), "XmlSchema", "TestFiles", "TestData");
         }
         public static string GetStandardPath()
         {
-            return Path.Combine(GetDataPath(), "TestFiles", "StandardTests");
+            return Path.Combine(GetDataPath(), "XmlSchema", "TestFiles", "StandardTests");
         }
     }
 }

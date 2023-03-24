@@ -80,7 +80,7 @@ namespace Internal.ReadyToRunConstants
     }
 
     [Flags]
-    enum ReadyToRunCrossModuleInlineFlags : uint
+    internal enum ReadyToRunCrossModuleInlineFlags : uint
     {
         CrossModuleInlinee  = 0x1,
         HasCrossModuleInliners = 0x2,
@@ -174,7 +174,7 @@ namespace Internal.ReadyToRunConstants
 
     //
     // Intrinsics and helpers
-    // Keep in sync with https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h
+    // Keep in sync with https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h
     //
 
     [Flags]

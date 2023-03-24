@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
+#pragma warning disable 8500 // taking address of managed type
+
 namespace System.Globalization
 {
     internal sealed partial class CalendarData
@@ -23,6 +25,7 @@ namespace System.Globalization
         private const uint CAL_SSHORTESTDAYNAME7 = 0x00000037;
         private const uint CAL_SERASTRING = 0x00000004;
         private const uint CAL_SABBREVERASTRING = 0x00000039;
+        private const uint CAL_ITWODIGITYEARMAX = 0x00000030;
 
         private const uint ENUM_ALL_CALENDARS = 0xffffffff;
 
@@ -264,7 +267,7 @@ namespace System.Globalization
             }
 
             // Now call the enumeration API. Work is done by our callback function
-            Interop.Kernel32.EnumCalendarInfoExEx(&EnumCalendarInfoCallback, localeName, (uint)calendar, null, calType, Unsafe.AsPointer(ref context));
+            Interop.Kernel32.EnumCalendarInfoExEx(&EnumCalendarInfoCallback, localeName, (uint)calendar, null, calType, &context);
 
             // Now we have a list of data, fail if we didn't find anything.
             Debug.Assert(context.strings != null);
@@ -416,7 +419,7 @@ namespace System.Globalization
 
             unsafe
             {
-                Interop.Kernel32.EnumCalendarInfoExEx(&EnumCalendarsCallback, localeName, ENUM_ALL_CALENDARS, null, CAL_ICALINTVALUE, Unsafe.AsPointer(ref data));
+                Interop.Kernel32.EnumCalendarInfoExEx(&EnumCalendarsCallback, localeName, ENUM_ALL_CALENDARS, null, CAL_ICALINTVALUE, &data);
             }
 
             // Copy to the output array
@@ -425,6 +428,15 @@ namespace System.Globalization
 
             // Now we have a list of data, return the count
             return data.calendars.Count;
+        }
+
+        // Get native two digit year max
+        internal static int GetTwoDigitYearMax(CalendarId calendarId)
+        {
+            return GlobalizationMode.Invariant ? Invariant.iTwoDigitYearMax :
+                    CallGetCalendarInfoEx(null, calendarId, CAL_ITWODIGITYEARMAX, out int twoDigitYearMax) ?
+                        twoDigitYearMax :
+                        -1;
         }
     }
 }

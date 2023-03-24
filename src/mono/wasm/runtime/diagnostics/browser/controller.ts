@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from "../../cwraps";
+import { INTERNAL } from "../../imports";
 import { withStackAlloc, getI32 } from "../../memory";
 import { Thread, waitForThread } from "../../pthreads/browser";
 import { isDiagnosticMessage, makeDiagnosticServerControlCommand } from "../shared/controller-commands";
+import monoDiagnosticsMock from "consts:monoDiagnosticsMock";
 
 /// An object that can be used to control the diagnostic server.
 export interface ServerController {
@@ -63,6 +65,9 @@ export async function startDiagnosticServer(websocket_url: string): Promise<Serv
     }
     // have to wait until the message port is created
     const thread = await waitForThread(result);
+    if (monoDiagnosticsMock) {
+        INTERNAL.diagnosticServerThread = thread;
+    }
     if (thread === undefined) {
         throw new Error("unexpected diagnostic server thread not found");
     }

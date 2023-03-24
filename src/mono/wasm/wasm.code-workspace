@@ -1,0 +1,18 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../mono"
+		},
+		{
+			"path": "../wasi"
+		}
+	],
+	"settings": {
+		"omnisharp.enableMsBuildLoadProjectsOnDemand": true,
+		"omnisharp.defaultLaunchSolution": "${workspaceFolder}sln/WasmBuild.sln",
+		"omnisharp.enableRoslynAnalyzers": true
+	}
+}

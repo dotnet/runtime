@@ -10,7 +10,7 @@ namespace System.Threading.RateLimiting
     {
         /// <summary>
         /// Specifies the time window that takes in the requests.
-        /// Must be set to a value >= <see cref="TimeSpan.Zero" /> by the time these options are passed to the constructor of <see cref="FixedWindowRateLimiter"/>.
+        /// Must be set to a value greater than <see cref="TimeSpan.Zero" /> by the time these options are passed to the constructor of <see cref="FixedWindowRateLimiter"/>.
         /// </summary>
         public TimeSpan Window { get; set; } = TimeSpan.Zero;
 

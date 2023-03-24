@@ -34,8 +34,8 @@
 namespace vxsort {
 namespace smallsort {
 
-extern "C" const uint8_t mask_table_4[16];
-extern "C" const uint8_t mask_table_8[64];
+extern "C" const uint8_t mask_table_4[M4_SIZE];
+extern "C" const uint8_t mask_table_8[M8_SIZE];
 
 template<> struct bitonic<int64_t, AVX2> {
     static const int N = 4;

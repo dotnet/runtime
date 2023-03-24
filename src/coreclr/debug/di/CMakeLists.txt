@@ -17,7 +17,6 @@ set(CORDBDI_SOURCES
   dbgtransportmanager.cpp
   hash.cpp
   module.cpp
-  nativepipeline.cpp
   platformspecific.cpp
   process.cpp
   rsappdomain.cpp

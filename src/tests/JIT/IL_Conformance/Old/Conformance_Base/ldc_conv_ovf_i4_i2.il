@@ -3,6 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -13,6 +14,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_conv_ovf_i4_i2
+{
 .class public		conv_ovf_i2 {
 
 //---- GLOBAL DATA ----------
@@ -1431,42 +1434,45 @@ END2:
 }
 
 //---- MAIN -----------------
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		5
 //====== begin testing ======
 //-- min i4 --
 	ldc.i4			0x80000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i2::conv_0(int32,int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_0(int32,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- -1 i4 --
 	ldc.i4			0xFFFFFFFF
 	ldc.i4			0xFFFFFFFF
-	call		int32 conv_ovf_i2::conv_1(int32,int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_1(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- 0 i4 --
 	ldc.i4			0x00000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i2::conv_2(int32,int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_2(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- +1 i4 --
 	ldc.i4			0x00000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_i2::conv_3(int32,int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_3(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- max i4 --
 	ldc.i4			0x7FFFFFFF
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i2::conv_4(int32,int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_4(int32,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
@@ -1474,35 +1480,35 @@ END2:
 //-- min i2 --
 	ldc.i4			0xFFFF8000
 	ldc.i4			0xFFFF8000
-	call		int32 conv_ovf_i2::conv_5(int32,int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_5(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- -1 i2 --
 	ldc.i4			0xFFFFFFFF
 	ldc.i4			0xFFFFFFFF
-	call		int32 conv_ovf_i2::conv_6(int32,int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_6(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- 0 i2 --
 	ldc.i4			0x00000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i2::conv_7(int32,int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_7(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- +1 i2 --
 	ldc.i4			0x00000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_i2::conv_8(int32,int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_8(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- max i2 --
 	ldc.i4			0x00007FFF
 	ldc.i4			0x00007FFF
-	call		int32 conv_ovf_i2::conv_9(int32,int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_9(int32,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -1511,35 +1517,35 @@ END2:
 //-- min i4 --
 /*	ldc.i4			0x80000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i2::conv_un_10(unsigned int32,unsigned int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_un_10(unsigned int32,unsigned int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- -1 i4 --
 	ldc.i4			0xFFFFFFFF
 	ldc.i4			0xFFFFFFFF
-	call		int32 conv_ovf_i2::conv_un_11(unsigned int32,unsigned int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_un_11(unsigned int32,unsigned int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 *///-- 0 i4 --
 	ldc.i4			0x00000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i2::conv_un_12(unsigned int32,unsigned int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_un_12(unsigned int32,unsigned int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- +1 i4 --
 	ldc.i4			0x00000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_i2::conv_un_13(unsigned int32,unsigned int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_un_13(unsigned int32,unsigned int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- max i4 --
 	ldc.i4			0x7FFFFFFF
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i2::conv_un_14(unsigned int32,unsigned int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_un_14(unsigned int32,unsigned int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
@@ -1547,35 +1553,35 @@ END2:
 //-- min i2 --
 /*	ldc.i4			0xFFFF8000
 	ldc.i4			0xFFFF8000
-	call		int32 conv_ovf_i2::conv_un_15(unsigned int32,unsigned int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_un_15(unsigned int32,unsigned int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- -1 i2 --
 	ldc.i4			0xFFFFFFFF
 	ldc.i4			0xFFFFFFFF
-	call		int32 conv_ovf_i2::conv_un_16(unsigned int32,unsigned int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_un_16(unsigned int32,unsigned int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 *///-- 0 i2 --
 	ldc.i4			0x00000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i2::conv_un_17(unsigned int32,unsigned int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_un_17(unsigned int32,unsigned int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- +1 i2 --
 	ldc.i4			0x00000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_i2::conv_un_18(unsigned int32,unsigned int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_un_18(unsigned int32,unsigned int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- max i2 --
 	ldc.i4			0x00007FFF
 	ldc.i4			0x00007FFF
-	call		int32 conv_ovf_i2::conv_un_19(unsigned int32,unsigned int32)
+	call		int32 ldc_conv_ovf_i4_i2.conv_ovf_i2::conv_un_19(unsigned int32,unsigned int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -1602,3 +1608,4 @@ END:
 
 .assembly ldc_conv_ovf_i4_i2{}
 
+}

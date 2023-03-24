@@ -11,8 +11,6 @@ namespace System.Text.Json.Serialization.Converters
     internal sealed class FSharpOptionConverter<TOption, TElement> : JsonConverter<TOption>
         where TOption : class
     {
-        // Reflect the converter strategy of the element type, since we use the identical contract for Some(_) values.
-        internal override ConverterStrategy ConverterStrategy => _converterStrategy;
         internal override Type? ElementType => typeof(TElement);
         // 'None' is encoded using 'null' at runtime and serialized as 'null' in JSON.
         public override bool HandleNull => true;
@@ -20,7 +18,6 @@ namespace System.Text.Json.Serialization.Converters
         private readonly JsonConverter<TElement> _elementConverter;
         private readonly Func<TOption, TElement> _optionValueGetter;
         private readonly Func<TElement?, TOption> _optionConstructor;
-        private readonly ConverterStrategy _converterStrategy;
 
         [RequiresUnreferencedCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
         [RequiresDynamicCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
@@ -29,12 +26,7 @@ namespace System.Text.Json.Serialization.Converters
             _elementConverter = elementConverter;
             _optionValueGetter = FSharpCoreReflectionProxy.Instance.CreateFSharpOptionValueGetter<TOption, TElement>();
             _optionConstructor = FSharpCoreReflectionProxy.Instance.CreateFSharpOptionSomeConstructor<TOption, TElement>();
-
-            // Workaround for the base constructor depending on the (still unset) ConverterStrategy
-            // to derive the CanUseDirectReadOrWrite and RequiresReadAhead values.
-            _converterStrategy = elementConverter.ConverterStrategy;
-            CanUseDirectReadOrWrite = elementConverter.CanUseDirectReadOrWrite;
-            RequiresReadAhead = elementConverter.RequiresReadAhead;
+            ConverterStrategy = elementConverter.ConverterStrategy;
         }
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out TOption? value)

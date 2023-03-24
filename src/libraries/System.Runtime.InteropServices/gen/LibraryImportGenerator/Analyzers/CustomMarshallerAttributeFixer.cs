@@ -156,6 +156,7 @@ namespace Microsoft.Interop.Analyzers
         {
         }
 
+#pragma warning disable IDE0060
         private static async Task<Solution> AddMissingMembers(Document doc, SyntaxNode node, HashSet<string> missingMemberNames, CancellationToken ct)
         {
             var model = await doc.GetSemanticModelAsync(ct).ConfigureAwait(false);
@@ -575,5 +576,6 @@ namespace Microsoft.Interop.Analyzers
                 generator.TypeExpression(
                     compilation.GetTypeByMetadataName("System.NotImplementedException"))));
         }
+#pragma warning disable IDE0060
     }
 }

@@ -5,8 +5,8 @@ namespace System.Text.Json.Nodes
 {
     public abstract partial class JsonNode
     {
-        // linker-safe default JsonSerializerOptions instance used by JsonNode methods.
-        private protected readonly JsonSerializerOptions s_defaultOptions = new();
+        // trimming-safe default JsonSerializerOptions instance used by JsonNode methods.
+        private protected static readonly JsonSerializerOptions s_defaultOptions = new();
 
         /// <summary>
         ///   Converts the current instance to string in JSON format.

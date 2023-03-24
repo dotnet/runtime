@@ -153,5 +153,8 @@ namespace System
 
         internal const string XmlSecureResolverMessage = "XmlSecureResolver is obsolete. Use XmlResolver.ThrowingResolver instead when attempting to forbid XML external entity resolution.";
         internal const string XmlSecureResolverDiagId = "SYSLIB0047";
+
+        internal const string RsaEncryptDecryptValueMessage = "RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.";
+        internal const string RsaEncryptDecryptDiagId = "SYSLIB0048";
     }
 }

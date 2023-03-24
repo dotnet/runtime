@@ -80,14 +80,14 @@ namespace System.Linq.Tests
         [Fact]
         public void OrderByDescending1()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().OrderByDescending(n => n).Count();
+            var count = new[] { 0, 1, 2 }.AsQueryable().OrderByDescending(n => n).Count();
             Assert.Equal(3, count);
         }
 
         [Fact]
         public void OrderByDescending2()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().OrderByDescending(n => n, Comparer<int>.Default).Count();
+            var count = new[] { 0, 1, 2 }.AsQueryable().OrderByDescending(n => n, Comparer<int>.Default).Count();
             Assert.Equal(3, count);
         }
     }

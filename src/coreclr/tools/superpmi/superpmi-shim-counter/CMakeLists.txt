@@ -17,7 +17,7 @@ include_directories(../superpmi-shared)
 set(SUPERPMI_SHIM_COUNTER_SOURCES
     jithost.cpp
     icorjitcompiler.cpp
-    icorjitinfo.cpp
+    icorjitinfo_generated.cpp
     methodcallsummarizer.cpp
     superpmi-shim-counter.cpp
     ../superpmi-shared/callutils.cpp
@@ -50,6 +50,7 @@ target_precompile_headers(superpmi-shim-counter PRIVATE "$<$<COMPILE_LANGUAGE:CX
 
 if(CLR_CMAKE_HOST_UNIX)
     target_link_libraries(superpmi-shim-counter
+        PRIVATE
         utilcodestaticnohost
         mscorrc
         coreclrpal
@@ -57,6 +58,7 @@ if(CLR_CMAKE_HOST_UNIX)
     )
 else()
     target_link_libraries(superpmi-shim-counter
+        PRIVATE
         advapi32.lib
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_CPP_LIB}

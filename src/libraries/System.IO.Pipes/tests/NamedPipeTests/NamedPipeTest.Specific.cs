@@ -697,6 +697,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69101")]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation doesn't rely on a timeout and cancellation token when connecting
         public async Task ClientConnectAsync_Cancel_With_InfiniteTimeout()

@@ -12,7 +12,7 @@ using System.Threading;
 namespace System.DirectoryServices.AccountManagement
 {
     /// <summary>
-    /// This is a class designed to cache DirectoryEntires instead of creating them every time.
+    /// This is a class designed to cache DirectoryEntries instead of creating them every time.
     /// </summary>
     internal sealed class SDSCache
     {

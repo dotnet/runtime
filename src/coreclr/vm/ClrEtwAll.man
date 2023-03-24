@@ -1744,6 +1744,23 @@
                         </UserData>
                     </template>
 
+                    <template tid="ContentionStart_V2">
+                        <data name="ContentionFlags" inType="win:UInt8" map="ContentionFlagsMap" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="LockID" inType="win:Pointer" />
+                        <data name="AssociatedObjectID" inType="win:Pointer" />
+                        <data name="LockOwnerThreadID" inType="win:UInt64" />
+                        <UserData>
+                            <Contention xmlns="myNs">
+                                <ContentionFlags> %1 </ContentionFlags>
+                                <ClrInstanceID> %2 </ClrInstanceID>
+                                <LockID> %3 </LockID>
+                                <AssociatedObjectID> %4 </AssociatedObjectID>
+                                <LockOwnerThreadID> %5 </LockOwnerThreadID>
+                            </Contention>
+                        </UserData>
+                    </template>
+
                     <template tid="ContentionStop_V1">
                         <data name="ContentionFlags" inType="win:UInt8" map="ContentionFlagsMap" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
@@ -3096,6 +3113,20 @@
                         </Settings>
                       </UserData>
                     </template>
+
+                    <template tid="LockCreated">
+                        <data name="LockID" inType="win:Pointer" />
+                        <data name="AssociatedObjectID" inType="win:Pointer" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <UserData>
+                            <LockCreated xmlns="myNs">
+                                <LockID> %1 </LockID>
+                                <AssociatedObjectID> %2 </AssociatedObjectID>
+                                <ClrInstanceID> %3 </ClrInstanceID>
+                            </LockCreated>
+                        </UserData>
+                    </template>
+
                 </templates>
 
                 <events>
@@ -3644,6 +3675,11 @@
                            task="Contention"
                            symbol="ContentionStart_V1" message="$(string.RuntimePublisher.ContentionStart_V1EventMessage)"/>
 
+                    <event value="81" version="2" level="win:Informational"  template="ContentionStart_V2"
+                           keywords ="ContentionKeyword"  opcode="win:Start"
+                           task="Contention"
+                           symbol="ContentionStart_V2" message="$(string.RuntimePublisher.ContentionStart_V2EventMessage)"/>
+
                     <event value="91" version="0" level="win:Informational"  template="Contention"
                            keywords ="ContentionKeyword"  opcode="win:Stop"
                            task="Contention"
@@ -3653,6 +3689,12 @@
                            keywords ="ContentionKeyword"  opcode="win:Stop"
                            task="Contention"
                            symbol="ContentionStop_V1" message="$(string.RuntimePublisher.ContentionStop_V1EventMessage)"/>
+
+                    <event value="90" version="0" level="win:Informational"  template="LockCreated"
+                           keywords ="ContentionKeyword"  opcode="win:Info"
+                           task="Contention"
+                           symbol="LockCreated" message="$(string.RuntimePublisher.LockCreatedEventMessage)"/>
+
 
                     <!-- CLR Stack events -->
                     <event value="82" version="0" level="win:LogAlways"  template="ClrStackWalk"
@@ -8436,8 +8478,10 @@
                 <string id="RuntimePublisher.ExceptionExceptionHandlingNoneEventMessage" value="NONE" />
                 <string id="RuntimePublisher.ContentionStartEventMessage" value="NONE" />
                 <string id="RuntimePublisher.ContentionStart_V1EventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2"/>
+                <string id="RuntimePublisher.ContentionStart_V2EventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2;%nLockID=%3;%nAssociatedObjectID=%4;%nLockOwnerThreadID=%5"/>
                 <string id="RuntimePublisher.ContentionStopEventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2"/>
                 <string id="RuntimePublisher.ContentionStop_V1EventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2;DurationNs=%3"/>
+                <string id="RuntimePublisher.LockCreatedEventMessage" value="LockID=%1;%nAssociatedObjectID=%2;%nClrInstanceID=%3"/>
                 <string id="RuntimePublisher.DCStartCompleteEventMessage" value="NONE" />
                 <string id="RuntimePublisher.DCEndCompleteEventMessage" value="NONE" />
                 <string id="RuntimePublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />

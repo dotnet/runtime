@@ -1919,26 +1919,6 @@ struct TempEnumValue
     UINT64 value;
 };
 
-//*******************************************************************************
-class TempEnumValueSorter : public CQuickSort<TempEnumValue>
-{
-public:
-    TempEnumValueSorter(TempEnumValue *pArray, SSIZE_T iCount)
-        : CQuickSort<TempEnumValue>(pArray, iCount) { LIMITED_METHOD_CONTRACT; }
-
-    int Compare(TempEnumValue *pFirst, TempEnumValue *pSecond)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (pFirst->value == pSecond->value)
-            return 0;
-        if (pFirst->value > pSecond->value)
-            return 1;
-        else
-            return -1;
-    }
-};
-
 extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QCall::ObjectHandleOnStack pReturnValues, QCall::ObjectHandleOnStack pReturnNames, BOOL fGetNames)
 {
     QCALL_CONTRACT;
@@ -1946,120 +1926,64 @@ extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QC
     BEGIN_QCALL;
 
     TypeHandle th = pEnumType.AsTypeHandle();
-
-    if (!th.IsEnum())
-        COMPlusThrow(kArgumentException, W("Arg_MustBeEnum"));
+    _ASSERTE(th.IsEnum());
 
     MethodTable *pMT = th.AsMethodTable();
 
     IMDInternalImport *pImport = pMT->GetMDImport();
 
     StackSArray<TempEnumValue> temps;
-    UINT64 previousValue = 0;
 
     HENUMInternalHolder fieldEnum(pImport);
     fieldEnum.EnumInit(mdtFieldDef, pMT->GetCl());
 
-    //
-    // Note that we're fine treating signed types as unsigned, because all we really
-    // want to do is sort them based on a convenient strong ordering.
-    //
+    CorElementType type = pMT->GetClass()->GetInternalCorElementType();
 
-    BOOL sorted = TRUE;
-
-    CorElementType type = pMT->GetInternalCorElementType();
+    // For underlying types that are signed integers, replace them with their
+    // unsigned counterparts, as expected by the managed Enum implementation.
+    // See the comment in Enum.cs for an explanation.
+    switch (type)
+    {
+        case ELEMENT_TYPE_I1: type = ELEMENT_TYPE_U1; break;
+        case ELEMENT_TYPE_I2: type = ELEMENT_TYPE_U2; break;
+        case ELEMENT_TYPE_I4: type = ELEMENT_TYPE_U4; break;
+        case ELEMENT_TYPE_I8: type = ELEMENT_TYPE_U8; break;
+        case ELEMENT_TYPE_I:  type = ELEMENT_TYPE_U;  break;
+        default: break;
+    }
 
     mdFieldDef field;
     while (pImport->EnumNext(&fieldEnum, &field))
     {
         DWORD dwFlags;
         IfFailThrow(pImport->GetFieldDefProps(field, &dwFlags));
-        if (IsFdStatic(dwFlags))
-        {
-            TempEnumValue temp;
+        if (!IsFdStatic(dwFlags))
+            continue;
 
-            if (fGetNames)
-                IfFailThrow(pImport->GetNameOfFieldDef(field, &temp.name));
+        TempEnumValue temp;
 
-            UINT64 value = 0;
+        if (fGetNames)
+            IfFailThrow(pImport->GetNameOfFieldDef(field, &temp.name));
 
-            MDDefaultValue defaultValue;
-            IfFailThrow(pImport->GetDefaultValue(field, &defaultValue));
+        MDDefaultValue defaultValue = { };
+        IfFailThrow(pImport->GetDefaultValue(field, &defaultValue));
 
-            // The following code assumes that the address of all union members is the same.
-            static_assert_no_msg(offsetof(MDDefaultValue, m_byteValue) == offsetof(MDDefaultValue, m_usValue));
-            static_assert_no_msg(offsetof(MDDefaultValue, m_ulValue) == offsetof(MDDefaultValue, m_ullValue));
-            PVOID pValue = &defaultValue.m_byteValue;
+        // The following code assumes that the address of all union members is the same.
+        static_assert_no_msg(offsetof(MDDefaultValue, m_byteValue) == offsetof(MDDefaultValue, m_usValue));
+        static_assert_no_msg(offsetof(MDDefaultValue, m_ulValue) == offsetof(MDDefaultValue, m_ullValue));
+        temp.value = defaultValue.m_ullValue;
 
-            switch (type) {
-            case ELEMENT_TYPE_I1:
-                value = *((INT8 *)pValue);
-                break;
-
-            case ELEMENT_TYPE_U1:
-            case ELEMENT_TYPE_BOOLEAN:
-                value = *((UINT8 *)pValue);
-                break;
-
-            case ELEMENT_TYPE_I2:
-                value = *((INT16 *)pValue);
-                break;
-
-            case ELEMENT_TYPE_U2:
-            case ELEMENT_TYPE_CHAR:
-                value = *((UINT16 *)pValue);
-                break;
-
-            case ELEMENT_TYPE_I4:
-            IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
-                value = *((INT32 *)pValue);
-                break;
-
-            case ELEMENT_TYPE_U4:
-            IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
-                value = *((UINT32 *)pValue);
-                break;
-
-            case ELEMENT_TYPE_I8:
-            case ELEMENT_TYPE_U8:
-            IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
-            IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
-                value = *((INT64 *)pValue);
-                break;
-
-            default:
-                break;
-            }
-
-            temp.value = value;
-
-            //
-            // Check to see if we are already sorted.  This may seem extraneous, but is
-            // actually probably the normal case.
-            //
-
-            if (previousValue > value)
-                sorted = FALSE;
-            previousValue = value;
-
-            temps.Append(temp);
-        }
+        temps.Append(temp);
     }
 
     TempEnumValue * pTemps = &(temps[0]);
     DWORD cFields = temps.GetCount();
 
-    if (!sorted)
-    {
-        TempEnumValueSorter sorter(pTemps, cFields);
-        sorter.Sort();
-    }
-
     {
         GCX_COOP();
 
         struct gc {
-            I8ARRAYREF values;
+            BASEARRAYREF values;
             PTRARRAYREF names;
         } gc;
         gc.values = NULL;
@@ -2068,12 +1992,13 @@ extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QC
         GCPROTECT_BEGIN(gc);
 
         {
-            gc.values = (I8ARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_U8, cFields);
+            gc.values = (BASEARRAYREF) AllocatePrimitiveArray(type, cFields);
 
-            INT64 *pToValues = gc.values->GetDirectPointerToNonObjectElements();
+            BYTE* pToValues = gc.values->GetDataPtr();
+            size_t elementSize = gc.values->GetComponentSize();
 
-            for (DWORD i = 0; i < cFields; i++) {
-                pToValues[i] = pTemps[i].value;
+            for (DWORD i = 0; i < cFields; i++, pToValues += elementSize) {
+                memcpyNoGCRefs(pToValues, &pTemps[i].value, elementSize);
             }
 
             pReturnValues.Set(gc.values);

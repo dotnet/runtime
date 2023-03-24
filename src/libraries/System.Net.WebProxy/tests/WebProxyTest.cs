@@ -133,6 +133,47 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        public static void WebProxy_BypassUrl_BypassArrayListChangedDirectly_IsBypassedAsExpected()
+        {
+            var p = new WebProxy("http://microsoft.com", BypassOnLocal: false);
+            Assert.False(p.IsBypassed(new Uri("http://bing.com")));
+
+            p.BypassArrayList.Add("bing");
+            Assert.True(p.IsBypassed(new Uri("http://bing.com")));
+
+            p.BypassArrayList.Remove("bing");
+            Assert.False(p.IsBypassed(new Uri("http://bing.com")));
+
+            p.BypassArrayList.AddRange(new[] { "dot.net" });
+            Assert.True(p.IsBypassed(new Uri("http://dot.net")));
+
+            p.BypassArrayList.InsertRange(0, new[] { "bing" });
+            Assert.True(p.IsBypassed(new Uri("http://bing.com")));
+
+            p.BypassArrayList.SetRange(0, new[] { "example", "microsoft" });
+            Assert.True(p.IsBypassed(new Uri("http://example.com")));
+            Assert.True(p.IsBypassed(new Uri("http://microsoft.com")));
+            Assert.False(p.IsBypassed(new Uri("http://bing.com")));
+            Assert.False(p.IsBypassed(new Uri("http://dot.net")));
+
+            p.BypassArrayList.Clear();
+            Assert.False(p.IsBypassed(new Uri("http://example.com")));
+            Assert.False(p.IsBypassed(new Uri("http://microsoft.com")));
+
+            p.BypassArrayList.Insert(0, "bing");
+            p.BypassArrayList.Insert(1, "example");
+            Assert.True(p.IsBypassed(new Uri("http://bing.com")));
+            Assert.True(p.IsBypassed(new Uri("http://example.com")));
+
+            p.BypassArrayList.RemoveAt(0);
+            Assert.False(p.IsBypassed(new Uri("http://bing.com")));
+            Assert.True(p.IsBypassed(new Uri("http://example.com")));
+
+            p.BypassArrayList.RemoveRange(0, 1);
+            Assert.False(p.IsBypassed(new Uri("http://example.com")));
+        }
+
+        [Fact]
         public static void WebProxy_BypassList_DoesntContainUrl_NotBypassed()
         {
             var p = new WebProxy("http://microsoft.com");
@@ -151,7 +192,7 @@ namespace System.Net.Tests
             // Local
 
             yield return new object[] { new Uri($"http://nodotinhostname"), true };
-            yield return new object[] { new Uri($"http://{Guid.NewGuid().ToString("N")}"), true };
+            yield return new object[] { new Uri($"http://{Guid.NewGuid():N}"), true };
             foreach (IPAddress address in Dns.GetHostEntryAsync(Dns.GetHostName()).GetAwaiter().GetResult().AddressList)
             {
                 if (address.AddressFamily == AddressFamily.InterNetwork)
@@ -168,7 +209,7 @@ namespace System.Net.Tests
             if (!string.IsNullOrWhiteSpace(domain))
             {
                 Uri uri = null;
-                try { uri = new Uri($"http://{Guid.NewGuid().ToString("N")}.{domain}"); }
+                try { uri = new Uri($"http://{Guid.NewGuid():N}.{domain}"); }
                 catch (UriFormatException) { }
 
                 if (uri != null)
@@ -179,7 +220,7 @@ namespace System.Net.Tests
 
             // Non-local
 
-            yield return new object[] { new Uri($"http://{Guid.NewGuid().ToString("N")}.com"), false };
+            yield return new object[] { new Uri($"http://{Guid.NewGuid():N}.com"), false };
             yield return new object[] { new Uri($"http://{IPAddress.None}"), false };
         }
 

@@ -96,7 +96,7 @@ namespace System.Data.OleDb
                 {
                     throw ODB.ProviderUnavailable(constr.Provider, null);
                 }
-                Exception? e = OleDbConnection.ProcessResults(hr, null, null);
+                Exception? e = OleDbConnection.ProcessResults(hr, null);
                 Debug.Assert(null != e, "CreateProviderError");
                 throw e;
             }
@@ -279,11 +279,11 @@ namespace System.Data.OleDb
             return hr;
         }
 
-        internal IDBInfoWrapper IDBInfo(OleDbConnectionInternal connection)
+        internal IDBInfoWrapper IDBInfo()
         {
             return new IDBInfoWrapper(ComWrapper());
         }
-        internal IDBPropertiesWrapper IDBProperties(OleDbConnectionInternal connection)
+        internal IDBPropertiesWrapper IDBProperties()
         {
             return new IDBPropertiesWrapper(ComWrapper());
         }
@@ -435,17 +435,17 @@ namespace System.Data.OleDb
             return hr;
         }
 
-        internal IDBSchemaRowsetWrapper IDBSchemaRowset(OleDbConnectionInternal connection)
+        internal IDBSchemaRowsetWrapper IDBSchemaRowset()
         {
             return new IDBSchemaRowsetWrapper(ComWrapper());
         }
 
-        internal IOpenRowsetWrapper IOpenRowset(OleDbConnectionInternal connection)
+        internal IOpenRowsetWrapper IOpenRowset()
         {
             return new IOpenRowsetWrapper(ComWrapper());
         }
 
-        internal ITransactionJoinWrapper ITransactionJoin(OleDbConnectionInternal connection)
+        internal ITransactionJoinWrapper ITransactionJoin()
         {
             return new ITransactionJoinWrapper(ComWrapper());
         }

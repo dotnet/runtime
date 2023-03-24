@@ -15,6 +15,7 @@ namespace Microsoft.Extensions.Logging.Debug
             return new DebugLogger(name);
         }
 
+        /// <inheritdoc />
         public void Dispose()
         {
         }

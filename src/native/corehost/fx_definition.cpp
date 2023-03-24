@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "deps_format.h"
 #include "fx_definition.h"
 #include "fx_ver.h"
 #include "pal.h"
@@ -30,14 +29,4 @@ void fx_definition_t::parse_runtime_config(
 )
 {
     m_runtime_config.parse(path, dev_path, override_settings);
-}
-
-void fx_definition_t::parse_deps()
-{
-    m_deps.parse(false, m_deps_file);
-}
-
-void fx_definition_t::parse_deps(const deps_json_t::rid_fallback_graph_t& graph)
-{
-    m_deps.parse(true, m_deps_file, graph);
 }

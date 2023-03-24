@@ -13,16 +13,14 @@ public static void StopProfile(){}
 2. Initialize the profiler in the main javascript (e.g. main.js)
 
 ```
-await createDotnetRuntime({
-    onConfigLoaded: () => {
-        if (config.enableProfiler) {
-            config.aotProfilerOptions = {
-                write_at: "<Namespace.Class::StopProfile>",
-                send_to: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
-            }
+await dotnet
+    .withConfig({
+        aotProfilerOptions: {
+            writeAt: "<Namespace.Class::StopProfile>",
+            sendTo: "System.Runtime.InteropServices.JavaScript.JavaScriptExports::DumpAotProfileData"
         }
-    },
-});
+    })
+    .create();
 ```
 
 3. Call the `write_at` method at the end of the app, either in C# or in JS. To call the `write_at` method in JS, make use of bindings:

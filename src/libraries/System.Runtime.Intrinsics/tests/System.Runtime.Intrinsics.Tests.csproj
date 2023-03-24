@@ -4,13 +4,14 @@
     <NoWarn>$(NoWarn),1718,SYSLIB0013</NoWarn>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
     <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Vectors\Vector128Tests.cs" />
     <Compile Include="Vectors\Vector256Tests.cs" />
+    <Compile Include="Vectors\Vector512Tests.cs" />
     <Compile Include="Vectors\Vector64Tests.cs" />
   </ItemGroup>
   <ItemGroup>

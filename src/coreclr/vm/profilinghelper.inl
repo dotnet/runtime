@@ -110,8 +110,8 @@ inline void ProfilingAPIUtility::LogNoInterfaceError(REFIID iidRequested, LPCSTR
     }
     CONTRACTL_END;
 
-    GuidString iidUtf8;
-    GuidString::Create(iidRequested, iidUtf8);
+    char iidUtf8[GUID_STR_BUFFER_LEN];
+    GuidToLPSTR(iidRequested, iidUtf8);
     ProfilingAPIUtility::LogProfError(IDS_E_PROF_NO_CALLBACK_IFACE, szCLSID, (LPCSTR)iidUtf8);
 }
 
@@ -121,7 +121,7 @@ inline void ProfilingAPIUtility::LogNoInterfaceError(REFIID iidRequested, LPCSTR
 // ProfilingAPIUtility::ShouldInjectProfAPIFault
 //
 // Description:
-//    Determines whether COMPlus_ProfAPIFault is set to a bitmask value
+//    Determines whether DOTNET_ProfAPIFault is set to a bitmask value
 //    with the specified flag set
 //
 // Return Value:
@@ -176,8 +176,8 @@ inline HRESULT ProfilingAPIUtility::LoadProfilerForAttach(
     CONTRACTL_END;
 
     // Inform user we're about to try attaching the profiler
-    GuidString clsidUtf8;
-    GuidString::Create(*pClsid, clsidUtf8);
+    char clsidUtf8[GUID_STR_BUFFER_LEN];
+    GuidToLPSTR(*pClsid, clsidUtf8);
     ProfilingAPIUtility::LogProfInfo(IDS_PROF_ATTACH_REQUEST_RECEIVED, (LPCSTR)clsidUtf8);
 
     return LoadProfiler(

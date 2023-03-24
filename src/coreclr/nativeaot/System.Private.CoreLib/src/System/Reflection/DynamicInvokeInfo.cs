@@ -235,11 +235,15 @@ namespace System.Reflection
                 StackAllocedArguments argStorage = default;
                 StackAllocatedByRefs byrefStorage = default;
 
+#pragma warning disable 8500
                 CheckArguments(ref argStorage._arg0!, (ByReference*)&byrefStorage, parameters, binderBundle);
+#pragma warning restore 8500
 
                 try
                 {
+#pragma warning disable 8500
                     ret = ref RawCalliHelper.Call(InvokeThunk, (void*)methodToCall, ref thisArg, ref ret, &byrefStorage);
+#pragma warning restore 8500
                     DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
                 }
                 catch (Exception e) when (wrapInTargetInvocationException)
@@ -268,7 +272,9 @@ namespace System.Reflection
             IntPtr* pStorage = stackalloc IntPtr[2 * argCount];
             NativeMemory.Clear(pStorage, (nuint)(2 * argCount) * (nuint)sizeof(IntPtr));
 
-            ByReference* pByRefStorage = (ByReference*)(pStorage + argCount);
+#pragma warning disable 8500
+            void* pByRefStorage = (ByReference*)(pStorage + argCount);
+#pragma warning restore 8500
 
             RuntimeImports.GCFrameRegistration regArgStorage = new(pStorage, (uint)argCount, areByRefs: false);
             RuntimeImports.GCFrameRegistration regByRefStorage = new(pByRefStorage, (uint)argCount, areByRefs: true);
@@ -326,7 +332,7 @@ namespace System.Reflection
 
         private unsafe void CheckArguments(
             ref object copyOfParameters,
-            ByReference* byrefParameters,
+            void* byrefParameters,
             object?[] parameters,
             BinderBundle binderBundle)
         {
@@ -398,8 +404,10 @@ namespace System.Reflection
 
                 Unsafe.Add(ref copyOfParameters, i) = arg!;
 
-                byrefParameters[i] = new ByReference(ref (argumentInfo.Transform & Transform.Reference) != 0 ?
+#pragma warning disable 8500, 9094
+                ((ByReference*)byrefParameters)[i] = new ByReference(ref (argumentInfo.Transform & Transform.Reference) != 0 ?
                     ref Unsafe.As<object, byte>(ref Unsafe.Add(ref copyOfParameters, i)) : ref arg.GetRawData());
+#pragma warning restore 8500, 9094
             }
         }
 
@@ -474,27 +482,17 @@ namespace System.Reflection
         // and pass it to CheckArguments().
         // For argument count > MaxStackAllocArgCount, do a stackalloc of void* pointers along with
         // GCReportingRegistration to safely track references.
-        [StructLayout(LayoutKind.Sequential)]
+        [InlineArray(MaxStackAllocArgCount)]
         private ref struct StackAllocedArguments
         {
             internal object? _arg0;
-#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
-            private object? _arg1;
-            private object? _arg2;
-            private object? _arg3;
-#pragma warning restore CA1823, CS0169, IDE0051
         }
 
         // Helper struct to avoid intermediate IntPtr[] allocation and RegisterForGCReporting in calls to the native reflection stack.
-        [StructLayout(LayoutKind.Sequential)]
+        [InlineArray(MaxStackAllocArgCount)]
         private ref struct StackAllocatedByRefs
         {
             internal ref byte _arg0;
-#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
-            private ref byte _arg1;
-            private ref byte _arg2;
-            private ref byte _arg3;
-#pragma warning restore CA1823, CS0169, IDE0051
         }
     }
 }

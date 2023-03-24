@@ -41,7 +41,7 @@ class SpAddrAT
         return Foo(s0, s1) + x;  // r0 <= &s0[0]; r1 <= &s0[4]; r2 <= r2; r3 <= r3
     }
 
-    public static int Main(String[] args)
+    public static int Main()
     {
         int res = M(1, 2, 3, 4);
         Console.WriteLine("M(1, 2, 3, 4) is {0}.", res);

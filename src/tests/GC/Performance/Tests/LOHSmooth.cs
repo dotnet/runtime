@@ -52,7 +52,7 @@ public class VSTSTest
         }
     }
 
-    public static void Main(string[] args)
+    public static void Main()
     {		    
         Allocate();    
         while (!_done)

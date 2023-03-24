@@ -238,7 +238,7 @@ namespace System.Data.OleDb
         {
             // two contiguous BSTR ptr, second should be a binary copy of the first
             Debug.Assert(_needToReset, "data type requires resetting and _needToReset is false");
-            Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
+            Debug.Assert(0 == offset % IntPtr.Size, "invalid alignment");
             ValidateCheck(offset, 2 * IntPtr.Size);
 
             IntPtr ptr;
@@ -257,7 +257,7 @@ namespace System.Data.OleDb
 
                     // safe to copy ptr, even if SysAllocStringLen failed
                     Marshal.WriteIntPtr(base.handle, offset, ptr);
-                    Marshal.WriteIntPtr(base.handle, offset + ADP.PtrSize, ptr);
+                    Marshal.WriteIntPtr(base.handle, offset + IntPtr.Size, ptr);
                 }
             }
             finally
@@ -277,10 +277,10 @@ namespace System.Data.OleDb
         internal void SetByRefValue(int offset, IntPtr pinnedValue)
         {
             Debug.Assert(_needToReset, "data type requires resetting and _needToReset is false");
-            Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
+            Debug.Assert(0 == offset % IntPtr.Size, "invalid alignment");
             ValidateCheck(offset, 2 * IntPtr.Size);
 
-            if (ADP.PtrZero == pinnedValue)
+            if (IntPtr.Zero == pinnedValue)
             { // empty array scenario
                 pinnedValue = ADP.IntPtrOffset(base.handle, _emptyStringOffset);
             }
@@ -296,7 +296,7 @@ namespace System.Data.OleDb
                 finally
                 {
                     Marshal.WriteIntPtr(base.handle, offset, pinnedValue);               // parameter input value
-                    Marshal.WriteIntPtr(base.handle, offset + ADP.PtrSize, pinnedValue); // original parameter value
+                    Marshal.WriteIntPtr(base.handle, offset + IntPtr.Size, pinnedValue); // original parameter value
                 }
             }
             finally
@@ -392,7 +392,7 @@ namespace System.Data.OleDb
 
         private unsafe void ResetValues(IntPtr buffer, object? iaccessor)
         {
-            Debug.Assert(ADP.PtrZero != buffer && _needToReset && _haveData, "shouldn't be calling ResetValues");
+            Debug.Assert(IntPtr.Zero != buffer && _needToReset && _haveData, "shouldn't be calling ResetValues");
             for (int i = 0; i < _bindingCount; ++i)
             {
                 IntPtr ptr = ADP.IntPtrOffset(buffer, (i * ODB.SizeOf_tagDBBINDING));
@@ -471,7 +471,7 @@ namespace System.Data.OleDb
             Debug.Assert(0 == valueOffset % 8, "unexpected unaligned ptr offset");
 
             UnsafeNativeMethods.IChapteredRowset chapteredRowset = (iaccessor as UnsafeNativeMethods.IChapteredRowset)!;
-            IntPtr chapter = SafeNativeMethods.InterlockedExchangePointer(ADP.IntPtrOffset(buffer, valueOffset), ADP.PtrZero);
+            IntPtr chapter = SafeNativeMethods.InterlockedExchangePointer(ADP.IntPtrOffset(buffer, valueOffset), IntPtr.Zero);
             if (ODB.DB_NULL_HCHAPTER != chapter)
             {
                 chapteredRowset.ReleaseChapter(chapter, out _);
@@ -490,20 +490,20 @@ namespace System.Data.OleDb
             finally
             {
                 IntPtr currentValue = Marshal.ReadIntPtr(buffer, valueOffset);
-                IntPtr originalValue = Marshal.ReadIntPtr(buffer, valueOffset + ADP.PtrSize);
+                IntPtr originalValue = Marshal.ReadIntPtr(buffer, valueOffset + IntPtr.Size);
 
-                if ((ADP.PtrZero != currentValue) && (currentValue != originalValue))
+                if ((IntPtr.Zero != currentValue) && (currentValue != originalValue))
                 {
                     Interop.OleAut32.SysFreeString(currentValue);
                 }
-                if (ADP.PtrZero != originalValue)
+                if (IntPtr.Zero != originalValue)
                 {
                     Interop.OleAut32.SysFreeString(originalValue);
                 }
 
                 // for debugability - delay clearing memory until after FreeBSTR
-                Marshal.WriteIntPtr(buffer, valueOffset, ADP.PtrZero);
-                Marshal.WriteIntPtr(buffer, valueOffset + ADP.PtrSize, ADP.PtrZero);
+                Marshal.WriteIntPtr(buffer, valueOffset, IntPtr.Zero);
+                Marshal.WriteIntPtr(buffer, valueOffset + IntPtr.Size, IntPtr.Zero);
             }
         }
 
@@ -519,17 +519,17 @@ namespace System.Data.OleDb
             finally
             {
                 IntPtr currentValue = Marshal.ReadIntPtr(buffer, valueOffset);
-                IntPtr originalValue = Marshal.ReadIntPtr(buffer, valueOffset + ADP.PtrSize);
+                IntPtr originalValue = Marshal.ReadIntPtr(buffer, valueOffset + IntPtr.Size);
 
                 // originalValue is pinned managed memory or pointer to emptyStringOffset
-                if ((ADP.PtrZero != currentValue) && (currentValue != originalValue))
+                if ((IntPtr.Zero != currentValue) && (currentValue != originalValue))
                 {
                     Interop.Ole32.CoTaskMemFree(currentValue);
                 }
 
                 // for debugability - delay clearing memory until after CoTaskMemFree
-                Marshal.WriteIntPtr(buffer, valueOffset, ADP.PtrZero);
-                Marshal.WriteIntPtr(buffer, valueOffset + ADP.PtrSize, ADP.PtrZero);
+                Marshal.WriteIntPtr(buffer, valueOffset, IntPtr.Zero);
+                Marshal.WriteIntPtr(buffer, valueOffset + IntPtr.Size, IntPtr.Zero);
             }
         }
 
@@ -599,7 +599,7 @@ namespace System.Data.OleDb
         internal IntPtr InterlockedExchangePointer(int offset)
         {
             ValidateCheck(offset, IntPtr.Size);
-            Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
+            Debug.Assert(0 == offset % IntPtr.Size, "invalid alignment");
 
             IntPtr value;
             bool mustRelease = false;

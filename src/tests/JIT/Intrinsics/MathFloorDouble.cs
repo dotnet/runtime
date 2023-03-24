@@ -31,7 +31,7 @@ namespace MathFloorDoubleTest
             8.8
         };
 
-        unsafe static int Main(string[] args)
+        unsafe static int Main()
         {
             double localValue = 9.9;
 

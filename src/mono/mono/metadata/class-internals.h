@@ -155,7 +155,8 @@ struct _MonoClassField {
 	 * field, it's the offset from the start of the object, if
 	 * it's static, it's from the start of the memory chunk
 	 * allocated for statics for the class.
-	 * For special static fields, this is set to -1 during vtable construction.
+	 * -1 means its a special static field.
+	 * -2 means its a collectible static field.
 	 */
 	int              offset;
 };
@@ -360,6 +361,7 @@ struct MonoVTable {
 	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
 	gpointer    type; /* System.Type type for klass */
 	guint8     *interface_bitmap;
+	MonoGCHandle loader_alloc; /* LoaderAllocator object for objects in collectible alcs */
 	guint32     max_interface_id;
 	guint8      rank;
 	/* Keep this a guint8, the jit depends on it */
@@ -440,7 +442,6 @@ struct _MonoGenericClass {
 	MonoGenericContext context;	/* a context that contains the type instantiation doesn't contain any method instantiation */ /* FIXME: Only the class_inst member of "context" is ever used, so this field could be replaced with just a monogenericinst */
 	guint is_dynamic  : 1;		/* Contains dynamic types */
 	guint is_tb_open  : 1;		/* This is the fully open instantiation for a type_builder. Quite ugly, but it's temporary.*/
-	guint need_sync   : 1;      /* Only if dynamic. Need to be synchronized with its container class after its finished. */
 	MonoClass *cached_class;	/* if present, the MonoClass corresponding to the instantiation.  */
 
 	/* The mem manager which owns this generic class. */
@@ -1351,13 +1352,13 @@ MONO_COMPONENT_API
 void
 mono_class_set_nested_classes_property (MonoClass *klass, GList *value);
 
-MonoClassPropertyInfo*
+MONO_COMPONENT_API MonoClassPropertyInfo*
 mono_class_get_property_info (MonoClass *klass);
 
 void
 mono_class_set_property_info (MonoClass *klass, MonoClassPropertyInfo *info);
 
-MonoClassEventInfo*
+MONO_COMPONENT_API MonoClassEventInfo*
 mono_class_get_event_info (MonoClass *klass);
 
 void
@@ -1431,6 +1432,9 @@ mono_method_has_no_body (MonoMethod *method);
 // Internal callers expected to use ERROR_DECL. External callers are not.
 MONO_COMPONENT_API MonoMethodHeader*
 mono_method_get_header_internal (MonoMethod *method, MonoError *error);
+
+MONO_COMPONENT_API void
+mono_method_get_param_names_internal (MonoMethod *method, const char **names);
 
 MonoType*
 mono_class_find_enum_basetype (MonoClass *klass, MonoError *error);

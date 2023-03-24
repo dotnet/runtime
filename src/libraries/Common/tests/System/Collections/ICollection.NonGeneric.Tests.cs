@@ -154,7 +154,10 @@ namespace System.Collections.Tests
             {
                 ICollection collection1 = NonGenericICollectionFactory(count);
                 ICollection collection2 = NonGenericICollectionFactory(count);
-                Assert.NotSame(collection1.SyncRoot, collection2.SyncRoot);
+                if (!ReferenceEquals(collection1, collection2))
+                {
+                    Assert.NotSame(collection1.SyncRoot, collection2.SyncRoot);
+                }
             }
         }
 

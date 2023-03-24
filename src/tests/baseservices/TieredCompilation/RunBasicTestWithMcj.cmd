@@ -44,10 +44,10 @@ if %CLRTestExitCode% neq %CLRTestExpectedExitCode% exit /b %CLRTestExitCode%
 
 echo Collect profile with R2R disabled, use profile with R2R enabled
 del /f /q profile.mcj 2>nul
-set COMPlus_ReadyToRun=0
+set DOTNET_ReadyToRun=0
 call "%CORE_ROOT%\corerun" r2r\BasicTestWithMcj.dll
 set CLRTestExitCode=!ErrorLevel!
-set COMPlus_ReadyToRun=
+set DOTNET_ReadyToRun=
 if %CLRTestExitCode% neq %CLRTestExpectedExitCode% exit /b %CLRTestExitCode%
 call "%CORE_ROOT%\corerun" r2r\BasicTestWithMcj.dll
 set CLRTestExitCode=!ErrorLevel!

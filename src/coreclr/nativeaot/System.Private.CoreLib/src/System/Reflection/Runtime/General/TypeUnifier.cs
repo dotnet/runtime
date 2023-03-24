@@ -85,9 +85,9 @@ namespace System.Reflection.Runtime.General
             return RuntimePointerTypeInfo.GetPointerTypeInfo(targetType);
         }
 
-        public static RuntimeTypeInfo GetConstructedGenericType(this RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments)
+        public static RuntimeTypeInfo GetConstructedGenericTypeNoConstraintCheck(this RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments)
         {
-            return RuntimeConstructedGenericTypeInfo.GetRuntimeConstructedGenericTypeInfo(genericTypeDefinition, genericTypeArguments);
+            return RuntimeConstructedGenericTypeInfo.GetRuntimeConstructedGenericTypeInfoNoConstraintCheck(genericTypeDefinition, genericTypeArguments);
         }
 
         public static RuntimeTypeInfo GetConstructedGenericTypeWithTypeHandle(this RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments)
@@ -253,7 +253,7 @@ namespace System.Reflection.Runtime.TypeInfos
         {
             protected sealed override RuntimeArrayTypeInfo Factory(UnificationKey key)
             {
-                ValidateElementType(key.ElementType, key.TypeHandle, multiDim: false, rank: 1);
+                ValidateElementType(key.ElementType, multiDim: false, rank: 1);
 
                 return new RuntimeArrayTypeInfo(key, multiDim: false, rank: 1);
             }
@@ -270,7 +270,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
             protected sealed override RuntimeArrayTypeInfo Factory(UnificationKey key)
             {
-                ValidateElementType(key.ElementType, key.TypeHandle, multiDim: true, rank: _rank);
+                ValidateElementType(key.ElementType, multiDim: true, rank: _rank);
 
                 return new RuntimeArrayTypeInfo(key, multiDim: true, rank: _rank);
             }
@@ -292,7 +292,7 @@ namespace System.Reflection.Runtime.TypeInfos
             public static readonly TypeTableForMultiDimArrayTypeTables Table = new TypeTableForMultiDimArrayTypeTables();
         }
 
-        private static void ValidateElementType(RuntimeTypeInfo elementType, RuntimeTypeHandle typeHandle, bool multiDim, int rank)
+        private static void ValidateElementType(RuntimeTypeInfo elementType, bool multiDim, int rank)
         {
             Debug.Assert(multiDim || rank == 1);
 
@@ -394,9 +394,20 @@ namespace System.Reflection.Runtime.TypeInfos
     //-----------------------------------------------------------------------------------------------------------
     internal sealed partial class RuntimeConstructedGenericTypeInfo : RuntimeTypeInfo, IKeyedItem<RuntimeConstructedGenericTypeInfo.UnificationKey>
     {
+        private static TryGetConstructedGenericTypeDelegate s_tryGetConstructedGenericTypeWithConstraintCheck;
         internal static RuntimeConstructedGenericTypeInfo GetRuntimeConstructedGenericTypeInfo(RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments)
         {
-            return GetRuntimeConstructedGenericTypeInfo(genericTypeDefinition, genericTypeArguments, precomputedTypeHandle: GetRuntimeTypeHandleIfAny(genericTypeDefinition, genericTypeArguments));
+            TryGetConstructedGenericTypeDelegate del = s_tryGetConstructedGenericTypeWithConstraintCheck ??= ReflectionCoreExecution.ExecutionEnvironment.TryGetConstructedGenericTypeForComponents;
+            RuntimeTypeHandle precomputedTypeHandle = GetRuntimeTypeHandleIfAny(genericTypeDefinition, genericTypeArguments, del);
+            return GetRuntimeConstructedGenericTypeInfo(genericTypeDefinition, genericTypeArguments, precomputedTypeHandle);
+        }
+
+        private static TryGetConstructedGenericTypeDelegate s_tryGetConstructedGenericTypeNoConstraintCheck;
+        internal static RuntimeConstructedGenericTypeInfo GetRuntimeConstructedGenericTypeInfoNoConstraintCheck(RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments)
+        {
+            TryGetConstructedGenericTypeDelegate del = s_tryGetConstructedGenericTypeNoConstraintCheck ??= ReflectionCoreExecution.ExecutionEnvironment.TryGetConstructedGenericTypeForComponentsNoConstraintCheck;
+            RuntimeTypeHandle precomputedTypeHandle = GetRuntimeTypeHandleIfAny(genericTypeDefinition, genericTypeArguments, del);
+            return GetRuntimeConstructedGenericTypeInfo(genericTypeDefinition, genericTypeArguments, precomputedTypeHandle);
         }
 
         internal static RuntimeConstructedGenericTypeInfo GetRuntimeConstructedGenericTypeInfo(RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments, RuntimeTypeHandle precomputedTypeHandle)
@@ -407,7 +418,9 @@ namespace System.Reflection.Runtime.TypeInfos
             return typeInfo;
         }
 
-        private static RuntimeTypeHandle GetRuntimeTypeHandleIfAny(RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments)
+        delegate bool TryGetConstructedGenericTypeDelegate(RuntimeTypeHandle genericDefinition, RuntimeTypeHandle[] genericArguments, out RuntimeTypeHandle result);
+
+        private static RuntimeTypeHandle GetRuntimeTypeHandleIfAny(RuntimeTypeInfo genericTypeDefinition, RuntimeTypeInfo[] genericTypeArguments, TryGetConstructedGenericTypeDelegate constructor)
         {
             RuntimeTypeHandle genericTypeDefinitionHandle = genericTypeDefinition.InternalTypeHandleIfAvailable;
             if (genericTypeDefinitionHandle.IsNull())
@@ -427,7 +440,7 @@ namespace System.Reflection.Runtime.TypeInfos
             }
 
             RuntimeTypeHandle typeHandle;
-            if (!ReflectionCoreExecution.ExecutionEnvironment.TryGetConstructedGenericTypeForComponents(genericTypeDefinitionHandle, genericTypeArgumentHandles, out typeHandle))
+            if (!constructor(genericTypeDefinitionHandle, genericTypeArgumentHandles, out typeHandle))
                 return default(RuntimeTypeHandle);
 
             return typeHandle;

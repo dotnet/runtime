@@ -29,6 +29,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/class-init.h>
+#include <mono/metadata/class-init-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
@@ -2509,6 +2510,13 @@ mono_class_get_field_token (MonoClassField *field)
 
 	mono_class_setup_fields (klass);
 
+	if (G_UNLIKELY (m_class_get_image (klass)->has_updates)) {
+		if (G_UNLIKELY (m_field_is_from_update (field))) {
+			uint32_t idx = mono_metadata_update_get_field_idx (field);
+			return mono_metadata_make_token (MONO_TABLE_FIELD, idx);
+		}
+	}
+
 	while (klass) {
 		MonoClassField *klass_fields = m_class_get_fields (klass);
 		if (!klass_fields)
@@ -2524,10 +2532,6 @@ mono_class_get_field_token (MonoClassField *field)
 				return mono_metadata_make_token (MONO_TABLE_FIELD, idx);
 			}
 		}
-		if (G_UNLIKELY (m_class_get_image (klass)->has_updates)) {
-			/* TODO: metadata-update: check if the field was added. */
-			g_assert_not_reached ();
-		}
 		klass = m_class_get_parent (klass);
 	}
 
@@ -2538,6 +2542,7 @@ mono_class_get_field_token (MonoClassField *field)
 static int
 mono_field_get_index (MonoClassField *field)
 {
+	/* metadata-update: the callers of this method need changes to support updates */
 	g_assert (!m_field_is_from_update (field));
 	int index = GPTRDIFF_TO_INT (field - m_class_get_fields (m_field_get_parent (field)));
 	g_assert (index >= 0 && GINT_TO_UINT32(index) < mono_class_get_field_count (m_field_get_parent (field)));
@@ -2568,6 +2573,9 @@ mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_typ
 		mono_class_set_field_def_values (klass, def_values);
 	}
 
+	/* TODO: metadata-update - added literal fields */
+	g_assert (!m_field_is_from_update (field));
+
 	field_index = mono_field_get_index (field);
 
 	if (!def_values [field_index].data) {
@@ -2591,6 +2599,7 @@ mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_typ
 static int
 mono_property_get_index (MonoProperty *prop)
 {
+	g_assert (!m_property_is_from_update (prop));
 	MonoClassPropertyInfo *info = mono_class_get_property_info (prop->parent);
 	int index = GPTRDIFF_TO_INT (prop - info->properties);
 
@@ -2628,6 +2637,8 @@ mono_class_get_property_default_value (MonoProperty *property, MonoTypeEnum *def
 		}
 		return NULL;
 	}
+	/* metadata-update: Roslyn doesn't emit HasDefault on added properties. */
+	g_assert (!m_property_is_from_update (property));
 	cindex = mono_metadata_get_constant_index (klass_image, mono_class_get_property_token (property), 0);
 	if (!cindex)
 		return NULL;
@@ -2645,11 +2656,17 @@ mono_class_get_event_token (MonoEvent *event)
 {
 	MonoClass *klass = event->parent;
 
+	if (G_UNLIKELY (m_class_get_image (klass)->has_updates)) {
+		if (G_UNLIKELY (m_event_is_from_update (event))) {
+			uint32_t idx = mono_metadata_update_get_event_idx (event);
+			return mono_metadata_make_token (MONO_TABLE_EVENT, idx);
+		}
+	}
+
 	while (klass) {
 		MonoClassEventInfo *info = mono_class_get_event_info (klass);
 		if (info) {
 			for (guint32 i = 0; i < info->count; ++i) {
-				/* TODO: metadata-update: get tokens for added props, too */
 				g_assert (!m_event_is_from_update (&info->events[i]));
 				if (&info->events [i] == event)
 					return mono_metadata_make_token (MONO_TABLE_EVENT, info->first + i + 1);
@@ -2688,6 +2705,14 @@ guint32
 mono_class_get_property_token (MonoProperty *prop)
 {
 	MonoClass *klass = prop->parent;
+
+	if (G_UNLIKELY (m_class_get_image (klass)->has_updates)) {
+		if (G_UNLIKELY (m_property_is_from_update (prop))) {
+			uint32_t idx = mono_metadata_update_get_property_idx (prop);
+			return mono_metadata_make_token (MONO_TABLE_PROPERTY, idx);
+		}
+	}
+
 	while (klass) {
 		MonoProperty* p;
 		int i = 0;
@@ -3909,6 +3934,61 @@ mono_class_signature_is_assignable_from (MonoClass *klass, MonoClass *oklass, gb
 	mono_class_is_assignable_from_general (klass, oklass, for_sig, result, error);
 }
 
+static gboolean
+class_is_inited_for_assignable_check (MonoClass *klass)
+{
+	/* if it's inited, it's inited */
+	if (G_LIKELY (m_class_is_inited (klass)))
+		return TRUE;
+	/*
+	 * IMPORTANT: keep this in sync with ensure_inited_for_assignable_check and with
+	 * mono_class_is_assignable_from_general - if the is_assignable check needs more of the
+	 * MonoClass structure to be initialized, this method will need extra checks.
+	 */
+
+	/* otherwise we need the supertypes and the interface bitmap */
+	if (!m_class_get_supertypes (klass))
+		return FALSE;
+	if (!m_class_get_interface_bitmap (klass))
+		return FALSE;
+	return TRUE;
+}
+
+static void
+ensure_inited_for_assignable_check (MonoClass *klass)
+{
+	if (m_class_is_inited (klass))
+		return;
+	/*
+	 * IMPORTANT: keep this in sync with class_is_inited_for_assignable_check and with
+	 * mono_class_is_assignable_from_general - if the is_assignable check needs more of the
+	 * MonoClass structure to be initialized, this method will need to do additional work.
+	 */
+
+	if (mono_class_is_ginst (klass)) {
+		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
+		ensure_inited_for_assignable_check (gklass);
+	}
+
+	mono_class_setup_supertypes (klass);
+
+	ERROR_DECL (local_error);
+	mono_class_setup_interfaces (klass, local_error);
+	if (!is_ok (local_error)) {
+		mono_class_set_type_load_failure (klass, "Could not set up interfaces for %s.%s due to: %s", m_class_get_name_space (klass), m_class_get_name (klass), mono_error_get_message (local_error));
+		mono_error_cleanup (local_error);
+	}
+
+	int result;
+	result = mono_class_setup_interface_offsets_internal (klass, 0, MONO_SETUP_ITF_OFFSETS_BITMAP_ONLY);
+	if (result == -1)
+		mono_class_set_type_load_failure (klass, "Setting up interface_bitmap for %s.%s failed", m_class_get_name_space (klass), m_class_get_name (klass));
+
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass))
+		mono_class_setup_interface_id (klass);
+}
+
+
 void
 mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboolean signature_assignment, gboolean *result, MonoError *error)
 {
@@ -3919,12 +3999,16 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 	}
 
 	MONO_REQ_GC_UNSAFE_MODE;
-	/*FIXME this will cause a lot of irrelevant stuff to be loaded.*/
-	if (!m_class_is_inited (klass))
-		mono_class_init_internal (klass);
+	/*
+	 * IMPORTANT: keep this in sync with class_is_inited_for_assignable_check and with
+	 * ensure_inited_for_assignable_check - if the is_assignable check needs more of the
+	 * MonoClass structure to be initialized, those methods will need to do additional work.
+	 */
+	if (G_UNLIKELY (!class_is_inited_for_assignable_check (klass)))
+		ensure_inited_for_assignable_check (klass);
 
-	if (!m_class_is_inited (oklass))
-		mono_class_init_internal (oklass);
+	if (G_UNLIKELY (!class_is_inited_for_assignable_check (oklass)))
+		ensure_inited_for_assignable_check (oklass);
 
 	if (mono_class_has_failure (klass)) {
 		mono_error_set_for_class_failure (error, klass);
@@ -4158,11 +4242,11 @@ mono_class_is_assignable_from_general (MonoClass *klass, MonoClass *oklass, gboo
 		}
 
 		if (m_class_get_byval_arg (klass)->type == MONO_TYPE_FNPTR) {
-			/*
-			 * if both klass and oklass are fnptr, and they're equal, we would have returned at the
-			 * beginning.
-			 */
-			/* Is this right? or do we need to look at signature compatibility? */
+			if (mono_metadata_signature_equal (klass_byval_arg->data.method, oklass_byval_arg->data.method)) {
+				*result = TRUE;
+				return;
+			}
+
 			*result = FALSE;
 			return;
 		}
@@ -5147,7 +5231,6 @@ mono_class_get_methods (MonoClass* klass, gpointer *iter)
 MonoProperty*
 mono_class_get_properties (MonoClass* klass, gpointer *iter)
 {
-	MonoProperty* property;
 	if (!iter)
 		return NULL;
 	if (!*iter) {
@@ -5155,19 +5238,28 @@ mono_class_get_properties (MonoClass* klass, gpointer *iter)
 		MonoClassPropertyInfo *info = mono_class_get_property_info (klass);
 		/* start from the first */
 		if (info->count) {
-			*iter = &info->properties [0];
-			return (MonoProperty *)*iter;
+			uint32_t idx = 0;
+			*iter = GUINT_TO_POINTER (idx + 1);
+			return (MonoProperty *)&info->properties [0];
 		} else {
 			/* no fields */
-			return NULL;
+			if (G_LIKELY (!m_class_get_image (klass)->has_updates))
+				return NULL;
+			else
+				*iter = 0;
 		}
 	}
-	property = (MonoProperty *)*iter;
-	property++;
+	// invariant: idx is one past the field we previously returned
+	uint32_t idx = GPOINTER_TO_UINT (*iter);
 	MonoClassPropertyInfo *info = mono_class_get_property_info (klass);
-	if (property < &info->properties [info->count]) {
-		*iter = property;
-		return (MonoProperty *)*iter;
+	if (idx < info->count) {
+		MonoProperty *property = &info->properties [idx];
+		++idx;
+		*iter = GUINT_TO_POINTER (idx);
+		return property;
+	}
+	if (G_UNLIKELY (m_class_get_image (klass)->has_updates)) {
+		return mono_metadata_update_added_properties_iter (klass, iter);
 	}
 	return NULL;
 }
@@ -5187,7 +5279,6 @@ mono_class_get_properties (MonoClass* klass, gpointer *iter)
 MonoEvent*
 mono_class_get_events (MonoClass* klass, gpointer *iter)
 {
-	MonoEvent* event;
 	if (!iter)
 		return NULL;
 	if (!*iter) {
@@ -5195,19 +5286,28 @@ mono_class_get_events (MonoClass* klass, gpointer *iter)
 		MonoClassEventInfo *info = mono_class_get_event_info (klass);
 		/* start from the first */
 		if (info->count) {
-			*iter = &info->events [0];
-			return (MonoEvent *)*iter;
+			uint32_t idx = 0;
+			*iter = GUINT_TO_POINTER (idx + 1);
+			return (MonoEvent *)&info->events [0];
 		} else {
 			/* no fields */
-			return NULL;
+			if (G_LIKELY (!m_class_get_image (klass)->has_updates))
+				return NULL;
+			else
+				*iter = 0;
 		}
 	}
-	event = (MonoEvent *)*iter;
-	event++;
+	// invariant: idx is one past the event we previously returned
+	uint32_t idx = GPOINTER_TO_UINT (*iter);
 	MonoClassEventInfo *info = mono_class_get_event_info (klass);
-	if (event < &info->events [info->count]) {
-		*iter = event;
-		return (MonoEvent *)*iter;
+	if (idx < info->count) {
+		MonoEvent *event = &info->events[idx];
+		++idx;
+		*iter = GUINT_TO_POINTER (idx);
+		return event;
+	}
+	if (G_UNLIKELY (m_class_get_image (klass)->has_updates)) {
+		return mono_metadata_update_added_events_iter (klass, iter);
 	}
 	return NULL;
 }
@@ -5487,7 +5587,7 @@ mono_field_get_rva (MonoClassField *field, int swizzle)
 
 	g_assert (field->type->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA);
 
-	/* TODO: metadata-update: make this work. */
+	/* metadata-update: added static fields with initializers don't seem to get here */
 	g_assert (!m_field_is_from_update (field));
 
 	def_values = mono_class_get_field_def_values_with_swizzle (klass, swizzle);
@@ -6544,8 +6644,14 @@ mono_field_resolve_type (MonoClassField *field, MonoError *error)
 static guint32
 mono_field_resolve_flags (MonoClassField *field)
 {
-	/* Fields in metadata updates are pre-resolved, so this method should not be called. */
-	g_assert (!m_field_is_from_update (field));
+	if (G_UNLIKELY (m_field_is_from_update (field))) {
+		/* metadata-update: Just resolve the whole field, for simplicity. */
+		ERROR_DECL (error);
+		mono_field_resolve_type (field, error);
+		mono_error_assert_ok (error);
+		g_assert (field->type);
+		return field->type->attrs;
+	}
 
 	MonoClass *klass = m_field_get_parent (field);
 	MonoImage *image = m_class_get_image (klass);

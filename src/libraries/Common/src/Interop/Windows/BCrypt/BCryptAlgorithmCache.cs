@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 using System.Collections.Concurrent;
-using System.Security.Cryptography;
 
 using Microsoft.Win32.SafeHandles;
 
@@ -31,30 +29,12 @@ internal static partial class Interop
                         return result.Handle;
                     }
 
-                    NTSTATUS ntStatus = Interop.BCrypt.BCryptOpenAlgorithmProvider(out SafeBCryptAlgorithmHandle handle, key.hashAlgorithmId, null, key.flags);
-                    if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                    {
-                        Exception e = Interop.BCrypt.CreateCryptographicException(ntStatus);
-                        handle.Dispose();
-                        throw e;
-                    }
+                    SafeBCryptAlgorithmHandle handle = BCryptOpenAlgorithmProvider(
+                        key.hashAlgorithmId,
+                        null,
+                        key.flags);
 
-                    int hashSize;
-                    ntStatus = Interop.BCrypt.BCryptGetProperty(
-                        handle,
-                        Interop.BCrypt.BCryptPropertyStrings.BCRYPT_HASH_LENGTH,
-                        &hashSize,
-                        sizeof(int),
-                        out int cbHashSize,
-                        0);
-                    if (ntStatus != NTSTATUS.STATUS_SUCCESS)
-                    {
-                        Exception e = Interop.BCrypt.CreateCryptographicException(ntStatus);
-                        handle.Dispose();
-                        throw e;
-                    }
-
-                    Debug.Assert(cbHashSize == sizeof(int));
+                    int hashSize = BCryptGetDWordProperty(handle, BCryptPropertyStrings.BCRYPT_HASH_LENGTH);
                     Debug.Assert(hashSize > 0);
 
                     if (!s_handles.TryAdd(key, (handle, hashSize)))

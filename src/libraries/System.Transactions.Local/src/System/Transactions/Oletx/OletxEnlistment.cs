@@ -26,13 +26,13 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
     }
 
     private Phase0EnlistmentShim? _phase0Shim;
-    private bool _canDoSinglePhase;
+    private readonly bool _canDoSinglePhase;
     private IEnlistmentNotificationInternal? _iEnlistmentNotification;
     // The information that comes from/goes to the proxy.
     private byte[]? _proxyPrepareInfoByteArray;
 
     private bool _isSinglePhase;
-    private Guid _transactionGuid = Guid.Empty;
+    private readonly Guid _transactionGuid = Guid.Empty;
 
     // Set to true if we receive an AbortRequest while we still have
     // another notification, like prepare, outstanding.  It indicates that
@@ -103,10 +103,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
         _proxyPrepareInfoByteArray = new byte[prepareInfoLength];
         Array.Copy(prepareInfoByteArray, _proxyPrepareInfoByteArray, prepareInfoLength);
 
-        byte[] txGuidByteArray = new byte[16];
-        Array.Copy(_proxyPrepareInfoByteArray, txGuidByteArray, 16);
-
-        _transactionGuid = new Guid(txGuidByteArray);
+        _transactionGuid = new Guid(_proxyPrepareInfoByteArray.AsSpan(0, 16));
         TransactionGuidString = _transactionGuid.ToString();
 
         TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
@@ -997,10 +994,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
 
         try
         {
-            if (localEnlistmentShim != null)
-            {
-                localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.Failed);
-            }
+            localEnlistmentShim?.PrepareRequestDone(OletxPrepareVoteType.Failed);
         }
         catch (COMException ex)
         {
@@ -1055,10 +1049,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
         {
             // This may be the result of a reenlist, which means we don't have a
             // reference to the proxy.
-            if (localEnlistmentShim != null)
-            {
-                localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.SinglePhase);
-            }
+            localEnlistmentShim?.PrepareRequestDone(OletxPrepareVoteType.SinglePhase);
         }
         catch (COMException ex)
         {
@@ -1117,10 +1108,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
 
         try
         {
-            if (localEnlistmentShim != null)
-            {
-                localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.Failed);
-            }
+            localEnlistmentShim?.PrepareRequestDone(OletxPrepareVoteType.Failed);
         }
         // If the TM went down during our call, there is nothing special we have to do because
         // the App doesn't expect any more notifications.
@@ -1170,10 +1158,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
 
         try
         {
-            if (localEnlistmentShim != null)
-            {
-                localEnlistmentShim.PrepareRequestDone(OletxPrepareVoteType.InDoubt);
-            }
+            localEnlistmentShim?.PrepareRequestDone(OletxPrepareVoteType.InDoubt);
         }
         // If the TM went down during our call, there is nothing special we have to do because
         // the App doesn't expect any more notifications.
@@ -1197,7 +1182,7 @@ internal sealed class OletxEnlistment : OletxBaseEnlistment, IPromotedEnlistment
     {
         if (_prepareInfoByteArray == null)
         {
-            Debug.Fail(string.Format(null, "this.prepareInfoByteArray == null in RecoveryInformation()"));
+            Debug.Fail("this.prepareInfoByteArray == null in RecoveryInformation()");
             throw TransactionException.CreateEnlistmentStateException(null, DistributedTxId);
         }
 

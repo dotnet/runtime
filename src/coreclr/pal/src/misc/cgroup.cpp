@@ -470,7 +470,7 @@ private:
 
     static bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
     {
-        return ::ReadMemoryValueFromFile(filename, val);
+        return ::PAL_ReadMemoryValueFromFile(filename, val);
     }
 
     static bool GetCGroup1CpuLimit(UINT *val)

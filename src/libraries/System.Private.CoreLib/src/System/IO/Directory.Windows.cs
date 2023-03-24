@@ -8,8 +8,10 @@ namespace System.IO
 {
     public static partial class Directory
     {
+#pragma warning disable IDE0060
         private static DirectoryInfo CreateDirectoryCore(string path, UnixFileMode unixCreateMode)
             => throw new PlatformNotSupportedException(SR.PlatformNotSupported_UnixFileMode);
+#pragma warning restore IDE0060
 
         private static unsafe string CreateTempSubdirectoryCore(string? prefix)
         {
@@ -46,7 +48,7 @@ namespace System.IO
                 if (!directoryCreated)
                 {
                     // in the off-chance that the directory already exists, try again
-                    int error = Marshal.GetLastWin32Error();
+                    int error = Marshal.GetLastPInvokeError();
                     if (error == Interop.Errors.ERROR_ALREADY_EXISTS)
                     {
                         builder.Length = initialTempPathLength;

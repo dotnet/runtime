@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Implements canonicalizing ByRefs
-    partial class ByRefType
+    public partial class ByRefType
     {
         protected override TypeDesc ConvertToCanonFormImpl(CanonicalFormKind kind)
         {

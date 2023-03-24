@@ -15,7 +15,6 @@
 
 #include "common.h"
 
-#include <shlwapi.h>
 #include <stdlib.h>
 #include "assemblynative.hpp"
 #include "dllimport.h"
@@ -956,13 +955,13 @@ FCIMPL1(Object*, AssemblyNative::GetReferencedAssemblies, AssemblyBaseObject * p
 {
     FCALL_CONTRACT;
 
-    struct _gc {
+    struct {
         PTRARRAYREF ItemArray;
         ASSEMBLYNAMEREF pObj;
         ASSEMBLYREF refAssembly;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
-
+    gc.ItemArray = NULL;
+    gc.pObj = NULL;
     gc.refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
 
     if (gc.refAssembly == NULL)
@@ -1136,7 +1135,6 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
         {
             // Create a new AssemblyLoaderAllocator for an AssemblyLoadContext
             loaderAllocator = new AssemblyLoaderAllocator();
-            loaderAllocator->SetCollectible();
 
             GCX_COOP();
             LOADERALLOCATORREF pManagedLoaderAllocator = NULL;

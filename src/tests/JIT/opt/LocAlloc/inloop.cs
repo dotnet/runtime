@@ -35,7 +35,7 @@ unsafe class Program
         return sum;
     }
 
-    static int Main(string[] args)
+    static int Main()
     {
         return foo(10) + 55;
     }

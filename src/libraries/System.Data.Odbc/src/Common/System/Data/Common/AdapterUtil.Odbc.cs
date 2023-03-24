@@ -658,12 +658,7 @@ namespace System.Data.Common
 
         internal static IntPtr IntPtrOffset(IntPtr pbase, int offset)
         {
-            if (4 == ADP.PtrSize)
-            {
-                return (IntPtr)checked(pbase.ToInt32() + offset);
-            }
-            Debug.Assert(8 == ADP.PtrSize, "8 != IntPtr.Size"); // MDAC 73747
-            return (IntPtr)checked(pbase.ToInt64() + offset);
+            return (nint)pbase + offset;
         }
     }
 }

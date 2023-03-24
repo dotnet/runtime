@@ -12,12 +12,12 @@ namespace TypeSystemTests
 {
     public class UniversalGenericFieldLayoutTests
     {
-        TestTypeSystemContext _contextX86;
-        ModuleDesc _testModuleX86;
-        TestTypeSystemContext _contextX64;
-        ModuleDesc _testModuleX64;
-        TestTypeSystemContext _contextARM;
-        ModuleDesc _testModuleARM;
+        private TestTypeSystemContext _contextX86;
+        private ModuleDesc _testModuleX86;
+        private TestTypeSystemContext _contextX64;
+        private ModuleDesc _testModuleX64;
+        private TestTypeSystemContext _contextARM;
+        private ModuleDesc _testModuleARM;
 
         public UniversalGenericFieldLayoutTests()
         {
@@ -44,8 +44,8 @@ namespace TypeSystemTests
         [Fact]
         public void LayoutIntTests()
         {
-            Assert.Throws<ArgumentException>(() => { return new LayoutInt(int.MinValue); });
-            Assert.Throws<ArgumentException>(() => { return new LayoutInt(-1); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { return new LayoutInt(int.MinValue); });
+            Assert.Throws<ArgumentOutOfRangeException>(() => { return new LayoutInt(-1); });
 
             Assert.Equal(LayoutInt.Zero, new LayoutInt(0));
             Assert.Equal(LayoutInt.One, new LayoutInt(1));
@@ -68,7 +68,7 @@ namespace TypeSystemTests
 
             Assert.Equal(0, new LayoutInt(0).AsInt);
             Assert.Equal(1, new LayoutInt(1).AsInt);
-            Assert.Equal(Int32.MaxValue, new LayoutInt(Int32.MaxValue).AsInt);
+            Assert.Equal(int.MaxValue, new LayoutInt(int.MaxValue).AsInt);
             Assert.Throws<InvalidOperationException>(() => { return LayoutInt.Indeterminate.AsInt; });
 
             Assert.Equal(LayoutInt.Indeterminate, LayoutInt.Indeterminate + LayoutInt.Indeterminate);
@@ -209,7 +209,7 @@ namespace TypeSystemTests
         }
 
 
-        private void TestLayoutOfUniversalCanonTypeOnArchitecture(TypeSystemContext context)
+        private static void TestLayoutOfUniversalCanonTypeOnArchitecture(TypeSystemContext context)
         {
             // Assert all of the various layout information about the universal canon type itself
             Assert.Equal(LayoutInt.Indeterminate, context.UniversalCanonType.InstanceFieldAlignment);
@@ -289,7 +289,7 @@ namespace TypeSystemTests
             Assert.Equal(LayoutInt.Indeterminate, genOfUUU.GetFields().ElementAt(2).Offset);
         }
 
-        private void TestIndeterminatedNestedStructFieldPerContext(TypeSystemContext context, ModuleDesc testModule, out InstantiatedType genOfIntNestedInt, out InstantiatedType genOfLongNestedInt)
+        private static void TestIndeterminatedNestedStructFieldPerContext(TypeSystemContext context, ModuleDesc testModule, out InstantiatedType genOfIntNestedInt, out InstantiatedType genOfLongNestedInt)
         {
             // Given a struct with all field universal, what is the layout?
             MetadataType tGen = testModule.GetType("GenericTypes", "GenStruct`3");
@@ -327,6 +327,7 @@ namespace TypeSystemTests
             InstantiatedType genOfIntNestedInt;
             InstantiatedType genOfLongNestedInt;
 
+#pragma warning disable IDE0059 // Unnecessary assignment of a value
             TestIndeterminatedNestedStructFieldPerContext(_contextX64, _testModuleX64, out genOfIntNestedInt, out genOfLongNestedInt);
             Assert.Equal(new LayoutInt(8), genOfLongNestedInt.InstanceByteAlignment);
             Assert.Equal(new LayoutInt(8), genOfLongNestedInt.InstanceByteAlignment);
@@ -334,11 +335,12 @@ namespace TypeSystemTests
             Assert.Equal(new LayoutInt(4), genOfLongNestedInt.InstanceByteAlignment);
             Assert.Equal(new LayoutInt(4), genOfLongNestedInt.InstanceByteAlignment);
             TestIndeterminatedNestedStructFieldPerContext(_contextARM, _testModuleARM, out genOfIntNestedInt, out genOfLongNestedInt);
+#pragma warning restore IDE0059 // Unnecessary assignment of a value
             Assert.Equal(LayoutInt.Indeterminate, genOfLongNestedInt.InstanceByteAlignment);
             Assert.Equal(LayoutInt.Indeterminate, genOfLongNestedInt.InstanceByteAlignment);
         }
 
-        private void AssertClassIndeterminateSize(TypeSystemContext context, MetadataType type, LayoutInt expectedIndeterminateByteAlignment)
+        private static void AssertClassIndeterminateSize(TypeSystemContext context, MetadataType type, LayoutInt expectedIndeterminateByteAlignment)
         {
             Assert.Equal(context.Target.LayoutPointerSize, type.InstanceFieldAlignment);
             Assert.Equal(context.Target.LayoutPointerSize, type.InstanceFieldSize);
@@ -347,7 +349,7 @@ namespace TypeSystemTests
             Assert.Equal(LayoutInt.Indeterminate, type.InstanceByteCountUnaligned);
         }
 
-        private void CommonClassLayoutTestBits(ModuleDesc testModule, 
+        private static void CommonClassLayoutTestBits(ModuleDesc testModule,
                                                TypeSystemContext context,
                                                LayoutInt expectedIndeterminateByteAlignment,
                                                out InstantiatedType genOfIU,
@@ -372,6 +374,7 @@ namespace TypeSystemTests
             AssertClassIndeterminateSize(context, genOfUL, expectedIndeterminateByteAlignment);
         }
 
+        /* This test exercises universal shared generic layout that is currently unsupported and known to be buggy.
         [Fact]
         public void TestClassLayout()
         {
@@ -511,5 +514,6 @@ namespace TypeSystemTests
             Assert.Equal(LayoutInt.Indeterminate, genOfUI.GetFields().First().Offset);
             Assert.Equal(LayoutInt.Indeterminate, genOfUL.GetFields().First().Offset);
         }
+        */
     }
 }

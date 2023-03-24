@@ -35,6 +35,7 @@ public class Interfaces
         if (TestIterfaceCallOptimization() == Fail)
             return Fail;
 
+        TestPublicAndNonpublicDifference.Run();
         TestDefaultInterfaceMethods.Run();
         TestDefaultInterfaceVariance.Run();
         TestVariantInterfaceOptimizations.Run();
@@ -51,6 +52,7 @@ public class Interfaces
         TestMoreConstraints.Run();
         TestSimpleNonGeneric.Run();
         TestSimpleGeneric.Run();
+        TestDynamicStaticGenericVirtualMethods.Run();
 
         return Pass;
     }
@@ -475,6 +477,46 @@ public class Interfaces
     }
 
     #endregion
+
+    class TestPublicAndNonpublicDifference
+    {
+        interface IFrobber
+        {
+            string Frob();
+        }
+        class ProtectedBase : IFrobber
+        {
+            string IFrobber.Frob() => "IFrobber.Frob";
+            protected virtual string Frob() => "Base.Frob";
+        }
+
+        class ProtectedDerived : ProtectedBase, IFrobber
+        {
+            protected override string Frob() => "Derived.Frob";
+        }
+
+        class PublicBase : IFrobber
+        {
+            string IFrobber.Frob() => "IFrobber.Frob";
+            public virtual string Frob() => "Base.Frob";
+        }
+
+        class PublicDerived : PublicBase, IFrobber
+        {
+            public override string Frob() => "Derived.Frob";
+        }
+
+        public static void Run()
+        {
+            IFrobber f1 = new PublicDerived();
+            if (f1.Frob() != "Derived.Frob")
+                throw new Exception();
+
+            IFrobber f2 = new ProtectedDerived();
+            if (f2.Frob() != "IFrobber.Frob")
+                throw new Exception();
+        }
+    }
 
     class TestDefaultInterfaceMethods
     {
@@ -1457,6 +1499,73 @@ public class Interfaces
                 throw new Exception();
             if (CallIndirect<SimpleStruct>(2) != (1236, typeof(IBar<Atom2>)))
                 throw new Exception();
+        }
+    }
+
+    class TestDynamicStaticGenericVirtualMethods
+    {
+        interface IEntry
+        {
+            string Enter1<T>(string cookie) where T : ISimpleCall;
+        }
+
+        interface ISimpleCall
+        {
+            static virtual string Wrap<T>(string cookie) => $"ISimpleCall.Wrap<{typeof(T).Name}>({cookie})";
+        }
+
+        interface ISimpleCallOverride : ISimpleCall
+        {
+            static string ISimpleCall.Wrap<T>(string cookie) => $"ISimpleCallOverride.Wrap<{typeof(T).Name}>({cookie})";
+        }
+
+        interface ISimpleCallGenericOverride<U> : ISimpleCall
+        {
+            static string ISimpleCall.Wrap<T>(string cookie) => $"ISimpleCallGenericOverride<{typeof(U).Name}>.Wrap<{typeof(T).Name}>({cookie})";
+        }
+
+        class SimpleCallClass : ISimpleCall
+        {
+            public static string Wrap<T>(string cookie) => $"SimpleCall.Wrap<{typeof(T).Name}>({cookie})";
+        }
+
+        class SimpleCallGenericClass<U> : ISimpleCall
+        {
+            public static string Wrap<T>(string cookie) => $"SimpleCallGenericClass<{typeof(U).Name}>.Wrap<{typeof(T).Name}>({cookie})";
+        }
+
+        struct SimpleCallStruct<U> : ISimpleCall
+        {
+            public static string Wrap<T>(string cookie) => $"SimpleCallStruct<{typeof(U).Name}>.Wrap<{typeof(T).Name}>({cookie})";
+        }
+
+        class Entry : IEntry
+        {
+            public virtual string Enter1<T>(string cookie) where T : ISimpleCall
+            {
+                return T.Wrap<T>(cookie);
+            }
+        }
+
+        class EnsureVirtualCall : Entry
+        {
+            public override string Enter1<T>(string cookie) => string.Empty;
+        }
+
+        static IEntry s_ensure = new EnsureVirtualCall();
+        static IEntry s_entry = new Entry();
+
+        public static void Run()
+        {
+            // Just to make sure this cannot be devirtualized.
+            s_ensure.Enter1<ISimpleCall>("One");
+
+            //Console.WriteLine(s_entry.Enter1<ISimpleCall>("One"));
+            //Console.WriteLine(s_entry.Enter1<ISimpleCallOverride>("One"));
+            //Console.WriteLine(s_entry.Enter1<ISimpleCallGenericOverride<object>>("One"));
+            Console.WriteLine(s_entry.Enter1<SimpleCallClass>("One"));
+            //Console.WriteLine(s_entry.Enter1<SimpleCallGenericClass<object>>("One"));
+            Console.WriteLine(s_entry.Enter1<SimpleCallStruct<object>>("One"));
         }
     }
 }

@@ -11,7 +11,6 @@
 **
 ===========================================================*/
 
-using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -21,7 +20,12 @@ namespace System
 {
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct Boolean : IComparable, IConvertible, IComparable<bool>, IEquatable<bool>
+    public readonly struct Boolean
+        : IComparable,
+          IConvertible,
+          IComparable<bool>,
+          IEquatable<bool>,
+          ISpanParsable<bool>
     {
         //
         // Member Variables
@@ -189,6 +193,11 @@ namespace System
 
         // Custom string compares for early application use by config switches, etc
         //
+#if MONO
+        // We have to keep these implementations for Mono here because MemoryExtensions.Equals("True", OrdinalIgnoreCase)
+        // triggers CompareInfo static initialization which is not desired when we parse configs on start.
+        // TODO: Remove once Mono aligns its behavior with CoreCLR around .beforefieldinit
+        // https://github.com/dotnet/runtime/issues/77513
         internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
         {
             // "true" as a ulong, each char |'d with 0x0020 for case-insensitivity
@@ -205,6 +214,18 @@ namespace System
                    (((MemoryMarshal.Read<ulong>(MemoryMarshal.AsBytes(value)) | 0x0020002000200020) == fals_val) &
                     ((value[4] | 0x20) == 'e'));
         }
+#else
+        internal static bool IsTrueStringIgnoreCase(ReadOnlySpan<char> value)
+        {
+            // JIT inlines and unrolls this, see https://github.com/dotnet/runtime/pull/77398
+            return value.Equals(TrueLiteral, StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool IsFalseStringIgnoreCase(ReadOnlySpan<char> value)
+        {
+            return value.Equals(FalseLiteral, StringComparison.OrdinalIgnoreCase);
+        }
+#endif
 
         // Determines whether a String represents true or false.
         //
@@ -381,5 +402,21 @@ namespace System
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
+
+        //
+        // IParsable
+        //
+
+        static bool IParsable<bool>.Parse(string s, IFormatProvider? provider) => Parse(s);
+
+        static bool IParsable<bool>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out bool result) => TryParse(s, out result);
+
+        //
+        // ISpanParsable
+        //
+
+        static bool ISpanParsable<bool>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
+
+        static bool ISpanParsable<bool>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out bool result) => TryParse(s, out result);
     }
 }

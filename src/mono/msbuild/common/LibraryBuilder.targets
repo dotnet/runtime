@@ -1,0 +1,38 @@
+<Project>
+  <UsingTask TaskName="LibraryBuilderTask" 
+             AssemblyFile="$(LibraryBuilderTasksAssemblyPath)" />
+
+  <Target Name="_BuildNativeLibrary"
+          Condition="'$(_IsLibraryMode)' == 'true' and '$(RunAOTCompilation)' == 'true'">
+
+    <PropertyGroup>
+      <_IsSharedLibrary>false</_IsSharedLibrary>
+      <_IsSharedLibrary Condition="'$(NativeLib)' == 'shared'">true</_IsSharedLibrary>
+      <_UsesCustomRuntimeInitCallback>false</_UsesCustomRuntimeInitCallback>
+      <_UsesCustomRuntimeInitCallback Condition="$(CustomRuntimeInitCallback) != ''">true</_UsesCustomRuntimeInitCallback>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_ExtraLibrarySources Include="$(_AotModuleTablePath)" />
+      <_ExtraLinkerArgs Include="@(_CommonLinkerArgs)" />
+    </ItemGroup>
+
+    <LibraryBuilderTask
+      Assemblies="@(_AssembliesToBundleInternal)"
+      AssembliesLocation="$(AssembliesLocation)"
+      ExtraLinkerArguments="@(_ExtraLinkerArgs)"
+      ExtraSources="@(_ExtraLibrarySources)"
+      IsSharedLibrary="$(_IsSharedLibrary)"
+      MonoRuntimeHeaders="$(_MonoHeaderPath)"
+      Name="$(AssemblyName)"
+      OutputDirectory="$(BundleDir)"
+      RuntimeIdentifier="$(RuntimeIdentifier)"
+      RuntimeLibraries="@(_RuntimeLibraries)"
+      TargetOS="$(TargetOS)"
+      UsesCustomRuntimeInitCallback="$(_UsesCustomRuntimeInitCallback)"
+      UsesRuntimeInitCallback="$(_UsesRuntimeInitCallback)">
+      <Output TaskParameter="OutputPath" PropertyName="LibraryOutputPath" />
+    </LibraryBuilderTask>
+  </Target>
+
+</Project>

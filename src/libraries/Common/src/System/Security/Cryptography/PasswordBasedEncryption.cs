@@ -74,20 +74,7 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(destination.Length >= encryptedData.Length);
 
-            // Don't check that algorithmIdentifier.Parameters is set here.
-            // Maybe some future PBES3 will have one with a default.
-
-            if (algorithmIdentifier.Algorithm == Oids.PasswordBasedEncryptionScheme2)
-            {
-                return Pbes2Decrypt(
-                    algorithmIdentifier.Parameters,
-                    password,
-                    passwordBytes,
-                    encryptedData,
-                    destination);
-            }
-
-            if (!Helpers.HasNonAesSymmetricEncryption)
+            if (!Helpers.HasSymmetricEncryption)
             {
                 throw new CryptographicException(
                     SR.Format(
@@ -95,8 +82,11 @@ namespace System.Security.Cryptography
                         algorithmIdentifier.Algorithm));
             }
 
+            // Don't check that algorithmIdentifier.Parameters is set here.
+            // Maybe some future PBES3 will have one with a default.
+
             HashAlgorithmName digestAlgorithmName;
-            SymmetricAlgorithm cipher;
+            SymmetricAlgorithm? cipher = null;
 
             bool pkcs12 = false;
 
@@ -141,6 +131,13 @@ namespace System.Security.Cryptography
                     cipher.KeySize = 40;
                     pkcs12 = true;
                     break;
+                case Oids.PasswordBasedEncryptionScheme2:
+                    return Pbes2Decrypt(
+                        algorithmIdentifier.Parameters,
+                        password,
+                        passwordBytes,
+                        encryptedData,
+                        destination);
                 default:
                     throw new CryptographicException(
                         SR.Format(
@@ -149,6 +146,7 @@ namespace System.Security.Cryptography
             }
 
             Debug.Assert(digestAlgorithmName.Name != null);
+            Debug.Assert(cipher != null);
 
             using (cipher)
             {
@@ -239,6 +237,14 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(pbeParameters != null);
 
+            if (!Helpers.HasSymmetricEncryption)
+            {
+                throw new CryptographicException(
+                    SR.Format(
+                        SR.Cryptography_UnknownAlgorithmIdentifier,
+                        pbeParameters.EncryptionAlgorithm));
+            }
+
             isPkcs12 = false;
 
             switch (pbeParameters.EncryptionAlgorithm)
@@ -258,7 +264,7 @@ namespace System.Security.Cryptography
                     cipher.KeySize = 256;
                     encryptionAlgorithmOid = Oids.Aes256Cbc;
                     break;
-                case PbeEncryptionAlgorithm.TripleDes3KeyPkcs12 when Helpers.HasNonAesSymmetricEncryption:
+                case PbeEncryptionAlgorithm.TripleDes3KeyPkcs12:
                     cipher = TripleDES.Create();
                     cipher.KeySize = 192;
                     encryptionAlgorithmOid = Oids.Pkcs12PbeWithShaAnd3Key3Des;
@@ -566,6 +572,12 @@ namespace System.Security.Cryptography
         {
             string? algId = encryptionScheme.Algorithm;
 
+            if (!Helpers.HasSymmetricEncryption)
+            {
+                throw new CryptographicException(
+                    SR.Format(SR.Cryptography_AlgorithmNotSupported, algId));
+            }
+
             if (algId == Oids.Aes128Cbc ||
                 algId == Oids.Aes192Cbc ||
                 algId == Oids.Aes256Cbc)
@@ -602,12 +614,6 @@ namespace System.Security.Cryptography
                 Aes aes = Aes.Create();
                 aes.KeySize = correctKeySize * 8;
                 return aes;
-            }
-
-            if (!Helpers.HasNonAesSymmetricEncryption)
-            {
-                throw new CryptographicException(
-                    SR.Format(SR.Cryptography_AlgorithmNotSupported, algId));
             }
 
             if (algId == Oids.TripleDesCbc)

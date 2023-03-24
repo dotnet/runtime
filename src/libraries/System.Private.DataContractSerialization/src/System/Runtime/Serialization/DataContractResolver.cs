@@ -10,8 +10,10 @@ namespace System.Runtime.Serialization
 {
     public abstract class DataContractResolver
     {
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public abstract bool TryResolveType(Type type, Type? declaredType, DataContractResolver knownTypeResolver, out XmlDictionaryString? typeName, out XmlDictionaryString? typeNamespace);
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public abstract Type? ResolveName(string typeName, string? typeNamespace, Type? declaredType, DataContractResolver knownTypeResolver);
     }

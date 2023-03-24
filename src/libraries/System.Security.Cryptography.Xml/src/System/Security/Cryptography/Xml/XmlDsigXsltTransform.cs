@@ -12,9 +12,9 @@ namespace System.Security.Cryptography.Xml
     {
         private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlDocument), typeof(XmlNodeList) };
         private readonly Type[] _outputTypes = { typeof(Stream) };
-        private XmlNodeList _xslNodes;
-        private string _xslFragment;
-        private Stream _inputStream;
+        private XmlNodeList? _xslNodes;
+        private string? _xslFragment;
+        private Stream? _inputStream;
         private readonly bool _includeComments;
 
         public XmlDsigXsltTransform()
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Xml
             if (nodeList == null)
                 throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
             // check that the XSLT element is well formed
-            XmlElement firstDataElement = null;
+            XmlElement? firstDataElement = null;
             int count = 0;
             foreach (XmlNode node in nodeList)
             {
@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.Xml
             _xslFragment = firstDataElement.OuterXml.Trim(null);
         }
 
-        protected override XmlNodeList GetInnerXml()
+        protected override XmlNodeList? GetInnerXml()
         {
             return _xslNodes;
         }
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.Xml
             }
             else if (obj is XmlNodeList)
             {
-                CanonicalXml xmlDoc = new CanonicalXml((XmlNodeList)obj, null, _includeComments);
+                CanonicalXml xmlDoc = new CanonicalXml((XmlNodeList)obj, null!, _includeComments);
                 byte[] buffer = xmlDoc.GetBytes();
                 if (buffer == null) return;
                 _inputStream.Write(buffer, 0, buffer.Length);
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.Xml
             }
             else if (obj is XmlDocument)
             {
-                CanonicalXml xmlDoc = new CanonicalXml((XmlDocument)obj, null, _includeComments);
+                CanonicalXml xmlDoc = new CanonicalXml((XmlDocument)obj, null!, _includeComments);
                 byte[] buffer = xmlDoc.GetBytes();
                 if (buffer == null) return;
                 _inputStream.Write(buffer, 0, buffer.Length);
@@ -118,13 +118,13 @@ namespace System.Security.Cryptography.Xml
             settings.XmlResolver = null;
             settings.MaxCharactersFromEntities = Utils.MaxCharactersFromEntities;
             settings.MaxCharactersInDocument = Utils.MaxCharactersInDocument;
-            using (StringReader sr = new StringReader(_xslFragment))
+            using (StringReader sr = new StringReader(_xslFragment!))
             {
-                XmlReader readerXsl = XmlReader.Create(sr, settings, (string)null);
+                XmlReader readerXsl = XmlReader.Create(sr, settings, (string)null!);
                 xslt.Load(readerXsl, XsltSettings.Default, null);
 
                 // Now load the input stream, XmlDocument can be used but is less efficient
-                XmlReader reader = XmlReader.Create(_inputStream, settings, BaseURI);
+                XmlReader reader = XmlReader.Create(_inputStream!, settings, BaseURI);
                 XPathDocument inputData = new XPathDocument(reader, XmlSpace.Preserve);
 
                 // Create an XmlTextWriter

@@ -4,13 +4,11 @@
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
 
-using Debug = System.Diagnostics.Debug;
-
 namespace ILCompiler
 {
-    partial class CompilerTypeSystemContext
+    public partial class CompilerTypeSystemContext
     {
-        private class DynamicInvokeThunkHashtable : LockFreeReaderHashtable<MethodSignature, DynamicInvokeMethodThunk>
+        private sealed class DynamicInvokeThunkHashtable : LockFreeReaderHashtable<MethodSignature, DynamicInvokeMethodThunk>
         {
             protected override bool CompareKeyToValue(MethodSignature key, DynamicInvokeMethodThunk value) => key.Equals(value.TargetSignature);
             protected override bool CompareValueToValue(DynamicInvokeMethodThunk value1, DynamicInvokeMethodThunk value2) => value1.TargetSignature.Equals(value2.TargetSignature) && value1.OwningType == value2.OwningType;
@@ -21,7 +19,8 @@ namespace ILCompiler
                 return new DynamicInvokeMethodThunk(((CompilerTypeSystemContext)key.Context).GeneratedAssembly.GetGlobalModuleType(), key);
             }
         }
-        DynamicInvokeThunkHashtable _dynamicInvokeThunks = new DynamicInvokeThunkHashtable();
+
+        private DynamicInvokeThunkHashtable _dynamicInvokeThunks = new DynamicInvokeThunkHashtable();
 
         public MethodDesc GetDynamicInvokeThunk(MethodSignature signature, bool valueTypeInstanceMethod)
         {

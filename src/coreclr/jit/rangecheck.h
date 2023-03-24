@@ -608,9 +608,9 @@ public:
     // TODO-CQ: This is not general enough.
     bool BetweenBounds(Range& range, GenTree* upper, int arrSize);
 
-    // Entry point to optimize range checks in the block. Assumes value numbering
+    // Entry point to optimize range checks in the method. Assumes value numbering
     // and assertion prop phases are completed.
-    void OptimizeRangeChecks();
+    bool OptimizeRangeChecks();
 
     // Given a "tree" node, check if it contains array bounds check node and
     // optimize to remove it, if possible. Requires "stmt" and "block" that

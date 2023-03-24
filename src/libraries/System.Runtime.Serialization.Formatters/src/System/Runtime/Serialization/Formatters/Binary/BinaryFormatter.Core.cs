@@ -9,10 +9,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
     public sealed partial class BinaryFormatter : IFormatter
     {
         [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [RequiresDynamicCode(IFormatter.RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(IFormatter.RequiresUnreferencedCodeMessage)]
         public object Deserialize(Stream serializationStream)
         {
-            // don't refactor the 'throw' into a helper method; linker will have difficulty trimming
+            // don't refactor the 'throw' into a helper method; trimming tools will have difficulty trimming
             if (!LocalAppContextSwitches.BinaryFormatterEnabled)
             {
                 throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
@@ -61,7 +62,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         [RequiresUnreferencedCode(IFormatter.RequiresUnreferencedCodeMessage)]
         public void Serialize(Stream serializationStream, object graph)
         {
-            // don't refactor the 'throw' into a helper method; linker will have difficulty trimming
+            // don't refactor the 'throw' into a helper method; trimming tools will have difficulty trimming
             if (!LocalAppContextSwitches.BinaryFormatterEnabled)
             {
                 throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);

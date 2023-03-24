@@ -112,6 +112,11 @@ struct FILETIME
 
 #ifdef HOST_AMD64
 
+#define CONTEXT_AMD64   0x00100000L
+
+#define CONTEXT_CONTROL         (CONTEXT_AMD64 | 0x00000001L)
+#define CONTEXT_INTEGER         (CONTEXT_AMD64 | 0x00000002L)
+
 typedef struct DECLSPEC_ALIGN(16) _XSAVE_FORMAT {
     uint16_t  ControlWord;
     uint16_t  StatusWord;
@@ -221,8 +226,21 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 #endif // UNIX_AMD64_ABI
     uintptr_t GetIp() { return Rip; }
     uintptr_t GetSp() { return Rsp; }
+
+    template <typename F>
+    void ForEachPossibleObjectRef(F lambda)
+    {
+        for (uint64_t* pReg = &Rax; pReg < &Rip; pReg++)
+            lambda((size_t*)pReg);
+    }
+
 } CONTEXT, *PCONTEXT;
 #elif defined(HOST_ARM)
+
+#define CONTEXT_ARM   0x00200000L
+
+#define CONTEXT_CONTROL (CONTEXT_ARM | 0x1L)
+#define CONTEXT_INTEGER (CONTEXT_ARM | 0x2L)
 
 #define ARM_MAX_BREAKPOINTS     8
 #define ARM_MAX_WATCHPOINTS     1
@@ -267,6 +285,12 @@ typedef struct DECLSPEC_ALIGN(8) _CONTEXT {
 } CONTEXT, *PCONTEXT;
 
 #elif defined(HOST_X86)
+
+#define CONTEXT_i386    0x00010000L
+
+#define CONTEXT_CONTROL         (CONTEXT_i386 | 0x00000001L) // SS:SP, CS:IP, FLAGS, BP
+#define CONTEXT_INTEGER         (CONTEXT_i386 | 0x00000002L) // AX, BX, CX, DX, SI, DI
+
 #define SIZE_OF_80387_REGISTERS      80
 #define MAXIMUM_SUPPORTED_EXTENSION  512
 
@@ -320,6 +344,11 @@ typedef struct _CONTEXT {
 #include "poppack.h"
 
 #elif defined(HOST_ARM64)
+
+#define CONTEXT_ARM64   0x00400000L
+
+#define CONTEXT_CONTROL (CONTEXT_ARM64 | 0x1L)
+#define CONTEXT_INTEGER (CONTEXT_ARM64 | 0x2L)
 
 // Specify the number of breakpoints and watchpoints that the OS
 // will track. Architecturally, ARM64 supports up to 16. In practice,
@@ -406,6 +435,16 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     uintptr_t GetIp() { return Pc; }
     uintptr_t GetLr() { return Lr; }
     uintptr_t GetSp() { return Sp; }
+
+    template <typename F>
+    void ForEachPossibleObjectRef(F lambda)
+    {
+        for (uint64_t* pReg = &X0; pReg <= &X28; pReg++)
+            lambda((size_t*)pReg);
+
+        // Lr can be used as a scratch register
+        lambda((size_t*)&Lr);
+    }
 } CONTEXT, *PCONTEXT;
 
 #elif defined(HOST_WASM)
@@ -596,6 +635,11 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetCompleteThreadContext(HANDLE hThread
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalSetThreadContext(HANDLE hThread, _Out_ CONTEXT * pCtx);
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx);
 
+// For platforms that have segment registers in the CONTEXT_CONTROL set that
+// are not saved in PAL_LIMITED_CONTEXT, this captures them from the current
+// thread and saves them in `pContext`.
+REDHAWK_PALIMPORT void REDHAWK_PALAPI PopulateControlSegmentRegisters(CONTEXT* pContext);
+
 REDHAWK_PALIMPORT int32_t REDHAWK_PALAPI PalGetProcessCpuCount();
 
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
@@ -674,6 +718,7 @@ EXTERN_C void * __cdecl _alloca(size_t);
 REDHAWK_PALIMPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, uintptr_t size, uint32_t allocationType, uint32_t protect);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size, uint32_t freeType);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect);
+REDHAWK_PALIMPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size);
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalSwitchToThread();
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
@@ -697,6 +742,7 @@ REDHAWK_PALIMPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t f
 typedef uint32_t (__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
 
 typedef void (*PalHijackCallback)(_In_ NATIVE_CONTEXT* pThreadContext, _In_opt_ void* pThreadToHijack);
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack);
@@ -724,6 +770,9 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PalAttachThread(void* thread);
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalDetachThread(void* thread);
 
 REDHAWK_PALIMPORT uint64_t PalGetCurrentThreadIdForLogging();
+
+REDHAWK_PALIMPORT uint64_t PalQueryPerformanceCounter();
+REDHAWK_PALIMPORT uint64_t PalQueryPerformanceFrequency();
 
 REDHAWK_PALIMPORT void PalPrintFatalError(const char* message);
 
@@ -753,7 +802,9 @@ REDHAWK_PALIMPORT void __cpuidex(int cpuInfo[4], int function_id, int subFunctio
 #endif
 
 REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport();
+REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI avx512StateSupport();
 REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalIsAvxEnabled();
+REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalIsAvx512Enabled();
 
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
 

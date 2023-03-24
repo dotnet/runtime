@@ -26,7 +26,7 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
 
     // Verify object size is bigger than min_obj_size
     size_t minObjSize = get_BaseSize();
-    if (get_ComponentSize() != 0)
+    if (HasComponentSize())
     {
         // If it is an array, we will align the size to the nearest pointer alignment, even if there are
         // zero elements.  Our strings take advantage of this.
@@ -62,7 +62,7 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
 
         // Either we're dealing with a clone of String or a generic type. We can tell the difference based
         // on the component size.
-        switch (get_ComponentSize())
+        switch (GetComponentSize())
         {
         case 0:
         {
@@ -104,7 +104,7 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
             REPORT_FAILURE();
 
         // Component size cannot be zero in this case.
-        if (get_ComponentSize() == 0)
+        if (GetComponentSize() == 0)
             REPORT_FAILURE();
 
         if (get_IsValueType() ||
@@ -137,7 +137,7 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
 //-----------------------------------------------------------------------------------------------------------
 MethodTable::Kinds MethodTable::get_Kind()
 {
-	return (Kinds)(m_usFlags & (uint16_t)EETypeKindMask);
+	return (Kinds)(m_uFlags & (uint16_t)EETypeKindMask);
 }
 
 //-----------------------------------------------------------------------------------------------------------

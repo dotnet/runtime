@@ -27,7 +27,7 @@ public class cs1
 {
 	public int m_i;
 
-	public static int Main(String [] args)
+	public static int Main()
 	{
 #if ADD_STRUCT_CONSTRAINT
 		GenType<S> g = new GenType<S>();

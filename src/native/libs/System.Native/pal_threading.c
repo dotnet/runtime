@@ -48,7 +48,7 @@ static void SetIsLocked(LowLevelMonitor* monitor, bool isLocked)
 #endif
 }
 
-LowLevelMonitor* SystemNative_LowLevelMonitor_Create()
+LowLevelMonitor* SystemNative_LowLevelMonitor_Create(void)
 {
     LowLevelMonitor* monitor = (LowLevelMonitor *)malloc(sizeof(LowLevelMonitor));
     if (monitor == NULL)
@@ -265,7 +265,7 @@ CreateThreadExit:
     return result;
 }
 
-int32_t SystemNative_SchedGetCpu()
+int32_t SystemNative_SchedGetCpu(void)
 {
 #if HAVE_SCHED_GETCPU
     return sched_getcpu();
@@ -281,7 +281,7 @@ void SystemNative_Exit(int32_t exitCode)
 }
 
 __attribute__((noreturn))
-void SystemNative_Abort()
+void SystemNative_Abort(void)
 {
     abort();
 }

@@ -3,10 +3,12 @@
 
 using System;
 using System.Threading;
+using Xunit;
 
-class BindHandleNull
+public class BindHandleNull
 {
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         return (new BindHandleNull().RunTest());
     }

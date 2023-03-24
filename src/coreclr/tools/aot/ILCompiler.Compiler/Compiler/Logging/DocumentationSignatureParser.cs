@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -9,6 +8,7 @@ using System.Linq;
 using System.Text;
 
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.Logging
 {
@@ -54,7 +54,7 @@ namespace ILCompiler.Logging
         {
             int index = 0;
             var results = new List<TypeSystemEntity>();
-            DocumentationSignatureParser.ParseSignaturePart(signature, ref index, (ModuleDesc)assembly, DocumentationSignatureParser.MemberType.Type, results);
+            ParseSignaturePart(signature, ref index, (ModuleDesc)assembly, MemberType.Type, results);
             Debug.Assert(results.Count <= 1);
             return results.Count == 0 ? null : (TypeDesc)results[0];
         }
@@ -65,19 +65,19 @@ namespace ILCompiler.Logging
             int index = 0;
             var results = new List<TypeSystemEntity>();
             var nameBuilder = new StringBuilder();
-            var (name, arity) = DocumentationSignatureParser.ParseTypeOrNamespaceName(signature, ref index, nameBuilder);
-            DocumentationSignatureParser.GetMatchingMembers(signature, ref index, type.Module, type, name, arity, DocumentationSignatureParser.MemberType.All, results, acceptName);
+            var (name, arity) = ParseTypeOrNamespaceName(signature, ref index, nameBuilder);
+            GetMatchingMembers(signature, ref index, type.Module, type, name, arity, MemberType.All, results, acceptName);
             return results;
         }
 
-        static string GetSignaturePart(TypeDesc type)
+        private static string GetSignaturePart(TypeDesc type)
         {
             var builder = new StringBuilder();
             DocumentationSignatureGenerator.PartVisitor.Instance.AppendName(builder, type);
             return builder.ToString();
         }
 
-        static bool ParseDocumentationSignature(string id, ModuleDesc module, List<TypeSystemEntity> results)
+        private static bool ParseDocumentationSignature(string id, ModuleDesc module, List<TypeSystemEntity> results)
         {
             if (id == null)
                 return false;
@@ -91,7 +91,7 @@ namespace ILCompiler.Logging
             return results.Count > 0;
         }
 
-        static void ParseSignature(string id, ref int index, ModuleDesc module, List<TypeSystemEntity> results)
+        private static void ParseSignature(string id, ref int index, ModuleDesc module, List<TypeSystemEntity> results)
         {
             Debug.Assert(results.Count == 0);
             var memberTypeChar = PeekNextChar(id, index);
@@ -150,7 +150,7 @@ namespace ILCompiler.Logging
                 (name, arity) = ParseTypeOrNamespaceName(id, ref index, nameBuilder);
                 // if we are at the end of the dotted name and still haven't resolved it to
                 // a type, there are no results.
-                if (String.IsNullOrEmpty(name))
+                if (string.IsNullOrEmpty(name))
                     return;
 
                 // no more dots, so don't loop any more
@@ -164,7 +164,7 @@ namespace ILCompiler.Logging
                 var typeOrNamespaceName = nameBuilder.ToString();
                 GetMatchingTypes(module, declaringType: containingType, name: typeOrNamespaceName, arity: arity, results: results);
                 Debug.Assert(results.Count <= 1);
-                if (results.Any())
+                if (results.Count != 0)
                 {
                     // the name resolved to a type
                     var result = results.Single();
@@ -211,21 +211,17 @@ namespace ILCompiler.Logging
                 index = startIndex;
             }
 
-#if false
             if (memberTypes.HasFlag(MemberType.Property))
             {
                 GetMatchingProperties(id, ref index, containingType, memberName, results, acceptName);
                 endIndex = index;
                 index = startIndex;
             }
-#endif
 
             index = endIndex;
 
-#if false
             if (memberTypes.HasFlag(MemberType.Event))
                 GetMatchingEvents(containingType, memberName, results);
-#endif
 
             if (memberTypes.HasFlag(MemberType.Field))
                 GetMatchingFields(containingType, memberName, results);
@@ -276,7 +272,7 @@ namespace ILCompiler.Logging
         // To avoid looking for types by name in all referenced assemblies, we just represent types
         // that are part of a signature by their doc comment strings, and we check for matching
         // strings when looking for matching member signatures.
-        static string ParseTypeSymbol(string id, ref int index, TypeSystemEntity typeParameterContext)
+        private static string ParseTypeSymbol(string id, ref int index, TypeSystemEntity typeParameterContext)
         {
             var results = new List<string>();
             ParseTypeSymbol(id, ref index, typeParameterContext, results);
@@ -287,7 +283,7 @@ namespace ILCompiler.Logging
             return null;
         }
 
-        static void ParseTypeSymbol(string id, ref int index, TypeSystemEntity typeParameterContext, List<string> results)
+        private static void ParseTypeSymbol(string id, ref int index, TypeSystemEntity typeParameterContext, List<string> results)
         {
             // Note: Roslyn has a special case that deviates from the language spec, which
             // allows context expressions embedded in a type reference => <context-definition>:<type-parameter>
@@ -348,7 +344,7 @@ namespace ILCompiler.Logging
             index = endIndex;
         }
 
-        static void ParseTypeParameterSymbol(string id, ref int index, TypeSystemEntity typeParameterContext, List<string> results)
+        private static void ParseTypeParameterSymbol(string id, ref int index, TypeSystemEntity typeParameterContext, List<string> results)
         {
             // skip the first `
             Debug.Assert(PeekNextChar(id, index) == '`');
@@ -393,7 +389,7 @@ namespace ILCompiler.Logging
             }
         }
 
-        static void ParseNamedTypeSymbol(string id, ref int index, TypeSystemEntity typeParameterContext, List<string> results)
+        private static void ParseNamedTypeSymbol(string id, ref int index, TypeSystemEntity typeParameterContext, List<string> results)
         {
             Debug.Assert(results.Count == 0);
             var nameBuilder = new StringBuilder();
@@ -401,7 +397,7 @@ namespace ILCompiler.Logging
             while (true)
             {
                 var name = ParseName(id, ref index);
-                if (String.IsNullOrEmpty(name))
+                if (string.IsNullOrEmpty(name))
                     return;
 
                 nameBuilder.Append(name);
@@ -448,7 +444,7 @@ namespace ILCompiler.Logging
             results.Add(nameBuilder.ToString());
         }
 
-        static int ParseArrayBounds(string id, ref int index)
+        private static int ParseArrayBounds(string id, ref int index)
         {
             index++; // skip '['
 
@@ -491,7 +487,7 @@ namespace ILCompiler.Logging
             return bounds;
         }
 
-        static bool ParseTypeArguments(string id, ref int index, TypeSystemEntity typeParameterContext, List<string> typeArguments)
+        private static bool ParseTypeArguments(string id, ref int index, TypeSystemEntity typeParameterContext, List<string> typeArguments)
         {
             index++; // skip over {
 
@@ -526,7 +522,7 @@ namespace ILCompiler.Logging
             return true;
         }
 
-        static void GetMatchingTypes(ModuleDesc module, TypeDesc declaringType, string name, int arity, List<TypeSystemEntity> results)
+        private static void GetMatchingTypes(ModuleDesc module, TypeDesc declaringType, string name, int arity, List<TypeSystemEntity> results)
         {
             Debug.Assert(module != null);
 
@@ -537,7 +533,7 @@ namespace ILCompiler.Logging
                 string namepart;
                 if (indexOfLastDot > 0 && indexOfLastDot < name.Length - 1)
                 {
-                    namespacepart = name.Substring(indexOfLastDot - 1);
+                    namespacepart = name.Substring(0, indexOfLastDot);
                     namepart = name.Substring(indexOfLastDot + 1);
                 }
                 else
@@ -559,7 +555,7 @@ namespace ILCompiler.Logging
 
             foreach (var nestedType in mdDeclaringType.GetNestedTypes())
             {
-                Debug.Assert(String.IsNullOrEmpty(nestedType.Namespace));
+                Debug.Assert(string.IsNullOrEmpty(nestedType.Namespace));
                 if (nestedType.Name != name)
                     continue;
 
@@ -575,7 +571,7 @@ namespace ILCompiler.Logging
             }
         }
 
-        static void GetMatchingMethods(string id, ref int index, TypeDesc type, string memberName, int arity, List<TypeSystemEntity> results, bool acceptName = false)
+        private static void GetMatchingMethods(string id, ref int index, TypeDesc type, string memberName, int arity, List<TypeSystemEntity> results, bool acceptName = false)
         {
             if (type == null)
                 return;
@@ -632,10 +628,9 @@ namespace ILCompiler.Logging
             index = endIndex;
         }
 
-#if false
-        static void GetMatchingProperties(string id, ref int index, TypeDesc type, string memberName, List<TypeSystemEntity> results, bool acceptName = false)
+        private static void GetMatchingProperties(string id, ref int index, TypeDesc typeDesc, string memberName, List<TypeSystemEntity> results, bool acceptName = false)
         {
-            if (type == null)
+            if (typeDesc is not EcmaType type)
                 return;
 
             int startIndex = index;
@@ -644,11 +639,14 @@ namespace ILCompiler.Logging
             List<string> parameters = null;
             // Unlike Roslyn, we don't need to decode property names because we are working
             // directly with IL.
-            foreach (var property in type.Properties)
+            foreach (var propertyHandle in type.MetadataReader.GetTypeDefinition(type.Handle).GetProperties())
             {
+                var p = new PropertyPseudoDesc(type, propertyHandle);
+
                 index = startIndex;
-                if (property.Name != memberName)
+                if (p.Name != memberName)
                     continue;
+
                 if (PeekNextChar(id, index) == '(')
                 {
                     if (parameters == null)
@@ -659,25 +657,24 @@ namespace ILCompiler.Logging
                     {
                         parameters.Clear();
                     }
-                    if (!ParseParameterList(id, ref index, property.DeclaringType, parameters))
+                    if (!ParseParameterList(id, ref index, p.OwningType, parameters))
                         continue;
-                    if (!AllParametersMatch(property.Parameters, parameters))
+                    if (!AllParametersMatch(p.Signature, parameters))
                         continue;
                 }
                 else
                 {
-                    if (!acceptName && property.Parameters.Count != 0)
+                    if (!acceptName && p.Signature.Length != 0)
                         continue;
                 }
-                results.Add(property);
+                results.Add(p);
                 endIndex = index;
             }
 
             index = endIndex;
         }
-#endif
 
-        static void GetMatchingFields(TypeDesc type, string memberName, List<TypeSystemEntity> results)
+        private static void GetMatchingFields(TypeDesc type, string memberName, List<TypeSystemEntity> results)
         {
             if (type == null)
                 return;
@@ -689,21 +686,21 @@ namespace ILCompiler.Logging
             }
         }
 
-#if false
-        static void GetMatchingEvents(TypeDesc type, string memberName, List<TypeSystemEntity> results)
+        private static void GetMatchingEvents(TypeDesc typeDesc, string memberName, List<TypeSystemEntity> results)
         {
-            if (type == null)
+            if (typeDesc is not EcmaType type)
                 return;
-            foreach (var evt in type.Events)
+
+            foreach (var eventHandle in type.MetadataReader.GetTypeDefinition(type.Handle).GetEvents())
             {
-                if (evt.Name != memberName)
+                var e = new EventPseudoDesc(type, eventHandle);
+                if (e.Name != memberName)
                     continue;
-                results.Add(evt);
+                results.Add(e);
             }
         }
-#endif
 
-        static bool AllParametersMatch(MethodSignature methodParameters, List<string> expectedParameters)
+        private static bool AllParametersMatch(MethodSignature methodParameters, List<string> expectedParameters)
         {
             if (methodParameters.Length != expectedParameters.Count)
                 return false;
@@ -717,9 +714,23 @@ namespace ILCompiler.Logging
             return true;
         }
 
-        static bool ParseParameterList(string id, ref int index, TypeSystemEntity typeParameterContext, List<string> parameters)
+        private static bool AllParametersMatch(PropertySignature propertyParameters, List<string> expectedParameters)
         {
-            System.Diagnostics.Debug.Assert(typeParameterContext != null);
+            if (propertyParameters.Length != expectedParameters.Count)
+                return false;
+
+            for (int i = 0; i < expectedParameters.Count; i++)
+            {
+                if (GetSignaturePart(propertyParameters[i]) != expectedParameters[i])
+                    return false;
+            }
+
+            return true;
+        }
+
+        private static bool ParseParameterList(string id, ref int index, TypeSystemEntity typeParameterContext, List<string> parameters)
+        {
+            Debug.Assert(typeParameterContext != null);
 
             index++; // skip over '('
 
@@ -756,14 +767,14 @@ namespace ILCompiler.Logging
             return true;
         }
 
-        static char PeekNextChar(string id, int index)
+        private static char PeekNextChar(string id, int index)
         {
             return index >= id.Length ? '\0' : id[index];
         }
 
-        static readonly char[] s_nameDelimiters = { ':', '.', '(', ')', '{', '}', '[', ']', ',', '\'', '@', '*', '`', '~' };
+        private static readonly char[] s_nameDelimiters = { ':', '.', '(', ')', '{', '}', '[', ']', ',', '\'', '@', '*', '`', '~' };
 
-        static string ParseName(string id, ref int index)
+        private static string ParseName(string id, ref int index)
         {
             string name;
 
@@ -783,12 +794,12 @@ namespace ILCompiler.Logging
         }
 
         // undoes dot encodings within names...
-        static string DecodeName(string name)
+        private static string DecodeName(string name)
         {
             return name.Replace('#', '.');
         }
 
-        static int ReadNextInteger(string id, ref int index)
+        private static int ReadNextInteger(string id, ref int index)
         {
             int n = 0;
 

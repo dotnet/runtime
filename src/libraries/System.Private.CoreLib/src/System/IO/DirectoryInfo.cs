@@ -15,6 +15,7 @@ namespace System.IO
 
         public DirectoryInfo(string path)
         {
+            ArgumentNullException.ThrowIfNull(path);
             Init(originalPath: path,
                   fullPath: Path.GetFullPath(path),
                   isNormalized: true);
@@ -27,20 +28,33 @@ namespace System.IO
 
         private void Init(string originalPath, string? fullPath = null, string? fileName = null, bool isNormalized = false)
         {
-            ArgumentNullException.ThrowIfNull(originalPath);
-
             OriginalPath = originalPath;
 
             fullPath ??= originalPath;
             fullPath = isNormalized ? fullPath : Path.GetFullPath(fullPath);
 
-            _name = fileName ?? (PathInternal.IsRoot(fullPath.AsSpan()) ?
-                    fullPath.AsSpan() :
-                    Path.GetFileName(Path.TrimEndingDirectorySeparator(fullPath.AsSpan()))).ToString();
+            _name = fileName;
 
             FullPath = fullPath;
 
             _isNormalized = isNormalized;
+        }
+
+        public override string Name
+        {
+            get
+            {
+                string? name = _name;
+                if (name is null)
+                {
+                    ReadOnlySpan<char> fullPath = FullPath.AsSpan();
+                    _name = name = (PathInternal.IsRoot(fullPath) ?
+                        fullPath :
+                        Path.GetFileName(Path.TrimEndingDirectorySeparator(fullPath))).ToString();
+                }
+
+                return name;
+            }
         }
 
         public DirectoryInfo? Parent
@@ -211,6 +225,21 @@ namespace System.IO
         {
             FileSystem.RemoveDirectory(FullPath, recursive);
             Invalidate();
+        }
+
+        public override bool Exists
+        {
+            get
+            {
+                try
+                {
+                    return ExistsCore;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
         }
     }
 }

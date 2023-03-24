@@ -55,19 +55,15 @@ namespace System.IO
                 }
 
                 int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
-                switch (errorCode)
+                return errorCode switch
                 {
-                    case Interop.Errors.ERROR_HANDLE_EOF:
-                        // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfile#synchronization-and-file-position :
-                        // "If lpOverlapped is not NULL, then when a synchronous read operation reaches the end of a file,
-                        // ReadFile returns FALSE and GetLastError returns ERROR_HANDLE_EOF"
-                        return numBytesRead;
-                    case Interop.Errors.ERROR_BROKEN_PIPE: // For pipes, ERROR_BROKEN_PIPE is the normal end of the pipe.
-                    case Interop.Errors.ERROR_INVALID_PARAMETER when IsEndOfFileForNoBuffering(handle, fileOffset):
-                        return 0;
-                    default:
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
-                }
+                    // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfile#synchronization-and-file-position:
+                    // "If lpOverlapped is not NULL, then when a synchronous read operation reaches the end of a file,
+                    // ReadFile returns FALSE and GetLastError returns ERROR_HANDLE_EOF"
+                    Interop.Errors.ERROR_HANDLE_EOF => numBytesRead,
+                    _ when IsEndOfFile(errorCode, handle, fileOffset) => 0,
+                    _ => throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path)
+                };
             }
         }
 
@@ -113,20 +109,16 @@ namespace System.IO
                         resetEvent.ReleaseRefCount(overlapped);
                     }
 
-                    switch (errorCode)
+                    if (IsEndOfFile(errorCode, handle, fileOffset))
                     {
-                        case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
-                        case Interop.Errors.ERROR_BROKEN_PIPE:
-                        case Interop.Errors.ERROR_INVALID_PARAMETER when IsEndOfFileForNoBuffering(handle, fileOffset):
-                            // EOF on a pipe. Callback will not be called.
-                            // We clear the overlapped status bit for this special case (failure
-                            // to do so looks like we are freeing a pending overlapped later).
-                            overlapped->InternalLow = IntPtr.Zero;
-                            return 0;
-
-                        default:
-                            throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
+                        // EOF on a pipe. Callback will not be called.
+                        // We clear the overlapped status bit for this special case (failure
+                        // to do so looks like we are freeing a pending overlapped later).
+                        overlapped->InternalLow = IntPtr.Zero;
+                        return 0;
                     }
+
+                    throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
                 }
             }
             finally
@@ -163,13 +155,7 @@ namespace System.IO
                 }
 
                 int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
-                switch (errorCode)
-                {
-                    case Interop.Errors.ERROR_NO_DATA: // EOF on a pipe
-                        return;
-                    default:
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
-                }
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path);
             }
         }
 
@@ -222,10 +208,6 @@ namespace System.IO
 
                     switch (errorCode)
                     {
-                        case Interop.Errors.ERROR_NO_DATA:
-                            // For pipes, ERROR_NO_DATA is not an error, but the pipe is closing.
-                            return;
-
                         case Interop.Errors.ERROR_INVALID_PARAMETER:
                             // ERROR_INVALID_PARAMETER may be returned for writes
                             // where the position is too large or for synchronous writes
@@ -288,28 +270,27 @@ namespace System.IO
                 {
                     // The operation failed, or it's pending.
                     errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
-                    switch (errorCode)
+
+                    if (errorCode == Interop.Errors.ERROR_IO_PENDING)
                     {
-                        case Interop.Errors.ERROR_IO_PENDING:
-                            // Common case: IO was initiated, completion will be handled by callback.
-                            // Register for cancellation now that the operation has been initiated.
-                            vts.RegisterForCancellation(cancellationToken);
-                            break;
-
-                        case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
-                        case Interop.Errors.ERROR_BROKEN_PIPE:
-                        case Interop.Errors.ERROR_INVALID_PARAMETER when IsEndOfFileForNoBuffering(handle, fileOffset):
-                            // EOF on a pipe. Callback will not be called.
-                            // We clear the overlapped status bit for this special case (failure
-                            // to do so looks like we are freeing a pending overlapped later).
-                            nativeOverlapped->InternalLow = IntPtr.Zero;
-                            vts.Dispose();
-                            return (null, 0);
-
-                        default:
-                            // Error. Callback will not be called.
-                            vts.Dispose();
-                            return (null, errorCode);
+                        // Common case: IO was initiated, completion will be handled by callback.
+                        // Register for cancellation now that the operation has been initiated.
+                        vts.RegisterForCancellation(cancellationToken);
+                    }
+                    else if (IsEndOfFile(errorCode, handle, fileOffset))
+                    {
+                        // EOF on a pipe. Callback will not be called.
+                        // We clear the overlapped status bit for this special case (failure
+                        // to do so looks like we are freeing a pending overlapped later).
+                        nativeOverlapped->InternalLow = IntPtr.Zero;
+                        vts.Dispose();
+                        return (null, 0);
+                    }
+                    else
+                    {
+                        // Error. Callback will not be called.
+                        vts.Dispose();
+                        return (null, errorCode);
                     }
                 }
             }
@@ -378,9 +359,6 @@ namespace System.IO
                             // Register for cancellation now that the operation has been initiated.
                             vts.RegisterForCancellation(cancellationToken);
                             break;
-                        case Interop.Errors.ERROR_NO_DATA: // EOF on a pipe. IO callback will not be called.
-                            vts.Dispose();
-                            return (null, 0);
                         default:
                             // Error. Callback will not be invoked.
                             vts.Dispose();
@@ -587,27 +565,27 @@ namespace System.IO
                 {
                     // The operation failed, or it's pending.
                     int errorCode = FileStreamHelpers.GetLastWin32ErrorAndDisposeHandleIfInvalid(handle);
-                    switch (errorCode)
+
+                    if (errorCode == Interop.Errors.ERROR_IO_PENDING)
                     {
-                        case Interop.Errors.ERROR_IO_PENDING:
-                            // Common case: IO was initiated, completion will be handled by callback.
-                            // Register for cancellation now that the operation has been initiated.
-                            vts.RegisterForCancellation(cancellationToken);
-                            break;
-
-                        case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
-                        case Interop.Errors.ERROR_BROKEN_PIPE:
-                            // EOF on a pipe. Callback will not be called.
-                            // We clear the overlapped status bit for this special case (failure
-                            // to do so looks like we are freeing a pending overlapped later).
-                            nativeOverlapped->InternalLow = IntPtr.Zero;
-                            vts.Dispose();
-                            return ValueTask.FromResult(0);
-
-                        default:
-                            // Error. Callback will not be called.
-                            vts.Dispose();
-                            return ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path));
+                        // Common case: IO was initiated, completion will be handled by callback.
+                        // Register for cancellation now that the operation has been initiated.
+                        vts.RegisterForCancellation(cancellationToken);
+                    }
+                    else if (IsEndOfFile(errorCode, handle, fileOffset))
+                    {
+                        // EOF on a pipe. Callback will not be called.
+                        // We clear the overlapped status bit for this special case (failure
+                        // to do so looks like we are freeing a pending overlapped later).
+                        nativeOverlapped->InternalLow = IntPtr.Zero;
+                        vts.Dispose();
+                        return ValueTask.FromResult(0);
+                    }
+                    else
+                    {
+                        // Error. Callback will not be called.
+                        vts.Dispose();
+                        return ValueTask.FromException<int>(Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path));
                     }
                 }
             }
@@ -695,9 +673,7 @@ namespace System.IO
                     {
                         // Error. Callback will not be invoked.
                         vts.Dispose();
-                        return errorCode == Interop.Errors.ERROR_NO_DATA // EOF on a pipe. IO callback will not be called.
-                            ? ValueTask.CompletedTask
-                            : ValueTask.FromException(SafeFileHandle.OverlappedValueTaskSource.GetIOError(errorCode, path: null));
+                        return ValueTask.FromException(SafeFileHandle.OverlappedValueTaskSource.GetIOError(errorCode, path: null));
                     }
                 }
             }
@@ -768,6 +744,20 @@ namespace System.IO
             {
                 CallbackResetEvent state = (CallbackResetEvent)ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped)!;
                 state.ReleaseRefCount(pOverlapped);
+            }
+        }
+
+        internal static bool IsEndOfFile(int errorCode, SafeFileHandle handle, long fileOffset)
+        {
+            switch (errorCode)
+            {
+                case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
+                case Interop.Errors.ERROR_BROKEN_PIPE: // For pipes, ERROR_BROKEN_PIPE is the normal end of the pipe.
+                case Interop.Errors.ERROR_PIPE_NOT_CONNECTED: // Named pipe server has disconnected, return 0 to match NamedPipeClientStream behaviour
+                case Interop.Errors.ERROR_INVALID_PARAMETER when IsEndOfFileForNoBuffering(handle, fileOffset):
+                    return true;
+                default:
+                    return false;
             }
         }
 

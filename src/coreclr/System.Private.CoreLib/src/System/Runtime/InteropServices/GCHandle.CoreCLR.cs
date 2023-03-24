@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices
     public partial struct GCHandle
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr InternalAlloc(object? value, GCHandleType type);
+        internal static extern IntPtr InternalAlloc(object? value, GCHandleType type);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void InternalFree(IntPtr handle);
@@ -18,8 +18,9 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object? InternalGet(IntPtr handle);
 #else
-        internal static unsafe object? InternalGet(IntPtr handle) =>
-            Unsafe.As<IntPtr, object>(ref *(IntPtr*)(nint)handle);
+#pragma warning disable 8500 // address of managed types
+        internal static unsafe object? InternalGet(IntPtr handle) => *(object*)handle;
+#pragma warning restore 8500
 #endif
 
         [MethodImpl(MethodImplOptions.InternalCall)]

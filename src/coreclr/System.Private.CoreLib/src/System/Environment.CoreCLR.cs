@@ -59,7 +59,7 @@ namespace System
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void FailFast(string? message, Exception? exception, string? errorMessage);
+        internal static extern void FailFast(string? message, Exception? exception, string? errorMessage);
 
         private static string[]? s_commandLineArgs;
 

@@ -40,6 +40,7 @@
 
 // These definitions are used for multiple includes of icall-def.h and eventually undefined.
 #define NOHANDLES(inner) inner
+#define NOHANDLES_FLAGS(inner,flags) inner
 #define HANDLES(id, name, func, ...)	ICALL (id, name, func ## _raw)
 #define HANDLES_REUSE_WRAPPER		HANDLES
 #define MONO_HANDLE_REGISTER_ICALL(...) /* nothing  */
@@ -156,12 +157,14 @@ static const MonoICallFunction icall_functions [] = {
 
 #undef HANDLES
 #undef NOHANDLES
+#undef NOHANDLES_FLAGS
 
-static const guchar icall_uses_handles [] = {
+static const guchar icall_flags [] = {
 #define ICALL_TYPE(id,name,first)	/* nothing */
 #define ICALL(id,name,func) 0,
-#define HANDLES(...) 1,
+#define HANDLES(...) MONO_ICALL_FLAGS_USES_HANDLES,
 #define NOHANDLES(inner) 0,
+#define NOHANDLES_FLAGS(inner,flags) flags,
 #include "metadata/icall-def.h"
 #undef ICALL_TYPE
 #undef ICALL
@@ -170,6 +173,7 @@ static const guchar icall_uses_handles [] = {
 #undef HANDLES
 #undef HANDLES_REUSE_WRAPPER
 #undef NOHANDLES
+#undef NOHANDLES_FLAGS
 #undef MONO_HANDLE_REGISTER_ICALL
 
 static int
@@ -188,13 +192,13 @@ find_slot_icall (const IcallTypeDesc *imap, const char *name)
 	return (nameslot - &icall_names_idx [0]);
 }
 
-static gboolean
-find_uses_handles_icall (const IcallTypeDesc *imap, const char *name)
+static MonoInternalCallFlags
+find_icall_flags (const IcallTypeDesc *imap, const char *name)
 {
 	const gssize slotnum = find_slot_icall (imap, name);
 	if (slotnum == -1)
-		return FALSE;
-	return (gboolean)icall_uses_handles [slotnum];
+		return 0;
+	return (MonoInternalCallFlags)icall_flags [slotnum];
 }
 
 static gpointer
@@ -223,31 +227,32 @@ find_class_icalls (const char *name)
 }
 
 static gpointer
-icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char *sigstart, gboolean *uses_handles)
+icall_table_lookup (MonoMethod *method, char *classname, char *methodname, char *sigstart, MonoInternalCallFlags *out_flags)
 {
 	const IcallTypeDesc *imap = NULL;
 	gpointer res;
 
 	imap = find_class_icalls (classname);
 
+	if (out_flags)
+		*out_flags = 0;
+
 	/* it wasn't found in the static call tables */
 	if (!imap) {
-		if (uses_handles)
-			*uses_handles = FALSE;
 		return NULL;
 	}
 	res = find_method_icall (imap, methodname);
 	if (res) {
-		if (uses_handles)
-			*uses_handles = find_uses_handles_icall (imap, methodname);
+		if (out_flags)
+			*out_flags = find_icall_flags (imap, methodname);
 		return res;
 	}
 	/* try _with_ signature */
 	*sigstart = '(';
 	res = find_method_icall (imap, methodname);
 	if (res) {
-		if (uses_handles)
-			*uses_handles = find_uses_handles_icall (imap, methodname);
+		if (out_flags)
+			*out_flags = find_icall_flags (imap, methodname);
 		return res;
 	}
 	return NULL;

@@ -10,9 +10,9 @@
 .assembly b06440a
 {
 }
-.class _simple {
+.class public _simple {
 
-.method static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
 .entrypoint
 .maxstack	100
 

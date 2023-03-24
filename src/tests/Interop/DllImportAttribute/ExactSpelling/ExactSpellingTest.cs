@@ -125,7 +125,7 @@ class ExactSpellingTest
         Assert.Throws<EntryPointNotFoundException>(() => Ansi.MarshalPointer_Int_InOut2(ref int8));
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         try
         {

@@ -64,9 +64,11 @@ namespace System.Reflection
 
         //
         // KEEP IN SYNC WITH _MonoReflectionAssembly in /mono/mono/metadata/object-internals.h
+        // and AssemblyBuilder.cs.
         //
         #region VM dependency
         private IntPtr _mono_assembly;
+        private LoaderAllocator? m_keepalive;
         #endregion
 
         internal IntPtr GetUnderlyingNativeHandle() { return _mono_assembly; }
@@ -379,7 +381,7 @@ namespace System.Reflection
                         unsafe
                         {
                             Mono.MonoAssemblyName* nativeName = (Mono.MonoAssemblyName*)nativeNames[i];
-                            Mono.RuntimeMarshal.FreeAssemblyName(ref *nativeName, true);
+                            AssemblyName.FreeAssemblyName(ref *nativeName, true);
                         }
                     }
                 }
@@ -428,7 +430,7 @@ namespace System.Reflection
             if (res == assembly)
                 res = null;
             if (res == null && throwOnFileNotFound)
-                throw new FileNotFoundException(string.Format(culture, SR.IO_FileNotFound_FileName, an.Name));
+                throw new FileNotFoundException(SR.Format(culture, SR.IO_FileNotFound_FileName, an.Name));
             return res;
         }
 

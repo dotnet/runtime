@@ -35,8 +35,8 @@ static int g_BreakOnEnCResolveField = -1;
 // The constructor phase initializes just enough so that Destruct() can be safely called.
 // It cannot throw or fail.
 //
-EditAndContinueModule::EditAndContinueModule(Assembly *pAssembly, mdToken moduleRef, PEAssembly *pPEAssembly)
-  : Module(pAssembly, moduleRef, pPEAssembly)
+EditAndContinueModule::EditAndContinueModule(Assembly *pAssembly, PEAssembly *pPEAssembly)
+  : Module(pAssembly, pPEAssembly)
 {
     CONTRACTL
     {
@@ -115,7 +115,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     // Update the module's EnC version number
     ++m_applyChangesCount;
 
-    LOG((LF_ENC, LL_INFO100, "EACM::AEAC:\n"));
+    LOG((LF_ENC, LL_INFO100, "EACM::AEAC: Apply count %d\n", m_applyChangesCount));
 
 #ifdef _DEBUG
     // Debugging hook to optionally break when this method is called
@@ -130,19 +130,19 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     static BOOL dumpChanges = -1;
 
     if (dumpChanges == -1)
-
         dumpChanges = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EncDumpApplyChanges);
 
-    if (dumpChanges> 0) {
+    if (dumpChanges> 0)
+    {
         SString fn;
         int ec;
-        fn.Printf(W("ApplyChanges.%d.dmeta"), m_applyChangesCount);
+        fn.Printf("ApplyChanges.%d.dmeta", m_applyChangesCount);
         FILE *fp;
         ec = _wfopen_s(&fp, fn.GetUnicode(), W("wb"));
         _ASSERTE(SUCCEEDED(ec));
         fwrite(pDeltaMD, 1, cbDeltaMD, fp);
         fclose(fp);
-        fn.Printf(W("ApplyChanges.%d.dil"), m_applyChangesCount);
+        fn.Printf("ApplyChanges.%d.dil", m_applyChangesCount);
         ec = _wfopen_s(&fp, fn.GetUnicode(), W("wb"));
         _ASSERTE(SUCCEEDED(ec));
         fwrite(pDeltaIL, 1, cbDeltaIL, fp);
@@ -323,7 +323,7 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     //
     // Note that this only works since we've very carefully made sure that _all_ references
     // to the Method's code must be to the call/jmp blob immediately in front of the
-    // MethodDesc itself.  See MethodDesc::IsEnCMethod()
+    // MethodDesc itself.  See MethodDesc::InEnCEnabledModule()
     //
     pMethod->ResetCodeEntryPointForEnC();
 

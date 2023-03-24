@@ -166,13 +166,12 @@ void    AsmMan::AddFile(_In_ __nullterminated char* szName, DWORD dwAttr, BinStr
     Assembler* pAsm = (Assembler*)m_pAssembler;
     if(tmp==NULL)
     {
-        tmp = new AsmManFile;
+        tmp = new (nothrow) AsmManFile();
         if(tmp==NULL)
         {
             pAsm->report->error("\nOut of memory!\n");
             return;
         }
-        memset(tmp,0,sizeof(AsmManFile));
         if((dwAttr & 0x80000000)!=0) pAsm->m_fEntryPointPresent = TRUE;
         tmp->szName = szName;
         tmp->dwAttr = dwAttr;
@@ -182,7 +181,7 @@ void    AsmMan::AddFile(_In_ __nullterminated char* szName, DWORD dwAttr, BinStr
         tmp->tkTok = TokenFromRid(m_FileLst.COUNT(),mdtFile);
     }
     pAsm->m_tkCurrentCVOwner = 0;
-    if(tmp) pAsm->m_pCustomDescrList = &(tmp->m_CustomDescrList);
+    pAsm->m_pCustomDescrList = &(tmp->m_CustomDescrList);
 }
 //==============================================================================================================
 
@@ -256,9 +255,8 @@ void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ cha
     }
     else
     {
-        if((m_pCurAsmRef = new AsmManAssembly))
+        if((m_pCurAsmRef = new (nothrow) AsmManAssembly()))
         {
-            memset(m_pCurAsmRef,0,sizeof(AsmManAssembly));
             m_pCurAsmRef->usVerMajor = (USHORT)0xFFFF;
             m_pCurAsmRef->usVerMinor = (USHORT)0xFFFF;
             m_pCurAsmRef->usBuild = (USHORT)0xFFFF;
@@ -414,7 +412,8 @@ void    AsmMan::EndAssembly()
                     if(hFile == INVALID_HANDLE_VALUE)
                     {
                         hr = GetLastError();
-                        report->error("Failed to open key file '%S': 0x%08X\n",((Assembler*)m_pAssembler)->m_wzKeySourceName,hr);
+                        MAKE_UTF8PTR_FROMWIDE(keySourceNameUtf8, ((Assembler*)m_pAssembler)->m_wzKeySourceName);
+                        report->error("Failed to open key file '%s': 0x%08X\n",keySourceNameUtf8,hr);
                         m_pCurAsmRef = NULL;
                         return;
                     }
@@ -441,7 +440,8 @@ void    AsmMan::EndAssembly()
                     DWORD dwBytesRead;
                     if (!ReadFile(hFile, m_sStrongName.m_pbPublicKey, m_sStrongName.m_cbPublicKey, &dwBytesRead, NULL)) {
                         hr = GetLastError();
-                        report->error("Failed to read key file '%S': 0x%08X\n",((Assembler*)m_pAssembler)->m_wzKeySourceName,hr);
+                        MAKE_UTF8PTR_FROMWIDE(keySourceNameUtf8, ((Assembler*)m_pAssembler)->m_wzKeySourceName);
+                        report->error("Failed to read key file '%s': 0x%08X\n",keySourceNameUtf8,hr);
                         m_pCurAsmRef = NULL;
                         CloseHandle(hFile);
                         return;
@@ -566,7 +566,7 @@ void    AsmMan::EmitAssemblyRefs()
                     (mdAssemblyRef*)&tk);         // [OUT] Returned AssemblyRef token.
         if(m_pCurAsmRef->tkTok != tk)
         {
-            report->error("AsmRef'%S' tok %8.8X -> %8.8X\n",wzUniBuf,m_pCurAsmRef->tkTok,tk);
+            report->error("AsmRef'%s' tok %8.8X -> %8.8X\n",m_pCurAsmRef->szName,m_pCurAsmRef->tkTok,tk);
         }
         if(FAILED(hr)) report->error("Failed to define assembly ref '%s': 0x%08X\n",m_pCurAsmRef->szName,hr);
         else
@@ -676,9 +676,8 @@ void    AsmMan::SetAssemblyAutodetect()
 
 void    AsmMan::StartComType(_In_ __nullterminated char* szName, DWORD dwAttr)
 {
-    if((m_pCurComType = new AsmManComType))
+    if((m_pCurComType = new (nothrow) AsmManComType()))
     {
-        memset(m_pCurComType,0,sizeof(AsmManComType));
         m_pCurComType->szName = szName;
         m_pCurComType->dwAttr = dwAttr;
         m_pCurComType->m_fNew = TRUE;
@@ -782,7 +781,7 @@ BOOL    AsmMan::SetComTypeClassTok(mdToken tkClass)
 
 void    AsmMan::StartManifestRes(_In_ __nullterminated char* szName, _In_ __nullterminated char* szAlias, DWORD dwAttr)
 {
-    if((m_pCurManRes = new AsmManRes))
+    if((m_pCurManRes = new (nothrow) AsmManRes()))
     {
         m_pCurManRes->szName = szName;
         m_pCurManRes->szAlias = szAlias;

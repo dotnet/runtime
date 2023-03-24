@@ -5,6 +5,8 @@ using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
 
+#pragma warning disable IDE0060
+
 namespace System
 {
     internal sealed unsafe class LogcatStream : CachedConsoleStream

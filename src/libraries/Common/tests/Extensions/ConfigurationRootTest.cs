@@ -104,7 +104,7 @@ namespace Microsoft.Extensions.Configuration.Test
 
             var debugView = config.GetDebugView(ProcessValue);
 
-            Assert.DoesNotContain(SecretCover, debugView);
+            Assert.Equal("foo=foo-value (TestConfigurationProvider)" + Environment.NewLine, debugView);
         }
 
         private string ProcessValue(ConfigurationDebugViewContext context)

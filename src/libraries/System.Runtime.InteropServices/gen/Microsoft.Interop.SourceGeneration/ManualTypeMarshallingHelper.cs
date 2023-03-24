@@ -24,6 +24,24 @@ namespace Microsoft.Interop
     public readonly record struct CustomTypeMarshallers(
         ImmutableDictionary<MarshalMode, CustomTypeMarshallerData> Modes)
     {
+        public bool Equals(CustomTypeMarshallers other)
+        {
+            // Check for equal count, then check if any KeyValuePairs exist in one 'Modes'
+            // but not the other (i.e. set equality on the set of items in the dictionary)
+            return Modes.Count == other.Modes.Count
+                && !Modes.Except(other.Modes).Any();
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = 0;
+            foreach (KeyValuePair<MarshalMode, CustomTypeMarshallerData> mode in Modes)
+            {
+                hash ^= mode.Key.GetHashCode() ^ mode.Value.GetHashCode();
+            }
+            return hash;
+        }
+
         public CustomTypeMarshallerData GetModeOrDefault(MarshalMode mode)
         {
             CustomTypeMarshallerData data;
@@ -228,6 +246,12 @@ namespace Microsoft.Interop
                 return true;
             }
 
+            if (!entryPointType.IsUnboundGenericType)
+            {
+                entryPoint = typeInAttribute;
+                return true;
+            }
+
             INamedTypeSymbol instantiatedEntryType = entryPointType.ResolveUnboundConstructedTypeToConstructedType(managedType, out int numOriginalArgsSubstituted, out int extraArgumentsInTemplate);
 
             entryPoint = instantiatedEntryType;
@@ -263,6 +287,13 @@ namespace Microsoft.Interop
                 managed = typeInAttribute;
                 return true;
             }
+
+            if (!namedMarshallerType.IsUnboundGenericType)
+            {
+                managed = namedMarshallerType;
+                return true;
+            }
+
 
             INamedTypeSymbol instantiatedManagedType = namedMarshallerType.ResolveUnboundConstructedTypeToConstructedType(entryPointType, out int numOriginalArgsSubstituted, out int extraArgumentsInTemplate);
 

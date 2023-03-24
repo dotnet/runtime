@@ -749,7 +749,7 @@ namespace System.Xml.Xsl.XsltOld
         //
         private readonly Hashtable[] _typeDeclsByLang = new Hashtable[] { new Hashtable(), new Hashtable(), new Hashtable() };
 
-        internal void AddScript(string source, ScriptingLanguage lang, string ns, string fileName, int lineNumber)
+        internal void AddScript(ScriptingLanguage lang, string ns)
         {
             ValidateExtensionNamespace(ns);
 

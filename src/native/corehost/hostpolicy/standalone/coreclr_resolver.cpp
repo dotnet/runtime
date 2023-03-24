@@ -19,10 +19,12 @@ bool coreclr_resolver_t::resolve_coreclr(const pal::string_t& libcoreclr_path, c
     }
 
     coreclr_resolver_contract.coreclr_initialize = reinterpret_cast<coreclr_initialize_fn>(pal::get_symbol(coreclr_resolver_contract.coreclr, "coreclr_initialize"));
+    coreclr_resolver_contract.coreclr_set_error_writer = reinterpret_cast<coreclr_set_error_writer_fn>(pal::get_symbol(coreclr_resolver_contract.coreclr, "coreclr_set_error_writer"));
     coreclr_resolver_contract.coreclr_shutdown = reinterpret_cast<coreclr_shutdown_fn>(pal::get_symbol(coreclr_resolver_contract.coreclr, "coreclr_shutdown_2"));
     coreclr_resolver_contract.coreclr_execute_assembly = reinterpret_cast<coreclr_execute_assembly_fn>(pal::get_symbol(coreclr_resolver_contract.coreclr, "coreclr_execute_assembly"));
     coreclr_resolver_contract.coreclr_create_delegate = reinterpret_cast<coreclr_create_delegate_fn>(pal::get_symbol(coreclr_resolver_contract.coreclr, "coreclr_create_delegate"));
 
+    // Only the coreclr_set_error_writer is optional
     assert(coreclr_resolver_contract.coreclr_initialize != nullptr
         && coreclr_resolver_contract.coreclr_shutdown != nullptr
         && coreclr_resolver_contract.coreclr_execute_assembly != nullptr

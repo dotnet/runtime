@@ -164,16 +164,16 @@ namespace System.Net
         }
 
         public static IAsyncResult BeginGetHostEntry(IPAddress address, AsyncCallback? requestCallback, object? stateObject) =>
-            TaskToApm.Begin(GetHostEntryAsync(address), requestCallback, stateObject);
+            TaskToAsyncResult.Begin(GetHostEntryAsync(address), requestCallback, stateObject);
 
         public static IAsyncResult BeginGetHostEntry(string hostNameOrAddress, AsyncCallback? requestCallback, object? stateObject) =>
-            TaskToApm.Begin(GetHostEntryAsync(hostNameOrAddress), requestCallback, stateObject);
+            TaskToAsyncResult.Begin(GetHostEntryAsync(hostNameOrAddress), requestCallback, stateObject);
 
         public static IPHostEntry EndGetHostEntry(IAsyncResult asyncResult)
         {
             ArgumentNullException.ThrowIfNull(asyncResult);
 
-            return TaskToApm.End<IPHostEntry>(asyncResult);
+            return TaskToAsyncResult.End<IPHostEntry>(asyncResult);
         }
 
         public static IPAddress[] GetHostAddresses(string hostNameOrAddress)
@@ -241,13 +241,13 @@ namespace System.Net
             (Task<IPAddress[]>)GetHostEntryOrAddressesCoreAsync(hostNameOrAddress, justReturnParsedIp: true, throwOnIIPAny: true, justAddresses: true, family, cancellationToken);
 
         public static IAsyncResult BeginGetHostAddresses(string hostNameOrAddress, AsyncCallback? requestCallback, object? state) =>
-            TaskToApm.Begin(GetHostAddressesAsync(hostNameOrAddress), requestCallback, state);
+            TaskToAsyncResult.Begin(GetHostAddressesAsync(hostNameOrAddress), requestCallback, state);
 
         public static IPAddress[] EndGetHostAddresses(IAsyncResult asyncResult)
         {
             ArgumentNullException.ThrowIfNull(asyncResult);
 
-            return TaskToApm.End<IPAddress[]>(asyncResult);
+            return TaskToAsyncResult.End<IPAddress[]>(asyncResult);
         }
 
         [Obsolete("GetHostByName has been deprecated. Use GetHostEntry instead.")]
@@ -265,14 +265,14 @@ namespace System.Net
 
         [Obsolete("BeginGetHostByName has been deprecated. Use BeginGetHostEntry instead.")]
         public static IAsyncResult BeginGetHostByName(string hostName, AsyncCallback? requestCallback, object? stateObject) =>
-            TaskToApm.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: true, throwOnIIPAny: true, AddressFamily.Unspecified, CancellationToken.None), requestCallback, stateObject);
+            TaskToAsyncResult.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: true, throwOnIIPAny: true, AddressFamily.Unspecified, CancellationToken.None), requestCallback, stateObject);
 
         [Obsolete("EndGetHostByName has been deprecated. Use EndGetHostEntry instead.")]
         public static IPHostEntry EndGetHostByName(IAsyncResult asyncResult)
         {
             ArgumentNullException.ThrowIfNull(asyncResult);
 
-            return TaskToApm.End<IPHostEntry>(asyncResult);
+            return TaskToAsyncResult.End<IPHostEntry>(asyncResult);
         }
 
         [Obsolete("GetHostByAddress has been deprecated. Use GetHostEntry instead.")]
@@ -328,7 +328,7 @@ namespace System.Net
 
         [Obsolete("BeginResolve has been deprecated. Use BeginGetHostEntry instead.")]
         public static IAsyncResult BeginResolve(string hostName, AsyncCallback? requestCallback, object? stateObject) =>
-            TaskToApm.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: false, throwOnIIPAny: false, AddressFamily.Unspecified, CancellationToken.None), requestCallback, stateObject);
+            TaskToAsyncResult.Begin(GetHostEntryCoreAsync(hostName, justReturnParsedIp: false, throwOnIIPAny: false, AddressFamily.Unspecified, CancellationToken.None), requestCallback, stateObject);
 
         [Obsolete("EndResolve has been deprecated. Use EndGetHostEntry instead.")]
         public static IPHostEntry EndResolve(IAsyncResult asyncResult)
@@ -337,16 +337,11 @@ namespace System.Net
 
             try
             {
-                ipHostEntry = TaskToApm.End<IPHostEntry>(asyncResult);
+                ipHostEntry = TaskToAsyncResult.End<IPHostEntry>(asyncResult);
             }
             catch (SocketException ex)
             {
-                object? asyncState = asyncResult switch
-                {
-                    Task t => t.AsyncState,
-                    TaskToApm.TaskAsyncResult twar => twar._task.AsyncState,
-                    _ => null
-                };
+                object? asyncState = TaskToAsyncResult.Unwrap(asyncResult).AsyncState;
 
                 IPAddress? address = asyncState switch
                 {
@@ -712,11 +707,7 @@ namespace System.Net
             return task;
         }
 
-        private static Exception CreateException(SocketError error, int nativeError)
-        {
-            SocketException e = new SocketException((int)error);
-            e.HResult = nativeError;
-            return e;
-        }
+        private static SocketException CreateException(SocketError error, int nativeError) =>
+            new SocketException((int)error) { HResult = nativeError };
     }
 }

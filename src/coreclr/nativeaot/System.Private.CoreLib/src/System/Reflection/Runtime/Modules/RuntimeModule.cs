@@ -93,6 +93,6 @@ namespace System.Reflection.Runtime.Modules
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public sealed override Type ResolveType(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments) { throw new PlatformNotSupportedException(); }
 
-        protected sealed override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(this);
+        private protected sealed override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(this);
     }
 }

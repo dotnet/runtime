@@ -7,6 +7,6 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="bug.il" />
+    <Compile Include="$(MSBuildProjectName).il" />
   </ItemGroup>
 </Project>

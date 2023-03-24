@@ -13,7 +13,7 @@
 #include <winresrc.h>
 
 #ifndef FX_VER_FILEDESCRIPTION_STR
-#define FX_VER_FILEDESCRIPTION_STR "Microsoft .NET Runtime resources\0"
+#define FX_VER_FILEDESCRIPTION_STR ".NET Runtime resources"
 #endif
 
 #include <fxver.h>
@@ -271,6 +271,7 @@ BEGIN
     IDS_EE_BADMARSHAL_ABSTRACTRETCRITICALHANDLE "Returned CriticalHandles cannot be abstract."
     IDS_EE_BADMARSHAL_CUSTOMMARSHALER       "Custom marshalers are only allowed on classes, strings, arrays, and boxed value types."
     IDS_EE_BADMARSHAL_GENERICS_RESTRICTION  "Non-blittable generic types cannot be marshaled."
+    IDS_EE_BADMARSHAL_INT128_RESTRICTION    "System.Int128 and System.UInt128 cannot be passed by value to unmanaged."
     IDS_EE_BADMARSHAL_AUTOLAYOUT            "Structures marked with [StructLayout(LayoutKind.Auto)] cannot be marshaled."
     IDS_EE_BADMARSHAL_STRING_OUT            "Cannot marshal a string by-value with the [Out] attribute."
     IDS_EE_BADMARSHAL_MARSHAL_DISABLED      "Cannot marshal managed types when the runtime marshalling system is disabled."
@@ -308,6 +309,10 @@ BEGIN
     IDS_CLASSLOAD_ENUM_EXTRA_GENERIC_TYPE_PARAM "Enumerated types cannot have any generic type parameters, beyond any inherited from their enclosing type (for nested enums)."
 	IDS_CLASSLOAD_GENERICTYPE_RECURSIVE     "Could not load type '%1' from assembly '%2' because it has recursive generic definition."
     IDS_CLASSLOAD_TOOMANYGENERICARGS        "Could not load type '%1' from assembly '%2'. Internal limitation: Too many generic arguments."
+
+    IDS_CLASSLOAD_INLINE_ARRAY_FIELD_COUNT  "InlineArrayAttribute requires that the target type has a single instance field. Type: '%1'.  Assembly: '%2'."
+    IDS_CLASSLOAD_INLINE_ARRAY_LENGTH       "InlineArrayAttribute requires that the length argument is greater than 0. Type: '%1'.  Assembly: '%2'."
+    IDS_CLASSLOAD_INLINE_ARRAY_EXPLICIT     "InlineArrayAttribute cannot be applied to a type with explicit layout. Type: '%1'.  Assembly: '%2'."
 
 #if FEATURE_COMINTEROP
     IDS_EE_CANNOTCAST_NOMARSHAL                 "The Windows Runtime Object can only be used in the threading context where it was created, because it implements INoMarshal or has MarshalingBehaviorAttribute(MarshalingType.None) set."
@@ -402,9 +407,6 @@ BEGIN
     IDS_EE_CANNOTCAST                       "Unable to cast object of type '%1' to type '%2'."
 
     IDS_EE_CANNOTCASTSAME                   "[A]%1 cannot be cast to [B]%2. %3. %4."
-    IDS_EE_CANNOTCAST_HELPER_PATH           "Type %s originates from '%s' in the context '%s' at location '%s'"
-    IDS_EE_CANNOTCAST_HELPER_BYTE           "Type %s originates from '%s' in the context '%s' in a byte array"
-    IDS_EE_NOTISOMORPHIC                    "Object contains references."
     IDS_EE_INVALID_VT_FOR_CUSTOM_MARHALER   "Type of the VARIANT specified for a parameter with a custom marshaler is not supported by the custom marshaler."
     IDS_EE_BAD_COMEXTENDS_CLASS             "Types extending from COM objects should override all methods of an interface implemented by the base COM class."
     IDS_EE_INTERFACE_NOT_DISPATCH_BASED     "The interface does not support late bound calls since it does not derive from IDispatch."
@@ -548,18 +550,9 @@ BEGIN
     IDS_ER_STACK_OVERFLOW                    "Description: The process was terminated due to stack overflow."
     IDS_ER_STACK                             "Stack:"
     IDS_ER_WORDAT                            "at"
-    IDS_ER_UNMANAGEDFAILFASTMSG              "at IP 0x%x (0x%x) with exit code 0x%x."
-    IDS_ER_UNHANDLEDEXCEPTIONINFO            "exception code %1, exception address %2"
     IDS_ER_MESSAGE_TRUNCATE                  "The remainder of the message was truncated."
     IDS_ER_CODECONTRACT_FAILED               "Description: The application encountered a bug.  A managed code contract (precondition, postcondition, object invariant, or assert) failed."
     IDS_ER_CODECONTRACT_DETAILMSG            "Contract details: "
-END
-
-STRINGTABLE DISCARDABLE
-BEGIN
-    IDS_DEBUG_UNHANDLED_EXCEPTION_MSG        "Application has generated an exception that could not be handled.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick OK to terminate the application.\nClick CANCEL to debug the application."
-    IDS_DEBUG_USER_BREAKPOINT_MSG            "Application has encountered a user-defined breakpoint.\n\nProcess ID=0x%x (%d), Thread ID=0x%x (%d).\n\nClick ABORT to terminate the application.\nClick RETRY to debug the application.\nClick IGNORE to ignore the breakpoint."
-
 END
 
 

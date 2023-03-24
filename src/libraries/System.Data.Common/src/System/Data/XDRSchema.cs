@@ -17,7 +17,7 @@ namespace System.Data
         internal XmlElement? _schemaRoot;
         internal DataSet _ds;
 
-        internal XDRSchema(DataSet ds, bool fInline)
+        internal XDRSchema(DataSet ds)
         {
             _schemaUri = string.Empty;
             _schemaName = string.Empty;
@@ -297,16 +297,17 @@ namespace System.Data
         private static Type ParseDataType(string dt, string dtValues)
         {
             string strType = dt;
-            string[] parts = dt.Split(':');
 
-            if (parts.Length > 2)
+            Span<System.Range> parts = stackalloc System.Range[3];
+            switch (dt.AsSpan().Split(parts, ':'))
             {
-                throw ExceptionBuilder.InvalidAttributeValue("type", dt);
-            }
-            else if (parts.Length == 2)
-            {
-                // CONSIDER: check that we have valid prefix
-                strType = parts[1];
+                case 2:
+                    // CONSIDER: check that we have valid prefix
+                    strType = dt[parts[1]];
+                    break;
+
+                case > 2:
+                    throw ExceptionBuilder.InvalidAttributeValue("type", dt);
             }
 
             NameType nt = FindNameType(strType);
@@ -429,19 +430,19 @@ namespace System.Data
                 if (strType == "bin.base64")
                 {
                     strType = string.Empty;
-                    xsdType = SimpleType.CreateByteArrayType("base64");
+                    xsdType = SimpleType.CreateByteArrayType();
                 }
 
                 if (strType == "bin.hex")
                 {
                     strType = string.Empty;
-                    xsdType = SimpleType.CreateByteArrayType("hex");
+                    xsdType = SimpleType.CreateByteArrayType();
                 }
             }
 
             bool isAttribute = FEqualIdentity(node, Keywords.XDR_ATTRIBUTE, Keywords.XDRNS);
 
-            GetMinMax(node, isAttribute, ref minOccurs, ref maxOccurs);
+            GetMinMax(node, ref minOccurs, ref maxOccurs);
 
             // Does XDR has default?
             strDefault = node.GetAttribute(Keywords.DEFAULT);
@@ -491,11 +492,6 @@ namespace System.Data
         }
 
         internal static void GetMinMax(XmlElement elNode, ref int minOccurs, ref int maxOccurs)
-        {
-            GetMinMax(elNode, false, ref minOccurs, ref maxOccurs);
-        }
-
-        internal static void GetMinMax(XmlElement elNode, bool isAttribute, ref int minOccurs, ref int maxOccurs)
         {
             string occurs = elNode.GetAttribute(Keywords.MINOCCURS);
             if (occurs != null && occurs.Length > 0)

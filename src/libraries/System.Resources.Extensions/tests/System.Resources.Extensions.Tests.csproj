@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetFrameworkMinimum)</TargetFrameworks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <ItemGroup>
@@ -19,18 +19,20 @@
     <ProjectReference Include="..\src\System.Resources.Extensions.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Common\src\System.Drawing.Common.csproj" />
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Windows.Extensions\src\System.Windows.Extensions.csproj" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
 
-  <!-- use the following target to regenerate the test resources file
+  <!-- Use the following target to regenerate the test resources file.
        This is done from a test application and checked in so that we don't run
        product code during the build.
-       Important: When invoking this target, pass the target framewok in as well,
-       i.e.: dotnet build -f net7.0-windows /t:GenerateTestResourcesFile. -->
+       Important:
+       When invoking this target, pass the target framework in as well, substituting
+       the X with the current major version:
+           dotnet build -f netX.0-windows /t:GenerateTestResourcesFile. -->
   <Target Name="GenerateTestResourcesFile">
     <PropertyGroup>
       <_executor>Microsoft.DotNet.RemoteExecutor.dll</_executor>

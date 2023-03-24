@@ -13,6 +13,7 @@ export type FilterPredicate = (data: ArrayBuffer) => boolean;
 export interface MockScriptConnection {
     waitForSend(filter: FilterPredicate): Promise<void>;
     waitForSend<T>(filter: FilterPredicate, extract: (data: ArrayBuffer) => T): Promise<T>;
+    processSend(onMessage: (data: ArrayBuffer) => any): Promise<void>;
     reply(data: ArrayBuffer): void;
 }
 
@@ -31,6 +32,8 @@ interface MockEnvironmentReply {
 }
 
 export interface MockEnvironment {
+    postMessageToBrowser(message: any, transferable?: Transferable[]): void;
+    addEventListenerFromBrowser(cmd: string, listener: (data: any) => void): void;
     createPromiseController<T>(): PromiseAndController<T>;
     delay: (ms: number) => Promise<void>;
     command: MockEnvironmentCommand;

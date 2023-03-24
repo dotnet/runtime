@@ -90,7 +90,7 @@ namespace Internal.IL.Stubs
                             };
                             break;
                         default:
-                            System.Diagnostics.Debug.Fail("Unexpected Struct marshalling thunk type");
+                            Debug.Fail("Unexpected Struct marshalling thunk type");
                             break;
                     }
                     _signature = new MethodSignature(MethodSignatureFlags.Static, 0, Context.GetWellKnownType(WellKnownType.Void), parameters);
@@ -112,7 +112,7 @@ namespace Internal.IL.Stubs
                     case StructMarshallingThunkType.Cleanup:
                         return "Cleanup";
                     default:
-                        System.Diagnostics.Debug.Fail("Unexpected Struct marshalling thunk type");
+                        Debug.Fail("Unexpected Struct marshalling thunk type");
                         return string.Empty;
                 }
             }
@@ -148,7 +148,7 @@ namespace Internal.IL.Stubs
 
             Marshaller[] marshallers = new Marshaller[numInstanceFields];
 
-            PInvokeFlags flags = new PInvokeFlags();
+            PInvokeFlags flags = default(PInvokeFlags);
             if (ManagedType.PInvokeStringFormat == PInvokeStringFormat.UnicodeClass || ManagedType.PInvokeStringFormat == PInvokeStringFormat.AutoClass)
             {
                 flags.CharSet = CharSet.Unicode;
@@ -203,17 +203,17 @@ namespace Internal.IL.Stubs
                 }
 
                 bool notEmpty = nativeEnumerator.MoveNext();
-                Debug.Assert(notEmpty == true);
+                Debug.Assert(notEmpty);
 
                 var nativeField = nativeEnumerator.Current;
                 Debug.Assert(nativeField != null);
                 bool isInlineArray = nativeField.FieldType is InlineArrayType;
                 //
-                // Field marshallers expects the value of the fields to be 
+                // Field marshallers expects the value of the fields to be
                 // loaded on the stack. We load the value on the stack
                 // before calling the marshallers.
                 // Only exception is ByValArray marshallers. Since they can
-                // only be used for field marshalling, they load/store values 
+                // only be used for field marshalling, they load/store values
                 // directly from arguments.
                 //
 
@@ -270,7 +270,7 @@ namespace Internal.IL.Stubs
                 }
 
                 bool notEmpty = nativeEnumerator.MoveNext();
-                Debug.Assert(notEmpty == true);
+                Debug.Assert(notEmpty);
 
                 var nativeField = nativeEnumerator.Current;
                 Debug.Assert(nativeField != null);
@@ -310,7 +310,7 @@ namespace Internal.IL.Stubs
             }
             catch (InvalidProgramException ex)
             {
-                Debug.Assert(!String.IsNullOrEmpty(ex.Message));
+                Debug.Assert(!string.IsNullOrEmpty(ex.Message));
                 return MarshalHelpers.EmitExceptionBody(ex.Message, this);
             }
         }
@@ -318,7 +318,7 @@ namespace Internal.IL.Stubs
         /// <summary>
         /// Loads the value of field of a struct at argument index argIndex to stack
         /// </summary>
-        private void LoadFieldValueFromArg(int argIndex, FieldDesc field, PInvokeILCodeStreams pInvokeILCodeStreams)
+        private static void LoadFieldValueFromArg(int argIndex, FieldDesc field, PInvokeILCodeStreams pInvokeILCodeStreams)
         {
             ILCodeStream stream = pInvokeILCodeStreams.MarshallingCodeStream;
             ILEmitter emitter = pInvokeILCodeStreams.Emitter;
@@ -326,7 +326,7 @@ namespace Internal.IL.Stubs
             stream.Emit(ILOpcode.ldfld, emitter.NewToken(field));
         }
 
-        private void StoreFieldValueFromArg(int argIndex, FieldDesc field, PInvokeILCodeStreams pInvokeILCodeStreams)
+        private static void StoreFieldValueFromArg(int argIndex, FieldDesc field, PInvokeILCodeStreams pInvokeILCodeStreams)
         {
             ILCodeStream stream = pInvokeILCodeStreams.MarshallingCodeStream;
             ILEmitter emitter = pInvokeILCodeStreams.Emitter;

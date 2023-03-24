@@ -119,10 +119,10 @@ struct _DiagnosticsEnvironmentInfoPayload_Internal {
 #endif
 	// The environment is sent back as an optional continuation stream of data.
 	// It is encoded in the typical length-prefixed array format as defined in
-	// the Diagnostics IPC Spec: https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
+	// the Diagnostics IPC Spec: https://github.com/dotnet/diagnostics/blob/main/documentation/design-docs/ipc-protocol.md
 	uint32_t incoming_bytes;
 	uint16_t future;
-	ep_rt_env_array_utf16_t env_array;
+	dn_vector_ptr_t *env_array;
 };
 
 #if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_PROCESS_PROTOCOL_GETTER_SETTER)

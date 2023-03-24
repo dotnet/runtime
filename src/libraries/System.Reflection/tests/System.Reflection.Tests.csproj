@@ -2,15 +2,13 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TestRuntime>true</TestRuntime>
-    <!-- LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies test relies on no deps.json -->
-    <GenerateDependencyFile>false</GenerateDependencyFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- SYSLIB0013: Uri.EscapeUriString is obsolete
          SYSLIB0037: AssemblyName members HashAlgorithm, ProcessorArchitecture, and VersionCompatibility are obsolete. -->
     <NoWarn>$(NoWarn);SYSLIB0013;SYSLIB0037</NoWarn>
 
     <!-- these tests depend on the pdb files -->
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
@@ -77,7 +75,7 @@
     <ProjectReference Include="TestExe\System.Reflection.TestExe.csproj" />
     <ProjectReference Include="TestAssembly\TestAssembly.csproj" />
   </ItemGroup>
-    <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).pdb" />
   </ItemGroup>

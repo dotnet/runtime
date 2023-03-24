@@ -12,94 +12,121 @@
 
 struct probe_config_t
 {
+    enum class type
+    {
+        servicing,
+        app,
+        framework,
+        lookup,
+    };
+
+    type probe_type;
+
     pal::string_t probe_dir;
+
+    // Only for type::framework
     const deps_json_t* probe_deps_json;
     int fx_level;
 
     bool only_runtime_assets;
-    bool only_serviceable_assets;
 
-    bool probe_publish_dir;
-
-    void print() const
+    pal::string_t as_str() const
     {
-        trace::verbose(_X("probe_config_t: probe=[%s] deps-dir-probe=[%d]"),
-            probe_dir.c_str(), probe_publish_dir);
+        pal::string_t details = _X("type=");
+        switch (probe_type)
+        {
+        case type::servicing:
+            details += _X("servicing");
+            break;
+        case type::app:
+            details += _X("app");
+            break;
+        case type::framework:
+            details += _X("framework");
+            break;
+        case type::lookup:
+            details += _X("lookup");
+            break;
+        default:
+            assert(false && "Unknown probe config type");
+            return _X("");
+        }
+
+        if (!probe_dir.empty())
+            details += _X(" dir=[") + probe_dir + _X("]");
+
+        if (fx_level != -1)
+            details += _X(" fx_level=") + pal::to_string(fx_level);
+
+        return details;
     }
 
-    probe_config_t(
-        const pal::string_t& probe_dir,
-        const deps_json_t* probe_deps_json,
-        int fx_level,
-        bool only_serviceable_assets,
-        bool only_runtime_assets,
-        bool probe_publish_dir)
-        : probe_dir(probe_dir)
-        , probe_deps_json(probe_deps_json)
-        , fx_level(fx_level)
-        , only_runtime_assets(only_runtime_assets)
-        , only_serviceable_assets(only_serviceable_assets)
-        , probe_publish_dir(probe_publish_dir)
-    {
-    }
+    probe_config_t(type probe_type, const pal::string_t& probe_dir)
+        : probe_type(probe_type)
+        , probe_dir(probe_dir)
+        , probe_deps_json(nullptr)
+        , fx_level(-1)
+        , only_runtime_assets(false)
+    { }
 
     bool is_lookup() const
     {
-        return (probe_deps_json == nullptr) &&
-            !only_runtime_assets &&
-            !only_serviceable_assets &&
-            !probe_publish_dir;
+        return probe_type == type::lookup;
     }
 
     bool is_fx() const
     {
-        return (probe_deps_json != nullptr);
+        return probe_type == type::framework;
     }
 
     bool is_app() const
     {
-        return probe_publish_dir;
+        return probe_type == type::app;
+    }
+
+    bool is_servicing() const
+    {
+        return probe_type == type::servicing;
     }
 
     static probe_config_t svc_ni(const pal::string_t& dir)
     {
-        return probe_config_t(dir, nullptr, -1, true, true, false);
+        probe_config_t config(type::servicing, dir);
+        config.only_runtime_assets = true;
+        return config;
     }
 
     static probe_config_t svc(const pal::string_t& dir)
     {
-        return probe_config_t(dir, nullptr, -1, true, false, false);
+        return probe_config_t(type::servicing, dir);
     }
 
     static probe_config_t fx(const pal::string_t& dir, const deps_json_t* deps, int fx_level)
     {
-        return probe_config_t(dir, deps, fx_level, false, false, false);
+        assert(fx_level > 0);
+        probe_config_t config(type::framework, dir);
+        config.probe_deps_json = deps;
+        config.fx_level = fx_level;
+        return config;
     }
 
     static probe_config_t lookup(const pal::string_t& dir)
     {
-        return probe_config_t(dir, nullptr, -1, false, false, false);
+        return probe_config_t(type::lookup, dir);
     }
 
     static probe_config_t published_deps_dir()
     {
-        return probe_config_t(_X(""), nullptr, 0, false, false, true);
+        return probe_config_t(type::app, _X(""));
     }
 };
 
 struct arguments_t
 {
     host_mode_t host_mode;
-    pal::string_t host_path;
     pal::string_t app_root;
     pal::string_t deps_path;
-    pal::string_t core_servicing;
-    std::vector<pal::string_t> probe_paths;
     pal::string_t managed_application;
-    std::vector<pal::string_t> global_shared_stores;
-    pal::string_t dotnet_shared_store;
-    std::vector<pal::string_t> env_shared_store;
-    pal::string_t additional_deps_serialized;
 
     int app_argc;
     const pal::char_t** app_argv;
@@ -110,21 +137,8 @@ struct arguments_t
     {
         if (trace::is_enabled())
         {
-            trace::verbose(_X("-- arguments_t: host_path='%s' app_root='%s' deps='%s' core_svc='%s' mgd_app='%s'"),
-                host_path.c_str(), app_root.c_str(), deps_path.c_str(), core_servicing.c_str(), managed_application.c_str());
-            for (const auto& probe : probe_paths)
-            {
-                trace::verbose(_X("-- arguments_t: probe dir: '%s'"), probe.c_str());
-            }
-            for (const auto& shared : env_shared_store)
-            {
-                trace::verbose(_X("-- arguments_t: env shared store: '%s'"), shared.c_str());
-            }
-            trace::verbose(_X("-- arguments_t: dotnet shared store: '%s'"), dotnet_shared_store.c_str());
-            for (const auto& global_shared : global_shared_stores)
-            {
-                trace::verbose(_X("-- arguments_t: global shared store: '%s'"), global_shared.c_str());
-            }
+            trace::verbose(_X("-- arguments_t: app_root='%s' deps='%s' mgd_app='%s'"),
+                app_root.c_str(), deps_path.c_str(), managed_application.c_str());
         }
     }
 };
@@ -135,12 +149,8 @@ bool parse_arguments(
     arguments_t& arg);
 bool init_arguments(
     const pal::string_t& managed_application_path,
-    const host_startup_info_t& host_info,
-    const pal::string_t& tfm,
     host_mode_t host_mode,
-    const pal::string_t& additional_deps_serialized,
     const pal::string_t& deps_file,
-    const std::vector<pal::string_t>& probe_paths,
     bool init_from_file_system,
     arguments_t& args);
 

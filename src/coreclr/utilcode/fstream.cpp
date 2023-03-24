@@ -176,48 +176,7 @@ Exit:
 
 HRESULT CFileStream::Seek(LARGE_INTEGER dlibMove, DWORD dwOrigin, ULARGE_INTEGER *plibNewPosition)
 {
-#if 1 // SetFilePointerEx not supported on Win9x
     return E_NOTIMPL;
-#else
-    HRESULT                                         hr = S_OK;
-    DWORD                                           dwFileOrigin;
-    BOOL                                            bRet;
-
-    _ASSERTE(_hFile != INVALID_HANDLE_VALUE);
-    if (_hFile == INVALID_HANDLE_VALUE) {
-        hr = E_UNEXPECTED;
-        goto Exit;
-    }
-
-    switch (dwOrigin) {
-        case STREAM_SEEK_SET:
-            dwFileOrigin = FILE_BEGIN;
-            break;
-
-        case STREAM_SEEK_CUR:
-            dwFileOrigin = FILE_CURRENT;
-            break;
-
-        case STREAM_SEEK_END:
-            dwFileOrigin = FILE_END;
-            break;
-
-        default:
-            hr = E_UNEXPECTED;
-            goto Exit;
-    }
-
-    bRet = SetFilePointerEx(_hFile, dlibMove, (LARGE_INTEGER *)plibNewPosition,
-                            dwFileOrigin);
-    if (!bRet) {
-        hr = HRESULT_FROM_WIN32(::GetLastError());
-        goto Exit;
-    }
-
-
-Exit:
-    return hr;
-#endif
 }
 
 HRESULT CFileStream::SetSize(ULARGE_INTEGER libNewSize)

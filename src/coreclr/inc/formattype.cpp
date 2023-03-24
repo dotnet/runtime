@@ -1507,7 +1507,7 @@ error:
         buf.AppendASCII(" }) ");
 
         char * tgt = szString + strlen(szString);
-        int sprintf_ret = sprintf_s(tgt, cchszString - (tgt - szString), "%S", buf.GetUnicode());
+        int sprintf_ret = sprintf_s(tgt, cchszString - (tgt - szString), "%s", buf.GetUTF8());
         if (sprintf_ret == -1)
         {
             // Hit an error. Oh well, nothing to do...
@@ -1521,7 +1521,7 @@ error:
     else
     {
         char * tgt = szString + strlen(szString);
-        int sprintf_ret = sprintf_s(tgt, cchszString - (tgt - szString), "%S", buf.GetUnicode());
+        int sprintf_ret = sprintf_s(tgt, cchszString - (tgt - szString), "%s", buf.GetUTF8());
         if (sprintf_ret == -1)
         {
             // There was an error, possibly with converting the Unicode characters.

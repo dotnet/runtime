@@ -88,7 +88,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
 
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/readytorun.h">src/inc/readytorun.h</a> READYTORUN_HEADER
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/readytorun.h">src/inc/readytorun.h</a> READYTORUN_HEADER
     /// </summary>
     public class ReadyToRunHeader : ReadyToRunCoreHeader
     {

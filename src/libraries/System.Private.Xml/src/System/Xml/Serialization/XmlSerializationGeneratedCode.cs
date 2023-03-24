@@ -364,7 +364,7 @@ namespace System.Xml.Serialization
             _writer.WriteLine("}");
         }
 
-        internal void GenerateSerializerContract(string className, XmlMapping[] xmlMappings, Type?[] types, string readerType, string?[] readMethods, string writerType, string?[] writerMethods, Hashtable serializers)
+        internal void GenerateSerializerContract(XmlMapping[] xmlMappings, Type?[] types, string readerType, string?[] readMethods, string writerType, string?[] writerMethods, Hashtable serializers)
         {
             _writer.WriteLine();
             _writer.Write("public class XmlSerializerContract : global::");

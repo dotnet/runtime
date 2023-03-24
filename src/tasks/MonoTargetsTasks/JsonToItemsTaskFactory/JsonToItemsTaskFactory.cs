@@ -205,8 +205,7 @@ namespace JsonToItemsTaskFactory
                 }
                 finally
                 {
-                    if (file != null)
-                        file.Dispose();
+                    file?.Dispose();
                 }
             }
 

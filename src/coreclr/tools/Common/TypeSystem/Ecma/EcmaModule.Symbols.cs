@@ -7,7 +7,7 @@ using System.Reflection.PortableExecutable;
 namespace Internal.TypeSystem.Ecma
 {
     // Pluggable file that adds PDB handling functionality to EcmaModule
-    partial class EcmaModule
+    public partial class EcmaModule
     {
         public PdbSymbolReader PdbReader
         {

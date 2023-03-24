@@ -11,5 +11,6 @@
     <!-- CSC needs explicit metadata version when it has no core library to reference -->
     <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 </Project>

@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Immutable;
 using System.IO;
+using System.Reflection.Internal;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.Metadata.Tests;
 using System.Runtime.CompilerServices;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 
 namespace System.Reflection.PortableExecutable.Tests
@@ -119,7 +120,7 @@ namespace System.Reflection.PortableExecutable.Tests
         [Fact]
         public void OpenNativeImage()
         {
-            using (var reader = new PEReader(File.OpenRead(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "kernel32.dll"))))
+            using (var reader = new PEReader(File.OpenRead(Path.Combine(Environment.SystemDirectory, "kernel32.dll"))))
             {
                 Assert.False(reader.HasMetadata);
                 Assert.True(reader.PEHeaders.IsDll);
@@ -848,6 +849,26 @@ namespace System.Reflection.PortableExecutable.Tests
             GC.WaitForPendingFinalizers();
 
             Assert.Equal(@"Debug", reader.GetString(reader.GetAssemblyDefinition().Name));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes only suported on windows
+        public unsafe void InvokeCtorWithIsLoadedImageAndPrefetchMetadataOptions2()
+        {
+            using (var tempFile = new TempFile(Path.GetTempFileName()))
+            {
+                File.WriteAllBytes(tempFile.Path, Misc.Members);
+
+                using (SafeLibraryHandle libHandle = global::Interop.Kernel32.LoadLibraryExW(tempFile.Path, IntPtr.Zero, 0))
+                {
+                    byte* peImagePtr = (byte*)global::Interop.Kernel32.GetModuleHandle(Path.GetFileName(tempFile.Path));
+
+                    Assert.True(peImagePtr != null);
+
+                    var peReader = new PEReader(new ReadOnlyUnmanagedMemoryStream(peImagePtr, int.MaxValue), PEStreamOptions.IsLoadedImage | PEStreamOptions.PrefetchMetadata);
+                    peReader.Dispose();
+                }
+            }
         }
     }
 }

@@ -9,7 +9,7 @@
 #include "pal_hmac.h"
 #include "pal_keyagree.h"
 #include "pal_keychain_macos.h"
-#include "pal_keyderivation_macos.h"
+#include "pal_keyderivation.h"
 #include "pal_random.h"
 #include "pal_rsa.h"
 #include "pal_sec.h"
@@ -17,6 +17,7 @@
 #include "pal_seckey_macos.h"
 #include "pal_signverify.h"
 #include "pal_ssl.h"
+#include "pal_swiftbindings.h"
 #include "pal_symmetric.h"
 #include "pal_trust_macos.h"
 #include "pal_x509.h"
@@ -25,6 +26,10 @@
 
 static const Entry s_cryptoAppleNative[] =
 {
+    DllImportEntry(AppleCryptoNative_AesGcmEncrypt)
+    DllImportEntry(AppleCryptoNative_AesGcmDecrypt)
+    DllImportEntry(AppleCryptoNative_ChaCha20Poly1305Encrypt)
+    DllImportEntry(AppleCryptoNative_ChaCha20Poly1305Decrypt)
     DllImportEntry(AppleCryptoNative_DigestFree)
     DllImportEntry(AppleCryptoNative_DigestCreate)
     DllImportEntry(AppleCryptoNative_DigestUpdate)
@@ -58,6 +63,7 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_SslRead)
     DllImportEntry(AppleCryptoNative_SslSetBreakOnCertRequested)
     DllImportEntry(AppleCryptoNative_SslSetBreakOnClientAuth)
+    DllImportEntry(AppleCryptoNative_SslSetBreakOnClientHello)
     DllImportEntry(AppleCryptoNative_SslSetBreakOnServerAuth)
     DllImportEntry(AppleCryptoNative_SslSetIoCallbacks)
     DllImportEntry(AppleCryptoNative_SslWrite)
@@ -86,6 +92,7 @@ static const Entry s_cryptoAppleNative[] =
     DllImportEntry(AppleCryptoNative_SslSetCertificate)
     DllImportEntry(AppleCryptoNative_SslSetCertificateAuthorities)
     DllImportEntry(AppleCryptoNative_SslSetTargetName)
+    DllImportEntry(AppleCryptoNative_SSLSetALPNProtocol)
     DllImportEntry(AppleCryptoNative_SSLSetALPNProtocols)
     DllImportEntry(AppleCryptoNative_SslGetAlpnSelected)
     DllImportEntry(AppleCryptoNative_SslHandshake)

@@ -7,7 +7,7 @@ namespace System.Numerics
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="TResult">The type that contains the result of negating <typeparamref name="TSelf" />.</typeparam>
     public interface IUnaryPlusOperators<TSelf, TResult>
-        where TSelf : IUnaryPlusOperators<TSelf, TResult>
+        where TSelf : IUnaryPlusOperators<TSelf, TResult>?
     {
         /// <summary>Computes the unary plus of a value.</summary>
         /// <param name="value">The value for which to compute its unary plus.</param>

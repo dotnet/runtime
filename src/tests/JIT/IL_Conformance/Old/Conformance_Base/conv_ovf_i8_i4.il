@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace conv_ovf_i8_i4
+{
 .class public		conv_ovf_i4 {
 
 
@@ -82,67 +85,70 @@ END2:
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		5
 	ldc.i8			0x8000000000000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i4::conv(int64,int32)
+	call		int32 conv_ovf_i8_i4.conv_ovf_i4::conv(int64,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 	ldc.i8			0xFFFFFFFFFFFFFFFF
 	ldc.i4			0xFFFFFFFF
-	call		int32 conv_ovf_i4::conv(int64,int32)
+	call		int32 conv_ovf_i8_i4.conv_ovf_i4::conv(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x0000000000000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i4::conv(int64,int32)
+	call		int32 conv_ovf_i8_i4.conv_ovf_i4::conv(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x0000000000000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_i4::conv(int64,int32)
+	call		int32 conv_ovf_i8_i4.conv_ovf_i4::conv(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x7FFFFFFFFFFFFFFF
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i4::conv(int64,int32)
+	call		int32 conv_ovf_i8_i4.conv_ovf_i4::conv(int64,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 
 	ldc.i8			0xFFFFFFFF80000000
 	ldc.i4			0x80000000
-	call		int32 conv_ovf_i4::conv(int64,int32)
+	call		int32 conv_ovf_i8_i4.conv_ovf_i4::conv(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0xFFFFFFFFFFFFFFFF
 	ldc.i4			0xFFFFFFFF
-	call		int32 conv_ovf_i4::conv(int64,int32)
+	call		int32 conv_ovf_i8_i4.conv_ovf_i4::conv(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x0000000000000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i4::conv(int64,int32)
+	call		int32 conv_ovf_i8_i4.conv_ovf_i4::conv(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x0000000000000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_i4::conv(int64,int32)
+	call		int32 conv_ovf_i8_i4.conv_ovf_i4::conv(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x000000007FFFFFFF
 	ldc.i4			0x7FFFFFFF
-	call		int32 conv_ovf_i4::conv(int64,int32)
+	call		int32 conv_ovf_i8_i4.conv_ovf_i4::conv(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -150,38 +156,38 @@ END2:
 
 	ldc.i8			0x0000000000000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i4::conv_un(int64,int32)
+	call		int32 conv_ovf_i8_i4.conv_ovf_i4::conv_un(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x0000000000000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_i4::conv_un(int64,int32)
+	call		int32 conv_ovf_i8_i4.conv_ovf_i4::conv_un(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x7FFFFFFFFFFFFFFF
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i4::conv_un(int64,int32)
+	call		int32 conv_ovf_i8_i4.conv_ovf_i4::conv_un(int64,int32)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 
 	ldc.i8			0x0000000000000000
 	ldc.i4			0x00000000
-	call		int32 conv_ovf_i4::conv_un(int64,int32)
+	call		int32 conv_ovf_i8_i4.conv_ovf_i4::conv_un(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x0000000000000001
 	ldc.i4			0x00000001
-	call		int32 conv_ovf_i4::conv_un(int64,int32)
+	call		int32 conv_ovf_i8_i4.conv_ovf_i4::conv_un(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 	ldc.i8			0x000000007FFFFFFF
 	ldc.i4			0x7FFFFFFF
-	call		int32 conv_ovf_i4::conv_un(int64,int32)
+	call		int32 conv_ovf_i8_i4.conv_ovf_i4::conv_un(int64,int32)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -201,3 +207,4 @@ END:
 
 
 .assembly conv_ovf_i8_i4{}
+}

@@ -174,7 +174,7 @@ namespace BinderTracingTests
             Assert.True(IsLoadToTrack(assemblyName.Name), $"Waiting for load for untracked name: {assemblyName.Name}. Tracking loads for: {string.Join(", ", loadsToTrack)}");
 
             const int waitIntervalInMs = 50;
-            int waitTimeoutInMs = Environment.GetEnvironmentVariable("COMPlus_GCStress") == null
+            int waitTimeoutInMs = Environment.GetEnvironmentVariable("DOTNET_GCStress") == null
                 ? 30 * 1000
                 : int.MaxValue;
 

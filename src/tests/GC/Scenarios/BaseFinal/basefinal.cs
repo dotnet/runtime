@@ -19,7 +19,7 @@ namespace DefaultNamespace {
         internal static Object StObj;
 #pragma warning restore 0414
 
-        public static int Main(String [] str)
+        public static int Main()
         {
             Console.WriteLine("Test should return with ExitCode 100 ...");
             CreateObj temp = new CreateObj();
@@ -90,8 +90,7 @@ namespace DefaultNamespace {
         {
 
             mv_Obj = new BaseFinal();
-            //Printing GetTotalMemory is commented out so that the test can build on RedHawk
-            //Console.WriteLine("before test started, the heapsize is {0}", GC.GetTotalMemory(false));
+            Console.WriteLine("before starting the test, heap size is {0}", GC.GetTotalMemory(false));
 
             for( int i=1; i< 1000; i++)
             {

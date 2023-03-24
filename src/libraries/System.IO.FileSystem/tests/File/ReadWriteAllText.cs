@@ -128,7 +128,7 @@ namespace System.IO.Tests
         /// <summary>
         /// On Unix, modifying a file that is ReadOnly will fail under normal permissions.
         /// If the test is being run under the superuser, however, modification of a ReadOnly
-        /// file is allowed.
+        /// file is allowed. On Windows, modifying a file that is ReadOnly will always fail.
         /// </summary>
         [Fact]
         public void WriteToReadOnlyFile()
@@ -138,8 +138,7 @@ namespace System.IO.Tests
             File.SetAttributes(path, FileAttributes.ReadOnly);
             try
             {
-                // Operation succeeds when being run by the Unix superuser
-                if (PlatformDetection.IsSuperUser)
+                if (PlatformDetection.IsNotWindows && PlatformDetection.IsPrivilegedProcess)
                 {
                     Write(path, "text");
                     Assert.Equal("text", Read(path));

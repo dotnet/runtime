@@ -1026,7 +1026,7 @@ void Assembler::EmitByte(int val)
 void Assembler::NewSEHDescriptor(void) //sets m_SEHD
 {
     m_SEHDstack.PUSH(m_SEHD);
-    m_SEHD = new SEH_Descriptor;
+    m_SEHD = new (nothrow) SEH_Descriptor();
     if(m_SEHD == NULL) report->error("Failed to allocate SEH descriptor\n");
 }
 /**************************************************************************/
@@ -1886,9 +1886,8 @@ void Assembler::ResetEvent(__inout_z __inout char* szName, mdToken typeSpec, DWO
         report->error("Event '%s...' -- name too long (%d characters).\n",szName,strlen(szName));
         szName[MAX_CLASSNAME_LENGTH-1] = c;
     }
-    if((m_pCurEvent = new EventDescriptor))
+    if((m_pCurEvent = new (nothrow) EventDescriptor()))
     {
-        memset(m_pCurEvent,0,sizeof(EventDescriptor));
         m_pCurEvent->m_tdClass = m_pCurClass->m_cl;
         m_pCurEvent->m_szName = szName;
         m_pCurEvent->m_dwAttr = dwAttr;
@@ -1943,13 +1942,12 @@ void Assembler::ResetProp(__inout_z __inout char * szName, BinStr* bsType, DWORD
         report->error("Property '%s...' -- name too long (%d characters).\n",szName,strlen(szName));
         szName[MAX_CLASSNAME_LENGTH-1] = c;
     }
-    m_pCurProp = new PropDescriptor;
+    m_pCurProp = new (nothrow) PropDescriptor();
     if(m_pCurProp == NULL)
     {
         report->error("Failed to allocate Property Descriptor\n");
         return;
     }
-    memset(m_pCurProp,0,sizeof(PropDescriptor));
     m_pCurProp->m_tdClass = m_pCurClass->m_cl;
     m_pCurProp->m_szName = szName;
     m_pCurProp->m_dwAttr = dwAttr;
@@ -2061,8 +2059,8 @@ void Assembler::EmitInstrStringLiteral(Instr* instr, BinStr* literal, BOOL Conve
     );
     if (FAILED(hr))
     {
-        report->error("Failed to add user string using DefineUserString, hr=0x%08x, data: '%S'\n",
-               hr, UnicodeString);
+        report->error("Failed to add user string using DefineUserString, hr=0x%08x, data: '%s'\n",
+               hr, pb);
     }
     else
     {
@@ -2382,7 +2380,6 @@ void Assembler::SetSourceFileName(_In_ __nullterminated char* szName)
             if(strcmp(m_szSourceFileName,szName))
             {
                 strcpy_s(m_szSourceFileName,MAX_FILENAME_LENGTH*3+1,szName);
-                WszMultiByteToWideChar(g_uCodePage,0,szName,-1,m_wzSourceFileName,MAX_FILENAME_LENGTH);
             }
             if(m_fGeneratePDB)
             {
@@ -2739,4 +2736,9 @@ void Assembler::EmitGenericParamConstraints(int numTyPars, TyParDescr* pTyPars, 
         pGPC->Token(tkOwnerOfCA);
         EmitCustomAttributes(tkOwnerOfCA, pGPC->CAList());
     }
+
+    delete[] nConstraintsArr;
+    delete[] nConstraintIndexArr;
+    delete[] pConstraintsArr;
+    delete[] pGPConstraintsArr;
 }

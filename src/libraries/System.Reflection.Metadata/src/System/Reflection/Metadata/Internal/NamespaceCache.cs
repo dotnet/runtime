@@ -207,14 +207,18 @@ namespace System.Reflection.Metadata.Ecma335
         {
             Debug.Assert(realChild.HasFullName);
 
+#if NET8_0_OR_GREATER
+            int numberOfSegments = fullName.AsSpan().Count('.');
+#else
             int numberOfSegments = 0;
-            foreach (char c in fullName)
+            ReadOnlySpan<char> span = fullName.AsSpan();
+            int dotPos;
+            while ((dotPos = span.IndexOf('.')) >= 0)
             {
-                if (c == '.')
-                {
-                    numberOfSegments++;
-                }
+                span = span.Slice(dotPos + 1);
+                numberOfSegments++;
             }
+#endif
 
             StringHandle simpleName = GetSimpleName(realChild, numberOfSegments);
             var namespaceHandle = NamespaceDefinitionHandle.FromVirtualIndex(++_virtualNamespaceCounter);

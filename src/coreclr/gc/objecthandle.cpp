@@ -1010,7 +1010,13 @@ void Ref_TracePinningRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc,
     LOG((LF_GC, LL_INFO10000, "Pinning referents of pinned handles in generation %u\n", condemned));
 
     // pin objects pointed to by pinning handles
-    uint32_t types[2] = {HNDTYPE_PINNED, HNDTYPE_ASYNCPINNED};
+    uint32_t types[] =
+    {
+        HNDTYPE_PINNED,
+#ifdef FEATURE_ASYNC_PINNED_HANDLES
+        HNDTYPE_ASYNCPINNED,
+#endif
+    };
     uint32_t flags = sc->concurrent ? HNDGCF_ASYNC : HNDGCF_NORMAL;
 
     HandleTableMap *walk = &g_HandleTableMap;
@@ -1025,7 +1031,9 @@ void Ref_TracePinningRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc,
                     // handles may require a callback into the EE in order to fully trace an async pinned
                     // object's object graph.
                     HndScanHandlesForGC(hTable, PinObject, uintptr_t(sc), uintptr_t(fn), &types[0], 1, condemned, maxgen, flags);
+#ifdef FEATURE_ASYNC_PINNED_HANDLES
                     HndScanHandlesForGC(hTable, AsyncPinObject, uintptr_t(sc), uintptr_t(fn), &types[1], 1, condemned, maxgen, flags);
+#endif
                 }
             }
         walk = walk->pNext;
@@ -1489,7 +1497,9 @@ void Ref_ScanHandlesForProfilerAndETW(uint32_t maxgen, uintptr_t lp1, handle_sca
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
         HNDTYPE_PINNED,
 //        HNDTYPE_VARIABLE,
+#ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
+#endif
         HNDTYPE_SIZEDREF,
     };
 
@@ -1554,7 +1564,9 @@ void Ref_ScanPointers(uint32_t condemned, uint32_t maxgen, ScanContext* sc, Ref_
         HNDTYPE_REFCOUNTED,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS || FEATURE_OBJCMARSHAL || FEATURE_NATIVEAOT
         HNDTYPE_PINNED,
+#ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
+#endif
         HNDTYPE_SIZEDREF,
     };
 
@@ -1591,7 +1603,13 @@ void Ref_UpdatePinnedPointers(uint32_t condemned, uint32_t maxgen, ScanContext* 
     LOG((LF_GC, LL_INFO10000, "Updating pointers to referents of pinning handles in generation %u\n", condemned));
 
     // these are the handle types that need their pointers updated
-    uint32_t types[2] = {HNDTYPE_PINNED, HNDTYPE_ASYNCPINNED};
+    uint32_t types[] =
+    {
+        HNDTYPE_PINNED,
+#ifdef FEATURE_ASYNC_PINNED_HANDLES
+        HNDTYPE_ASYNCPINNED,
+#endif
+    };
     uint32_t flags = (sc->concurrent) ? HNDGCF_ASYNC : HNDGCF_NORMAL;
 
     HandleTableMap *walk = &g_HandleTableMap;
@@ -1633,7 +1651,9 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
         HNDTYPE_WEAK_NATIVE_COM,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+#ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
+#endif
         HNDTYPE_SIZEDREF,
     };
 
@@ -1676,7 +1696,9 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
         HNDTYPE_WEAK_NATIVE_COM,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+#ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
+#endif
         HNDTYPE_SIZEDREF,
     };
 
@@ -1718,7 +1740,9 @@ void Ref_VerifyHandleTable(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
         HNDTYPE_WEAK_NATIVE_COM,
 #endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+#ifdef FEATURE_ASYNC_PINNED_HANDLES
         HNDTYPE_ASYNCPINNED,
+#endif
         HNDTYPE_SIZEDREF,
         HNDTYPE_DEPENDENT,
     };

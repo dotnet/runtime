@@ -14,7 +14,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void CreateBuilder()
         {
-            var builder = ImmutableDictionary.CreateBuilder<string, string>();
+            ImmutableDictionary<string, string>.Builder builder = ImmutableDictionary.CreateBuilder<string, string>();
             Assert.Same(EqualityComparer<string>.Default, builder.KeyComparer);
             Assert.Same(EqualityComparer<string>.Default, builder.ValueComparer);
 
@@ -30,7 +30,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void ToBuilder()
         {
-            var builder = ImmutableDictionary<int, string>.Empty.ToBuilder();
+            ImmutableDictionary<int, string>.Builder builder = ImmutableDictionary<int, string>.Empty.ToBuilder();
             builder.Add(3, "3");
             builder.Add(5, "5");
             Assert.Equal(2, builder.Count);
@@ -38,7 +38,7 @@ namespace System.Collections.Immutable.Tests
             Assert.True(builder.ContainsKey(5));
             Assert.False(builder.ContainsKey(7));
 
-            var set = builder.ToImmutable();
+            ImmutableDictionary<int, string> set = builder.ToImmutable();
             Assert.Equal(builder.Count, set.Count);
             builder.Add(8, "8");
             Assert.Equal(3, builder.Count);
@@ -50,17 +50,17 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void BuilderAddRangeThrowsWhenAddingNullKey()
         {
-            var set = ImmutableDictionary<string, int>.Empty.Add("1", 1);
-            var builder = set.ToBuilder();
-            var items = new[] { new KeyValuePair<string, int>(null, 0) };
+            ImmutableDictionary<string, int> set = ImmutableDictionary<string, int>.Empty.Add("1", 1);
+            ImmutableDictionary<string, int>.Builder builder = set.ToBuilder();
+            KeyValuePair<string, int>[] items = new[] { new KeyValuePair<string, int>(null, 0) };
             Assert.Throws<ArgumentNullException>(() => builder.AddRange(items));
         }
 
         [Fact]
         public void BuilderFromMap()
         {
-            var set = ImmutableDictionary<int, string>.Empty.Add(1, "1");
-            var builder = set.ToBuilder();
+            ImmutableDictionary<int, string> set = ImmutableDictionary<int, string>.Empty.Add(1, "1");
+            ImmutableDictionary<int, string>.Builder builder = set.ToBuilder();
             Assert.True(builder.ContainsKey(1));
             builder.Add(3, "3");
             builder.Add(5, "5");
@@ -69,7 +69,7 @@ namespace System.Collections.Immutable.Tests
             Assert.True(builder.ContainsKey(5));
             Assert.False(builder.ContainsKey(7));
 
-            var set2 = builder.ToImmutable();
+            ImmutableDictionary<int, string> set2 = builder.ToImmutable();
             Assert.Equal(builder.Count, set2.Count);
             Assert.True(set2.ContainsKey(1));
             builder.Add(8, "8");
@@ -84,12 +84,12 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void SeveralChanges()
         {
-            var mutable = ImmutableDictionary<int, string>.Empty.ToBuilder();
-            var immutable1 = mutable.ToImmutable();
+            ImmutableDictionary<int, string>.Builder mutable = ImmutableDictionary<int, string>.Empty.ToBuilder();
+            ImmutableDictionary<int, string> immutable1 = mutable.ToImmutable();
             Assert.Same(immutable1, mutable.ToImmutable()); // "The Immutable property getter is creating new objects without any differences."
 
             mutable.Add(1, "a");
-            var immutable2 = mutable.ToImmutable();
+            ImmutableDictionary<int, string> immutable2 = mutable.ToImmutable();
             Assert.NotSame(immutable1, immutable2); // "Mutating the collection did not reset the Immutable property."
             Assert.Same(immutable2, mutable.ToImmutable()); // "The Immutable property getter is creating new objects without any differences."
             Assert.Equal(1, immutable2.Count);
@@ -98,14 +98,14 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void EnumerateBuilderWhileMutating()
         {
-            var builder = ImmutableDictionary<int, string>.Empty
+            ImmutableDictionary<int, string>.Builder builder = ImmutableDictionary<int, string>.Empty
                 .AddRange(Enumerable.Range(1, 10).Select(n => new KeyValuePair<int, string>(n, null)))
                 .ToBuilder();
             Assert.Equal(
                Enumerable.Range(1, 10).Select(n => new KeyValuePair<int, string>(n, null)),
                builder);
 
-            var enumerator = builder.GetEnumerator();
+            ImmutableDictionary<int, string>.Enumerator enumerator = builder.GetEnumerator();
             Assert.True(enumerator.MoveNext());
             builder.Add(11, null);
 
@@ -128,12 +128,12 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void BuilderReusesUnchangedImmutableInstances()
         {
-            var collection = ImmutableDictionary<int, string>.Empty.Add(1, null);
-            var builder = collection.ToBuilder();
+            ImmutableDictionary<int, string> collection = ImmutableDictionary<int, string>.Empty.Add(1, null);
+            ImmutableDictionary<int, string>.Builder builder = collection.ToBuilder();
             Assert.Same(collection, builder.ToImmutable()); // no changes at all.
             builder.Add(2, null);
 
-            var newImmutable = builder.ToImmutable();
+            ImmutableDictionary<int, string> newImmutable = builder.ToImmutable();
             Assert.NotSame(collection, newImmutable); // first ToImmutable with changes should be a new instance.
             Assert.Same(newImmutable, builder.ToImmutable()); // second ToImmutable without changes should be the same instance.
         }
@@ -141,7 +141,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void AddRange()
         {
-            var builder = ImmutableDictionary.Create<string, int>().ToBuilder();
+            ImmutableDictionary<string, int>.Builder builder = ImmutableDictionary.Create<string, int>().ToBuilder();
             builder.AddRange(new Dictionary<string, int> { { "a", 1 }, { "b", 2 } });
             Assert.Equal(2, builder.Count);
             Assert.Equal(1, builder["a"]);
@@ -151,7 +151,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void RemoveRange()
         {
-            var builder =
+            ImmutableDictionary<string, int>.Builder builder =
                 ImmutableDictionary.Create<string, int>()
                                    .AddRange(new Dictionary<string, int> { { "a", 1 }, { "b", 2 }, { "c", 3 } })
                                    .ToBuilder();
@@ -164,7 +164,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void Clear()
         {
-            var builder = ImmutableDictionary.Create<string, int>().ToBuilder();
+            ImmutableDictionary<string, int>.Builder builder = ImmutableDictionary.Create<string, int>().ToBuilder();
             builder.Add("five", 5);
             Assert.Equal(1, builder.Count);
             builder.Clear();
@@ -174,8 +174,8 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void ContainsValue()
         {
-            var map = ImmutableDictionary.Create<string, int>().Add("five", 5);
-            var builder = map.ToBuilder();
+            ImmutableDictionary<string, int> map = ImmutableDictionary.Create<string, int>().Add("five", 5);
+            ImmutableDictionary<string, int>.Builder builder = map.ToBuilder();
             Assert.True(builder.ContainsValue(5));
             Assert.False(builder.ContainsValue(4));
         }
@@ -183,7 +183,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void KeyComparer()
         {
-            var builder = ImmutableDictionary.Create<string, string>()
+            ImmutableDictionary<string, string>.Builder builder = ImmutableDictionary.Create<string, string>()
                 .Add("a", "1").Add("B", "1").ToBuilder();
             Assert.Same(EqualityComparer<string>.Default, builder.KeyComparer);
             Assert.True(builder.ContainsKey("a"));
@@ -196,7 +196,7 @@ namespace System.Collections.Immutable.Tests
             Assert.True(builder.ContainsKey("A"));
             Assert.True(builder.ContainsKey("b"));
 
-            var set = builder.ToImmutable();
+            ImmutableDictionary<string, string> set = builder.ToImmutable();
             Assert.Same(StringComparer.OrdinalIgnoreCase, set.KeyComparer);
             Assert.True(set.ContainsKey("a"));
             Assert.True(set.ContainsKey("A"));
@@ -207,13 +207,13 @@ namespace System.Collections.Immutable.Tests
         public void KeyComparerCollisions()
         {
             // First check where collisions have matching values.
-            var builder = ImmutableDictionary.Create<string, string>()
+            ImmutableDictionary<string, string>.Builder builder = ImmutableDictionary.Create<string, string>()
                 .Add("a", "1").Add("A", "1").ToBuilder();
             builder.KeyComparer = StringComparer.OrdinalIgnoreCase;
             Assert.Equal(1, builder.Count);
             Assert.True(builder.ContainsKey("a"));
 
-            var set = builder.ToImmutable();
+            ImmutableDictionary<string, string> set = builder.ToImmutable();
             Assert.Same(StringComparer.OrdinalIgnoreCase, set.KeyComparer);
             Assert.Equal(1, set.Count);
             Assert.True(set.ContainsKey("a"));
@@ -235,20 +235,20 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void KeyComparerEmptyCollection()
         {
-            var builder = ImmutableDictionary.Create<string, string>()
+            ImmutableDictionary<string, string>.Builder builder = ImmutableDictionary.Create<string, string>()
                 .Add("a", "1").Add("B", "1").ToBuilder();
             Assert.Same(EqualityComparer<string>.Default, builder.KeyComparer);
             builder.KeyComparer = StringComparer.OrdinalIgnoreCase;
             Assert.Same(StringComparer.OrdinalIgnoreCase, builder.KeyComparer);
-            var set = builder.ToImmutable();
+            ImmutableDictionary<string, string> set = builder.ToImmutable();
             Assert.Same(StringComparer.OrdinalIgnoreCase, set.KeyComparer);
         }
 
         [Fact]
         public void GetValueOrDefaultOfConcreteType()
         {
-            var empty = ImmutableDictionary.Create<string, int>().ToBuilder();
-            var populated = ImmutableDictionary.Create<string, int>().Add("a", 5).ToBuilder();
+            ImmutableDictionary<string, int>.Builder empty = ImmutableDictionary.Create<string, int>().ToBuilder();
+            ImmutableDictionary<string, int>.Builder populated = ImmutableDictionary.Create<string, int>().Add("a", 5).ToBuilder();
             Assert.Equal(0, empty.GetValueOrDefault("a"));
             Assert.Equal(1, empty.GetValueOrDefault("a", 1));
             Assert.Equal(5, populated.GetValueOrDefault("a"));
@@ -268,7 +268,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(builder, items);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void TestDebuggerAttributes_Null()
         {
             Type proxyType = DebuggerAttributes.GetProxyType(ImmutableHashSet.Create<string>());
@@ -284,7 +284,7 @@ namespace System.Collections.Immutable.Tests
             builder.Add(1, 1);
             builder.Add(2, 2);
 
-            var dictionary = builder.ToImmutableDictionary();
+            ImmutableDictionary<int, int> dictionary = builder.ToImmutableDictionary();
             Assert.Equal(0, dictionary[0]);
             Assert.Equal(1, dictionary[1]);
             Assert.Equal(2, dictionary[2]);

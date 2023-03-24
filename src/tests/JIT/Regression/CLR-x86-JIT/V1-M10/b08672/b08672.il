@@ -5,7 +5,7 @@
 {
 }
 .assembly extern mscorlib{}
-.class	stelem_i {
+.class	public stelem_i {
 
 .field static native int[] i
 
@@ -77,7 +77,7 @@ END:
 //-------------------------
 // Entry point - Main     -
 //-------------------------
-.method static int32 main(class System.String[]) {
+.method public static int32 main() {
 .entrypoint
 .maxstack	10
 .locals init (int32)

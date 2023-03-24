@@ -16,6 +16,7 @@ namespace ILCompiler
     public struct GenericDictionaryLookup
     {
         private const short UseHelperOffset = -1;
+        private const short UseNullOffset = -2;
 
         private readonly object _helperObject;
 
@@ -56,13 +57,21 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Gets a value indicating whether the lookup needs to be performed by calling a helper method. 
+        /// Gets a value indicating whether the lookup needs to be performed by calling a helper method.
         /// </summary>
         public bool UseHelper
         {
             get
             {
                 return _offset1 == UseHelperOffset;
+            }
+        }
+
+        public bool UseNull
+        {
+            get
+            {
+                return _offset1 == UseNullOffset;
             }
         }
 
@@ -73,7 +82,7 @@ namespace ILCompiler
         {
             get
             {
-                Debug.Assert(!UseHelper);
+                Debug.Assert(!UseHelper && !UseNull);
                 return ContextSource == GenericContextSource.MethodParameter ? 1 : 2;
             }
         }
@@ -82,7 +91,7 @@ namespace ILCompiler
         {
             get
             {
-                Debug.Assert(!UseHelper);
+                Debug.Assert(!UseHelper && !UseNull);
                 Debug.Assert(index < NumberOfIndirections);
                 switch (index)
                 {
@@ -101,7 +110,7 @@ namespace ILCompiler
         {
             get
             {
-                Debug.Assert(!UseHelper);
+                Debug.Assert(!UseHelper && !UseNull);
                 return _indirectLastOffset;
             }
         }
@@ -124,6 +133,11 @@ namespace ILCompiler
         public static GenericDictionaryLookup CreateHelperLookup(GenericContextSource contextSource, ReadyToRunHelperId helperId, object helperObject)
         {
             return new GenericDictionaryLookup(contextSource, UseHelperOffset, checked((short)helperId), helperObject, indirectLastOffset: false);
+        }
+
+        public static GenericDictionaryLookup CreateNullLookup(GenericContextSource contextSource)
+        {
+            return new GenericDictionaryLookup(contextSource, UseNullOffset, 0, null, false);
         }
     }
 

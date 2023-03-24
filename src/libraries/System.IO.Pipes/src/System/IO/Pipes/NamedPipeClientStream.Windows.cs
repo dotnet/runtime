@@ -20,7 +20,7 @@ namespace System.IO.Pipes
         // on the server end, but WaitForConnection will not return until we have returned.  Any data written to the
         // pipe by us after we have connected but before the server has called WaitForConnection will be available
         // to the server after it calls WaitForConnection.
-        private bool TryConnect(int timeout, CancellationToken cancellationToken)
+        private bool TryConnect(int timeout)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = PipeStream.GetSecAttrs(_inheritability);
 

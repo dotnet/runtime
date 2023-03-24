@@ -8,7 +8,7 @@
 - [Performance improvements in .NET Core 3.0](https://devblogs.microsoft.com/dotnet/performance-improvements-in-net-core-3-0/)
 - [Performance improvements in .NET 5](https://devblogs.microsoft.com/dotnet/performance-improvements-in-net-5/)
 - [Performance improvements in .NET 6](https://devblogs.microsoft.com/dotnet/performance-improvements-in-net-6/)
-
+- [Performance improvements in .NET 7](https://devblogs.microsoft.com/dotnet/performance_improvements_in_net_7/)
 
 ### Posts that take a high-level look at the entire source:
 
@@ -30,3 +30,4 @@
 - [Preventing .NET Garbage Collections with the TryStartNoGCRegion API](http://mattwarren.org/2016/08/16/Preventing-dotNET-Garbage-Collections-with-the-TryStartNoGCRegion-API/)
 - [GC Pauses and Safe Points](http://mattwarren.org/2016/08/08/GC-Pauses-and-Safe-Points/)
 - [Strings and the CLR - a Special Relationship](http://mattwarren.org/2016/05/31/Strings-and-the-CLR-a-Special-Relationship/)
+- [How Async/Await Really Works in C#](https://devblogs.microsoft.com/dotnet/how-async-await-really-works/)

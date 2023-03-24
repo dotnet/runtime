@@ -87,7 +87,7 @@ namespace System
             }
             set
             {
-                CheckNonNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 lock (s_syncObject)
                 {
@@ -127,7 +127,7 @@ namespace System
             [UnsupportedOSPlatform("tvos")]
             set
             {
-                CheckNonNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 lock (s_syncObject)
                 {
@@ -235,16 +235,16 @@ namespace System
 
         private static TextWriter CreateOutputWriter(Stream outputStream)
         {
-            return TextWriter.Synchronized(outputStream == Stream.Null ?
-                StreamWriter.Null :
-                new StreamWriter(
+            return outputStream == Stream.Null ?
+                TextWriter.Null :
+                TextWriter.Synchronized(new StreamWriter(
                     stream: outputStream,
                     encoding: OutputEncoding.RemovePreamble(), // This ensures no prefix is written to the stream.
                     bufferSize: WriteBufferSize,
                     leaveOpen: true)
-                {
-                    AutoFlush = true
-                });
+                    {
+                        AutoFlush = true
+                    });
         }
 
         private static StrongBox<bool>? _isStdInRedirected;
@@ -392,26 +392,44 @@ namespace System
             set { ConsolePal.WindowTop = value; }
         }
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static int WindowWidth
         {
-            [UnsupportedOSPlatform("android")]
-            [UnsupportedOSPlatform("browser")]
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.WindowWidth; }
-            [SupportedOSPlatform("windows")]
-            set { ConsolePal.WindowWidth = value; }
+            set
+            {
+                if (Console.IsOutputRedirected)
+                {
+                    throw new IOException(SR.InvalidOperation_SetWindowSize);
+                }
+
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+
+                ConsolePal.WindowWidth = value;
+            }
         }
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static int WindowHeight
         {
-            [UnsupportedOSPlatform("android")]
-            [UnsupportedOSPlatform("browser")]
-            [UnsupportedOSPlatform("ios")]
-            [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.WindowHeight; }
-            [SupportedOSPlatform("windows")]
-            set { ConsolePal.WindowHeight = value; }
+            set
+            {
+                if (Console.IsOutputRedirected)
+                {
+                    throw new IOException(SR.InvalidOperation_SetWindowSize);
+                }
+
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+
+                ConsolePal.WindowHeight = value;
+            }
         }
 
         [SupportedOSPlatform("windows")]
@@ -420,9 +438,20 @@ namespace System
             ConsolePal.SetWindowPosition(left, top);
         }
 
-        [SupportedOSPlatform("windows")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static void SetWindowSize(int width, int height)
         {
+            if (Console.IsOutputRedirected)
+            {
+                throw new IOException(SR.InvalidOperation_SetWindowSize);
+            }
+
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+
             ConsolePal.SetWindowSize(width, height);
         }
 
@@ -620,10 +649,7 @@ namespace System
         public static Stream OpenStandardInput(int bufferSize)
         {
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
-            if (bufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
             return ConsolePal.OpenStandardInput();
         }
 
@@ -635,10 +661,7 @@ namespace System
         public static Stream OpenStandardOutput(int bufferSize)
         {
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
-            if (bufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
             return ConsolePal.OpenStandardOutput();
         }
 
@@ -650,10 +673,7 @@ namespace System
         public static Stream OpenStandardError(int bufferSize)
         {
             // bufferSize is ignored, other than in argument validation, even in the .NET Framework
-            if (bufferSize < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(bufferSize);
             return ConsolePal.OpenStandardError();
         }
 
@@ -663,7 +683,8 @@ namespace System
         [UnsupportedOSPlatform("tvos")]
         public static void SetIn(TextReader newIn)
         {
-            CheckNonNull(newIn, nameof(newIn));
+            ArgumentNullException.ThrowIfNull(newIn);
+
             newIn = SyncTextReader.GetSynchronizedTextReader(newIn);
             lock (s_syncObject)
             {
@@ -673,8 +694,17 @@ namespace System
 
         public static void SetOut(TextWriter newOut)
         {
-            CheckNonNull(newOut, nameof(newOut));
-            newOut = TextWriter.Synchronized(newOut);
+            ArgumentNullException.ThrowIfNull(newOut);
+
+            // Ensure all access to the writer is synchronized. If it's the known Null
+            // singleton writer, which may be used if someone wants to suppress all
+            // console output, we needn't add synchronization because all operations
+            // are nops.
+            if (newOut != TextWriter.Null)
+            {
+                newOut = TextWriter.Synchronized(newOut);
+            }
+
             lock (s_syncObject)
             {
                 s_isOutTextWriterRedirected = true;
@@ -684,19 +714,19 @@ namespace System
 
         public static void SetError(TextWriter newError)
         {
-            CheckNonNull(newError, nameof(newError));
-            newError = TextWriter.Synchronized(newError);
+            ArgumentNullException.ThrowIfNull(newError);
+
+            // Ensure all access to the writer is synchronized. See comment in SetOut.
+            if (newError != TextWriter.Null)
+            {
+                newError = TextWriter.Synchronized(newError);
+            }
+
             lock (s_syncObject)
             {
                 s_isErrorTextWriterRedirected = true;
                 Volatile.Write(ref s_error, newError);
             }
-        }
-
-        private static void CheckNonNull(object obj, string paramName)
-        {
-            if (obj == null)
-                throw new ArgumentNullException(paramName);
         }
 
         //

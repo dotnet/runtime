@@ -1136,8 +1136,8 @@ void EEResourceException::GetMessage(SString &result)
     // since we don't want to call managed code here.
     //
 
-    result.Printf("%s (message resource %S)",
-                  CoreLibBinder::GetExceptionName(m_kind), m_resourceName.GetUnicode());
+    result.Printf("%s (message resource %s)",
+                  CoreLibBinder::GetExceptionName(m_kind), m_resourceName.GetUTF8());
 }
 
 BOOL EEResourceException::GetThrowableMessage(SString &result)
@@ -1309,12 +1309,6 @@ BOOL EETypeAccessException::GetThrowableMessage(SString &result)
 // EEArgumentException is an EE exception subclass representing a bad argument
 // ---------------------------------------------------------------------------
 
-typedef struct {
-    OBJECTREF pThrowable;
-    STRINGREF s1;
-    OBJECTREF pTmpThrowable;
-} ProtectArgsStruct;
-
 OBJECTREF EEArgumentException::CreateThrowable()
 {
 
@@ -1328,15 +1322,22 @@ OBJECTREF EEArgumentException::CreateThrowable()
 
     _ASSERTE(GetThreadNULLOk() != NULL);
 
-    ProtectArgsStruct prot;
-    memset(&prot, 0, sizeof(ProtectArgsStruct));
-    ResMgrGetString(m_resourceName, &prot.s1);
-    GCPROTECT_BEGIN(prot);
+    struct
+    {
+        OBJECTREF pThrowable;
+        STRINGREF s1;
+        OBJECTREF pTmpThrowable;
+    } gc;
+    gc.pThrowable = NULL;
+    gc.s1 = NULL;
+    gc.pTmpThrowable = NULL;
+    ResMgrGetString(m_resourceName, &gc.s1);
+    GCPROTECT_BEGIN(gc);
 
     MethodTable *pMT = CoreLibBinder::GetException(m_kind);
-    prot.pThrowable = AllocateObject(pMT);
+    gc.pThrowable = AllocateObject(pMT);
 
-    MethodDesc* pMD = MemberLoader::FindMethod(prot.pThrowable->GetMethodTable(),
+    MethodDesc* pMD = MemberLoader::FindMethod(gc.pThrowable->GetMethodTable(),
                             COR_CTOR_METHOD_NAME, &gsig_IM_Str_Str_RetVoid);
 
     if (!pMD)
@@ -1354,8 +1355,8 @@ OBJECTREF EEArgumentException::CreateThrowable()
     if (m_kind == kArgumentException)
     {
         ARG_SLOT args1[] = {
-            ObjToArgSlot(prot.pThrowable),
-            ObjToArgSlot(prot.s1),
+            ObjToArgSlot(gc.pThrowable),
+            ObjToArgSlot(gc.s1),
             ObjToArgSlot(argName),
         };
         exceptionCtor.Call(args1);
@@ -1363,16 +1364,16 @@ OBJECTREF EEArgumentException::CreateThrowable()
     else
     {
         ARG_SLOT args1[] = {
-            ObjToArgSlot(prot.pThrowable),
+            ObjToArgSlot(gc.pThrowable),
             ObjToArgSlot(argName),
-            ObjToArgSlot(prot.s1),
+            ObjToArgSlot(gc.s1),
         };
         exceptionCtor.Call(args1);
     }
 
     GCPROTECT_END(); //Prot
 
-    return prot.pThrowable;
+    return gc.pThrowable;
 }
 
 
@@ -1453,13 +1454,16 @@ OBJECTREF EETypeLoadException::CreateThrowable()
 
     MethodTable *pMT = CoreLibBinder::GetException(kTypeLoadException);
 
-    struct _gc {
+    struct {
         OBJECTREF pNewException;
         STRINGREF pNewAssemblyString;
         STRINGREF pNewClassString;
         STRINGREF pNewMessageArgString;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.pNewException = NULL;
+    gc.pNewAssemblyString = NULL;
+    gc.pNewClassString = NULL;
+    gc.pNewMessageArgString = NULL;
     GCPROTECT_BEGIN(gc);
 
     gc.pNewClassString = StringObject::NewString(m_fullName);
@@ -1550,10 +1554,7 @@ void EEFileLoadException::SetFileName(const SString &fileName, BOOL removePath)
     {
         SString::CIterator i = fileName.End();
 
-        if (fileName.FindBack(i, W('\\')))
-            i++;
-
-        if (fileName.FindBack(i, W('/')))
+        if (fileName.FindBack(i, DIRECTORY_SEPARATOR_CHAR_W))
             i++;
 
         m_name.Set(fileName, i, fileName.End());
@@ -1632,11 +1633,12 @@ OBJECTREF EEFileLoadException::CreateThrowable()
     }
     CONTRACTL_END;
 
-    struct _gc {
+    struct {
         OBJECTREF pNewException;
         STRINGREF pNewFileString;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.pNewException = NULL;
+    gc.pNewFileString = NULL;
     GCPROTECT_BEGIN(gc);
 
     gc.pNewFileString = StringObject::NewString(m_name);
@@ -1949,7 +1951,12 @@ OBJECTREF EECOMException::CreateThrowable()
         {
             // We have a non 0 help context so use it to form the help link.
             SString strMessage;
-            strMessage.Printf(W("%s#%d"), m_ED.bstrHelpFile, m_ED.dwHelpContext);
+            strMessage.Append(m_ED.bstrHelpFile);
+
+            // Add the help context
+            WCHAR cxt[ARRAY_SIZE("#") + MaxSigned32BitDecString] = W("#");
+            FormatInteger(cxt + 1, ARRAY_SIZE(cxt) - 1, "%d", m_ED.dwHelpContext);
+            strMessage.Append(cxt);
             helpStr = StringObject::NewString(strMessage);
         }
         else
@@ -2149,7 +2156,7 @@ CLRLastThrownObjectException* CLRLastThrownObjectException::Validate()
                 "The 'LastThrownObject' should not be, but is, NULL.\n"
                 "The runtime may have lost track of the type of an exception in flight.\n"
                 "Please get a good stack trace, find the caller of Validate, and file a bug against the owner.\n\n"
-                "To suppress this assert 'set COMPlus_SuppressLostExceptionTypeAssert=1'");
+                "To suppress this assert 'set DOTNET_SuppressLostExceptionTypeAssert=1'");
         }
     }
 

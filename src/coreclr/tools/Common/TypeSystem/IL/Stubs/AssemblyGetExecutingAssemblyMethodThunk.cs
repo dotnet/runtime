@@ -10,7 +10,7 @@ namespace Internal.IL.Stubs
     /// is to load something that will let us identify the current assembly and call a class library
     /// helper that will let us get the Assembly.
     /// </summary>
-    internal partial class AssemblyGetExecutingAssemblyMethodThunk : ILStubMethod
+    internal sealed partial class AssemblyGetExecutingAssemblyMethodThunk : ILStubMethod
     {
         public AssemblyGetExecutingAssemblyMethodThunk(TypeDesc owningType, IAssemblyDesc executingAssembly)
         {
@@ -81,7 +81,7 @@ namespace Internal.IL.Stubs
         }
     }
 
-    internal class AssemblyGetExecutingAssemblyMethodThunkCache
+    internal sealed class AssemblyGetExecutingAssemblyMethodThunkCache
     {
         private TypeDesc _owningTypeForThunks;
         private Unifier _cache;
@@ -97,7 +97,7 @@ namespace Internal.IL.Stubs
             return _cache.GetOrCreateValue(executingAssembly);
         }
 
-        private class Unifier : LockFreeReaderHashtable<IAssemblyDesc, AssemblyGetExecutingAssemblyMethodThunk>
+        private sealed class Unifier : LockFreeReaderHashtable<IAssemblyDesc, AssemblyGetExecutingAssemblyMethodThunk>
         {
             private AssemblyGetExecutingAssemblyMethodThunkCache _parent;
 

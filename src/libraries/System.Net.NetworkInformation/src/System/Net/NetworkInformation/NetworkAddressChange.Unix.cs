@@ -104,22 +104,9 @@ namespace System.Net.NetworkInformation
                         if (s_availabilityTimer == null)
                         {
                             // Don't capture the current ExecutionContext and its AsyncLocals onto the timer causing them to live forever
-                            bool restoreFlow = false;
-                            try
+                            using (ExecutionContext.SuppressFlow())
                             {
-                                if (!ExecutionContext.IsFlowSuppressed())
-                                {
-                                    ExecutionContext.SuppressFlow();
-                                    restoreFlow = true;
-                                }
-
                                 s_availabilityTimer = new Timer(s_availabilityTimerFiredCallback, null, Timeout.Infinite, Timeout.Infinite);
-                            }
-                            finally
-                            {
-                                // Restore the current ExecutionContext
-                                if (restoreFlow)
-                                    ExecutionContext.RestoreFlow();
                             }
                         }
 
@@ -219,7 +206,7 @@ namespace System.Net.NetworkInformation
             {
                 // Unexpected error.
                 Debug.Fail($"Unexpected error: {ex}");
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(ex);
             }
 
             static unsafe Interop.Error ReadEvents(Socket socket)

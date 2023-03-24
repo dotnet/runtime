@@ -116,7 +116,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return TypeDesc.EmptyTypes;
+                return EmptyTypes;
             }
         }
 

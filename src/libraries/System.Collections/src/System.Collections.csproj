@@ -7,7 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Collections\BitArray.cs" />
-    <Compile Include="System\Collections\Generic\CollectionExtensions.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ICollectionDebugView.cs"
              Link="Common\System\Collections\Generic\ICollectionDebugView.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\IDictionaryDebugView.cs"

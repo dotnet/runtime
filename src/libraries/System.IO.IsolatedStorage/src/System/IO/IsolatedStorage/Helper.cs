@@ -5,14 +5,12 @@ namespace System.IO.IsolatedStorage
 {
     internal static partial class Helper
     {
-        private const string IsolatedStorageDirectoryName = "IsolatedStorage";
-
         private static string? s_machineRootDirectory;
         private static string? s_roamingUserRootDirectory;
         private static string? s_userRootDirectory;
 
         /// <summary>
-        /// The full root directory is the relevant special folder from Environment.GetFolderPath() plus "IsolatedStorage"
+        /// The full root directory is the relevant special folder from Environment.GetFolderPath() plus IsolatedStorageDirectoryName
         /// and a set of random directory names if not roaming. (The random directories aren't created for WinRT as
         /// the FolderPath locations for WinRT are app isolated already.)
         ///
@@ -21,6 +19,8 @@ namespace System.IO.IsolatedStorage
         ///     User: @"C:\Users\jerem\AppData\Local\IsolatedStorage\10v31ho4.bo2\eeolfu22.f2w\"
         ///     User|Roaming: @"C:\Users\jerem\AppData\Roaming\IsolatedStorage\"
         ///     Machine: @"C:\ProgramData\IsolatedStorage\nin03cyc.wr0\o3j0urs3.0sn\"
+        ///     Android path: "/data/user/0/net.dot.System.IO.IsolatedStorage.Tests/files/.config/.isolated-storage/"
+        ///     iOS path: "/var/mobile/Containers/Data/Application/A323CBB9-A2B3-4432-9449-48CC20C07A7D/Documents/.config/.isolated-storage/"
         ///
         /// Identity for the current store gets tacked on after this.
         /// </summary>

@@ -26,6 +26,7 @@ namespace System.Runtime.Serialization
         {
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? InternalDeserialize(XmlReaderDelegator xmlReader, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle, string name, string ns)
         {
@@ -35,6 +36,7 @@ namespace System.Runtime.Serialization
                 return InternalDeserializeWithSurrogate(xmlReader, Type.GetTypeFromHandle(declaredTypeHandle)!, null /*surrogateDataContract*/, name, ns);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? InternalDeserialize(XmlReaderDelegator xmlReader, Type declaredType, string? name, string? ns)
         {
@@ -44,6 +46,7 @@ namespace System.Runtime.Serialization
                 return InternalDeserializeWithSurrogate(xmlReader, declaredType, null /*surrogateDataContract*/, name, ns);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? InternalDeserialize(XmlReaderDelegator xmlReader, Type declaredType, DataContract? dataContract, string? name, string? ns)
         {
@@ -53,6 +56,7 @@ namespace System.Runtime.Serialization
                 return InternalDeserializeWithSurrogate(xmlReader, declaredType, dataContract, name, ns);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private object? InternalDeserializeWithSurrogate(XmlReaderDelegator xmlReader, Type declaredType, DataContract? surrogateDataContract, string? name, string? ns)
         {
@@ -62,7 +66,7 @@ namespace System.Runtime.Serialization
                 GetDataContract(DataContractSurrogateCaller.GetDataContractType(_serializationSurrogateProvider, declaredType));
             if (this.IsGetOnlyCollection && dataContract.UnderlyingType != declaredType)
             {
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.SurrogatesWithGetOnlyCollectionsNotSupportedSerDeser, DataContract.GetClrTypeFullName(declaredType))));
+                throw new InvalidDataContractException(SR.Format(SR.SurrogatesWithGetOnlyCollectionsNotSupportedSerDeser, DataContract.GetClrTypeFullName(declaredType)));
             }
             ReadAttributes(xmlReader);
             string objectId = GetObjectId();
@@ -73,6 +77,7 @@ namespace System.Runtime.Serialization
             return obj;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void CheckIfTypeSerializable(Type memberType, bool isMemberTypeSerializable)
         {
@@ -82,13 +87,14 @@ namespace System.Runtime.Serialization
                     memberType = memberType.GetElementType()!;
                 memberType = DataContractSurrogateCaller.GetDataContractType(_serializationSurrogateProvider, memberType);
                 if (!DataContract.IsTypeSerializable(memberType))
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.TypeNotSerializable, memberType)));
+                    throw new InvalidDataContractException(SR.Format(SR.TypeNotSerializable, memberType));
                 return;
             }
 
             base.CheckIfTypeSerializable(memberType, isMemberTypeSerializable);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override Type GetSurrogatedType(Type type)
         {
@@ -102,8 +108,8 @@ namespace System.Runtime.Serialization
                 Type surrogateType = DataContractSerializer.GetSurrogatedType(_serializationSurrogateProvider, type);
                 if (this.IsGetOnlyCollection && surrogateType != type)
                 {
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.SurrogatesWithGetOnlyCollectionsNotSupportedSerDeser,
-                        DataContract.GetClrTypeFullName(type))));
+                    throw new InvalidDataContractException(SR.Format(SR.SurrogatesWithGetOnlyCollectionsNotSupportedSerDeser,
+                        DataContract.GetClrTypeFullName(type)));
                 }
                 else
                 {

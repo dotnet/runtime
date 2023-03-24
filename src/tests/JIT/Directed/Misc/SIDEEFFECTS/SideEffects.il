@@ -226,7 +226,7 @@ ERROR_EXIT:
 //----------------------------------------------------------------------------
 
 
-  .method public static int32 main(class [mscorlib]System.String[] A_0) il managed
+  .method public static int32 main() il managed
   {
 	.entrypoint
 	.maxstack 10

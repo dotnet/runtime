@@ -1,8 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
-    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
+    <IgnoreForCI Condition="'$(TargetOS)' == 'browser'">true</IgnoreForCI>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs" Link="Common\System\IO\TempDirectory.cs" />
@@ -96,9 +96,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Configuration.ConfigurationManager.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-      <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.TraceSource\src\System.Diagnostics.TraceSource.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Configuration" />

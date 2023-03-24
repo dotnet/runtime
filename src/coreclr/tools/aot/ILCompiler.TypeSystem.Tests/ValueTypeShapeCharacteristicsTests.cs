@@ -9,11 +9,10 @@ namespace TypeSystemTests
 {
     public class ValueTypeShapeCharacteristicsTests
     {
-        const ValueTypeShapeCharacteristics Float32Aggregate = ValueTypeShapeCharacteristics.Float32Aggregate;
-        const ValueTypeShapeCharacteristics Float64Aggregate = ValueTypeShapeCharacteristics.Float64Aggregate;
-
-        TestTypeSystemContext _context;
-        ModuleDesc _testModule;
+        private const ValueTypeShapeCharacteristics Float32Aggregate = ValueTypeShapeCharacteristics.Float32Aggregate;
+        private const ValueTypeShapeCharacteristics Float64Aggregate = ValueTypeShapeCharacteristics.Float64Aggregate;
+        private TestTypeSystemContext _context;
+        private ModuleDesc _testModule;
 
         public ValueTypeShapeCharacteristicsTests()
         {
@@ -32,7 +31,7 @@ namespace TypeSystemTests
 
             Assert.True(singleType.IsHomogeneousAggregate);
             Assert.Equal(Float32Aggregate, singleType.ValueTypeShapeCharacteristics);
-            
+
             Assert.True(doubleType.IsHomogeneousAggregate);
             Assert.Equal(Float64Aggregate, doubleType.ValueTypeShapeCharacteristics);
         }

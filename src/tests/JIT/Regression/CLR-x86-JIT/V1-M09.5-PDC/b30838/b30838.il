@@ -3,7 +3,6 @@
 
 
 
-.module 'b10939'
 // MVID: {5E222DAB-74B5-4FA9-A101-AE45EE636213}
 .assembly extern legacy library mscorlib {}
 .assembly extern System.Console
@@ -11,7 +10,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'b10939'
+.assembly 'b30838'
 {
   
 }
@@ -26,6 +25,7 @@
   IL_0001:  ret
 } // end of global method 'foo'
 
+.class public auto ansi Test_b30838 extends [mscorlib] System.Object {
 .method public static int32 main() il managed
 {
   .entrypoint
@@ -41,5 +41,6 @@ ldc.i4 100
 add
   IL_0012:  ret
 } // end of global method 'main'
+}
 
 //*********** DISASSEMBLY COMPLETE ***********************

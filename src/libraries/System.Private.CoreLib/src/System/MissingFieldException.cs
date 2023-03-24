@@ -31,6 +31,7 @@ namespace System
         {
             ClassName = className;
             MemberName = fieldName;
+            HResult = HResults.COR_E_MISSINGFIELD;
         }
 
         protected MissingFieldException(SerializationInfo info, StreamingContext context)

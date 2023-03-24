@@ -11,17 +11,17 @@ namespace System.Reflection
     internal sealed unsafe class RuntimeEventInfo : EventInfo
     {
         #region Private Data Members
-        private int m_token;
-        private EventAttributes m_flags;
+        private readonly int m_token;
+        private readonly EventAttributes m_flags;
         private string? m_name;
-        private void* m_utf8name;
-        private RuntimeTypeCache m_reflectedTypeCache;
-        private RuntimeMethodInfo? m_addMethod;
-        private RuntimeMethodInfo? m_removeMethod;
-        private RuntimeMethodInfo? m_raiseMethod;
-        private MethodInfo[]? m_otherMethod;
-        private RuntimeType m_declaringType;
-        private BindingFlags m_bindingFlags;
+        private readonly void* m_utf8name;
+        private readonly RuntimeTypeCache m_reflectedTypeCache;
+        private readonly RuntimeMethodInfo? m_addMethod;
+        private readonly RuntimeMethodInfo? m_removeMethod;
+        private readonly RuntimeMethodInfo? m_raiseMethod;
+        private readonly MethodInfo[]? m_otherMethod;
+        private readonly RuntimeType m_declaringType;
+        private readonly BindingFlags m_bindingFlags;
         #endregion
 
         #region Constructor
@@ -71,7 +71,11 @@ namespace System.Reflection
 
         public override bool Equals(object? obj) =>
             ReferenceEquals(this, obj) ||
-            (MetadataUpdater.IsSupported && CacheEquals(obj));
+            (MetadataUpdater.IsSupported &&
+                obj is RuntimeEventInfo ei &&
+                ei.m_token == m_token &&
+                ReferenceEquals(ei.m_declaringType, m_declaringType) &&
+                ReferenceEquals(ei.m_reflectedTypeCache.GetRuntimeType(), m_reflectedTypeCache.GetRuntimeType()));
 
         public override int GetHashCode() =>
             HashCode.Combine(m_token.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());

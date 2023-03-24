@@ -223,6 +223,7 @@ namespace System
             return nint_t.TryParse(s, out Unsafe.As<nint, nint_t>(ref result));
         }
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
@@ -241,6 +242,11 @@ namespace System
             return nint_t.TryParse(s, out Unsafe.As<nint, nint_t>(ref result));
         }
 
+        /// <summary>Tries to parse a string into a value.</summary>
+        /// <param name="s">A read-only span of characters containing a number to convert.</param>
+        /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />.</param>
+        /// <param name="result">When this method returns, contains the result of successfully parsing <paramref name="s" /> or an undefined value on failure.</param>
+        /// <returns><see langword="true" /> if <paramref name="s" /> was converted successfully; otherwise, <see langword="false" />.</returns>
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
@@ -278,18 +284,23 @@ namespace System
         public static (nint Quotient, nint Remainder) DivRem(nint left, nint right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
+        [Intrinsic]
         public static nint LeadingZeroCount(nint value) => BitOperations.LeadingZeroCount((nuint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
+        [Intrinsic]
         public static nint PopCount(nint value) => BitOperations.PopCount((nuint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
+        [Intrinsic]
         public static nint RotateLeft(nint value, int rotateAmount) => (nint)BitOperations.RotateLeft((nuint)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
+        [Intrinsic]
         public static nint RotateRight(nint value, int rotateAmount) => (nint)BitOperations.RotateRight((nuint)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
+        [Intrinsic]
         public static nint TrailingZeroCount(nint value) => BitOperations.TrailingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
@@ -534,6 +545,8 @@ namespace System
         public static bool IsPow2(nint value) => BitOperations.IsPow2(value);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint Log2(nint value)
         {
             if (value < 0)
@@ -1117,7 +1130,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<nint>.TryConvertToChecked<TOther>(nint value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<nint>.TryConvertToChecked<TOther>(nint value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1178,14 +1191,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<nint>.TryConvertToSaturating<TOther>(nint value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<nint>.TryConvertToSaturating<TOther>(nint value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1250,14 +1263,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<nint>.TryConvertToTruncating<TOther>(nint value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<nint>.TryConvertToTruncating<TOther>(nint value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1318,7 +1331,7 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }

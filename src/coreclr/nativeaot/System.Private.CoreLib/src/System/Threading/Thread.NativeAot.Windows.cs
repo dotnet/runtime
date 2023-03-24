@@ -377,7 +377,7 @@ namespace System.Threading
             t_comState &= ~ComState.InitializedByUs;
         }
 
-        // TODO: https://github.com/dotnet/corefx/issues/20766
+        // TODO: https://github.com/dotnet/runtime/issues/22161
         public void DisableComObjectEagerCleanup() { }
 
         private static Thread InitializeExistingThreadPoolThread()
@@ -497,8 +497,5 @@ namespace System.Threading
             InitializedByUs = 1,
             Locked = 2,
         }
-
-        // TODO: Use GetCurrentProcessorNumberEx for NUMA
-        private static int ComputeCurrentProcessorId() => (int)Interop.Kernel32.GetCurrentProcessorNumber();
     }
 }

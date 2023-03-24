@@ -20,6 +20,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         private readonly EnumDataContractCriticalHelper _helper;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal EnumDataContract(Type type) : base(new EnumDataContractCriticalHelper(type))
         {
@@ -33,6 +34,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         public override DataContract BaseContract
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => _helper.BaseContract;
         }
@@ -40,6 +42,7 @@ namespace System.Runtime.Serialization.DataContracts
         internal XmlQualifiedName BaseContractName
         {
             get => _helper.BaseContractName;
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             set => _helper.BaseContractName = value;
         }
@@ -50,7 +53,7 @@ namespace System.Runtime.Serialization.DataContracts
             set => _helper.Members = value;
         }
 
-        public override ReadOnlyCollection<DataMember> DataMembers => (Members == null) ? DataContract.s_emptyDataMemberList : Members.AsReadOnly();
+        public override ReadOnlyCollection<DataMember> DataMembers => (Members == null) ? ReadOnlyCollection<DataMember>.Empty : Members.AsReadOnly();
 
         internal List<long>? Values
         {
@@ -116,6 +119,7 @@ namespace System.Runtime.Serialization.DataContracts
                 return retVal;
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal EnumDataContractCriticalHelper(
                 [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
@@ -157,6 +161,7 @@ namespace System.Runtime.Serialization.DataContracts
             {
                 get => _baseContract.XmlName;
 
+                [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
                 [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
                 set
                 {
@@ -311,13 +316,13 @@ namespace System.Runtime.Serialization.DataContracts
                 }
                 // enforce that enum value was completely parsed
                 if (longValue != 0)
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.InvalidEnumValueOnWrite, value, DataContract.GetClrTypeFullName(UnderlyingType))));
+                    throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.InvalidEnumValueOnWrite, value, DataContract.GetClrTypeFullName(UnderlyingType)));
 
                 if (noneWritten && zeroIndex >= 0)
                     writer.WriteString(ChildElementNames![zeroIndex].Value);
             }
             else
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.InvalidEnumValueOnWrite, value, DataContract.GetClrTypeFullName(UnderlyingType))));
+                throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.InvalidEnumValueOnWrite, value, DataContract.GetClrTypeFullName(UnderlyingType)));
         }
 
         internal object ReadEnumValue(XmlReaderDelegator reader)
@@ -357,7 +362,7 @@ namespace System.Runtime.Serialization.DataContracts
             else
             {
                 if (stringValue.Length == 0)
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.InvalidEnumValueOnRead, stringValue, DataContract.GetClrTypeFullName(UnderlyingType))));
+                    throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.InvalidEnumValueOnRead, stringValue, DataContract.GetClrTypeFullName(UnderlyingType)));
                 longValue = ReadEnumValue(stringValue, 0, stringValue.Length);
             }
 
@@ -376,7 +381,7 @@ namespace System.Runtime.Serialization.DataContracts
                     return Values![i];
                 }
             }
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.InvalidEnumValueOnRead, value.Substring(index, count), DataContract.GetClrTypeFullName(UnderlyingType))));
+            throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.InvalidEnumValueOnRead, value.Substring(index, count), DataContract.GetClrTypeFullName(UnderlyingType)));
         }
 
         internal string GetStringFromEnumValue(long value)
@@ -434,12 +439,14 @@ namespace System.Runtime.Serialization.DataContracts
             return false;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
             WriteEnumValue(xmlWriter, obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {

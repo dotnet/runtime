@@ -307,10 +307,7 @@ namespace System.Net.Http
 
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 if (value > HttpContent.MaxBufferSize)
                 {
@@ -319,7 +316,7 @@ namespace System.Net.Http
                         HttpContent.MaxBufferSize));
                 }
 
-                CheckDisposed();
+                ObjectDisposedException.ThrowIf(_disposed, this);
 
                 // No-op on property setter.
             }
@@ -749,14 +746,6 @@ namespace System.Net.Http
             // Hack to trigger an InvalidOperationException if a property that's stored on
             // SslOptions is changed, since SslOptions itself does not do any such checks.
             _socketHandler!.SslOptions = _socketHandler!.SslOptions;
-        }
-
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().ToString());
-            }
         }
 
         private object InvokeNativeHandlerMethod(string name, params object?[] parameters)

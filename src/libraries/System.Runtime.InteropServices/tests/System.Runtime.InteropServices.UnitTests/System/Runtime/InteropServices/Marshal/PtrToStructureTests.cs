@@ -139,6 +139,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75666", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void PtrToStructure_AutoLayoutClass_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("structure", () => Marshal.PtrToStructure((IntPtr)1, (object)new NonGenericClass()));
@@ -186,6 +187,7 @@ namespace System.Runtime.InteropServices.Tests
 
         [Theory]
         [MemberData(nameof(PtrToStructure_ObjectNotBlittable_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75666", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void PtrToStructure_ObjectNoBlittable_ThrowsArgumentException(object structure)
         {
             AssertExtensions.Throws<ArgumentException>("structure", () => Marshal.PtrToStructure((IntPtr)1, structure));
@@ -232,6 +234,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75666", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [MemberData(nameof(PtrToStructure_NonBlittableType_TestData))]
         public void PtrToStructure_NonBlittablType_ThrowsArgumentException(Type structureType)
         {

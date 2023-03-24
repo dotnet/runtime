@@ -134,8 +134,6 @@ Namespace Microsoft.VisualBasic
             Return DirectCast(InvokeMethod("MsgBox", Prompt, Buttons, Title), MsgBoxResult)
         End Function
 
-        <UnconditionalSuppressMessage("ReflectionAnalsys", "IL2075:UnrecognizedReflectionPattern",
-                Justification:="Trimmer warns because it can't see Microsoft.VisualBasic.Forms. If the assembly is there, the trimmer will be able to tell to preserve the method specified.")>
         Private Function InvokeMethod(methodName As String, ParamArray args As Object()) As Object
             Dim type As Type = Type.GetType("Microsoft.VisualBasic._Interaction, Microsoft.VisualBasic.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError:=False)
             Dim method As MethodInfo = type?.GetMethod(methodName)

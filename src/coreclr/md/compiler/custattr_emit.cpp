@@ -16,7 +16,6 @@
 #include "rwutil.h"
 #include "mdlog.h"
 #include "importhelper.h"
-#include "mdperf.h"
 #include "posterror.h"
 #include "cahlprinternal.h"
 #include "custattr.h"
@@ -703,16 +702,11 @@ STDMETHODIMP RegMeta::DefineCustomAttribute(
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CustomAttributeRec  *pRecord = NULL; // New custom Attribute record.
     RID         iRecord;                // New custom Attribute RID.
     CMiniMdRW   *pMiniMd = &m_pStgdb->m_MiniMd;
     int         ixKnown;                // Index of known custom attribute.
 
-    LOG((LOGMD, "RegMeta::DefineCustomAttribute(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", tkOwner, tkCtor,
-            pCustomAttribute, cbCustomAttribute, pcv));
-    START_MD_PERF();
     LOCKWRITE();
 
     _ASSERTE(TypeFromToken(tkCtor) == mdtMethodDef || TypeFromToken(tkCtor) == mdtMemberRef);
@@ -825,9 +819,6 @@ STDMETHODIMP RegMeta::DefineCustomAttribute(
     IfFailGo(UpdateENCLog(TokenFromRid(iRecord, mdtCustomAttribute)));
 
 ErrExit:
-    STOP_MD_PERF(DefineCustomAttribute);
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::DefineCustomAttribute
@@ -845,11 +836,8 @@ STDMETHODIMP RegMeta::SetCustomAttributeValue(  // Return code.
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CustomAttributeRec  *pRecord = NULL;// Existing custom Attribute record.
 
-    START_MD_PERF();
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -862,14 +850,11 @@ STDMETHODIMP RegMeta::SetCustomAttributeValue(  // Return code.
 
     IfFailGo(UpdateENCLog(tkAttr));
 ErrExit:
-
-    STOP_MD_PERF(SetCustomAttributeValue);
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 #endif //!FEATURE_METADATA_EMIT_IN_DEBUGGER
 } // RegMeta::SetCustomAttributeValue
 
+#if !defined(FEATURE_METADATA_EMIT_IN_DEBUGGER)
 //*****************************************************************************
 //*****************************************************************************
 HRESULT RegMeta::_IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
@@ -878,7 +863,6 @@ HRESULT RegMeta::_IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
 {
     HRESULT     hr = S_OK;              // A result.
     CCustAttrHashKey sLookup;           // For looking up a custom attribute.
-    CCustAttrHashKey *pFound;           // Result of a lookup.
     LPCSTR      szNamespace = "";       // Namespace of custom attribute type.
     LPCSTR      szName = "";            // Name of custom attribute type.
     TypeDefRec  *pTypeDefRec = NULL;    // Parent record, when a TypeDef.
@@ -896,7 +880,8 @@ HRESULT RegMeta::_IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
     sLookup.tkType = tkCtor;
 
     // See if this custom attribute type has been seen before.
-    if ((pFound = m_caHash.Find(&sLookup)))
+    const CCustAttrHashKey* pFound = m_caHash.LookupPtr(tkCtor);
+    if (pFound)
     {   // Yes, already seen.
         *pca = pFound->ca;
         hr = (pFound->ca == CA_UNKNOWN) ? S_FALSE : S_OK;
@@ -1005,9 +990,9 @@ HRESULT RegMeta::_IsKnownCustomAttribute(        // S_OK, S_FALSE, or error.
 
     // Add to hash.
     sLookup.ca = ixCa;
-    pFound = m_caHash.Add(&sLookup);
-    IfNullGo(pFound);
-    *pFound = sLookup;
+    if (!m_caHash.AddNoThrow(sLookup))
+        return E_OUTOFMEMORY;
+
     *pca = ixCa;
 
 ErrExit:
@@ -1223,17 +1208,17 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         { // Just verify the attribute.  It still gets stored as a real custom attribute.
         // format is "{01234567-0123-0123-0123-001122334455}"
         GUID guid;
-        WCHAR wzGuid[40];
+        CHAR zGuid[40];
         int cch = qArgs[0].val.str.cbStr;
 
         // Guid should be 36 characters; need to add curlies.
         if (cch == 36)
         {
-            WszMultiByteToWideChar(CP_UTF8, 0, qArgs[0].val.str.pStr,cch, wzGuid+1,39);
-            wzGuid[0] = '{';
-            wzGuid[37] = '}';
-            wzGuid[38] = 0;
-            hr = IIDFromString(wzGuid, &guid);
+            memcpy(zGuid+1, qArgs[0].val.str.pStr, cch);
+            zGuid[0] = '{';
+            zGuid[37] = '}';
+            zGuid[38] = 0;
+            hr = LPCSTRToGuid(zGuid, &guid) ? S_OK : E_FAIL;
         }
         else
             hr = META_E_CA_INVALID_UUID;
@@ -2001,5 +1986,7 @@ ErrExit:
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif
+
+#endif // !FEATURE_METADATA_EMIT_IN_DEBUGGER
 
 #endif //FEATURE_METADATA_EMIT

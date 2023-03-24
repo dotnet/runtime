@@ -37,7 +37,7 @@ namespace System.Net
 {
     internal sealed class HttpEndPointManager
     {
-        private static Dictionary<IPAddress, Dictionary<int, HttpEndPointListener>> s_ipEndPoints = new Dictionary<IPAddress, Dictionary<int, HttpEndPointListener>>();
+        private static readonly Dictionary<IPAddress, Dictionary<int, HttpEndPointListener>> s_ipEndPoints = new Dictionary<IPAddress, Dictionary<int, HttpEndPointListener>>();
 
         private HttpEndPointManager()
         {
@@ -210,7 +210,7 @@ namespace System.Net
                 return;
 
             HttpEndPointListener epl = GetEPListener(lp.Host!, lp.Port, listener, lp.Secure);
-            epl.RemovePrefix(lp, listener);
+            epl.RemovePrefix(lp);
         }
     }
 }

@@ -7,21 +7,21 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.Avx1
 {
-    class Program
+    public partial class Program
     {
-        const int Pass = 100;
-        const int Fail = 0;
 
-        static unsafe int Main(string[] args)
+        [Fact]
+        public static unsafe void MoveMask()
         {
             int testResult = Pass;
 
             if (Avx.IsSupported)
             {
-                using (TestTable<float> floatTable = new TestTable<float>(new float[8] { 1, -5, 100, 0, 1, -5, 100, 0 }))
+                using (TestTable_SingleArray<float> floatTable = new TestTable_SingleArray<float>(new float[8] { 1, -5, 100, 0, 1, -5, 100, 0 }))
                 {
 
                     var vf1 = Unsafe.Read<Vector256<float>>(floatTable.inArray1Ptr);
@@ -35,7 +35,7 @@ namespace IntelHardwareIntrinsicTest
                     }
                 }
 
-                using (TestTable<double> doubleTable = new TestTable<double>(new double[4] { 1, -5, 1, -5 }))
+                using (TestTable_SingleArray<double> doubleTable = new TestTable_SingleArray<double>(new double[4] { 1, -5, 1, -5 }))
                 {
 
                     var vf1 = Unsafe.Read<Vector256<double>>(doubleTable.inArray1Ptr);
@@ -50,17 +50,16 @@ namespace IntelHardwareIntrinsicTest
                 }
             }
 
-
-            return testResult;
+            Assert.Equal(Pass, testResult);
         }
 
-        public unsafe struct TestTable<T> : IDisposable where T : struct
+        public unsafe struct TestTable_SingleArray<T> : IDisposable where T : struct
         {
             public T[] inArray1;
             public void* inArray1Ptr => inHandle1.AddrOfPinnedObject().ToPointer();
             GCHandle inHandle1;
 
-            public TestTable(T[] a)
+            public TestTable_SingleArray(T[] a)
             {
                 this.inArray1 = a;
                 inHandle1 = GCHandle.Alloc(inArray1, GCHandleType.Pinned);

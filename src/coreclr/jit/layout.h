@@ -42,7 +42,7 @@ class ClassLayout
     INDEBUG(const char* m_className;)
 
     // Shortened class name as constructed by Compiler::eeGetShortClassName()
-    INDEBUG(const char16_t* m_shortClassName;)
+    INDEBUG(const char* m_shortClassName;)
 
     // ClassLayout instances should only be obtained via ClassLayoutTable.
     friend class ClassLayoutTable;
@@ -59,7 +59,7 @@ class ClassLayout
         , m_type(TYP_STRUCT)
 #ifdef DEBUG
         , m_className("block")
-        , m_shortClassName(u"block")
+        , m_shortClassName("block")
 #endif
     {
     }
@@ -69,7 +69,7 @@ class ClassLayout
     ClassLayout(CORINFO_CLASS_HANDLE classHandle,
                 bool                 isValueClass,
                 unsigned             size,
-                var_types type DEBUGARG(const char* className) DEBUGARG(const char16_t* shortClassName))
+                var_types type DEBUGARG(const char* className) DEBUGARG(const char* shortClassName))
         : m_classHandle(classHandle)
         , m_size(size)
         , m_isValueClass(isValueClass)
@@ -107,7 +107,7 @@ public:
         return m_className;
     }
 
-    const char16_t* GetShortClassName() const
+    const char* GetShortClassName() const
     {
         return m_shortClassName;
     }
@@ -116,8 +116,6 @@ public:
 
     bool IsValueClass() const
     {
-        assert(!IsBlockLayout());
-
         return m_isValueClass;
     }
 

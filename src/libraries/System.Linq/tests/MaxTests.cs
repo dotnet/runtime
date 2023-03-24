@@ -2,12 +2,74 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Numerics;
 using Xunit;
 
 namespace System.Linq.Tests
 {
     public class MaxTests : EnumerableTests
     {
+        public static IEnumerable<object[]> Max_AllTypes_TestData()
+        {
+            for (int length = 2; length < 33; length++)
+            {
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (byte)i)), (byte)(length + length - 1) };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (byte)i).ToArray()), (byte)(length + length - 1) };
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (sbyte)i)), (sbyte)(length + length - 1) };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (sbyte)i).ToArray()), (sbyte)(length + length - 1) };
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ushort)i)), (ushort)(length + length - 1) };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ushort)i).ToArray()), (ushort)(length + length - 1) };
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (short)i)), (short)(length + length - 1) };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (short)i).ToArray()), (short)(length + length - 1) };
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (uint)i)), (uint)(length + length - 1) };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (uint)i).ToArray()), (uint)(length + length - 1) };
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (int)i)), (int)(length + length - 1) };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (int)i).ToArray()), (int)(length + length - 1) };
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ulong)i)), (ulong)(length + length - 1) };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (ulong)i).ToArray()), (ulong)(length + length - 1) };
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (long)i)), (long)(length + length - 1) };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (long)i).ToArray()), (long)(length + length - 1) };
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (float)i)), (float)(length + length - 1) };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (float)i).ToArray()), (float)(length + length - 1) };
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (double)i)), (double)(length + length - 1) };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (double)i).ToArray()), (double)(length + length - 1) };
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (decimal)i)), (decimal)(length + length - 1) };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (decimal)i).ToArray()), (decimal)(length + length - 1) };
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (nuint)i)), (nuint)(length + length - 1) };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (nuint)i).ToArray()), (nuint)(length + length - 1) };
+
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (nint)i)), (nint)(length + length - 1) };
+                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (nint)i).ToArray()), (nint)(length + length - 1) };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Max_AllTypes_TestData))]
+        public void Max_AllTypes<T>(IEnumerable<T> source, T expected) where T : INumber<T>
+        {
+            Assert.Equal(expected, source.Max());
+
+            Assert.Equal(expected, source.Max(comparer: null));
+            Assert.Equal(expected, source.Max(Comparer<T>.Default));
+            Assert.Equal(expected, source.Max(Comparer<T>.Create(Comparer<T>.Default.Compare)));
+
+            T first = source.First();
+            Assert.Equal(first, source.Max(Comparer<T>.Create((x, y) => x == first ? 1 : -1)));
+
+            Assert.Equal(expected + T.One, source.Max(x => x + T.One));
+        }
+
         [Fact]
         public void SameResultsRepeatCallsIntQuery()
         {
@@ -64,12 +126,6 @@ namespace System.Linq.Tests
                 yield return new object[] { new TestEnumerable<int>(array), expected };
                 yield return new object[] { array, expected };
             }
-
-            for (int length = 2; length < 33; length++)
-            {
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length)), length + length - 1 };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).ToArray()), length + length - 1 };
-            }
         }
 
         [Theory]
@@ -99,12 +155,6 @@ namespace System.Linq.Tests
             {
                 yield return new object[] { new TestEnumerable<long>(array), expected };
                 yield return new object[] { array, expected };
-            }
-
-            for (int length = 2; length < 33; length++)
-            {
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (long)i)), (long)(length + length - 1) };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (long)i).ToArray()), (long)(length + length - 1) };
             }
         }
 
@@ -167,12 +217,6 @@ namespace System.Linq.Tests
                 yield return new object[] { new TestEnumerable<float>(array), expected };
                 yield return new object[] { array, expected };
             }
-
-            for (int length = 2; length < 33; length++)
-            {
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (float)i)), (float)(length + length - 1) };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (float)i).ToArray()), (float)(length + length - 1) };
-            }
         }
 
         [Theory]
@@ -195,6 +239,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<float>().Max());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<float>().Max(x => x));
+            Assert.Throws<InvalidOperationException>(() => Array.Empty<float>().Max());
+            Assert.Throws<InvalidOperationException>(() => new List<float>().Max());
         }
 
         [Fact]
@@ -251,12 +297,6 @@ namespace System.Linq.Tests
                 yield return new object[] { new TestEnumerable<double>(array), expected };
                 yield return new object[] { array, expected };
             }
-
-            for (int length = 2; length < 33; length++)
-            {
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (double)i)), (double)(length + length - 1) };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (double)i).ToArray()), (double)(length + length - 1) };
-            }
         }
 
         [Theory]
@@ -279,6 +319,8 @@ namespace System.Linq.Tests
         {
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<double>().Max());
             Assert.Throws<InvalidOperationException>(() => Enumerable.Empty<double>().Max(x => x));
+            Assert.Throws<InvalidOperationException>(() => Array.Empty<double>().Max());
+            Assert.Throws<InvalidOperationException>(() => new List<double>().Max());
         }
 
         [Fact]
@@ -320,12 +362,6 @@ namespace System.Linq.Tests
             {
                 yield return new object[] { new TestEnumerable<decimal>(array), expected };
                 yield return new object[] { array, expected };
-            }
-
-            for (int length = 2; length < 33; length++)
-            {
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (decimal)i)), (decimal)(length + length - 1) };
-                yield return new object[] { Shuffler.Shuffle(Enumerable.Range(length, length).Select(i => (decimal)i).ToArray()), (decimal)(length + length - 1) };
             }
         }
 

@@ -25,7 +25,7 @@ namespace System.Formats.Tar
         {
             if (!superStream.CanRead)
             {
-                throw new InvalidOperationException(SR.IO_NotSupported_UnreadableStream);
+                throw new ArgumentException(SR.IO_NotSupported_UnreadableStream, nameof(superStream));
             }
             _startInSuperStream = startPosition;
             _positionInSuperStream = startPosition;
@@ -85,10 +85,7 @@ namespace System.Formats.Tar
 
         protected void ThrowIfDisposed()
         {
-            if (_isDisposed)
-            {
-                throw new ObjectDisposedException(GetType().ToString(), SR.IO_StreamDisposed);
-            }
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
 
         private void ThrowIfBeyondEndOfStream()
@@ -188,10 +185,7 @@ namespace System.Formats.Tar
         // the substream is just 'a chunk' of the super-stream
         protected override void Dispose(bool disposing)
         {
-            if (disposing && !_isDisposed)
-            {
-                _isDisposed = true;
-            }
+            _isDisposed = true;
             base.Dispose(disposing);
         }
     }

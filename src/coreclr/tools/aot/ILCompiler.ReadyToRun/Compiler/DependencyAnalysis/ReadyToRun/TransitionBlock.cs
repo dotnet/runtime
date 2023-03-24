@@ -383,7 +383,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             }
 
                             if (size <= EnregisteredReturnTypeIntegerMaxSize)
+                            {
+                                if (IsLoongArch64)
+                                    fpReturnSize = LoongArch64PassStructInRegister.GetLoongArch64PassStructInRegisterFlags(thRetType.GetRuntimeTypeHandle()) & 0xff;
                                 break;
+                            }
+
                         }
                     }
 

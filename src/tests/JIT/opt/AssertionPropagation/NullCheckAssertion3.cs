@@ -36,7 +36,7 @@ internal class Sample5
         return h;
     }
 
-    private static int Main(string[] args)
+    private static int Main()
     {
         try
         {

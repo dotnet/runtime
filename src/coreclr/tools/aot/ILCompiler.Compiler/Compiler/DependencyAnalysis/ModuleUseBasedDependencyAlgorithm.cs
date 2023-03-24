@@ -7,7 +7,7 @@ using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal class ModuleUseBasedDependencyAlgorithm
+    internal static class ModuleUseBasedDependencyAlgorithm
     {
         internal static void AddDependenciesDueToModuleUse(ref DependencyList dependencyList, NodeFactory factory, ModuleDesc module)
         {

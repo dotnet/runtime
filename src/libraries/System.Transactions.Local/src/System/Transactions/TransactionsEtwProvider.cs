@@ -573,7 +573,7 @@ namespace System.Transactions
         }
 
         [Event(ENLISTMENT_CREATED_LTM_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Informational, Task = Tasks.Enlistment, Opcode = Opcodes.Create, Message = "Enlistment Created (LTM). ID is {0}, type is {1}, options is {2}")]
-        [UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2026", Justification = "Only string/int are passed")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Only string/int are passed")]
         private void EnlistmentCreatedLtm(int enlistmentIdentifier, string enlistmentType, string enlistmentOptions)
         {
             SetActivityId(string.Empty);
@@ -581,7 +581,7 @@ namespace System.Transactions
         }
 
         [Event(ENLISTMENT_CREATED_OLETX_EVENTID, Keywords = Keywords.TraceOleTx, Level = EventLevel.Informational, Task = Tasks.Enlistment, Opcode = Opcodes.Create, Message = "Enlistment Created (OLETX). ID is {0}, type is {1}, options is {2}")]
-        [UnconditionalSuppressMessage("AssemblyLoadTrimming", "IL2026", Justification = "Only string/int are passed")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Only string/int are passed")]
         private void EnlistmentCreatedOleTx(int enlistmentIdentifier, string enlistmentType, string enlistmentOptions)
         {
             SetActivityId(string.Empty);

@@ -160,59 +160,6 @@ namespace System.Linq.Parallel.Tests
         }
     }
 
-    /// <summary>
-    /// All funcs to be used as comparers by wrapping and delegating.
-    /// </summary>
-    internal static class DelegatingComparer
-    {
-        public static IComparer<T> Create<T>(Func<T, T, int> comparer)
-        {
-            return new DelegatingOrderingComparer<T>(comparer);
-        }
-
-        public static IEqualityComparer<T> Create<T>(Func<T, T, bool> comparer, Func<T, int> hashcode)
-        {
-            return new DelegatingEqualityComparer<T>(comparer, hashcode);
-        }
-
-        private class DelegatingOrderingComparer<T> : IComparer<T>
-        {
-            private readonly Func<T, T, int> _comparer;
-
-            public DelegatingOrderingComparer(Func<T, T, int> comparer)
-            {
-                _comparer = comparer;
-            }
-
-            public int Compare(T left, T right)
-            {
-                return _comparer(left, right);
-            }
-        }
-
-        private class DelegatingEqualityComparer<T> : IEqualityComparer<T>
-        {
-            private readonly Func<T, T, bool> _comparer;
-            private readonly Func<T, int> _hashcode;
-
-            public DelegatingEqualityComparer(Func<T, T, bool> comparer, Func<T, int> hashcode)
-            {
-                _comparer = comparer;
-                _hashcode = hashcode;
-            }
-
-            public bool Equals(T left, T right)
-            {
-                return _comparer(left, right);
-            }
-
-            public int GetHashCode(T item)
-            {
-                return _hashcode(item);
-            }
-        }
-    }
-
     internal struct NotComparable
     {
         private readonly int _value;

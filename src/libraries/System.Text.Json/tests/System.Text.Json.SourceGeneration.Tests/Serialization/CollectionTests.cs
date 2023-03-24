@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Tests;
 using System.Threading.Tasks;
@@ -17,7 +18,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed class CollectionTests_Metadata_String : CollectionTests_Metadata
     {
         public CollectionTests_Metadata_String()
-            : base(new StringSerializerWrapper(CollectionTestsContext_Metadata.Default, (options) => new CollectionTestsContext_Metadata(options)))
+            : base(new StringSerializerWrapper(CollectionTestsContext_Metadata.Default))
         {
         }
     }
@@ -25,7 +26,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public sealed class CollectionTests_Metadata_AsyncStream : CollectionTests_Metadata
     {
         public CollectionTests_Metadata_AsyncStream()
-            : base(new AsyncStreamSerializerWrapper(CollectionTestsContext_Metadata.Default, (options) => new CollectionTestsContext_Metadata(options)))
+            : base(new AsyncStreamSerializerWrapper(CollectionTestsContext_Metadata.Default))
         {
         }
     }
@@ -109,6 +110,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithIgnoredIDictionary))]
         [JsonSerializable(typeof(ClassWithIgnoreAttributeDictionary))]
         [JsonSerializable(typeof(ClassWithIgnoredImmutableDictionary))]
+        [JsonSerializable(typeof(ClassWithNotSupportedDictionary))]
+        [JsonSerializable(typeof(ClassWithNotSupportedDictionaryButIgnored))]
         [JsonSerializable(typeof(Dictionary<string, AllSingleUpperProperties_Child>))]
         [JsonSerializable(typeof(AllSingleUpperPropertiesParent))]
         [JsonSerializable(typeof(ClassWithDictionaryOfString_ChildWithDictionaryOfString))]
@@ -131,8 +134,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Dictionary<string, ClassWithPrivateParameterlessConstructor>))]
         [JsonSerializable(typeof(Dictionary<string, Dictionary<string, CustomClass>>))]
         [JsonSerializable(typeof(TestClassWithDictionary))]
-        [JsonSerializable(typeof(IReadOnlyDictionary<Uri, int>))]
-        [JsonSerializable(typeof(GenericIReadOnlyDictionaryWrapper<Uri, int>))]
+        [JsonSerializable(typeof(IReadOnlyDictionary<JsonNode, int>))]
+        [JsonSerializable(typeof(GenericIReadOnlyDictionaryWrapper<JsonNode, int>))]
         [JsonSerializable(typeof(List<int>))]
         [JsonSerializable(typeof(IReadOnlyDictionary<int, int>))]
         [JsonSerializable(typeof(Dictionary<string, CustomClass>))]
@@ -238,7 +241,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(MyListString))]
         [JsonSerializable(typeof(NetworkWrapper))]
         [JsonSerializable(typeof(Client))]
-        [JsonSerializable(typeof(IReadOnlyDictionary<Uri, int>))]
+        [JsonSerializable(typeof(IReadOnlyDictionary<JsonNode, int>))]
         [JsonSerializable(typeof(IEnumerable<IEnumerable>))]
         [JsonSerializable(typeof(GenericIEnumerableWrapper<WrapperForIEnumerable>))]
         [JsonSerializable(typeof(IEnumerable))]
@@ -439,7 +442,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public partial class CollectionTests_Default : CollectionTests
     {
         public CollectionTests_Default()
-            : base(new StringSerializerWrapper(CollectionTestsContext_Default.Default, (options) => new CollectionTestsContext_Default(options)))
+            : base(new StringSerializerWrapper(CollectionTestsContext_Default.Default))
         {
         }
 
@@ -505,6 +508,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithIgnoredIDictionary))]
         [JsonSerializable(typeof(ClassWithIgnoreAttributeDictionary))]
         [JsonSerializable(typeof(ClassWithIgnoredImmutableDictionary))]
+        [JsonSerializable(typeof(ClassWithNotSupportedDictionary))]
+        [JsonSerializable(typeof(ClassWithNotSupportedDictionaryButIgnored))]
         [JsonSerializable(typeof(Dictionary<string, AllSingleUpperProperties_Child>))]
         [JsonSerializable(typeof(AllSingleUpperPropertiesParent))]
         [JsonSerializable(typeof(ClassWithDictionaryOfString_ChildWithDictionaryOfString))]
@@ -527,8 +532,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Dictionary<string, ClassWithPrivateParameterlessConstructor>))]
         [JsonSerializable(typeof(Dictionary<string, Dictionary<string, CustomClass>>))]
         [JsonSerializable(typeof(TestClassWithDictionary))]
-        [JsonSerializable(typeof(IReadOnlyDictionary<Uri, int>))]
-        [JsonSerializable(typeof(GenericIReadOnlyDictionaryWrapper<Uri, int>))]
+        [JsonSerializable(typeof(IReadOnlyDictionary<JsonNode, int>))]
+        [JsonSerializable(typeof(GenericIReadOnlyDictionaryWrapper<JsonNode, int>))]
         [JsonSerializable(typeof(List<int>))]
         [JsonSerializable(typeof(IReadOnlyDictionary<int, int>))]
         [JsonSerializable(typeof(Dictionary<string, CustomClass>))]
@@ -634,7 +639,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(MyListString))]
         [JsonSerializable(typeof(NetworkWrapper))]
         [JsonSerializable(typeof(Client))]
-        [JsonSerializable(typeof(IReadOnlyDictionary<Uri, int>))]
+        [JsonSerializable(typeof(IReadOnlyDictionary<JsonNode, int>))]
         [JsonSerializable(typeof(IEnumerable<IEnumerable>))]
         [JsonSerializable(typeof(GenericIEnumerableWrapper<WrapperForIEnumerable>))]
         [JsonSerializable(typeof(IEnumerable))]

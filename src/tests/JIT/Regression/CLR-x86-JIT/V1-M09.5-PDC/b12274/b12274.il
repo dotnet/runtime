@@ -10,7 +10,7 @@
 .assembly b12274
 {
 }
-.class mul_ovf {
+.class public mul_ovf {
 .method static	int32 u8(int64,int64) {
 .maxstack	5
 try_start:
@@ -32,7 +32,7 @@ done:
 .try try_start to try_end catch [mscorlib]System.OverflowException handler handler_start to handler_end
 }
 
-.method static int32 main(class [mscorlib]System.String[]) {
+.method public static int32 main() {
 .entrypoint
 .maxstack	10
 	ldc.i8		0x8000000000000000

@@ -51,7 +51,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             TraceTypeSystemContext tsc,
             TraceRuntimeDescToTypeSystemDesc idParser,
             int clrInstanceID,
-            FileInfo preciseDebugInfoFile,
+            string preciseDebugInfoFile,
             Logger logger)
         {
             // Capture the addresses of jitted code
@@ -164,7 +164,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             if (preciseDebugInfoFile != null)
             {
                 preciseInfos =
-                    File.ReadAllLines(preciseDebugInfoFile.FullName)
+                    File.ReadAllLines(preciseDebugInfoFile)
                     .Select(l => JsonSerializer.Deserialize<PreciseDebugInfo>(l))
                     .ToList();
             }

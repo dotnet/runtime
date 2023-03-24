@@ -9,8 +9,6 @@ namespace System.Net.NetworkInformation
 {
     internal static partial class StringParsingHelpers
     {
-        private static readonly string[] s_newLineSeparator = new string[] { Environment.NewLine }; // Used for string splitting
-
         internal static int ParseNumSocketConnections(string filePath, string protocolName)
         {
             // Parse the number of active connections out of /proc/net/sockstat
@@ -32,7 +30,7 @@ namespace System.Net.NetworkInformation
             if (tcp4ConnectionsFile != null)
             {
                 string tcp4FileContents = ReadAllText(tcp4ConnectionsFile);
-                v4connections = tcp4FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+                v4connections = tcp4FileContents.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
             }
             else
             {
@@ -42,7 +40,7 @@ namespace System.Net.NetworkInformation
             if (tcp6ConnectionsFile != null)
             {
                 string tcp6FileContents = ReadAllText(tcp6ConnectionsFile);
-                v6connections = tcp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+                v6connections = tcp6FileContents.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
             }
             else
             {
@@ -112,7 +110,7 @@ namespace System.Net.NetworkInformation
             if (tcp4ConnectionsFile != null)
             {
                 string tcp4FileContents = ReadAllText(tcp4ConnectionsFile);
-                v4connections = tcp4FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+                v4connections = tcp4FileContents.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
             }
             else
             {
@@ -122,7 +120,7 @@ namespace System.Net.NetworkInformation
             if (tcp6ConnectionsFile != null)
             {
                 string tcp6FileContents = ReadAllText(tcp6ConnectionsFile);
-                v6connections = tcp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+                v6connections = tcp6FileContents.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
             }
             else
             {
@@ -192,7 +190,7 @@ namespace System.Net.NetworkInformation
             if (udp4File != null)
             {
                 string udp4FileContents = ReadAllText(udp4File);
-                v4connections = udp4FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+                v4connections = udp4FileContents.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
             }
             else
             {
@@ -202,7 +200,7 @@ namespace System.Net.NetworkInformation
             if (udp6File != null)
             {
                 string udp6FileContents = ReadAllText(udp6File);
-                v6connections = udp6FileContents.Split(s_newLineSeparator, StringSplitOptions.RemoveEmptyEntries);
+                v6connections = udp6FileContents.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
             }
             else
             {

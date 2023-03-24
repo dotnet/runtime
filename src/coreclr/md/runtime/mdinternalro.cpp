@@ -1248,7 +1248,7 @@ HRESULT MDInternalRO::GetItemGuid(      // return hresult
         wzBlob[0] = '{';
         wzBlob[37] = '}';
         wzBlob[38] = 0;
-        hr = IIDFromString(wzBlob, pGuid);
+        hr = LPCWSTRToGuid(wzBlob, pGuid) ? S_OK : E_FAIL;
     }
     else
         *pGuid = GUID_NULL;
@@ -1674,9 +1674,6 @@ HRESULT MDInternalRO::GetMethodSpecProps(         // S_OK or error.
 {
     HRESULT         hr = NOERROR;
     MethodSpecRec  *pMethodSpecRec;
-
-    LOG((LOGMD, "MD RegMeta::GetMethodSpecProps(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        mi, tkParent, ppvSigBlob, pcbSigBlob));
 
     _ASSERTE(TypeFromToken(mi) == mdtMethodSpec);
 

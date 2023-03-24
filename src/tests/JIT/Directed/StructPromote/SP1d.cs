@@ -31,7 +31,7 @@ class SP1d
         // outarg[0] <= inarg[8]; outarg[4] <= r3; outarg[8] <= r2
     }
 
-    public static int Main(String[] args)
+    public static int Main()
     {
         int res = M(4, 5, 6, 7, 3, 2, 1);
         Console.WriteLine("M(4, 5, 6, 7, 3, 2, 1) is {0}.", res);

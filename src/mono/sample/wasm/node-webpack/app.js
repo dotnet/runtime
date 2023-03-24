@@ -1,12 +1,9 @@
-import createDotnetRuntime from '@microsoft/dotnet-runtime'
+import { dotnet } from '@microsoft/dotnet-runtime'
 import { color } from 'console-log-colors'
 
 async function dotnetMeaning() {
     try {
-        const { getAssemblyExports } = await createDotnetRuntime({
-            configSrc: "./mono-config.json"
-        });
-
+        const { getAssemblyExports } = await dotnet.create();
         const exports = await getAssemblyExports("Wasm.Node.WebPack.Sample");
         const meaningFunction = exports.Sample.Test.Main;
         return meaningFunction();

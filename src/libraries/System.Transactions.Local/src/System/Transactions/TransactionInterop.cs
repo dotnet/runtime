@@ -167,8 +167,7 @@ namespace System.Transactions
                 transactionShim,
                 outcomeEnlistment,
                 txIdentifier,
-                oletxIsoLevel,
-                false);
+                oletxIsoLevel);
 
             // Now create the associated OletxTransaction.
             oleTx = new OletxTransaction(realTx);
@@ -385,8 +384,7 @@ namespace System.Transactions
                     transactionShim,
                     outcomeEnlistment,
                     txIdentifier,
-                    oletxIsoLevel,
-                    false);
+                    oletxIsoLevel);
 
                 oleTx = new OletxTransaction(realTx);
 
@@ -403,8 +401,7 @@ namespace System.Transactions
                     null,
                     null,
                     txIdentifier,
-                    OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE,
-                    false);
+                    OletxTransactionIsolationLevel.ISOLATIONLEVEL_SERIALIZABLE);
 
                 oleTx = new OletxTransaction(realTx);
                 transaction = new Transaction(oleTx);
@@ -511,8 +508,7 @@ namespace System.Transactions
                 transactionShim,
                 outcomeEnlistment,
                 identifier,
-                oletxIsoLevel,
-                false);
+                oletxIsoLevel);
 
             return new OletxTransaction(realTx);
         }

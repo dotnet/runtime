@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -15,32 +16,53 @@ public class TermInfoTests
     public void VerifyInstalledTermInfosParse()
     {
         bool foundAtLeastOne = false;
+        List<Exception>? verifyExceptions = null;
 
-        foreach (string location in TermInfo.DatabaseFactory.s_terminfoLocations)
+        HashSet<string?> locations = new HashSet<string>(TermInfo.DatabaseFactory.SystemTermInfoLocations);
+        locations.Add(TermInfo.DatabaseFactory.HomeTermInfoLocation);
+        locations.Add(TermInfo.DatabaseFactory.EnvVarTermInfoLocation);
+
+        foreach (string location in locations)
         {
             if (!Directory.Exists(location))
                 continue;
 
-            foreach (string term in Directory.EnumerateFiles(location, "*", SearchOption.AllDirectories))
+            foreach (string termFile in Directory.EnumerateFiles(location, "*", SearchOption.AllDirectories))
             {
-                if (term.ToUpper().Contains("README")) continue;
-                foundAtLeastOne = true;
-
-                TerminalFormatStrings info = new(TermInfo.DatabaseFactory.ReadDatabase(Path.GetFileName(term)));
-
-                if (!string.IsNullOrEmpty(info.Foreground))
+                try
                 {
-                    Assert.NotEmpty(TermInfo.ParameterizedStrings.Evaluate(info.Foreground, 0 /* irrelevant, just an integer to put into the formatting*/));
+                    if (termFile.ToUpper().Contains("README")) continue;
+                    foundAtLeastOne = true;
+
+                    string term = Path.GetFileName(termFile);
+                    TermInfo.Database db = TermInfo.DatabaseFactory.ReadDatabase(term, location);
+                    Assert.NotNull(db);
+                    TerminalFormatStrings info = new(db);
+
+                    if (!string.IsNullOrEmpty(info.Foreground))
+                    {
+                        Assert.NotEmpty(TermInfo.ParameterizedStrings.Evaluate(info.Foreground, 0 /* irrelevant, just an integer to put into the formatting*/));
+                    }
+
+                    if (!string.IsNullOrEmpty(info.Background))
+                    {
+                        Assert.NotEmpty(TermInfo.ParameterizedStrings.Evaluate(info.Background, 0 /* irrelevant, just an integer to put into the formatting*/));
+                    }
                 }
-
-                if (!string.IsNullOrEmpty(info.Background))
+                catch (Exception ex)
                 {
-                    Assert.NotEmpty(TermInfo.ParameterizedStrings.Evaluate(info.Background, 0 /* irrelevant, just an integer to put into the formatting*/));
+                    verifyExceptions ??= new();
+                    verifyExceptions.Add(new Exception($"Exception while verifying '{termFile}'", ex));
                 }
             }
         }
 
         Assert.True(foundAtLeastOne, "Didn't find any terminfo files");
+
+        if (verifyExceptions is not null)
+        {
+            throw new AggregateException(verifyExceptions);
+        }
     }
 
     [Fact]

@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -45,10 +43,6 @@ namespace ILCompiler.DependencyAnalysis
 
             if (CompilationModuleGroup.ContainsMethodBody(method, false))
             {
-                // We might be able to optimize the method body away if the owning type was never seen as allocated.
-                if (method.NotCallableWithoutOwningEEType() && CompilationModuleGroup.AllowInstanceMethodOptimization(method))
-                    return new TentativeInstanceMethodNode(new MethodCodeNode(method));
-
                 return new MethodCodeNode(method);
             }
             else
@@ -72,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis
             else
             {
                 // Otherwise we just unbox 'this' and don't touch anything else.
-                return new UnboxingStubNode(method, Target);
+                return new UnboxingStubNode(method);
             }
         }
 

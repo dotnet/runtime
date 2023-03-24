@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -139,7 +140,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public void UnsuccessfulSourceGeneration()
+        public void MultiDimensionArrayDoesNotProduceWarnings()
         {
             static void RunTest(bool explicitRef)
             {
@@ -201,14 +202,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     location = compilation.GetSymbolsWithName("JsonContext").First().Locations[0];
                 }
 
-                // Expected warning logs.
-                (Location, string)[] expectedWarningDiagnostics = new (Location, string)[]
-                {
-                    (location, "Did not generate serialization metadata for type 'global::ReferencedAssembly.ActiveOrUpcomingEvent[]'.")
-                };
-
                 CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-                CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, expectedWarningDiagnostics);
+                CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
                 CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
             }
 
@@ -291,21 +286,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public void WarnOnClassesWithInitOnlyProperties()
+        public void DoNotWarnOnClassesWithInitOnlyProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithInitOnlyProperties();
             JsonSourceGenerator generator = new JsonSourceGenerator();
             CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
 
-            Location location = compilation.GetSymbolsWithName("Id").First().Locations[0];
-
-            (Location, string)[] expectedWarningDiagnostics = new (Location, string)[]
-            {
-                (location, "The type 'Location' defines init-only properties, deserialization of which is currently not supported in source generation mode.")
-            };
-
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, expectedWarningDiagnostics);
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
         }
 
@@ -322,21 +310,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
         
         [Fact]
-        public void WarnOnClassesWithMixedInitOnlyProperties()
+        public void DoNotWarnOnClassesWithMixedInitOnlyProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithMixedInitOnlyProperties();
             JsonSourceGenerator generator = new JsonSourceGenerator();
             CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
 
-            Location location = compilation.GetSymbolsWithName("Orphaned").First().Locations[0];
-
-            (Location, string)[] expectedWarningDiagnostics = new (Location, string)[]
-            {
-                (location, "The type 'MyClass' defines init-only properties, deserialization of which is currently not supported in source generation mode.")
-            };
-
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, expectedWarningDiagnostics);
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
         }
 
@@ -346,6 +327,18 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation compilation = CompilationHelper.CreateCompilationWithRecordPositionalParameters();
             JsonSourceGenerator generator = new JsonSourceGenerator();
             CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+        }
+
+        [Fact]
+        public void DoNotWarnOnClassesWithRequiredProperties()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilationWithRequiredProperties();
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
 
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());

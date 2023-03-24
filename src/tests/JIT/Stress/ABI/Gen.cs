@@ -48,6 +48,9 @@ namespace ABIStress
             if (type == typeof(double))
                 return (double)rand.Next();
 
+            if (type == typeof(Int128))
+                return new Int128((ulong)(long)GenConstant(typeof(long), null, rand), (ulong)(long)GenConstant(typeof(long), null, rand));
+
             if (type == typeof(Vector<int>))
                 return GenConstantVector<Vector<int>, int>(rand);
 
@@ -173,6 +176,8 @@ namespace ABIStress
                 il.Emit(OpCodes.Ldc_R4, (float)val);
             else if (ty == typeof(double))
                 il.Emit(OpCodes.Ldc_R8, (double)val);
+            else if (ty == typeof(Int128))
+                EmitLoadBlittable(il, (Int128)val);
             else if (ty == typeof(Vector<int>))
                 EmitLoadBlittable(il, (Vector<int>)val);
             else if (ty == typeof(Vector128<int>))

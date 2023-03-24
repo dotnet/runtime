@@ -52,7 +52,7 @@ static void DlOpen(const char* libraryName)
     }
 }
 
-static void OpenLibraryOnce()
+static void OpenLibraryOnce(void)
 {
     // If there is an override of the version specified using the CLR_OPENSSL_VERSION_OVERRIDE
     // env variable, try to load that first.
@@ -131,7 +131,7 @@ static void OpenLibraryOnce()
 
 static pthread_once_t g_openLibrary = PTHREAD_ONCE_INIT;
 
-int OpenLibrary()
+int OpenLibrary(void)
 {
     pthread_once(&g_openLibrary, OpenLibraryOnce);
 

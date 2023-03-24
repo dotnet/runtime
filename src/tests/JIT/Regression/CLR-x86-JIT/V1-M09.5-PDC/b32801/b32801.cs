@@ -6,7 +6,7 @@ using System;
 
 public class bug
 {
-    public static int Main(String[] args)
+    public static int Main()
     {
         Decimal cur1 = new Decimal(UInt32.MaxValue);
         Console.WriteLine("The decimal value is: " + cur1);

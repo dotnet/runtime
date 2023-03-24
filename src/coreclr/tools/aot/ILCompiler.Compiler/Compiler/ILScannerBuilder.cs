@@ -6,8 +6,6 @@ using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
-
-using Internal.TypeSystem;
 using Internal.IL;
 
 namespace ILCompiler

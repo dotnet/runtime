@@ -207,7 +207,7 @@ namespace Internal.IL.Stubs
                     codeStream.Emit(ILOpcode.box, emitter.NewToken(boxThisType));
                 }
             }
-            
+
             codeStream.Emit(ILOpcode.call, emitter.NewToken(SystemDelegateType.GetKnownMethod("GetActualTargetFunctionPointer", null)));
 
             MethodSignature targetSignature = new MethodSignature(0, 0, Signature.ReturnType, parameters);
@@ -346,7 +346,7 @@ namespace Internal.IL.Stubs
             codeStream.EmitLdc(0);
             codeStream.EmitStLoc(iteratorLocal);
 
-            // Loop across every element of the array. 
+            // Loop across every element of the array.
             ILCodeLabel startOfLoopLabel = emitter.NewCodeLabel();
             codeStream.EmitLabel(startOfLoopLabel);
 
@@ -494,7 +494,7 @@ namespace Internal.IL.Stubs
         public override MethodIL EmitIL()
         {
             // We will generate the following code:
-            //  
+            //
             // object ret;
             // object[] args = new object[parameterCount];
             // args[0] = param0;

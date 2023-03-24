@@ -25,7 +25,6 @@
     <Compile Include="$(RuntimeSerializationSources)\CollectionDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DateTimeOffsetAdapter.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\DiagnosticUtility.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DictionaryGlobals.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataContractResolver.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataContractSerializer.cs" />
@@ -35,6 +34,7 @@
     <Compile Include="$(RuntimeSerializationSources)\DataContractSurrogateCaller.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataMember.cs" />
     <Compile Include="$(RuntimeSerializationSources)\EnumDataContract.cs" />
+    <Compile Include="$(RuntimeSerializationSources)\ExceptionUtility.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ExportOptions.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ExtensionDataObject.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ExtensionDataReader.cs" />
@@ -149,7 +149,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <AnalyzerReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj"
+                      ReferenceOutputAssembly="false"
+                      SetTargetFramework="TargetFramework=netstandard2.0"
+                      OutputItemType="Analyzer" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />

@@ -70,11 +70,11 @@ namespace System
         /// <remarks>This is known as Euler's number and is approximately 2.7182818284590452354.</remarks>
         public const float E = MathF.E;
 
-        /// <summary>Represents the ratio of the circumference of a circle to its diameter, specified by the constant, π.</summary>
+        /// <summary>Represents the ratio of the circumference of a circle to its diameter, specified by the constant, PI.</summary>
         /// <remarks>Pi is approximately 3.1415926535897932385.</remarks>
         public const float Pi = MathF.PI;
 
-        /// <summary>Represents the number of radians in one turn, specified by the constant, τ.</summary>
+        /// <summary>Represents the number of radians in one turn, specified by the constant, Tau.</summary>
         /// <remarks>Tau is approximately 6.2831853071795864769.</remarks>
         public const float Tau = MathF.Tau;
 
@@ -812,6 +812,9 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(float x) => MathF.ILogB(x);
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
+        public static float Lerp(float value1, float value2, float amount) => (value1 * (1.0f - amount)) + (value2 * amount);
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static float ReciprocalEstimate(float x) => MathF.ReciprocalEstimate(x);
 
@@ -1223,7 +1226,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<float>.TryConvertToChecked<TOther>(float value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<float>.TryConvertToChecked<TOther>(float value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1284,26 +1287,26 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<float>.TryConvertToSaturating<TOther>(float value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<float>.TryConvertToSaturating<TOther>(float value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo<TOther>(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<float>.TryConvertToTruncating<TOther>(float value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<float>.TryConvertToTruncating<TOther>(float value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo<TOther>(value, out result);
         }
 
-        private static bool TryConvertTo<TOther>(float value, [NotNullWhen(true)] out TOther result)
+        private static bool TryConvertTo<TOther>(float value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
@@ -1382,7 +1385,7 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
@@ -1391,6 +1394,7 @@ namespace System
         // IParsable
         //
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out float result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
 
         //

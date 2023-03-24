@@ -1,16 +1,1 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TestRuntime>true</TestRuntime>
-    <Scenario>WasmTestOnBrowser</Scenario>
-    <TestArchiveTestsRoot>$(TestArchiveRoot)browseronly/</TestArchiveTestsRoot>
-    <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
-    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
-    <ExpectedExitCode>42</ExpectedExitCode>
-    <WasmMainJSPath>main.js</WasmMainJSPath>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Include="Program.cs" />
-    <WasmExtraFilesToDeploy Include="index.html" />
-  </ItemGroup>
-</Project>
+<Project Sdk="Microsoft.NET.Sdk" />

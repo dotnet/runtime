@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace System.Xml
@@ -353,7 +354,7 @@ namespace System.Xml
         private void WriteBase64Text(byte[] buffer, int offset, int count)
         {
             _base64Chars ??= new byte[512];
-            Base64Encoding encoding = XmlConverter.Base64Encoding;
+            Base64Encoding encoding = DataContractSerializer.Base64Encoding;
             while (count >= 3)
             {
                 int byteCount = Math.Min(_base64Chars.Length / 4 * 3, count - count % 3);

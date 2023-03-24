@@ -271,7 +271,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73436", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void AddJsonConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {
@@ -375,8 +374,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
                 )
                 .BuildServiceProvider();
 
-            // the configuration binder throws TargetInvocationException when setting options property MaxQueueLength throws exception
-            Assert.Throws<TargetInvocationException>(() => serviceProvider.GetRequiredService<ILoggerProvider>());
+            Assert.Throws<ArgumentOutOfRangeException>(() => serviceProvider.GetRequiredService<ILoggerProvider>());
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]

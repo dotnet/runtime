@@ -131,8 +131,6 @@ RemoveDirectoryHelper (
     BOOL  bRet = FALSE;
     *dwLastError = 0;
 
-    FILEDosToUnixPathA( lpPathName );
-
     if ( rmdir(lpPathName) != 0 )
     {
         TRACE("Removal of directory [%s] was unsuccessful, errno = %d.\n",
@@ -297,100 +295,6 @@ done:
 
 /*++
 Function:
-  GetCurrentDirectoryA
-
-See MSDN doc.
---*/
-DWORD
-PALAPI
-GetCurrentDirectoryA(
-             IN DWORD nBufferLength,
-             OUT LPSTR lpBuffer)
-{
-
-    PathCharString lpBufferString;
-    DWORD dwDirLen = GetCurrentDirectoryA(lpBufferString);
-
-    /* if the supplied buffer isn't long enough, return the required
-       length, including room for the NULL terminator */
-    if ( nBufferLength <= dwDirLen )
-    {
-        ++dwDirLen; /* include space for the NULL */
-    }
-    else
-    {
-        strcpy_s( lpBuffer, nBufferLength, lpBufferString );
-    }
-
-    return dwDirLen;
-}
-
-/*++
-Function:
-  GetCurrentDirectoryW
-
-See MSDN doc.
---*/
-DWORD
-PALAPI
-GetCurrentDirectoryW(
-             IN DWORD nBufferLength,
-             OUT LPWSTR lpBuffer)
-{
-    DWORD dwWideLen = 0;
-    DWORD dwLastError = ERROR_BAD_PATHNAME;
-    int   dir_len;
-    PathCharString  current_dir;
-
-    PERF_ENTRY(GetCurrentDirectoryW);
-    ENTRY("GetCurrentDirectoryW(nBufferLength=%u, lpBuffer=%p)\n",
-          nBufferLength, lpBuffer);
-
-
-    dir_len = GetCurrentDirectoryA(current_dir);
-
-    if( dir_len == 0)
-    {
-        dwLastError = DIRGetLastErrorFromErrno();
-        goto done;
-    }
-
-    dwWideLen = MultiByteToWideChar( CP_ACP, 0,
-                 current_dir, dir_len,
-                 NULL, 0 );
-
-    /* if the supplied buffer isn't long enough, return the required
-       length, including room for the NULL terminator */
-    if ( nBufferLength > dwWideLen )
-    {
-        if(!MultiByteToWideChar( CP_ACP, 0, current_dir, dir_len + 1,
-                     lpBuffer, nBufferLength ))
-        {
-            ASSERT("MultiByteToWideChar failure!\n");
-            dwWideLen = 0;
-            dwLastError = ERROR_INTERNAL_ERROR;
-        }
-    }
-    else
-    {
-        ++dwWideLen; /* include the  space for the NULL */
-    }
-
-done:
-
-    if ( dwLastError )
-    {
-        SetLastError(dwLastError);
-    }
-
-    LOGEXIT("GetCurrentDirectoryW returns DWORD %u\n", dwWideLen);
-    PERF_EXIT(GetCurrentDirectoryW);
-    return dwWideLen;
-}
-
-
-/*++
-Function:
   SetCurrentDirectoryW
 
 See MSDN doc.
@@ -509,7 +413,6 @@ CreateDirectoryA(
         dwLastError = ERROR_NOT_ENOUGH_MEMORY;
         goto done;
     }
-    FILEDosToUnixPathA( unixPathName );
     // Remove any trailing slashes at the end because mkdir might not
     // handle them appropriately on all platforms.
     pathLength = strlen(unixPathName);
@@ -603,7 +506,6 @@ SetCurrentDirectoryA(
     BOOL bRet = FALSE;
     DWORD dwLastError = 0;
     int result;
-    LPSTR unixPathName = NULL;
 
     PERF_ENTRY(SetCurrentDirectoryA);
     ENTRY("SetCurrentDirectoryA(lpPathName=%p (%s))\n",
@@ -619,17 +521,8 @@ SetCurrentDirectoryA(
         goto done;
     }
 
-    unixPathName = PAL__strdup(lpPathName);
-    if (unixPathName == NULL )
-    {
-        ERROR("PAL__strdup() failed\n");
-        dwLastError = ERROR_NOT_ENOUGH_MEMORY;
-        goto done;
-    }
-    FILEDosToUnixPathA( unixPathName );
-
-    TRACE("Attempting to open Unix dir [%s]\n", unixPathName);
-    result = chdir(unixPathName);
+    TRACE("Attempting to open Unix dir [%s]\n", lpPathName);
+    result = chdir(lpPathName);
 
     if ( result == 0 )
     {
@@ -641,7 +534,7 @@ SetCurrentDirectoryA(
         {
             struct stat stat_data;
 
-            if ( stat( unixPathName, &stat_data) == 0 &&
+            if ( stat( lpPathName, &stat_data) == 0 &&
                  (stat_data.st_mode & S_IFMT) == S_IFREG )
             {
                 /* Not a directory, it is a file. */
@@ -649,7 +542,7 @@ SetCurrentDirectoryA(
             }
             else
             {
-                FILEGetProperNotFoundError( unixPathName, &dwLastError );
+                FILEGetProperNotFoundError( lpPathName, &dwLastError );
             }
             TRACE("chdir() failed, path was invalid.\n");
         }
@@ -665,11 +558,6 @@ done:
     if( dwLastError )
     {
         SetLastError(dwLastError);
-    }
-
-    if(unixPathName != NULL)
-    {
-        PAL_free( unixPathName );
     }
 
     LOGEXIT("SetCurrentDirectoryA returns BOOL %d\n", bRet);

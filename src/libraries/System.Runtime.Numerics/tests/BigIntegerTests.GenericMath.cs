@@ -366,6 +366,9 @@ namespace System.Numerics.Tests
 
             Assert.Equal((BigInteger)63, BinaryIntegerHelper<BigInteger>.TrailingZeroCount(Int64MaxValuePlusOne));
             Assert.Equal((BigInteger)0, BinaryIntegerHelper<BigInteger>.TrailingZeroCount(UInt64MaxValue));
+
+            Assert.Equal((BigInteger)1000, BinaryIntegerHelper<BigInteger>.TrailingZeroCount(BigInteger.Pow(2, 1000)));
+            Assert.Equal((BigInteger)1000, BinaryIntegerHelper<BigInteger>.TrailingZeroCount(-BigInteger.Pow(2, 1000)));
         }
 
         [Fact]

@@ -13,7 +13,6 @@
 #include <stdint.h>
 #include <windows.h>
 #include <objbase.h>
-#include <tchar.h>
 #include "debugmacros.h"
 #include <stdlib.h>
 #include <malloc.h>

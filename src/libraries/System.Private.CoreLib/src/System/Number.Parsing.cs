@@ -2736,7 +2736,7 @@ namespace System
             return GetOverflowException(type);
         }
 
-        private static Exception GetOverflowException(TypeCode type)
+        private static OverflowException GetOverflowException(TypeCode type)
         {
             string s;
             switch (type)
@@ -2773,21 +2773,15 @@ namespace System
             return new OverflowException(s);
         }
 
-        private static Exception GetExceptionInt128(ParsingStatus status)
-        {
-            if (status == ParsingStatus.Failed)
-                throw new FormatException(SR.Format_InvalidString);
+        private static Exception GetExceptionInt128(ParsingStatus status) =>
+            status == ParsingStatus.Failed ?
+                new FormatException(SR.Format_InvalidString) :
+                new OverflowException(SR.Overflow_Int128);
 
-            return new OverflowException(SR.Overflow_Int128);
-        }
-
-        private static Exception GetExceptionUInt128(ParsingStatus status)
-        {
-            if (status == ParsingStatus.Failed)
-                throw new FormatException(SR.Format_InvalidString);
-
-            return new OverflowException(SR.Overflow_UInt128);
-        }
+        private static Exception GetExceptionUInt128(ParsingStatus status) =>
+            status == ParsingStatus.Failed ?
+                new FormatException(SR.Format_InvalidString) :
+                new OverflowException(SR.Overflow_UInt128);
 
         internal static double NumberToDouble(ref NumberBuffer number)
         {

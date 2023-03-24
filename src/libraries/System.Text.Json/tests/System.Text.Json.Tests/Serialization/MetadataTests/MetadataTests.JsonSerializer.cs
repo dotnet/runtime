@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -22,6 +23,26 @@ namespace System.Text.Json.Serialization.Tests
             json = await Serializer.SerializeWrapper(actual, typeof(WeatherForecastWithPOCOs), JsonContext.Default);
             actual = (WeatherForecastWithPOCOs)await Serializer.DeserializeWrapper(json, typeof(WeatherForecastWithPOCOs), JsonContext.Default);
             VerifyWeatherForecastWithPOCOs(expected, actual);
+        }
+
+        [Fact]
+        public async Task RoundTripSerializerOverloads_UntypedMetadata()
+        {
+            JsonTypeInfo untypedMetadata = JsonContext.Default.WeatherForecastWithPOCOs;
+
+            WeatherForecastWithPOCOs expected = CreateWeatherForecastWithPOCOs();
+            string json = await Serializer.SerializeWrapper(expected, untypedMetadata);
+            WeatherForecastWithPOCOs actual = Assert.IsType<WeatherForecastWithPOCOs>(await Serializer.DeserializeWrapper(json, untypedMetadata));
+            VerifyWeatherForecastWithPOCOs(expected, actual);
+        }
+
+        [Fact]
+        public async Task SerializerOverloads_NullUntypedMetadata_ThrowsArgumentNullException()
+        {
+            JsonTypeInfo nullMetadata = null!;
+            WeatherForecastWithPOCOs expected = CreateWeatherForecastWithPOCOs();
+            await AssertExtensions.ThrowsAsync<ArgumentNullException>("jsonTypeInfo", () => Serializer.SerializeWrapper(expected, nullMetadata));
+            await AssertExtensions.ThrowsAsync<ArgumentNullException>("jsonTypeInfo", () => Serializer.DeserializeWrapper("{}", nullMetadata));
         }
 
         private static WeatherForecastWithPOCOs CreateWeatherForecastWithPOCOs()

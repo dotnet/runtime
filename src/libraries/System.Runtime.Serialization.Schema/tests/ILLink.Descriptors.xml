@@ -1,0 +1,5 @@
+<linker>
+  <assembly fullname="System.CodeDom">
+    <type fullname="Microsoft.CSharp.CSharpCodeProvider" />
+  </assembly>
+</linker>

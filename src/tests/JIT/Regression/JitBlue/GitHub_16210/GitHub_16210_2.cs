@@ -20,7 +20,7 @@ using System.Runtime.CompilerServices;
     public float w;
 }
 
-class X
+public class X
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static float E(ref float p, int i)
@@ -35,7 +35,7 @@ class X
         return E(ref test.x, i);
     }
 
-    static int Main(string[] args)
+    public static int Main()
     {
         float v0 = P(0);
         float v1 = P(1);

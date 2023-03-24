@@ -44,7 +44,15 @@ namespace Internal.Runtime.CompilerHelpers
                 return structureTypeHandle.GetValueTypeSize();
             }
 
-            throw new NotSupportedException(SR.Format(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structureTypeHandle)));
+            // If the type is an interface or a generic type, the reason is likely that.
+            Type structureType = Type.GetTypeFromHandle(structureTypeHandle)!;
+            if (structureTypeHandle.IsInterface() || structureTypeHandle.IsGenericType())
+            {
+                throw new ArgumentException(SR.Format(SR.Arg_CannotMarshal, structureType));
+            }
+
+            // Otherwise assume we miss interop data for the type.
+            throw new NotSupportedException(SR.Format(SR.StructMarshalling_MissingInteropData, structureType));
         }
 
         public static IntPtr GetStructUnmarshalStub(RuntimeTypeHandle structureTypeHandle)

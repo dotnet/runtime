@@ -12,7 +12,7 @@
 // *****************************************************************************
 // WARNING!!!: These values and code are also used by SOS in the diagnostics
 // repo. Should updated in a backwards and forwards compatible way.
-// See: https://github.com/dotnet/diagnostics/blob/master/src/inc/gcinfotypes.h
+// See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/gcinfotypes.h
 // *****************************************************************************
 
 #define PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
@@ -596,7 +596,6 @@ void FASTCALL decodeCallPattern(int         pattern,
 
 // Stack offsets must be 8-byte aligned, so we use this unaligned
 //  offset to represent that the method doesn't have a security object
-#define NO_SECURITY_OBJECT        (-1)
 #define NO_GS_COOKIE              (-1)
 #define NO_STACK_BASE_REGISTER    (0xffffffff)
 #define NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA (0xffffffff)

@@ -758,7 +758,7 @@ namespace System.IO
             InternalWriteAllLines(new StreamWriter(path, false, encoding), contents);
         }
 
-        private static void InternalWriteAllLines(TextWriter writer, IEnumerable<string> contents)
+        private static void InternalWriteAllLines(StreamWriter writer, IEnumerable<string> contents)
         {
             Debug.Assert(writer != null);
             Debug.Assert(contents != null);
@@ -1069,7 +1069,7 @@ namespace System.IO
                 : InternalWriteAllLinesAsync(AsyncStreamWriter(path, encoding, append: false), contents, cancellationToken);
         }
 
-        private static async Task InternalWriteAllLinesAsync(TextWriter writer, IEnumerable<string> contents, CancellationToken cancellationToken)
+        private static async Task InternalWriteAllLinesAsync(StreamWriter writer, IEnumerable<string> contents, CancellationToken cancellationToken)
         {
             Debug.Assert(writer != null);
             Debug.Assert(contents != null);

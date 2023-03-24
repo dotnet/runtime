@@ -65,6 +65,8 @@ namespace System.Reflection.Emit
         [DynamicDependency(nameof(modopts))]  // Automatically keeps all previous fields too due to StructLayout
         internal SignatureHelper(ModuleBuilder? module, SignatureHelperType type)
         {
+            AssemblyBuilder.EnsureDynamicCodeSupported();
+
             this.type = type;
             this.module = module;
         }
@@ -72,7 +74,7 @@ namespace System.Reflection.Emit
         public static SignatureHelper GetFieldSigHelper(Module? mod)
         {
             if (mod != null && !(mod is ModuleBuilder))
-                throw new ArgumentException("ModuleBuilder is expected");
+                throw new NotSupportedException(SR.NotSupported_MustBeModuleBuilder);
 
             return new SignatureHelper((ModuleBuilder?)mod, SignatureHelperType.HELPER_FIELD);
         }
@@ -80,7 +82,7 @@ namespace System.Reflection.Emit
         public static SignatureHelper GetLocalVarSigHelper(Module? mod)
         {
             if (mod != null && !(mod is ModuleBuilder))
-                throw new ArgumentException("ModuleBuilder is expected");
+                throw new NotSupportedException(SR.NotSupported_MustBeModuleBuilder);
 
             return new SignatureHelper((ModuleBuilder?)mod, SignatureHelperType.HELPER_LOCAL);
         }
@@ -192,9 +194,9 @@ namespace System.Reflection.Emit
             {
                 ArgumentNullException.ThrowIfNull(modifier, name);
                 if (modifier.IsArray)
-                    throw new ArgumentException("Array type not permitted", name);
+                    throw new ArgumentException(SR.Argument_ArraysInvalid, name);
                 if (modifier.ContainsGenericParameters)
-                    throw new ArgumentException("Open Generic Type not permitted", name);
+                    throw new ArgumentException(SR.Argument_OpenGenericTypeNotPermitted, name);
             }
         }
 
@@ -204,7 +206,7 @@ namespace System.Reflection.Emit
                 return;
 
             if (custom_modifiers.Length != n)
-                throw new ArgumentException(string.Format("Custom modifiers length `{0}' does not match the size of the arguments", custom_modifiers.Length));
+                throw new ArgumentException(SR.Format(SR.Argument_CustomModifierLengthInvalidLength, custom_modifiers.Length));
 
             foreach (Type[] parameter_modifiers in custom_modifiers)
             {
@@ -217,7 +219,7 @@ namespace System.Reflection.Emit
 
         private static Exception MissingFeature()
         {
-            throw new NotImplementedException("Mono does not currently support setting modOpt/modReq through SignatureHelper");
+            throw new NotImplementedException(SR.NotImplemented_NoSupportForModOpt);
         }
 
         // FIXME: "Currently we ignore requiredCustomModifiers and optionalCustomModifiers"
@@ -370,7 +372,7 @@ namespace System.Reflection.Emit
 
         public byte[] GetSignature()
         {
-            TypeBuilder.ResolveUserTypes(arguments);
+            RuntimeTypeBuilder.ResolveUserTypes(arguments);
 
             return type switch
             {
@@ -389,17 +391,17 @@ namespace System.Reflection.Emit
                                                            Type[]? parameters)
         {
             if (mod != null && !(mod is ModuleBuilder))
-                throw new ArgumentException("ModuleBuilder is expected");
+                throw new NotSupportedException(SR.NotSupported_MustBeModuleBuilder);
 
             returnType ??= typeof(void);
 
             if (returnType.IsUserType)
-                throw new NotSupportedException("User defined subclasses of System.Type are not yet supported.");
+                throw new NotSupportedException(SR.PlatformNotSupported_UserDefinedSubclassesOfType);
             if (parameters != null)
             {
                 for (int i = 0; i < parameters.Length; ++i)
                     if (parameters[i].IsUserType)
-                        throw new NotSupportedException("User defined subclasses of System.Type are not yet supported.");
+                        throw new NotSupportedException(SR.PlatformNotSupported_UserDefinedSubclassesOfType);
 
             }
 

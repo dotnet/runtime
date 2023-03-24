@@ -4,16 +4,19 @@
 using System;
 using System.Runtime.Intrinsics.X86;
 using System.Numerics;
+using Xunit;
 
-namespace IntelHardwareIntrinsicTest
+namespace IntelHardwareIntrinsicTest.General
 {
-    class Program
+    public partial class Program
     {
-        static int Main(string[] args)
+        [Xunit.ActiveIssue("https://github.com/dotnet/runtime/issues/75767", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMonoLLVMAOT))]
+        [Fact]
+        public static void IsSupported()
         {
             bool result = true;
 
-            if (Sse.IsSupported && int.TryParse(Environment.GetEnvironmentVariable("COMPlus_EnableIncompleteISAClass"), out var enableIncompleteIsa) && (enableIncompleteIsa != 0))
+            if (Sse.IsSupported && int.TryParse(Environment.GetEnvironmentVariable("DOTNET_EnableIncompleteISAClass"), out var enableIncompleteIsa) && (enableIncompleteIsa != 0))
             {
                 // X86 platforms
                 if (Vector<byte>.Count == 32 && !Avx2.IsSupported)
@@ -53,8 +56,7 @@ namespace IntelHardwareIntrinsicTest
             {
                 result = false;
             }
-            return result ? 100 : 0;
+            Assert.True(result);
         }
-
     }
 }

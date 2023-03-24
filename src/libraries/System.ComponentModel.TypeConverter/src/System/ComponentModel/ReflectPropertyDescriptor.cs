@@ -536,7 +536,7 @@ namespace System.ComponentModel
 
         internal Type? ExtenderGetReceiverType() => _receiverType;
 
-        internal Type ExtenderGetType(IExtenderProvider provider) => PropertyType;
+        internal Type ExtenderGetType() => PropertyType;
 
         internal object? ExtenderGetValue(IExtenderProvider? provider, object? component)
         {
@@ -956,14 +956,8 @@ namespace System.ComponentModel
         /// </summary>
         public override void RemoveValueChanged(object? component, EventHandler handler)
         {
-            if (component == null)
-            {
-                throw new ArgumentNullException(nameof(component));
-            }
-            if (handler == null)
-            {
-                throw new ArgumentNullException(nameof(handler));
-            }
+            ArgumentNullException.ThrowIfNull(component);
+            ArgumentNullException.ThrowIfNull(handler);
 
             // If there's an event called <propertyname>Changed, we hooked the caller's
             // handler directly up to that on the component, so remove it now.

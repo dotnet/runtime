@@ -112,6 +112,7 @@ namespace System.Net.Http.Functional.Tests
                 .Where(i => !i.Description.StartsWith("PANGP Virtual Ethernet"))    // This is a VPN adapter, but is reported as a regular Ethernet interface with
                                                                                     // a valid link-local address, but the link-local address doesn't actually work.
                                                                                     // So just manually filter it out.
+                .Where(i => !i.Name.Contains("Tailscale"))                          // Same as PANGP above.
                 .SelectMany(i => i.GetIPProperties().UnicastAddresses)
                 .Select(a => a.Address)
                 .Where(a => a.IsIPv6LinkLocal)
@@ -172,9 +173,6 @@ namespace System.Net.Http.Functional.Tests
             // Browser doesn't support ServerCertificateCustomValidationCallback
             if (allowAllCertificates && PlatformDetection.IsNotBrowser)
             {
-                // On Android, it is not enough to set the custom validation callback, the certificates also need to be trusted by the OS.
-                // See HttpClientHandlerTestBase.SocketsHttpHandler.cs:CreateHttpClientHandler for more details.
-
                 handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
             }
 

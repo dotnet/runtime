@@ -7,7 +7,7 @@ using System.Transactions.Oletx;
 // This files contains non-Windows stubs for Windows-only functionality, so that Sys.Tx can build. The APIs below
 // are only ever called when a distributed transaction is needed, and throw PlatformNotSupportedException.
 
-#pragma warning disable CA1822
+#pragma warning disable CA1822, IDE0060
 
 namespace System.Transactions.Oletx
 {
@@ -117,7 +117,7 @@ namespace System.Transactions.Oletx
         internal static IDtcTransaction GetDtcTransaction()
             => throw NotSupported();
 
-        void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext context)
+        public void GetObjectData(SerializationInfo serializationInfo, StreamingContext context)
         {
             //if (serializationInfo == null)
             //{

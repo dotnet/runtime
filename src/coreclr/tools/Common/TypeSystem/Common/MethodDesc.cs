@@ -60,7 +60,7 @@ namespace Internal.TypeSystem
         }
 
         // Provide a means to create a MethodSignature which ignores EmbeddedSignature data in the MethodSignatures it is compared to
-        public static EmbeddedSignatureData[] EmbeddedSignatureMismatchPermittedFlag = new EmbeddedSignatureData[0];
+        public static EmbeddedSignatureData[] EmbeddedSignatureMismatchPermittedFlag = Array.Empty<EmbeddedSignatureData>();
 
         public MethodSignature(MethodSignatureFlags flags, int genericParameterCount, TypeDesc returnType, TypeDesc[] parameters, EmbeddedSignatureData[] embeddedSignatureData = null)
         {
@@ -445,8 +445,8 @@ namespace Internal.TypeSystem
         public override bool Equals(object o)
         {
             // Its only valid to compare two MethodDescs in the same context
-            Debug.Assert(o is not MethodDesc || object.ReferenceEquals(((MethodDesc)o).Context, this.Context));
-            return object.ReferenceEquals(this, o);
+            Debug.Assert(o is not MethodDesc || ReferenceEquals(((MethodDesc)o).Context, this.Context));
+            return ReferenceEquals(this, o);
         }
 
         /// <summary>
@@ -519,7 +519,7 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Gets a value indicating whether this method is a static constructor.
         /// </summary>
-        public bool IsStaticConstructor
+        public virtual bool IsStaticConstructor
         {
             get
             {
@@ -577,6 +577,14 @@ namespace Internal.TypeSystem
         /// Gets a value indicating that this method cannot be overridden.
         /// </summary>
         public virtual bool IsFinal
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public virtual bool IsPublic
         {
             get
             {

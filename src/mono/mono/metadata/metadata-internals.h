@@ -16,7 +16,6 @@
 #include "mono/utils/mono-dl.h"
 #include "mono/utils/monobitset.h"
 #include "mono/utils/mono-property-hash.h"
-#include "mono/utils/mono-value-hash.h"
 #include <mono/utils/mono-error.h>
 #include "mono/utils/mono-conc-hashtable.h"
 #include "mono/utils/refcount.h"
@@ -1247,5 +1246,8 @@ mono_metadata_table_to_ptr_table (int table_num)
 		g_assert_not_reached ();
 	}
 }
+
+uint32_t
+mono_metadata_get_method_params (MonoImage *image, uint32_t method_idx, uint32_t *last_param_out);
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */

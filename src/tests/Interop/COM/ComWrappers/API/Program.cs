@@ -17,34 +17,65 @@ namespace ComWrappersTests
     {
         class TestComWrappers : ComWrappers
         {
+            private static IntPtr fpQueryInterface = default;
+            private static IntPtr fpAddRef = default;
+            private static IntPtr fpRelease = default;
+            private static IntPtr fpWrappedQueryInterface = default;
+
+            static TestComWrappers()
+            {
+                ComWrappers.GetIUnknownImpl(out fpQueryInterface, out fpAddRef, out fpRelease);
+                fpWrappedQueryInterface = MockReferenceTrackerRuntime.WrapQueryInterface(fpQueryInterface);
+            }
+
             protected unsafe override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
             {
-                IntPtr fpQueryInterface = default;
-                IntPtr fpAddRef = default;
-                IntPtr fpRelease = default;
-                ComWrappers.GetIUnknownImpl(out fpQueryInterface, out fpAddRef, out fpRelease);
-
                 ComInterfaceEntry* entryRaw = null;
                 count = 0;
                 if (obj is Test)
                 {
-                    var vtbl = new ITestVtbl()
+                    // If the caller is requesting an IUnknown definition we supply 2 vtables
+                    count = flags.HasFlag(CreateComInterfaceFlags.CallerDefinedIUnknown) ? 2 : 1;
+                    entryRaw = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ITestVtbl), sizeof(ComInterfaceEntry) * count);
+
+                    int index = 0;
+                    if (flags.HasFlag(CreateComInterfaceFlags.CallerDefinedIUnknown))
                     {
-                        IUnknownImpl = new IUnknownVtbl()
+                        // This IUnknown wraps the QueryInterface to validate proper detection
+                        // of ComWrappers created managed object wrappers.
+                        var vtbl = new IUnknownVtbl()
                         {
-                            QueryInterface = fpQueryInterface,
+                            QueryInterface = fpWrappedQueryInterface,
                             AddRef = fpAddRef,
                             Release = fpRelease
-                        },
-                        SetValue = Marshal.GetFunctionPointerForDelegate(ITestVtbl.pSetValue)
-                    };
-                    var vtblRaw = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ITestVtbl), sizeof(ITestVtbl));
-                    Marshal.StructureToPtr(vtbl, vtblRaw, false);
+                        };
 
-                    entryRaw = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ITestVtbl), sizeof(ComInterfaceEntry));
-                    entryRaw->IID = typeof(ITest).GUID;
-                    entryRaw->Vtable = vtblRaw;
-                    count = 1;
+                        var vtblRaw = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ITestVtbl), sizeof(IUnknownVtbl));
+                        Marshal.StructureToPtr(vtbl, vtblRaw, false);
+
+                        entryRaw[index].IID = IUnknownVtbl.IID_IUnknown;
+                        entryRaw[index].Vtable = vtblRaw;
+                        index++;
+                    }
+
+                    {
+                        var vtbl = new ITestVtbl()
+                        {
+                            IUnknownImpl = new IUnknownVtbl()
+                            {
+                                QueryInterface = fpQueryInterface,
+                                AddRef = fpAddRef,
+                                Release = fpRelease
+                            },
+                            SetValue = Marshal.GetFunctionPointerForDelegate(ITestVtbl.pSetValue)
+                        };
+                        var vtblRaw = RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ITestVtbl), sizeof(ITestVtbl));
+                        Marshal.StructureToPtr(vtbl, vtblRaw, false);
+
+                        entryRaw[index].IID = typeof(ITest).GUID;
+                        entryRaw[index].Vtable = vtblRaw;
+                        index++;
+                    }
                 }
 
                 return entryRaw;
@@ -195,6 +226,59 @@ namespace ComWrappersTests
 
             var trackerObj3 = (ITrackerObjectWrapper)cw.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject | CreateObjectFlags.UniqueInstance);
             Assert.NotEqual(trackerObj1, trackerObj3);
+        }
+
+        static void ValidateMappingAPIs()
+        {
+            Console.WriteLine($"Running {nameof(ValidateMappingAPIs)}...");
+
+            var cw = new TestComWrappers();
+
+            // Allocate a wrapper for the managed instance
+            var managedObj = new Test();
+            IntPtr managedWrapper = cw.GetOrCreateComInterfaceForObject(managedObj, CreateComInterfaceFlags.None);
+            Assert.NotEqual(IntPtr.Zero, managedWrapper);
+
+            // Allocate wrapper with user defined IUnknown.
+            // Using a new ComWrappers instance because
+            // a native wrapper for a managed object is associated
+            // with its allocating ComWrappers instance.
+            var cwAlt = new TestComWrappers();
+            IntPtr managedWrapper2 = cwAlt.GetOrCreateComInterfaceForObject(managedObj, CreateComInterfaceFlags.CallerDefinedIUnknown);
+            Assert.NotEqual(IntPtr.Zero, managedWrapper2);
+
+            // Create a wrapper for the unmanaged instance
+            IntPtr unmanagedObj = MockReferenceTrackerRuntime.CreateTrackerObject();
+            Guid IID_IUnknown = IUnknownVtbl.IID_IUnknown;
+            Assert.Equal(0, Marshal.QueryInterface(unmanagedObj, ref IID_IUnknown, out IntPtr unmanagedObjIUnknown));
+            var unmanagedWrapper = cw.GetOrCreateObjectForComInstance(unmanagedObj, CreateObjectFlags.None);
+
+            // Also allocate a unique instance to validate looking from an uncached instance
+            var unmanagedWrapperUnique = cw.GetOrCreateObjectForComInstance(unmanagedObj, CreateObjectFlags.UniqueInstance);
+
+            // Verify TryGetObject
+            Assert.True(ComWrappers.TryGetObject(managedWrapper, out object managedObjOther));
+            Assert.Equal(managedObj, managedObjOther);
+            Assert.True(ComWrappers.TryGetObject(managedWrapper2, out object managedObjOther2));
+            Assert.Equal(managedObj, managedObjOther2);
+            Assert.False(ComWrappers.TryGetObject(unmanagedObj, out object _));
+
+            // Verify TryGetComInstance
+            Assert.False(ComWrappers.TryGetComInstance(managedObj, out IntPtr _));
+            Assert.True(ComWrappers.TryGetComInstance(unmanagedWrapper, out IntPtr unmanagedObjOther));
+            Assert.True(ComWrappers.TryGetComInstance(unmanagedWrapperUnique, out IntPtr unmanagedObjOtherUnique));
+            Assert.Equal(unmanagedObjIUnknown, unmanagedObjOther);
+            Assert.Equal(unmanagedObjIUnknown, unmanagedObjOtherUnique);
+            Marshal.Release(unmanagedObjOther);
+            Marshal.Release(unmanagedObjOtherUnique);
+
+            // Release unmanaged resources
+            int count = Marshal.Release(managedWrapper);
+            Assert.Equal(0, count);
+            count = Marshal.Release(managedWrapper2);
+            Assert.Equal(0, count);
+            Marshal.Release(unmanagedObj);
+            Marshal.Release(unmanagedObjIUnknown);
         }
 
         static void ValidateWrappersInstanceIsolation()
@@ -563,6 +647,7 @@ namespace ComWrappersTests
                 // Use the base type
                 IntPtr testWrapper = cw.GetOrCreateComInterfaceForObject(new Test(), CreateComInterfaceFlags.TrackerSupport);
                 int id = derived.AddObjectRef(testWrapper);
+                Marshal.Release(testWrapper);
 
                 // Tell the tracker runtime to release its hold on the base instance.
                 MockReferenceTrackerRuntime.ReleaseAllTrackerObjects();
@@ -611,7 +696,7 @@ namespace ComWrappersTests
             Assert.Equal(0, allocTracker.GetCount());
         }
 
-        static int Main(string[] doNotUse)
+        static int Main()
         {
             try
             {
@@ -619,6 +704,7 @@ namespace ComWrappersTests
                 ValidateComInterfaceCreationRoundTrip();
                 ValidateFallbackQueryInterface();
                 ValidateCreateObjectCachingScenario();
+                ValidateMappingAPIs();
                 ValidateWrappersInstanceIsolation();
                 ValidatePrecreatedExternalWrapper();
                 ValidateExternalWrapperCacheCleanUp();

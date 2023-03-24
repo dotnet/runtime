@@ -1311,6 +1311,11 @@ LExit:
 
     DebuggerRCThread* t = (DebuggerRCThread*)g_pRCThread;
 
+    if (FAILED(SetThreadName(t->m_thread, W(".NET Debugger"))))
+    {
+        LOG((LF_CORDB, LL_INFO10000, "DebuggerRCThread name set failed\n"));
+    }
+
     t->ThreadProc(); // this thread is local, go and become the helper
 
     return 0;
@@ -1366,7 +1371,6 @@ HRESULT DebuggerRCThread::Start(void)
         {
             LOG((LF_CORDB, LL_EVERYTHING, "DebuggerRCThread failed, err=%d\n", GetLastError()));
             hr = HRESULT_FROM_GetLastError();
-
         }
         else
         {

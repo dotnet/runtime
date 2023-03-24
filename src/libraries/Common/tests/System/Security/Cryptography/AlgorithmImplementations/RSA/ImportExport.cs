@@ -311,6 +311,22 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void ImportZeroModulus(bool includePrivateParameters)
+        {
+            RSAParameters zeroModulus = CopyRSAParameters(TestData.RSA2048Params);
+            zeroModulus.Modulus.AsSpan().Clear();
+
+            if (!includePrivateParameters)
+            {
+                zeroModulus = MakePublic(zeroModulus);
+            }
+
+            Assert.ThrowsAny<CryptographicException>(() => RSAFactory.Create(zeroModulus));
+        }
+
         internal static void AssertKeyEquals(in RSAParameters expected, in RSAParameters actual)
         {
             Assert.Equal(expected.Modulus, actual.Modulus);
@@ -443,6 +459,23 @@ namespace System.Security.Cryptography.Rsa.Tests
                 // The key is too big for this platform.
                 return false;
             }
+        }
+
+        private static RSAParameters CopyRSAParameters(in RSAParameters rsaParams)
+        {
+            static byte[] CopyBytes(byte[] data) => data is null ? null : data.AsSpan().ToArray();
+
+            return new RSAParameters
+            {
+                Modulus = CopyBytes(rsaParams.Modulus),
+                Exponent = CopyBytes(rsaParams.Exponent),
+                D = CopyBytes(rsaParams.D),
+                P = CopyBytes(rsaParams.P),
+                Q = CopyBytes(rsaParams.Q),
+                DP = CopyBytes(rsaParams.DP),
+                DQ = CopyBytes(rsaParams.DQ),
+                InverseQ = CopyBytes(rsaParams.InverseQ),
+            };
         }
     }
 }

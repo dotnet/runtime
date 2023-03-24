@@ -12,7 +12,7 @@ using Interlocked = System.Threading.Interlocked;
 
 namespace ILCompiler
 {
-    partial class CompilerTypeSystemContext
+    public partial class CompilerTypeSystemContext
     {
         // Chosen rather arbitrarily. For the app that I was looking at, cutoff point of 7 compiled
         // more than 10 minutes on a release build of the compiler, and I lost patience.
@@ -57,10 +57,7 @@ namespace ILCompiler
 
         protected override RuntimeInterfacesAlgorithm GetRuntimeInterfacesAlgorithmForNonPointerArrayType(ArrayType type)
         {
-            if (_arrayOfTRuntimeInterfacesAlgorithm == null)
-            {
-                _arrayOfTRuntimeInterfacesAlgorithm = new ArrayOfTRuntimeInterfacesAlgorithm(SystemModule.GetKnownType("System", "Array`1"));
-            }
+            _arrayOfTRuntimeInterfacesAlgorithm ??= new ArrayOfTRuntimeInterfacesAlgorithm(SystemModule.GetKnownType("System", "Array`1"));
             return _arrayOfTRuntimeInterfacesAlgorithm;
         }
 

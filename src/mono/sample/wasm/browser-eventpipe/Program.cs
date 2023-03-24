@@ -77,9 +77,7 @@ namespace Sample
 
         public static CancellationToken GetCancellationToken()
         {
-            if (cts == null) {
-                cts = new CancellationTokenSource ();
-            }
+            cts ??= new CancellationTokenSource ();
             return cts.Token;
         }
 

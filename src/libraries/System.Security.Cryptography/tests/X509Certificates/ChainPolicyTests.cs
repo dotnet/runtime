@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ResetAfterChanges()
         {
-            using (X509Certificate2 cert = new X509Certificate2(SelfSigned1PemBytes))
+            using (X509Certificate2 cert = new X509Certificate2(TestData.SelfSigned1PemBytes))
             {
                 X509ChainPolicy policy = new X509ChainPolicy();
                 policy.CertificatePolicy.Add(s_emailProtectionEku);
@@ -54,8 +54,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void VerifyCloneBehavior()
         {
-            using (X509Certificate2 cert = new X509Certificate2(SelfSigned1PemBytes))
-            using (X509Certificate2 cert2 = new X509Certificate2(SelfSigned1PemBytes))
+            using (X509Certificate2 cert = new X509Certificate2(TestData.SelfSigned1PemBytes))
+            using (X509Certificate2 cert2 = new X509Certificate2(TestData.SelfSigned1PemBytes))
             {
                 X509ChainPolicy source = new X509ChainPolicy();
                 source.CertificatePolicy.Add(s_timestampEku);
@@ -120,29 +120,5 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Empty(policy.ExtraStore);
             Assert.Empty(policy.CustomTrustStore);
         }
-
-        // TODO (66338): Unify with TestData.SelfSigned1PemBytes after all X509 tests are unified in.
-        private static readonly byte[] SelfSigned1PemBytes = ByteUtils.AsciiBytes(
-            @"-----BEGIN CERTIFICATE-----
-MIIDWjCCAkKgAwIBAgIJAJpCQ7mtFWHeMA0GCSqGSIb3DQEBCwUAMEIxCzAJBgNV
-BAYTAlhYMRUwEwYDVQQHDAxEZWZhdWx0IENpdHkxHDAaBgNVBAoME0RlZmF1bHQg
-Q29tcGFueSBMdGQwHhcNMTgwNTMwMTgyNjM1WhcNMTkwNTMwMTgyNjM1WjBCMQsw
-CQYDVQQGEwJYWDEVMBMGA1UEBwwMRGVmYXVsdCBDaXR5MRwwGgYDVQQKDBNEZWZh
-dWx0IENvbXBhbnkgTHRkMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA
-pfYZTHjzei9U3QxiIIjESsf9z3Bfl8FAQLIU+OeICN3upnDvTgeWM/Jw7LwiuHhu
-XvSawPwQ8ONvUeSG/wfyjYyTB7VBpVnNi6oTR6E1WSuiu0iT3qlDHVwArTI5DvIM
-FzP3/AT1Ub5SvwVbWiR2za6wuUIsryyLz5+zCwGr+J/Xbmta/H9IT9NLwmDJCZQe
-4Q4hCWhf7FKdXWt59y9PofVnE7R8CKNfUKr6GA+gy+SEtM/cHgqox5PErnV9b14U
-uVROnRUyo1bFwTOdoW3zf5S4VZ4pFPJHNYACHEMiE0eNgfJf+QeyPUPN50neEAbf
-kQYkeEET8dW6JlDFrAI4wwIDAQABo1MwUTAdBgNVHQ4EFgQUK+C/eGYPlV+KaTvj
-tF6lJaKmo3EwHwYDVR0jBBgwFoAUK+C/eGYPlV+KaTvjtF6lJaKmo3EwDwYDVR0T
-AQH/BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAZUjvDMhGc45TLRHKO5rsyifN
-g7qb3dO5vtD/JWeo+wyMYcBHIANIIxYrkT0dRBQWQerVDBvsAESahM3f0SdszGac
-6y1qxQWxfjxRiCwrEQ7JVZkmspYLbOxaS1T2IZUo3D7VJReyna6r11EKy7i49Toa
-KmrhTLBsHV+MUgPRtupiOOu0fXqfxpXE7XEvi0hyv8PKli+Oww2Zyt1jTTvv2RTA
-eJRqTUNUbWEDesXAOh5CY6Xjfg7Gt6IYQHt0JMw29pXB3TV2uyXuvFNsc725cPbW
-JCuC9TGQRUAUj+LZ43tTrfaZ7g5L80/eRrvlx5MIJSsX8cev8pZYx224WRtk/w==
------END CERTIFICATE-----
-");
     }
 }

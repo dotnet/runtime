@@ -5,7 +5,7 @@ namespace Test
 {
     using System;
 
-    internal class App
+    public class App
     {
         private static byte s_b;
         private static void Func(ref String s) { }
@@ -13,7 +13,7 @@ namespace Test
         {
             Func(ref __refvalue(__makeref(s_b), String[])[0]);
         }
-        private static int Main()
+        public static int Main()
         {
             try
             {

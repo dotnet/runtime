@@ -7,12 +7,14 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Text.RegularExpressions;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._AvxVnni.Vector128
 {
     public static partial class Program
     {
-        private static void MultiplyWideningAndAddInt16()
+        [Fact]
+        public static void MultiplyWideningAndAddInt16()
         {
             var test = new SimpleTernaryOpTest__MultiplyWideningAndAddInt16();
 

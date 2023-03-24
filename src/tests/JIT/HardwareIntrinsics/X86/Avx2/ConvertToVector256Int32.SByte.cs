@@ -14,12 +14,14 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Avx2.handwritten
 {
     public static partial class Program
     {
-        private static void ConvertToVector256Int32SByte()
+        [Fact]
+        public static void ConvertToVector256Int32SByte()
         {
             var test = new SimpleUnaryOpTest__ConvertToVector256Int32SByte();
 

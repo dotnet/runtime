@@ -3,7 +3,7 @@
 //
 
 using System;
-class AA
+public class AA
 {
     static void f(ref Array param)
     {
@@ -24,7 +24,7 @@ class AA
         }
     }
 
-    static int Main()
+    public static int Main()
     {
         f(ref m_arr);
         Console.WriteLine("Passed.");

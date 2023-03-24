@@ -21,7 +21,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override int ClassCode => 56456113;
 
         public AttributePresenceFilterNode(EcmaModule module)
-            : base(module.Context.Target)
         {
             _module = module;
         }

@@ -198,9 +198,6 @@ public:
 //*****************************************************************************
     HRESULT ResetBackingStore();            // Return code.
 
-    FILETYPE GetFileType()
-    { return m_FileType; }
-
     int IsReadOnly()
     { return ((m_fFlags & STGIO_WRITE) == 0); }
 
@@ -248,13 +245,11 @@ private:
     void CtorInit();
     HRESULT WriteToDisk(const void *pbBuff, ULONG cbWrite, ULONG *pcbWritten);
     HRESULT ReadFromDisk(void *pbBuff, ULONG cbBuff, ULONG *pcbRead);
-    HRESULT CopyFileInternal(LPCWSTR szTo, int bFailIfThere, int bWriteThrough);
     void FreePageMap();
 
 private:
 
     // Flags and state data.
-    FILETYPE    m_FileType;             // Cached type of the file (based on extension).
     LONG        m_cRef;                 // Ref count on this object.
     bool        m_bWriteThrough : 1;    // true for write through mode.
     bool        m_bRewrite : 1;         // State check for rewrite mode.

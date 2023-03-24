@@ -56,7 +56,7 @@ void SpinUntil(void *pCond, BOOL fNonZero)
 #endif //_DEBUG
 
     // on MP machines, allow ourselves some spin time before sleeping
-    static uint32_t uNonSleepSpins = 8 * (GCToEEInterface::GetCurrentProcessCpuCount() - 1);
+    uint32_t uNonSleepSpins = 8 * (GCToEEInterface::GetCurrentProcessCpuCount() - 1);
 
     // spin until the specified condition is met
     while ((*(uintptr_t *)pCond != 0) != (fNonZero != 0))

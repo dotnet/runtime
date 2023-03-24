@@ -175,8 +175,6 @@ namespace System.Reflection
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recognize always throwing method. https://github.com/mono/linker/issues/2025")]
         public sealed override Type GetInterface(string name, bool ignoreCase) => throw new NotSupportedException(SR.NotSupported_SignatureType);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]

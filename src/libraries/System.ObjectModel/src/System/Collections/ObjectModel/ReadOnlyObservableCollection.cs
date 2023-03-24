@@ -28,6 +28,11 @@ namespace System.Collections.ObjectModel
             ((INotifyPropertyChanged)Items).PropertyChanged += new PropertyChangedEventHandler(HandlePropertyChanged);
         }
 
+        /// <summary>Gets an empty <see cref="ReadOnlyObservableCollection{T}"/>.</summary>
+        /// <value>An empty <see cref="ReadOnlyObservableCollection{T}"/>.</value>
+        /// <remarks>The returned instance is immutable and will always be empty.</remarks>
+        public static new ReadOnlyObservableCollection<T> Empty { get; } = new ReadOnlyObservableCollection<T>(new ObservableCollection<T>());
+
         /// <summary>
         /// CollectionChanged event (per <see cref="INotifyCollectionChanged" />).
         /// </summary>

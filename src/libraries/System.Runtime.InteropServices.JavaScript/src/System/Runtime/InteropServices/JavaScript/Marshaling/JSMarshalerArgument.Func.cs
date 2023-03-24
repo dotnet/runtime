@@ -124,6 +124,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         public unsafe void ToManaged(out Action? value)
         {
             if (slot.Type == MarshalerType.None)
@@ -139,6 +140,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="T">The type of the marshaled argument of the Action.</typeparam>
+        /// <param name="value">The value to be marshaled.</param>
+        /// <param name="arg1Marshaler">The generated callback which marshals the argument of the Action.</param>
         public unsafe void ToManaged<T>(out Action<T>? value, ArgumentToJSCallback<T> arg1Marshaler)
         {
             if (slot.Type == MarshalerType.None)
@@ -154,6 +158,11 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="T1">The type of the marshaled argument of the Action.</typeparam>
+        /// <typeparam name="T2">The type of the marshaled argument of the Action.</typeparam>
+        /// <param name="value">The value to be marshaled.</param>
+        /// <param name="arg1Marshaler">The generated callback which marshals the argument of the Action.</param>
+        /// <param name="arg2Marshaler">The generated callback which marshals the argument of the Action.</param>
         public unsafe void ToManaged<T1, T2>(out Action<T1, T2>? value, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler)
         {
             if (slot.Type == MarshalerType.None)
@@ -169,6 +178,13 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="T1">The type of the marshaled argument of the Action.</typeparam>
+        /// <typeparam name="T2">The type of the marshaled argument of the Action.</typeparam>
+        /// <typeparam name="T3">The type of the marshaled argument of the Action.</typeparam>
+        /// <param name="value">The value to be marshaled.</param>
+        /// <param name="arg1Marshaler">The generated callback which marshals the argument of the Action.</param>
+        /// <param name="arg2Marshaler">The generated callback which marshals the argument of the Action.</param>
+        /// <param name="arg3Marshaler">The generated callback which marshals the argument of the Action.</param>
         public unsafe void ToManaged<T1, T2, T3>(out Action<T1, T2, T3>? value, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToJSCallback<T3> arg3Marshaler)
         {
             if (slot.Type == MarshalerType.None)
@@ -319,6 +335,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="TResult">Type of marshaled result of the Func.</typeparam>
+        /// <param name="value">The value to be marshaled.</param>
+        /// <param name="resMarshaler">The generated callback which marshals the result of the Func.</param>
         public unsafe void ToManaged<TResult>(out Func<TResult>? value, ArgumentToManagedCallback<TResult> resMarshaler)
         {
             if (slot.Type == MarshalerType.None)
@@ -334,6 +353,11 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="T">The type of the marshaled argument of the Func.</typeparam>
+        /// <typeparam name="TResult">Type of marshaled result of the Func.</typeparam>
+        /// <param name="value">The value to be marshaled.</param>
+        /// <param name="arg1Marshaler">The generated callback which marshals the argument of the Func.</param>
+        /// <param name="resMarshaler">The generated callback which marshals the result of the Func.</param>
         public unsafe void ToManaged<T, TResult>(out Func<T, TResult>? value, ArgumentToJSCallback<T> arg1Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
         {
             if (slot.Type == MarshalerType.None)
@@ -350,6 +374,13 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="T1">The type of the marshaled argument of the Func.</typeparam>
+        /// <typeparam name="T2">The type of the marshaled argument of the Func.</typeparam>
+        /// <typeparam name="TResult">Type of marshaled result of the Func.</typeparam>
+        /// <param name="value">The value to be marshaled.</param>
+        /// <param name="arg1Marshaler">The generated callback which marshals the argument of the Func.</param>
+        /// <param name="arg2Marshaler">The generated callback which marshals the argument of the Func.</param>
+        /// <param name="resMarshaler">The generated callback which marshals the result of the Func.</param>
         public unsafe void ToManaged<T1, T2, TResult>(out Func<T1, T2, TResult>? value, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
         {
             if (slot.Type == MarshalerType.None)
@@ -365,6 +396,15 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="T1">The type of the marshaled argument of the Func.</typeparam>
+        /// <typeparam name="T2">The type of the marshaled argument of the Func.</typeparam>
+        /// <typeparam name="T3">The type of the marshaled argument of the Func.</typeparam>
+        /// <typeparam name="TResult">Type of marshaled result of the Func.</typeparam>
+        /// <param name="value">The value to be marshaled.</param>
+        /// <param name="arg1Marshaler">The generated callback which marshals the argument of the Func.</param>
+        /// <param name="arg2Marshaler">The generated callback which marshals the argument of the Func.</param>
+        /// <param name="arg3Marshaler">The generated callback which marshals the argument of the Func.</param>
+        /// <param name="resMarshaler">The generated callback which marshals the result of the Func.</param>
         public unsafe void ToManaged<T1, T2, T3, TResult>(out Func<T1, T2, T3, TResult>? value, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToJSCallback<T3> arg3Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
         {
             if (slot.Type == MarshalerType.None)
@@ -380,6 +420,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">The value to be marshaled.</param>
         public unsafe void ToJS(Action value)
         {
             Action cpy = value;
@@ -397,6 +438,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="T">The type of the marshaled argument of the Action.</typeparam>
+        /// <param name="value">The value to be marshaled.</param>
+        /// <param name="arg1Marshaler">The generated callback which marshals the argument of the Action.</param>
         public unsafe void ToJS<T>(Action<T> value, ArgumentToManagedCallback<T> arg1Marshaler)
         {
             Action<T> cpy = value;
@@ -415,6 +459,11 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="T1">The type of the marshaled argument of the Action.</typeparam>
+        /// <typeparam name="T2">The type of the marshaled argument of the Action.</typeparam>
+        /// <param name="value">The value to be marshaled.</param>
+        /// <param name="arg1Marshaler">The generated callback which marshals the argument of the Action.</param>
+        /// <param name="arg2Marshaler">The generated callback which marshals the argument of the Action.</param>
         public unsafe void ToJS<T1, T2>(Action<T1, T2> value, ArgumentToManagedCallback<T1> arg1Marshaler, ArgumentToManagedCallback<T2> arg2Marshaler)
         {
             Action<T1, T2> cpy = value;
@@ -435,6 +484,13 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="T1">The type of the marshaled argument of the Action.</typeparam>
+        /// <typeparam name="T2">The type of the marshaled argument of the Action.</typeparam>
+        /// <typeparam name="T3">The type of the marshaled argument of the Action.</typeparam>
+        /// <param name="value">The value to be marshaled.</param>
+        /// <param name="arg1Marshaler">The generated callback which marshals the argument of the Action.</param>
+        /// <param name="arg2Marshaler">The generated callback which marshals the argument of the Action.</param>
+        /// <param name="arg3Marshaler">The generated callback which marshals the argument of the Action.</param>
         public unsafe void ToJS<T1, T2, T3>(Action<T1, T2, T3> value, ArgumentToManagedCallback<T1> arg1Marshaler, ArgumentToManagedCallback<T2> arg2Marshaler, ArgumentToManagedCallback<T3> arg3Marshaler)
         {
             Action<T1, T2, T3> cpy = value;
@@ -457,6 +513,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="TResult">Type of marshaled result of the Func.</typeparam>
+        /// <param name="value">The value to be marshaled.</param>
+        /// <param name="resMarshaler">The generated callback which marshals the result of the Func.</param>
         public unsafe void ToJS<TResult>(Func<TResult> value, ArgumentToJSCallback<TResult> resMarshaler)
         {
             Func<TResult> cpy = value;
@@ -475,6 +534,11 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="T">The type of the marshaled argument of the Func.</typeparam>
+        /// <typeparam name="TResult">Type of marshaled result of the Func.</typeparam>
+        /// <param name="value">The value to be marshaled.</param>
+        /// <param name="resMarshaler">The generated callback which marshals the result of the Func.</param>
+        /// <param name="arg1Marshaler">The generated callback which marshals the argument of the Func.</param>
         public unsafe void ToJS<T, TResult>(Func<T, TResult> value, ArgumentToManagedCallback<T> arg1Marshaler, ArgumentToJSCallback<TResult> resMarshaler)
         {
             Func<T, TResult> cpy = value;
@@ -495,6 +559,13 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="T1">The type of the marshaled argument of the Func.</typeparam>
+        /// <typeparam name="T2">The type of the marshaled argument of the Func.</typeparam>
+        /// <typeparam name="TResult">Type of marshaled result of the Func.</typeparam>
+        /// <param name="value">The value to be marshaled.</param>
+        /// <param name="resMarshaler">The generated callback which marshals the result of the Func.</param>
+        /// <param name="arg1Marshaler">The generated callback which marshals the argument of the Func.</param>
+        /// <param name="arg2Marshaler">The generated callback which marshals the argument of the Func.</param>
         public unsafe void ToJS<T1, T2, TResult>(Func<T1, T2, TResult> value, ArgumentToManagedCallback<T1> arg1Marshaler, ArgumentToManagedCallback<T2> arg2Marshaler, ArgumentToJSCallback<TResult> resMarshaler)
         {
             Func<T1, T2, TResult> cpy = value;
@@ -517,6 +588,15 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="T1">The type of the marshaled argument of the Func.</typeparam>
+        /// <typeparam name="T2">The type of the marshaled argument of the Func.</typeparam>
+        /// <typeparam name="T3">The type of the marshaled argument of the Func.</typeparam>
+        /// <typeparam name="TResult">Type of marshaled result of the Func.</typeparam>
+        /// <param name="value">The value to be marshaled.</param>
+        /// <param name="resMarshaler">The generated callback which marshals the result of the Func.</param>
+        /// <param name="arg1Marshaler">The generated callback which marshals the argument of the Func.</param>
+        /// <param name="arg2Marshaler">The generated callback which marshals the argument of the Func.</param>
+        /// <param name="arg3Marshaler">The generated callback which marshals the argument of the Func.</param>
         public unsafe void ToJS<T1, T2, T3, TResult>(Func<T1, T2, T3, TResult> value, ArgumentToManagedCallback<T1> arg1Marshaler, ArgumentToManagedCallback<T2> arg2Marshaler, ArgumentToManagedCallback<T3> arg3Marshaler, ArgumentToJSCallback<TResult> resMarshaler)
         {
             Func<T1, T2, T3, TResult> cpy = value;

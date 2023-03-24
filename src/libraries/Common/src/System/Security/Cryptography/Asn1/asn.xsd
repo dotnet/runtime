@@ -46,6 +46,7 @@
     </xs:sequence>
     <xs:attribute name="name" use="required" type="xs:NCName" />
     <xs:attribute name="namespace" use="required" type="QualifiedName" />
+    <xs:attribute name="rebind" use="optional" type="xs:boolean" default="true" />
   </xs:complexType>
 
   <xs:complexType name="FieldBase">

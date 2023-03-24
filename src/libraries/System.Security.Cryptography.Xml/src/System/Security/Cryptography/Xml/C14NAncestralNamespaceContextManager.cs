@@ -26,8 +26,8 @@ namespace System.Security.Cryptography.Xml
             }
 
             int rDepth;
-            XmlAttribute local = (XmlAttribute)nsLocallyDeclared[nsPrefix];
-            XmlAttribute rAncestral = GetNearestRenderedNamespaceWithMatchingPrefix(nsPrefix, out rDepth);
+            XmlAttribute? local = (XmlAttribute?)nsLocallyDeclared[nsPrefix];
+            XmlAttribute? rAncestral = GetNearestRenderedNamespaceWithMatchingPrefix(nsPrefix, out rDepth);
             if (local != null)
             {
                 if (Utils.IsNonRedundantNamespaceDecl(local, rAncestral))
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.Xml
             else
             {
                 int uDepth;
-                XmlAttribute uAncestral = GetNearestUnrenderedNamespaceWithMatchingPrefix(nsPrefix, out uDepth);
+                XmlAttribute? uAncestral = GetNearestUnrenderedNamespaceWithMatchingPrefix(nsPrefix, out uDepth);
                 if (uAncestral != null && uDepth > rDepth && Utils.IsNonRedundantNamespaceDecl(uAncestral, rAncestral))
                 {
                     if (Utils.IsXmlNamespaceNode(uAncestral))
@@ -55,14 +55,14 @@ namespace System.Security.Cryptography.Xml
 
         internal override void GetNamespacesToRender(XmlElement element, SortedList attrListToRender, SortedList nsListToRender, Hashtable nsLocallyDeclared)
         {
-            XmlAttribute attrib;
+            XmlAttribute? attrib;
             object[] attrs = new object[nsLocallyDeclared.Count];
             nsLocallyDeclared.Values.CopyTo(attrs, 0);
             foreach (object a in attrs)
             {
                 attrib = (XmlAttribute)a;
                 int rDepth;
-                XmlAttribute rAncestral = GetNearestRenderedNamespaceWithMatchingPrefix(Utils.GetNamespacePrefix(attrib), out rDepth);
+                XmlAttribute? rAncestral = GetNearestRenderedNamespaceWithMatchingPrefix(Utils.GetNamespacePrefix(attrib), out rDepth);
                 if (Utils.IsNonRedundantNamespaceDecl(attrib, rAncestral))
                 {
                     nsLocallyDeclared.Remove(Utils.GetNamespacePrefix(attrib));

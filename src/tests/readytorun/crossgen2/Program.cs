@@ -2157,7 +2157,7 @@ internal class Program
         return true;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         _passedTests = new List<string>();
         _failedTests = new List<string>();

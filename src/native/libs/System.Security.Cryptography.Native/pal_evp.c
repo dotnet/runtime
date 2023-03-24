@@ -145,37 +145,37 @@ int32_t CryptoNative_EvpMdSize(const EVP_MD* md)
     return EVP_MD_get_size(md);
 }
 
-const EVP_MD* CryptoNative_EvpMd5()
+const EVP_MD* CryptoNative_EvpMd5(void)
 {
     // No error queue impact.
     return EVP_md5();
 }
 
-const EVP_MD* CryptoNative_EvpSha1()
+const EVP_MD* CryptoNative_EvpSha1(void)
 {
     // No error queue impact.
     return EVP_sha1();
 }
 
-const EVP_MD* CryptoNative_EvpSha256()
+const EVP_MD* CryptoNative_EvpSha256(void)
 {
     // No error queue impact.
     return EVP_sha256();
 }
 
-const EVP_MD* CryptoNative_EvpSha384()
+const EVP_MD* CryptoNative_EvpSha384(void)
 {
     // No error queue impact.
     return EVP_sha384();
 }
 
-const EVP_MD* CryptoNative_EvpSha512()
+const EVP_MD* CryptoNative_EvpSha512(void)
 {
     // No error queue impact.
     return EVP_sha512();
 }
 
-int32_t CryptoNative_GetMaxMdSize()
+int32_t CryptoNative_GetMaxMdSize(void)
 {
     // No error queue impact.
     return EVP_MAX_MD_SIZE;

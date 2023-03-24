@@ -6,4 +6,8 @@
   </PropertyGroup>
 
   <Import Project="..\..\..\Directory.Build.props" />
+
+  <PropertyGroup>
+    <RunAnalyzers>true</RunAnalyzers>
+  </PropertyGroup>
 </Project>

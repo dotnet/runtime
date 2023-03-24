@@ -7,9 +7,7 @@ parameters:
   helixQueues: ''
   runtimeVariant: ''
   crossBuild: false
-  crossrootfsDir: ''
   dependOnEvaluatePaths: false
-  stagedBuild: false
   variables: {}
   pool: ''
 
@@ -32,7 +30,6 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     helixType: 'test/crossgen-comparison/'
@@ -44,7 +41,6 @@ jobs:
     displayName: ${{ format('Test crossgen2-comparison build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
     crossBuild: ${{ parameters.crossBuild }}
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     variables:
     - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -68,10 +64,10 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: target_crossgen2_os
         value: windows
-    - ${{ if eq(parameters.osGroup, 'Linux') }}:
+    - ${{ if eq(parameters.osGroup, 'linux') }}:
       - name: target_crossgen2_os
         value: linux
-    - ${{ if eq(parameters.osGroup, 'OSX') }}:
+    - ${{ if eq(parameters.osGroup, 'osx') }}:
       - name: target_crossgen2_os
         value: osx
     - name: crossgen2location
@@ -80,7 +76,7 @@ jobs:
       - name: crossgen2location
         value: $(productDirectory)$(dir)$(targetFlavor)$(dir)x64$(dir)crossgen2$(dir)crossgen2.dll
     - name: librariesProductDllDir
-      value: $(Build.SourcesDirectory)$(dir)artifacts$(dir)bin$(dir)runtime$(dir)net7.0-$(osGroup)$(osSubgroup)-$(buildConfig)-$(archType)
+      value: $(Build.SourcesDirectory)$(dir)artifacts$(dir)bin$(dir)runtime$(dir)net8.0-$(osGroup)$(osSubgroup)-$(buildConfig)-$(archType)
 
     - ${{ parameters.variables }}
 

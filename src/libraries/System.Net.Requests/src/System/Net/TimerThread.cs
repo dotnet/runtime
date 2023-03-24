@@ -112,10 +112,7 @@ namespace System.Net
                 return new InfiniteTimerQueue();
             }
 
-            if (durationMilliseconds < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(durationMilliseconds));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(durationMilliseconds);
 
             TimerQueue? queue;
             object key = durationMilliseconds; // Box once.

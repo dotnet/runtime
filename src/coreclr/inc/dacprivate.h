@@ -250,8 +250,8 @@ struct MSLAYOUT DacpModuleData
     CLRDATA_ADDRESS FileReferencesMap = 0;
     CLRDATA_ADDRESS ManifestModuleReferencesMap = 0;
 
-    CLRDATA_ADDRESS pLookupTableHeap = 0;
-    CLRDATA_ADDRESS pThunkHeap = 0;
+    CLRDATA_ADDRESS LoaderAllocator = 0;
+    CLRDATA_ADDRESS ThunkHeap = 0;
 
     ULONG64 dwModuleIndex = 0;
 
@@ -610,6 +610,8 @@ struct MSLAYOUT DacpTieredVersionData
         OptimizationTier_OptimizedTier1,
         OptimizationTier_ReadyToRun,
         OptimizationTier_OptimizedTier1OSR,
+        OptimizationTier_QuickJittedInstrumented,
+        OptimizationTier_OptimizedTier1Instrumented,
     };
 
     CLRDATA_ADDRESS NativeCodeAddr;

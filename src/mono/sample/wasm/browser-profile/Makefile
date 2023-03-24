@@ -3,7 +3,7 @@ TOP=../../../../..
 include ../wasm.mk
 
 PROJECT_NAME=Wasm.BrowserProfile.Sample.csproj
-BUILD_ARGS=/p:WasmBuildNative=true /p:EnableProfiler=true
+BUILD_ARGS=/p:WasmBuildNative=true
 BUILD_PROFILED_ARGS=/p:RunAOTCompilation=true /p:AOTProfilePath=$(PROFILE_PATH)
 
 run: run-browser

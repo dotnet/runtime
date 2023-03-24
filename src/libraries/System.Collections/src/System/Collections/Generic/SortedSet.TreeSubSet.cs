@@ -306,8 +306,8 @@ namespace System.Collections.Generic
 
             /// <summary>
             /// Checks whether this subset is out of date, and updates it if necessary.
-            /// <param name="updateCount">Updates the count variable if necessary.</param>
             /// </summary>
+            /// <param name="updateCount">Updates the count variable if necessary.</param>
             internal override void VersionCheck(bool updateCount = false) => VersionCheckImpl(updateCount);
 
             private void VersionCheckImpl(bool updateCount)

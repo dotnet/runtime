@@ -18,6 +18,7 @@ namespace System.Net.Http
     {
         private readonly HttpConnectionSettings _settings = new HttpConnectionSettings();
         private HttpMessageHandlerStage? _handler;
+        private Func<HttpConnectionSettings, HttpMessageHandlerStage, HttpMessageHandlerStage>? _decompressionHandlerFactory;
         private bool _disposed;
 
         private void CheckDisposedOrStarted()
@@ -62,6 +63,7 @@ namespace System.Net.Http
             set
             {
                 CheckDisposedOrStarted();
+                EnsureDecompressionHandlerFactory();
                 _settings._automaticDecompression = value;
             }
         }
@@ -131,10 +133,7 @@ namespace System.Net.Http
             get => _settings._maxAutomaticRedirections;
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 CheckDisposedOrStarted();
                 _settings._maxAutomaticRedirections = value;
@@ -146,10 +145,7 @@ namespace System.Net.Http
             get => _settings._maxConnectionsPerServer;
             set
             {
-                if (value < 1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 CheckDisposedOrStarted();
                 _settings._maxConnectionsPerServer = value;
@@ -161,10 +157,7 @@ namespace System.Net.Http
             get => _settings._maxResponseDrainSize;
             set
             {
-                if (value < 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedNonNegativeNum);
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
 
                 CheckDisposedOrStarted();
                 _settings._maxResponseDrainSize = value;
@@ -192,10 +185,7 @@ namespace System.Net.Http
             get => _settings._maxResponseHeadersLength;
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 CheckDisposedOrStarted();
                 _settings._maxResponseHeadersLength = value;
@@ -511,7 +501,8 @@ namespace System.Net.Http
 
             if (settings._automaticDecompression != DecompressionMethods.None)
             {
-                handler = new DecompressionHandler(settings._automaticDecompression, handler);
+                Debug.Assert(_decompressionHandlerFactory is not null);
+                handler = _decompressionHandlerFactory(settings, handler);
             }
 
             // Ensure a single handler is used for all requests.
@@ -521,6 +512,13 @@ namespace System.Net.Http
             }
 
             return _handler;
+        }
+
+        // Allows for DecompressionHandler (and its compression dependencies) to be trimmed when
+        // AutomaticDecompression is not being used.
+        private void EnsureDecompressionHandlerFactory()
+        {
+            _decompressionHandlerFactory ??= (settings, handler) => new DecompressionHandler(settings._automaticDecompression, handler);
         }
 
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
@@ -565,7 +563,7 @@ namespace System.Net.Http
                 return Task.FromCanceled<HttpResponseMessage>(cancellationToken);
             }
 
-            HttpMessageHandler handler = _handler ?? SetupHandlerChain();
+            HttpMessageHandlerStage handler = _handler ?? SetupHandlerChain();
 
             Exception? error = ValidateAndNormalizeRequest(request);
             if (error != null)

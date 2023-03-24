@@ -406,7 +406,7 @@ namespace System.Diagnostics.Eventing.Reader
         {
             if (bookmark == null)
                 return EventLogHandle.Zero;
-            EventLogHandle handle = NativeWrapper.EvtCreateBookmark(bookmark.BookmarkText);
+            EventLogHandle handle = NativeWrapper.EvtCreateBookmark(bookmark.BookmarkXml);
             return handle;
         }
     }

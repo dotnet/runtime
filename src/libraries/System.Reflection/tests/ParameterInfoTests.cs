@@ -108,7 +108,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15037", TestRuntimes.Mono)]
         public void RawDefaultValueFromAttribute()
         {
             ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "Foo2", 0);
@@ -124,6 +123,167 @@ namespace System.Reflection.Tests
             object raw = p.RawDefaultValue;
             Assert.Equal(typeof(int), raw.GetType());
             Assert.Equal<int>((int)BindingFlags.FlattenHierarchy, (int)raw);
+        }
+
+        [Fact]
+        public void RawDefaultValue_DateTimeParamWithDateTimeConstantAttr()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "DateTimeParamWithDateTimeConstantAttr", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Equal(typeof(DateTime), raw.GetType());
+            Assert.Equal(new DateTime(42), (DateTime)raw);
+        }
+
+        [Fact]
+        public void RawDefaultValue_DateTimeNullableParamWithDateTimeConstantAttr()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "DateTimeNullableParamWithDateTimeConstantAttr", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Equal(typeof(DateTime), raw.GetType());
+            Assert.Equal(new DateTime(42), (DateTime)raw);
+        }
+
+        [Fact]
+        public void RawDefaultValue_DateTimeNullableParamWithDateTimeConstantAttrDefaultValue()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "DateTimeNullableParamWithDateTimeConstantAttrDefaultValue", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Null(raw);
+        }
+
+        [Fact]
+        public void RawDefaultValue_DateTimeParamWithCustomConstantAttrNoDefaultValue()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "DateTimeParamWithCustomConstantAttrNoDefaultValue", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Equal(typeof(int), raw.GetType());
+            Assert.Equal(42, raw);
+        }
+
+        [Fact]
+        public void RawDefaultValue_DateTimeParamWithTwoCustomConstantAttrsNoDefaultValue1()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "DateTimeParamWithTwoCustomConstantAttrsNoDefaultValue1", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Equal(typeof(int), raw.GetType());
+            Assert.Equal(42, raw);
+        }
+
+        [Fact]
+        public void RawDefaultValue_DateTimeParamWithTwoCustomConstantAttrsNoDefaultValue2()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "DateTimeParamWithTwoCustomConstantAttrsNoDefaultValue2", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Equal(typeof(DateTime), raw.GetType());
+            Assert.Equal(new DateTime(43), (DateTime)raw);
+        }
+
+        [Fact]
+        public void RawDefaultValue_IntParamWithCustomConstantAttr()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "IntParamWithCustomConstantAttr", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Equal(typeof(int), raw.GetType());
+            Assert.Equal(42, raw);
+        }
+
+        [Fact]
+        public void RawDefaultValue_IntParamWithCustomConstantAttrDefaultValue()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "IntParamWithCustomConstantAttrDefaultValue", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Equal(typeof(int), raw.GetType());
+            Assert.Equal(0, raw);
+        }
+
+        [Fact]
+        public void RawDefaultValue_IntParamWithTwoCustomConstantAttrsDefaultValue()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "IntParamWithTwoCustomConstantAttrsDefaultValue", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Equal(typeof(int), raw.GetType());
+            Assert.Equal(42, raw);
+        }
+
+        // Verify that RawDefaultValue is resolved through named arguments
+        [Fact]
+        public void RawDefaultValue_IntParamWithCustomConstantAttrConstructorValue()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "IntParamWithCustomConstantAttrConstructorValue", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Equal(typeof(DBNull), raw.GetType());
+            Assert.Equal(DBNull.Value, raw);
+        }
+
+        [Fact]
+        public void RawDefaultValue_DecimalParamWithDateTimeConstantAttr()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "DecimalParamWithDateTimeConstantAttr", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Equal(typeof(decimal), raw.GetType());
+            Assert.Equal(new decimal(4, 3, 2, true, 1), raw);
+        }
+
+        [Fact]
+        public void RawDefaultValue_DecimalNullableParamWithDateTimeConstantAttrDefaultValue()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "DecimalNullableParamWithDateTimeConstantAttrDefaultValue", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Null(raw);
+        }
+
+        [Fact]
+        public void RawDefaultValue_DecimalParamWithCustomConstantAttrNoDefaultValue()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "DecimalParamWithCustomConstantAttrNoDefaultValue", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Equal(typeof(int), raw.GetType());
+            Assert.Equal(42, raw);
+        }
+
+        [Fact]
+        public void RawDefaultValue_DecimalParamWithTwoCustomConstantAttrsNoDefaultValue1()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "DecimalParamWithTwoCustomConstantAttrsNoDefaultValue1", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Equal(typeof(int), raw.GetType());
+            Assert.Equal(42, raw);
+        }
+
+        [Fact]
+        public void RawDefaultValue_DecimalParamWithTwoCustomConstantAttrsNoDefaultValue2()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "DecimalParamWithTwoCustomConstantAttrsNoDefaultValue2", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Equal(typeof(decimal), raw.GetType());
+            Assert.Equal(new decimal(4, 3, 2, true, 1), raw);
+        }
+
+        [Fact]
+        public void RawDefaultValue_ObjectParamWithDateTimeConstantAttr()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "ObjectParamWithDateTimeConstantAttr", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Equal(typeof(DateTime), raw.GetType());
+            Assert.Equal(new DateTime(42), raw);
+        }
+
+        [Fact]
+        public void RawDefaultValue_ObjectParamWithDecimalConstantAttr()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "ObjectParamWithDecimalConstantAttr", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Equal(typeof(decimal), raw.GetType());
+            Assert.Equal(new decimal(4, 3, 2, true, 1), raw);
+        }
+
+        [Fact]
+        public void RawDefaultValue_ObjectParamWithTwoCustomConstantAttr()
+        {
+            ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "ObjectParamWithTwoCustomConstantAttr", 0);
+            object raw = p.RawDefaultValue;
+            Assert.Equal(typeof(decimal), raw.GetType());
+            Assert.Equal(new decimal(4, 3, 2, true, 1), raw);
         }
 
         [Theory]
@@ -362,12 +522,59 @@ namespace System.Reflection.Tests
             return type.GetTypeInfo().DeclaredMethods.FirstOrDefault(methodInfo => methodInfo.Name.Equals(name));
         }
 
+        private class CustomDateTimeConstantAttribute : UsableCustomConstantAttribute
+        {
+            public new object Value { get { return RealValue; } set { RealValue = new DateTime((long)value); } }
+        }
+
+        private class CustomDecimalConstantAttribute : UsableCustomConstantAttribute
+        {
+            public new object Value { get { return RealValue; } set { RealValue = new decimal((long)value); } }
+        }
+
+        private class CustomIntConstantAttribute : UsableCustomConstantAttribute
+        {
+            public new object Value { get { return RealValue; } set { RealValue = value; } }
+        }
+
+        private class AnotherCustomIntConstant : UsableCustomConstantAttribute
+        {
+            public new object Value { get { return RealValue; } set { RealValue = value; } }
+        }
+
+        private class CustomIntConstructorConstantAttribute : UsableCustomConstantAttribute
+        {
+            public CustomIntConstructorConstantAttribute(int value)
+            {
+                RealValue = value;
+            }
+            public new object Value { get { return RealValue; } set { RealValue = value; } }
+        }
+
         // Metadata for reflection
         public class ParameterInfoMetadata
         {
             public void Foo1(BindingFlags bf = BindingFlags.DeclaredOnly) { }
             public void Foo2([CustomBindingFlags(Value = BindingFlags.IgnoreCase)] BindingFlags bf) { }
             public void Foo3([CustomBindingFlags(Value = BindingFlags.DeclaredOnly)] BindingFlags bf = BindingFlags.FlattenHierarchy ) { }
+            public void DateTimeParamWithDateTimeConstantAttr([DateTimeConstant(42)] DateTime dt) { }
+            public void DateTimeNullableParamWithDateTimeConstantAttr([DateTimeConstant(42)] DateTime? dt) { }
+            public void DateTimeNullableParamWithDateTimeConstantAttrDefaultValue([CustomDateTimeConstant(Value = 42)] DateTime? dt = null) { }
+            public void DateTimeParamWithCustomConstantAttrNoDefaultValue([CustomDateTimeConstant(Value = 42)] DateTime dt) { }
+            public void DateTimeParamWithTwoCustomConstantAttrsNoDefaultValue1([CustomDateTimeConstant(Value = 42)][DateTimeConstant(43)] DateTime dt) { }
+            public void DateTimeParamWithTwoCustomConstantAttrsNoDefaultValue2([DateTimeConstant(43)][CustomDateTimeConstant(Value = 42)] DateTime dt) { }
+            public void IntParamWithCustomConstantAttr([CustomIntConstant(Value = 42)] int number) { }
+            public void IntParamWithCustomConstantAttrDefaultValue([CustomIntConstant(Value = 42)] int number = 0) { }
+            public void IntParamWithTwoCustomConstantAttrsDefaultValue([CustomIntConstant(Value = 42)][AnotherCustomIntConstant(Value = 43)] int number) { }
+            public void IntParamWithCustomConstantAttrConstructorValue([CustomIntConstructorConstant(42)] int number) { }
+            public void DecimalParamWithDateTimeConstantAttr([DecimalConstant(1, 1, 2, 3, 4)] decimal dec) { }
+            public void DecimalNullableParamWithDateTimeConstantAttrDefaultValue([CustomDecimalConstant(Value = 42)] decimal? dec = null) { }
+            public void DecimalParamWithCustomConstantAttrNoDefaultValue([CustomDecimalConstant(Value = 42)] decimal dec) { }
+            public void DecimalParamWithTwoCustomConstantAttrsNoDefaultValue1([CustomDecimalConstant(Value = 42)][DecimalConstant(1, 1, 2, 3, 4)] decimal dec) { }
+            public void DecimalParamWithTwoCustomConstantAttrsNoDefaultValue2([DecimalConstant(1, 1, 2, 3, 4)][CustomDecimalConstant(Value = 42)] decimal dec) { }
+            public void ObjectParamWithDateTimeConstantAttr([DateTimeConstant(42)] object obj) { }
+            public void ObjectParamWithDecimalConstantAttr([DecimalConstant(1, 1, 2, 3, 4)] object obj) { }
+            public void ObjectParamWithTwoCustomConstantAttr([DecimalConstant(1, 1, 2, 3, 4)][CustomIntConstant(Value = 42)] object obj) { }
 
             public void MethodWithCustomAttribute([My(2)]string str, int iValue, long lValue) { }
             public virtual void VirtualMethodWithCustomAttributes([My(3)]int val1, [My(4)]int val2, int val3) { }

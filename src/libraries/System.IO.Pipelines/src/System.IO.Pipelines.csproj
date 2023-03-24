@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <IsPackable>true</IsPackable>
     <PackageDescription>Single producer single consumer byte buffer management.
 
@@ -11,8 +11,6 @@ System.IO.Pipelines.PipeReader</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
-             Link="Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="Properties\InternalsVisibleTo.cs" />
     <Compile Include="System\IO\Pipelines\BufferSegment.cs" />
     <Compile Include="System\IO\Pipelines\CompletionData.cs" />
@@ -55,6 +53,10 @@ System.IO.Pipelines.PipeReader</PackageDescription>
     <Compile Include="System\IO\Pipelines\StreamExtensions.netstandard.cs" />
     <Compile Include="System\IO\Pipelines\ThreadPoolScheduler.netstandard.cs" />
     <Compile Include="System\IO\Pipelines\CancellationTokenExtensions.netstandard.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+    <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToAsyncResult.cs" Link="Common\System\Threading\Tasks\TaskToAsyncResult.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

@@ -112,6 +112,9 @@
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\InstantiatedType.cs">
       <Link>TypeSystem\Common\InstantiatedType.cs</Link>
     </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\InstantiatedType.Metadata.cs">
+      <Link>TypeSystem\Common\InstantiatedType.Metadata.cs</Link>
+    </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\InstantiatedType.Interfaces.cs">
       <Link>TypeSystem\Common\InstantiatedType.Interfaces.cs</Link>
     </Compile>
@@ -174,6 +177,12 @@
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeSystemContext.cs">
       <Link>TypeSystem\Common\TypeSystemContext.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeSystemContext.Resolution.cs">
+      <Link>TypeSystem\Common\TypeSystemContext.Resolution.cs</Link>
+    </Compile>
+    <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeSystemContext.FieldLayout.cs">
+      <Link>TypeSystem\Common\TypeSystemContext.FieldLayout.cs</Link>
     </Compile>
     <Compile Include="$(ToolsCommonPath)TypeSystem\Common\TypeSystemHelpers.cs">
       <Link>TypeSystem\Common\TypeSystemHelpers.cs</Link>

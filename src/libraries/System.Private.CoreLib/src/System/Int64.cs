@@ -305,18 +305,23 @@ namespace System
         public static (long Quotient, long Remainder) DivRem(long left, long right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
+        [Intrinsic]
         public static long LeadingZeroCount(long value) => BitOperations.LeadingZeroCount((ulong)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
+        [Intrinsic]
         public static long PopCount(long value) => BitOperations.PopCount((ulong)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
+        [Intrinsic]
         public static long RotateLeft(long value, int rotateAmount) => (long)BitOperations.RotateLeft((ulong)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
+        [Intrinsic]
         public static long RotateRight(long value, int rotateAmount) => (long)BitOperations.RotateRight((ulong)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
+        [Intrinsic]
         public static long TrailingZeroCount(long value) => BitOperations.TrailingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
@@ -551,6 +556,8 @@ namespace System
         public static bool IsPow2(long value) => BitOperations.IsPow2(value);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Log2(long value)
         {
             if (value < 0)
@@ -1143,7 +1150,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<long>.TryConvertToChecked<TOther>(long value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<long>.TryConvertToChecked<TOther>(long value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1204,14 +1211,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<long>.TryConvertToSaturating<TOther>(long value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<long>.TryConvertToSaturating<TOther>(long value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1283,14 +1290,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<long>.TryConvertToTruncating<TOther>(long value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<long>.TryConvertToTruncating<TOther>(long value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1351,7 +1358,7 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
@@ -1360,6 +1367,7 @@ namespace System
         // IParsable
         //
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out long result) => TryParse(s, NumberStyles.Integer, provider, out result);
 
         //

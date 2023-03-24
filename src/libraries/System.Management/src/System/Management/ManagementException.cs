@@ -687,8 +687,8 @@ namespace System.Management
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.Management.ManagementException'/>
         /// class with a specified error message.</para>
-        /// <param name='message'>The message that describes the error.</param>
         /// </summary>
+        /// <param name='message'>The message that describes the error.</param>
         public ManagementException(string message):this(ManagementStatus.Failed, message, null)
         {
 
@@ -696,11 +696,11 @@ namespace System.Management
 
         /// <summary>
         /// <para>Initializes a empty new instance of the <see cref='System.Management.ManagementException'/> class </para>
+        /// </summary>
         /// <param name='message'>The message that describes the error.</param>
         /// <param name='innerException'>The exception that is the cause of the current exception. If the innerException
         /// parameter is not a null reference (Nothing in Visual Basic), the current exception is raised in a catch
         /// block that handles the inner exception.</param>
-        /// </summary>
         public ManagementException(string message, Exception innerException):this(innerException, message, null)
         {
             // if the exception passed is not a ManagementException, then initialize the ErrorCode to Failed

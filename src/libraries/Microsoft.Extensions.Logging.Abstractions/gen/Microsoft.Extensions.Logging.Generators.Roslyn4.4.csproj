@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AnalyzerRoslynVersion>4.4</AnalyzerRoslynVersion>
+    <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_4_4)</RoslynApiVersion>
+    <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
+  </PropertyGroup>
+
+  <Import Project="Microsoft.Extensions.Logging.Generators.targets" />
+
+  <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Compile Remove="LoggerMessageGenerator.Roslyn3.11.cs" />
+  </ItemGroup>
+
+</Project>

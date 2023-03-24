@@ -21,6 +21,8 @@ namespace System.Xml.Schema
 
         public virtual XmlSchemaDatatypeVariety Variety { get { return XmlSchemaDatatypeVariety.Atomic; } }
 
+        internal abstract Type ListValueType { get; }
+
         internal XmlSchemaDatatype() { }
 
         public virtual object ChangeType(object value, Type targetType)

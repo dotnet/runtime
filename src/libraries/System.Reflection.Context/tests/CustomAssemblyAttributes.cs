@@ -4,3 +4,4 @@
 using System.Reflection.Context.Tests;
 
 [assembly: TestAssemblyAttribute()]
+[module: TestModuleAttribute()]

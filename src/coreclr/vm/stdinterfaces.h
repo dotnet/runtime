@@ -15,25 +15,11 @@
 #endif // FEATURE_COMINTEROP
 
 #include "dispex.h"
-#include "weakreference.h"
 #include "common.h"
-
-// Until the Windows SDK is updated, just hard-code the INoMarshal IID
-#ifndef __INoMarshal_INTERFACE_DEFINED__
-DEFINE_GUID(IID_INoMarshal,0xecc8691b,0xc1db,0x4dc0,0x85,0x5e,0x65,0xf6,0xc5,0x51,0xaf,0x49);
-MIDL_INTERFACE("ecc8691b-c1db-4dc0-855e-65f6c551af49")
-INoMarshal : public IUnknown
-{
-public:
-};
-#endif // !__INoMarshal_INTERFACE_DEFINED__
-
 
 class Assembly;
 class Module;
 class MethodTable;
-
-typedef HRESULT (__stdcall* PCOMFN)(void);
 
 //------------------------------------------------------------------------------------------
 // HRESULT's returned by GetITypeInfoForEEClass.
@@ -114,42 +100,23 @@ enum ComClassType
     enum_Last,
 };
 
+// IUNKNOWN wrappers
 
-//-------------------------------------------------------------------------
-// IProvideClassInfo methods
-HRESULT __stdcall ClassInfo_GetClassInfo_Wrapper(IUnknown* pUnk,
-                         ITypeInfo** ppTI); //Address of output variable that receives the type info.
+// prototypes IUnknown methods
+HRESULT __stdcall   Unknown_QueryInterface(IUnknown* pUnk, REFIID riid, void** ppv);
 
-// ---------------------------------------------------------------------------
-//  Interface ISupportsErrorInfo
+ULONG __stdcall     Unknown_AddRef(IUnknown* pUnk);
+ULONG __stdcall     Unknown_Release(IUnknown* pUnk);
+ULONG __stdcall     Unknown_AddRefInner(IUnknown* pUnk);
+ULONG __stdcall     Unknown_ReleaseInner(IUnknown* pUnk);
 
-// %%Function: SupportsErroInfo_IntfSupportsErrorInfo,
-// ---------------------------------------------------------------------------
-HRESULT __stdcall
-SupportsErroInfo_IntfSupportsErrorInfo_Wrapper(IUnknown* pUnk, REFIID riid);
+// for std interfaces such as IProvideClassInfo
+HRESULT __stdcall   Unknown_QueryInterface_IErrorInfo(IUnknown* pUnk, REFIID riid, void** ppv);
+ULONG __stdcall     Unknown_AddRefSpecial(IUnknown* pUnk);
+ULONG __stdcall     Unknown_ReleaseSpecial(IUnknown* pUnk);
+ULONG __stdcall     Unknown_ReleaseSpecial_IErrorInfo(IUnknown* pUnk);
 
-// ---------------------------------------------------------------------------
-//  Interface IErrorInfo
-
-// %%Function: ErrorInfo_GetDescription,
-HRESULT __stdcall ErrorInfo_GetDescription_Wrapper(IUnknown* pUnk, BSTR* pbstrDescription);
-
-// %%Function: ErrorInfo_GetGUID,
-HRESULT __stdcall ErrorInfo_GetGUID_Wrapper(IUnknown* pUnk, GUID* pguid);
-
-// %%Function: ErrorInfo_GetHelpContext,
-HRESULT _stdcall ErrorInfo_GetHelpContext_Wrapper(IUnknown* pUnk, DWORD* pdwHelpCtxt);
-
-// %%Function: ErrorInfo_GetHelpFile,
-HRESULT __stdcall ErrorInfo_GetHelpFile_Wrapper(IUnknown* pUnk, BSTR* pbstrHelpFile);
-
-// %%Function: ErrorInfo_GetSource,
-HRESULT __stdcall ErrorInfo_GetSource_Wrapper(IUnknown* pUnk, BSTR* pbstrSource);
-
-//------------------------------------------------------------------------------------------
-//      IDispatch methods for COM+ objects. These methods dispatch to the appropriate
-//      implementation based on the flags of the class that implements them.
-
+// IDISPATCH wrappers
 
 // %%Function: IDispatch::GetTypeInfoCount
 HRESULT __stdcall   Dispatch_GetTypeInfoCount_Wrapper (
@@ -207,200 +174,6 @@ HRESULT __stdcall   InternalDispatchImpl_Invoke_Wrapper (
                                     EXCEPINFO *pexcepinfo,
                                     unsigned int *puArgErr
                                     );
-
-//------------------------------------------------------------------------------------------
-//      IDispatchEx methods for COM+ objects
-
-
-// %%Function: IDispatchEx::GetTypeInfoCount
-HRESULT __stdcall   DispatchEx_GetTypeInfoCount_Wrapper (
-                                    IDispatchEx* pDisp,
-                                    unsigned int *pctinfo);
-
-
-//  %%Function: IDispatch::GetTypeInfo
-HRESULT __stdcall   DispatchEx_GetTypeInfo_Wrapper (
-                                    IDispatchEx* pDisp,
-                                    unsigned int itinfo,
-                                    LCID lcid,
-                                    ITypeInfo **pptinfo);
-
-// IDispatchEx::GetIDsofNames
-HRESULT __stdcall   DispatchEx_GetIDsOfNames_Wrapper (
-                                    IDispatchEx* pDisp,
-                                    REFIID riid,
-                                    _In_reads_(cNames) OLECHAR **rgszNames,
-                                    unsigned int cNames,
-                                    LCID lcid,
-                                    DISPID *rgdispid);
-
-// IDispatchEx::Invoke
-HRESULT __stdcall   DispatchEx_Invoke_Wrapper (
-                                    IDispatchEx* pDisp,
-                                    DISPID dispidMember,
-                                    REFIID riid,
-                                    LCID lcid,
-                                    unsigned short wFlags,
-                                    DISPPARAMS *pdispparams,
-                                    VARIANT *pvarResult,
-                                    EXCEPINFO *pexcepinfo,
-                                    unsigned int *puArgErr);
-
-// IDispatchEx::DeleteMemberByDispID
-HRESULT __stdcall   DispatchEx_DeleteMemberByDispID_Wrapper (
-                                    IDispatchEx* pDisp,
-                                    DISPID id);
-
-// IDispatchEx::DeleteMemberByName
-HRESULT __stdcall   DispatchEx_DeleteMemberByName_Wrapper (
-                                    IDispatchEx* pDisp,
-                                    BSTR bstrName,
-                                    DWORD grfdex);
-
-
-// IDispatchEx::GetDispID
-HRESULT __stdcall   DispatchEx_GetDispID_Wrapper (
-                                    IDispatchEx* pDisp,
-                                    BSTR bstrName,
-                                    DWORD grfdex,
-                                    DISPID *pid);
-
-
-// IDispatchEx::GetMemberName
-HRESULT __stdcall   DispatchEx_GetMemberName_Wrapper (
-                                    IDispatchEx* pDisp,
-                                    DISPID id,
-                                    BSTR *pbstrName);
-
-// IDispatchEx::GetMemberProperties
-HRESULT __stdcall   DispatchEx_GetMemberProperties_Wrapper (
-                                    IDispatchEx* pDisp,
-                                    DISPID id,
-                                    DWORD grfdexFetch,
-                                    DWORD *pgrfdex);
-
-// IDispatchEx::GetNameSpaceParent
-HRESULT __stdcall   DispatchEx_GetNameSpaceParent_Wrapper (
-                                    IDispatchEx* pDisp,
-                                    IUnknown **ppunk);
-
-// IDispatchEx::GetNextDispID
-HRESULT __stdcall   DispatchEx_GetNextDispID_Wrapper (
-                                    IDispatchEx* pDisp,
-                                    DWORD grfdex,
-                                    DISPID id,
-                                    DISPID *pid);
-
-// IDispatchEx::InvokeEx
-HRESULT __stdcall   DispatchEx_InvokeEx_Wrapper (
-                                    IDispatchEx* pDisp,
-                                    DISPID id,
-                                    LCID lcid,
-                                    WORD wFlags,
-                                    DISPPARAMS *pdp,
-                                    VARIANT *pVarRes,
-                                    EXCEPINFO *pei,
-                                    IServiceProvider *pspCaller);
-
-//------------------------------------------------------------------------------------------
-//      IMarshal methods for COM+ objects
-
-HRESULT __stdcall Marshal_GetUnmarshalClass_Wrapper (
-                                    IMarshal* pMarsh,
-                                    REFIID riid, void * pv, ULONG dwDestContext,
-                                    void * pvDestContext, ULONG mshlflags,
-                                    LPCLSID pclsid);
-
-HRESULT __stdcall Marshal_GetMarshalSizeMax_Wrapper (
-                                    IMarshal* pMarsh,
-                                    REFIID riid, void * pv, ULONG dwDestContext,
-                                    void * pvDestContext, ULONG mshlflags,
-                                    ULONG * pSize);
-
-HRESULT __stdcall Marshal_MarshalInterface_Wrapper (
-                                    IMarshal* pMarsh,
-                                    LPSTREAM pStm, REFIID riid, void * pv,
-                                    ULONG dwDestContext, LPVOID pvDestContext,
-                                    ULONG mshlflags);
-
-HRESULT __stdcall Marshal_UnmarshalInterface_Wrapper (
-                                    IMarshal* pMarsh,
-                                    LPSTREAM pStm, REFIID riid,
-                                    void ** ppvObj);
-
-HRESULT __stdcall Marshal_ReleaseMarshalData_Wrapper (IMarshal* pMarsh, LPSTREAM pStm);
-
-HRESULT __stdcall Marshal_DisconnectObject_Wrapper (IMarshal* pMarsh, ULONG dwReserved);
-
-
-//------------------------------------------------------------------------------------------
-//      IConnectionPointContainer methods for COM+ objects
-
-interface IEnumConnectionPoints;
-
-HRESULT __stdcall ConnectionPointContainer_EnumConnectionPoints_Wrapper(IUnknown* pUnk,
-                                    IEnumConnectionPoints **ppEnum);
-
-HRESULT __stdcall ConnectionPointContainer_FindConnectionPoint_Wrapper(IUnknown* pUnk,
-                                    REFIID riid,
-                                    IConnectionPoint **ppCP);
-
-
-//------------------------------------------------------------------------------------------
-//      IObjectSafety methods for COM+ objects
-
-interface IObjectSafety;
-
-HRESULT __stdcall ObjectSafety_GetInterfaceSafetyOptions_Wrapper(IUnknown* pUnk,
-                                                         REFIID riid,
-                                                         DWORD *pdwSupportedOptions,
-                                                         DWORD *pdwEnabledOptions);
-
-HRESULT __stdcall ObjectSafety_SetInterfaceSafetyOptions_Wrapper(IUnknown* pUnk,
-                                                         REFIID riid,
-                                                         DWORD dwOptionSetMask,
-                                                         DWORD dwEnabledOptions);
-
-// IUNKNOWN wrappers
-
-// prototypes IUnknown methods
-HRESULT __stdcall   Unknown_QueryInterface(IUnknown* pUnk, REFIID riid, void** ppv);
-
-ULONG __stdcall     Unknown_AddRef(IUnknown* pUnk);
-ULONG __stdcall     Unknown_Release(IUnknown* pUnk);
-ULONG __stdcall     Unknown_AddRefInner(IUnknown* pUnk);
-ULONG __stdcall     Unknown_ReleaseInner(IUnknown* pUnk);
-
-// for std interfaces such as IProvideClassInfo
-HRESULT __stdcall   Unknown_QueryInterface_IErrorInfo(IUnknown* pUnk, REFIID riid, void** ppv);
-ULONG __stdcall     Unknown_AddRefSpecial(IUnknown* pUnk);
-ULONG __stdcall     Unknown_ReleaseSpecial(IUnknown* pUnk);
-ULONG __stdcall     Unknown_ReleaseSpecial_IErrorInfo(IUnknown* pUnk);
-
-
-// special idispatch methods
-
-HRESULT __stdcall
-InternalDispatchImpl_GetIDsOfNames (
-    IDispatch* pDisp,
-    REFIID riid,
-    _In_reads_(cNames) OLECHAR **rgszNames,
-    unsigned int cNames,
-    LCID lcid,
-    DISPID *rgdispid);
-
-
-HRESULT __stdcall
-InternalDispatchImpl_Invoke (
-    IDispatch* pDisp,
-    DISPID dispidMember,
-    REFIID riid,
-    LCID lcid,
-    unsigned short wFlags,
-    DISPPARAMS *pdispparams,
-    VARIANT *pvarResult,
-    EXCEPINFO *pexcepinfo,
-    unsigned int *puArgErr);
 
 //------------------------------------------------------------------------------------------
 // Helper to get the current IErrorInfo if the specified interface supports it.

@@ -5,11 +5,11 @@
 /// <reference path="./types/v8.d.ts" />
 /// <reference path="./types/node.d.ts" />
 
-import { DotnetModule, EarlyExports, EarlyImports, RuntimeHelpers } from "./types";
-import { EmscriptenModule } from "./types/emscripten";
+import type { CreateDotnetRuntimeType, DotnetModule, RuntimeAPI, EarlyExports, EarlyImports, ModuleAPI, RuntimeHelpers } from "./types";
+import type { EmscriptenModule, EmscriptenModuleInternal } from "./types/emscripten";
 
 // these are our public API (except internal)
-export let Module: EmscriptenModule & DotnetModule;
+export let Module: EmscriptenModule & DotnetModule & EmscriptenModuleInternal;
 export let INTERNAL: any;
 export let IMPORTS: any;
 
@@ -19,7 +19,9 @@ export let ENVIRONMENT_IS_SHELL: boolean;
 export let ENVIRONMENT_IS_WEB: boolean;
 export let ENVIRONMENT_IS_WORKER: boolean;
 export let ENVIRONMENT_IS_PTHREAD: boolean;
-
+export const exportedRuntimeAPI: RuntimeAPI = {} as any;
+export const moduleExports: ModuleAPI = {} as any;
+export let emscriptenEntrypoint: CreateDotnetRuntimeType;
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function set_imports_exports(
     imports: EarlyImports,
@@ -39,13 +41,24 @@ export function set_imports_exports(
     runtimeHelpers.requirePromise = imports.requirePromise;
 }
 
+export function set_emscripten_entrypoint(
+    entrypoint: CreateDotnetRuntimeType
+): void {
+    emscriptenEntrypoint = entrypoint;
+}
+
+
 const initialRuntimeHelpers: Partial<RuntimeHelpers> =
 {
     javaScriptExports: {} as any,
-    mono_wasm_load_runtime_done: false,
     mono_wasm_bindings_is_ready: false,
     maxParallelDownloads: 16,
-    config: {},
+    enableDownloadRetry: true,
+    config: {
+        environmentVariables: {},
+    },
     diagnosticTracing: false,
+    enablePerfMeasure: true,
+    loadedFiles: []
 };
 export const runtimeHelpers: RuntimeHelpers = initialRuntimeHelpers as any;

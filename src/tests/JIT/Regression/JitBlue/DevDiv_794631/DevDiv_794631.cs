@@ -4,9 +4,9 @@
 
 using System;
 
-class Repro
+public class Repro
 {
-    static int Main()
+    public static int Main()
     {
         //This testcase ensures that we correctly generate one ReadUInt16() call
         //instead of two due to a bug in fgmorph which transformed a call result 

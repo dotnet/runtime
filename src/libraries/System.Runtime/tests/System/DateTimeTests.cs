@@ -108,6 +108,28 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_Int_Int_Int_Int_Int_Int_Int_Int_TestData))]
+        public void Ctor_DateOnly_TimeOnly(int year, int month, int day, int hour, int minute, int second, int millisecond)
+        {
+            var date = new DateOnly(year, month, day);
+            var time = new TimeOnly(hour, minute, second, millisecond);
+            var dateTime = new DateTime(date, time);
+            
+            Assert.Equal(new DateTime(year, month, day, hour, minute, second, millisecond), dateTime);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Int_Int_Int_Int_Int_Int_Int_Int_TestData))]
+        public void Ctor_DateOnly_TimeOnly_DateTimeKind(int year, int month, int day, int hour, int minute, int second, int millisecond)
+        {
+            var date = new DateOnly(year, month, day);
+            var time = new TimeOnly(hour, minute, second, millisecond);
+            var dateTime = new DateTime(date, time, DateTimeKind.Local);
+            
+            Assert.Equal(new DateTime(year, month, day, hour, minute, second, millisecond, DateTimeKind.Local), dateTime);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Int_Int_Int_Int_Int_Int_Int_Int_TestData))]
         public void Ctor_Int_Int_Int_Int_Int_Int_Int_Calendar(int year, int month, int day, int hour, int minute, int second, int millisecond)
         {
             var dateTime = new DateTime(year, month, day, hour, minute, second, millisecond, new GregorianCalendar());
@@ -355,6 +377,35 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("calendar", () => new DateTime(1, 1, 1, 1, 1, 1, 1, null, DateTimeKind.Local));
             AssertExtensions.Throws<ArgumentNullException>("calendar", () => new DateTime(1, 1, 1, 1, 1, 1, 1, 1, null));
             AssertExtensions.Throws<ArgumentNullException>("calendar", () => new DateTime(1, 1, 1, 1, 1, 1, 1, 1, null, DateTimeKind.Local));
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Int_Int_Int_Int_Int_Int_Int_Int_Int_TestData))]
+        public void DeconstructionTest_DateOnly_TimeOnly(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond)
+        {
+            var dateTime = new DateTime(year, month, day, hour, minute, second, millisecond, microsecond);
+            var (date, time) = dateTime;
+
+            Assert.Equal(year, date.Year);
+            Assert.Equal(month, date.Month);
+            Assert.Equal(day, date.Day);
+            Assert.Equal(hour, time.Hour);
+            Assert.Equal(minute, time.Minute);
+            Assert.Equal(second, time.Second);
+            Assert.Equal(millisecond, time.Millisecond);
+            Assert.Equal(microsecond, time.Microsecond);
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Int_Int_Int_Int_Int_Int_Int_Int_Int_TestData))]
+        public void DeconstructionTest_Year_Month_Day(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond)
+        {
+            var dateTime = new DateTime(year, month, day, hour, minute, second, millisecond, microsecond);
+            var (obtainedYear, obtainedMonth, obtainedDay) = dateTime;
+
+            Assert.Equal(year, obtainedYear);
+            Assert.Equal(month, obtainedMonth);
+            Assert.Equal(day, obtainedDay);
         }
 
         [Theory]
@@ -2573,6 +2624,26 @@ namespace System.Tests
         public static void UnixEpoch()
         {
             VerifyDateTime(DateTime.UnixEpoch, 1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        }
+
+        [Fact]
+        public static void ParseExact_InvariantName_RespectsCustomNames()
+        {
+            var c = new CultureInfo("");
+            c.DateTimeFormat.DayNames = new[] { "A", "B", "C", "D", "E", "F", "G" };
+            c.DateTimeFormat.AbbreviatedDayNames = new[] { "abc", "bcd", "cde", "def", "efg", "fgh", "ghi" };
+            c.DateTimeFormat.MonthNames = new[] { "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "" };
+            c.DateTimeFormat.AbbreviatedMonthNames = new[] { "hij", "ijk", "jkl", "klm", "lmn", "mno", "nop", "opq", "pqr", "qrs", "rst", "stu", "" };
+
+            DateTime expected = new DateTime(2023, 3, 4, 9, 30, 12, DateTimeKind.Utc);
+
+            Assert.Equal(expected, DateTime.ParseExact("Saturday, March 4, 2023 9:30:12 AM", "dddd, MMMM d, yyyy h':'mm':'ss tt", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact("G, J 4, 2023 9:30:12 AM", "dddd, MMMM d, yyyy h':'mm':'ss tt", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
+            Assert.Equal(expected, DateTime.ParseExact("G, J 4, 2023 9:30:12 AM", "dddd, MMMM d, yyyy h':'mm':'ss tt", c, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
+
+            Assert.Equal(expected, DateTime.ParseExact("Sat, 04 Mar 2023 09:30:12 GMT", "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
+            Assert.Throws<FormatException>(() => DateTime.ParseExact("ghi, 04 jkl 2023 09:30:12 GMT", "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
+            Assert.Equal(expected, DateTime.ParseExact("ghi, 04 jkl 2023 09:30:12 GMT", "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'", c, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal));
         }
 
         public enum DateTimeUnits

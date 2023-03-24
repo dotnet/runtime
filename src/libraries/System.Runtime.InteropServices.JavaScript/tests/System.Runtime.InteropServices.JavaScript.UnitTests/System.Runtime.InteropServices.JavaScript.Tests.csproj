@@ -1,20 +1,24 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
+    <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
+    <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'true'">$(DefineConstants);ENABLE_LEGACY_JS_INTEROP</DefineConstants>
     <!-- Use following lines to write the generated files to disk. -->
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSImportExportTest.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Utils.cs" />
     <None Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
-    <None Include="$(CompilerGeneratedFilesOutputPath)\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JSImportGenerator\JSImports.g.cs" />
-    <None Include="$(CompilerGeneratedFilesOutputPath)\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JsExportGenerator\JSExports.g.cs" />
+    <None Include="$(CompilerGeneratedFilesOutputPath)\..\browser-wasm\generated\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JSImportGenerator\JSImports.g.cs" />
+    <None Include="$(CompilerGeneratedFilesOutputPath)\..\browser-wasm\generated\Microsoft.Interop.JavaScript.JSImportGenerator\Microsoft.Interop.JavaScript.JsExportGenerator\JSExports.g.cs" />
     <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\JavaScriptTestHelper.mjs" />
+    <WasmExtraFilesToDeploy Include="System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.js" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />

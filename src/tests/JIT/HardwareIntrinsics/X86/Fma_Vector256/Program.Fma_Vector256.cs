@@ -4,26 +4,13 @@
 using System;
 using System.Collections.Generic;
 
-namespace JIT.HardwareIntrinsics.X86
+namespace JIT.HardwareIntrinsics.X86._Fma_Vector256
 {
     public static partial class Program
     {
         static Program()
         {
-            TestList = new Dictionary<string, Action>() {
-                ["MultiplyAdd.Double"] = MultiplyAddDouble,
-                ["MultiplyAdd.Single"] = MultiplyAddSingle,
-                ["MultiplyAddNegated.Double"] = MultiplyAddNegatedDouble,
-                ["MultiplyAddNegated.Single"] = MultiplyAddNegatedSingle,
-                ["MultiplyAddSubtract.Double"] = MultiplyAddSubtractDouble,
-                ["MultiplyAddSubtract.Single"] = MultiplyAddSubtractSingle,
-                ["MultiplySubtract.Double"] = MultiplySubtractDouble,
-                ["MultiplySubtract.Single"] = MultiplySubtractSingle,
-                ["MultiplySubtractAdd.Double"] = MultiplySubtractAddDouble,
-                ["MultiplySubtractAdd.Single"] = MultiplySubtractAddSingle,
-                ["MultiplySubtractNegated.Double"] = MultiplySubtractNegatedDouble,
-                ["MultiplySubtractNegated.Single"] = MultiplySubtractNegatedSingle,
-            };
+
         }
     }
 }

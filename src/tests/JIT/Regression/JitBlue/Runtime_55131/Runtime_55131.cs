@@ -17,7 +17,7 @@ public class Runtime_55131
     static ushort s_6;
     static uint[] s_15 = new uint[] { 0 };
     static bool s_19 = false;
-    private static int Main()
+    public static int Main()
     {
         bool condition = False();
         int result = 100;

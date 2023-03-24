@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -48,7 +46,7 @@ namespace Internal.TypeSystem
 
         private TypeDesc Instantiate(TypeDesc type)
         {
-            return type.InstantiateSignature(_instantiatedType.Instantiation, new Instantiation());
+            return type.InstantiateSignature(_instantiatedType.Instantiation, default(Instantiation));
         }
 
         public override MethodSignature Signature
@@ -111,6 +109,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsPublic
+        {
+            get
+            {
+                return _typicalMethodDef.IsPublic;
+            }
+        }
+
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return _typicalMethodDef.HasCustomAttribute(attributeNamespace, attributeName);
@@ -126,6 +132,14 @@ namespace Internal.TypeSystem
             get
             {
                 return _typicalMethodDef.IsDefaultConstructor;
+            }
+        }
+
+        public override bool IsStaticConstructor
+        {
+            get
+            {
+                return _typicalMethodDef.IsStaticConstructor;
             }
         }
 

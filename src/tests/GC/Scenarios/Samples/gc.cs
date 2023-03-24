@@ -497,7 +497,7 @@ class Application {
     }
 
 
-    public static int Main(String[] args) {
+    public static int Main() {
     // Environment.ExitCode = 1;
         Display("To fully understand this sample, you should step through the");
         Display("code in the debugger while monitoring the output generated.\n");

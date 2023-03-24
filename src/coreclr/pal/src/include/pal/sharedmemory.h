@@ -88,9 +88,11 @@ public:
 class SharedMemoryHelpers
 {
 private:
+    static const mode_t PermissionsMask_CurrentUser_ReadWrite;
     static const mode_t PermissionsMask_CurrentUser_ReadWriteExecute;
     static const mode_t PermissionsMask_AllUsers_ReadWrite;
     static const mode_t PermissionsMask_AllUsers_ReadWriteExecute;
+
 public:
     static const UINT32 InvalidProcessId;
     static const SIZE_T InvalidThreadId;
@@ -106,12 +108,12 @@ public:
     static void BuildSharedFilesPath(PathCharString& destination, const char *suffix, int suffixByteCount);
     static bool AppendUInt32String(PathCharString& destination, UINT32 value);
 
-    static bool EnsureDirectoryExists(const char *path, bool isGlobalLockAcquired, bool createIfNotExist = true, bool isSystemDirectory = false);
+    static bool EnsureDirectoryExists(const char *path, bool isGlobalLockAcquired, bool hasCurrentUserAccessOnly, bool setStickyFlag, bool createIfNotExist = true, bool isSystemDirectory = false);
 private:
     static int Open(LPCSTR path, int flags, mode_t mode = static_cast<mode_t>(0));
 public:
     static int OpenDirectory(LPCSTR path);
-    static int CreateOrOpenFile(LPCSTR path, bool createIfNotExist = true, bool *createdRef = nullptr);
+    static int CreateOrOpenFile(LPCSTR path, bool createIfNotExist = true, bool isSessionScope = true, bool *createdRef = nullptr);
     static void CloseFile(int fileDescriptor);
 
     static SIZE_T GetFileSize(int fileDescriptor);

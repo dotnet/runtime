@@ -113,7 +113,7 @@ namespace TypeSystemTests
         {
             MetadataType t = _testModule.GetType("GenericTypes", "GenericClass`1").MakeInstantiatedType(_context.GetWellKnownType(WellKnownType.Int32));
 
-            MethodSignature sig = new MethodSignature(MethodSignatureFlags.None, 0, _context.GetSignatureVariable(0, false), new TypeDesc[0] { });
+            MethodSignature sig = new MethodSignature(MethodSignatureFlags.None, 0, _context.GetSignatureVariable(0, false), System.Array.Empty<TypeDesc>());
             MethodDesc fooMethod = t.GetMethod("Foo", sig);
             Assert.NotNull(fooMethod);
         }
@@ -222,8 +222,6 @@ namespace TypeSystemTests
             MetadataType genericOpenType = _testModule.GetType("GenericTypes", "TwoParamGenericClass`2");
             MetadataType nonGenericType = _testModule.GetType("GenericTypes", "NonGenericClass");
 
-            MethodDesc nonGenericOnGeneric = genericOpenType.GetMethod("NonGenericFunction", null);
-            MethodDesc genericOnGeneric = genericOpenType.GetMethod("GenericFunction", null);
             MethodDesc genericOnNonGeneric = nonGenericType.GetMethod("GenericFunction", null);
 
             InstantiatedType genericIntString = genericOpenType.MakeInstantiatedType(intType, stringType);

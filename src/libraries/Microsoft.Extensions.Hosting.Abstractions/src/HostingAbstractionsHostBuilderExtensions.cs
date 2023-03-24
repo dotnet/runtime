@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.Hosting
 {
+    /// <summary>
+    /// Provides extension methods for the <see cref="IHostBuilder"/> from the hosting abstractions package.
+    /// </summary>
     public static class HostingAbstractionsHostBuilderExtensions
     {
         /// <summary>

@@ -3,13 +3,13 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace System.Linq
 {
     internal abstract partial class OrderedEnumerable<TElement> : IPartition<TElement>
     {
-        public TElement[] ToArray()
+        public virtual TElement[] ToArray()
         {
             Buffer<TElement> buffer = new Buffer<TElement>(_source);
 
@@ -21,7 +21,7 @@ namespace System.Linq
 
             TElement[] array = new TElement[count];
             int[] map = SortedMap(buffer);
-            for (int i = 0; i != array.Length; i++)
+            for (int i = 0; i < array.Length; i++)
             {
                 array[i] = buffer._items[map[i]];
             }
@@ -29,7 +29,7 @@ namespace System.Linq
             return array;
         }
 
-        public List<TElement> ToList()
+        public virtual List<TElement> ToList()
         {
             Buffer<TElement> buffer = new Buffer<TElement>(_source);
             int count = buffer._count;
@@ -245,6 +245,23 @@ namespace System.Linq
             }
 
             return value;
+        }
+    }
+
+    internal sealed partial class OrderedImplicitlyStableEnumerable<TElement> : OrderedEnumerable<TElement>
+    {
+        public override TElement[] ToArray()
+        {
+            TElement[] array = _source.ToArray();
+            Sort(array, _descending);
+            return array;
+        }
+
+        public override List<TElement> ToList()
+        {
+            List<TElement> list = _source.ToList();
+            Sort(CollectionsMarshal.AsSpan(list), _descending);
+            return list;
         }
     }
 }

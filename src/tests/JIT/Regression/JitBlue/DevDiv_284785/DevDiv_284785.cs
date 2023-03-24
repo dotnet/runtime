@@ -8,9 +8,9 @@
 
 using System;
 
-static class C
+public static class C
 {
-    static int Main()
+    public static int Main()
     {
         int i = -4;
         ulong l = 0;

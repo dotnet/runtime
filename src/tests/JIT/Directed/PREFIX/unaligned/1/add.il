@@ -26,7 +26,7 @@ ret
 //-------------------------
 // Entry point - Main     -
 //-------------------------
-.method static int32 main(class [mscorlib]System.String[]) {
+.method static int32 main() {
 .entrypoint
 .maxstack	6
 .locals init (class _add target)

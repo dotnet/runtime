@@ -123,9 +123,9 @@ namespace Test
         }
     }
 
-    internal class App
+    public class App
     {
-        private static int Main()
+        public static int Main()
         {
             try
             {

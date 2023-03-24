@@ -14,9 +14,11 @@ public abstract class BenchTask
 
     public virtual bool BrowserOnly => false;
 
-    public async Task<string> RunBatch(List<Result> results, int measurementIdx, int milliseconds = 5000)
+    public async Task<string> RunBatch(List<Result> results, int measurementIdx, int milliseconds = -1)
     {
         var measurement = Measurements[measurementIdx];
+        if (milliseconds == -1)
+            milliseconds = measurement.RunLength;
         await measurement.BeforeBatch();
         var result = await measurement.RunBatch(this, milliseconds);
         results.Add(result);
@@ -41,10 +43,12 @@ public abstract class BenchTask
 
     public abstract class Measurement
     {
+        protected int currentStep = 0;
         public abstract string Name { get; }
 
-        public virtual int InitialSamples { get { return 10; } }
-        public virtual int NumberOfRuns { get { return 5; } }
+        public virtual int InitialSamples => 10;
+        public virtual int NumberOfRuns => 5;
+        public virtual int RunLength => 5000;
 
         public virtual Task BeforeBatch() { return Task.CompletedTask; }
 
@@ -64,7 +68,6 @@ public abstract class BenchTask
         {
             DateTime start = DateTime.Now;
             DateTime end;
-            int i = 0;
             try
             {
                 // run one to eliminate possible startup overhead and do GC collection
@@ -76,7 +79,7 @@ public abstract class BenchTask
                 GC.Collect();
 
                 start = DateTime.Now;
-                for (i = 0; i < InitialSamples; i++)
+                for (currentStep = 0; currentStep < InitialSamples; currentStep++)
                     if (HasRunStepAsync)
                         await RunStepAsync();
                     else
@@ -87,7 +90,7 @@ public abstract class BenchTask
                 int steps = CalculateSteps(milliseconds, initTs);
 
                 start = DateTime.Now;
-                for (i = 0; i < steps; i++)
+                for (currentStep = 0; currentStep < steps; currentStep++)
                 {
                     if (HasRunStepAsync)
                         await RunStepAsync();
@@ -105,7 +108,7 @@ public abstract class BenchTask
                 end = DateTime.Now;
                 var ts = end - start;
                 Console.WriteLine(ex);
-                return new Result { span = ts, steps = i + InitialSamples, taskName = task.Name, measurementName = Name + " " + ex.Message };
+                return new Result { span = ts, steps = currentStep + InitialSamples, taskName = task.Name, measurementName = Name + " " + ex.Message };
             }
         }
     }

@@ -24,7 +24,7 @@
 // in each handle we allocate and the pattern with which we null out object references in the array.
 //
 // Additionally this test stresses substantially more complex code paths in the GC if server mode is enabled.
-// This can be achieved by setting the environment variable COMPlus_BuildFlavor=svr prior to executing the
+// This can be achieved by setting the environment variable DOTNET_BuildFlavor=svr prior to executing the
 // test executable.
 //
 // Note that we don't go to any lengths to ensure that dependent handle ownership is spread over multiple cpus

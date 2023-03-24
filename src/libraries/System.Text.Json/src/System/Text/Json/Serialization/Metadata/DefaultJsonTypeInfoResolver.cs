@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.Json.Reflection;
 using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -69,6 +67,11 @@ namespace System.Text.Json.Serialization.Metadata
 
             JsonTypeInfo.ValidateType(type);
             JsonTypeInfo typeInfo = CreateJsonTypeInfo(type, options);
+            typeInfo.OriginatingResolver = this;
+
+            // We've finished configuring the metadata, brand the instance as user-unmodified.
+            // This should be the last update operation in the resolver to avoid resetting the flag.
+            typeInfo.IsCustomized = false;
 
             if (_modifiers != null)
             {
@@ -85,25 +88,8 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options)
         {
-            JsonTypeInfo jsonTypeInfo;
             JsonConverter converter = GetConverterForType(type, options);
-
-            if (converter.TypeToConvert == type)
-            {
-                // For performance, avoid doing a reflection-based instantiation
-                // if the converter type matches that of the declared type.
-                jsonTypeInfo = converter.CreateReflectionJsonTypeInfo(options);
-            }
-            else
-            {
-                Type jsonTypeInfoType = typeof(ReflectionJsonTypeInfo<>).MakeGenericType(type);
-                jsonTypeInfo = (JsonTypeInfo)jsonTypeInfoType.CreateInstanceNoWrapExceptions(
-                    parameterTypes: new Type[] { typeof(JsonConverter), typeof(JsonSerializerOptions) },
-                    parameters: new object[] { converter, options })!;
-            }
-
-            Debug.Assert(jsonTypeInfo.Type == type);
-            return jsonTypeInfo;
+            return CreateTypeInfoCore(type, converter, options);
         }
 
         /// <summary>
@@ -126,12 +112,12 @@ namespace System.Text.Json.Serialization.Metadata
                 _resolver = resolver;
             }
 
-            protected override bool IsImmutable => !_resolver._mutable;
-            protected override void VerifyMutable()
+            public override bool IsReadOnly => !_resolver._mutable;
+            protected override void OnCollectionModifying()
             {
                 if (!_resolver._mutable)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_TypeInfoResolverImmutable();
+                    ThrowHelper.ThrowInvalidOperationException_DefaultTypeInfoResolverImmutable();
                 }
             }
         }

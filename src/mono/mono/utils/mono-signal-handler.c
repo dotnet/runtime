@@ -38,7 +38,7 @@ static struct mono_sigpair *sigpair_buf;
 static int sigpair_buflen;
 
 void
-mono_load_signames ()
+mono_load_signames (void)
 {
 	if (sigpair_buf)
 		return;

@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Functionality related to deterministic ordering of types and members
-    partial class TypeDesc
+    public partial class TypeDesc
     {
         /// <summary>
         /// Gets an identifier that is the same for all instances of this <see cref="TypeDesc"/>

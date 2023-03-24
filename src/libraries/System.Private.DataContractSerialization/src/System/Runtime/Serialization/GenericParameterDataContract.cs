@@ -11,6 +11,7 @@ namespace System.Runtime.Serialization.DataContracts
     {
         private readonly GenericParameterDataContractCriticalHelper _helper;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal GenericParameterDataContract(Type type)
             : base(new GenericParameterDataContractCriticalHelper(type))
@@ -26,6 +27,7 @@ namespace System.Runtime.Serialization.DataContracts
         {
             private readonly int _parameterPosition;
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal GenericParameterDataContractCriticalHelper(
                 [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
@@ -39,6 +41,7 @@ namespace System.Runtime.Serialization.DataContracts
             internal int ParameterPosition => _parameterPosition;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract>? boundContracts = null)
         {

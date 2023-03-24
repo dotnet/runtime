@@ -88,7 +88,7 @@ namespace System.Diagnostics.Metrics
                 MeasurementsCompleted = (instrument, cookie) =>
                 {
                     _endInstrumentMeasurements(instrument);
-                    RemoveInstrumentState(instrument, (InstrumentState)cookie!);
+                    RemoveInstrumentState(instrument);
                 }
             };
             _listener.SetMeasurementEventCallback<double>((i, m, l, c) => ((InstrumentState)c!).Update((double)m, l));
@@ -218,7 +218,7 @@ namespace System.Diagnostics.Metrics
             _listener.Dispose();
         }
 
-        private void RemoveInstrumentState(Instrument instrument, InstrumentState state)
+        private void RemoveInstrumentState(Instrument instrument)
         {
             _instrumentStates.TryRemove(instrument, out _);
         }
@@ -275,7 +275,7 @@ namespace System.Diagnostics.Metrics
                 {
                     lock (this)
                     {
-                        return CheckTimeSeriesAllowed() ? new RateSumAggregator() : null;
+                        return CheckTimeSeriesAllowed() ? new RateSumAggregator(isMonotonic: true) : null;
                     }
                 };
             }
@@ -285,7 +285,7 @@ namespace System.Diagnostics.Metrics
                 {
                     lock (this)
                     {
-                        return CheckTimeSeriesAllowed() ? new RateAggregator() : null;
+                        return CheckTimeSeriesAllowed() ? new RateAggregator(isMonotonic: true) : null;
                     }
                 };
             }
@@ -309,6 +309,26 @@ namespace System.Diagnostics.Metrics
                         return (!CheckHistogramAllowed() || !CheckTimeSeriesAllowed()) ?
                             null :
                             new ExponentialHistogramAggregator(s_defaultHistogramConfig);
+                    }
+                };
+            }
+            else if (genericDefType == typeof(UpDownCounter<>))
+            {
+                return () =>
+                {
+                    lock (this)
+                    {
+                        return CheckTimeSeriesAllowed() ? new RateSumAggregator(isMonotonic: false) : null;
+                    }
+                };
+            }
+            else if (genericDefType == typeof(ObservableUpDownCounter<>))
+            {
+                return () =>
+                {
+                    lock (this)
+                    {
+                        return CheckTimeSeriesAllowed() ? new RateAggregator(isMonotonic: false) : null;
                     }
                 };
             }

@@ -616,7 +616,7 @@ namespace System.IO.Ports
                 {
                     // If the portName they have passed in is a FILE_TYPE_CHAR but not a serial port,
                     // for example "LPT1", this API will fail.  For this reason we handle the error message specially.
-                    int errorCode = Marshal.GetLastWin32Error();
+                    int errorCode = Marshal.GetLastPInvokeError();
                     if ((errorCode == Interop.Errors.ERROR_INVALID_PARAMETER) || (errorCode == Interop.Errors.ERROR_INVALID_HANDLE))
                         throw new ArgumentException(SR.Arg_InvalidSerialPortExtended, nameof(portName));
                     else
@@ -719,7 +719,7 @@ namespace System.IO.Ports
                     Interop.Kernel32.SetCommMask(_handle, 0);
                     if (!Interop.Kernel32.EscapeCommFunction(_handle, Interop.Kernel32.CommFunctions.CLRDTR))
                     {
-                        int hr = Marshal.GetLastWin32Error();
+                        int hr = Marshal.GetLastPInvokeError();
 
                         // access denied can happen if USB is yanked out. If that happens, we
                         // want to at least allow finalize to succeed and clean up everything
@@ -874,7 +874,7 @@ namespace System.IO.Ports
 
             // Obtain the WaitHandle, but don't use public property in case we
             // delay initialize the manual reset event in the future.
-            WaitHandle wh = afsar._waitHandle;
+            ManualResetEvent wh = afsar._waitHandle;
             if (wh != null)
             {
                 // We must block to ensure that AsyncFSCallback has completed,
@@ -952,7 +952,7 @@ namespace System.IO.Ports
 
             // Obtain the WaitHandle, but don't use public property in case we
             // delay initialize the manual reset event in the future.
-            WaitHandle wh = afsar._waitHandle;
+            ManualResetEvent wh = afsar._waitHandle;
             if (wh != null)
             {
                 // We must block to ensure that AsyncFSCallback has completed,
@@ -1031,7 +1031,7 @@ namespace System.IO.Ports
             return numBytes;
         }
 
-        internal unsafe int ReadByte(int timeout)
+        internal unsafe int ReadByte(int _/*timeout*/)
         {
             if (_handle == null) InternalResources.FileNotOpen();
 
@@ -1101,12 +1101,7 @@ namespace System.IO.Ports
         }
 
         // use default timeout as argument to WriteByte override with timeout arg
-        public override void WriteByte(byte value)
-        {
-            WriteByte(value, WriteTimeout);
-        }
-
-        internal unsafe void WriteByte(byte value, int timeout)
+        public override unsafe void WriteByte(byte value)
         {
             if (_inBreak)
                 throw new InvalidOperationException(SR.In_Break_State);
@@ -1131,7 +1126,7 @@ namespace System.IO.Ports
                 if (numBytes == -1)
                 {
                     // This is how writes timeout on Win9x.
-                    if (Marshal.GetLastWin32Error() == Interop.Errors.ERROR_COUNTER_TIMEOUT)
+                    if (Marshal.GetLastPInvokeError() == Interop.Errors.ERROR_COUNTER_TIMEOUT)
                         throw new TimeoutException(SR.Write_timed_out);
 
                     throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -1428,7 +1423,7 @@ namespace System.IO.Ports
 
             if (r == 0)
             {
-                hr = Marshal.GetLastWin32Error();
+                hr = Marshal.GetLastPInvokeError();
 
                 // Note: we should never silently ignore an error here without some
                 // extra work.  We must make sure that BeginReadCore won't return an
@@ -1477,7 +1472,7 @@ namespace System.IO.Ports
 
             if (r == 0)
             {
-                hr = Marshal.GetLastWin32Error();
+                hr = Marshal.GetLastPInvokeError();
                 // Note: we should never silently ignore an error here without some
                 // extra work.  We must make sure that BeginWriteCore won't return an
                 // IAsyncResult that will cause EndWrite to block, since the OS won't
@@ -1607,7 +1602,7 @@ namespace System.IO.Ports
                     {
                         if (Interop.Kernel32.WaitCommEvent(handle, eventsOccurredPtr, intOverlapped) == false)
                         {
-                            int hr = Marshal.GetLastWin32Error();
+                            int hr = Marshal.GetLastPInvokeError();
 
                             // When a device is disconnected unexpectedly from a serial port, there appear to be
                             // at least three error codes Windows or drivers may return.
@@ -1625,13 +1620,13 @@ namespace System.IO.Ports
                                 // if we get IO pending, MSDN says we should wait on the WaitHandle, then call GetOverlappedResult
                                 // to get the results of WaitCommEvent.
                                 bool success = waitCommEventWaitHandle.WaitOne();
-                                Debug.Assert(success, $"waitCommEventWaitHandle.WaitOne() returned error {Marshal.GetLastWin32Error()}");
+                                Debug.Assert(success, $"waitCommEventWaitHandle.WaitOne() returned error {Marshal.GetLastPInvokeError()}");
 
                                 do
                                 {
                                     // NOTE: GetOverlappedResult will modify the original pointer passed into WaitCommEvent.
                                     success = Interop.Kernel32.GetOverlappedResult(handle, intOverlapped, ref unused, false);
-                                    error = Marshal.GetLastWin32Error();
+                                    error = Marshal.GetLastPInvokeError();
                                 }
                                 while (error == Interop.Errors.ERROR_IO_INCOMPLETE && !ShutdownLoop && !success);
 

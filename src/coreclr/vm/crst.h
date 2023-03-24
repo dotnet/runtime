@@ -40,7 +40,7 @@
 //    Crst *pcrst = new Crst(type);
 //
 //      where "type" is one of the enums created in the auto-generated
-//      file:..\inc\CrstTypes.h header file (matching the definition in
+//      file:..\inc\crsttypes_generated.h header file (matching the definition in
 //      file:..\inc\CrstTypes.def).
 //
 //      By default, crsts don't support nested enters by the same thread. If

@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlReaderTests
 {
     public class XmlSystemPathResolverTests
     {
@@ -93,6 +93,7 @@ namespace System.Xml.Tests
         [InlineData("http://notfound.invalid.corp.microsoft.com")]
         [InlineData("ftp://host.invalid")]
         [InlineData("notsupported://host.invalid")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75129", TestPlatforms.Browser)]
         public static void TestResolveInvalidPath(string invalidUri)
         {
             Assert.ThrowsAny<Exception>(() => XmlReader.Create(invalidUri));

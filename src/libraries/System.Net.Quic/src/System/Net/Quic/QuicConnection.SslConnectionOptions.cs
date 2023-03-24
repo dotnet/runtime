@@ -117,7 +117,8 @@ public partial class QuicConnection
 
                 if (result is not null)
                 {
-                    sslPolicyErrors |= CertificateValidation.BuildChainAndVerifyProperties(chain!, result, checkCertName: true, !_isClient, _targetHost, certificateBuffer, certificateLength);
+                    bool checkCertName = !chain!.ChainPolicy!.VerificationFlags.HasFlag(X509VerificationFlags.IgnoreInvalidName);
+                    sslPolicyErrors |= CertificateValidation.BuildChainAndVerifyProperties(chain!, result, checkCertName, !_isClient, _targetHost, certificateBuffer, certificateLength);
                 }
                 else if (_certificateRequired)
                 {

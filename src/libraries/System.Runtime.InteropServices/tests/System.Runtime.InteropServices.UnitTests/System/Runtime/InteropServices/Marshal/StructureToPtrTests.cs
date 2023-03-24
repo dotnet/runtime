@@ -150,6 +150,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75666", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [MemberData(nameof(StructureToPtr_NonBlittableObject_TestData))]
         public void StructureToPtr_NonBlittable_ThrowsArgumentException(object o)
         {
@@ -158,6 +159,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75666", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void StructureToPtr_AutoLayout_ThrowsArgumentException()
         {
             var someTs_Auto = new SomeTestStruct_Auto();
@@ -166,6 +168,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75666", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ActiveIssue("https://github.com/mono/mono/issues/15104", TestRuntimes.Mono)]
         public void StructureToPtr_InvalidLengthByValArrayInStruct_ThrowsArgumentException()
         {

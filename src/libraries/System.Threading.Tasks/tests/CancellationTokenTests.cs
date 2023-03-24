@@ -805,7 +805,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         /// <summary>
-        /// ensure that calling ctr.Dipose() from within a cancellation callback will not deadlock.
+        /// ensure that calling ctr.Dispose() from within a cancellation callback will not deadlock.
         /// </summary>
         /// <returns></returns>
         [Fact]
@@ -1733,6 +1733,64 @@ namespace System.Threading.Tasks.Tests
                 Assert.Equal(1, invokedCount);
                 Assert.False(r.Unregister());
             }
+        }
+
+        [Fact]
+        public static void CancellationTokenSource_CancelAsync_NoRegistrations_CallbackCompletesImmediately()
+        {
+            var cts = new CancellationTokenSource();
+            Assert.True(cts.CancelAsync().IsCompletedSuccessfully);
+            Assert.True(cts.IsCancellationRequested);
+
+            cts = new CancellationTokenSource();
+            cts.Token.Register(() => { }).Dispose();
+            Assert.True(cts.CancelAsync().IsCompletedSuccessfully);
+            Assert.True(cts.IsCancellationRequested);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static async Task CancellationTokenSource_CancelAsync_CallbacksInvokedAsynchronously()
+        {
+            var cts = new CancellationTokenSource();
+
+            var mres = new ManualResetEventSlim();
+            cts.Token.Register(mres.Wait);
+
+            Task t = cts.CancelAsync();
+            Assert.False(t.IsCompleted);
+            Assert.True(cts.IsCancellationRequested);
+
+            Assert.True(cts.CancelAsync().IsCompletedSuccessfully); // secondary call completes immediately
+
+            mres.Set();
+            await t;
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void CancellationTokenSource_CancelAsync_AllCallbacksInvoked()
+        {
+            const int Iters = 1000;
+
+            int sum = 0;
+            int callingThreadId = Environment.CurrentManagedThreadId;
+
+            var cts = new CancellationTokenSource();
+            for (int i = 1; i <= Iters; i++)
+            {
+                cts.Token.Register(s =>
+                {
+                    Assert.NotEqual(callingThreadId, Environment.CurrentManagedThreadId);
+                    sum += (int)s;
+                }, i);
+            }
+
+            Task t = cts.CancelAsync();
+            Assert.True(cts.IsCancellationRequested);
+
+            ((IAsyncResult)t).AsyncWaitHandle.WaitOne(); // synchronously block without inlining to ensure this thread isn't reused
+            t.Wait(); // propagate any exceptions
+
+            Assert.Equal(Iters * (Iters + 1) / 2, sum);
         }
 
         #region Helper Classes and Methods

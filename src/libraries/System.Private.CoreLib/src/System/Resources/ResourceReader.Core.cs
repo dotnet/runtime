@@ -45,14 +45,6 @@ namespace System.Resources
             ReadResources();
         }
 
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "InitializeBinaryFormatter will get trimmed out when AllowCustomResourceTypes is set to false. " +
-            "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
-            "the user to only get one error.")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "InitializeBinaryFormatter will get trimmed out when AllowCustomResourceTypes is set to false. " +
-            "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
-            "the user to only get one error.")]
         private object DeserializeObject(int typeIndex)
         {
             if (!AllowCustomResourceTypes)
@@ -65,11 +57,21 @@ namespace System.Resources
                 throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
             }
 
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+                Justification = "InitializeBinaryFormatter will get trimmed out when AllowCustomResourceTypes is set to false. " +
+                "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
+                "the user to only get one error.")]
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "InitializeBinaryFormatter will get trimmed out when AllowCustomResourceTypes is set to false. " +
+                "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
+                "the user to only get one error.")]
+            bool InitializeBinaryFormatterLocal() => InitializeBinaryFormatter();
+
             if (Volatile.Read(ref _binaryFormatter) is null)
             {
-                if (!InitializeBinaryFormatter())
+                if (!InitializeBinaryFormatterLocal())
                 {
-                    // The linker trimmed away the BinaryFormatter implementation and we can't call into it.
+                    // Trimming took away the BinaryFormatter implementation and we can't call into it.
                     // We'll throw an exception with the same text that BinaryFormatter would have thrown
                     // had we been able to call into it. Keep this resource string in sync with the same
                     // resource from the Formatters assembly.
@@ -94,7 +96,7 @@ namespace System.Resources
             "Custom readers as well as custom objects on the resources file are not observable by the trimmer and so required assemblies, types and members may be removed.")]
         private bool InitializeBinaryFormatter()
         {
-            // If BinaryFormatter support is disabled for the app, the linker will replace this entire
+            // If BinaryFormatter support is disabled for the app, the trimmer will replace this entire
             // method body with "return false;", skipping all reflection code below.
 
             if (Volatile.Read(ref s_binaryFormatterType) is null || Volatile.Read(ref s_deserializeMethod) is null)

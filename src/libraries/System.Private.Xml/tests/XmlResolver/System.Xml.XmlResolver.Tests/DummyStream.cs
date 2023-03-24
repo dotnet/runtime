@@ -3,7 +3,7 @@
 
 using System.IO;
 
-namespace System.Xml.XmlResolver.Tests
+namespace System.Xml.XmlResolverTests
 {
     internal class DummyStream : MemoryStream
     {

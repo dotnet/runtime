@@ -1,0 +1,10 @@
+{
+    "instanceUrl": "https://devdiv.visualstudio.com/",
+    "template": "TFSDEVDIV",
+    "projectName": "DEVDIV",
+    "areaPath": "DevDiv\\NET Libraries",
+    "iterationPath": "DevDiv",
+    "notificationAliases": [ "runtimerepo-infra@microsoft.com" ],
+    "repositoryName": "Runtime",
+    "codebaseName": "Runtime"
+}

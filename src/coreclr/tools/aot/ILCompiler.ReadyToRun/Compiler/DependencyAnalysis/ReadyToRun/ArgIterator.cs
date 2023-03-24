@@ -1364,6 +1364,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         {
                             if (isValueType && ((floatFieldFlags & (uint)StructFloatFieldInfoFlags.STRUCT_HAS_ONE_FLOAT_MASK) != 0))
                             {
+                                Debug.Assert(cFPRegs == 1);
                                 if ((_loongarch64IdxFPReg < 8) && (_loongarch64IdxGenReg < 8))
                                 {
                                     _argLocDescForStructInRegs = new ArgLocDesc();
@@ -1381,15 +1382,23 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                     _loongarch64IdxGenReg++;
                                     return argOfsInner;
                                 }
-                                else
-                                {
-                                    _loongarch64IdxFPReg = 8;
-                                }
                             }
                             else if (cFPRegs + _loongarch64IdxFPReg <= 8)
                             {
                                 // Each floating point register in the argument area is 8 bytes.
                                 int argOfsInner = _transitionBlock.OffsetOfFloatArgumentRegisters + _loongarch64IdxFPReg * 8;
+                                if (floatFieldFlags == (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_TWO)
+                                {
+                                    // struct with two single-float fields.
+                                    _argLocDescForStructInRegs = new ArgLocDesc();
+                                    _argLocDescForStructInRegs.m_idxFloatReg = _loongarch64IdxFPReg;
+                                    _argLocDescForStructInRegs.m_cFloatReg = 2;
+                                    Debug.Assert(cFPRegs == 2);
+                                    Debug.Assert(argSize == 8);
+
+                                    _hasArgLocDescForStructInRegs = true;
+                                    _argLocDescForStructInRegs.m_floatFlags = (uint)StructFloatFieldInfoFlags.STRUCT_FLOAT_FIELD_ONLY_TWO;
+                                }
                                 _loongarch64IdxFPReg += cFPRegs;
                                 return argOfsInner;
                             }
@@ -1417,11 +1426,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 _loongarch64IdxGenReg = 8;
                                 _loongarch64OfsStack += 8;
                                 return argOfsInner;
-                            }
-                            else
-                            {
-                                // Don't use reg slots for this. It will be passed purely on the stack arg space.
-                                _loongarch64IdxGenReg = 8;
                             }
                         }
 

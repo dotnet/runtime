@@ -555,7 +555,7 @@ namespace System.Configuration
             if (newConfigSourceStreamName != null)
             {
                 // Ensure that no parent is using the same config source stream
-                ValidateUniqueChildConfigSource(sectionInformation.ConfigKey, newConfigSourceStreamName, newConfigSource,
+                ValidateUniqueChildConfigSource(newConfigSourceStreamName, newConfigSource,
                     null);
 
                 StreamInfo streamInfo = (StreamInfo)_streamInfoUpdates[newConfigSourceStreamName];
@@ -1842,7 +1842,7 @@ namespace System.Configuration
                                 SectionXmlInfo sectionXmlInfo = new SectionXmlInfo(
                                     sectionRecord.ConfigKey, definitionConfigPath, _configPath, _locationSubPath,
                                     ConfigStreamInfo.StreamName, 0, ConfigStreamInfo.StreamVersion, null,
-                                    configSource, configSourceStreamName, configSourceStreamVersion,
+                                    configSource, configSourceStreamName,
                                     configSection.SectionInformation.ProtectionProviderName,
                                     configSection.SectionInformation.OverrideModeSetting,
                                     !configSection.SectionInformation.InheritInChildApplications);
@@ -2148,7 +2148,7 @@ namespace System.Configuration
         private static void CheckPreamble(byte[] preamble, XmlUtilWriter utilWriter, byte[] buffer)
         {
             bool hasByteOrderMark = false;
-            using (Stream preambleStream = new MemoryStream(buffer))
+            using (var preambleStream = new MemoryStream(buffer))
             {
                 byte[] streamStart = new byte[preamble.Length];
                 if (preambleStream.Read(streamStart, 0, streamStart.Length) == streamStart.Length)

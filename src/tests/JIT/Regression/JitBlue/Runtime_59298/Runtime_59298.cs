@@ -58,7 +58,7 @@ public class Runtime_59298
         return s_s2_16;
     }
 
-    public static int Main(string[] args)
+    public static int Main()
     {
         new Runtime_59298().Method0(out short s);
         return s + 100;

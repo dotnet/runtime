@@ -323,7 +323,7 @@ namespace System.Data
 
                 if (leftIsSqlType || rightIsSqlType)
                 {
-                    resultType = ResultSqlType(leftStorage, rightStorage, (left is ConstNode), (right is ConstNode), op);
+                    resultType = ResultSqlType(leftStorage, rightStorage, op);
                 }
                 else
                 {
@@ -1369,7 +1369,7 @@ namespace System.Data
             return result;
         }
 
-        internal static StorageType ResultSqlType(StorageType left, StorageType right, bool lc, bool rc, int op)
+        internal static StorageType ResultSqlType(StorageType left, StorageType right, int op)
         {
             int leftPrecedence = (int)GetPrecedence(left);
             if (leftPrecedence == (int)DataTypePrecedence.Error)

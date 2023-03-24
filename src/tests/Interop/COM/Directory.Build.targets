@@ -6,6 +6,8 @@
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <!-- ilasm round-trip testing blocked on ILAsm supporting embedding resources. See https://github.com/dotnet/runtime/issues/11412 -->
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <!-- The tests are unhappy with where we lay out the executable -->
+    <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseManagedCOMServer)' == 'true'">

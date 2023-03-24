@@ -5,14 +5,17 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
-internal class VectorTest
+namespace IntelHardwareIntrinsicTest.SSE2;
+
+partial class Program
 {
-    private static int Main()
+    [Fact]
+    public static void AlignVector128()
     {
         s_f = default; // avoid helper in Foo below
         Console.WriteLine(Foo(default, default));
-        return 100;
     }
 
     private static Vector128<int> s_f;

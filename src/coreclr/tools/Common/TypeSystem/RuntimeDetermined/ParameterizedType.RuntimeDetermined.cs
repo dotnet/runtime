@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem
 {
-    partial class ParameterizedType
+    public partial class ParameterizedType
     {
         public sealed override bool IsRuntimeDeterminedSubtype
         {

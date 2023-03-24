@@ -15,6 +15,9 @@ namespace Microsoft.Extensions.Logging.Abstractions
         /// </summary>
         public static NullLogger Instance { get; } = new NullLogger();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NullLogger"/> class.
+        /// </summary>
         private NullLogger()
         {
         }

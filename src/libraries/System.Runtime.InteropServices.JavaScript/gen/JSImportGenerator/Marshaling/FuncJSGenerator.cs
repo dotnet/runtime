@@ -13,8 +13,9 @@ namespace Microsoft.Interop.JavaScript
 {
     internal sealed class FuncJSGenerator : BaseJSGenerator
     {
-        private bool _isAction;
-        private MarshalerType[] _argumentMarshalerTypes;
+        private readonly bool _isAction;
+        private readonly MarshalerType[] _argumentMarshalerTypes;
+
         public FuncJSGenerator(bool isAction, MarshalerType[] argumentMarshalerTypes)
             : base(isAction ? MarshalerType.Action : MarshalerType.Function, new Forwarder())
         {
@@ -48,17 +49,17 @@ namespace Microsoft.Interop.JavaScript
                 ? Argument(IdentifierName(context.GetIdentifiers(info).native))
                 : _inner.AsArgument(info, context);
 
-            var jsty = (JSFunctionTypeInfo)info.ManagedType;
+            var jsty = (JSFunctionTypeInfo)((JSMarshallingInfo)info.MarshallingAttributeInfo).TypeInfo;
             var sourceTypes = jsty.ArgsTypeInfo
-                .Select(a => ParseTypeName(a.FullTypeName))
+                .Select(a => a.Syntax)
                 .ToArray();
 
-            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == CustomTypeMarshallingDirection.In && info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.UnmarshalCapture && context.Direction == MarshalDirection.ManagedToUnmanaged && info.IsManagedReturnPosition)
             {
                 yield return ToManagedMethod(target, source, jsty);
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Marshal && context.Direction == CustomTypeMarshallingDirection.Out && info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.Marshal && context.Direction == MarshalDirection.UnmanagedToManaged && info.IsManagedReturnPosition)
             {
                 yield return ToJSMethod(target, source, jsty);
             }
@@ -68,18 +69,18 @@ namespace Microsoft.Interop.JavaScript
                 yield return x;
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Invoke && context.Direction == CustomTypeMarshallingDirection.In && !info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.PinnedMarshal && context.Direction == MarshalDirection.ManagedToUnmanaged && !info.IsManagedReturnPosition)
             {
                 yield return ToJSMethod(target, source, jsty);
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == CustomTypeMarshallingDirection.Out && !info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == MarshalDirection.UnmanagedToManaged && !info.IsManagedReturnPosition)
             {
                 yield return ToManagedMethod(target, source, jsty);
             }
         }
 
-        private StatementSyntax ToManagedMethod(string target, ArgumentSyntax source, JSFunctionTypeInfo info)
+        private ExpressionStatementSyntax ToManagedMethod(string target, ArgumentSyntax source, JSFunctionTypeInfo info)
         {
             List<ArgumentSyntax> arguments = new List<ArgumentSyntax>();
             arguments.Add(source.WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword)));
@@ -101,7 +102,7 @@ namespace Microsoft.Interop.JavaScript
                 .WithArgumentList(ArgumentList(SeparatedList(arguments))));
         }
 
-        private StatementSyntax ToJSMethod(string target, ArgumentSyntax source, JSFunctionTypeInfo info)
+        private ExpressionStatementSyntax ToJSMethod(string target, ArgumentSyntax source, JSFunctionTypeInfo info)
         {
             List<ArgumentSyntax> arguments = new List<ArgumentSyntax>();
             arguments.Add(source);

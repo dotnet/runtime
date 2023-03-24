@@ -22,17 +22,7 @@ namespace System.Net.NetworkInformation
         private static PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
             => SendIcmpEchoRequestOverRawSocket(address, buffer, timeout, options);
 
-        private async Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
-        {
-            Task<PingReply> t = SendIcmpEchoRequestOverRawSocketAsync(address, buffer, timeout, options);
-            PingReply reply = await t.ConfigureAwait(false);
-
-            if (_canceled)
-            {
-                throw new OperationCanceledException();
-            }
-
-            return reply;
-        }
+        private Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
+            => SendIcmpEchoRequestOverRawSocketAsync(address, buffer, timeout, options);
     }
 }

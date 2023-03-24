@@ -4,7 +4,7 @@
     <GenerateInstallers>true</GenerateInstallers>
     <ArchiveName>dotnet-hostfxr-internal</ArchiveName>
     <InstallerName>dotnet-hostfxr</InstallerName>
-    <InstallerName Condition="'$(TargetOS)' == 'OSX'">dotnet-hostfxr-internal</InstallerName>
+    <InstallerName Condition="'$(TargetOS)' == 'osx'">dotnet-hostfxr-internal</InstallerName>
     <PackageBrandNameSuffix>Host FX Resolver</PackageBrandNameSuffix>
     <PlatformPackageType>ToolPack</PlatformPackageType>
     <VSInsertionShortComponentName>NetCore.HostFXR</VSInsertionShortComponentName>

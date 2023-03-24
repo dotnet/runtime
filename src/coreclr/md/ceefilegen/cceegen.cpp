@@ -101,21 +101,17 @@ STDMETHODIMP CCeeGen::SetInitialGrowth(DWORD growth)
 STDMETHODIMP CCeeGen::EmitString (_In_ LPWSTR lpString, ULONG *RVA)
 {
     HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     if (! RVA)
         IfFailGo(E_POINTER);
     hr = getStringSection().getEmittedStringRef(lpString, RVA);
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     return hr;
 }
 
 STDMETHODIMP CCeeGen::GetString(ULONG RVA, __inout LPWSTR *lpString)
 {
     HRESULT hr = E_FAIL;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     if (! lpString)
         IfFailGo(E_POINTER);
@@ -123,8 +119,6 @@ STDMETHODIMP CCeeGen::GetString(ULONG RVA, __inout LPWSTR *lpString)
 
 
 ErrExit:
-
-    END_ENTRYPOINT_NOTHROW;
     if (*lpString)
         return S_OK;
     return hr;
@@ -133,7 +127,6 @@ ErrExit:
 STDMETHODIMP CCeeGen::AllocateMethodBuffer(ULONG cchBuffer, UCHAR **lpBuffer, ULONG *RVA)
 {
     HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     ULONG methodOffset = 0;
 
@@ -152,15 +145,12 @@ STDMETHODIMP CCeeGen::AllocateMethodBuffer(ULONG cchBuffer, UCHAR **lpBuffer, UL
     *RVA = methodOffset;
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }
 
 STDMETHODIMP CCeeGen::GetMethodBuffer(ULONG RVA, UCHAR **lpBuffer)
 {
     HRESULT hr = E_FAIL;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     if (! lpBuffer)
         IfFailGo(E_POINTER);
@@ -168,8 +158,6 @@ STDMETHODIMP CCeeGen::GetMethodBuffer(ULONG RVA, UCHAR **lpBuffer)
 
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     if (lpBuffer != NULL && *lpBuffer != 0)
         return S_OK;
 
@@ -179,15 +167,12 @@ ErrExit:
 STDMETHODIMP CCeeGen::ComputePointer(HCEESECTION section, ULONG RVA, UCHAR **lpBuffer)
 {
     HRESULT hr = E_FAIL;
-    BEGIN_ENTRYPOINT_NOTHROW;
 
     if (! lpBuffer)
         IfFailGo(E_POINTER);
     *lpBuffer = (UCHAR*) ((CeeSection *)section)->computePointer(RVA);
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     if (lpBuffer != NULL && *lpBuffer != 0)
         return S_OK;
     return hr;
@@ -196,52 +181,33 @@ ErrExit:
 STDMETHODIMP CCeeGen::GetIMapTokenIface (
         IUnknown **pIMapToken)
 {
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     _ASSERTE(!"E_NOTIMPL");
-    END_ENTRYPOINT_NOTHROW;
-
     return E_NOTIMPL;
 }
 
 STDMETHODIMP CCeeGen::AddNotificationHandler (
         IUnknown *pHandler)
 {
-    BEGIN_ENTRYPOINT_NOTHROW;
     _ASSERTE(!"E_NOTIMPL");
-    END_ENTRYPOINT_NOTHROW;
-
     return E_NOTIMPL;
 }
 
 STDMETHODIMP CCeeGen::GenerateCeeFile ()
 {
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     _ASSERTE(!"E_NOTIMPL");
-    END_ENTRYPOINT_NOTHROW;
-
     return E_NOTIMPL;
 }
 
 STDMETHODIMP CCeeGen::GetIlSection (
         HCEESECTION *section)
 {
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     *section = (HCEESECTION)(m_sections[m_ilIdx]);
-    END_ENTRYPOINT_NOTHROW;
-
     return S_OK;
 }
 
 STDMETHODIMP CCeeGen::GetStringSection(HCEESECTION *section)
 {
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     _ASSERTE(!"E_NOTIMPL");
-    END_ENTRYPOINT_NOTHROW;
-
     return E_NOTIMPL;
 }
 
@@ -251,12 +217,7 @@ STDMETHODIMP CCeeGen::AddSectionReloc (
         HCEESECTION relativeTo,
         CeeSectionRelocType relocType)
 {
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    hr = m_sections[m_ilIdx]->addSectReloc(offset, *(m_sections[m_ilIdx]), relocType);
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return m_sections[m_ilIdx]->addSectReloc(offset, *(m_sections[m_ilIdx]), relocType);
 }
 
 STDMETHODIMP CCeeGen::GetSectionCreate (
@@ -264,24 +225,16 @@ STDMETHODIMP CCeeGen::GetSectionCreate (
         DWORD flags,
         HCEESECTION *section)
 {
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     short       sectionIdx;
-    hr = getSectionCreate (name, flags, (CeeSection **)section, &sectionIdx);
-    END_ENTRYPOINT_NOTHROW;
-    return hr;
+    return getSectionCreate (name, flags, (CeeSection **)section, &sectionIdx);
 }
 
 STDMETHODIMP CCeeGen::GetSectionDataLen (
         HCEESECTION section,
         ULONG *dataLen)
 {
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CeeSection *pSection = (CeeSection*) section;
     *dataLen = pSection->dataLen();
-    END_ENTRYPOINT_NOTHROW;
 
     return NOERROR;
 }
@@ -292,11 +245,8 @@ STDMETHODIMP CCeeGen::GetSectionBlock (
         ULONG align,
         void **ppBytes)
 {
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     CeeSection *pSection = (CeeSection*) section;
     *ppBytes = (BYTE *)pSection->getBlock(len, align);
-    END_ENTRYPOINT_NOTHROW;
 
     if (*ppBytes == 0)
         return E_OUTOFMEMORY;

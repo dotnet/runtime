@@ -103,20 +103,14 @@ internal static partial class Interop
         public static unsafe ProcessInfo GetProcessInfoById(int pid)
         {
             // Negative PIDs are invalid
-            if (pid < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(pid));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(pid);
 
             ProcessInfo info;
 
             kinfo_proc* kinfo = GetProcInfo(pid, true, out int count);
             try
             {
-                if (count < 1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(pid));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(count, 1, nameof(pid));
 
                 var process = new ReadOnlySpan<kinfo_proc>(kinfo, count);
 
@@ -136,7 +130,7 @@ internal static partial class Interop
                         _processId = pid,
                         _threadId = (ulong)process[i].ki_tid,
                         _basePriority = process[i].ki_nice,
-                        _startAddress = (IntPtr)process[i].ki_tdaddr
+                        _startAddress = process[i].ki_tdaddr
                     };
                     info._threadInfoList.Add(ti);
                 }

@@ -35,13 +35,13 @@ namespace DebuggerTests
             await CheckObject(locals, "c", "DebuggerTests.DebuggerDisplayMethodTest", description: "First Int:32 Second Int:43");
             await CheckObject(locals, "myList", "System.Collections.Generic.List<int>", description: "Count = 4");
             await CheckObject(locals, "person1", "DebuggerTests.Person", description: "FirstName: Anton, SurName: Mueller, Age: 44");
-            await CheckObject(locals, "person2", "DebuggerTests.Person", description: "FirstName: Lisa, SurName: Müller, Age: 41");
+            await CheckObject(locals, "person2", "DebuggerTests.Person", description: "FirstName: Lisa, SurName: M\u00FCller, Age: 41");
         }
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task UsingDebuggerTypeProxy()
         {
-            var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 15);
+            var bp = await SetBreakpointInMethod("debugger-test.dll", "DebuggerTests.DebuggerCustomViewTest", "run", 16);
             var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.DebuggerCustomViewTest:run'); }, 1);",
                 "dotnet://debugger-test.dll/debugger-custom-view-test.cs",
@@ -60,6 +60,10 @@ namespace DebuggerTests
             await CheckObject(locals, "b", "DebuggerTests.WithProxy", description:"DebuggerTests.WithProxy");
             props = await GetObjectOnFrame(frame, "b");
             await CheckString(props, "Val2", "one");
+
+            await CheckValueType(locals, "bs", "DebuggerTests.WithProxyStruct", description:"DebuggerTests.WithProxyStruct");
+            props = await GetObjectOnFrame(frame, "bs");
+            await CheckString(props, "Val2", "one struct");
 
             await CheckObject(locals, "openWith", "System.Collections.Generic.Dictionary<string, string>", description: "Count = 3");
             props = await GetObjectOnFrame(frame, "openWith");
@@ -105,6 +109,38 @@ namespace DebuggerTests
                 //FIXME: blocks
                 Assert.True(task.Result);
             }
+        }
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task InspectObjectOfTypeWithToStringOverriden()
+        {
+            var expression = $"{{ invoke_static_method('[debugger-test] ToStringOverriden:Run'); }}";
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() {" + expression + "; }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 1561, 8,
+                "ToStringOverriden.Run",
+                wait_for_event_fn: async (pause_location) =>
+                {
+                    var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                    await EvaluateOnCallFrameAndCheck(id,
+                        ("a", TObject("ToStringOverriden", description:"helloToStringOverriden")),
+                        ("b", TObject("ToStringOverriden.ToStringOverridenB", description:"helloToStringOverridenA")),
+                        ("c", TObject("ToStringOverriden.ToStringOverridenD", description:"helloToStringOverridenD")),
+                        ("d", TObject("ToStringOverriden.ToStringOverridenE", description:"helloToStringOverridenE")),
+                        ("e", TObject("ToStringOverriden.ToStringOverridenB", description:"helloToStringOverridenA")),
+                        ("f", TObject("ToStringOverriden.ToStringOverridenB", description:"helloToStringOverridenA")),
+                        ("g", TObject("ToStringOverriden.ToStringOverridenG", description:"helloToStringOverridenG")),
+                        ("h", TObject("ToStringOverriden.ToStringOverridenH", description:"helloToStringOverridenH")),
+                        ("i", TObject("ToStringOverriden.ToStringOverridenI", description:"ToStringOverriden.ToStringOverridenI")),
+                        ("j", TObject("ToStringOverriden.ToStringOverridenJ", description:"helloToStringOverridenJ")),
+                        ("k", TObject("ToStringOverriden.ToStringOverridenK", description:"ToStringOverriden.ToStringOverridenK")),
+                        ("l", TObject("ToStringOverriden.ToStringOverridenL", description:"helloToStringOverridenL")),
+                        ("m", TObject("ToStringOverriden.ToStringOverridenM", description:"ToStringOverridenM { }")),
+                        ("n", TObject("ToStringOverriden.ToStringOverridenN", description:"helloToStringOverridenN"))
+                    );
+                }
+            );
         }
     }
 }

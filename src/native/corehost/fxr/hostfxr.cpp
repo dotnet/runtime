@@ -241,6 +241,13 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk2(
     hostfxr_resolve_sdk2_result_fn result)
 {
     trace_hostfxr_entry_point(_X("hostfxr_resolve_sdk2"));
+    trace::info(
+        _X("  exe_dir=%s\n")
+        _X("  working_dir=%s\n")
+        _X("  flags=%d"),
+        exe_dir == nullptr ? _X("<nullptr>") : exe_dir,
+        working_dir == nullptr ? _X("<nullptr>") : working_dir,
+        flags);
 
     if (exe_dir == nullptr)
     {
@@ -315,6 +322,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_available_sdks(
     hostfxr_get_available_sdks_result_fn result)
 {
     trace_hostfxr_entry_point(_X("hostfxr_get_available_sdks"));
+    trace::info(_X("  exe_dir=%s"), exe_dir == nullptr ? _X("<nullptr>") : exe_dir);
 
     if (exe_dir == nullptr)
     {
@@ -344,47 +352,15 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_available_sdks(
     return StatusCode::Success;
 }
 
-//
-// Returns available SDKs and frameworks.
-//
-// Resolves the existing SDKs and frameworks from a dotnet root directory (if
-// any), or the global default location. If multi-level lookup is enabled and
-// the dotnet root location is different than the global location, the SDKs and
-// frameworks will be enumerated from both locations.
-//
-// The SDKs are sorted in ascending order by version, multi-level lookup
-// locations are put before private ones.
-//
-// The frameworks are sorted in ascending order by name followed by version,
-// multi-level lookup locations are put before private ones.
-//
-// Parameters:
-//    dotnet_root
-//      The path to a directory containing a dotnet executable.
-//
-//    reserved
-//      Reserved for future parameters.
-//
-//    result
-//      Callback invoke to return the list of SDKs and frameworks.
-//      Structs and their elements are valid for the duration of the call.
-//
-//    result_context
-//      Additional context passed to the result callback.
-//
-// Return value:
-//   0 on success, otherwise failure.
-//
-// String encoding:
-//   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
-//   Unix        - UTF-8  (pal::char_t is 1 byte char)
-//
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
     const pal::char_t* dotnet_root,
     void* reserved,
     hostfxr_get_dotnet_environment_info_result_fn result,
     void* result_context)
 {
+    trace_hostfxr_entry_point(_X("hostfxr_get_dotnet_environment_info"));
+    trace::info(_X("  dotnet_root=%s"), dotnet_root == nullptr ? _X("<nullptr>") : dotnet_root);
+
     if (result == nullptr)
     {
         trace::error(_X("hostfxr_get_dotnet_environment_info received an invalid argument: result should not be null."));
@@ -519,6 +495,15 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_dotnet_environment_info(
 SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_native_search_directories(const int argc, const pal::char_t* argv[], pal::char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size)
 {
     trace_hostfxr_entry_point(_X("hostfxr_get_native_search_directories"));
+    if (trace::is_enabled())
+    {
+        trace::info(_X("  args=["));
+        for (int i = 0; i < argc; ++i)
+        {
+            trace::info(_X("    %s"), argv[i]);
+        }
+        trace::info(_X("  ]"));
+    }
 
     if (buffer_size < 0 || (buffer_size > 0 && buffer == nullptr) || required_buffer_size == nullptr)
     {
@@ -682,6 +667,8 @@ namespace
             return coreclr_delegate_type::load_assembly_and_get_function_pointer;
         case hostfxr_delegate_type::hdt_get_function_pointer:
             return coreclr_delegate_type::get_function_pointer;
+        case hostfxr_delegate_type::hdt_load_assembly:
+            return coreclr_delegate_type::load_assembly;
         }
         return coreclr_delegate_type::invalid;
     }

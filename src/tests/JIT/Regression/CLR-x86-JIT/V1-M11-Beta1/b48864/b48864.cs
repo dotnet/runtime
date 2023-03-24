@@ -6,9 +6,9 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
-        static int Main()
+        public static int Main()
         {
             bool b = true;
             do

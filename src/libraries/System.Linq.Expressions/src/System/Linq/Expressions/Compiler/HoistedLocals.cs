@@ -64,16 +64,24 @@ namespace System.Linq.Expressions.Compiler
                 vars = vars.AddFirst(parent.SelfVariable);
             }
 
-            Dictionary<Expression, int> indexes = new Dictionary<Expression, int>(vars.Count);
-            for (int i = 0; i < vars.Count; i++)
+            if (vars.Count != 0)
             {
-                indexes.Add(vars[i], i);
+                Dictionary<Expression, int> indexes = new Dictionary<Expression, int>(vars.Count);
+                for (int i = 0; i < vars.Count; i++)
+                {
+                    indexes.Add(vars[i], i);
+                }
+
+                Indexes = new ReadOnlyDictionary<Expression, int>(indexes);
+            }
+            else
+            {
+                Indexes = ReadOnlyDictionary<Expression, int>.Empty;
             }
 
-            SelfVariable = Expression.Variable(typeof(object[]), name: null);
             Parent = parent;
             Variables = vars;
-            Indexes = new ReadOnlyDictionary<Expression, int>(indexes);
+            SelfVariable = Expression.Variable(typeof(object[]), name: null);
         }
 
         internal ParameterExpression? ParentVariable => Parent?.SelfVariable;

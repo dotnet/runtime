@@ -82,7 +82,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public readonly MutableModule _mutableModule;
 
         public ManifestMetadataTableNode(NodeFactory nodeFactory)
-            : base(nodeFactory.Target)
         {
             _assemblyRefToModuleIdMap = new Dictionary<string, int>();
             _moduleIdToAssemblyNameMap = new Dictionary<int, AssemblyName>();

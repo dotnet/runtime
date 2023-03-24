@@ -10,7 +10,7 @@ using System.Globalization;
 
 public class Bug
 {
-    public static int Main(String[] args)
+    public static int Main()
     {
         Decimal[] dcmlSecValues = new Decimal[2] { 2, 3 };
         Int32 aa = 1;

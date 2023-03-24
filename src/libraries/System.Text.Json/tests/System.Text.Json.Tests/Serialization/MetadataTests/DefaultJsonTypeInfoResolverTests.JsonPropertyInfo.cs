@@ -1700,5 +1700,69 @@ namespace System.Text.Json.Serialization.Tests
                 set => _value = value ?? "NULL";
             }
         }
+
+        [Fact]
+        public static void TypeWithIgnoredUnsupportedType_ShouldBeSupported()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/76807
+
+            // Sanity check -- metadata resolution for the unsupported type is failing
+            Assert.Throws<InvalidOperationException>(() => JsonSerializerOptions.Default.GetTypeInfo(typeof(UnsupportedType)));
+
+            // Serialization works as expected
+            string json = JsonSerializer.Serialize(new PocoWithIgnoredUnsupportedType());
+            JsonTestHelper.AssertJsonEqual("{}", json);
+
+            // Metadata is reported as expected
+            JsonTypeInfo jti = JsonSerializerOptions.Default.GetTypeInfo(typeof(PocoWithIgnoredUnsupportedType));
+            Assert.Equal(1, jti.Properties.Count);
+            JsonPropertyInfo propertyInfo = jti.Properties[0];
+            Assert.Null(propertyInfo.Get);
+            Assert.Null(propertyInfo.Set);
+        }
+
+        public class PocoWithIgnoredUnsupportedType
+        {
+            [JsonIgnore]
+            public UnsupportedType UnsuportedProperty { get; set; }
+        }
+
+        [Fact]
+        public static void TypeWithUnIgnoredUnsupportedType_CanModifyUnsupportedType()
+        {
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver
+                {
+                    Modifiers =
+                    {
+                        static jti =>
+                        {
+                            if (jti.Type == typeof(PocoWithUnIgnoredUnsupportedType))
+                            {
+                                Assert.Equal(1, jti.Properties.Count);
+                                JsonPropertyInfo propertyInfo = jti.Properties[0];
+                                Assert.Equal(typeof(UnsupportedType), propertyInfo.PropertyType);
+
+                                jti.Properties.Clear();
+                            }
+                        }
+                    }
+                }
+            };
+
+            string json = JsonSerializer.Serialize(new PocoWithUnIgnoredUnsupportedType(), options);
+            JsonTestHelper.AssertJsonEqual("{}", json);
+        }
+
+        public class PocoWithUnIgnoredUnsupportedType
+        {
+            public UnsupportedType UnsuportedProperty { get; set; }
+        }
+
+        public class UnsupportedType
+        {
+            public ReadOnlySpan<byte> Span => Array.Empty<byte>();
+        }
     }
 }

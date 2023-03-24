@@ -1,16 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if DEBUG
-// Uncomment to enable runtime checks to help validate that NetEventSource isn't being misused
-// in a way that will cause performance problems, e.g. unexpected boxing of value types.
-//#define DEBUG_NETEVENTSOURCE_MISUSE
-#endif
-
 using System.Collections;
 using System.Diagnostics;
-using System.Diagnostics.Tracing;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -48,71 +42,44 @@ namespace System.Net
         {
             public const EventKeywords Default = (EventKeywords)0x0001;
             public const EventKeywords Debug = (EventKeywords)0x0002;
-
-            // No longer used:
-            // EnterExit = (EventKeywords)0x0004;
         }
 
         private const string MissingMember = "(?)";
         private const string NullInstance = "(null)";
         private const string StaticMethodObject = "(static)";
         private const string NoParameters = "";
-        private const int MaxDumpSize = 1024;
 
-        // No longer used:
-        // EnterEventId = 1;
-        // ExitEventId = 2;
+        private const int InfoEventId = 1;
+        private const int ErrorEventId = 2;
+        // private const int AssociateEventId = 3; // Defined in NetEventSource.Common.Associate.cs
+        // private const int DumpArrayEventId = 4; // Defined in NetEventSource.Common.DumpBuffer.cs
 
-        private const int AssociateEventId = 3;
-        private const int InfoEventId = 4;
-        private const int ErrorEventId = 5;
-        private const int VerboseEventId = 6;
-        private const int DumpArrayEventId = 7;
-
-        // These events are implemented in NetEventSource.Security.cs.
-        // Define the ids here so that projects that include NetEventSource.Security.cs will not have conflicts.
-        private const int EnumerateSecurityPackagesId = 8;
-        private const int SspiPackageNotFoundId = 9;
-        private const int AcquireDefaultCredentialId = 10;
-        private const int AcquireCredentialsHandleId = 11;
-        private const int InitializeSecurityContextId = 12;
-        private const int SecurityContextInputBufferId = 13;
-        private const int SecurityContextInputBuffersId = 14;
-        private const int AcceptSecuritContextId = 15;
-        private const int OperationReturnedSomethingId = 16;
-
-        private const int NextAvailableEventId = 17; // Update this value whenever new events are added.  Derived types should base all events off of this to avoid conflicts.
+        private const int NextAvailableEventId = 5; // Update this value whenever new events are added.  Derived types should base all events off of this to avoid conflicts.
         #endregion
 
-        #region Events
         #region Info
         /// <summary>Logs an information message.</summary>
         /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
         /// <param name="formattableString">The message to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Info(object? thisOrContextObject, FormattableString? formattableString = null, [CallerMemberName] string? memberName = null)
-        {
-            DebugValidateArg(thisOrContextObject);
-            DebugValidateArg(formattableString);
-            if (Log.IsEnabled()) Log.Info(IdOf(thisOrContextObject), memberName, formattableString != null ? Format(formattableString) : NoParameters);
-        }
+        public static void Info(object? thisOrContextObject, FormattableString? formattableString = null, [CallerMemberName] string? memberName = null) =>
+            Log.Info(IdOf(thisOrContextObject), memberName, formattableString != null ? Format(formattableString) : NoParameters);
 
         /// <summary>Logs an information message.</summary>
         /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
         /// <param name="message">The message to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Info(object? thisOrContextObject, object? message, [CallerMemberName] string? memberName = null)
-        {
-            DebugValidateArg(thisOrContextObject);
-            DebugValidateArg(message);
-            if (Log.IsEnabled()) Log.Info(IdOf(thisOrContextObject), memberName, Format(message).ToString());
-        }
+        public static void Info(object? thisOrContextObject, object? message, [CallerMemberName] string? memberName = null) =>
+            Log.Info(IdOf(thisOrContextObject), memberName, Format(message));
 
         [Event(InfoEventId, Level = EventLevel.Informational, Keywords = Keywords.Default)]
-        private void Info(string thisOrContextObject, string? memberName, string? message) =>
+        private void Info(string thisOrContextObject, string? memberName, string? message)
+        {
+            Debug.Assert(IsEnabled());
             WriteEvent(InfoEventId, thisOrContextObject, memberName ?? MissingMember, message);
+        }
         #endregion
 
         #region Error
@@ -121,172 +88,26 @@ namespace System.Net
         /// <param name="formattableString">The message to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Error(object? thisOrContextObject, FormattableString formattableString, [CallerMemberName] string? memberName = null)
-        {
-            DebugValidateArg(thisOrContextObject);
-            DebugValidateArg(formattableString);
-            if (Log.IsEnabled()) Log.ErrorMessage(IdOf(thisOrContextObject), memberName, Format(formattableString));
-        }
+        public static void Error(object? thisOrContextObject, FormattableString formattableString, [CallerMemberName] string? memberName = null) =>
+            Log.ErrorMessage(IdOf(thisOrContextObject), memberName, Format(formattableString));
 
         /// <summary>Logs an error message.</summary>
         /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
         /// <param name="message">The message to be logged.</param>
         /// <param name="memberName">The calling member.</param>
         [NonEvent]
-        public static void Error(object? thisOrContextObject, object message, [CallerMemberName] string? memberName = null)
-        {
-            DebugValidateArg(thisOrContextObject);
-            DebugValidateArg(message);
-            if (Log.IsEnabled()) Log.ErrorMessage(IdOf(thisOrContextObject), memberName, Format(message).ToString());
-        }
+        public static void Error(object? thisOrContextObject, object message, [CallerMemberName] string? memberName = null) =>
+            Log.ErrorMessage(IdOf(thisOrContextObject), memberName, Format(message));
 
         [Event(ErrorEventId, Level = EventLevel.Error, Keywords = Keywords.Default)]
-        private void ErrorMessage(string thisOrContextObject, string? memberName, string? message) =>
+        private void ErrorMessage(string thisOrContextObject, string? memberName, string? message)
+        {
+            Debug.Assert(IsEnabled());
             WriteEvent(ErrorEventId, thisOrContextObject, memberName ?? MissingMember, message);
-        #endregion
-
-        #region Verbose
-        /// <summary>Logs an info message at verbose mode.</summary>
-        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
-        /// <param name="formattableString">The message to be logged.</param>
-        /// <param name="memberName">The calling member.</param>
-        [NonEvent]
-        public static void Verbose(object? thisOrContextObject, FormattableString formattableString, [CallerMemberName] string? memberName = null)
-        {
-            DebugValidateArg(thisOrContextObject);
-            DebugValidateArg(formattableString);
-            if (Log.IsEnabled()) Log.VerboseMessage(IdOf(thisOrContextObject), memberName, Format(formattableString));
         }
-
-        /// <summary>Logs an info at verbose mode.</summary>
-        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
-        /// <param name="message">The message to be logged.</param>
-        /// <param name="memberName">The calling member.</param>
-        [NonEvent]
-        public static void Verbose(object? thisOrContextObject, object message, [CallerMemberName] string? memberName = null)
-        {
-            DebugValidateArg(thisOrContextObject);
-            DebugValidateArg(message);
-            if (Log.IsEnabled()) Log.VerboseMessage(IdOf(thisOrContextObject), memberName, Format(message).ToString());
-        }
-
-        [Event(VerboseEventId, Level = EventLevel.Verbose, Keywords = Keywords.Default)]
-        private void VerboseMessage(string thisOrContextObject, string? memberName, string? message) =>
-            WriteEvent(VerboseEventId, thisOrContextObject, memberName ?? MissingMember, message);
-        #endregion
-
-        #region DumpBuffer
-        /// <summary>Logs the contents of a buffer.</summary>
-        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
-        /// <param name="buffer">The buffer to be logged.</param>
-        /// <param name="memberName">The calling member.</param>
-        [NonEvent]
-        public static void DumpBuffer(object? thisOrContextObject, byte[] buffer, [CallerMemberName] string? memberName = null)
-        {
-            DumpBuffer(thisOrContextObject, buffer, 0, buffer.Length, memberName);
-        }
-
-        /// <summary>Logs the contents of a buffer.</summary>
-        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
-        /// <param name="buffer">The buffer to be logged.</param>
-        /// <param name="offset">The starting offset from which to log.</param>
-        /// <param name="count">The number of bytes to log.</param>
-        /// <param name="memberName">The calling member.</param>
-        [NonEvent]
-        public static void DumpBuffer(object? thisOrContextObject, byte[] buffer, int offset, int count, [CallerMemberName] string? memberName = null)
-        {
-            if (Log.IsEnabled() && offset >= 0 && offset <= buffer.Length - count)
-            {
-                count = Math.Min(count, MaxDumpSize);
-
-                byte[] slice = buffer;
-                if (offset != 0 || count != buffer.Length)
-                {
-                    slice = new byte[count];
-                    Buffer.BlockCopy(buffer, offset, slice, 0, count);
-                }
-
-                Log.DumpBuffer(IdOf(thisOrContextObject), memberName, slice);
-            }
-        }
-
-        /// <summary>Logs the contents of a buffer.</summary>
-        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
-        /// <param name="bufferPtr">The starting location of the buffer to be logged.</param>
-        /// <param name="count">The number of bytes to log.</param>
-        /// <param name="memberName">The calling member.</param>
-        [NonEvent]
-        public static unsafe void DumpBuffer(object? thisOrContextObject, IntPtr bufferPtr, int count, [CallerMemberName] string? memberName = null)
-        {
-            Debug.Assert(bufferPtr != IntPtr.Zero);
-            Debug.Assert(count >= 0);
-
-            if (Log.IsEnabled())
-            {
-                var buffer = new byte[Math.Min(count, MaxDumpSize)];
-                fixed (byte* targetPtr = buffer)
-                {
-                    Buffer.MemoryCopy((byte*)bufferPtr, targetPtr, buffer.Length, buffer.Length);
-                }
-                Log.DumpBuffer(IdOf(thisOrContextObject), memberName, buffer);
-            }
-        }
-
-        [Event(DumpArrayEventId, Level = EventLevel.Verbose, Keywords = Keywords.Debug)]
-        private void DumpBuffer(string thisOrContextObject, string? memberName, byte[] buffer) =>
-            WriteEvent(DumpArrayEventId, thisOrContextObject, memberName ?? MissingMember, buffer);
-        #endregion
-
-        #region Associate
-        /// <summary>Logs a relationship between two objects.</summary>
-        /// <param name="first">The first object.</param>
-        /// <param name="second">The second object.</param>
-        /// <param name="memberName">The calling member.</param>
-        [NonEvent]
-        public static void Associate(object first, object second, [CallerMemberName] string? memberName = null)
-        {
-            DebugValidateArg(first);
-            DebugValidateArg(second);
-            if (Log.IsEnabled()) Log.Associate(IdOf(first), memberName, IdOf(first), IdOf(second));
-        }
-
-        /// <summary>Logs a relationship between two objects.</summary>
-        /// <param name="thisOrContextObject">`this`, or another object that serves to provide context for the operation.</param>
-        /// <param name="first">The first object.</param>
-        /// <param name="second">The second object.</param>
-        /// <param name="memberName">The calling member.</param>
-        [NonEvent]
-        public static void Associate(object? thisOrContextObject, object first, object second, [CallerMemberName] string? memberName = null)
-        {
-            DebugValidateArg(thisOrContextObject);
-            DebugValidateArg(first);
-            DebugValidateArg(second);
-            if (Log.IsEnabled()) Log.Associate(IdOf(thisOrContextObject), memberName, IdOf(first), IdOf(second));
-        }
-
-        [Event(AssociateEventId, Level = EventLevel.Informational, Keywords = Keywords.Default, Message = "[{2}]<-->[{3}]")]
-        private void Associate(string thisOrContextObject, string? memberName, string first, string second) =>
-            WriteEvent(AssociateEventId, thisOrContextObject, memberName ?? MissingMember, first, second);
-        #endregion
         #endregion
 
         #region Helpers
-        [Conditional("DEBUG_NETEVENTSOURCE_MISUSE")]
-        private static void DebugValidateArg(object? arg)
-        {
-            if (!Log.IsEnabled())
-            {
-                Debug.Assert(!(arg is ValueType), $"Should not be passing value type {arg?.GetType()} to logging without IsEnabled check");
-                Debug.Assert(!(arg is FormattableString), $"Should not be formatting FormattableString \"{arg}\" if tracing isn't enabled");
-            }
-        }
-
-        [Conditional("DEBUG_NETEVENTSOURCE_MISUSE")]
-        private static void DebugValidateArg(FormattableString? arg)
-        {
-            Debug.Assert(Log.IsEnabled() || arg == null, $"Should not be formatting FormattableString \"{arg}\" if tracing isn't enabled");
-        }
-
         [NonEvent]
         public static string IdOf(object? value) => value != null ? value.GetType().Name + "#" + GetHashCode(value) : NullInstance;
 
@@ -294,7 +115,7 @@ namespace System.Net
         public static int GetHashCode(object? value) => value?.GetHashCode() ?? 0;
 
         [NonEvent]
-        public static object Format(object? value)
+        public static string? Format(object? value)
         {
             // If it's null, return a known string for null values
             if (value == null)
@@ -305,7 +126,7 @@ namespace System.Net
             // Give another partial implementation a chance to provide its own string representation
             string? result = null;
             AdditionalCustomizedToString(value, ref result);
-            if (result != null)
+            if (result is not null)
             {
                 return result;
             }
@@ -343,7 +164,7 @@ namespace System.Net
             }
 
             // Otherwise, return the original object so that the caller does default formatting.
-            return value;
+            return value.ToString();
         }
 
         [NonEvent]
@@ -356,376 +177,50 @@ namespace System.Net
                 case 2: return string.Format(s.Format, Format(s.GetArgument(0)), Format(s.GetArgument(1)));
                 case 3: return string.Format(s.Format, Format(s.GetArgument(0)), Format(s.GetArgument(1)), Format(s.GetArgument(2)));
                 default:
-                    object?[] args = s.GetArguments();
-                    object[] formattedArgs = new object[args.Length];
-                    for (int i = 0; i < args.Length; i++)
+                    string?[] formattedArgs = new string?[s.ArgumentCount];
+                    for (int i = 0; i < formattedArgs.Length; i++)
                     {
-                        formattedArgs[i] = Format(args[i]);
+                        formattedArgs[i] = Format(s.GetArgument(i));
                     }
                     return string.Format(s.Format, formattedArgs);
             }
         }
 
-        static partial void AdditionalCustomizedToString<T>(T value, ref string? result);
+        static partial void AdditionalCustomizedToString(object value, ref string? result);
         #endregion
-
-        #region Custom WriteEvent overloads
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
-        [NonEvent]
-        private unsafe void WriteEvent(int eventId, string? arg1, string? arg2, string? arg3, string? arg4)
-        {
-            if (Log.IsEnabled())
-            {
-                arg1 ??= "";
-                arg2 ??= "";
-                arg3 ??= "";
-                arg4 ??= "";
-
-                fixed (char* string1Bytes = arg1)
-                fixed (char* string2Bytes = arg2)
-                fixed (char* string3Bytes = arg3)
-                fixed (char* string4Bytes = arg4)
-                {
-                    const int NumEventDatas = 4;
-                    var descrs = stackalloc EventData[NumEventDatas];
-
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)string1Bytes,
-                        Size = ((arg1.Length + 1) * 2)
-                    };
-                    descrs[1] = new EventData
-                    {
-                        DataPointer = (IntPtr)string2Bytes,
-                        Size = ((arg2.Length + 1) * 2)
-                    };
-                    descrs[2] = new EventData
-                    {
-                        DataPointer = (IntPtr)string3Bytes,
-                        Size = ((arg3.Length + 1) * 2)
-                    };
-                    descrs[3] = new EventData
-                    {
-                        DataPointer = (IntPtr)string4Bytes,
-                        Size = ((arg4.Length + 1) * 2)
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
-                }
-            }
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
-        [NonEvent]
-        private unsafe void WriteEvent(int eventId, string? arg1, string? arg2, byte[]? arg3)
-        {
-            if (Log.IsEnabled())
-            {
-                arg1 ??= "";
-                arg2 ??= "";
-                arg3 ??= Array.Empty<byte>();
-
-                fixed (char* arg1Ptr = arg1)
-                fixed (char* arg2Ptr = arg2)
-                fixed (byte* arg3Ptr = arg3)
-                {
-                    int bufferLength = arg3.Length;
-                    const int NumEventDatas = 4;
-                    var descrs = stackalloc EventData[NumEventDatas];
-
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)arg1Ptr,
-                        Size = (arg1.Length + 1) * sizeof(char)
-                    };
-                    descrs[1] = new EventData
-                    {
-                        DataPointer = (IntPtr)arg2Ptr,
-                        Size = (arg2.Length + 1) * sizeof(char)
-                    };
-                    descrs[2] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&bufferLength),
-                        Size = 4
-                    };
-                    descrs[3] = new EventData
-                    {
-                        DataPointer = (IntPtr)arg3Ptr,
-                        Size = bufferLength
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
-                }
-            }
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
-        [NonEvent]
-        private unsafe void WriteEvent(int eventId, string? arg1, int arg2, int arg3, int arg4)
-        {
-            if (Log.IsEnabled())
-            {
-                arg1 ??= "";
-
-                fixed (char* arg1Ptr = arg1)
-                {
-                    const int NumEventDatas = 4;
-                    var descrs = stackalloc EventData[NumEventDatas];
-
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg1Ptr),
-                        Size = (arg1.Length + 1) * sizeof(char)
-                    };
-                    descrs[1] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg2),
-                        Size = sizeof(int)
-                    };
-                    descrs[2] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg3),
-                        Size = sizeof(int)
-                    };
-                    descrs[3] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg4),
-                        Size = sizeof(int)
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
-                }
-            }
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
-        [NonEvent]
-        private unsafe void WriteEvent(int eventId, string? arg1, int arg2, string? arg3)
-        {
-            if (Log.IsEnabled())
-            {
-                arg1 ??= "";
-                arg3 ??= "";
-
-                fixed (char* arg1Ptr = arg1)
-                fixed (char* arg3Ptr = arg3)
-                {
-                    const int NumEventDatas = 3;
-                    var descrs = stackalloc EventData[NumEventDatas];
-
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg1Ptr),
-                        Size = (arg1.Length + 1) * sizeof(char)
-                    };
-                    descrs[1] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg2),
-                        Size = sizeof(int)
-                    };
-                    descrs[2] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg3Ptr),
-                        Size = (arg3.Length + 1) * sizeof(char)
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
-                }
-            }
-        }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
         [NonEvent]
         private unsafe void WriteEvent(int eventId, string? arg1, string? arg2, int arg3)
         {
-            if (Log.IsEnabled())
+            arg1 ??= "";
+            arg2 ??= "";
+
+            fixed (char* arg1Ptr = arg1)
+            fixed (char* arg2Ptr = arg2)
             {
-                arg1 ??= "";
-                arg2 ??= "";
+                const int NumEventDatas = 3;
+                EventData* descrs = stackalloc EventData[NumEventDatas];
 
-                fixed (char* arg1Ptr = arg1)
-                fixed (char* arg2Ptr = arg2)
+                descrs[0] = new EventData
                 {
-                    const int NumEventDatas = 3;
-                    var descrs = stackalloc EventData[NumEventDatas];
+                    DataPointer = (IntPtr)(arg1Ptr),
+                    Size = (arg1.Length + 1) * sizeof(char)
+                };
+                descrs[1] = new EventData
+                {
+                    DataPointer = (IntPtr)(arg2Ptr),
+                    Size = (arg2.Length + 1) * sizeof(char)
+                };
+                descrs[2] = new EventData
+                {
+                    DataPointer = (IntPtr)(&arg3),
+                    Size = sizeof(int)
+                };
 
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg1Ptr),
-                        Size = (arg1.Length + 1) * sizeof(char)
-                    };
-                    descrs[1] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg2Ptr),
-                        Size = (arg2.Length + 1) * sizeof(char)
-                    };
-                    descrs[2] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg3),
-                        Size = sizeof(int)
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
-                }
+                WriteEventCore(eventId, NumEventDatas, descrs);
             }
         }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
-        [NonEvent]
-        private unsafe void WriteEvent(int eventId, string? arg1, string? arg2, string? arg3, int arg4)
-        {
-            if (Log.IsEnabled())
-            {
-                arg1 ??= "";
-                arg2 ??= "";
-                arg3 ??= "";
-
-                fixed (char* arg1Ptr = arg1)
-                fixed (char* arg2Ptr = arg2)
-                fixed (char* arg3Ptr = arg3)
-                {
-                    const int NumEventDatas = 4;
-                    var descrs = stackalloc EventData[NumEventDatas];
-
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg1Ptr),
-                        Size = (arg1.Length + 1) * sizeof(char)
-                    };
-                    descrs[1] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg2Ptr),
-                        Size = (arg2.Length + 1) * sizeof(char)
-                    };
-                    descrs[2] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg3Ptr),
-                        Size = (arg3.Length + 1) * sizeof(char)
-                    };
-                    descrs[3] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg4),
-                        Size = sizeof(int)
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
-                }
-            }
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
-        [NonEvent]
-        private unsafe void WriteEvent(int eventId, string arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8)
-        {
-            if (Log.IsEnabled())
-            {
-                arg1 ??= "";
-
-                fixed (char* arg1Ptr = arg1)
-                {
-                    const int NumEventDatas = 8;
-                    var descrs = stackalloc EventData[NumEventDatas];
-
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg1Ptr),
-                        Size = (arg1.Length + 1) * sizeof(char)
-                    };
-                    descrs[1] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg2),
-                        Size = sizeof(int)
-                    };
-                    descrs[2] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg3),
-                        Size = sizeof(int)
-                    };
-                    descrs[3] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg4),
-                        Size = sizeof(int)
-                    };
-                    descrs[4] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg5),
-                        Size = sizeof(int)
-                    };
-                    descrs[5] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg6),
-                        Size = sizeof(int)
-                    };
-                    descrs[6] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg7),
-                        Size = sizeof(int)
-                    };
-                    descrs[7] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg8),
-                        Size = sizeof(int)
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
-                }
-            }
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = EventSourceSuppressMessage)]
-        [NonEvent]
-        private unsafe void WriteEvent(int eventId, string arg1, string arg2, int arg3, int arg4, int arg5)
-        {
-            if (Log.IsEnabled())
-            {
-                arg1 ??= "";
-                arg2 ??= "";
-
-                fixed (char* arg1Ptr = arg1)
-                fixed (char* arg2Ptr = arg2)
-                {
-                    const int NumEventDatas = 5;
-                    var descrs = stackalloc EventData[NumEventDatas];
-
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg1Ptr),
-                        Size = (arg1.Length + 1) * sizeof(char)
-                    };
-                    descrs[1] = new EventData
-                    {
-                        DataPointer = (IntPtr)(arg2Ptr),
-                        Size = (arg2.Length + 1) * sizeof(char)
-                    };
-                    descrs[2] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg3),
-                        Size = sizeof(int)
-                    };
-                    descrs[3] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg4),
-                        Size = sizeof(int)
-                    };
-                    descrs[4] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg5),
-                        Size = sizeof(int)
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
-                }
-            }
-        }
-        #endregion
     }
 }

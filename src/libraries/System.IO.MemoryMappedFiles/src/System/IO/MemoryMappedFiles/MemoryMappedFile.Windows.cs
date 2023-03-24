@@ -233,7 +233,7 @@ namespace System.IO.MemoryMappedFiles
         {
             SafeMemoryMappedFileHandle handle = Interop.OpenFileMapping(
                 desiredAccessRights, (inheritability & HandleInheritability.Inheritable) != 0, mapName);
-            int lastError = Marshal.GetLastWin32Error();
+            int lastError = Marshal.GetLastPInvokeError();
 
             if (handle.IsInvalid)
             {

@@ -255,12 +255,6 @@ public:
         return (m_flags & enum_RepresentsVariantInterface);
     }
 
-    BOOL IsUseOleAutDispatchImpl()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_flags & enum_UseOleAutDispatchImpl);
-    }
-
     BOOL ImplementsIMarshal()
     {
         LIMITED_METHOD_CONTRACT;
@@ -327,7 +321,7 @@ private:
 
         enum_RepresentsVariantInterface       = 0x400, // this is a template for an interface with variance
 
-        enum_UseOleAutDispatchImpl            = 0x800, // the class is decorated with IDispatchImplAttribute(CompatibleImpl)
+        // enum_Unused                        = 0x800,
 
         enum_ImplementsIMarshal               = 0x1000, // the class implements a managed interface with Guid == IID_IMarshal
 

@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
-using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Reflection.Internal
 {
@@ -22,16 +23,10 @@ namespace System.Reflection.Internal
     ///
     /// This implementation is scoped to byte arrays as that is all that the metadata reader needs.
     ///
-    /// Also, since we don't have access to immutable collection internals, we use a trick involving
-    /// overlapping a <see cref="ImmutableArray{Byte}"/> with an array reference. While
-    /// unverifiable, it is valid. See ECMA-335, section II.10.7 Controlling instance layout:
+    /// Also, since we don't have access to immutable collection internals, we use
+    /// <see cref="Unsafe.As{TFrom, TTo}(ref TFrom)"/>.
     ///
-    /// "It is possible to overlap fields in this way, though offsets occupied by an object reference
-    /// shall not overlap with offsets occupied by a built-in value type or a part of
-    /// another object reference. While one object reference can completely overlap another, this is
-    /// unverifiable."
-    ///
-    /// Furthermore, the fact that <see cref="ImmutableArray{Byte}"/> backed by a single byte array
+    /// The fact that <see cref="ImmutableArray{Byte}"/> is backed by a single byte array
     /// field is something inherent to the design of ImmutableArray in order to get its performance
     /// characteristics and therefore something we (Microsoft) are comfortable defining as a contract that
     /// can be depended upon as below.
@@ -59,9 +54,7 @@ namespace System.Reflection.Internal
             byte[] givenArray = array!;
             array = null;
 
-            ByteArrayUnion union = default;
-            union.UnderlyingArray = givenArray;
-            return union.ImmutableArray;
+            return Unsafe.As<byte[], ImmutableArray<byte>>(ref givenArray);
         }
 
         /// <summary>
@@ -81,19 +74,7 @@ namespace System.Reflection.Internal
         /// <returns>The underlying array, or null if <see cref="ImmutableArray{T}.IsDefault"/> is true.</returns>
         internal static byte[]? DangerousGetUnderlyingArray(ImmutableArray<byte> array)
         {
-            ByteArrayUnion union = default;
-            union.ImmutableArray = array;
-            return union.UnderlyingArray;
-        }
-
-        [StructLayout(LayoutKind.Explicit)]
-        private struct ByteArrayUnion
-        {
-            [FieldOffset(0)]
-            internal byte[]? UnderlyingArray;
-
-            [FieldOffset(0)]
-            internal ImmutableArray<byte> ImmutableArray;
+            return Unsafe.As<ImmutableArray<byte>, byte[]>(ref array);
         }
     }
 }

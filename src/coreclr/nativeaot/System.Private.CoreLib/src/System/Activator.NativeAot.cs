@@ -118,7 +118,7 @@ namespace System
         [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle CreateInstance(string assemblyName, string typeName)
         {
-            throw new PlatformNotSupportedException(); // https://github.com/dotnet/corefx/issues/30845
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/runtime/issues/26701
         }
 
         [RequiresUnreferencedCode("Type and its constructor could be removed")]
@@ -131,13 +131,13 @@ namespace System
                                                   CultureInfo? culture,
                                                   object?[]? activationAttributes)
         {
-            throw new PlatformNotSupportedException(); // https://github.com/dotnet/corefx/issues/30845
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/runtime/issues/26701
         }
 
         [RequiresUnreferencedCode("Type and its constructor could be removed")]
         public static ObjectHandle CreateInstance(string assemblyName, string typeName, object?[]? activationAttributes)
         {
-            throw new PlatformNotSupportedException(); // https://github.com/dotnet/corefx/issues/30845
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/runtime/issues/26701
         }
     }
 }

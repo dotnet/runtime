@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Net.Quic;
 using System.IO;
-using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -37,8 +36,9 @@ namespace System.Net.Http
         // Our control stream.
         private QuicStream? _clientControl;
 
-        // Current SETTINGS from the server.
-        private int _maximumHeadersLength = int.MaxValue; // TODO: this is not yet observed by Http3Stream when buffering headers.
+        // Server-advertised SETTINGS_MAX_FIELD_SECTION_SIZE
+        // https://www.rfc-editor.org/rfc/rfc9114.html#section-7.2.4.1-2.2.1
+        private uint _maxHeaderListSize = uint.MaxValue; // Defaults to infinite
 
         // Once the server's streams are received, these are set to 1. Further receipt of these streams results in a connection error.
         private int _haveServerControlStream;
@@ -54,7 +54,7 @@ namespace System.Net.Http
 
         public HttpAuthority Authority => _authority;
         public HttpConnectionPool Pool => _pool;
-        public int MaximumRequestHeadersLength => _maximumHeadersLength;
+        public uint MaxHeaderListSize => _maxHeaderListSize;
         public byte[]? AltUsedEncodedHeaderBytes => _altUsedEncodedHeader;
         public Exception? AbortException => Volatile.Read(ref _abortException);
         private object SyncObj => _activeRequests;
@@ -85,6 +85,13 @@ namespace System.Net.Http
                 _altUsedEncodedHeader = QPack.QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReferenceToArray(KnownHeaders.AltUsed.Name, altUsedValue);
             }
 
+            uint maxHeaderListSize = _pool._lastSeenHttp3MaxHeaderListSize;
+            if (maxHeaderListSize > 0)
+            {
+                // Previous connections to the same host advertised a limit.
+                // Use this as an initial value before we receive the SETTINGS frame.
+                _maxHeaderListSize = maxHeaderListSize;
+            }
 
             if (HttpTelemetry.Log.IsEnabled())
             {
@@ -155,7 +162,7 @@ namespace System.Net.Http
 
                     if (_clientControl != null)
                     {
-                        _clientControl.Dispose();
+                        await _clientControl.DisposeAsync().ConfigureAwait(false);
                         _clientControl = null;
                     }
 
@@ -240,12 +247,15 @@ namespace System.Net.Http
             catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted)
             {
                 // This will happen if we aborted _connection somewhere and we have pending OpenOutboundStreamAsync call.
-                Debug.Assert(_abortException is not null);
+                // note that _abortException may be null if we closed the connection in response to a GOAWAY frame
                 throw new HttpRequestException(SR.net_http_client_execution_error, _abortException, RequestRetryType.RetryOnConnectionFailure);
             }
             finally
             {
-                requestStream?.Dispose();
+                if (requestStream is not null)
+                {
+                    await requestStream.DisposeAsync().ConfigureAwait(false);
+                }
             }
         }
 
@@ -391,7 +401,7 @@ namespace System.Net.Http
         {
             Span<byte> buffer = stackalloc byte[4 + VariableLengthIntegerHelper.MaximumEncodedLength];
 
-            int integerLength = VariableLengthIntegerHelper.WriteInteger(buffer.Slice(4), settings._maxResponseHeadersLength * 1024L);
+            int integerLength = VariableLengthIntegerHelper.WriteInteger(buffer.Slice(4), settings.MaxResponseHeadersByteLength);
             int payloadLength = 1 + integerLength; // includes the setting ID and the integer value.
             Debug.Assert(payloadLength <= VariableLengthIntegerHelper.OneByteLimit);
 
@@ -562,10 +572,13 @@ namespace System.Net.Http
                             }
 
                             stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.StreamCreationError);
-                            stream.Dispose();
                             return;
                     }
                 }
+            }
+            catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted)
+            {
+                // ignore the exception, we have already closed the connection
             }
             catch (Exception ex)
             {
@@ -643,7 +656,7 @@ namespace System.Net.Http
                                 }
                                 return;
                             default:
-                                await SkipUnknownPayloadAsync(frameType.GetValueOrDefault(), payloadLength).ConfigureAwait(false);
+                                await SkipUnknownPayloadAsync(payloadLength).ConfigureAwait(false);
                                 break;
                         }
                     }
@@ -720,10 +733,13 @@ namespace System.Net.Http
 
                     buffer.Discard(bytesRead);
 
+                    if (NetEventSource.Log.IsEnabled()) Trace($"Applying setting {(Http3SettingType)settingId}={settingValue}");
+
                     switch ((Http3SettingType)settingId)
                     {
                         case Http3SettingType.MaxHeaderListSize:
-                            _maximumHeadersLength = (int)Math.Min(settingValue, int.MaxValue);
+                            _maxHeaderListSize = (uint)Math.Min((ulong)settingValue, uint.MaxValue);
+                            _pool._lastSeenHttp3MaxHeaderListSize = _maxHeaderListSize;
                             break;
                         case Http3SettingType.ReservedHttp2EnablePush:
                         case Http3SettingType.ReservedHttp2MaxConcurrentStreams:
@@ -767,7 +783,7 @@ namespace System.Net.Http
                 OnServerGoAway(firstRejectedStreamId);
             }
 
-            async ValueTask SkipUnknownPayloadAsync(Http3FrameType frameType, long payloadLength)
+            async ValueTask SkipUnknownPayloadAsync(long payloadLength)
             {
                 while (payloadLength != 0)
                 {

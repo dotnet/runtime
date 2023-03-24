@@ -48,7 +48,7 @@ internal static partial class Interop
                             {
                                 return buffer.Slice(0, (int)length).ToString();
                             }
-                            else if (Marshal.GetLastWin32Error() != Errors.ERROR_INSUFFICIENT_BUFFER)
+                            else if (Marshal.GetLastPInvokeError() != Errors.ERROR_INSUFFICIENT_BUFFER)
                             {
                                 return null;
                             }

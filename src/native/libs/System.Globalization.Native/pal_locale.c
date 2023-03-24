@@ -134,7 +134,7 @@ int32_t FixupLocaleName(UChar* value, int32_t valueLength)
 // On Apple related platforms (OSX, iOS, tvOS, MacCatalyst), we'll take what the system locale is.  
 // On all other platforms we'll map this POSIX locale to Invariant instead. 
 // The reason is POSIX locale collation behavior is not desirable at all because it doesn't support case insensitive string comparisons.
-const char* DetectDefaultLocaleName()
+const char* DetectDefaultLocaleName(void)
 {
     const char* icuLocale = uloc_getDefault();
 

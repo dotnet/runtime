@@ -55,14 +55,14 @@ namespace System.Linq.Tests
         [Fact]
         public void Any1()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().Any();
+            var val = new[] { 0, 2, 1 }.AsQueryable().Any();
             Assert.True(val);
         }
 
         [Fact]
         public void Any2()
         {
-            var val = (new int[] { 0, 2, 1 }).AsQueryable().Any(n => n > 1);
+            var val = new[] { 0, 2, 1 }.AsQueryable().Any(n => n > 1);
             Assert.True(val);
         }
     }

@@ -45,11 +45,7 @@ namespace System.Security.Cryptography
             _key = new ECOpenSsl(this);
         }
 
-        public override KeySizes[] LegalKeySizes =>
-            new[] {
-                new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),
-                new KeySizes(minSize: 521, maxSize: 521, skipSize: 0)
-            };
+        public override KeySizes[] LegalKeySizes => s_defaultKeySizes.CloneKeySizesArray();
 
         protected override void Dispose(bool disposing)
         {
@@ -136,10 +132,7 @@ namespace System.Security.Cryptography
         [MemberNotNull(nameof(_key))]
         private void ThrowIfDisposed()
         {
-            if (_key == null)
-            {
-                throw new ObjectDisposedException(nameof(ECDiffieHellmanOpenSsl));
-            }
+            ObjectDisposedException.ThrowIf(_key is null, this);
         }
 
         private SafeEcKeyHandle GetKey()

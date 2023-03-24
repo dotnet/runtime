@@ -20,6 +20,10 @@ namespace Microsoft.Extensions.Logging.EventSource
         private EventSourceLogger? _loggers; // Linked list of loggers that I have created
         private readonly LoggingEventSource _eventSource;
 
+        /// <summary>
+        /// Creates an instance of <see cref="EventSourceLoggerProvider"/>.
+        /// </summary>
+        /// <param name="eventSource">The logging event source.</param>
         public EventSourceLoggerProvider(LoggingEventSource eventSource)
         {
             ThrowHelper.ThrowIfNull(eventSource);

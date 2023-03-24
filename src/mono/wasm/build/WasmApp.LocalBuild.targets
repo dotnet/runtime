@@ -26,7 +26,6 @@
 
   <PropertyGroup>
     <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
-    <TrimMode>partial</TrimMode>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' != 'Debug'">

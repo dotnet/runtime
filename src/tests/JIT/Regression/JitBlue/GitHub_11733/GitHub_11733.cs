@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class C
+public class C
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static float L(float a)
@@ -18,7 +18,7 @@ class C
         return (float)Math.Pow(a, (float)Math.Pow(b, a));
     }
 
-    static int Main()
+    public static int Main()
     {
         return L(0) == M(float.NegativeInfinity, 0) ? 100 : 0;
     }

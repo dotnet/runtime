@@ -109,7 +109,7 @@ namespace System.Security.Principal
             {
                 if (Interop.BOOL.FALSE == Interop.Advapi32.ConvertStringSidToSid(stringSid, out ByteArray))
                 {
-                    ErrorCode = Marshal.GetLastWin32Error();
+                    ErrorCode = Marshal.GetLastPInvokeError();
                     goto Error;
                 }
 
@@ -163,7 +163,7 @@ namespace System.Security.Principal
             {
                 resultSid = null;
 
-                return Marshal.GetLastWin32Error();
+                return Marshal.GetLastPInvokeError();
             }
         }
 
@@ -218,7 +218,7 @@ namespace System.Security.Principal
             {
                 resultSid = null;
 
-                return Marshal.GetLastWin32Error();
+                return Marshal.GetLastPInvokeError();
             }
         }
 

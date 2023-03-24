@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos</TargetFrameworks>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-    <OptimizeForSize Condition="'$(TargetPlatformIdentifier)' == 'Browser' or '$(TargetPlatformIdentifier)' == 'Android' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">true</OptimizeForSize>
+    <OptimizeForSize Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'tvos'">true</OptimizeForSize>
   </PropertyGroup>
   <ItemGroup Condition="'$(OptimizeForSize)' == true">
     <Compile Include="System\Linq\Enumerable.SizeOpt.cs" />
@@ -74,6 +74,7 @@
     <Compile Include="System\Linq\Last.cs" />
     <Compile Include="System\Linq\Lookup.cs" />
     <Compile Include="System\Linq\Max.cs" />
+    <Compile Include="System\Linq\MaxMin.cs" />
     <Compile Include="System\Linq\Min.cs" />
     <Compile Include="System\Linq\OrderBy.cs" />
     <Compile Include="System\Linq\OrderedEnumerable.cs" />
@@ -104,5 +105,6 @@
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.Intrinsics" />
   </ItemGroup>
 </Project>

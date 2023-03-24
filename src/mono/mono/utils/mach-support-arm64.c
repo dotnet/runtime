@@ -26,7 +26,7 @@
 #endif
 
 int
-mono_mach_arch_get_mcontext_size ()
+mono_mach_arch_get_mcontext_size (void)
 {
 	return sizeof (struct __darwin_mcontext64);
 }
@@ -81,13 +81,13 @@ mono_mach_arch_thread_states_to_mono_context (thread_state_t state, thread_state
 }
 
 int
-mono_mach_arch_get_thread_state_size ()
+mono_mach_arch_get_thread_state_size (void)
 {
 	return sizeof (arm_unified_thread_state_t);
 }
 
 int
-mono_mach_arch_get_thread_fpstate_size ()
+mono_mach_arch_get_thread_fpstate_size (void)
 {
 	return sizeof (arm_neon_state64_t);
 }

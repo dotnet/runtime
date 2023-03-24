@@ -23,10 +23,7 @@ namespace System.Diagnostics
         internal static ProcessInfo? CreateProcessInfo(int pid, string? processNameFilter = null)
         {
             // Negative PIDs aren't valid
-            if (pid < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(pid));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(pid);
 
             ProcessInfo procInfo;
 
@@ -83,7 +80,7 @@ namespace System.Diagnostics
                     _processId = pid,
                     _threadId = t.Key,
                     _basePriority = procInfo.BasePriority,
-                    _startAddress = IntPtr.Zero
+                    _startAddress = null
                 };
 
                 // Fill in additional info if we were able to retrieve such data about the thread

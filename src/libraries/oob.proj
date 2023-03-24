@@ -12,7 +12,7 @@
     <ProjectReference Include="shims.proj" OutputItemType="SharedFrameworkAssembly" />
 
     <ProjectReference Include="apicompat\ApiCompat.proj"
-                      Condition="'$(DotNetBuildFromSource)' != 'true' and '$(RunApiCompat)' != 'false'" />
+                      Condition="'$(DotNetBuildFromSource)' != 'true' and '$(ApiCompatValidateAssemblies)' != 'false'" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildTargetFramework)' != '$(NetCoreAppCurrent)' or '$(BuildTargetFramework)' == ''">
@@ -37,13 +37,12 @@
   <Target Name="GetTrimOOBAssembliesInputs"
           DependsOnTargets="ResolveProjectReferences">
     <PropertyGroup>
-      <OOBAssembliesTrimmedArtifactsPath>$([MSBuild]::NormalizeDirectory('$(ILLinkTrimAssemblyArtifactsRootDir)', 'trimmed-oobs'))</OOBAssembliesTrimmedArtifactsPath>
-      <OOBAssembliesMarkerFile>$(IntermediateOutputPath)linker-$(TargetArchitecture)-marker.txt</OOBAssembliesMarkerFile>
+      <OOBAssembliesTrimDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'illink-$(TargetArchitecture)'))</OOBAssembliesTrimDir>
+      <OOBAssembliesTrimMarkerFile>$(OOBAssembliesTrimDir)marker.txt</OOBAssembliesTrimMarkerFile>
     </PropertyGroup>
 
     <ItemGroup>
-      <!-- Include suppression XML files bin-placed in earlier per-library linker run. -->
-      <OOBLibrarySuppressionsXml Include="$(ILLinkTrimAssemblyOOBSuppressionsXmlsDir)*.xml" />
+      <OOBLibrarySuppressionsXml Include="@(OOBAssembly->Metadata('ILLinkSuppressionsXmls'))" />
 
       <OOBAssemblyToTrim Include="@(OOBAssembly->WithMetadataValue('IsTrimmable', 'true'))" />
       <OOBAssemblyReference Include="@(OOBAssembly->WithMetadataValue('IsTrimmable', 'false'));
@@ -56,8 +55,8 @@
           Condition="'$(RefOnly)' != 'true' and '@(OOBAssembly)' != ''"
           DependsOnTargets="GetTrimOOBAssembliesInputs;PrepareForAssembliesTrim"
           Inputs="$(ILLinkTasksAssembly);@(OOBAssemblyToTrim);@(OOBAssemblyReference);@(OOBLibrarySuppressionsXml)"
-          Outputs="$(OOBAssembliesMarkerFile)">
-    <Message Text="$(MSBuildProjectName) -> Trimming $(PackageRID) out-of-band assemblies with ILLinker..." Importance="high" />
+          Outputs="$(OOBAssembliesTrimMarkerFile)">
+    <Message Text="$(MSBuildProjectName) -> Trimming $(OutputRid) out-of-band assemblies with ILLinker..." Importance="high" />
 
     <PropertyGroup>
       <OOBILLinkArgs>$(ILLinkArgs)</OOBILLinkArgs>
@@ -66,17 +65,17 @@
       <OOBILLinkArgs Condition="'@(OOBLibrarySuppressionsXml)' != ''" >$(OOBILLinkArgs) --link-attributes &quot;@(OOBLibrarySuppressionsXml->'%(FullPath)', '&quot; --link-attributes &quot;')&quot;</OOBILLinkArgs>
     </PropertyGroup>
 
+    <MakeDir Directories="$(OOBAssembliesTrimDir)" />
     <ILLink AssemblyPaths=""
         RootAssemblyNames="@(OOBAssemblyToTrim)"
         ReferenceAssemblyPaths="@(OOBAssemblyReference)"
-        OutputDirectory="$(OOBAssembliesTrimmedArtifactsPath)"
+        OutputDirectory="$(OOBAssembliesTrimDir)"
         ExtraArgs="$(OOBILLinkArgs)"
         ToolExe="$(_DotNetHostFileName)"
         ToolPath="$(_DotNetHostDirectory)" />
 
     <!-- Create a marker file which serves as the target's output to enable incremental builds. -->
-    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(OOBAssembliesMarkerFile)'))" />
-    <Touch Files="$(OOBAssembliesMarkerFile)"
+    <Touch Files="$(OOBAssembliesTrimMarkerFile)"
            AlwaysCreate="true" />
   </Target>
 

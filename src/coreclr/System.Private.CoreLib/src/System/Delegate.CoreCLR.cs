@@ -161,7 +161,7 @@ namespace System
                 IRuntimeMethodInfo method = FindMethodHandle();
                 RuntimeType? declaringType = RuntimeMethodHandle.GetDeclaringType(method);
                 // need a proper declaring type instance method on a generic type
-                if (RuntimeTypeHandle.IsGenericTypeDefinition(declaringType) || RuntimeTypeHandle.HasInstantiation(declaringType))
+                if (declaringType.IsGenericType)
                 {
                     bool isStatic = (RuntimeMethodHandle.GetAttributes(method) & MethodAttributes.Static) != (MethodAttributes)0;
                     if (!isStatic)

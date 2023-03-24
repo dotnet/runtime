@@ -13,7 +13,7 @@ namespace System.Runtime.Caching
     // until then we provide a stub
     internal sealed class SRefMultiple
     {
-        internal SRefMultiple(object[] targets)
+        internal SRefMultiple()
         {
         }
 

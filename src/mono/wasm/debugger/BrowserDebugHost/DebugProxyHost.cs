@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.ExceptionServices;
@@ -25,7 +24,7 @@ public static class DebugProxyHost
         {
             RunDevToolsProxyAsync(options, args, loggerFactory, token)
         };
-        if (!options.RunningForBlazor)
+        if (!options.RunningForBlazor || options.IsFirefoxDebugging)
             tasks.Add(RunFirefoxServerLoopAsync(options, args, loggerFactory, token));
 
         Task completedTask = await Task.WhenAny(tasks);

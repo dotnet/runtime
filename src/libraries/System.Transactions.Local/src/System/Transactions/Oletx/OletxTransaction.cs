@@ -35,7 +35,7 @@ namespace System.Transactions.Oletx
         // filled with the propagation token from the serialization info.  Later, when
         // GetRealObject is called, this array is used to decide whether or not a new
         // transation needs to be created and if so, to create the transaction.
-        private byte[]? _propagationTokenForDeserialize;
+        private readonly byte[]? _propagationTokenForDeserialize;
 
         protected int Disposed;
 
@@ -121,10 +121,7 @@ namespace System.Transactions.Oletx
 
         protected OletxTransaction(SerializationInfo? serializationInfo, StreamingContext context)
         {
-            if (serializationInfo == null)
-            {
-                throw new ArgumentNullException(nameof(serializationInfo));
-            }
+            ArgumentNullException.ThrowIfNull(serializationInfo);
 
             // Simply store the propagation token from the serialization info.  GetRealObject will
             // decide whether or not we will use it.
@@ -431,10 +428,7 @@ namespace System.Transactions.Oletx
 
         public void GetObjectData(SerializationInfo serializationInfo, StreamingContext context)
         {
-            if (serializationInfo == null)
-            {
-                throw new ArgumentNullException(nameof(serializationInfo));
-            }
+            ArgumentNullException.ThrowIfNull(serializationInfo);
 
             byte[] propagationToken;
 
@@ -468,7 +462,7 @@ namespace System.Transactions.Oletx
         // Transaction manager
         internal OletxTransactionManager OletxTransactionManagerInstance { get; }
 
-        private TransactionShim? _transactionShim;
+        private readonly TransactionShim? _transactionShim;
 
         // guid related to transaction
         internal Guid TxGuid { get; private set; }
@@ -498,7 +492,7 @@ namespace System.Transactions.Oletx
         internal OletxPhase1VolatileEnlistmentContainer? Phase1EnlistVolatilementContainer;
 
         // Used to get outcomes of transactions with a voter.
-        private OutcomeEnlistment? _outcomeEnlistment;
+        private readonly OutcomeEnlistment? _outcomeEnlistment;
 
         // This is a count of volatile and Phase0 durable enlistments on this transaction that have not yet voted.
         // This is incremented when an enlistment is made and decremented when the
@@ -520,8 +514,8 @@ namespace System.Transactions.Oletx
         // Enlistments on all clones of this Real transaction use this value.
         internal int _enlistmentCount;
 
-        private DateTime _creationTime;
-        private DateTime _lastStateChangeTime;
+        private readonly DateTime _creationTime;
+        private readonly DateTime _lastStateChangeTime;
         private TransactionTraceIdentifier _traceIdentifier = TransactionTraceIdentifier.Empty;
 
         // This field is set directly from the OletxCommittableTransaction constructor.  It will be null
@@ -619,8 +613,7 @@ namespace System.Transactions.Oletx
             TransactionShim? transactionShim,
             OutcomeEnlistment? outcomeEnlistment,
             Guid identifier,
-            OletxTransactionIsolationLevel oletxIsoLevel,
-            bool isRoot)
+            OletxTransactionIsolationLevel oletxIsoLevel)
         {
             bool successful = false;
 
@@ -864,12 +857,9 @@ namespace System.Transactions.Oletx
 
                 if ((enlistmentOptions & EnlistmentOptions.EnlistDuringPrepareRequired) != 0)
                 {
-                    if (Phase0EnlistVolatilementContainerList == null)
-                    {
-                        // Not using a MemoryBarrier because all access to this member variable is done when holding
-                        // a lock on the object.
-                        Phase0EnlistVolatilementContainerList = new ArrayList(1);
-                    }
+                    // Not using a MemoryBarrier because all access to this member variable is done when holding
+                    // a lock on the object.
+                    Phase0EnlistVolatilementContainerList ??= new ArrayList(1);
                     // We may have failed the proxy enlistment for the first container, but we would have
                     // allocated the list.  That is why we have this check here.
                     if (Phase0EnlistVolatilementContainerList.Count == 0)
@@ -1047,10 +1037,7 @@ namespace System.Transactions.Oletx
                         phase0VolatileContainer.RollbackFromTransaction();
                     }
                 }
-                if (Phase1EnlistVolatilementContainer != null)
-                {
-                    Phase1EnlistVolatilementContainer.RollbackFromTransaction();
-                }
+                Phase1EnlistVolatilementContainer?.RollbackFromTransaction();
             }
 
             try
@@ -1133,12 +1120,13 @@ namespace System.Transactions.Oletx
                 }
             }
 
+#pragma warning disable IDE0031 // Null check can be simplified
             // Let the InternalTransaciton know about the outcome.
             if (InternalTransaction != null)
             {
                 InternalTransaction.DistributedTransactionOutcome(InternalTransaction, Status);
             }
-
+#pragma warning restore IDE0031
         }
 
         internal TransactionTraceIdentifier TransactionTraceId

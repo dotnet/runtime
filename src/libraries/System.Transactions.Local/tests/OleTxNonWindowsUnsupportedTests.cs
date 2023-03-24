@@ -55,10 +55,15 @@ public class OleTxNonWindowsUnsupportedTests
 
     [Fact]
     public void GetWhereabouts()
-        => Assert.Throws<PlatformNotSupportedException>(() => TransactionInterop.GetWhereabouts());
+        => Assert.Throws<PlatformNotSupportedException>(TransactionInterop.GetWhereabouts);
 
     [Fact]
     public void GetExportCookie()
-        => Assert.Throws<PlatformNotSupportedException>(() => TransactionInterop.GetExportCookie(
-            new CommittableTransaction(), new byte[200]));
+        => Assert.Throws<PlatformNotSupportedException>(() =>
+            TransactionInterop.GetExportCookie(new CommittableTransaction(), new byte[200]));
+
+    [Fact]
+    public void GetDtcTransaction()
+        => Assert.Throws<PlatformNotSupportedException>(() =>
+            TransactionInterop.GetDtcTransaction(new CommittableTransaction()));
 }

@@ -7,9 +7,9 @@
 
 using System.Runtime.CompilerServices;
 
-class Program
+public class Program
 {
-    static int Main() => Test(31) == -65538 ? 100 : 0;
+    public static int Main() => Test(31) == -65538 ? 100 : 0;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Test(int x) => -(1 << x) / 32767;

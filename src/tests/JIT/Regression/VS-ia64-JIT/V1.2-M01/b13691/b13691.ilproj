@@ -8,6 +8,6 @@
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="init_byte.il" />
+    <Compile Include="$(MSBuildProjectName).il" />
   </ItemGroup>
 </Project>

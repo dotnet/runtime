@@ -26,9 +26,9 @@ public struct MyReader
     }
 }
 
-class GitHub_19454
+public class GitHub_19454
 {
-    static int Main()
+    public static int Main()
     {
         MyReader r = new MyReader();
         r.ReadBytesInner(0);

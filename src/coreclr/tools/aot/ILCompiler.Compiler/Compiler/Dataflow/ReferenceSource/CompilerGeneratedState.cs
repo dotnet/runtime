@@ -55,10 +55,16 @@ namespace Mono.Linker.Dataflow
 
 		public static bool IsHoistedLocal (FieldDefinition field)
 		{
-			// Treat all fields on compiler-generated types as hoisted locals.
-			// This avoids depending on the name mangling scheme for hoisted locals.
-			var declaringTypeName = field.DeclaringType.Name;
-			return CompilerGeneratedNames.IsLambdaDisplayClass (declaringTypeName) || CompilerGeneratedNames.IsStateMachineType (declaringTypeName);
+			if (CompilerGeneratedNames.IsLambdaDisplayClass (field.DeclaringType.Name))
+				return true;
+
+			if (CompilerGeneratedNames.IsStateMachineType (field.DeclaringType.Name)) {
+				// Don't track the "current" field which is used for state machine return values,
+				// because this can be expensive to track.
+				return !CompilerGeneratedNames.IsStateMachineCurrentField (field.Name);
+			}
+
+			return false;
 		}
 
 		// "Nested function" refers to lambdas and local functions.
@@ -139,7 +145,7 @@ namespace Mono.Linker.Dataflow
 				// Discover calls or references to lambdas or local functions. This includes
 				// calls to local functions, and lambda assignments (which use ldftn).
 				if (method.Body != null) {
-					foreach (var instruction in method.Body.Instructions) {
+					foreach (var instruction in _context.GetMethodIL (method).Instructions) {
 						switch (instruction.OpCode.OperandType) {
 						case OperandType.InlineMethod: {
 								MethodDefinition? referencedMethod = _context.TryResolve ((MethodReference) instruction.Operand);
@@ -348,7 +354,7 @@ namespace Mono.Linker.Dataflow
 
 			GenericInstanceType? ScanForInit (TypeDefinition compilerGeneratedType, MethodBody body)
 			{
-				foreach (var instr in body.Instructions) {
+				foreach (var instr in _context.GetMethodIL (body).Instructions) {
 					bool handled = false;
 					switch (instr.OpCode.Code) {
 					case Code.Initobj:

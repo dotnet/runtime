@@ -10,7 +10,7 @@ using MethodSemanticsAttributes = Internal.Metadata.NativeFormat.MethodSemantics
 
 namespace ILCompiler.Metadata
 {
-    partial class Transform<TPolicy>
+    internal partial class Transform<TPolicy>
     {
         private Event HandleEvent(Cts.Ecma.EcmaModule module, Ecma.EventDefinitionHandle eventHandle)
         {
@@ -36,7 +36,6 @@ namespace ILCompiler.Metadata
                 Name = HandleString(reader.GetString(eventDef.Name)),
                 Flags = eventDef.Attributes,
                 Type = HandleType(module.GetType(eventDef.Type)),
-                
             };
 
             if (adderHasMetadata)

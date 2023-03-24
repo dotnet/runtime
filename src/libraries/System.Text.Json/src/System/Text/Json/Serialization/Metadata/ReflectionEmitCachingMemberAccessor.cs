@@ -19,8 +19,6 @@ namespace System.Text.Json.Serialization.Metadata
 
         public override Action<TCollection, object?> CreateAddMethodDelegate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] TCollection>()
             => s_cache.GetOrAdd((nameof(CreateAddMethodDelegate), typeof(TCollection), null),
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2091:UnrecognizedReflectionPattern",
-                    Justification = "Parent method annotation does not flow to lambda method, cf. https://github.com/dotnet/roslyn/issues/46646")]
                 static (_) => s_sourceAccessor.CreateAddMethodDelegate<TCollection>());
 
         public override Func<object>? CreateConstructor([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type classType)
@@ -40,22 +38,14 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>()
             => s_cache.GetOrAdd((nameof(CreateImmutableDictionaryCreateRangeDelegate), typeof((TCollection, TKey, TValue)), null),
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                    Justification = "Parent method annotation does not flow to lambda method, cf. https://github.com/dotnet/roslyn/issues/46646")]
-#pragma warning disable IL2026 // The suppression doesn't work for the trim analyzer: https://github.com/dotnet/roslyn/issues/59746
                 static (_) => s_sourceAccessor.CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>());
-#pragma warning restore IL2026
 
         [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>()
             => s_cache.GetOrAdd((nameof(CreateImmutableEnumerableCreateRangeDelegate), typeof((TCollection, TElement)), null),
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                    Justification = "Parent method annotation does not flow to lambda method, cf. https://github.com/dotnet/roslyn/issues/46646")]
-#pragma warning disable IL2026 // The suppression doesn't work for the trim analyzer: https://github.com/dotnet/roslyn/issues/59746
                 static (_) => s_sourceAccessor.CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>());
-#pragma warning restore IL2026
 
-        public override Func<object[], T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor)
+        public override Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor)
             => s_cache.GetOrAdd((nameof(CreateParameterizedConstructor), typeof(T), constructor), static key => s_sourceAccessor.CreateParameterizedConstructor<T>((ConstructorInfo)key.member!));
 
         public override JsonTypeInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>? CreateParameterizedConstructor<T, TArg0, TArg1, TArg2, TArg3>(ConstructorInfo constructor)

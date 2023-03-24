@@ -110,6 +110,11 @@ namespace System.IO.Compression.Tests
             StreamsEqual(ast, bst, -1);
         }
 
+        public static async Task StreamsEqualAsync(Stream ast, Stream bst)
+        {
+            await StreamsEqualAsync(ast, bst, -1);
+        }
+
         public static void StreamsEqual(Stream ast, Stream bst, int blocksToRead)
         {
             if (ast.CanSeek)
@@ -141,6 +146,42 @@ namespace System.IO.Compression.Tests
                 }
 
                 Assert.True(ArraysEqual<byte>(ad, bd, ac), "Stream contents not equal: " + ast.ToString() + ", " + bst.ToString());
+
+                blocksRead++;
+            } while (ac == bufSize);
+        }
+
+        public static async Task StreamsEqualAsync(Stream ast, Stream bst, int blocksToRead)
+        {
+            if (ast.CanSeek)
+                ast.Seek(0, SeekOrigin.Begin);
+            if (bst.CanSeek)
+                bst.Seek(0, SeekOrigin.Begin);
+
+            const int bufSize = 4096;
+            byte[] ad = new byte[bufSize];
+            byte[] bd = new byte[bufSize];
+
+            int ac = 0;
+            int bc = 0;
+
+            int blocksRead = 0;
+
+            //assume read doesn't do weird things
+            do
+            {
+                if (blocksToRead != -1 && blocksRead >= blocksToRead)
+                    break;
+
+                ac = await ast.ReadAtLeastAsync(ad, 4096, throwOnEndOfStream: false);
+                bc = await bst.ReadAtLeastAsync(bd, 4096, throwOnEndOfStream: false);
+
+                if (ac != bc)
+                {
+                    bd = NormalizeLineEndings(bd);
+                }
+
+                AssertExtensions.SequenceEqual(ad.AsSpan(0, ac), bd.AsSpan(0, bc));
 
                 blocksRead++;
             } while (ac == bufSize);

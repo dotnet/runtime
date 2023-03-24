@@ -8,14 +8,14 @@ using ILCompiler.Logging;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-    public readonly partial struct DiagnosticContext
+    internal readonly partial struct DiagnosticContext
     {
         public readonly MessageOrigin Origin;
-        readonly bool _diagnosticsEnabled;
-        readonly bool _suppressTrimmerDiagnostics;
-        readonly bool _suppressAotDiagnostics;
-        readonly bool _suppressSingleFileDiagnostics;
-        readonly Logger _logger;
+        private readonly bool _diagnosticsEnabled;
+        private readonly bool _suppressTrimmerDiagnostics;
+        private readonly bool _suppressAotDiagnostics;
+        private readonly bool _suppressSingleFileDiagnostics;
+        private readonly Logger _logger;
 
         public DiagnosticContext(in MessageOrigin origin, bool diagnosticsEnabled, Logger logger)
         {
@@ -52,5 +52,12 @@ namespace ILLink.Shared.TrimAnalysis
 
             _logger.LogWarning(Origin, id, args);
         }
+
+#pragma warning disable IDE0060, CA1822 // The details provided here are not used by illink, but they are used for example by the analyzer
+        public partial void AddDiagnostic(DiagnosticId id, ValueWithDynamicallyAccessedMembers actualValue, ValueWithDynamicallyAccessedMembers expectedAnnotationsValue, params string[] args)
+        {
+            AddDiagnostic(id, args);
+        }
+#pragma warning restore IDE0060, CA1822
     }
 }

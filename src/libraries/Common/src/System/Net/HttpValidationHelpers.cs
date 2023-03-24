@@ -10,28 +10,19 @@ namespace System.Net
             // First, check for absence of separators and spaces.
             if (IsInvalidMethodOrHeaderString(name))
             {
-                throw new ArgumentException(string.Format(SR.net_WebHeaderInvalidHeaderChars, name), nameof(name));
+                throw new ArgumentException(SR.Format(SR.net_WebHeaderInvalidHeaderChars, name), nameof(name));
             }
 
             // Second, check for non CTL ASCII-7 characters (32-126).
             if (ContainsNonAsciiChars(name))
             {
-                throw new ArgumentException(string.Format(SR.net_WebHeaderInvalidHeaderChars, name), nameof(name));
+                throw new ArgumentException(SR.Format(SR.net_WebHeaderInvalidHeaderChars, name), nameof(name));
             }
             return name;
         }
 
-        internal static bool ContainsNonAsciiChars(string token)
-        {
-            for (int i = 0; i < token.Length; ++i)
-            {
-                if ((token[i] < 0x20) || (token[i] > 0x7e))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
+        internal static bool ContainsNonAsciiChars(string token) =>
+            token.AsSpan().IndexOfAnyExceptInRange((char)0x20, (char)0x7e) >= 0;
 
         internal static bool IsValidToken(string token)
         {

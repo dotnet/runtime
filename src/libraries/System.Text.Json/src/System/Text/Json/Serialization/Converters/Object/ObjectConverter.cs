@@ -8,7 +8,7 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class ObjectConverter : JsonConverter<object?>
     {
-        internal override ConverterStrategy ConverterStrategy => ConverterStrategy.Object;
+        private protected override ConverterStrategy GetDefaultConverterStrategy() => ConverterStrategy.Object;
 
         public ObjectConverter()
         {
@@ -74,10 +74,26 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
+        public override object ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
+            return null!;
+        }
+
         internal override object ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             ThrowHelper.ThrowNotSupportedException_DictionaryKeyTypeNotSupported(TypeToConvert, this);
             return null!;
+        }
+
+        public override void WriteAsPropertyName(Utf8JsonWriter writer, object? value, JsonSerializerOptions options)
+        {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            }
+
+            WriteAsPropertyNameCore(writer, value, options, isWritingExtensionDataProperty: false);
         }
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, object? value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)

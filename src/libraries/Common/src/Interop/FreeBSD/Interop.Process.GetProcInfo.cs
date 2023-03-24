@@ -52,8 +52,8 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         public struct @timeval
         {
-            public IntPtr tv_sec;
-            public IntPtr tv_usec;
+            public nint tv_sec;
+            public nint tv_usec;
         }
 
         [StructLayout(LayoutKind.Sequential)]

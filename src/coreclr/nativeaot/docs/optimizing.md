@@ -16,7 +16,7 @@ under the `<Project>` node of your project file.
 
 The Native AOT compiler supports the [documented options](https://docs.microsoft.com/en-us/dotnet/core/deploying/trim-self-contained) for removing unused code (trimming). By default, the compiler tries to very conservatively remove some of the unused code.
 
-🛈 Native AOT difference: The documented `PublishTrimmed` property is implied to be `true` when Native AOT is active.
+:information_source: Native AOT difference: The documented `PublishTrimmed` property is implied to be `true` when Native AOT is active.
 
 By default, the compiler tries to maximize compatibility with existing .NET code at the expense of compilation speed and size of the output executable. This allows people to use their existing code that worked well in a fully dynamic mode without hitting issues caused by trimming. To read more about reflection, see the [Reflection in AOT mode](reflection-in-aot-mode.md) document.
 
@@ -39,7 +39,7 @@ Since `PublishTrimmed` is implied to be true with Native AOT, some framework fea
 ## Options related to code generation
 * `<IlcOptimizationPreference>Speed</IlcOptimizationPreference>`: when generating optimized code, favor code execution speed.
 * `<IlcOptimizationPreference>Size</IlcOptimizationPreference>`: when generating optimized code, favor smaller code size.
-* `<IlcInstructionSet>`: By default, the compiler targets the minimum instruction set supported by the target OS and architecture. This option allows targeting newer instruction sets for better performance. The native binary will require the instruction sets to be supported by the hardware in order to run. For example, `<IlcInstructionSet>avx2,bmi2,fma,pclmul,popcnt,aes</IlcInstructionSet>` will produce binary that takes advantage of instruction sets that are typically present on current Intel and AMD processors. Run `ilc --help` for the full list of available instruction sets. `ilc` can be executed from the NativeAOT package in your local nuget cache e.g. `%USERPROFILE%\.nuget\packages\runtime.win-x64.microsoft.dotnet.ilcompiler\7.0.0-...\tools\ilc.exe` on Windows or `~/.nuget/packages/runtime.linux-arm64.microsoft.dotnet.ilcompiler/7.0.0-.../tools/ilc` on Linux.
+* `<IlcInstructionSet>`: By default, the compiler targets the minimum instruction set supported by the target OS and architecture. This option allows targeting newer instruction sets for better performance. The native binary will require the instruction sets to be supported by the hardware in order to run. For example, `<IlcInstructionSet>avx2,bmi2,fma,pclmul,popcnt,aes</IlcInstructionSet>` will produce binary that takes advantage of instruction sets that are typically present on current Intel and AMD processors. Run `ilc --help` for the full list of available instruction sets. `ilc` can be executed from the NativeAOT package in your local nuget cache e.g. `%USERPROFILE%\.nuget\packages\runtime.win-x64.microsoft.dotnet.ilcompiler\8.0.0-...\tools\ilc.exe` on Windows or `~/.nuget/packages/runtime.linux-arm64.microsoft.dotnet.ilcompiler/8.0.0-.../tools/ilc` on Linux.
 
 ## Special considerations for Linux/macOS
 

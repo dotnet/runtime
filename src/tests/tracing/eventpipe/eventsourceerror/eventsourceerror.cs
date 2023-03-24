@@ -44,7 +44,7 @@ namespace Tracing.Tests.EventSourceError
 
     public class EventSourceError
     {
-        public static int Main(string[] args)
+        public static int Main()
         {
             // This test validates that if an EventSource generates an error
             // during construction it gets emitted over EventPipe

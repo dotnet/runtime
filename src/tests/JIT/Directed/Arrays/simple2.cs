@@ -6,7 +6,7 @@ using System;
 
 internal class Simple2_Array_Test
 {
-    public static int Main(String[] args)
+    public static int Main()
     {
         Console.WriteLine("Starting...");
         int SIZE = 10;

@@ -4,11 +4,11 @@
 #include "pal_evp.h"
 
 // just some unique IDs
-intptr_t CryptoNative_EvpMd5()    { return 101; }
-intptr_t CryptoNative_EvpSha1()   { return 102; }
-intptr_t CryptoNative_EvpSha256() { return 103; }
-intptr_t CryptoNative_EvpSha384() { return 104; }
-intptr_t CryptoNative_EvpSha512() { return 105; }
+intptr_t CryptoNative_EvpMd5(void)    { return 101; }
+intptr_t CryptoNative_EvpSha1(void)   { return 102; }
+intptr_t CryptoNative_EvpSha256(void) { return 103; }
+intptr_t CryptoNative_EvpSha384(void) { return 104; }
+intptr_t CryptoNative_EvpSha512(void) { return 105; }
 
 int32_t CryptoNative_EvpMdSize(intptr_t md)
 {
@@ -21,7 +21,7 @@ int32_t CryptoNative_EvpMdSize(intptr_t md)
     return -1;
 }
 
-int32_t CryptoNative_GetMaxMdSize()
+int32_t CryptoNative_GetMaxMdSize(void)
 {
     return EVP_MAX_MD_SIZE;
 }

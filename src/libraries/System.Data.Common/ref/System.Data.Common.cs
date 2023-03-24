@@ -492,8 +492,10 @@ namespace System.Data
     public partial class DataSet : System.ComponentModel.MarshalByValueComponent, System.ComponentModel.IListSource, System.ComponentModel.ISupportInitialize, System.ComponentModel.ISupportInitializeNotification, System.Runtime.Serialization.ISerializable, System.Xml.Serialization.IXmlSerializable
     {
         public DataSet() { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         protected DataSet(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         protected DataSet(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context, bool ConstructSchema) { }
         public DataSet(string dataSetName) { }
@@ -548,6 +550,7 @@ namespace System.Data
         public static System.Xml.Schema.XmlSchemaComplexType GetDataSetSchema(System.Xml.Schema.XmlSchemaSet? schemaSet) { throw null; }
         public virtual void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         protected virtual System.Xml.Schema.XmlSchema? GetSchemaSerializable() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Members from serialized types may use dynamic code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
         protected void GetSerializationData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Members from serialized types may be trimmed if not referenced directly.")]
@@ -937,6 +940,7 @@ namespace System.Data
         public override decimal GetDecimal(int ordinal) { throw null; }
         public override double GetDouble(int ordinal) { throw null; }
         public override System.Collections.IEnumerator GetEnumerator() { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public override System.Type GetFieldType(int ordinal) { throw null; }
         public override float GetFloat(int ordinal) { throw null; }
         public override System.Guid GetGuid(int ordinal) { throw null; }
@@ -945,6 +949,7 @@ namespace System.Data
         public override long GetInt64(int ordinal) { throw null; }
         public override string GetName(int ordinal) { throw null; }
         public override int GetOrdinal(string name) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public override System.Type GetProviderSpecificFieldType(int ordinal) { throw null; }
         public override object GetProviderSpecificValue(int ordinal) { throw null; }
         public override int GetProviderSpecificValues(object[] values) { throw null; }
@@ -1044,8 +1049,8 @@ namespace System.Data
         void System.ComponentModel.IBindingList.RemoveSort() { }
         void System.ComponentModel.IBindingListView.ApplySort(System.ComponentModel.ListSortDescriptionCollection sorts) { }
         void System.ComponentModel.IBindingListView.RemoveFilter() { }
-        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
-        string System.ComponentModel.ITypedList.GetListName(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
+        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(System.ComponentModel.PropertyDescriptor[]? listAccessors) { throw null; }
+        string System.ComponentModel.ITypedList.GetListName(System.ComponentModel.PropertyDescriptor[]? listAccessors) { throw null; }
         public System.Data.DataTable ToTable() { throw null; }
         public System.Data.DataTable ToTable(bool distinct, params string[] columnNames) { throw null; }
         public System.Data.DataTable ToTable(string? tableName) { throw null; }
@@ -1098,8 +1103,8 @@ namespace System.Data
         int System.ComponentModel.IBindingList.Find(System.ComponentModel.PropertyDescriptor property, object key) { throw null; }
         void System.ComponentModel.IBindingList.RemoveIndex(System.ComponentModel.PropertyDescriptor property) { }
         void System.ComponentModel.IBindingList.RemoveSort() { }
-        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
-        string System.ComponentModel.ITypedList.GetListName(System.ComponentModel.PropertyDescriptor[] listAccessors) { throw null; }
+        System.ComponentModel.PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(System.ComponentModel.PropertyDescriptor[]? listAccessors) { throw null; }
+        string System.ComponentModel.ITypedList.GetListName(System.ComponentModel.PropertyDescriptor[]? listAccessors) { throw null; }
         protected virtual void TableCollectionChanged(object sender, System.ComponentModel.CollectionChangeEventArgs e) { }
     }
     [System.ComponentModel.EditorAttribute("Microsoft.VSDesigner.Data.Design.DataViewRowStateEditor, Microsoft.VSDesigner, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
@@ -2315,6 +2320,7 @@ namespace System.Data.Common
         public abstract double GetDouble(int ordinal);
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public abstract System.Collections.IEnumerator GetEnumerator();
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public abstract System.Type GetFieldType(int ordinal);
         public System.Threading.Tasks.Task<T> GetFieldValueAsync<T>(int ordinal) { throw null; }
         public virtual System.Threading.Tasks.Task<T> GetFieldValueAsync<T>(int ordinal, System.Threading.CancellationToken cancellationToken) { throw null; }
@@ -2327,6 +2333,7 @@ namespace System.Data.Common
         public abstract string GetName(int ordinal);
         public abstract int GetOrdinal(string name);
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public virtual System.Type GetProviderSpecificFieldType(int ordinal) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public virtual object GetProviderSpecificValue(int ordinal) { throw null; }
@@ -2373,6 +2380,7 @@ namespace System.Data.Common
         protected virtual System.Data.Common.DbDataReader GetDbDataReader(int i) { throw null; }
         public abstract decimal GetDecimal(int i);
         public abstract double GetDouble(int i);
+        [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties | System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicFields)]
         public abstract System.Type GetFieldType(int i);
         public abstract float GetFloat(int i);
         public abstract System.Guid GetGuid(int i);
@@ -3216,9 +3224,8 @@ namespace System.Data.SqlTypes
         public override string ToString() { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlGuid : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlGuid>
+    public partial struct SqlGuid : System.Data.SqlTypes.INullable, System.IComparable, System.Runtime.Serialization.ISerializable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlGuid>
     {
-        private object _dummy;
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlGuid Null;
         public SqlGuid(byte[] value) { throw null; }
@@ -3253,6 +3260,7 @@ namespace System.Data.SqlTypes
         System.Xml.Schema.XmlSchema System.Xml.Serialization.IXmlSerializable.GetSchema() { throw null; }
         void System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader reader) { }
         void System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter writer) { }
+        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public byte[]? ToByteArray() { throw null; }
         public System.Data.SqlTypes.SqlBinary ToSqlBinary() { throw null; }
         public System.Data.SqlTypes.SqlString ToSqlString() { throw null; }

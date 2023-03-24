@@ -266,16 +266,18 @@ namespace System.Security.Cryptography.Cose
                             reader.SkipValue();
                             break;
                         case KnownHeaders.Crit:
-                            int length = reader.ReadStartArray().GetValueOrDefault();
-                            if (length < 1)
-                            {
-                                throw new ArgumentException(SR.CriticalHeadersMustBeArrayOfAtLeastOne, nameof(value));
-                            }
+                            reader.ReadStartArray();
+                            bool isEmpty = true;
 
-                            for (int i = 0; i < length; i++)
+                            while (true)
                             {
                                 CborReaderState state = reader.PeekState();
-                                if (state == CborReaderState.UnsignedInteger || state == CborReaderState.NegativeInteger)
+                                if (state == CborReaderState.EndArray)
+                                {
+                                    reader.ReadEndArray();
+                                    break;
+                                }
+                                else if (state == CborReaderState.UnsignedInteger || state == CborReaderState.NegativeInteger)
                                 {
                                     reader.ReadInt32();
                                 }
@@ -287,8 +289,13 @@ namespace System.Security.Cryptography.Cose
                                 {
                                     throw new ArgumentException(SR.Format(SR.CoseHeaderMapHeaderDoesNotAcceptSpecifiedValue, label.LabelName), nameof(value));
                                 }
+                                isEmpty = false;
                             }
-                            reader.SkipToParent();
+
+                            if (isEmpty)
+                            {
+                                throw new ArgumentException(SR.CriticalHeadersMustBeArrayOfAtLeastOne, nameof(value));
+                            }
                             break;
                         case KnownHeaders.ContentType:
                             if (initialState != CborReaderState.TextString &&

@@ -36,11 +36,11 @@ namespace System.Net.Security
 
         public void Dispose()
         {
-            Dispose(true);
+            DisposeInternal();
             GC.SuppressFinalize(this);
         }
 
-        private void Dispose(bool disposing)
+        private void DisposeInternal()
         {
             SafeFreeCredentials? target = Target;
             target?.DangerousRelease();
@@ -49,7 +49,7 @@ namespace System.Net.Security
 
         ~SafeCredentialReference()
         {
-            Dispose(false);
+            DisposeInternal();
         }
     }
 

@@ -473,6 +473,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Pass();
         }
 
+        [Fact]
+        public void HostRuntimeContract_get_runtime_property()
+        {
+            var fixture = sharedTestState.HostApiInvokerAppFixture;
+
+            fixture.BuiltDotnet.Exec(fixture.TestProject.AppDll, "host_runtime_contract.get_runtime_property", "APP_CONTEXT_BASE_DIRECTORY", "DOES_NOT_EXIST", "ENTRY_ASSEMBLY_NAME")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining($"APP_CONTEXT_BASE_DIRECTORY = {Path.GetDirectoryName(fixture.TestProject.AppDll)}")
+                .And.HaveStdOutContaining($"DOES_NOT_EXIST = <none>")
+                .And.HaveStdOutContaining($"ENTRY_ASSEMBLY_NAME = {fixture.TestProject.AssemblyName}");
+        }
+
         public class SharedTestState : IDisposable
         {
             public TestProjectFixture HostApiInvokerAppFixture { get; }
@@ -508,12 +523,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                     // On non-Windows, we can't just P/Invoke to already loaded hostfxr, so copy it next to the app dll.
                     var fixture = HostApiInvokerAppFixture;
-                    var hostfxr = Path.Combine(
-                        fixture.BuiltDotnet.GreatestVersionHostFxrPath,
-                        RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr"));
-
                     FileUtils.CopyIntoDirectory(
-                        hostfxr,
+                        fixture.BuiltDotnet.GreatestVersionHostFxrFilePath,
                         Path.GetDirectoryName(fixture.TestProject.AppDll));
                 }
             }

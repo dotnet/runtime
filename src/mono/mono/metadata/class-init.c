@@ -1357,7 +1357,7 @@ make_generic_param_class (MonoGenericParam *param)
 		if (mono_class_has_failure (klass->parent))
 			mono_class_set_type_load_failure (klass, "Failed to setup parent interfaces");
 		else
-			mono_class_setup_interface_offsets_internal (klass, klass->parent->vtable_size, TRUE);
+			mono_class_setup_interface_offsets_internal (klass, klass->parent->vtable_size, MONO_SETUP_ITF_OFFSETS_OVERWRITE);
 	}
 
 	return klass;
@@ -2273,6 +2273,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				int idx = first_field_idx + i;
 				guint32 offset;
 				mono_metadata_field_info (klass->image, idx, &offset, NULL, NULL);
+                                /* metadata-update: updates to explicit layout classes are not allowed. */
 				field_offsets [i] = offset + MONO_ABI_SIZEOF (MonoObject);
 			}
 			ftype = mono_type_get_underlying_type (field->type);
@@ -2553,13 +2554,13 @@ initialize_object_slots (MonoClass *klass)
 }
 
 int
-mono_class_get_object_finalize_slot ()
+mono_class_get_object_finalize_slot (void)
 {
 	return finalize_slot;
 }
 
 MonoMethod *
-mono_class_get_default_finalize_method ()
+mono_class_get_default_finalize_method (void)
 {
 	int const i = finalize_slot;
 	return (i < 0) ? NULL : mono_defaults.object_class->vtable [i];
@@ -3065,7 +3066,7 @@ mono_class_init_internal (MonoClass *klass)
 	mono_loader_unlock ();
 	locked = FALSE;
 
-	mono_class_setup_interface_offsets_internal (klass, first_iface_slot, TRUE);
+	mono_class_setup_interface_offsets_internal (klass, first_iface_slot, MONO_SETUP_ITF_OFFSETS_OVERWRITE);
 
 	if (mono_class_is_ginst (klass) && !mono_verifier_class_is_valid_generic_instantiation (klass))
 		mono_class_set_type_load_failure (klass, "Invalid generic instantiation");
@@ -3586,6 +3587,11 @@ mono_class_setup_properties (MonoClass *klass)
 		first = ginfo->first;
 		count = ginfo->count;
 	} else {
+                /*
+                 * metadata-update: note this is only adding properties from the base image. new
+                 * properties added to an existing class won't be here since they're not in the
+                 * contiguous rows [first,last].
+                 */
 		first = mono_metadata_properties_from_typedef (klass->image, mono_metadata_token_index (klass->type_token) - 1, &last);
 		g_assert ((last - first) >= 0);
 		count = last - first;

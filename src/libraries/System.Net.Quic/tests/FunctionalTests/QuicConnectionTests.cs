@@ -336,5 +336,33 @@ namespace System.Net.Quic.Tests
             }
             peerCertificate.Dispose();
         }
+
+        [Fact]
+        public async Task Connection_AwaitsStream_ConnectionSurvivesGC()
+        {
+            const byte data = 0xDC;
+
+            TaskCompletionSource<IPEndPoint> listenerEndpointTcs = new TaskCompletionSource<IPEndPoint>();
+            await Task.WhenAll(
+                Task.Run(async () =>
+                {
+                    await using var listener = await CreateQuicListener();
+                    listenerEndpointTcs.SetResult(listener.LocalEndPoint);
+                    await using var connection = await listener.AcceptConnectionAsync();
+                    await using var stream = await connection.AcceptInboundStreamAsync();
+                    var buffer = new byte[1];
+                    Assert.Equal(1, await stream.ReadAsync(buffer));
+                    Assert.Equal(data, buffer[0]);
+                }).WaitAsync(TimeSpan.FromSeconds(5)),
+                Task.Run(async () =>
+                {
+                    var endpoint = await listenerEndpointTcs.Task;
+                    await using var connection = await CreateQuicConnection(endpoint);
+                    await Task.Delay(TimeSpan.FromSeconds(0.5));
+                    GC.Collect();
+                    await using var stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Unidirectional);
+                    await stream.WriteAsync(new byte[1] { data }, completeWrites: true);
+                }).WaitAsync(TimeSpan.FromSeconds(5)));
+        }
     }
 }

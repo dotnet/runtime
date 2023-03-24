@@ -52,7 +52,7 @@ if "%VisualStudioVersion%"=="17.0" (
 )
 
 :VSMissing
-echo %__MsgPrefix%Error: Visual Studio 2019 or 2022 with C++ tools required. ^
+echo %__MsgPrefix%Error: Visual Studio 2022 with C++ tools required. ^
 Please see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/windows-requirements.md for build requirements.
 exit /b 1
 
@@ -61,6 +61,7 @@ exit /b 1
 if "%__VCBuildArch%"=="" exit /b 0
 
 :: Set the environment for the native build
+if not exist "%VCINSTALLDIR%Auxiliary\Build\vcvarsall.bat" goto :VSMissing
 call "%VCINSTALLDIR%Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
 if not "%ErrorLevel%"=="0" exit /b 1
 

@@ -80,7 +80,7 @@ namespace System.IO
                 Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
                 {
                     nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                    lpSecurityDescriptor = (IntPtr)pSecurityDescriptor
+                    lpSecurityDescriptor = pSecurityDescriptor
                 };
 
                 while (stackDir.Count > 0)
@@ -91,7 +91,7 @@ namespace System.IO
                     r = Interop.Kernel32.CreateDirectory(name, &secAttrs);
                     if (!r && (firstError == 0))
                     {
-                        int currentError = Marshal.GetLastWin32Error();
+                        int currentError = Marshal.GetLastPInvokeError();
                         // While we tried to avoid creating directories that don't
                         // exist above, there are at least two cases that will
                         // cause us to see ERROR_ALREADY_EXISTS here.  FileExists

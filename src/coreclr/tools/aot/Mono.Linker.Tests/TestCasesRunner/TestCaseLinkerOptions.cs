@@ -25,6 +25,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public bool StripSubstitutions;
 		public bool StripLinkAttributes;
 
+		public bool IlcFrameworkCompilation;
+
 		public List<KeyValuePair<string, string[]>> AdditionalArguments = new List<KeyValuePair<string, string[]>> ();
 
 		public List<string> Descriptors = new List<string> ();

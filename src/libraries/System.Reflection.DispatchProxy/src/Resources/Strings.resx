@@ -1,4 +1,4 @@
-﻿<root>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -66,10 +66,13 @@
   <data name="InterfaceType_Must_Be_Interface" xml:space="preserve">
     <value>The type '{0}' must be an interface, not a class.</value>
   </data>
- <data name="BaseType_Cannot_Be_Abstract" xml:space="preserve">
+  <data name="BaseType_Cannot_Be_Abstract" xml:space="preserve">
     <value>The base type '{0}' cannot be abstract.</value>
   </data>
   <data name="PlatformNotSupported_ReflectionDispatchProxy" xml:space="preserve">
     <value>This operation is not supported on .NET Standard as Reflection.Emit is not available.</value>
+  </data>
+  <data name="ProxyType_Must_Be_Derived_From_DispatchProxy" xml:space="preserve">
+    <value>The provided proxy type '{0}' must be derived from 'DispatchProxy'.</value>
   </data>
 </root>

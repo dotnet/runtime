@@ -8,6 +8,12 @@ namespace System.IO.Tests
     public class FileInfo_Name : FileSystemTest
     {
         [Fact]
+        public void Ctor_NullArgument_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("fileName", () => new FileInfo(null));
+        }
+
+        [Fact]
         public void ValidCase()
         {
             var info = new FileInfo(Path.Combine("Double", "single"));

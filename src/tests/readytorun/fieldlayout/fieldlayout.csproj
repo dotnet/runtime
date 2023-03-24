@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="fieldlayouttests.cs" />
+    <Compile Include="../../../coreclr/tools/aot/ILCompiler.TypeSystem.Tests/CoreTestAssembly/InstanceFieldLayout.cs" />
+  </ItemGroup>
+</Project>

@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <AssemblyName>X86_Crc32_handwritten_r</AssemblyName>
+    <BuildAsStandalone>false</BuildAsStandalone>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>

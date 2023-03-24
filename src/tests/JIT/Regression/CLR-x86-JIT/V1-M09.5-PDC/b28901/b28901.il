@@ -7,7 +7,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly vargtail
+.assembly 'b28901'
 {
 }
 .class public auto ansi Win32 

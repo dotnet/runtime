@@ -28,7 +28,7 @@ BOOL writeTest_WriteFile_test2(DWORD dwByteCount, DWORD dwBytesWrittenResult, BO
     BOOL bRc = FALSE;
 
     /* create the test file */
-    DeleteFile(szWritableFile);
+    remove(szWritableFile);
     hFile = CreateFile(szWritableFile, GENERIC_WRITE, FILE_SHARE_WRITE,    
                        NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 

@@ -62,7 +62,6 @@ namespace System.Text.Json
         public List<PropertyRef>? PropertyRefCache;
 
         // Holds relevant state when deserializing objects with parameterized constructors.
-        public int CtorArgumentStateIndex;
         public ArgumentState? CtorArgumentState;
 
         // Whether to use custom number handling.
@@ -105,7 +104,7 @@ namespace System.Text.Json
         /// </summary>
         public bool IsProcessingDictionary()
         {
-            return (JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy & ConverterStrategy.Dictionary) != 0;
+            return JsonTypeInfo.Kind is JsonTypeInfoKind.Dictionary;
         }
 
         /// <summary>
@@ -113,7 +112,7 @@ namespace System.Text.Json
         /// </summary>
         public bool IsProcessingEnumerable()
         {
-            return (JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy & ConverterStrategy.Enumerable) != 0;
+            return JsonTypeInfo.Kind is JsonTypeInfoKind.Enumerable;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -144,7 +143,7 @@ namespace System.Text.Json
             {
                 Debug.Assert(RequiredPropertiesSet != null);
 
-                if (!RequiredPropertiesSet.AllBitsEqual(true))
+                if (!RequiredPropertiesSet.HasAllSet())
                 {
                     ThrowHelper.ThrowJsonException_JsonRequiredPropertyMissing(typeInfo, RequiredPropertiesSet);
                 }
@@ -152,6 +151,6 @@ namespace System.Text.Json
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"ConverterStrategy.{JsonTypeInfo?.PropertyInfoForTypeInfo.ConverterStrategy}, {JsonTypeInfo?.Type.Name}";
+        private string DebuggerDisplay => $"ConverterStrategy.{JsonTypeInfo?.Converter.ConverterStrategy}, {JsonTypeInfo?.Type.Name}";
     }
 }

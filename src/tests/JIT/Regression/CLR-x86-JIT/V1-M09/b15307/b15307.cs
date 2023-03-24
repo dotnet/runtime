@@ -6,9 +6,9 @@ using System.Globalization;
 
 namespace DefaultNamespace
 {
-    internal class bug
+    public class bug
     {
-        public static int Main(String[] args)
+        public static int Main()
         {
             CultureInfo ci = new CultureInfo("en-us");
             return 100;

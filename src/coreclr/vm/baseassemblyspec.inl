@@ -243,10 +243,11 @@ inline BOOL BaseAssemblySpec::CompareEx(BaseAssemblySpec *pSpec, DWORD dwCompare
             || strcmp(m_pAssemblyName, pSpec->m_pAssemblyName)))
         return FALSE;
 
-    if (m_cbPublicKeyOrToken != pSpec->m_cbPublicKeyOrToken
-        || memcmp(m_pbPublicKeyOrToken, pSpec->m_pbPublicKeyOrToken, m_cbPublicKeyOrToken))
+    if (m_cbPublicKeyOrToken != pSpec->m_cbPublicKeyOrToken)
         return FALSE;
 
+    if (m_cbPublicKeyOrToken != 0 && memcmp(m_pbPublicKeyOrToken, pSpec->m_pbPublicKeyOrToken, m_cbPublicKeyOrToken) != 0)
+        return FALSE;
 
     if (m_dwFlags != pSpec->m_dwFlags)
         return FALSE;

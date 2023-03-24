@@ -298,7 +298,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="value">Document name.</param>
         /// <returns>
         /// Handle to the added or existing document name blob
-        /// (see https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md#DocumentNameBlob).
+        /// (see https://github.com/dotnet/runtime/blob/main/docs/design/specs/PortablePdb-Metadata.md#DocumentNameBlob).
         /// </returns>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         public BlobHandle GetOrAddDocumentName(string value)

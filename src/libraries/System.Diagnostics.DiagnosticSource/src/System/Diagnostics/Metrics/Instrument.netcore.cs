@@ -104,7 +104,7 @@ namespace System.Diagnostics.Metrics
             KeyValuePair<string, object?>[]? tags = tagList.Tags;
             if (tags is not null)
             {
-                RecordMeasurement(measurement, tags.AsSpan().Slice(0, tagList.Count));
+                RecordMeasurement(measurement, tags.AsSpan(0, tagList.Count));
                 return;
             }
 

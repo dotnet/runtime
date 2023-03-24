@@ -26,10 +26,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public virtual TestRunCharacteristics Characteristics =>
 			TestRunCharacteristics.TargetingNetCore | TestRunCharacteristics.SupportsDefaultInterfaceMethods | TestRunCharacteristics.SupportsStaticInterfaceMethods;
 
-		public virtual bool IsIgnored ([NotNullWhen(true)] out string? reason)
+		private static bool IsIgnoredByNativeAOT (CustomAttribute attr)
+		{
+			var ignoredBy = attr.GetPropertyValue ("IgnoredBy");
+			return ignoredBy is null ? true : ((Tool) ignoredBy).HasFlag (Tool.NativeAot);
+		}
+
+		public virtual bool IsIgnored ([NotNullWhen (true)] out string? reason)
 		{
 			var ignoreAttribute = _testCaseTypeDefinition.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.Name == nameof (IgnoreTestCaseAttribute));
-			if (ignoreAttribute != null) {
+			if (ignoreAttribute != null && IsIgnoredByNativeAOT (ignoreAttribute)) {
 				if (ignoreAttribute.ConstructorArguments.Count == 1) {
 					reason = (string) ignoreAttribute.ConstructorArguments.First ().Value;
 					return true;
@@ -58,7 +64,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return false;
 		}
 
-		bool IsRequirementMissing (TestRunCharacteristics requirement, TestRunCharacteristics testCaseRequirements)
+		private bool IsRequirementMissing (TestRunCharacteristics requirement, TestRunCharacteristics testCaseRequirements)
 		{
 			return testCaseRequirements.HasFlag (requirement) && !Characteristics.HasFlag (requirement);
 		}
@@ -90,7 +96,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual string GetCSharpCompilerToUse ()
 		{
-			return GetOptionAttributeValue (nameof (SetupCSharpCompilerToUseAttribute), string.Empty)!.ToLower ();
+			return GetOptionAttributeValue (nameof (SetupCSharpCompilerToUseAttribute), string.Empty)!.ToLowerInvariant ();
 		}
 
 		public virtual IEnumerable<string> GetSetupCompilerArguments ()
@@ -107,7 +113,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.Select (GetSourceAndRelativeDestinationValue);
 		}
 
-		static string GetReferenceDir ()
+		private static string GetReferenceDir ()
 		{
 			string runtimeDir = Path.GetDirectoryName (typeof (object).Assembly.Location)!;
 			string ncaVersion = Path.GetFileName (runtimeDir);

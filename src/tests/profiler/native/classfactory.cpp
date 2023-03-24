@@ -17,6 +17,7 @@
 #include "transitions/transitions.h"
 #include "multiple/multiple.h"
 #include "inlining/inlining.h"
+#include "moduleload/moduleload.h"
 
 ClassFactory::ClassFactory(REFCLSID clsid) : refCount(0), clsid(clsid)
 {
@@ -123,6 +124,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     else if (clsid == HandlesProfiler::GetClsid())
     {
         profiler = new HandlesProfiler();
+    }
+    else if (clsid == ModuleLoad::GetClsid())
+    {
+        profiler = new ModuleLoad();
     }
     else
     {

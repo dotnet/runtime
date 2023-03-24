@@ -234,7 +234,7 @@ sgen_has_critical_method (void)
 gboolean
 mono_gc_is_critical_method (MonoMethod *method)
 {
-#ifdef HOST_WASM
+#if defined(HOST_WASM) || defined(HOST_WASI)
 	//methods can't be critical under wasm due to the single thread'ness of it
 	return FALSE;
 #else
@@ -254,39 +254,11 @@ mono_install_sgen_mono_callbacks (MonoSgenMonoCallbacks *cb)
 	cb_inited = TRUE;
 }
 
-#if !ENABLE_ILGEN
-
-static void
-emit_nursery_check_noilgen (MonoMethodBuilder *mb, gboolean is_concurrent)
-{
-}
-
-static void
-emit_managed_allocator_noilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean profiler, int atype)
-{
-}
-
-static void
-install_noilgen (void)
-{
-	MonoSgenMonoCallbacks cb;
-	cb.version = MONO_SGEN_MONO_CALLBACKS_VERSION;
-	cb.emit_nursery_check = emit_nursery_check_noilgen;
-	cb.emit_managed_allocator = emit_managed_allocator_noilgen;
-	mono_install_sgen_mono_callbacks (&cb);
-}
-
-#endif
-
 static MonoSgenMonoCallbacks *
 get_sgen_mono_cb (void)
 {
 	if (G_UNLIKELY (!cb_inited)) {
-#ifdef ENABLE_ILGEN
 		mono_sgen_mono_ilgen_init ();
-#else
-		install_noilgen ();
-#endif
 	}
 	return &sgenmono_cb;
 }
@@ -444,6 +416,12 @@ mono_gc_get_vtable_bits (MonoClass *klass)
 		if (fin_callbacks.is_class_finalization_aware (klass))
 			res |= SGEN_GC_BIT_FINALIZER_AWARE;
 	}
+
+	if (m_class_get_image (klass) == mono_defaults.corlib &&
+			strcmp (m_class_get_name_space (klass), "System") == 0 &&
+			strncmp (m_class_get_name (klass), "WeakReference", 13) == 0)
+		res |= SGEN_GC_BIT_WEAKREF;
+
 	return res;
 }
 
@@ -452,6 +430,21 @@ is_finalization_aware (MonoObject *obj)
 {
 	MonoVTable *vt = SGEN_LOAD_VTABLE (obj);
 	return (vt->gc_bits & SGEN_GC_BIT_FINALIZER_AWARE) == SGEN_GC_BIT_FINALIZER_AWARE;
+}
+
+gboolean
+sgen_client_object_finalize_eagerly (GCObject *obj)
+{
+	if (obj->vtable->gc_bits & SGEN_GC_BIT_WEAKREF) {
+		MonoWeakReference *wr = (MonoWeakReference*)obj;
+		MonoGCHandle gc_handle = (MonoGCHandle)(wr->taggedHandle & ~(gsize)1);
+		mono_gchandle_free_internal (gc_handle);
+		// keep the bit that indicates whether this reference was tracking resurrection, clear the rest.
+		wr->taggedHandle &= (gsize)1;
+		return TRUE;
+	}
+
+	return FALSE;
 }
 
 void
@@ -2133,7 +2126,7 @@ mono_gc_set_gc_callbacks (MonoGCCallbacks *callbacks)
 }
 
 MonoGCCallbacks *
-mono_gc_get_gc_callbacks ()
+mono_gc_get_gc_callbacks (void)
 {
 	return &gc_callbacks;
 }
@@ -2152,11 +2145,6 @@ sgen_client_thread_attach (SgenThreadInfo* info)
 	info->client_info.skip = FALSE;
 
 	info->client_info.stack_start = NULL;
-
-#ifdef SGEN_POSIX_STW
-	info->client_info.stop_count = -1;
-	info->client_info.signal = 0;
-#endif
 
 	memset (&info->client_info.ctx, 0, sizeof (MonoContext));
 
@@ -2293,7 +2281,7 @@ pin_handle_stack_interior_ptrs (void **ptr_slot, void *user_data)
 	sgen_conservatively_pin_objects_from (ptr_slot, ptr_slot+1, ud->start_nursery, ud->end_nursery, PIN_TYPE_STACK);
 }
 
-#ifdef HOST_WASM
+#if defined(HOST_WASM) || defined(HOST_WASI)
 extern gboolean mono_wasm_enable_gc;
 #endif
 
@@ -2305,7 +2293,7 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 {
 	scan_area_arg_start = start_nursery;
 	scan_area_arg_end = end_nursery;
-#ifdef HOST_WASM
+#if defined(HOST_WASM) || defined(HOST_WASI)
 	//Under WASM we don't scan thread stacks and we can't trust the values we find there either.
 	if (!mono_wasm_enable_gc)
 		return;
@@ -2879,11 +2867,16 @@ mono_gc_card_table_nursery_check (void)
 	return !sgen_get_major_collector ()->is_concurrent;
 }
 
-/* Negative value to remove */
 void
-mono_gc_add_memory_pressure (gint64 value)
+mono_gc_add_memory_pressure (guint64 value)
 {
-	/* FIXME: Implement at some point? */
+	sgen_add_memory_pressure(value);
+}
+
+void
+mono_gc_remove_memory_pressure (guint64 value)
+{
+	sgen_remove_memory_pressure(value);
 }
 
 /*

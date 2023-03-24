@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using Xunit.Abstractions;
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,11 +9,14 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.Loader;
 using System.Text;
+using System.Xml.Tests;
 using System.Xml.XPath;
 using System.Xml.Xsl;
 using XmlCoreTest.Common;
+using Xunit;
+using Xunit.Abstractions;
 
-namespace System.Xml.Tests
+namespace System.Xml.XslCompiledTransformApiTests
 {
     public class ReflectionTestCaseBase : XsltApiTestCaseBase2
     {
@@ -81,6 +81,7 @@ namespace System.Xml.Tests
     }
 
     //[TestCase(Name = "Load(MethodInfo, ByteArray, TypeArray) tests", Desc = "This testcase tests private Load method via Reflection. This method is used by sharepoint")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CLoadMethInfoTest : ReflectionTestCaseBase
     {
         private ITestOutputHelper _output;
@@ -476,13 +477,23 @@ namespace System.Xml.Tests
     //[TestCase(Name = "XslCompiledTransform.XmlResolver : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.XmlResolver : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XslCompiledTransform.XmlResolver : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
-    public class CXmlResolverTest : XsltApiTestCaseBase2
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+    public class CXmlResolverTest : XsltApiTestCaseBase2, IDisposable
     {
         private ITestOutputHelper _output;
+        private AllowDefaultResolverContext _resolverContext;
+
         public CXmlResolverTest(ITestOutputHelper output) : base(output)
         {
             _output = output;
+            _resolverContext = new AllowDefaultResolverContext();
         }
+
+        public void Dispose()
+        {
+            _resolverContext.Dispose();
+        }
+
         //[Variation(id = 1, Desc = "Set XmlResolver property to null, load style sheet with import/include, should not affect transform")]
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
@@ -557,24 +568,25 @@ namespace System.Xml.Tests
         [Theory]
         public void XmlResolver3(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
-
-            string Baseline = Path.Combine("baseline", (string)param);
-
-            if (LoadXSL("xmlResolver_document_function.xsl", xslInputType, readerType) == 1)
+            using (new AllowDefaultResolverContext())
             {
-                if (Transform((string) "fruits.xml", (OutputType) outputType, navType) == 1)
+                string Baseline = Path.Combine("baseline", (string)param);
+
+                if (LoadXSL("xmlResolver_document_function.xsl", xslInputType, readerType) == 1)
                 {
-                    VerifyResult(Baseline, _strOutFile);
-                    return;
+                    if (Transform((string)"fruits.xml", (OutputType)outputType, navType) == 1)
+                    {
+                        VerifyResult(Baseline, _strOutFile);
+                        return;
+                    }
                 }
-            }
-            else
-            {
-                _output.WriteLine("Problem loading stylesheet with document function and default resolver!");
+                else
+                {
+                    _output.WriteLine("Problem loading stylesheet with document function and default resolver!");
+                    Assert.True(false);
+                }
                 Assert.True(false);
             }
-            Assert.True(false);
         }
 
         //[Variation(id = 7, Desc = "document() has absolute URI", Pri = 0)]
@@ -590,51 +602,52 @@ namespace System.Xml.Tests
         [Theory]
         public void XmlResolver7(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
+            using (new AllowDefaultResolverContext())
+            {
+                string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>";
+                string fileName = GetType().Name + "_" + Path.GetRandomFileName();
+                string testFile = Path.Combine(Path.GetTempPath(), fileName);
+                string xmlFile = FullFilePath(fileName);
 
-            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>";
-            string fileName = GetType().Name + "_" + Path.GetRandomFileName();
-            string testFile = Path.Combine(Path.GetTempPath(), fileName);
-            string xmlFile = FullFilePath(fileName);
-
-            // copy file on the local machine
-            try
-            {
-                File.Copy(xmlFile, testFile, true);
-            }
-            catch (Exception e)
-            {
-                _output.WriteLine(e.ToString());
-                _output.WriteLine("Could not copy file to local. Some other issues prevented this test from running");
-                return; //TEST_SKIPPED;
-            }
-            finally
-            {
-                if (File.Exists(testFile))
+                // copy file on the local machine
+                try
                 {
-                    File.SetAttributes(testFile, FileAttributes.Normal);
-                    File.Delete(testFile);
+                    File.Copy(xmlFile, testFile, true);
                 }
-            }
-
-            // copy file on the local machine (this is now done with createAPItestfiles.js, see Oasys scenario.)
-            if (LoadXSL("xmlResolver_document_function_absolute_uri.xsl", xslInputType, readerType) == 1)
-            {
-                if (Transform((string) "fruits.xml", (OutputType) outputType, navType) == 1)
+                catch (Exception e)
                 {
-                    VerifyResult(expected);
-                    return;
+                    _output.WriteLine(e.ToString());
+                    _output.WriteLine("Could not copy file to local. Some other issues prevented this test from running");
+                    return; //TEST_SKIPPED;
+                }
+                finally
+                {
+                    if (File.Exists(testFile))
+                    {
+                        File.SetAttributes(testFile, FileAttributes.Normal);
+                        File.Delete(testFile);
+                    }
+                }
+
+                // copy file on the local machine (this is now done with createAPItestfiles.js, see Oasys scenario.)
+                if (LoadXSL("xmlResolver_document_function_absolute_uri.xsl", xslInputType, readerType) == 1)
+                {
+                    if (Transform((string)"fruits.xml", (OutputType)outputType, navType) == 1)
+                    {
+                        VerifyResult(expected);
+                        return;
+                    }
+                    else
+                    {
+                        _output.WriteLine("Failed to resolve document function with absolute URI.");
+                        Assert.True(false);
+                    }
                 }
                 else
                 {
-                    _output.WriteLine("Failed to resolve document function with absolute URI.");
+                    _output.WriteLine("Failed to load style sheet!");
                     Assert.True(false);
                 }
-            }
-            else
-            {
-                _output.WriteLine("Failed to load style sheet!");
-                Assert.True(false);
             }
         }
     }
@@ -655,6 +668,7 @@ namespace System.Xml.Tests
     //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XslCompiledTransform.Load() - Integrity : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CLoadTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -993,6 +1007,7 @@ namespace System.Xml.Tests
     //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : URI, Stream", Desc = "URI,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : URI, Writer", Desc = "URI,WRITER")]
     //[TestCase(Name = "XslCompiledTransform.Load(XmlResolver) - Integrity : URI, TextWriter", Desc = "URI,TEXTWRITER")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CLoadXmlResolverTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -1424,6 +1439,7 @@ namespace System.Xml.Tests
     //[TestCase(Name = "XslCompiledTransform.Load(Url, Resolver) : URI, Stream", Desc = "URI,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Load(Url, Resolver) : URI, Writer", Desc = "URI,WRITER")]
     //[TestCase(Name = "XslCompiledTransform.Load(Url, Resolver) : URI, TextWriter", Desc = "URI,TEXTWRITER")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CLoadUrlResolverTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -1523,6 +1539,7 @@ namespace System.Xml.Tests
     /***********************************************************/
 
     //[TestCase(Name = "XslCompiledTransform.Load(Url) Integrity : URI, Stream", Desc = "URI,STREAM")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CLoadStringTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -1641,6 +1658,7 @@ namespace System.Xml.Tests
     /***********************************************************/
 
     //[TestCase(Name = "XslCompiledTransform .Load(IXPathNavigable) : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CLoadXPathNavigableTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -1749,6 +1767,7 @@ namespace System.Xml.Tests
     /***********************************************************/
 
     //[TestCase(Name = "XslCompiledTransform.Load(Reader) : Reader, Stream", Desc = "READER,STREAM")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CLoadReaderTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -2138,6 +2157,7 @@ namespace System.Xml.Tests
     //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XslCompiledTransform.Transform() Integrity : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CTransformTestGeneric : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -2393,12 +2413,21 @@ namespace System.Xml.Tests
     //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : Navigator, Stream", Desc = "NAVIGATOR,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : Navigator, Writer", Desc = "NAVIGATOR,WRITER")]
     //[TestCase(Name = "XslCompiledTransform.Transform(XmlResolver) : Navigator, TextWriter", Desc = "NAVIGATOR,TEXTWRITER")]
-    public class CTransformResolverTest : XsltApiTestCaseBase2
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+    public class CTransformResolverTest : XsltApiTestCaseBase2, IDisposable
     {
         private ITestOutputHelper _output;
+        private AllowDefaultResolverContext _resolverContext;
+
         public CTransformResolverTest(ITestOutputHelper output) : base(output)
         {
             _output = output;
+            _resolverContext = new AllowDefaultResolverContext();
+        }
+
+        public void Dispose()
+        {
+            _resolverContext.Dispose();
         }
 
         //[Variation("Pass null XmlResolver, load style sheet with import/include, should not affect transform")]
@@ -2450,26 +2479,27 @@ namespace System.Xml.Tests
         [Theory]
         public void XmlResolver2(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
-
-            // "xmlResolver_document_function.xsl" contains
-            // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
-            string Baseline = Path.Combine("baseline", (string)param);
-
-            if (LoadXSL("xmlResolver_document_function.xsl", xslInputType, readerType) == 1)
+            using (new AllowDefaultResolverContext())
             {
-                if (TransformResolver("fruits.xml", outputType, navType, null) == 1)
+                // "xmlResolver_document_function.xsl" contains
+                // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
+                string Baseline = Path.Combine("baseline", (string)param);
+
+                if (LoadXSL("xmlResolver_document_function.xsl", xslInputType, readerType) == 1)
                 {
-                    VerifyResult(Baseline, _strOutFile);
-                    return;
+                    if (TransformResolver("fruits.xml", outputType, navType, null) == 1)
+                    {
+                        VerifyResult(Baseline, _strOutFile);
+                        return;
+                    }
                 }
-            }
-            else
-            {
-                _output.WriteLine("Problem loading stylesheet!");
+                else
+                {
+                    _output.WriteLine("Problem loading stylesheet!");
+                    Assert.True(false);
+                }
                 Assert.True(false);
             }
-            Assert.True(false);
         }
 
         //[Variation("Default XmlResolver, load style sheet with document function, should resolve during transform", Param = "DefaultResolver.txt")]
@@ -2485,25 +2515,26 @@ namespace System.Xml.Tests
         [Theory]
         public void XmlResolver3(object param, XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
-
-            // "xmlResolver_document_function.xsl" contains
-            // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
-            string Baseline = Path.Combine("baseline", (string)param);
-            if (LoadXSL("xmlResolver_document_function.xsl", xslInputType, readerType) == 1)
+            using (new AllowDefaultResolverContext())
             {
-                if (Transform((string) "fruits.xml", (OutputType) outputType, navType) == 1)
+                // "xmlResolver_document_function.xsl" contains
+                // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
+                string Baseline = Path.Combine("baseline", (string)param);
+                if (LoadXSL("xmlResolver_document_function.xsl", xslInputType, readerType) == 1)
                 {
-                    VerifyResult(Baseline, _strOutFile);
-                    return;
+                    if (Transform((string)"fruits.xml", (OutputType)outputType, navType) == 1)
+                    {
+                        VerifyResult(Baseline, _strOutFile);
+                        return;
+                    }
                 }
-            }
-            else
-            {
-                _output.WriteLine("Problem loading stylesheet with document function and default resolver!");
+                else
+                {
+                    _output.WriteLine("Problem loading stylesheet with document function and default resolver!");
+                    Assert.True(false);
+                }
                 Assert.True(false);
             }
-            Assert.True(false);
         }
 
         //[Variation("document() has absolute URI")]
@@ -2519,50 +2550,51 @@ namespace System.Xml.Tests
         [Theory]
         public void XmlResolver5(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
+            using (new AllowDefaultResolverContext())
+            {
+                string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>";
+                string fileName = GetType().Name + "_" + Path.GetRandomFileName();
+                string testFile = Path.Combine(Path.GetTempPath(), fileName);
+                string xmlFile = FullFilePath(fileName);
 
-            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result>123</result>";
-            string fileName = GetType().Name + "_" + Path.GetRandomFileName();
-            string testFile = Path.Combine(Path.GetTempPath(), fileName);
-            string xmlFile = FullFilePath(fileName);
-
-            // copy file on the local machine
-            try
-            {
-                File.Copy(xmlFile, testFile, true);
-            }
-            catch (Exception e)
-            {
-                _output.WriteLine(e.ToString());
-                _output.WriteLine("Could not copy file to local. Some other issues prevented this test from running");
-                return; //TEST_SKIPPED;
-            }
-            finally
-            {
-                if (File.Exists(testFile))
+                // copy file on the local machine
+                try
                 {
-                    File.SetAttributes(testFile, FileAttributes.Normal);
-                    File.Delete(testFile);
+                    File.Copy(xmlFile, testFile, true);
                 }
-            }
-
-            if (LoadXSL("xmlResolver_document_function_absolute_uri.xsl", xslInputType, readerType) == 1)
-            {
-                if (TransformResolver("fruits.xml", outputType, navType, new XmlUrlResolver()) == 1)
+                catch (Exception e)
                 {
-                    VerifyResult(expected);
-                    return;
+                    _output.WriteLine(e.ToString());
+                    _output.WriteLine("Could not copy file to local. Some other issues prevented this test from running");
+                    return; //TEST_SKIPPED;
+                }
+                finally
+                {
+                    if (File.Exists(testFile))
+                    {
+                        File.SetAttributes(testFile, FileAttributes.Normal);
+                        File.Delete(testFile);
+                    }
+                }
+
+                if (LoadXSL("xmlResolver_document_function_absolute_uri.xsl", xslInputType, readerType) == 1)
+                {
+                    if (TransformResolver("fruits.xml", outputType, navType, new XmlUrlResolver()) == 1)
+                    {
+                        VerifyResult(expected);
+                        return;
+                    }
+                    else
+                    {
+                        _output.WriteLine("Failed to resolve document function with absolute URI.");
+                        Assert.True(false);
+                    }
                 }
                 else
                 {
-                    _output.WriteLine("Failed to resolve document function with absolute URI.");
+                    _output.WriteLine("Failed to load style sheet!");
                     Assert.True(false);
                 }
-            }
-            else
-            {
-                _output.WriteLine("Failed to load style sheet!");
-                Assert.True(false);
             }
         }
 
@@ -2593,6 +2625,7 @@ namespace System.Xml.Tests
     //[TestCase(Name = "XslCompiledTransform.Transform(String, String) : Reader , String", Desc = "READER,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Transform(String, String) : URI, String", Desc = "URI,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Transform(String, String) : Navigator, String", Desc = "NAVIGATOR,STREAM")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CTransformStrStrTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -2965,12 +2998,21 @@ namespace System.Xml.Tests
     //[TestCase(Name = "XslCompiledTransform.Transform(String, String, Resolver) : Reader , String", Desc = "READER,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Transform(String, String, Resolver) : URI, String", Desc = "URI,STREAM")]
     //[TestCase(Name = "XslCompiledTransform.Transform(String, String, Resolver) : Navigator, String", Desc = "NAVIGATOR,STREAM")]
-    public class CTransformStrStrResolverTest : XsltApiTestCaseBase2
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+    public class CTransformStrStrResolverTest : XsltApiTestCaseBase2, IDisposable
     {
         private ITestOutputHelper _output;
+        private AllowDefaultResolverContext _resolverContext;
+
         public CTransformStrStrResolverTest(ITestOutputHelper output) : base(output)
         {
             _output = output;
+            _resolverContext = new AllowDefaultResolverContext();
+        }
+
+        public void Dispose()
+        {
+            _resolverContext.Dispose();
         }
 
         //[Variation("Pass null XmlResolver to Transform, load style sheet with import/include, should not affect transform")]
@@ -3006,24 +3048,25 @@ namespace System.Xml.Tests
         [Theory]
         public void TransformStrStrResolver2(XslInputType xslInputType, ReaderType readerType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
-
-            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result><elem>1</elem><elem>2</elem><elem>3</elem></result>";
-
-            // "xmlResolver_document_function.xsl" contains
-            // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
-
-            string szFullFilename = FullFilePath("fruits.xml");
-
-            if (LoadXSL("xmlResolver_document_function.xsl", xslInputType, readerType) == 1)
+            using (new AllowDefaultResolverContext())
             {
-                xslt.Transform(szFullFilename, "out.xml");
-                VerifyResult(expected);
-            }
-            else
-            {
-                _output.WriteLine("Problem loading stylesheet!");
-                Assert.True(false);
+                string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><result><elem>1</elem><elem>2</elem><elem>3</elem></result>";
+
+                // "xmlResolver_document_function.xsl" contains
+                // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
+
+                string szFullFilename = FullFilePath("fruits.xml");
+
+                if (LoadXSL("xmlResolver_document_function.xsl", xslInputType, readerType) == 1)
+                {
+                    xslt.Transform(szFullFilename, "out.xml");
+                    VerifyResult(expected);
+                }
+                else
+                {
+                    _output.WriteLine("Problem loading stylesheet!");
+                    Assert.True(false);
+                }
             }
         }
 
@@ -3034,31 +3077,33 @@ namespace System.Xml.Tests
         [Theory]
         public void TransformStrStrResolver3(object param, XslInputType xslInputType, ReaderType readerType)
         {
-            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
-
-            // "xmlResolver_document_function.xsl" contains
-            // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
-
-            string szFullFilename = FullFilePath("fruits.xml");
-            string Baseline = Path.Combine("baseline", (string)param);
-
-            if (LoadXSL("xmlResolver_document_function.xsl", xslInputType, readerType) == 1)
+            using (new AllowDefaultResolverContext())
             {
-                xslt.Transform(szFullFilename, "out.xml");
-                VerifyResult(Baseline, _strOutFile);
-                return;
-            }
-            else
-            {
-                _output.WriteLine("Problem loading stylesheet with document function and default resolver!");
+                // "xmlResolver_document_function.xsl" contains
+                // <xsl:for-each select="document('xmlResolver_document_function.xml')//elem">
+
+                string szFullFilename = FullFilePath("fruits.xml");
+                string Baseline = Path.Combine("baseline", (string)param);
+
+                if (LoadXSL("xmlResolver_document_function.xsl", xslInputType, readerType) == 1)
+                {
+                    xslt.Transform(szFullFilename, "out.xml");
+                    VerifyResult(Baseline, _strOutFile);
+                    return;
+                }
+                else
+                {
+                    _output.WriteLine("Problem loading stylesheet with document function and default resolver!");
+                    Assert.True(false);
+                }
                 Assert.True(false);
             }
-            Assert.True(false);
         }
     }
 
     //[TestCase(Name = "XslCompiledTransform.Transform(IXPathNavigable, XsltArgumentList, XmlWriter, XmlResolver)", Desc = "Constructor Tests", Param = "IXPathNavigable")]
     //[TestCase(Name = "XslCompiledTransform.Transform(XmlReader, XsltArgumentList, XmlWriter, XmlResolver)", Desc = "Constructor Tests", Param = "XmlReader")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CTransformConstructorWithFourParametersTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -3093,9 +3138,10 @@ namespace System.Xml.Tests
         [Theory]
         public void ValidCases_ExternalURI(object param0, object param1, object param2, object param3, object param4, object param5)
         {
-            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
-
-            ValidCases(param0, param1, param2, param3, param4, param5);
+            using (new AllowDefaultResolverContext())
+            {
+                ValidCases(param0, param1, param2, param3, param4, param5);
+            }
         }
 
         //[Variation("Document function 1, CustomXmlResolver", Pri = 0, Params = new object[] { "xmlResolver_document_function.xsl", "fruits.xml", "xmlResolver_document_function.txt", "CustomXmlResolver", true })]
@@ -3262,6 +3308,7 @@ namespace System.Xml.Tests
     // This testcase is for bugs 109429, 111075 and 109644 fixed in Everett SP1
     //[TestCase(Name = "NDP1_1SP1 Bugs (URI,STREAM)", Desc = "URI,STREAM")]
     //[TestCase(Name = "NDP1_1SP1 Bugs (NAVIGATOR,TEXTWRITER)", Desc = "NAVIGATOR,TEXTWRITER")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CNDP1_1SP1Test : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
@@ -3353,12 +3400,21 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
     }
 
     //[TestCase(Name = "XslCompiledTransform Regression Tests for API", Desc = "XslCompiledTransform Regression Tests")]
-    public class CTransformRegressionTest : XsltApiTestCaseBase2
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+    public class CTransformRegressionTest : XsltApiTestCaseBase2, IDisposable
     {
         private ITestOutputHelper _output;
+        private AllowDefaultResolverContext _resolverContext;
+
         public CTransformRegressionTest(ITestOutputHelper output) : base(output)
         {
             _output = output;
+            _resolverContext = new AllowDefaultResolverContext();
+        }
+
+        public void Dispose()
+        {
+            _resolverContext.Dispose();
         }
 
         //[Variation("Bug398968 - Globalization is broken for document() function")]

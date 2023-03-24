@@ -8,11 +8,11 @@ namespace DefaultNamespace
     //@ENDRENAME; Verify this renames
     using System;
 
-    class AppStarter
+    public class AppStarter
     {
         private static int n = 0;
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             n = 1;
             Console.WriteLine("n = " + n);

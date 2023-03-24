@@ -600,7 +600,11 @@ namespace System.ServiceModel.Syndication
 
         private static string AsString(DateTimeOffset dateTime)
         {
+#if NET8_0_OR_GREATER
+            if (dateTime.TotalOffsetMinutes == 0)
+#else
             if (dateTime.Offset == TimeSpan.Zero)
+#endif // NET8_0_OR_GREATER
             {
                 return dateTime.ToUniversalTime().ToString(Rfc3339UTCDateTimeFormat, CultureInfo.InvariantCulture);
             }

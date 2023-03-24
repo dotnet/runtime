@@ -53,7 +53,7 @@ class Program
         }
     }
 
-    static int Main(string[] args)
+    static int Main()
     {
         // start recording
         testLog.StartRecording();

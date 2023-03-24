@@ -6,7 +6,7 @@ using System.Runtime.Versioning;
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
-    /// Used as generic argument for <see cref="JSMarshalAsAttribute{T}"/> to express expected JavaScript type, which should be source or result of argument marshaling.
+    /// Used as generic argument for <see cref="JSMarshalAsAttribute{T}"/> to express expected JavaScript type, which should be input or output of argument marshaling.
     /// </summary>
     [SupportedOSPlatform("browser")]
     public abstract class JSType
@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</see> type.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</see> type.
         /// </summary>
         public sealed class Boolean : JSType
         {
@@ -37,7 +37,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</see> type.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</see> type.
         /// </summary>
         public sealed class Number : JSType
         {
@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt">BigInt</see> type.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigInt">BigInt</see> type.
         /// </summary>
         public sealed class BigInt : JSType
         {
@@ -53,7 +53,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date">Date</see> type.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date">Date</see> type.
         /// </summary>
         public sealed class Date : JSType
         {
@@ -61,7 +61,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</see> type.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/String">String</see> type.
         /// </summary>
         public sealed class String : JSType
         {
@@ -69,7 +69,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</see> type.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</see> type.
         /// </summary>
         public sealed class Object : JSType
         {
@@ -77,7 +77,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error">Error</see> type.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error">Error</see> type.
         /// </summary>
         public sealed class Error : JSType
         {
@@ -93,23 +93,25 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshal as copy of JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</see> or <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray">TypedArray</see> type.
+        /// Marshal as a copy of the JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</see> or <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray">TypedArray</see> type.
         /// </summary>
+        /// <typeparam name="T">The type of array element.</typeparam>
         public sealed class Array<T> : JSType where T : JSType
         {
             internal Array() { }
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</see> type.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</see> type.
         /// </summary>
+        /// <typeparam name="T">The type of marshalled result value.</typeparam>
         public sealed class Promise<T> : JSType where T : JSType
         {
             internal Promise() { }
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see> type.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see> type.
         /// </summary>
         public sealed class Function : JSType
         {
@@ -117,32 +119,42 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see> type.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see> type.
         /// </summary>
+        /// <typeparam name="T">The type of marshaled parameter or result.</typeparam>
         public sealed class Function<T> : JSType where T : JSType
         {
             internal Function() { }
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see> type.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see> type.
         /// </summary>
+        /// <typeparam name="T1">The type of marshaled parameter or result.</typeparam>
+        /// <typeparam name="T2">Type of marshaled parameter.</typeparam>
         public sealed class Function<T1, T2> : JSType where T1 : JSType where T2 : JSType
         {
             internal Function() { }
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see> type.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see> type.
         /// </summary>
+        /// <typeparam name="T1">The type of marshaled parameter or result.</typeparam>
+        /// <typeparam name="T2">Type of marshaled parameter.</typeparam>
+        /// <typeparam name="T3">Type of marshaled parameter.</typeparam>
         public sealed class Function<T1, T2, T3> : JSType where T1 : JSType where T2 : JSType where T3 : JSType
         {
             internal Function() { }
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see> type.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see> type.
         /// </summary>
+        /// <typeparam name="T1">The type of marshaled parameter or result.</typeparam>
+        /// <typeparam name="T2">Type of marshaled parameter.</typeparam>
+        /// <typeparam name="T3">Type of marshaled parameter.</typeparam>
+        /// <typeparam name="T4">Type of marshaled parameter.</typeparam>
         public sealed class Function<T1, T2, T3, T4> : JSType where T1 : JSType where T2 : JSType where T3 : JSType where T4 : JSType
         {
             internal Function() { }

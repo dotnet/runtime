@@ -7,7 +7,7 @@ using System.Reflection.Runtime.General;
 
 namespace System.Reflection.TypeLoading
 {
-    internal abstract partial class RoType
+    internal partial class RoType
     {
         public sealed override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => Query<ConstructorInfo>(bindingAttr).ToArray();
 
@@ -36,7 +36,7 @@ namespace System.Reflection.TypeLoading
             }
 
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
+                return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
 
             binder ??= Loader.GetDefaultBinder();
 
@@ -153,7 +153,7 @@ namespace System.Reflection.TypeLoading
                 }
 
                 if ((bindingAttr & BindingFlags.ExactBinding) != 0)
-                    return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types, modifiers);
+                    return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types);
 
                 binder ??= Loader.GetDefaultBinder();
 

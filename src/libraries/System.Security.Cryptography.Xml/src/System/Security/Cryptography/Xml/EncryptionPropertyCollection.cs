@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         /// <internalonly/>
-        int IList.Add(object value)
+        int IList.Add(object? value)
         {
             if (!(value is EncryptionProperty))
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         /// <internalonly/>
-        bool IList.Contains(object value)
+        bool IList.Contains(object? value)
         {
             if (!(value is EncryptionProperty))
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         /// <internalonly/>
-        int IList.IndexOf(object value)
+        int IList.IndexOf(object? value)
         {
             if (!(value is EncryptionProperty))
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         /// <internalonly/>
-        void IList.Insert(int index, object value)
+        void IList.Insert(int index, object? value)
         {
             if (!(value is EncryptionProperty))
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         /// <internalonly/>
-        void IList.Remove(object value)
+        void IList.Remove(object? value)
         {
             if (!(value is EncryptionProperty))
                 throw new ArgumentException(SR.Cryptography_Xml_IncorrectObjectType, nameof(value));
@@ -116,7 +116,7 @@ namespace System.Security.Cryptography.Xml
 
         public EncryptionProperty Item(int index)
         {
-            return (EncryptionProperty)_props[index];
+            return (EncryptionProperty)_props[index]!;
         }
 
         [System.Runtime.CompilerServices.IndexerName("ItemOf")]
@@ -124,7 +124,7 @@ namespace System.Security.Cryptography.Xml
         {
             get
             {
-                return (EncryptionProperty)((IList)this)[index];
+                return (EncryptionProperty)((IList)this)[index]!;
             }
             set
             {
@@ -133,7 +133,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         /// <internalonly/>
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get { return _props[index]; }
             set

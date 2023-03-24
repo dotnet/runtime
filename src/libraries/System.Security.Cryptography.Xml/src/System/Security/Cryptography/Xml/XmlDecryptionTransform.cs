@@ -14,11 +14,11 @@ namespace System.Security.Cryptography.Xml
     {
         private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlDocument) };
         private readonly Type[] _outputTypes = { typeof(XmlDocument) };
-        private XmlNodeList _encryptedDataList;
-        private ArrayList _arrayListUri; // this ArrayList object represents the Uri's to be excluded
-        private EncryptedXml _exml; // defines the XML encryption processing rules
-        private XmlDocument _containingDocument;
-        private XmlNamespaceManager _nsm;
+        private XmlNodeList? _encryptedDataList;
+        private ArrayList? _arrayListUri; // this ArrayList object represents the Uri's to be excluded
+        private EncryptedXml? _exml; // defines the XML encryption processing rules
+        private XmlDocument? _containingDocument;
+        private XmlNamespaceManager? _nsm;
         private const string XmlDecryptionTransformNamespaceUrl = "http://www.w3.org/2002/07/decrypt#";
 
         public XmlDecryptionTransform()
@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.Xml
 
         private ArrayList ExceptUris => _arrayListUri ??= new ArrayList();
 
-        protected virtual bool IsTargetElement(XmlElement inputElement, string idValue)
+        protected virtual bool IsTargetElement(XmlElement? inputElement, string idValue)
         {
             if (inputElement == null)
                 return false;
@@ -46,10 +46,10 @@ namespace System.Security.Cryptography.Xml
                 if (_exml != null)
                     return _exml;
 
-                Reference reference = Reference;
-                SignedXml signedXml = (reference == null ? SignedXml : reference.SignedXml);
+                Reference? reference = Reference;
+                SignedXml? signedXml = (reference == null ? SignedXml : reference.SignedXml);
                 if (signedXml == null || signedXml.EncryptedXml == null)
-                    _exml = new EncryptedXml(_containingDocument); // default processing rules
+                    _exml = new EncryptedXml(_containingDocument!); // default processing rules
                 else
                     _exml = signedXml.EncryptedXml;
 
@@ -85,13 +85,13 @@ namespace System.Security.Cryptography.Xml
             ExceptUris.Clear();
             foreach (XmlNode node in nodeList)
             {
-                XmlElement elem = node as XmlElement;
+                XmlElement? elem = node as XmlElement;
                 if (elem != null)
                 {
                     if (elem.LocalName == "Except" && elem.NamespaceURI == XmlDecryptionTransformNamespaceUrl)
                     {
                         // the Uri is required
-                        string uri = Utils.GetAttribute(elem, "URI", XmlDecryptionTransformNamespaceUrl);
+                        string? uri = Utils.GetAttribute(elem, "URI", XmlDecryptionTransformNamespaceUrl);
                         if (uri == null || uri.Length == 0 || uri[0] != '#')
                             throw new CryptographicException(SR.Cryptography_Xml_UriRequired);
                         if (!Utils.VerifyAttributes(elem, "URI"))
@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
-        protected override XmlNodeList GetInnerXml()
+        protected override XmlNodeList? GetInnerXml()
         {
             if (ExceptUris.Count == 0)
                 return null;
@@ -143,7 +143,7 @@ namespace System.Security.Cryptography.Xml
             XmlDocument document = new XmlDocument();
             document.PreserveWhitespace = true;
             XmlResolver resolver = (ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
-            XmlReader xmlReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI);
+            XmlReader xmlReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI!);
             document.Load(xmlReader);
             _containingDocument = document;
             _nsm = new XmlNamespaceManager(_containingDocument.NameTable);
@@ -169,7 +169,7 @@ namespace System.Security.Cryptography.Xml
         // Replace the encrypted XML element with the decrypted data for signature verification
         private void ReplaceEncryptedData(XmlElement encryptedDataElement, byte[] decrypted)
         {
-            XmlNode parent = encryptedDataElement.ParentNode;
+            XmlNode parent = encryptedDataElement.ParentNode!;
             if (parent.NodeType == XmlNodeType.Document)
             {
                 // We're replacing the root element.  In order to correctly reflect the semantics of the
@@ -194,13 +194,13 @@ namespace System.Security.Cryptography.Xml
             {
                 for (int index = 0; index < ExceptUris.Count; index++)
                 {
-                    if (IsTargetElement(encryptedDataElement, (string)ExceptUris[index]))
+                    if (IsTargetElement(encryptedDataElement, (string)ExceptUris[index]!))
                         return false;
                 }
             }
             EncryptedData ed = new EncryptedData();
             ed.LoadXml(encryptedDataElement);
-            SymmetricAlgorithm symAlg = EncryptedXml.GetDecryptionKey(ed, null);
+            SymmetricAlgorithm? symAlg = EncryptedXml.GetDecryptionKey(ed, null);
             if (symAlg == null)
                 throw new CryptographicException(SR.Cryptography_Xml_MissingDecryptionKey);
             byte[] decrypted = EncryptedXml.DecryptData(ed, symAlg);
@@ -218,24 +218,24 @@ namespace System.Security.Cryptography.Xml
             {
                 encryptedDatasQueue.Enqueue(value);
             }
-            XmlNode node = encryptedDatasQueue.Dequeue() as XmlNode;
+            XmlNode? node = encryptedDatasQueue.Dequeue() as XmlNode;
             while (node != null)
             {
-                XmlElement encryptedDataElement = node as XmlElement;
+                XmlElement? encryptedDataElement = node as XmlElement;
                 if (encryptedDataElement != null && encryptedDataElement.LocalName == "EncryptedData" &&
                     encryptedDataElement.NamespaceURI == EncryptedXml.XmlEncNamespaceUrl)
                 {
-                    XmlNode sibling = encryptedDataElement.NextSibling;
-                    XmlNode parent = encryptedDataElement.ParentNode;
+                    XmlNode sibling = encryptedDataElement.NextSibling!;
+                    XmlNode parent = encryptedDataElement.ParentNode!;
                     if (ProcessEncryptedDataItem(encryptedDataElement))
                     {
                         // find the new decrypted element.
-                        XmlNode child = parent.FirstChild;
+                        XmlNode? child = parent.FirstChild;
                         while (child != null && child.NextSibling != sibling)
                             child = child.NextSibling;
                         if (child != null)
                         {
-                            XmlNodeList nodes = child.SelectNodes("//enc:EncryptedData", _nsm);
+                            XmlNodeList nodes = child.SelectNodes("//enc:EncryptedData", _nsm!)!;
                             if (nodes.Count > 0)
                             {
                                 foreach (XmlNode value in nodes)
@@ -258,7 +258,7 @@ namespace System.Security.Cryptography.Xml
             if (_encryptedDataList != null)
                 ProcessElementRecursively(_encryptedDataList);
             // propagate namespaces
-            Utils.AddNamespaces(_containingDocument.DocumentElement, PropagatedNamespaces);
+            Utils.AddNamespaces(_containingDocument!.DocumentElement!, PropagatedNamespaces);
             return _containingDocument;
         }
 

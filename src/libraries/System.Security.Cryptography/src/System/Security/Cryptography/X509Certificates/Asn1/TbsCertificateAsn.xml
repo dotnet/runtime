@@ -27,7 +27,7 @@
   <asn:Integer name="SerialNumber" backingType="ReadOnlyMemory" />
   <asn:AsnType name="SignatureAlgorithm" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
   <asn:AnyValue name="Issuer" universalTagNumber="16" />
-  <asn:AsnType name="Validity" typeName="System.Security.Cryptography.X509Certificates.Asn1.ValidityAsn" />	
+  <asn:AsnType name="Validity" typeName="System.Security.Cryptography.X509Certificates.Asn1.ValidityAsn" rebind="false"/>
   <asn:AnyValue name="Subject" universalTagNumber="16" />
   <asn:AsnType name="SubjectPublicKeyInfo" typeName="System.Security.Cryptography.Asn1.SubjectPublicKeyInfoAsn" />
   <asn:BitString name="IssuerUniqueId" implicitTag="1" optional="true" />

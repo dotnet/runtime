@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using ILCompiler.DependencyAnalysisFramework;
 using Internal.TypeSystem;
-using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -25,11 +21,6 @@ namespace ILCompiler.DependencyAnalysis
         public override ISortableSymbolNode ImportedNonGCStaticNode(NodeFactory factory, MetadataType type)
         {
             return new ExternSymbolNode(NonGCStaticsNode.GetMangledName(type, factory.NameMangler));
-        }
-
-        public override ISortableSymbolNode ImportedTypeDictionaryNode(NodeFactory factory, TypeDesc type)
-        {
-            throw new NotImplementedException();
         }
 
         public override ISortableSymbolNode ImportedMethodDictionaryNode(NodeFactory factory, MethodDesc method)

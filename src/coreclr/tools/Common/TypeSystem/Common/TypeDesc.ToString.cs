@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem
 {
-    partial class TypeDesc
+    public partial class TypeDesc
     {
         public override string ToString()
         {

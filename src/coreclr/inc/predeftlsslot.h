@@ -9,7 +9,7 @@
 // ******************************************************************************
 // WARNING!!!: These enums are used by SOS in the diagnostics repo. Values should
 // added or removed in a backwards and forwards compatible way.
-// See: https://github.com/dotnet/diagnostics/blob/master/src/inc/predeftlsslot.h
+// See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/predeftlsslot.h
 // ******************************************************************************
 
 // The historic location of ThreadType slot kept for compatibility with SOS

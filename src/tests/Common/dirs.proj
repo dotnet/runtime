@@ -10,7 +10,6 @@
       <DisabledProjects Include="$(TestRoot)*\**\cs_template.csproj" />
       <DisabledProjects Include="$(TestRoot)Common\**\*.*proj" />
       <DisabledProjects Include="$(TestRoot)FunctionalTests\**\*.csproj" /> <!-- They need to be isolated from the existing setup -->
-      <DisabledProjects Include="$(TestRoot)BuildWasmApps\**\*.csproj" /> <!-- built and run with libraries -->
       <DisabledProjects Include="$(TestRoot)GC\Performance\Framework\GCPerfTestFramework.csproj" />
       <DisabledProjects Include="$(TestRoot)Loader\classloader\StaticVirtualMethods\**\generatetest.csproj" /> <!-- test generators -->
       <DisabledProjects Include="$(TestRoot)Performance\Scenario\JitBench\unofficial_dotnet\JitBench.csproj" /> <!-- no official build support for SDK-style netcoreapp2.0 projects -->
@@ -45,11 +44,17 @@
       <AllProjects Include="$(TestRoot)**\*.fsproj" Exclude="@(DisabledProjects)" />
       <AllProjects Include="$(TestRoot)**\*.ilproj" Exclude="@(DisabledProjects)" />
     </ItemGroup>
-
     <!-- All the test projects are partitioned into the test groups as defined below.
          Each of the test groups is meant to be built by a separate MSBuild invocation with specified $(__TestGroupToBuild) property. -->
-
     <ItemGroup Condition=" '$(CLRTestPriorityToBuild)' == '0' ">
+
+      <!-- Fast filter to avoid files with Pri1 projects, this isn't completely accurate, but its close. Any Pri1 tests not caught by this will be skipped,
+           and any tests intended as Pri0 will end up running as Pri1, which isn't terrible. This trick allows us to avoid loading each project into msbuild
+           and evaluating it, which is a substantial improvement to the performance of the "Copy native test components to test output folder" task in our test runs  -->
+      <Pri1Projects Include="@(AllProjects)" Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($([System.IO.File]::ReadAllText('%(AllProjects.FullPath)')), '&lt;CLRTestPriority&gt;1&lt;/CLRTestPriority&gt;'))" />
+
+      <AllProjects Remove="@(Pri1Projects)" />
+
       <!-- Group number k consists of all the test projects P such that _GroupStartsWith(k) <= P.Identity < _GroupStartsWith(k+1).
            In other words, ItemGroup _GroupStartsWith defines boundaries between the test groups. -->
 

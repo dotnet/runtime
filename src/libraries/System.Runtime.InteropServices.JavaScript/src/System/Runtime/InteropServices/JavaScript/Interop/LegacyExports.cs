@@ -4,16 +4,15 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    // this maps to src\mono\wasm\runtime\legacy\corebindings.ts
-    // the methods are protected from trimming by DynamicDependency on JSFunctionBinding.BindJSFunction
+    // the public methods are protected from trimming by ILLink.Descriptors.LegacyJsInterop.xml
     internal static unsafe partial class LegacyExports
     {
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
-        public static void GetCSOwnedObjectByJSHandleRef(IntPtr jsHandle, int shouldAddInflight, out JSObject? result)
+        public static void GetCSOwnedObjectByJSHandleRef(nint jsHandle, int shouldAddInflight, out JSObject? result)
         {
             lock (JSHostImplementation.s_csOwnedObjects)
             {
@@ -31,7 +30,6 @@ namespace System.Runtime.InteropServices.JavaScript
             result = null;
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static IntPtr GetCSOwnedObjectJSHandleRef(in JSObject jsObject, int shouldAddInflight)
         {
             jsObject.AssertNotDisposed();
@@ -43,7 +41,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject.JSHandle;
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static IntPtr TryGetCSOwnedObjectJSHandleRef(in object rawObj, int shouldAddInflight)
         {
             JSObject? jsObject = rawObj as JSObject;
@@ -54,8 +51,7 @@ namespace System.Runtime.InteropServices.JavaScript
             return jsObject?.JSHandle ?? IntPtr.Zero;
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
-        public static void CreateCSOwnedProxyRef(IntPtr jsHandle, JSHostImplementation.MappedType mappedType, int shouldAddInflight, out JSObject jsObject)
+        public static void CreateCSOwnedProxyRef(nint jsHandle, LegacyHostImplementation.MappedType mappedType, int shouldAddInflight, out JSObject jsObject)
         {
             JSObject? res = null;
 
@@ -68,12 +64,12 @@ namespace System.Runtime.InteropServices.JavaScript
 #pragma warning disable CS0612 // Type or member is obsolete
                     res = mappedType switch
                     {
-                        JSHostImplementation.MappedType.JSObject => new JSObject(jsHandle),
-                        JSHostImplementation.MappedType.Array => new Array(jsHandle),
-                        JSHostImplementation.MappedType.ArrayBuffer => new ArrayBuffer(jsHandle),
-                        JSHostImplementation.MappedType.DataView => new DataView(jsHandle),
-                        JSHostImplementation.MappedType.Function => new Function(jsHandle),
-                        JSHostImplementation.MappedType.Uint8Array => new Uint8Array(jsHandle),
+                        LegacyHostImplementation.MappedType.JSObject => new JSObject(jsHandle),
+                        LegacyHostImplementation.MappedType.Array => new Array(jsHandle),
+                        LegacyHostImplementation.MappedType.ArrayBuffer => new ArrayBuffer(jsHandle),
+                        LegacyHostImplementation.MappedType.DataView => new DataView(jsHandle),
+                        LegacyHostImplementation.MappedType.Function => new Function(jsHandle),
+                        LegacyHostImplementation.MappedType.Uint8Array => new Uint8Array(jsHandle),
                         _ => throw new ArgumentOutOfRangeException(nameof(mappedType))
                     };
 #pragma warning restore CS0612 // Type or member is obsolete
@@ -87,27 +83,23 @@ namespace System.Runtime.InteropServices.JavaScript
             jsObject = res;
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void GetJSOwnedObjectByGCHandleRef(int gcHandle, out object result)
         {
             GCHandle h = (GCHandle)(IntPtr)gcHandle;
             result = h.Target!;
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static IntPtr GetJSOwnedObjectGCHandleRef(in object obj)
         {
             return JSHostImplementation.GetJSOwnedObjectGCHandle(obj, GCHandleType.Normal);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static IntPtr CreateTaskSource()
         {
             var tcs = new TaskCompletionSource<object>();
             return GetJSOwnedObjectGCHandleRef(tcs);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void SetTaskSourceResultRef(int tcsGCHandle, in object result)
         {
             GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
@@ -116,7 +108,6 @@ namespace System.Runtime.InteropServices.JavaScript
             tcs.SetResult(result);
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void SetTaskSourceFailure(int tcsGCHandle, string reason)
         {
             GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
@@ -125,7 +116,6 @@ namespace System.Runtime.InteropServices.JavaScript
             tcs.SetException(new JSException(reason));
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void GetTaskSourceTaskRef(int tcsGCHandle, out object result)
         {
             GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
@@ -134,7 +124,6 @@ namespace System.Runtime.InteropServices.JavaScript
             result = tcs.Task;
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void SetupJSContinuationRef(in Task _task, JSObject continuationObj)
         {
             // HACK: Attempting to use the in-param will produce CS1628, so we make a temporary copy
@@ -181,13 +170,11 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static string ObjectToStringRef(ref object o)
         {
             return o.ToString() ?? string.Empty;
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static double GetDateValueRef(ref object dtv)
         {
             ArgumentNullException.ThrowIfNull(dtv);
@@ -203,31 +190,46 @@ namespace System.Runtime.InteropServices.JavaScript
 
         // HACK: We need to implicitly box by using an 'object' out-param.
         // Note that the return value would have been boxed on the C#->JS transition anyway.
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void CreateDateTimeRef(double ticks, out object result)
         {
             DateTimeOffset unixTime = DateTimeOffset.FromUnixTimeMilliseconds((long)ticks);
             result = unixTime.DateTime;
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        // we do this via reflection to allow trimming tools to trim dependency on Uri class and it's assembly
+        // if the user code has methods with Uri signature, they probably also have the Uri constructor
+        // if they don't have it, they could configure ILLing to protect it after they enabled trimming
+        // We believe that this code path is probably not even used in the wild
+        // System.Private.Uri is ~80KB large assembly so it's worth trimming
+        private static Type? uriType;
+
+        [Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2077", Justification = "Done on purpose, see comment above.")]
+        [Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2057", Justification = "Done on purpose, see comment above.")]
         public static void CreateUriRef(string uri, out object? result)
         {
-            // we do this via reflection to allow linker to trim dependency on URI and it's assembly
-            // if the user code has methods with Uri signature, this should work too
-            // System.Private.Uri is large assembly so it's worth trimming
-            var uriType = Type.GetType("System.Uri, System.Private.Uri");
-            if (uriType == null) throw new InvalidProgramException();
-            result = Activator.CreateInstance(uriType, uri);
+            if (uriType == null)
+            {
+                // StringBuilder to confuse ILLink, which is too smart otherwise
+                StringBuilder sb = new StringBuilder("System.Uri, System.Private.Uri");
+                uriType = Type.GetType(sb.ToString());
+            }
+            // See: https://devblogs.microsoft.com/dotnet/customizing-trimming-in-net-core-5/
+            if (uriType == null) throw new InvalidOperationException(SR.UriTypeMissing);
+            try
+            {
+                result = Activator.CreateInstance(uriType, uri);
+            }
+            catch (MissingMethodException ex)
+            {
+                throw new MissingMethodException(SR.UriConstructorMissing, ex);
+            }
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static bool IsSimpleArrayRef(ref object a)
         {
             return a is System.Array arr && arr.Rank == 1 && arr.GetLowerBound(0) == 0;
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static string GetCallSignatureRef(IntPtr _methodHandle, in object objForRuntimeType)
         {
             var methodHandle = JSHostImplementation.GetMethodHandleFromIntPtr(_methodHandle);
@@ -245,8 +247,8 @@ namespace System.Runtime.InteropServices.JavaScript
             for (int i = 0; i < parmsLength; i++)
             {
                 Type t = parms[i].ParameterType;
-                var mt = JSHostImplementation.GetMarshalTypeFromType(t);
-                result[i] = JSHostImplementation.GetCallSignatureCharacterForMarshalType(mt, null);
+                var mt = LegacyHostImplementation.GetMarshalTypeFromType(t);
+                result[i] = LegacyHostImplementation.GetCallSignatureCharacterForMarshalType(mt, null);
             }
 
             return new string(result);

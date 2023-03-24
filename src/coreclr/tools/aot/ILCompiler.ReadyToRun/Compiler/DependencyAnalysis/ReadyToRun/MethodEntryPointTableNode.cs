@@ -35,8 +35,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
         }
 
-        public MethodEntryPointTableNode(EcmaModule module, TargetDetails target)
-            : base(target)
+        public MethodEntryPointTableNode(EcmaModule module)
         {
             _module = module;
         }

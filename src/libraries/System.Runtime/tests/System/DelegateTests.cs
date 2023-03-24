@@ -103,20 +103,22 @@ namespace System.Tests
             emptyDelegate.DynamicInvoke(null);
         }
 
-        private class SomeCustomConstantAttribute : CustomConstantAttribute
-        {
-            public static object Do(object o) => o;
-
-            public override object Value => "SomeValue";
-        }
-
-        private delegate object ObjectDelegateWithSomeCustomConstantAttribute([SomeCustomConstant] object o);
-
         [Fact]
-        [SkipOnMono("https://github.com/dotnet/runtime/issues/49806")]
         public static void DynamicInvoke_MissingTypeForCustomConstantAttribute_Succeeds()
         {
-            Assert.Equal("SomeValue", (string)(new ObjectDelegateWithSomeCustomConstantAttribute(SomeCustomConstantAttribute.Do).DynamicInvoke(Type.Missing)));
+            Assert.Equal("SomeValue", (string)(new ObjectDelegateWithStringCustomConstantAttribute(ObjectMethod).DynamicInvoke(Type.Missing)));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_MissingTypeForCustomConstantAttributeWithDefault_Succeeds()
+        {
+            Assert.Equal("DefaultValue", new StringDelegateWithStringCustomConstantAttributeWithDefault(StringMethod).DynamicInvoke(Type.Missing));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_MissingTypeForTwoCustomConstantAttributes_Succeeds()
+        {
+            Assert.Equal("SomeValue", (string)(new ObjectDelegateWithTwoCustomConstantAttributes(ObjectMethod).DynamicInvoke(Type.Missing)));
         }
 
         [Fact]
@@ -329,6 +331,30 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void DynamicInvoke_DateTimeAndCustomConstantAttribute_DateTimeParameterWithMissingValue()
+        {
+            Assert.Equal(
+                new DateTime(42),
+                (DateTime)(new DateTimeDelegateWithDateTimeAndCustomConstantAttribute(DateTimeMethod)).DynamicInvoke(new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_CustomConstantAndDateTimeAttribute_DateTimeParameterWithMissingValue()
+        {
+            Assert.Equal(
+                new DateTime(43),
+                (DateTime)(new DateTimeDelegateWithCustomConstantAndDateTimeAttribute(DateTimeMethod)).DynamicInvoke(new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_CustomConstantAttribute_DateTimeParameterWithMissingValue()
+        {
+            Assert.Equal(
+                new DateTime(43),
+                (DateTime)(new DateTimeDelegateWithCustomConstantAttribute(DateTimeMethod)).DynamicInvoke(new object[] { Type.Missing }));
+        }
+
+        [Fact]
         public static void DynamicInvoke_DefaultParameter_DateTimeParameterWithExplicitValue()
         {
             Assert.Equal(
@@ -342,6 +368,30 @@ namespace System.Tests
             Assert.Equal(
                 new decimal(4, 3, 2, true, 1),
                 (decimal)(new DecimalWithDefaultValueAttribute(DecimalMethod)).DynamicInvoke(new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_DecimalAndCustomConstantAttribute_DecimalParameterWithAttributeAndMissingValue()
+        {
+            Assert.Equal(
+                new decimal(12, 13, 14, true, 1),
+                (decimal)(new DecimalDelegateWithDecimalAndCustomConstantAttribute(DecimalMethod)).DynamicInvoke(new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_CustomConstantAndDecimalAttribute_DecimalParameterWithAttributeAndMissingValue()
+        {
+            Assert.Equal(
+                new decimal(12, 13, 14, true, 1),
+                (decimal)(new DecimalDelegateWithCustomConstantAndDecimalAttribute(DecimalMethod)).DynamicInvoke(new object[] { Type.Missing }));
+        }
+
+        [Fact]
+        public static void DynamicInvoke_CustomConstantAttribute_DecimalParameterWithAttributeAndMissingValue()
+        {
+            Assert.Equal(
+                new decimal(12, 13, 14, true, 1),
+                (decimal)(new DecimalDelegateWithCustomConstantAttribute(DecimalMethod)).DynamicInvoke(new object[] { Type.Missing }));
         }
 
         [Fact]
@@ -630,6 +680,36 @@ namespace System.Tests
         }
 
         private delegate string OptionalStringParameter([Optional] string parameter);
+
+        private class StringCustomConstantAttribute : CustomConstantAttribute
+        {
+            public override object Value => "SomeValue";
+        }
+
+        private class AnotherStringCustomConstantAttribute : CustomConstantAttribute
+        {
+            public override object Value => "SomeOtherValue";
+        }
+
+        private class AnotherDateTimeCustomConstantAttribute : CustomConstantAttribute
+        {
+            public override object Value => new DateTime(43);
+        }
+
+        private class AnotherDecimalCustomConstantAttribute : CustomConstantAttribute
+        {
+            public override object Value => new decimal(12, 13, 14, true, 1);
+        }
+
+        private delegate object ObjectDelegateWithStringCustomConstantAttribute([StringCustomConstant] object o);
+        private delegate object ObjectDelegateWithTwoCustomConstantAttributes([StringCustomConstant][AnotherStringCustomConstant] object o);
+        private delegate DateTime DateTimeDelegateWithDateTimeAndCustomConstantAttribute([DateTimeConstant(42)][AnotherDateTimeCustomConstant] DateTime parameter);
+        private delegate DateTime DateTimeDelegateWithCustomConstantAndDateTimeAttribute([AnotherDateTimeCustomConstant][DateTimeConstant(42)] DateTime parameter);
+        private delegate DateTime DateTimeDelegateWithCustomConstantAttribute([AnotherDateTimeCustomConstant] DateTime parameter);
+        private delegate decimal DecimalDelegateWithDecimalAndCustomConstantAttribute([DecimalConstant(1, 1, 2, 3, 4)][AnotherDecimalCustomConstant] decimal parameter);
+        private delegate decimal DecimalDelegateWithCustomConstantAndDecimalAttribute([AnotherDecimalCustomConstant][DecimalConstant(1, 1, 2, 3, 4)] decimal parameter);
+        private delegate decimal DecimalDelegateWithCustomConstantAttribute([AnotherDecimalCustomConstant] decimal parameter);
+        private delegate string StringDelegateWithStringCustomConstantAttributeWithDefault([StringCustomConstant] string o = "DefaultValue");
     }
 
     public static class CreateDelegateTests

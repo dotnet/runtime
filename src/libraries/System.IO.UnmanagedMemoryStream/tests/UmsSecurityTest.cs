@@ -72,7 +72,7 @@ public class UmsSecurityTests
         int value = stream.Read(streamData, 0, streamData.Length);
 
         Assert.Equal(originalData.Length, value);
-        Assert.Equal(originalData, streamData, ArrayHelpers.Comparer<byte>());
+        AssertExtensions.SequenceEqual(originalData, streamData);
 
         stream.Position = 0;
     }

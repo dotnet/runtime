@@ -290,7 +290,9 @@ namespace System.Management
         static WmiNetUtilsHelper()
         {
             RegistryKey netFrameworkSubKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\.NETFramework\");
-            string netFrameworkInstallRoot = (string)netFrameworkSubKey?.GetValue("InstallRoot");
+            string netFrameworkInstallRoot = (string)netFrameworkSubKey?.GetValue(RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ?
+                "InstallRootArm64" :
+                "InstallRoot");
 
             if (netFrameworkInstallRoot == null)
             {
@@ -311,7 +313,7 @@ namespace System.Management
             if (hModule == IntPtr.Zero)
             {
                 // This is unlikely, so having the TypeInitializationException wrapping it is fine.
-                throw new Win32Exception(Marshal.GetLastWin32Error(), SR.Format(SR.LoadLibraryFailed, wminet_utilsPath));
+                throw new Win32Exception(Marshal.GetLastPInvokeError(), SR.Format(SR.LoadLibraryFailed, wminet_utilsPath));
             }
 
             if (LoadDelegate(ref ResetSecurity_f, hModule, "ResetSecurity") &&

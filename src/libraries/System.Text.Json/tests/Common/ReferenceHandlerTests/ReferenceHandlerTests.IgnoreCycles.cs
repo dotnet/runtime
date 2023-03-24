@@ -383,7 +383,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact] // https://github.com/dotnet/runtime/issues/51837
-        public async void IgnoreCycles_StringShouldNotBeIgnored()
+        public async Task IgnoreCycles_StringShouldNotBeIgnored()
         {
             var stringReference = "John";
             
@@ -400,7 +400,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public async void IgnoreCycles_BoxedValueShouldNotBeIgnored()
+        public async Task IgnoreCycles_BoxedValueShouldNotBeIgnored()
         {
             object dayOfBirthAsObject = 15;
 

@@ -1,18 +1,25 @@
-import { App } from './app-support.js'
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-async function main(applicationArguments) {
-    App.runtime.setModuleImports("main.js", {
-        window: {
-            location: {
-                href: () => globalThis.window.location.href
-            }
+import { dotnet } from './dotnet.js'
+
+const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
+    .withDiagnosticTracing(false)
+    .withApplicationArgumentsFromQuery()
+    .create();
+
+setModuleImports('main.js', {
+    window: {
+        location: {
+            href: () => globalThis.window.location.href
         }
-    });
-    const exports = await App.runtime.getAssemblyExports("browser.0.dll");
-    const text = exports.MyClass.Greeting();
-    document.getElementById("out").innerHTML = `${text}`;
+    }
+});
 
-    await App.runtime.runMain("browser.0.dll", applicationArguments);
-}
+const config = getConfig();
+const exports = await getAssemblyExports(config.mainAssemblyName);
+const text = exports.MyClass.Greeting();
+console.log(text);
 
-App.run(main);
+document.getElementById('out').innerHTML = text;
+await dotnet.run();

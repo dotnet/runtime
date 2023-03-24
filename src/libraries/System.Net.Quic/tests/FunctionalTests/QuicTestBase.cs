@@ -28,6 +28,9 @@ namespace System.Net.Quic.Tests
 
         public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;
 
+        private static readonly Lazy<bool> _isIPv6Available = new Lazy<bool>(GetIsIPv6Available);
+        public static bool IsIPv6Available => _isIPv6Available.Value;
+
         public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 
         public readonly X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
@@ -40,6 +43,7 @@ namespace System.Net.Quic.Tests
         public QuicTestBase(ITestOutputHelper output)
         {
             _output = output;
+            _output.WriteLine($"Using {MsQuicApi.MsQuicLibraryVersion}");
         }
 
         public void Dispose()
@@ -57,6 +61,7 @@ namespace System.Net.Quic.Tests
         public async Task<QuicException> AssertThrowsQuicExceptionAsync(QuicError expectedError, Func<Task> testCode)
         {
             QuicException ex = await Assert.ThrowsAsync<QuicException>(testCode);
+            _output.WriteLine(ex.ToString());
             Assert.Equal(expectedError, ex.QuicError);
             return ex;
         }
@@ -331,7 +336,7 @@ namespace System.Net.Quic.Tests
         internal Task RunBidirectionalClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, int iterations = 1, int millisecondsTimeout = PassingTestTimeoutMilliseconds)
             => RunStreamClientServer(clientFunction, serverFunction, bidi: true, iterations, millisecondsTimeout);
 
-        internal Task RunUnirectionalClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, int iterations = 1, int millisecondsTimeout = PassingTestTimeoutMilliseconds)
+        internal Task RunUnidirectionalClientServer(Func<QuicStream, Task> clientFunction, Func<QuicStream, Task> serverFunction, int iterations = 1, int millisecondsTimeout = PassingTestTimeoutMilliseconds)
             => RunStreamClientServer(clientFunction, serverFunction, bidi: false, iterations, millisecondsTimeout);
 
         internal static async Task<int> ReadAll(QuicStream stream, byte[] buffer)
@@ -365,6 +370,20 @@ namespace System.Net.Quic.Tests
             finally
             {
                 ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
+        internal static bool GetIsIPv6Available()
+        {
+            try
+            {
+                using Socket s = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+                s.Bind(new IPEndPoint(IPAddress.IPv6Loopback, 0));
+                return true;
+            }
+            catch (SocketException)
+            {
+                return false;
             }
         }
     }

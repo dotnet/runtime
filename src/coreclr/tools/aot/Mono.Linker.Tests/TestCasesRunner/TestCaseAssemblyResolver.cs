@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class TestCaseAssemblyResolver : DefaultAssemblyResolver
 	{
-		readonly HashSet<IDisposable> itemsToDispose;
+		private readonly HashSet<IDisposable> itemsToDispose;
 
 		public TestCaseAssemblyResolver ()
 		{

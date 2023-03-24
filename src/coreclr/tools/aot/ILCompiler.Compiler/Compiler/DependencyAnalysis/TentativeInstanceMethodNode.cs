@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-
-using ILCompiler.DependencyAnalysisFramework;
-
-using Internal.IL;
-using Internal.Text;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;

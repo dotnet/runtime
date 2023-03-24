@@ -37,7 +37,7 @@ namespace System.Net.Http.Functional.Tests
 
             if (PlatformDetection.IsAndroid && useSsl && host == "::1")
             {
-                throw new SkipTestException("IPv6 loopback with SSL doesn't work on Android");
+                throw new SkipTestException("TargetHost cannot be set to an IPv6 address on Android because the string doesn't conform to the STD 3 ASCII rules");
             }
 
             await LoopbackServerFactory.CreateClientAndServerAsync(

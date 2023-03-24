@@ -46,7 +46,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory) => $"Region {StartSymbol.GetMangledName(factory.NameMangler)}";
 
-        public override ObjectNodeSection Section => ObjectNodeSection.DataSection;
+        public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.DataSection;
         public override bool IsShareable => false;
 
         public override bool StaticDependenciesAreComputed => true;

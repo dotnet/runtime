@@ -77,19 +77,14 @@ namespace ILCompiler.DependencyAnalysis
         /// <summary>
         /// Get a slot index for a given entry. Slot indices are never expected to change once given out.
         /// </summary>
-        public abstract int GetSlotForEntry(GenericLookupResult entry);
+        public abstract bool TryGetSlotForEntry(GenericLookupResult entry, out int slot);
 
-        /// <summary>
-        /// Get the slot for an entry which is fixed already. Otherwise return -1
-        /// </summary>
-        /// <param name="entry"></param>
-        /// <returns></returns>
-        public virtual int GetSlotForFixedEntry(GenericLookupResult entry)
-        {
-            return GetSlotForEntry(entry);
-        }
-        
         public abstract IEnumerable<GenericLookupResult> Entries
+        {
+            get;
+        }
+
+        public abstract bool IsEmpty
         {
             get;
         }
@@ -113,7 +108,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public virtual ICollection<NativeLayoutVertexNode> GetTemplateEntries(NodeFactory factory)
         {
-            ArrayBuilder<NativeLayoutVertexNode> templateEntries = new ArrayBuilder<NativeLayoutVertexNode>();
+            ArrayBuilder<NativeLayoutVertexNode> templateEntries = default(ArrayBuilder<NativeLayoutVertexNode>);
             foreach (var entry in Entries)
             {
                 templateEntries.Add(entry.TemplateDictionaryNode(factory));
@@ -182,7 +177,7 @@ namespace ILCompiler.DependencyAnalysis
             return conditionalDependencies;
         }
 
-        protected override string GetName(NodeFactory factory) => $"Dictionary layout for {_owningMethodOrType.ToString()}";
+        protected override string GetName(NodeFactory factory) => $"Dictionary layout for {_owningMethodOrType}";
 
         public override bool HasConditionalStaticDependencies => HasFixedSlots;
         public override bool HasDynamicDependencies => false;
@@ -195,41 +190,39 @@ namespace ILCompiler.DependencyAnalysis
     public class PrecomputedDictionaryLayoutNode : DictionaryLayoutNode
     {
         private readonly GenericLookupResult[] _layout;
+        private readonly GenericLookupResult[] _discardedSlots;
 
         public override bool HasFixedSlots => true;
 
-        public PrecomputedDictionaryLayoutNode(TypeSystemEntity owningMethodOrType, IEnumerable<GenericLookupResult> layout)
+        public override bool IsEmpty => _layout.Length == 0;
+
+        public PrecomputedDictionaryLayoutNode(TypeSystemEntity owningMethodOrType, GenericLookupResult[] layout, GenericLookupResult[] discardedSlots)
             : base(owningMethodOrType)
         {
-            ArrayBuilder<GenericLookupResult> l = new ArrayBuilder<GenericLookupResult>();
-            foreach (var entry in layout)
-                l.Add(entry);
-
-            _layout = l.ToArray();
+            _layout = layout;
+            _discardedSlots = discardedSlots;
         }
 
         public override void EnsureEntry(GenericLookupResult entry)
         {
-            int index = Array.IndexOf(_layout, entry);
-
-            if (index == -1)
-            {
-                // Using EnsureEntry to add a slot to a PrecomputedDictionaryLayoutNode is not supported
-                throw new NotSupportedException();
-            }
+            throw new NotSupportedException();
         }
 
-        public override int GetSlotForEntry(GenericLookupResult entry)
+        public override bool TryGetSlotForEntry(GenericLookupResult entry, out int slot)
         {
-            int index = Array.IndexOf(_layout, entry);
+            slot = Array.IndexOf(_layout, entry);
+
+            // If this is a slot we should discard, respond false
+            if (slot < 0 && Array.IndexOf(_discardedSlots, entry) >= 0)
+                return false;
 
             // This entry wasn't precomputed. If this is an optimized build with scanner, it might suggest
             // the scanner didn't see the need for this. There is a discrepancy between scanning and compiling.
             // This is a fatal error to prevent bad codegen.
-            if (index < 0)
+            if (slot < 0)
                 throw new InvalidOperationException($"{OwningMethodOrType}: {entry}");
 
-            return index;
+            return true;
         }
 
         public override IEnumerable<GenericLookupResult> Entries
@@ -243,10 +236,10 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class LazilyBuiltDictionaryLayoutNode : DictionaryLayoutNode
     {
-        class EntryHashTable : LockFreeReaderHashtable<GenericLookupResult, GenericLookupResult>
+        private sealed class EntryHashTable : LockFreeReaderHashtable<GenericLookupResult, GenericLookupResult>
         {
-            protected override bool CompareKeyToValue(GenericLookupResult key, GenericLookupResult value) => Object.Equals(key, value);
-            protected override bool CompareValueToValue(GenericLookupResult value1, GenericLookupResult value2) => Object.Equals(value1, value2);
+            protected override bool CompareKeyToValue(GenericLookupResult key, GenericLookupResult value) => Equals(key, value);
+            protected override bool CompareValueToValue(GenericLookupResult value1, GenericLookupResult value2) => Equals(value1, value2);
             protected override GenericLookupResult CreateValueFromKey(GenericLookupResult key) => key;
             protected override int GetKeyHashCode(GenericLookupResult key) => key.GetHashCode();
             protected override int GetValueHashCode(GenericLookupResult value) => value.GetHashCode();
@@ -284,19 +277,19 @@ namespace ILCompiler.DependencyAnalysis
             _layout = layout;
         }
 
-        public override int GetSlotForEntry(GenericLookupResult entry)
+        public override bool TryGetSlotForEntry(GenericLookupResult entry, out int slot)
         {
             if (_layout == null)
                 ComputeLayout();
 
-            int index = Array.IndexOf(_layout, entry);
+            slot = Array.IndexOf(_layout, entry);
 
             // We never called EnsureEntry on this during compilation?
             // This is a fatal error to prevent bad codegen.
-            if (index < 0)
+            if (slot < 0)
                 throw new InvalidOperationException($"{OwningMethodOrType}: {entry}");
 
-            return index;
+            return true;
         }
 
         public override IEnumerable<GenericLookupResult> Entries
@@ -307,6 +300,17 @@ namespace ILCompiler.DependencyAnalysis
                     ComputeLayout();
 
                 return _layout;
+            }
+        }
+
+        public override bool IsEmpty
+        {
+            get
+            {
+                if (_layout == null)
+                    ComputeLayout();
+
+                return _layout.Length == 0;
             }
         }
     }

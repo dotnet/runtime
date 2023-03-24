@@ -46,12 +46,31 @@ unw_addr_space_t unw_local_addr_space = &local_addr_space;
 static inline void *
 uc_addr (unw_tdep_context_t *uc, int reg)
 {
-  if (reg >= UNW_AARCH64_X0 && reg < UNW_AARCH64_V0)
+#ifdef __FreeBSD__
+  if (reg >= UNW_AARCH64_X0 && reg < UNW_AARCH64_X30)
+    return &uc->uc_mcontext.mc_gpregs.gp_x[reg];
+  else if (reg == UNW_AARCH64_X30)
+    return &uc->uc_mcontext.mc_gpregs.gp_lr;
+  else if (reg == UNW_AARCH64_SP)
+    return &uc->uc_mcontext.sp;
+  else if (reg == UNW_AARCH64_PC)
+    return &uc->uc_mcontext.gp_elr;
+  else if (reg >= UNW_AARCH64_V0 && reg <= UNW_AARCH64_V31)
+    return &GET_FPCTX(uc)->uc_mcontext.mc_fpregs.fp_q[reg - UNW_AARCH64_V0];
+  else
+    return NULL;
+#else /* __FreeBSD__ */
+  if (reg >= UNW_AARCH64_X0 && reg <= UNW_AARCH64_X30)
     return &uc->uc_mcontext.regs[reg];
+  else if (reg == UNW_AARCH64_SP)
+    return &uc->uc_mcontext.sp;
+  else if (reg == UNW_AARCH64_PC)
+    return &uc->uc_mcontext.pc;
   else if (reg >= UNW_AARCH64_V0 && reg <= UNW_AARCH64_V31)
     return &GET_FPCTX(uc)->vregs[reg - UNW_AARCH64_V0];
   else
     return NULL;
+#endif /* __FreeBSD__ */
 }
 
 # ifdef UNW_LOCAL_ONLY

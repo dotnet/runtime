@@ -112,39 +112,32 @@ namespace Internal.Win32
         public string[] GetSubKeyNames()
         {
             var names = new List<string>();
-            char[] name = ArrayPool<char>.Shared.Rent(MaxKeyLength + 1);
+            Span<char> name = stackalloc char[MaxKeyLength + 1];
 
-            try
+            int result;
+            int nameLength = name.Length;
+
+            while ((result = Interop.Advapi32.RegEnumKeyEx(
+                _hkey,
+                names.Count,
+                ref MemoryMarshal.GetReference(name),
+                ref nameLength,
+                null,
+                null,
+                null,
+                null)) != Interop.Errors.ERROR_NO_MORE_ITEMS)
             {
-                int result;
-                int nameLength = name.Length;
-
-                while ((result = Interop.Advapi32.RegEnumKeyEx(
-                    _hkey,
-                    names.Count,
-                    name,
-                    ref nameLength,
-                    null,
-                    null,
-                    null,
-                    null)) != Interop.Errors.ERROR_NO_MORE_ITEMS)
+                switch (result)
                 {
-                    switch (result)
-                    {
-                        case Interop.Errors.ERROR_SUCCESS:
-                            names.Add(new string(name, 0, nameLength));
-                            nameLength = name.Length;
-                            break;
-                        default:
-                            // Throw the error
-                            Win32Error(result, null);
-                            break;
-                    }
+                    case Interop.Errors.ERROR_SUCCESS:
+                        names.Add(new string(name.Slice(0, nameLength)));
+                        nameLength = name.Length;
+                        break;
+                    default:
+                        // Throw the error
+                        Win32Error(result, null);
+                        break;
                 }
-            }
-            finally
-            {
-                ArrayPool<char>.Shared.Return(name);
             }
 
             return names.ToArray();

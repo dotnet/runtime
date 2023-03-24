@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppPrevious);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
-    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
-    <PackageDescription>Extension methods for configuring file-based configuration providers for Microsoft.Extensions.Configuration.</PackageDescription>
+    <PackageDescription>Provides a base class for file-based configuration providers used with Microsoft.Extensions.Configuration and extension methods for configuring them.</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>

@@ -15,6 +15,7 @@
     <OutputPath>$(RuntimeBinDir)</OutputPath>
     <Platforms>AnyCPU;x64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>

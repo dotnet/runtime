@@ -17,7 +17,7 @@ namespace System
         private static string CurrentDirectoryCore
         {
             get => Interop.Sys.GetCwd();
-            set => Interop.CheckIo(Interop.Sys.ChDir(value), value, isDirectory: true);
+            set => Interop.CheckIo(Interop.Sys.ChDir(value), value, isDirError: true);
         }
 
         private static string ExpandEnvironmentVariablesCore(string name)

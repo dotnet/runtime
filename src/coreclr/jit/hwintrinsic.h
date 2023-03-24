@@ -153,6 +153,14 @@ enum HWIntrinsicFlag : unsigned int
     // the intrinsic can be used on hardware with AVX but not AVX2 support
     HW_Flag_AvxOnlyCompatible = 0x40000,
 
+    // MaybeCommutative
+    // - if a binary-op intrinsic is maybe commutative (e.g., Max or Min for float/double), its op1 can possibly be
+    // contained
+    HW_Flag_MaybeCommutative = 0x80000,
+
+    // The intrinsic has no EVEX compatible form
+    HW_Flag_NoEvexSemantics = 0x100000
+
 #elif defined(TARGET_ARM64)
     // The intrinsic has an immediate operand
     // - the value can be (and should be) encoded in a corresponding instruction when the operand value is constant
@@ -167,8 +175,7 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_SIMDScalar = 0x1000,
 
     // The intrinsic supports some sort of containment analysis
-    HW_Flag_SupportsContainment = 0x2000
-
+    HW_Flag_SupportsContainment = 0x2000,
 #else
 #error Unsupported platform
 #endif
@@ -626,6 +633,18 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_Commutative) != 0;
     }
 
+    static bool IsMaybeCommutative(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+#if defined(TARGET_XARCH)
+        return (flags & HW_Flag_MaybeCommutative) != 0;
+#elif defined(TARGET_ARM64)
+        return false;
+#else
+#error Unsupported platform
+#endif
+    }
+
     static bool RequiresCodegen(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
@@ -743,6 +762,22 @@ struct HWIntrinsicInfo
 #error Unsupported platform
 #endif
     }
+    //------------------------------------------------------------------------
+    // HasEvexSemantics: Checks if the NamedIntrinsic has a lowering to
+    // to an instruction with an EVEX form.
+    //
+    // Return Value:
+    // true if the NamedIntrinsic lowering has an EVEX form.
+    //
+    static bool HasEvexSemantics(NamedIntrinsic id)
+    {
+#if defined(TARGET_XARCH)
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_NoEvexSemantics) == 0;
+#else
+        return false;
+#endif
+    }
 
     static bool HasSpecialImport(NamedIntrinsic id)
     {
@@ -772,6 +807,12 @@ struct HWIntrinsicInfo
             case NI_AdvSimd_Arm64_LoadPairVector128NonTemporal:
                 return 2;
 #endif
+
+#ifdef TARGET_XARCH
+            case NI_X86Base_DivRem:
+            case NI_X86Base_X64_DivRem:
+                return 2;
+#endif // TARGET_XARCH
 
             default:
                 unreached();
@@ -877,6 +918,11 @@ private:
             else
             {
                 baseType = node->TypeGet();
+            }
+
+            if (category == HW_Category_Scalar)
+            {
+                baseType = genActualType(baseType);
             }
         }
     }

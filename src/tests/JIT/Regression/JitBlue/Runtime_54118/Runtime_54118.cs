@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 // Various tests for memory-dependent loop hoisting
 
-class Runtime_54118
+public class Runtime_54118
 {
     public static int Main()
     {

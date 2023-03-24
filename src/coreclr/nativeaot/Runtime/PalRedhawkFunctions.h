@@ -125,18 +125,6 @@ inline HANDLE PalLoadLibraryExW(const WCHAR * arg1, HANDLE arg2, uint32_t arg3)
     return LoadLibraryExW(arg1, arg2, arg3);
 }
 
-extern "C" UInt32_BOOL __stdcall QueryPerformanceCounter(LARGE_INTEGER *);
-inline UInt32_BOOL PalQueryPerformanceCounter(LARGE_INTEGER * arg1)
-{
-    return QueryPerformanceCounter(arg1);
-}
-
-extern "C" UInt32_BOOL __stdcall QueryPerformanceFrequency(LARGE_INTEGER *);
-inline UInt32_BOOL PalQueryPerformanceFrequency(LARGE_INTEGER * arg1)
-{
-    return QueryPerformanceFrequency(arg1);
-}
-
 extern "C" void __stdcall RaiseException(uint32_t, uint32_t, uint32_t, const uint32_t *);
 inline void PalRaiseException(uint32_t arg1, uint32_t arg2, uint32_t arg3, const uint32_t * arg4)
 {

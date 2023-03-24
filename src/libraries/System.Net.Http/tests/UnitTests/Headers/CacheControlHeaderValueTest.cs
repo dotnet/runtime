@@ -354,8 +354,14 @@ namespace System.Net.Http.Tests
             value2.MaxStale = true;
             CompareValues(value1, value2, true);
 
-            value2.MaxStaleLimit = new TimeSpan(1, 2, 3);
+            value1.MaxStaleLimit = new TimeSpan(1, 2, 3);
             CompareValues(value1, value2, false);
+
+            value2.MaxStaleLimit = new TimeSpan(2, 3, 4);
+            CompareValues(value1, value2, false);
+
+            value1.MaxStaleLimit = new TimeSpan(2, 3, 4);
+            CompareValues(value1, value2, true);
         }
 
         [Fact]
@@ -626,6 +632,22 @@ namespace System.Net.Http.Tests
             CheckInvalidParse("no-cache no-store", 0);
             CheckInvalidParse("invalid =", 0);
             CheckInvalidParse("\u4F1A", 0);
+        }
+
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData(",")]
+        [InlineData(",,")]
+        [InlineData(" , , ")]
+        public void CacheControlHeaderValue_EmptyValue_Parsed(string value)
+        {
+            Assert.NotNull(CacheControlHeaderValue.Parse(value));
+
+            Assert.True(CacheControlHeaderValue.TryParse(value, out CacheControlHeaderValue headerValue));
+            Assert.NotNull(headerValue);
         }
 
         [Fact]

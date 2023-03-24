@@ -33,7 +33,7 @@ namespace NetClient
             Assert.False(nativeOuter.AreAggregated(nativeOuter, new object()));
         }
 
-        static int Main(string[] doNotUse)
+        static int Main()
         {
             // RegFree COM is not supported on Windows Nano
             if (Utilities.IsWindowsNanoServer)

@@ -112,6 +112,7 @@ public:
     static void WaitForGCCompletion();
 
     static void EnumGcRef(PTR_RtuObjectRef pRef, GCRefKind kind, void * pfnEnumCallback, void * pvCallbackData);
+    static void EnumGcRefConservatively(PTR_RtuObjectRef pRef, void* pfnEnumCallback, void* pvCallbackData);
 
     static void BulkEnumGcObjRef(PTR_RtuObjectRef pRefs, uint32_t cRefs, void * pfnEnumCallback, void * pvCallbackData);
 

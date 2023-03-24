@@ -17,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
     /// at runtime to look up runtime artifacts that depend on the concrete
     /// context the generic type or method was instantiated with.
     /// </summary>
-    public abstract class GenericDictionaryNode : ObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
+    public abstract class GenericDictionaryNode : DehydratableObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
     {
         private readonly NodeFactory _factory;
 
@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis
         public abstract Instantiation MethodInstantiation { get; }
 
         public abstract DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory);
-        
+
         public sealed override bool StaticDependenciesAreComputed => true;
 
         public sealed override bool IsShareable => true;
@@ -43,14 +43,15 @@ namespace ILCompiler.DependencyAnalysis
 
         int ISymbolDefinitionNode.Offset => HeaderSize;
 
-        public override ObjectNodeSection Section => GetDictionaryLayout(_factory).DictionarySection(_factory);
+        protected override ObjectNodeSection GetDehydratedSection(NodeFactory factory)
+            => GetDictionaryLayout(_factory).DictionarySection(_factory);
 
         public GenericDictionaryNode(NodeFactory factory)
         {
             _factory = factory;
         }
 
-        public sealed override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
+        protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)
         {
             ObjectDataBuilder builder = new ObjectDataBuilder(factory, relocsOnly);
             builder.AddSymbol(this);
@@ -104,7 +105,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override int HeaderSize => 0;
         public override Instantiation TypeInstantiation => _owningType.Instantiation;
-        public override Instantiation MethodInstantiation => new Instantiation();
+        public override Instantiation MethodInstantiation => default(Instantiation);
         protected override TypeSystemContext Context => _owningType.Context;
         public override TypeSystemEntity OwningEntity => _owningType;
         public TypeDesc OwningType => _owningType;
@@ -116,6 +117,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => true;
 
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => GetDictionaryLayout(factory).IsEmpty;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
@@ -140,8 +142,6 @@ namespace ILCompiler.DependencyAnalysis
                         "Default constructor for lazy generics"));
                 }
             }
-
-            factory.MetadataManager.GetDependenciesForGenericDictionary(ref result, factory, _owningType);
 
             return result;
         }

@@ -162,7 +162,8 @@ void EEClass::Destruct(MethodTable * pOwningMT)
         }
         if (pDelegateEEClass->m_pInstRetBuffCallStub)
         {
-            pDelegateEEClass->m_pInstRetBuffCallStub->DecRef();
+            ExecutableWriterHolder<Stub> stubWriterHolder(pDelegateEEClass->m_pInstRetBuffCallStub, sizeof(Stub));
+            stubWriterHolder.GetRW()->DecRef();
         }
         // While m_pMultiCastInvokeStub is also a member,
         // it is owned by the m_pMulticastStubCache, not by the class
@@ -584,14 +585,15 @@ HRESULT EEClass::AddMethod(MethodTable * pMT, mdMethodDef methodDef, RVA newRVA,
 
     LoaderAllocator* pAllocator = pMT->GetLoaderAllocator();
 
+    DWORD classification = mcIL;
+
     // Create a new MethodDescChunk to hold the new MethodDesc
     // Create the chunk somewhere we'll know is within range of the VTable
     MethodDescChunk *pChunk = MethodDescChunk::CreateChunk(pAllocator->GetHighFrequencyHeap(),
                                                            1,               // methodDescCount
-                                                           mcInstantiated,
+                                                           classification,
                                                            TRUE /* fNonVtableSlot */,
                                                            TRUE /* fNativeCodeSlot */,
-                                                           FALSE /* fComPlusCallInfo */,
                                                            pMT,
                                                            &dummyAmTracker);
 
@@ -605,20 +607,38 @@ HRESULT EEClass::AddMethod(MethodTable * pMT, mdMethodDef methodDef, RVA newRVA,
      // Use a local StackingAllocator instead.
     StackingAllocator stackingAllocator;
 
+    MethodTableBuilder::bmtInternalInfo bmtInternal;
+    bmtInternal.pModule = pMT->GetModule();
+    bmtInternal.pInternalImport = NULL;
+    bmtInternal.pParentMT = NULL;
+
     MethodTableBuilder builder(pMT,
                                pClass,
                                &stackingAllocator,
                                &dummyAmTracker);
+
+    builder.SetBMTData(pMT->GetLoaderAllocator(),
+                       NULL,
+                       NULL,
+                       NULL,
+                       NULL,
+                       NULL,
+                       NULL,
+                       NULL,
+                       NULL,
+                       NULL,
+                       &bmtInternal);
+
     EX_TRY
     {
         INDEBUG(LPCSTR debug_szFieldName);
         INDEBUG(if (FAILED(pImport->GetNameOfMethodDef(methodDef, &debug_szFieldName))) { debug_szFieldName = "Invalid MethodDef record"; });
         builder.InitMethodDesc(pNewMD,
-                               mcInstantiated,  // Use instantiated methoddesc for EnC added methods to get space for slot
+                               classification,
                                methodDef,
                                dwImplFlags,
                                dwMemberAttrs,
-                               TRUE,            // fEnC
+                               TRUE,    // fEnC
                                newRVA,
                                pImport,
                                NULL
@@ -628,6 +648,10 @@ HRESULT EEClass::AddMethod(MethodTable * pMT, mdMethodDef methodDef, RVA newRVA,
                               );
 
         pNewMD->SetTemporaryEntryPoint(pAllocator, &dummyAmTracker);
+
+        // [TODO] if an exception is thrown, asserts will fire in EX_CATCH_HRESULT()
+        // during an EnC operation due to the debugger thread not being able to
+        // transition to COOP mode.
     }
     EX_CATCH_HRESULT(hr);
     if (S_OK != hr)
@@ -2994,7 +3018,7 @@ EEClass::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, MethodTable * pMT)
     if (HasOptionalFields())
         DacEnumMemoryRegion(dac_cast<TADDR>(GetOptionalFields()), sizeof(EEClassOptionalFields));
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
         PTR_Module pModule = pMT->GetModule();
         if (pModule.IsValid())

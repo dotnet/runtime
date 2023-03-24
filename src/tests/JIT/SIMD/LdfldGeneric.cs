@@ -23,7 +23,7 @@ namespace VectorMathTests
             public Point p;
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             Point p = new Point(1);
 

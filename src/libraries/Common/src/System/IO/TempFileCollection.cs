@@ -47,6 +47,7 @@ namespace System.IO.Internal
             GC.SuppressFinalize(this);
         }
 
+#pragma warning disable IDE0060
 #if CODEDOM
         protected virtual
 #else
@@ -56,6 +57,7 @@ namespace System.IO.Internal
         {
             SafeDelete();
         }
+#pragma warning restore IDE0060
 
         ~TempFileCollection()
         {

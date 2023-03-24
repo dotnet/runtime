@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 // The failure mode is that the RyuJIT/x86 backend changed call to ROUND intrinsic
 // with double return type to ROUND intrinsic with int return type, that is not supported.
 
-internal class Program
+public class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Bar()
@@ -31,7 +31,7 @@ internal class Program
         }        
     }
 	
-    private static int Main(string[] args)
+    public static int Main()
     {
         try
         {

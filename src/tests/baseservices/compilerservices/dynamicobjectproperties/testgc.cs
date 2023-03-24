@@ -16,9 +16,9 @@ public class TestGC
    private static string value21;
    private static string value99;
 
-   /* 
-   * Ensure that a key that has no managed references to it gets automatically removed from the 
-   * dictionary after GC happens. Also make sure the value gets gc’d as well. 
+   /*
+   * Ensure that a key that has no managed references to it gets automatically removed from the
+   * dictionary after GC happens. Also make sure the value gets gc'd as well.
    */
     public static void TestKeyWithNoReferences_Pass1(int length)
     {
@@ -32,7 +32,7 @@ public class TestGC
             String key = "KeyTestString" + i.ToString();
             String value = "ValueTestString" + i.ToString();
             tbl.Add(key, value);
-            
+
             // create a weak reference for the key
             weakRefKeyArr[i] = new WeakReference(key, true);
             weakRefValArr[i] = new WeakReference(value, true);
@@ -48,7 +48,7 @@ public class TestGC
         GC.Collect();
 
 
-        // note, this assignment will prevent the object from being collected if it isn’t already
+        // note, this assignment will prevent the object from being collected if it isn't already
         for (int i = 0; i < length; i++)
         {
             Object targetKey = weakRefKeyArr[i].Target;
@@ -71,13 +71,13 @@ public class TestGC
         GC.KeepAlive(tbl);
     }
 
-       
+
     /*
-     * Ensure that a key whose value has a reference to the key or a reference to another object 
-     * which has a reference to the key, gets automatically removed from the dictionary after GC 
-     * happens (provided there are no references to the value outside the dictionary.) 
-     * Also make sure the value gets gc’d as well.
-     * 
+     * Ensure that a key whose value has a reference to the key or a reference to another object
+     * which has a reference to the key, gets automatically removed from the dictionary after GC
+     * happens (provided there are no references to the value outside the dictionary.)
+     * Also make sure the value gets gc'd as well.
+     *
      * In this case we pass the same string array to the function, so keys and values have references to each other
      * (But only within the dictionary)
      * */
@@ -110,7 +110,7 @@ public class TestGC
         GC.Collect();
 
 
-        // note, this assignment will prevent the object from being collected if it isn’t already
+        // note, this assignment will prevent the object from being collected if it isn't already
         for (int i = 0; i < length; i++)
         {
             Object targetKey = weakRefKeyArr[i].Target;
@@ -135,10 +135,10 @@ public class TestGC
     }
 
     /*
-     * Ensure that a key whose value is referenced outside the dictionary does not get 
+     * Ensure that a key whose value is referenced outside the dictionary does not get
      * automatically removed from the dictionary after GC happens and the key doesn't get gc'd.
      */
-    public static void TestKeyWithOutsideReferences_Pass1(int length) 
+    public static void TestKeyWithOutsideReferences_Pass1(int length)
     {
         tbl = new ConditionalWeakTable<string, string>();
 
@@ -177,7 +177,7 @@ public class TestGC
         }
     }
 
-    public static void TestKeyWithOutsideReferences_Pass2(int length) 
+    public static void TestKeyWithOutsideReferences_Pass2(int length)
     {
         // force GC to happen
         GC.Collect();
@@ -186,7 +186,7 @@ public class TestGC
 
         // check that all other objects were collected except for the 3 above
 
-        // note, this assignment will prevent the object from being collected if it isn’t already
+        // note, this assignment will prevent the object from being collected if it isn't already
         for (int i = 0; i < length; i++)
         {
             Object targetKey = weakRefKeyArr[i].Target;
@@ -219,7 +219,7 @@ public class TestGC
                 }
             }
         }
-        
+
         // check that the 3 values above were not removed from the dictionary
         string val;
 
@@ -239,10 +239,10 @@ public class TestGC
     {
         try
         {
-	    // Changing this test to 2 passes - the code has been refactored so there are no 
- 	    // outstanding locals with original references to the keys. 
+	    // Changing this test to 2 passes - the code has been refactored so there are no
+ 	    // outstanding locals with original references to the keys.
             // This test was failing on IA64 because of IA64 JIT or GC reporting locals longer than necessary
-	    // and the entires weren't getting reclaimed. 
+	    // and the entries weren't getting reclaimed.
 
             Console.WriteLine("\nTest keys with inside references");
             TestKeyWithInsideReferences_Pass1(100);
@@ -257,8 +257,8 @@ public class TestGC
             Console.WriteLine("\nTest keys with outside references");
             TestKeyWithOutsideReferences_Pass1(100);
             TestKeyWithOutsideReferences_Pass2(100);
-            
-        
+
+
             if (Test.result)
             {
                 Console.WriteLine("Test Passed");

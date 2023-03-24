@@ -18,7 +18,7 @@ namespace System.Resources
     //
     public class ResourceSet : IDisposable, IEnumerable
     {
-        protected IResourceReader Reader = null!;
+        protected IResourceReader? Reader; // The field is protected for .NET Framework compatibility
 
         private Dictionary<object, object?>? _table;
         private Dictionary<string, object?>? _caseInsensitiveTable;  // For case-insensitive lookups.
@@ -123,12 +123,12 @@ namespace System.Resources
 
         private IDictionaryEnumerator GetEnumeratorHelper()
         {
-            IDictionary? copyOfTableAsIDictionary = _table;  // Avoid a race with Dispose
-            if (copyOfTableAsIDictionary == null)
+            Dictionary<object, object?>? table = _table;  // Avoid a race with Dispose
+            if (table == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
 
              // Use IDictionary.GetEnumerator() for backward compatibility. Callers expect the enumerator to return DictionaryEntry instances.
-            return copyOfTableAsIDictionary.GetEnumerator();
+            return ((IDictionary)table).GetEnumerator();
         }
 
         // Look up a string value for a resource given its name.

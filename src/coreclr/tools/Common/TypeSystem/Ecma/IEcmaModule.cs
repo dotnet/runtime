@@ -1,12 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
 
 using Internal.TypeSystem.Ecma;
 
@@ -48,7 +43,7 @@ namespace Internal.TypeSystem.Ecma
     {
         MetadataReader MetadataReader { get; }
         TypeDesc GetType(EntityHandle handle);
-        Object GetObject(EntityHandle handle, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw);
+        object GetObject(EntityHandle handle, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw);
         int CompareTo(IEcmaModule other);
         int ModuleTypeSort { get; }
 

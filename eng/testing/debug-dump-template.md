@@ -103,7 +103,7 @@ dotnet tool uninstall --global dotnet-dump
 ---
 ## If it's a Linux dump on Windows...
 
-Download the [Cross DAC Binaries](https://dev.azure.com/dnceng/public/_apis/build/builds/%BUILDID%/artifacts?artifactName=CoreCLRCrossDacArtifacts&api-version=6.0&%24format=zip), open it and choose the flavor that matches the dump you are to debug, and copy those files to `%WOUTDIR%\shared\Microsoft.NETCore.App\%PRODUCTVERSION%`.
+Download the [Cross DAC Binaries](https://dev.azure.com/dnceng-public/public/_apis/build/builds/%BUILDID%/artifacts?artifactName=CoreCLRCrossDacArtifacts&api-version=6.0&%24format=zip), open it and choose the flavor that matches the dump you are to debug, and copy those files to `%WOUTDIR%\shared\Microsoft.NETCore.App\%PRODUCTVERSION%`.
 
 Now you can debug with WinDbg or `dotnet-dump` as if it was a Windows dump. See above.
 
@@ -112,7 +112,7 @@ Now you can debug with WinDbg or `dotnet-dump` as if it was a Windows dump. See 
 
 ## ... and you want to debug with LLDB
 
-Install or update LLDB if necessary ([instructions here](https://github.com/dotnet/diagnostics/blob/master/documentation/lldb/linux-instructions.md))
+Install or update LLDB if necessary ([instructions here](https://github.com/dotnet/diagnostics/blob/main/documentation/lldb/linux-instructions.md))
 
 Load the dump:
 ```sh
@@ -151,4 +151,4 @@ will start generating native Mach-O core files. dotnet-dump and ClrMD are still 
 ---
 # Other Helpful Information
 
-* [How to debug a Linux core dump with SOS](https://github.com/dotnet/diagnostics/blob/master/documentation/debugging-coredump.md)
+* [How to debug a Linux core dump with SOS](https://github.com/dotnet/diagnostics/blob/main/documentation/debugging-coredump.md)

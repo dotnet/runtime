@@ -92,7 +92,7 @@ public class G
 
 class Program
 {
-    static int Main(string[] args)
+    static int Main()
     {
         var container = new G();
         container.RegisterNamedObjectType<B>();

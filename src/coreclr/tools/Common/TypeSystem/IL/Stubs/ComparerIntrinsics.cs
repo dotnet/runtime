@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
@@ -66,25 +65,7 @@ namespace Internal.IL.Stubs
             ILEmitter emitter = new ILEmitter();
             var codeStream = emitter.NewCodeStream();
 
-            FieldDesc defaultField = owningType.GetKnownField("s_default");
-
-            TypeSystemContext  context = comparerType.Context;
-            TypeDesc objectType = context.GetWellKnownType(WellKnownType.Object);
-            MethodDesc compareExchangeObject = context.SystemModule.
-                GetKnownType("System.Threading", "Interlocked").
-                    GetKnownMethod("CompareExchange",
-                        new MethodSignature(
-                            MethodSignatureFlags.Static,
-                            genericParameterCount: 0,
-                            returnType: objectType,
-                            parameters: new TypeDesc[] { objectType.MakeByRefType(), objectType, objectType }));
-
-            codeStream.Emit(ILOpcode.ldsflda, emitter.NewToken(defaultField));
             codeStream.Emit(ILOpcode.newobj, emitter.NewToken(comparerType.GetParameterlessConstructor()));
-            codeStream.Emit(ILOpcode.ldnull);
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(compareExchangeObject));
-            codeStream.Emit(ILOpcode.pop);
-            codeStream.Emit(ILOpcode.ldsfld, emitter.NewToken(defaultField));
             codeStream.Emit(ILOpcode.ret);
 
             return emitter.Link(methodBeingGenerated);
@@ -94,7 +75,7 @@ namespace Internal.IL.Stubs
         /// Gets the comparer type that is suitable to compare instances of <paramref name="type"/>
         /// or null if such comparer cannot be determined at compile time.
         /// </summary>
-        private static TypeDesc GetComparerForType(TypeDesc type, string flavor, string interfaceName)
+        private static InstantiatedType GetComparerForType(TypeDesc type, string flavor, string interfaceName)
         {
             TypeSystemContext context = type.Context;
 
@@ -165,7 +146,7 @@ namespace Internal.IL.Stubs
             {
                 // This can be any of the comparers we have.
 
-                ArrayBuilder<TypeDesc> universalComparers = new ArrayBuilder<TypeDesc>();
+                ArrayBuilder<TypeDesc> universalComparers = default(ArrayBuilder<TypeDesc>);
 
                 universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Nullable{flavor}`1")
                         .MakeInstantiatedType(type));
@@ -182,7 +163,7 @@ namespace Internal.IL.Stubs
 
                 return universalComparers.ToArray();
             }
-            
+
             // This mirrors exactly what GetUnknownEquatableComparer and GetUnknownComparer (in the class library)
             // will need at runtime. This is the general purpose code path that can be used to compare
             // anything.
@@ -203,7 +184,7 @@ namespace Internal.IL.Stubs
                         .MakeInstantiatedType(type),
                 };
             }
-            
+
             return new TypeDesc[]
             {
                 context.SystemModule.GetKnownType("System.Collections.Generic", $"Generic{flavor}`1")
@@ -226,8 +207,7 @@ namespace Internal.IL.Stubs
                 if (interfaceInstantiation.Length == 1 &&
                     interfaceInstantiation[0] == type)
                 {
-                    if (interfaceType == null)
-                        interfaceType = type.Context.SystemModule.GetKnownType("System", interfaceName);
+                    interfaceType ??= interfaceType = type.Context.SystemModule.GetKnownType("System", interfaceName);
 
                     if (implementedInterface.GetTypeDefinition() == interfaceType)
                         return true;
@@ -236,5 +216,118 @@ namespace Internal.IL.Stubs
 
             return false;
         }
+
+        public static bool CanCompareValueTypeBits(MetadataType type, MethodDesc objectEqualsMethod)
+        {
+            Debug.Assert(type.IsValueType);
+
+            if (type.ContainsGCPointers)
+                return false;
+
+            if (type.IsGenericDefinition)
+                return false;
+
+            OverlappingFieldTracker overlappingFieldTracker = new OverlappingFieldTracker(type);
+
+            bool result = true;
+            foreach (var field in type.GetFields())
+            {
+                if (field.IsStatic)
+                    continue;
+
+                if (!overlappingFieldTracker.TrackField(field))
+                {
+                    // This field overlaps with another field - can't compare memory
+                    result = false;
+                    break;
+                }
+
+                TypeDesc fieldType = field.FieldType;
+                if (fieldType.IsPrimitive || fieldType.IsEnum || fieldType.IsPointer || fieldType.IsFunctionPointer)
+                {
+                    TypeFlags category = fieldType.UnderlyingType.Category;
+                    if (category == TypeFlags.Single || category == TypeFlags.Double)
+                    {
+                        // Double/Single have weird behaviors around negative/positive zero
+                        result = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    // Would be a suprise if this wasn't a valuetype. We checked ContainsGCPointers above.
+                    Debug.Assert(fieldType.IsValueType);
+
+                    // If the field overrides Equals, we can't use the fast helper because we need to call the method.
+                    if (fieldType.FindVirtualFunctionTargetMethodOnObjectType(objectEqualsMethod).OwningType == fieldType)
+                    {
+                        result = false;
+                        break;
+                    }
+
+                    if (!CanCompareValueTypeBits((MetadataType)fieldType, objectEqualsMethod))
+                    {
+                        result = false;
+                        break;
+                    }
+                }
+            }
+
+            // If there are gaps, we can't memcompare
+            if (result && overlappingFieldTracker.HasGaps)
+                result = false;
+
+            return result;
+        }
+
+        private struct OverlappingFieldTracker
+        {
+            private bool[] _usedBytes;
+
+            public OverlappingFieldTracker(MetadataType type)
+            {
+                _usedBytes = new bool[type.InstanceFieldSize.AsInt];
+            }
+
+            public bool TrackField(FieldDesc field)
+            {
+                int fieldBegin = field.Offset.AsInt;
+
+                TypeDesc fieldType = field.FieldType;
+
+                int fieldEnd;
+                if (fieldType.IsPointer || fieldType.IsFunctionPointer)
+                {
+                    fieldEnd = fieldBegin + field.Context.Target.PointerSize;
+                }
+                else
+                {
+                    Debug.Assert(fieldType.IsValueType);
+                    fieldEnd = fieldBegin + ((DefType)fieldType).InstanceFieldSize.AsInt;
+                }
+
+                for (int i = fieldBegin; i < fieldEnd; i++)
+                {
+                    if (_usedBytes[i])
+                        return false;
+                    _usedBytes[i] = true;
+                }
+
+                return true;
+            }
+
+            public bool HasGaps
+            {
+                get
+                {
+                    for (int i = 0; i < _usedBytes.Length; i++)
+                        if (!_usedBytes[i])
+                            return true;
+
+                    return false;
+                }
+            }
+        }
+
     }
 }

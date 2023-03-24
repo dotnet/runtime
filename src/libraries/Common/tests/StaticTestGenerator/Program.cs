@@ -199,9 +199,10 @@ namespace StaticTestGenerator
 
             // Write out the associated .csproj
             string csprojPath = Path.Combine(outputPath, Path.GetFileNameWithoutExtension(testAssemblyPath) + "-runner.csproj");
+            Version version = Environment.Version;
             File.WriteAllText(
                 csprojPath,
-                CSProjTemplate
+                GetCsprojTemplate($"net{version.Major}.{version.Minor}")
                 .Replace("#HelperAssemblyLocation#", Path.GetDirectoryName(testAssemblyPath) + Path.DirectorySeparatorChar)
                 .Replace("#TestAssembly#", Path.GetFullPath(testAssemblyPath))
                 .Replace("#TestAssemblyLocation#", testAssemblyPath));
@@ -273,7 +274,7 @@ namespace StaticTestGenerator
             // Invalid command line arguments.
             Console.WriteLine("Usage: <output_directory> <helper_assemblies_directory> <test_assembly_path> <xunit_console_options>");
             Console.WriteLine("    Example:");
-            Console.WriteLine(@"   dotnet run d:\tmpoutput d:\repos\runtime\artifacts\bin\testhost\net7.0-windows-Debug-x64\shared\Microsoft.NETCore.App\7.0.0\ d:\repos\runtime\artifacts\bin\System.Runtime.Tests\net7.0-windows-Debug\System.Runtime.Tests.dll");
+            Console.WriteLine(@"   dotnet run d:\tmpoutput d:\repos\runtime\artifacts\bin\testhost\net8.0-windows-Debug-x64\shared\Microsoft.NETCore.App\8.0.0\ d:\repos\runtime\artifacts\bin\System.Runtime.Tests\net8.0-windows-Debug\System.Runtime.Tests.dll");
             testAssemblyPath = string.Empty;
             runtimeAssembliesPath = string.Empty;
             outputPath = string.Empty;
@@ -1127,13 +1128,11 @@ public static class Test
 }
 ";
 
-        /// <summary>The template for the .csproj.</summary>
-        private const string CSProjTemplate =
-@"<Project Sdk=""Microsoft.NET.Sdk"">
+        private string GetCsprojTemplate(string targetFramework) =>
+$@"<Project Sdk=""Microsoft.NET.Sdk"">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
-    <LangVersion>preview</LangVersion>
+    <TargetFramework>{targetFramework}</TargetFramework>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <NoWarn>IDE0049</NoWarn> <!-- names can be simplified -->
   </PropertyGroup>

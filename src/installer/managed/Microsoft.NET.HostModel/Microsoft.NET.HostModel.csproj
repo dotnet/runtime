@@ -9,7 +9,7 @@
     <IncludeSymbols>true</IncludeSymbols>
     <Serviceable>true</Serviceable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- Managed API isn't completely documented yet. TODO: https://github.com/dotnet/core-setup/issues/5108 -->
+    <!-- Managed API isn't completely documented yet. TODO: https://github.com/dotnet/runtime/issues/43872 -->
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Historically, the key for the managed projects is the AspNetCore key Arcade carries. -->
@@ -19,7 +19,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Reflection.Metadata" Version="1.8.0" />
+    <!-- we need to keep the version of System.Reflection.Metadata in sync with dotnet/msbuild and dotnet/sdk -->
+    <PackageReference Include="System.Reflection.Metadata" Version="6.0.0" />
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
   </ItemGroup>
 

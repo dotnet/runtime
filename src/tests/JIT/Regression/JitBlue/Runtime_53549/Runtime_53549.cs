@@ -10,7 +10,7 @@ interface I
     public Decimal F();
 }
 
-class Runtime_53549 : I
+public class Runtime_53549 : I
 {
     Decimal z;
 
@@ -25,7 +25,7 @@ class Runtime_53549 : I
     // we allow GDV on i.F().
     //
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int H(I i)
+    static int H(I i)
     {
         return G(i.F()) ? 100 : -1;
     }

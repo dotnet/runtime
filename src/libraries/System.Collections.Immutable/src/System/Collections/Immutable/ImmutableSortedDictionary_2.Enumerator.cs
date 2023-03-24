@@ -140,7 +140,7 @@ namespace System.Collections.Immutable
 
                 if (_stack != null)
                 {
-                    var stack = _stack.Use(ref this);
+                    Stack<RefAsValueType<ImmutableSortedDictionary<TKey, TValue>.Node>> stack = _stack.Use(ref this);
                     if (stack.Count > 0)
                     {
                         Node n = stack.Pop().Value;
@@ -165,7 +165,7 @@ namespace System.Collections.Immutable
                 _current = null;
                 if (_stack != null)
                 {
-                    var stack = _stack.Use(ref this);
+                    Stack<RefAsValueType<ImmutableSortedDictionary<TKey, TValue>.Node>> stack = _stack.Use(ref this);
                     stack.ClearFastWhenEmpty();
                     this.PushLeft(_root);
                 }
@@ -208,7 +208,7 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(node, nameof(node));
                 Debug.Assert(_stack != null);
-                var stack = _stack.Use(ref this);
+                Stack<RefAsValueType<ImmutableSortedDictionary<TKey, TValue>.Node>> stack = _stack.Use(ref this);
                 while (!node.IsEmpty)
                 {
                     stack.Push(new RefAsValueType<Node>(node));

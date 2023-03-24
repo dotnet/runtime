@@ -35,7 +35,7 @@ ASM_CONST(     E,    16, STRING_BASE_SIZE)
 ASM_CONST(3FFFFFDF,3FFFFFDF,MAX_STRING_LENGTH)
 
 ASM_OFFSET(    0,     0, MethodTable, m_usComponentSize)
-ASM_OFFSET(    2,     2, MethodTable, m_usFlags)
+ASM_OFFSET(    0,     0, MethodTable, m_uFlags)
 ASM_OFFSET(    4,     4, MethodTable, m_uBaseSize)
 ASM_OFFSET(   14,    18, MethodTable, m_VTable)
 
@@ -61,7 +61,7 @@ ASM_OFFSET(    4,     8, gc_alloc_context, alloc_limit)
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 ASM_OFFSET(    4,     8, InterfaceDispatchCell, m_pCache)
-#ifndef HOST_64BIT
+#ifdef INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
 ASM_OFFSET(    8,     0, InterfaceDispatchCache, m_pCell)
 #endif
 ASM_OFFSET(   10,    20, InterfaceDispatchCache, m_rgEntries)

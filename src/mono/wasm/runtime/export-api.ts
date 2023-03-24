@@ -1,11 +1,14 @@
-import { APIType } from "./exports";
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 import { runtimeHelpers } from "./imports";
 import { mono_wasm_get_assembly_exports } from "./invoke-cs";
 import { mono_wasm_set_module_imports } from "./invoke-js";
 import { getB32, getF32, getF64, getI16, getI32, getI52, getI64Big, getI8, getU16, getU32, getU52, getU8, setB32, setF32, setF64, setI16, setI32, setI52, setI64Big, setI8, setU16, setU32, setU52, setU8 } from "./memory";
-import { mono_run_main, mono_run_main_and_exit } from "./run";
+import { mono_run_main, mono_run_main_and_exit, mono_exit } from "./run";
+import { dotnet } from "./run-outer";
 import { mono_wasm_setenv } from "./startup";
-import { MonoConfig } from "./types";
+import { APIType, ModuleAPI, MonoConfig } from "./types";
 
 export function export_api(): any {
     const api: APIType = {
@@ -43,4 +46,12 @@ export function export_api(): any {
         getHeapF64: getF64,
     };
     return api;
+}
+
+export function export_module(): ModuleAPI {
+    const exports: ModuleAPI = {
+        dotnet,
+        exit: mono_exit
+    };
+    return exports;
 }

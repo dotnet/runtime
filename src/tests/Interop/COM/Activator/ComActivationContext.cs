@@ -15,5 +15,6 @@ namespace Activator
         public string AssemblyPath;
         public string AssemblyName;
         public string TypeName;
+        public bool IsolatedContext;
     }
 }

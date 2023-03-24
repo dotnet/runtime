@@ -112,6 +112,7 @@ public:
         , m_IsNoReturnKnown(false)
         , m_ConstArgFeedsIsKnownConst(false)
         , m_ArgFeedsIsKnownConst(false)
+        , m_InsideThrowBlock(false)
     {
         // empty
     }
@@ -125,6 +126,11 @@ public:
     // Policy determinations
     void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
     bool BudgetCheck() const override;
+
+    virtual unsigned EstimatedTotalILSize() const
+    {
+        return m_CodeSize;
+    }
 
     // Policy policies
     bool PropagateNeverToRuntime() const override;
@@ -182,6 +188,7 @@ protected:
     bool                    m_IsNoReturnKnown : 1;
     bool                    m_ConstArgFeedsIsKnownConst : 1;
     bool                    m_ArgFeedsIsKnownConst : 1;
+    bool                    m_InsideThrowBlock : 1;
 };
 
 // ExtendedDefaultPolicy is a slightly more aggressive variant of
@@ -215,7 +222,7 @@ public:
         , m_IsFromValueClass(false)
         , m_NonGenericCallsGeneric(false)
         , m_IsCallsiteInNoReturnRegion(false)
-        , m_HasProfile(false)
+        , m_HasProfileWeights(false)
     {
         // Empty
     }
@@ -225,6 +232,8 @@ public:
     void NoteDouble(InlineObservation obs, double value) override;
 
     double DetermineMultiplier() override;
+
+    unsigned EstimatedTotalILSize() const override;
 
     bool RequiresPreciseScan() override
     {
@@ -265,7 +274,7 @@ protected:
     bool     m_IsFromValueClass : 1;
     bool     m_NonGenericCallsGeneric : 1;
     bool     m_IsCallsiteInNoReturnRegion : 1;
-    bool     m_HasProfile : 1;
+    bool     m_HasProfileWeights : 1;
 };
 
 // DiscretionaryPolicy is a variant of the default policy.  It
@@ -360,7 +369,7 @@ protected:
     unsigned    m_CallSiteWeight;
     int         m_ModelCodeSizeEstimate;
     int         m_PerCallInstructionEstimate;
-    bool        m_HasProfile;
+    bool        m_HasProfileWeights;
     bool        m_IsClassCtor;
     bool        m_IsSameThis;
     bool        m_CallerHasNewArray;

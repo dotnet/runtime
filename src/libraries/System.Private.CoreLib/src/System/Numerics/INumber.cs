@@ -14,7 +14,7 @@ namespace System.Numerics
           IComparisonOperators<TSelf, TSelf, bool>,
           IModulusOperators<TSelf, TSelf, TSelf>,
           INumberBase<TSelf>
-        where TSelf : INumber<TSelf>
+        where TSelf : INumber<TSelf>?
     {
         /// <summary>Clamps a value to an inclusive minimum and maximum value.</summary>
         /// <param name="value">The value to clamp.</param>

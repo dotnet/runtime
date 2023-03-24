@@ -552,6 +552,8 @@ namespace System.Runtime.InteropServices
     [System.CLSCompliantAttribute(false)]
     public abstract class ComWrappers
     {
+        public static unsafe bool TryGetComInstance(object obj, out System.IntPtr unknown) { throw null; }
+        public static unsafe bool TryGetObject(System.IntPtr unknown, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? obj) { throw null; }
         public struct ComInterfaceEntry
         {
             public System.Guid IID;
@@ -572,7 +574,7 @@ namespace System.Runtime.InteropServices
         public static void RegisterForTrackerSupport(ComWrappers instance) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void RegisterForMarshalling(ComWrappers instance) { }
-        protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
+        public static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
     }
     [System.FlagsAttribute]
     public enum CreateComInterfaceFlags
@@ -1173,6 +1175,7 @@ namespace System.Runtime.InteropServices
         public static bool IsPow2(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsRealNumber(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsSubnormal(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Lerp(System.Runtime.InteropServices.NFloat value1, System.Runtime.InteropServices.NFloat value2, System.Runtime.InteropServices.NFloat amount) { throw null; }
         public static System.Runtime.InteropServices.NFloat Log(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Log(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat newBase) { throw null; }
         public static System.Runtime.InteropServices.NFloat Log10(System.Runtime.InteropServices.NFloat x) { throw null; }
@@ -1314,9 +1317,9 @@ namespace System.Runtime.InteropServices
         static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertFromChecked<TOther>(TOther value, out System.Runtime.InteropServices.NFloat result) { throw null; }
         static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertFromSaturating<TOther>(TOther value, out System.Runtime.InteropServices.NFloat result) { throw null; }
         static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertFromTruncating<TOther>(TOther value, out System.Runtime.InteropServices.NFloat result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertToChecked<TOther>(System.Runtime.InteropServices.NFloat value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertToSaturating<TOther>(System.Runtime.InteropServices.NFloat value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
-        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertToTruncating<TOther>(System.Runtime.InteropServices.NFloat value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertToChecked<TOther>(System.Runtime.InteropServices.NFloat value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertToSaturating<TOther>(System.Runtime.InteropServices.NFloat value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertToTruncating<TOther>(System.Runtime.InteropServices.NFloat value, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TOther result) { throw null; }
         static System.Runtime.InteropServices.NFloat System.Numerics.ISubtractionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator checked -(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         static System.Runtime.InteropServices.NFloat System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator checked -(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat Tan(System.Runtime.InteropServices.NFloat x) { throw null; }

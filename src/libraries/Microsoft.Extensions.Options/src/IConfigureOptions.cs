@@ -7,7 +7,7 @@ namespace Microsoft.Extensions.Options
     /// Represents something that configures the <typeparamref name="TOptions"/> type.
     /// Note: These are run before all <see cref="IPostConfigureOptions{TOptions}"/>.
     /// </summary>
-    /// <typeparam name="TOptions"></typeparam>
+    /// <typeparam name="TOptions">The options type being configured.</typeparam>
     public interface IConfigureOptions<in TOptions> where TOptions : class
     {
         /// <summary>

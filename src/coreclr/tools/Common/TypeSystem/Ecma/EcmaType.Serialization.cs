@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace Internal.TypeSystem.Ecma
 {
-    partial class EcmaType
+    public partial class EcmaType
     {
         public override bool IsSerializable
         {

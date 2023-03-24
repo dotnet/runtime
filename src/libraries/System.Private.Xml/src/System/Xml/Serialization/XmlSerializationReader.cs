@@ -12,6 +12,7 @@ using System.Reflection;
 using System.Security;
 using System.Xml;
 using System.Xml.Schema;
+using static System.Xml.Serialization.ReflectionXmlSerializationReader;
 
 namespace System.Xml.Serialization
 {
@@ -110,7 +111,7 @@ namespace System.Xml.Serialization
         protected abstract void InitIDs();
 
         // this method must be called before any generated deserialization methods are called
-        internal void Init(XmlReader r, XmlDeserializationEvents events, string? encodingStyle, TempAssembly? tempAssembly)
+        internal void Init(XmlReader r, XmlDeserializationEvents events, string? encodingStyle)
         {
             _events = events;
             _r = r;
@@ -963,7 +964,7 @@ namespace System.Xml.Serialization
         {
             if (value == null)
             {
-                throw new ArgumentNullException(SR.Format(SR.XmlMissingArrayType, CurrentTag()));
+                throw new ArgumentNullException(nameof(value), SR.Format(SR.XmlMissingArrayType, CurrentTag()));
             }
 
             if (value.Length == 0)
@@ -1547,7 +1548,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GetArrayElementType")]
-        private object? ReadArray(string? typeName, string? typeNs)
+        private Array? ReadArray(string? typeName, string? typeNs)
         {
             SoapArrayInfo arrayInfo;
             Type? fallbackElementType = null;
@@ -2275,7 +2276,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GenerateReferencedMethods")]
-        internal void GenerateEnd(string?[] methods, XmlMapping[] xmlMappings, Type?[]? types)
+        internal void GenerateEnd()
         {
             GenerateReferencedMethods();
             GenerateInitCallbacksMethod();
@@ -4821,7 +4822,14 @@ namespace System.Xml.Serialization
                         Writer.Write("ReadSerializable(( ");
                         Writer.Write(typeof(IXmlSerializable).FullName);
                         Writer.Write(")");
-                        Writer.Write(RaCodeGen.GetStringForCreateInstance(sm.TypeDesc!.CSharpName, sm.TypeDesc.UseReflection, sm.TypeDesc.CannotNew, false));
+                        if (sm.TypeDesc!.CSharpName == "global::System.Xml.Linq.XElement")
+                        {
+                            Writer.Write(RaCodeGen.GetStringForCreateInstance(sm.TypeDesc!.CSharpName, false, false, false, "\"default\""));
+                        }
+                        else
+                        {
+                            Writer.Write(RaCodeGen.GetStringForCreateInstance(sm.TypeDesc!.CSharpName, sm.TypeDesc.UseReflection, sm.TypeDesc.CannotNew, false));
+                        }
                         bool isWrappedAny = !element.Any && IsWildcard(sm);
                         if (isWrappedAny)
                         {
