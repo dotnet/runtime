@@ -121,7 +121,7 @@ namespace Microsoft.Interop
 
             var elements = ImmutableArray.CreateBuilder<TypePositionInfo>(originalElements.Length + 2);
 
-            elements.Add(new TypePositionInfo(methodStub.TypeKeyOwner, new NativeThisInfo(methodStub.UnwrapperSyntax))
+            elements.Add(new TypePositionInfo(methodStub.TypeKeyOwner, methodStub.ManagedThisMarshallingInfo)
             {
                 InstanceIdentifier = ThisParameterIdentifier,
                 NativeIndex = 0,

@@ -456,7 +456,7 @@ namespace Microsoft.Interop
                 ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
                 typeKeyOwner,
                 new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()),
-                ParseTypeName(TypeNames.ComWrappersUnwrapper));
+                ComInterfaceDispatchMarshallingInfo.Instance);
         }
 
         private static Diagnostic? GetDiagnosticIfInvalidTypeForGeneration(InterfaceDeclarationSyntax syntax, INamedTypeSymbol type)

@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
-    internal static class ComInterfaceGeneratorHelpers
+    internal static class VtableIndexStubGeneratorHelpers
     {
         public static MarshallingGeneratorFactoryKey<(TargetFramework, Version)> CreateGeneratorFactory(StubEnvironment env, MarshalDirection direction)
         {
@@ -56,9 +56,7 @@ namespace Microsoft.Interop
                         ? MarshalMode.ManagedToUnmanagedOut
                         : MarshalMode.UnmanagedToManagedIn));
 
-            generatorFactory = new ManagedHResultExceptionMarshallerFactory(generatorFactory, direction);
-
-            generatorFactory = new ComInterfaceDispatchMarshallerFactory(generatorFactory);
+            generatorFactory = new ObjectUnwrapperMarshallerFactory(generatorFactory);
 
             generatorFactory = new ByValueContentsMarshalKindValidator(generatorFactory);
 

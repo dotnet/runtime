@@ -11,24 +11,24 @@ using System.Threading.Tasks;
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
-    /// Converts all exceptions to <see cref="T.NaN"/>.
+    /// Converts the exception to the default value of the unmanaged type.
     /// </summary>
-    /// <typeparam name="T">The unmanaged type to return the <c>NaN</c> value for.</typeparam>
-    [CustomMarshaller(typeof(Exception), MarshalMode.UnmanagedToManagedOut, typeof(ExceptionNaNMarshaller<>))]
-    public static class ExceptionNaNMarshaller<T>
-        where T : unmanaged, IFloatingPointIeee754<T>
+    /// <typeparam name="T">The unmanaged type</typeparam>
+    [CustomMarshaller(typeof(Exception), MarshalMode.UnmanagedToManagedOut, typeof(ExceptionAsHResultMarshaller<>))]
+    public static class ExceptionAsDefaultMarshaller<T>
+        where T : unmanaged
     {
         /// <summary>
-        /// Convert the exception to <see cref="T.NaN"/>.
+        /// Converts the exception to the default value of the unmanaged type.
         /// </summary>
         /// <param name="e">The exception</param>
-        /// <returns><see cref="T.NaN"/>.</returns>
+        /// <returns>The default value of <typeparamref name="T"/>.</returns>
         public static T ConvertToUnmanaged(Exception e)
         {
             // Use GetHRForException to ensure the runtime sets up the IErrorInfo object
             // and calls SetErrorInfo if the platform supports it.
             _ = Marshal.GetHRForException(e);
-            return T.NaN;
+            return default;
         }
     }
 }

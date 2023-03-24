@@ -22,5 +22,5 @@ namespace Microsoft.Interop
         MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> UnmanagedToManagedGeneratorFactory,
         ManagedTypeInfo TypeKeyOwner,
         SequenceEqualImmutableArray<Diagnostic> Diagnostics,
-        TypeSyntax UnwrapperSyntax) : GeneratedMethodContextBase(TypeKeyOwner, Diagnostics);
+        MarshallingInfo ManagedThisMarshallingInfo) : GeneratedMethodContextBase(TypeKeyOwner, Diagnostics);
 }
