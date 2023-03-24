@@ -443,7 +443,9 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 //
 // into:
 //
-//    tmp = isClassAlreadyInited ? fastPath : CORINFO_HELP_X_NONGCSTATIC_BASE():
+//    if (isClassAlreadyInited)
+//        CORINFO_HELP_X_NONGCSTATIC_BASE();
+//    tmp = fastPath;
 //
 // Notes:
 //    The current implementation is focused on NativeAOT where we can't skip static
@@ -473,6 +475,11 @@ PhaseStatus Compiler::fgExpandStaticInit()
 
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
+        if (block->isRunRarely())
+        {
+            continue;
+        }
+
     SCAN_BLOCK_AGAIN:
         for (Statement* const stmt : block->NonPhiStatements())
         {
@@ -530,14 +537,18 @@ PhaseStatus Compiler::fgExpandStaticInit()
                     newFirstStmt = newFirstStmt->GetNextStmt();
                 }
 
-                // Define a local for the result
-                const unsigned resultNum   = lvaGrabTemp(true DEBUGARG("static init"));
-                lvaTable[resultNum].lvType = call->TypeGet();
-                GenTreeLclVar* resultLcl   = gtNewLclvNode(resultNum, call->TypeGet());
+                GenTree* staticBaseTree;
+                if (staticBaseAccessType == IAT_VALUE)
+                {
+                    staticBaseTree = gtNewIconHandleNode(staticBase, GTF_ICON_STATIC_HDL);
+                }
+                else
+                {
+                    assert(staticBaseAccessType == IAT_PVALUE);
+                    staticBaseTree = gtNewIndOfIconHandleNode(TYP_I_IMPL, staticBase, GTF_ICON_STATIC_ADDR_PTR, true);
+                }
 
-                // Replace current use with a temp local. That local will be set in either
-                // fastPathBb or fallbackBb
-                *callUse = gtClone(resultLcl);
+                *callUse = staticBaseTree;
 
                 fgMorphStmtBlockOps(block, stmt);
                 gtUpdateStmtSideEffects(stmt);
@@ -553,17 +564,14 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 //     {
                 //         goto fastPathBb;
                 //     }
-                //     result = helperCall();
-                //     goto block;
+                //     helperCall(); // we don't use its return value
                 // fastPathBb:
                 //     result = fastPath;
                 // block:
                 //
 
                 // TODO: do we need double-indirect for staticBaseAccessType == IAT_PVALUE ?
-                GenTree* isInitAdrNode = gtNewCastNode(TYP_INT, gtNewIndOfIconHandleNode(TYP_UBYTE, staticInitAddr,
-                                                                                         GTF_ICON_CONST_PTR, true),
-                                                       true, TYP_UINT);
+                GenTree* isInitAdrNode = gtNewIndOfIconHandleNode(TYP_UBYTE, staticInitAddr, GTF_ICON_CONST_PTR, true);
 
                 // "((uint)*isInitAddr) & isInitMask != 0"
                 isInitAdrNode        = gtNewOperNode(GT_AND, TYP_INT, isInitAdrNode, gtNewIconNode(isInitMask));
@@ -572,23 +580,8 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 BasicBlock* isInitedBb =
                     fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp), debugInfo);
 
-                // Fast-path basic block
-                GenTree* asgFastpathValue;
-                if (staticBaseAccessType == IAT_VALUE)
-                {
-                    asgFastpathValue = gtNewIconHandleNode(staticBase, GTF_ICON_STATIC_HDL);
-                }
-                else
-                {
-                    assert(staticBaseAccessType == IAT_PVALUE);
-                    asgFastpathValue = gtNewIndOfIconHandleNode(TYP_I_IMPL, staticBase, GTF_ICON_STATIC_ADDR_PTR, true);
-                }
-                BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_NONE, isInitedBb, asgFastpathValue, debugInfo);
-
                 // Fallback basic block
-                GenTree*    asgFallbackValue = gtNewAssignNode(gtClone(resultLcl), call);
-                BasicBlock* fallbackBb =
-                    fgNewBBFromTreeAfter(BBJ_ALWAYS, isInitedBb, asgFallbackValue, debugInfo, true);
+                BasicBlock* fallbackBb = fgNewBBFromTreeAfter(BBJ_NONE, isInitedBb, call, debugInfo, true);
 
                 //
                 // Update preds in all new blocks
@@ -597,22 +590,18 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 // Unlink block and prevBb
                 fgRemoveRefPred(block, prevBb);
 
-                // Block has two preds now: either fastPathBb or fallbackBb
-                fgAddRefPred(block, fastPathBb);
+                // Block has two preds now: either isInitedBb or fallbackBb
+                fgAddRefPred(block, isInitedBb);
                 fgAddRefPred(block, fallbackBb);
 
                 // prevBb always flow into isInitedBb
                 fgAddRefPred(isInitedBb, prevBb);
 
                 // Both fastPathBb and fallbackBb have a single common pred - isInitedBb
-                fgAddRefPred(fastPathBb, isInitedBb);
                 fgAddRefPred(fallbackBb, isInitedBb);
 
-                // if isInitedBb condition is true we jump to fastPathBb
-                isInitedBb->bbJumpDest = fastPathBb;
-
                 // fallbackBb unconditionally jumps to the last block (jumps over fastPathBb)
-                fallbackBb->bbJumpDest = block;
+                isInitedBb->bbJumpDest = block;
 
                 //
                 // Re-distribute weights
@@ -622,8 +611,6 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 isInitedBb->inheritWeight(prevBb);
                 // 80% chance we pass isInitedBb. NOTE: we don't want to make it "run-rarely" to avoid
                 // regressions for startup time
-                fastPathBb->inheritWeightPercentage(isInitedBb, 80);
-                // 20% chance we fail isInitedBb
                 fallbackBb->inheritWeightPercentage(isInitedBb, 20);
 
                 //
@@ -633,7 +620,6 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
                 {
                     isInitedBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-                    fastPathBb->bbNatLoopNum = prevBb->bbNatLoopNum;
                     fallbackBb->bbNatLoopNum = prevBb->bbNatLoopNum;
                     // Update lpBottom after block split
                     if (optLoopTable[prevBb->bbNatLoopNum].lpBottom == prevBb)
@@ -645,7 +631,6 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 // All blocks are expected to be in the same EH region
                 assert(BasicBlock::sameEHRegion(prevBb, block));
                 assert(BasicBlock::sameEHRegion(prevBb, isInitedBb));
-                assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
 
                 result = PhaseStatus::MODIFIED_EVERYTHING;
 
