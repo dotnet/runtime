@@ -25,7 +25,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     node.IsKind(SyntaxKind.MethodDeclaration)
                         && node is MethodDeclarationSyntax method
                         && method.AttributeLists.Count > 0,
-                static (context, ct) => (IMethodSymbol)context.SemanticModel.GetDeclaredSymbol(context.Node)!);
+                static (context, ct) => (IMethodSymbol)context.SemanticModel.GetDeclaredSymbol(context.Node, ct)!);
 
         var outOfProcessTests = context.AdditionalTextsProvider.Combine(context.AnalyzerConfigOptionsProvider).SelectMany((data, ct) =>
         {
@@ -141,8 +141,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 }
                 else
                 {
-                    string consoleType = "System.Console";
-                    context.AddSource("SimpleRunner.g.cs", GenerateStandaloneSimpleTestRunner(methods, aliasMap, consoleType));
+                    context.AddSource("SimpleRunner.g.cs", GenerateStandaloneSimpleTestRunner(methods, aliasMap));
                 }
             });
     }
@@ -183,7 +182,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine();
 
         builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = new (args, testExclusionList);");
-        // builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new(TestCount.Count);");
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
         builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();");
         builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
@@ -191,14 +189,17 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine();
 
         builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.tempLog.xml""))");
-        builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv""))");
-
+        builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv"")){{");
         CodeBuilder testExecutorBuilder = new();
         int totalTestsEmitted = 0;
 
         using (builder.NewBracesScope())
         {
             builder.AppendLine("statsCsvSw.WriteLine($\"{TestCount.Count},0,0,0\");");
+            // CAUTION NOTE: If this ever changes and the 'assembly' tag is no longer
+            // the topmost one in the temp log, XUnitLogChecker must be updated accordingly.
+            // Otherwise, it's going to fail when attempting to find dumps.
+            builder.AppendLine($@"summary.WriteHeaderToTempLog(""{assemblyName}"", tempLogSw);");
 
             ITestReporterWrapper reporter =
                 new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
@@ -244,6 +245,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 testExecutorBuilder.AppendLine("}");
                 testExecutorBuilder.AppendLine();
             }
+
+            testExecutorBuilder.AppendLine("}");
+            builder.AppendLine("tempLogSw.WriteLine(\"</assembly>\");");
         }
         builder.AppendLine();
 
@@ -373,7 +377,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         return builder.GetCode();
     }
 
-    private static string GenerateStandaloneSimpleTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap, string consoleType)
+    private static string GenerateStandaloneSimpleTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap)
     {
         ITestReporterWrapper reporter = new NoTestReporting();
         CodeBuilder builder = new();
@@ -404,7 +408,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         return builder.GetCode();
     }
 
-    private class ExternallyReferencedTestMethodsVisitor : SymbolVisitor<IEnumerable<IMethodSymbol>>
+    private sealed class ExternallyReferencedTestMethodsVisitor : SymbolVisitor<IEnumerable<IMethodSymbol>>
     {
         public override IEnumerable<IMethodSymbol>? VisitAssembly(IAssemblySymbol symbol)
         {

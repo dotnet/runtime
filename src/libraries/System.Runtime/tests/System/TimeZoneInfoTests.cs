@@ -3240,6 +3240,8 @@ namespace System.Tests
                 }
 
                 var list = new List<CultureInfo>();
+
+#if !TARGET_BROWSER
                 GCHandle handle = GCHandle.Alloc(list);
                 try
                 {
@@ -3252,10 +3254,12 @@ namespace System.Tests
                 {
                     handle.Free();
                 }
+#endif
 
                 return list.ToArray();
             }
 
+#if !TARGET_BROWSER
             [UnmanagedCallersOnly]
             private static unsafe int EnumUiLanguagesCallback(char* lpUiLanguageString, IntPtr lParam)
             {
@@ -3288,6 +3292,7 @@ namespace System.Tests
 
             [DllImport("Kernel32.dll", CharSet = CharSet.Auto)]
             private static extern unsafe bool EnumUILanguages(delegate* unmanaged<char*, IntPtr, int> lpUILanguageEnumProc, uint dwFlags, IntPtr lParam);
+#endif
         }
     }
 }

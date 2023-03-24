@@ -364,4 +364,24 @@ unsafe class Validate
 
         BoxedMethodArg(arr);
     }
+
+    // ====================== GCDescOpt ==========================================================
+
+    [Fact]
+    [SkipOnMono("CoreCLR and NativeAOT-specific implementation details.")]
+    public static void GCDescOpt()
+    {
+        Console.WriteLine($"{nameof(GCDescOpt)}...");
+
+        MyArray<object>[] arr = new MyArray<object>[5];
+
+        fixed (void* arrPtr = arr)
+        {
+            nint* mtPtr = (nint*)arrPtr - 2;
+            nint* gcSeriesPtr = (nint*)*mtPtr - 1;
+
+            // optimized gc info should have exactly 1 gc series.
+            Assert.Equal(1, *gcSeriesPtr);
+        }
+    }
 }

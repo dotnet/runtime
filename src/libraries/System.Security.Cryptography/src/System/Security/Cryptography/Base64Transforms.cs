@@ -136,32 +136,35 @@ namespace System.Security.Cryptography
             if (outputBuffer == null)
                 ThrowHelper.ThrowArgumentNull(ThrowHelper.ExceptionArgument.outputBuffer);
 
-            // The common case is inputCount = InputBlockSize
-            byte[]? tmpBufferArray = null;
-            Span<byte> tmpBuffer = stackalloc byte[StackAllocSize];
-            if (inputCount > StackAllocSize)
+            ReadOnlySpan<byte> inputBufferSpan = inputBuffer.AsSpan(inputOffset, inputCount);
+            int bytesToTransform = _inputIndex + inputBufferSpan.Length;
+
+            byte[]? transformBufferArray = null;
+            Span<byte> transformBuffer = stackalloc byte[StackAllocSize];
+            if (bytesToTransform > StackAllocSize)
             {
-                tmpBuffer = tmpBufferArray = CryptoPool.Rent(inputCount);
+                transformBuffer = transformBufferArray = CryptoPool.Rent(inputCount);
             }
 
-            tmpBuffer = GetTempBuffer(inputBuffer.AsSpan(inputOffset, inputCount), tmpBuffer);
-            int bytesToTransform = _inputIndex + tmpBuffer.Length;
+            transformBuffer = AppendInputBuffers(inputBufferSpan, transformBuffer);
+            // update bytesToTransform since it can be less if some whitespace was discarded.
+            bytesToTransform = transformBuffer.Length;
 
             // Too little data to decode: save data to _inputBuffer, so it can be transformed later
             if (bytesToTransform < InputBlockSize)
             {
-                tmpBuffer.CopyTo(_inputBuffer.AsSpan(_inputIndex));
+                transformBuffer.CopyTo(_inputBuffer);
 
                 _inputIndex = bytesToTransform;
 
-                ReturnToCryptoPool(tmpBufferArray, tmpBuffer.Length);
+                ReturnToCryptoPool(transformBufferArray, transformBuffer.Length);
 
                 return 0;
             }
 
-            ConvertFromBase64(tmpBuffer, outputBuffer.AsSpan(outputOffset), out _, out int written);
+            ConvertFromBase64(transformBuffer, outputBuffer.AsSpan(outputOffset), out _, out int written);
 
-            ReturnToCryptoPool(tmpBufferArray, tmpBuffer.Length);
+            ReturnToCryptoPool(transformBufferArray, transformBuffer.Length);
 
             return written;
         }
@@ -177,16 +180,21 @@ namespace System.Security.Cryptography
                 return Array.Empty<byte>();
             }
 
+            ReadOnlySpan<byte> inputBufferSpan = inputBuffer.AsSpan(inputOffset, inputCount);
+            int bytesToTransform = _inputIndex + inputBufferSpan.Length;
+
             // The common case is inputCount <= Base64InputBlockSize
-            byte[]? tmpBufferArray = null;
-            Span<byte> tmpBuffer = stackalloc byte[StackAllocSize];
-            if (inputCount > StackAllocSize)
+            byte[]? transformBufferArray = null;
+            Span<byte> transformBuffer = stackalloc byte[StackAllocSize];
+
+            if (bytesToTransform > StackAllocSize)
             {
-                tmpBuffer = tmpBufferArray = CryptoPool.Rent(inputCount);
+                transformBuffer = transformBufferArray = CryptoPool.Rent(inputCount);
             }
 
-            tmpBuffer = GetTempBuffer(inputBuffer.AsSpan(inputOffset, inputCount), tmpBuffer);
-            int bytesToTransform = _inputIndex + tmpBuffer.Length;
+            transformBuffer = AppendInputBuffers(inputBufferSpan, transformBuffer);
+            // update bytesToTransform since it can be less if some whitespace was discarded.
+            bytesToTransform = transformBuffer.Length;
 
             // Too little data to decode
             if (bytesToTransform < InputBlockSize)
@@ -194,18 +202,18 @@ namespace System.Security.Cryptography
                 // reinitialize the transform
                 Reset();
 
-                ReturnToCryptoPool(tmpBufferArray, tmpBuffer.Length);
+                ReturnToCryptoPool(transformBufferArray, transformBuffer.Length);
 
                 return Array.Empty<byte>();
             }
 
-            int outputSize = GetOutputSize(bytesToTransform, tmpBuffer);
+            int outputSize = GetOutputSize(bytesToTransform, transformBuffer);
             byte[] output = new byte[outputSize];
 
-            ConvertFromBase64(tmpBuffer, output, out int consumed, out int written);
+            ConvertFromBase64(transformBuffer, output, out int consumed, out int written);
             Debug.Assert(written == outputSize);
 
-            ReturnToCryptoPool(tmpBufferArray, tmpBuffer.Length);
+            ReturnToCryptoPool(transformBufferArray, transformBuffer.Length);
 
             // reinitialize the transform
             Reset();
@@ -213,30 +221,28 @@ namespace System.Security.Cryptography
             return output;
         }
 
-        private Span<byte> GetTempBuffer(Span<byte> inputBuffer, Span<byte> tmpBuffer)
+        private Span<byte> AppendInputBuffers(ReadOnlySpan<byte> inputBuffer, Span<byte> transformBuffer)
         {
+            _inputBuffer.AsSpan(0, _inputIndex).CopyTo(transformBuffer);
+
             if (_whitespaces == FromBase64TransformMode.DoNotIgnoreWhiteSpaces)
             {
-                return inputBuffer;
+                inputBuffer.CopyTo(transformBuffer.Slice(_inputIndex));
+                return transformBuffer.Slice(0, _inputIndex + inputBuffer.Length);
             }
-
-            return DiscardWhiteSpaces(inputBuffer, tmpBuffer);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Span<byte> DiscardWhiteSpaces(Span<byte> inputBuffer, Span<byte> tmpBuffer)
-        {
-            int count = 0;
-
-            for (int i = 0; i < inputBuffer.Length; i++)
+            else
             {
-                if (!IsWhitespace(inputBuffer[i]))
+                int count = _inputIndex;
+                for (int i = 0; i < inputBuffer.Length; i++)
                 {
-                    tmpBuffer[count++] = inputBuffer[i];
+                    if (!IsWhitespace(inputBuffer[i]))
+                    {
+                        transformBuffer[count++] = inputBuffer[i];
+                    }
                 }
-            }
 
-            return tmpBuffer.Slice(0, count);
+                return transformBuffer.Slice(0, count);
+            }
         }
 
         private static bool IsWhitespace(byte value)
@@ -277,28 +283,16 @@ namespace System.Security.Cryptography
             return outputSize;
         }
 
-        private void ConvertFromBase64(Span<byte> tmpBuffer, Span<byte> outputBuffer, out int consumed, out int written)
+        private void ConvertFromBase64(Span<byte> transformBuffer, Span<byte> outputBuffer, out int consumed, out int written)
         {
-            int bytesToTransform = _inputIndex + tmpBuffer.Length;
+            int bytesToTransform = transformBuffer.Length;
             Debug.Assert(bytesToTransform >= 4);
-
-            byte[]? transformBufferArray = null;
-            Span<byte> transformBuffer = stackalloc byte[StackAllocSize];
-            if (bytesToTransform > StackAllocSize)
-            {
-                transformBuffer = transformBufferArray = CryptoPool.Rent(bytesToTransform);
-            }
-
-            // Copy _inputBuffer to transformBuffer and append tmpBuffer
-            Debug.Assert(_inputIndex < _inputBuffer.Length);
-            _inputBuffer.AsSpan(0, _inputIndex).CopyTo(transformBuffer);
-            tmpBuffer.CopyTo(transformBuffer.Slice(_inputIndex));
 
             // Save data that won't be transformed to _inputBuffer, so it can be transformed later
             _inputIndex = bytesToTransform & 3;     // bit hack for % 4
             bytesToTransform -= _inputIndex;        // only transform up to the next multiple of 4
             Debug.Assert(_inputIndex < _inputBuffer.Length);
-            tmpBuffer.Slice(tmpBuffer.Length - _inputIndex).CopyTo(_inputBuffer);
+            transformBuffer.Slice(transformBuffer.Length - _inputIndex).CopyTo(_inputBuffer);
 
             transformBuffer = transformBuffer.Slice(0, bytesToTransform);
             OperationStatus status = Base64.DecodeFromUtf8(transformBuffer, outputBuffer, out consumed, out written);
@@ -312,8 +306,6 @@ namespace System.Security.Cryptography
                 Debug.Assert(status == OperationStatus.InvalidData);
                 ThrowHelper.ThrowBase64FormatException();
             }
-
-            ReturnToCryptoPool(transformBufferArray, transformBuffer.Length);
         }
 
         private static void ReturnToCryptoPool(byte[]? array, int clearSize)

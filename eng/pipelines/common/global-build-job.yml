@@ -163,7 +163,6 @@ jobs:
             buildScript: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
             nonPortable: ${{ parameters.isNonPortableSourceBuild }}
             targetRID: ${{ parameters.targetRid }}
-            runtimeOS: linux
             name: ${{ parameters.platform }}
 
     - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
