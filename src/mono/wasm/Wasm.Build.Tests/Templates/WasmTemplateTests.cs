@@ -35,22 +35,19 @@ namespace Wasm.Build.Tests
             File.WriteAllText(path, text);
         }
 
-        private const string DefaultRuntimeAssetsRelativePath = "./_framework/";
-
         private void UpdateBrowserMainJs(string targetFramework, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath)
         {
-            string mainJsPath = Path.Combine(_projectDir!, "wwwroot", "main.js");
-            string mainJsContent = File.ReadAllText(mainJsPath);
+            base.UpdateBrowserMainJs((mainJsContent) => {
+                // .withExitOnUnhandledError() is available only only >net7.0
+                mainJsContent = mainJsContent.Replace(".create()",
+                        (targetFramework == "net8.0" || targetFramework == "net9.0")
+                            ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
+                            : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
 
-            // .withExitOnUnhandledError() is available only only >net7.0
-            mainJsContent = mainJsContent.Replace(".create()",
-                    (targetFramework == "net8.0" || targetFramework == "net9.0")
-                        ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
-                        : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
+                mainJsContent = mainJsContent.Replace("from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
 
-            mainJsContent = mainJsContent.Replace("from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
-
-            File.WriteAllText(mainJsPath, mainJsContent);
+                return mainJsContent;
+            }, targetFramework, runtimeAssetsRelativePath);
         }
 
         private void UpdateConsoleMainJs()

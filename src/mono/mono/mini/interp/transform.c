@@ -34,6 +34,7 @@
 #include "interp.h"
 #include "transform.h"
 #include "tiering.h"
+#include "interp-pgo.h"
 
 #if HOST_BROWSER
 #include "jiterpreter.h"
@@ -4831,6 +4832,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	gboolean generate_enc_seq_points_without_debug_info = FALSE;
 	InterpBasicBlock *exit_bb = NULL;
 
+	mono_interp_pgo_generate_start ();
+
 	original_bb = bb = mono_basic_block_split (method, error, header);
 	goto_if_nok (error, exit);
 	g_assert (bb);
@@ -8247,12 +8250,17 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		}
 	}
 
+	if (td->optimized && !inlining)
+		mono_interp_pgo_method_was_tiered (method);
+
 exit_ret:
 	g_free (arg_locals);
 	g_free (local_locals);
 	mono_bitset_free (il_targets);
 	mono_basic_block_free (original_bb);
 	td->dont_inline = g_list_remove (td->dont_inline, method);
+
+	mono_interp_pgo_generate_end ();
 
 	return ret;
 exit:
