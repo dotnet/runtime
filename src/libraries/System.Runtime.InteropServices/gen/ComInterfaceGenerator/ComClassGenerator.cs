@@ -46,7 +46,7 @@ namespace Microsoft.Interop
 
             var classInfoType = attributedClasses
                 .Select(static (info, ct) => new { info.ClassName, info.ImplementedInterfacesNames })
-                .Select(static (info, ct) => GenerateClassInfoType(info.ClassName, info.ImplementedInterfacesNames.Array).NormalizeWhitespace());
+                .Select(static (info, ct) => GenerateClassInfoType(info.ImplementedInterfacesNames.Array).NormalizeWhitespace());
 
             var attribute = attributedClasses
                 .Select(static (info, ct) => new { info.ContainingSyntaxContext, info.ClassSyntax })
@@ -76,7 +76,7 @@ namespace Microsoft.Interop
                     .WithModifiers(classSyntax.Modifiers)
                     .WithTypeParameterList(classSyntax.TypeParameters)
                     .AddAttributeLists(AttributeList(SingletonSeparatedList(s_comExposedClassAttributeTemplate))));
-        private static ClassDeclarationSyntax GenerateClassInfoType(string className, ImmutableArray<string> implementedInterfaces)
+        private static ClassDeclarationSyntax GenerateClassInfoType(ImmutableArray<string> implementedInterfaces)
         {
             const string vtablesField = "s_vtables";
             const string vtablesLocal = "vtables";
@@ -100,7 +100,7 @@ namespace Microsoft.Interop
                         Token(SyntaxKind.VolatileKeyword)));
             List<StatementSyntax> vtableInitializationBlock = new()
             {
-                // ComInterfaceEntry* vtables = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(<className>), sizeof(ComInterfaceEntry) * <numInterfaces>);
+                // ComInterfaceEntry* vtables = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(<ClassInfoTypeName>), sizeof(ComInterfaceEntry) * <numInterfaces>);
                 LocalDeclarationStatement(
                     VariableDeclaration(
                             PointerType(
@@ -116,7 +116,7 @@ namespace Microsoft.Interop
                                                 ParseTypeName(TypeNames.System_Runtime_CompilerServices_RuntimeHelpers),
                                                 IdentifierName("AllocateTypeAssociatedMemory")))
                                         .AddArgumentListArguments(
-                                            Argument(TypeOfExpression(ParseTypeName(className))),
+                                            Argument(TypeOfExpression(IdentifierName(ClassInfoTypeName))),
                                             Argument(
                                                 BinaryExpression(
                                                     SyntaxKind.MultiplyExpression,
