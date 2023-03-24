@@ -7,16 +7,13 @@ namespace System.Reflection.Emit
 {
     internal sealed class FieldBuilderImpl : FieldBuilder
     {
-        private TypeBuilderImpl _typeBuilder;
-        private string _fieldName;
-        private FieldAttributes _attributes;
-        private Type _fieldType;
+        private readonly TypeBuilderImpl _typeBuilder;
+        private readonly string _fieldName;
+        private readonly FieldAttributes _attributes;
+        private readonly Type _fieldType;
 
         internal FieldBuilderImpl(TypeBuilderImpl typeBuilder, string fieldName, Type type, FieldAttributes attributes)
         {
-            ArgumentException.ThrowIfNullOrEmpty(fieldName);
-            ArgumentNullException.ThrowIfNull(type);
-
             _fieldName = fieldName;
             _typeBuilder = typeBuilder;
             _fieldType = type;

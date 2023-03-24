@@ -15,9 +15,6 @@ namespace System.Reflection.Emit
         internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
             Type[]? parameters, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-            ArgumentNullException.ThrowIfNull(module);
-
             _module = module;
             Name = name;
             Attributes = attributes;

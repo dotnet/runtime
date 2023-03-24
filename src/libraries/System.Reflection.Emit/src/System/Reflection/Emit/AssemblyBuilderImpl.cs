@@ -12,8 +12,8 @@ namespace System.Reflection.Emit
     public sealed class AssemblyBuilderImpl : AssemblyBuilder
     {
         private bool _previouslySaved;
-        private AssemblyName _assemblyName;
-        private ModuleBuilderImpl? _module;
+        private readonly AssemblyName _assemblyName;
+        private readonly ModuleBuilderImpl _module;
 
         internal AssemblyBuilderImpl(AssemblyName name, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
@@ -50,9 +50,7 @@ namespace System.Reflection.Emit
             var peBuilder = new ManagedPEBuilder(
                 peHeaderBuilder,
                 new MetadataRootBuilder(metadataBuilder),
-                ilBuilder,
-                flags: CorFlags.ILOnly,
-                deterministicIdProvider: content => new BlobContentId(Guid.NewGuid(), 0x04030201)); // Const ID, will reexamine as project progresses.
+                ilBuilder);
 
             // Write executable into the specified stream.
             var peBlob = new BlobBuilder();
@@ -62,26 +60,21 @@ namespace System.Reflection.Emit
 
         public void Save(Stream stream)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             if (_previouslySaved) // Cannot save an assembly multiple times. This is consistent with Save() in .Net Framework.
             {
                 throw new InvalidOperationException(SR.CannotSaveMultipleTimes);
             }
 
-            ArgumentNullException.ThrowIfNull(stream);
-
-            if (_assemblyName == null || _assemblyName.Name == null)
+            if (string.IsNullOrEmpty(_assemblyName.Name))
             {
                 throw new InvalidOperationException();
             }
 
-            if (_module == null)
-            {
-                throw new InvalidOperationException(SR.AModuleRequired);
-            }
-
             // Add assembly metadata
             var metadata = new MetadataBuilder();
-            metadata.AddAssembly( // Metadata is added for the new assembly - Current design - metadata generated only when Save method is called.
+            metadata.AddAssembly(
                metadata.GetOrAddString(value: _assemblyName.Name),
                version: _assemblyName.Version ?? new Version(0, 0, 0, 0),
                culture: _assemblyName.CultureName == null ? default : metadata.GetOrAddString(value: _assemblyName.CultureName),
@@ -107,13 +100,6 @@ namespace System.Reflection.Emit
 
         protected override ModuleBuilder DefineDynamicModuleCore(string name)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-
-            if (_module == null)
-            {
-                throw new InvalidOperationException(SR.ModuleNotFound);
-            }
-
             return _module;
         }
 
