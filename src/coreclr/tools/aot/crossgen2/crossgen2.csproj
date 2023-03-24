@@ -40,6 +40,10 @@
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
+    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
+  </ItemGroup>
+
   <Import Project="$(R2ROverridePath)" Condition="'$(R2ROverridePath)' != ''" />
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets"
           Condition="'$(NativeAotSupported)' == 'true' and '$(_IsPublishing)' == 'true'" />
@@ -66,7 +70,7 @@
       </PropertyGroup>
 
       <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
-            EchoOff="false"
+            EchoOff="true"
             ConsoleToMsBuild="true"
             StandardOutputImportance="Low">
         <Output TaskParameter="ConsoleOutput" PropertyName="CppLinker" />
