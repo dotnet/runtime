@@ -3052,8 +3052,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
 //------------------------------------------------------------------------
 // genCodeForMemmove: Perform an unrolled memmove. The idea that we can
-//    ignore the fact that dst and src might overlap if we save the whole
-//    dst to temp regs in advance, e.g. for memmove(rax, rcx, 30):
+//    ignore the fact that src and dst might overlap if we save the whole
+//    src to temp regs in advance, e.g. for memmove(dst: x1, src: x0, len: 30):
 //
 //       ldr   q16, [x0]
 //       ldr   q17, [x0, #0x0E]

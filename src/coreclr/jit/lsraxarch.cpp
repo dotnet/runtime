@@ -1513,7 +1513,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 {
                     // Prepare SIMD/GPR registers needed to perform an unrolled memmove. The idea that
                     // we can ignore the fact that src and dst might overlap if we save the whole src
-                    // to temp regs in advance, e.g. for memmove(rcx, rax, 120):
+                    // to temp regs in advance, e.g. for memmove(dst: rcx, src: rax, len: 120):
                     //
                     //       vmovdqu  ymm0, ymmword ptr[rax +  0]
                     //       vmovdqu  ymm1, ymmword ptr[rax + 32]
