@@ -835,6 +835,13 @@ int WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSus
     // If we are told that we require an upper bounds check (GC did some heap reshuffling),
     // we need to switch to the WriteBarrier_PostGrow function for good.
 
+#ifdef FEATURE_UNITY_REQUIRE_WRITEBARRIERPOSTGROW_ALWAYS
+    // REMOVE THIS when we remove null gc!
+    // With the null gc, we always want to have the upper bounds check
+    // This ensures that the tiny bounds we setup will always miss
+    bReqUpperBoundsCheck = true;
+#endif
+
     WriteBarrierType newType;
     if (NeedDifferentWriteBarrier(bReqUpperBoundsCheck, g_region_use_bitwise_write_barrier, &newType))
     {
