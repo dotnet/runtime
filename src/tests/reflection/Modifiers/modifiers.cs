@@ -6,7 +6,7 @@ using System.Reflection;
 
 class Program
 {
-    static int Main()
+    static unsafe int Main()
     {
         var baseClass = new BaseClass();
         var derivedClass = new DerivedClass();
