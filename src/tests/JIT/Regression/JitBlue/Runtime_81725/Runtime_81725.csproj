@@ -3,7 +3,6 @@
     <!-- Needed for CLRTestEnvironmentVariable -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <OutputType>Exe</OutputType>
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>

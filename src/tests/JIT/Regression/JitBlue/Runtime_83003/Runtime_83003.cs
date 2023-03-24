@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 public class Foo
 {
@@ -19,7 +20,8 @@ public class Derived : Foo
 		foo2 (base.foo);
 	}
 
-	public static int Main() {
+	[Fact]
+	public static int TestEntryPoint() {
 		var d = new Derived ();
 		d.foo ();
 		return 100;

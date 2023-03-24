@@ -4,12 +4,14 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 [module: SkipLocalsInit]
 
 public class Runtime_81585
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Vector4 a = new Vector4(new Vector2(1.051f, 2.05f), 3.478f, 1.0f);
         Vector4 b = new Vector4(new Vector3(1.051f, 2.05f, 3.478f), 0.0f);

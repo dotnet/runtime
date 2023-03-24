@@ -4,6 +4,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public static class FloatingPointHelper<TSelf>
     where TSelf : IFloatingPoint<TSelf>
@@ -14,7 +15,8 @@ public static class FloatingPointHelper<TSelf>
 
 public class Runtime_81460
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return (Test() == 0) ? 100 : 0;
     }

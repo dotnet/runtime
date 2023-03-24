@@ -3,10 +3,12 @@
 
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_81739
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Plane p;
         p.Normal = default;
