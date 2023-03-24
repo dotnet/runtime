@@ -314,6 +314,13 @@
       <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/pkgconfig" />
     </ItemGroup>
 
+    <!-- x86 linux cross build options -->
+    <ItemGroup Condition="'$(TargetsLinux)' == 'true' and '$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 'x86'">
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
+      <_MonoBuildEnv Include="TARGET_BUILD_ARCH=x86" />
+      <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/pkgconfig" />
+    </ItemGroup>
+
     <!-- riscv64 Linux cross build options -->
     <ItemGroup Condition="'$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 'riscv64'">
       <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
