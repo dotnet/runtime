@@ -10,6 +10,24 @@ namespace System.IO.IsolatedStorage
     {
         public const string IsolatedStorageDirectoryName = "IsolatedStorage";
 
+        internal static string GetDataDirectory(IsolatedStorageScope scope)
+        {
+            // This is the relevant special folder for the given scope plus IsolatedStorageDirectoryName.
+            // It is meant to replicate the behavior of the VM ComIsolatedStorage::GetRootDir().
+
+            // (note that Silverlight used "CoreIsolatedStorage" for a directory name and did not support machine scope)
+
+            Environment.SpecialFolder specialFolder =
+            IsMachine(scope) ? Environment.SpecialFolder.CommonApplicationData : // e.g. C:\ProgramData
+            IsRoaming(scope) ? Environment.SpecialFolder.ApplicationData : // e.g. C:\Users\Joe\AppData\Roaming
+            Environment.SpecialFolder.LocalApplicationData; // e.g. C:\Users\Joe\AppData\Local
+
+            string dataDirectory = Environment.GetFolderPath(specialFolder, Environment.SpecialFolderOption.Create);
+            dataDirectory = Path.Combine(dataDirectory, IsolatedStorageDirectoryName);
+
+            return dataDirectory;
+        }
+
         internal static string GetRandomDirectory(string rootDirectory, IsolatedStorageScope scope)
         {
             string? randomDirectory = GetExistingRandomDirectory(rootDirectory);

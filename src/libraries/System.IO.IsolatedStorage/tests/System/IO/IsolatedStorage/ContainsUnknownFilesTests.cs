@@ -64,6 +64,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Theory, MemberData(nameof(ValidStores))]
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "For mobile platforms root ends with /.isolated-storage/")]
         public void ContainsUnknownFiles_NotOkDirectory(PresetScopes scope)
         {
             TestHelper.WipeStores();

@@ -8,6 +8,45 @@ namespace System.IO.IsolatedStorage
         // we're using a different directory name for compatibility with legacy Xamarin
         public const string IsolatedStorageDirectoryName = ".isolated-storage";
 
+        internal static string GetDataDirectory(IsolatedStorageScope scope)
+        {
+            // This is the relevant special folder for the given scope plus IsolatedStorageDirectoryName.
+            // It is meant to replicate the behavior of the VM ComIsolatedStorage::GetRootDir().
+            //
+            // In legacy Xamarin for Roaming Scope we were using Environment.SpecialFolder.LocalApplicationData
+            // In .Net 7 for Roaming Scope we are using Environment.SpecialFolder.ApplicationData
+            // e.g. .Net 7  path = /data/user/0/{packageName}/files/.isolated-storage/{hash}/{hash}/AppFiles/
+            // e.g. Xamarin path = /data/user/0/{packageName}/files/.config/.isolated-storage"
+            //
+            // Since we shipped that behavior as part of .NET 7 we can't change this now or upgraded apps wouldn't find their files anymore.
+            // We need to look for an existing directory first before using the legacy Xamarin approach.
+
+            Environment.SpecialFolder specialFolder =
+            IsMachine(scope) ? Environment.SpecialFolder.CommonApplicationData : // e.g. /usr/share;
+            IsRoaming(scope) ? Environment.SpecialFolder.ApplicationData : // e.g. /data/user/0/{packageName}/files/.config;
+            Environment.SpecialFolder.LocalApplicationData; // e.g. /data/user/0/{packageName}/files;
+
+            string dataDirectory = Environment.GetFolderPath(specialFolder);
+            dataDirectory = Path.Combine(dataDirectory, IsolatedStorageDirectoryName);
+            if (Directory.Exists(dataDirectory))
+            {
+                return dataDirectory;
+            }
+            // Otherwise return legacy xamarin path
+            else
+            {
+                specialFolder =
+                IsMachine(scope) ? Environment.SpecialFolder.CommonApplicationData :
+                IsRoaming(scope) ? Environment.SpecialFolder.LocalApplicationData:
+                Environment.SpecialFolder.ApplicationData;
+
+                dataDirectory = Environment.GetFolderPath(specialFolder, Environment.SpecialFolderOption.Create);
+                dataDirectory = Path.Combine(dataDirectory, IsolatedStorageDirectoryName);
+            }
+
+            return dataDirectory;
+        }
+
         internal static string GetRandomDirectory(string rootDirectory, IsolatedStorageScope _)
         {
             // In legacy Xamarin we didn't have a random directory inside of the isolated storage root for each app,

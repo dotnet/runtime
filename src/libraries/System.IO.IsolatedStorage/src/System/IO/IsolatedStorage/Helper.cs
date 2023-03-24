@@ -24,8 +24,8 @@ namespace System.IO.IsolatedStorage
         ///     User: @"C:\Users\jerem\AppData\Local\IsolatedStorage\10v31ho4.bo2\eeolfu22.f2w\"
         ///     User|Roaming: @"C:\Users\jerem\AppData\Roaming\IsolatedStorage\"
         ///     Machine: @"C:\ProgramData\IsolatedStorage\nin03cyc.wr0\o3j0urs3.0sn\"
-        ///     Android path: "/data/user/0/net.dot.System.IO.IsolatedStorage.Tests/files/.config/.isolated-storage/"
-        ///     iOS path: "/var/mobile/Containers/Data/Application/A323CBB9-A2B3-4432-9449-48CC20C07A7D/Documents/.config/.isolated-storage/"
+        ///     Android path: "/data/user/0/{packageName}/files/.config/.isolated-storage"
+        ///     iOS path: "/var/mobile/Containers/Data/Application/A323CBB9-A2B3-4432-9449-48CC20C07A7D/Documents/.config/.isolated-storage"
         ///
         /// Identity for the current store gets tacked on after this.
         /// </summary>
@@ -53,24 +53,6 @@ namespace System.IO.IsolatedStorage
                 s_userRootDirectory = GetRandomDirectory(GetDataDirectory(scope), scope);
 
             return s_userRootDirectory;
-        }
-
-        internal static string GetDataDirectory(IsolatedStorageScope scope)
-        {
-            // This is the relevant special folder for the given scope plus IsolatedStorageDirectoryName.
-            // It is meant to replicate the behavior of the VM ComIsolatedStorage::GetRootDir().
-
-            // (note that Silverlight used "CoreIsolatedStorage" for a directory name and did not support machine scope)
-
-            Environment.SpecialFolder specialFolder =
-            IsMachine(scope) ? Environment.SpecialFolder.CommonApplicationData : // e.g. C:\ProgramData
-            IsRoaming(scope) ? Environment.SpecialFolder.ApplicationData : // e.g. C:\Users\Joe\AppData\Roaming
-            Environment.SpecialFolder.LocalApplicationData; // e.g. C:\Users\Joe\AppData\Local
-
-            string dataDirectory = Environment.GetFolderPath(specialFolder, Environment.SpecialFolderOption.Create);
-            dataDirectory = Path.Combine(dataDirectory, IsolatedStorageDirectoryName);
-
-            return dataDirectory;
         }
 
         internal static string? GetExistingRandomDirectory(string rootDirectory)
