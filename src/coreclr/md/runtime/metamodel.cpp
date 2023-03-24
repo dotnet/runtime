@@ -717,7 +717,10 @@ CMiniMdBase::InitColsForTable(
                                     // should we write the data into the structure
 {
     const CMiniTableDef *pTemplate;     // Template table definition.
-    CMiniColDef pCols[9];               // The col defs to init.
+    // Mark the array of columns as not allocated (not ALLOCATED_MEMORY_MARKER) for SetNewColumnDefinition
+    BYTE colData[1 + sizeof(CMiniColDef) * 9];
+    colData[0] = 0;
+    CMiniColDef* pCols = BYTEARRAY_TO_COLDES(colData);
     BYTE        iOffset;                // Running size of a record.
     BYTE        iSize;                  // Size of a field.
     HRESULT     hr = S_OK;
