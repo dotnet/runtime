@@ -92,6 +92,7 @@ mono_native_thread_join_handle (HANDLE thread_handle, gboolean close_handle);
 #endif
 
 #if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+#include <mono/utils/mono-threads-wasm.h>
 #include <emscripten/eventloop.h>
 #endif
 
@@ -1117,6 +1118,12 @@ fire_attach_profiler_events (MonoNativeThreadId tid)
 		"Handle Stack"));
 }
 
+
+#ifdef MONO_EMSCRIPTEN_KEEPALIVE_WORKAROUND_HACK
+/* See ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal */
+__thread uint mono_emscripten_keepalive_hack_count;
+#endif
+
 static guint32 WINAPI
 start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 {
@@ -1248,8 +1255,14 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 #if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
 	if (returns_to_js_event_loop) {
 		/* if the thread wants to stay alive, don't clean up after it */
+#ifdef MONO_EMSCRIPTEN_KEEPALIVE_WORKAROUND_HACK
+		/* we "know" that threadpool threads set their keepalive count correctly and will return here */
+		g_assert (mono_emscripten_keepalive_hack_count > 0);
+		return 0;
+#else
 		if (emscripten_runtime_keepalive_check())
 			return 0;
+#endif
 	}
 #endif
 
@@ -1288,8 +1301,15 @@ start_wrapper (gpointer data)
 #if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
 	if (returns_to_js_event_loop) {
 		/* if the thread wants to stay alive, don't clean up after it */
+#ifdef MONO_EMSCRIPTEN_KEEPALIVE_WORKAROUND_HACK
+		/* we "know" the keepalive count is positive at this point for threadpool threads. Keep it alive */
+		g_assert (mono_emscripten_keepalive_hack_count > 0);
+		emscripten_unwind_to_js_event_loop ();
+		g_assert_not_reached();
+#else
 		if (emscripten_runtime_keepalive_check())
 			return 0;
+#endif
 	}
 #endif
 
@@ -5036,6 +5056,9 @@ ves_icall_System_Threading_LowLevelJSSemaphore_ReleaseInternal (gpointer sem_ptr
 void
 ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void)
 {
+#ifdef MONO_EMSCRIPTEN_KEEPALIVE_WORKAROUND_HACK
+	mono_emscripten_keepalive_hack_count++;
+#endif
 	emscripten_runtime_keepalive_push();
 }
 
@@ -5043,6 +5066,24 @@ void
 ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
 {
 	emscripten_runtime_keepalive_pop();
+#ifdef MONO_EMSCRIPTEN_KEEPALIVE_WORKAROUND_HACK
+	/* This is a BAD IDEA:
+	 *
+	 * 1. We don't know if there were non-mono callers of emscripten_runtime_keepalive_push. We
+	 * could be dropping a thread that was meant to stay alive.
+	 *
+	 * 2. mono_thread_exit while we have managed frames on the stack means we might leak
+	 * resource since finally clauses didn't run.  Also the mono interpreter doesn't really get
+	 * a chance to clean up.
+	 *
+	 * 
+	 */
+	mono_emscripten_keepalive_hack_count--;
+	if (!mono_emscripten_keepalive_hack_count) {
+		g_warning ("thread %p mono keepalive count is zero, detaching\n", (void*)(intptr_t)pthread_self());
+		mono_thread_exit();
+	}
+#endif
 }
 
 #endif /* HOST_BROWSER && !DISABLE_THREADS */
