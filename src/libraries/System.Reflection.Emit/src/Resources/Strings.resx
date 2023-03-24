@@ -129,6 +129,9 @@
   <data name="SignatureNotSupported" xml:space="preserve">
     <value>The signature {0} is not yet supported.</value>
   </data>
+  <data name="AModuleRequired" xml:space="preserve">
+    <value>Assembly needs at least one module defined.</value>
+  </data>
   <data name="AssemblyNameCannotBeNull" xml:space="preserve">
     <value>Assembly name cannot be null</value>
   </data>

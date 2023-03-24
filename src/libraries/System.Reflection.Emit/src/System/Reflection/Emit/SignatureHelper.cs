@@ -6,8 +6,7 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Emit
 {
-    // This is prototype code, to generate simple signatures.
-    // For more complex signatures, will port System.Reflection.Emit's SignatureHelper.
+    // TODO: Only support simple signatures. More complex signatures will be added.
     internal static class MetadataSignatureHelper
     {
         internal static BlobBuilder FieldSignatureEncoder(Type fieldType)

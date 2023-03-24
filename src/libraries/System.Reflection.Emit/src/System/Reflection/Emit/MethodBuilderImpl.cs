@@ -3,27 +3,36 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Emit
 {
     internal sealed class MethodBuilderImpl : MethodBuilder
     {
-        internal Type _returnType;
-        internal Type[]? _parametersTypes;
+        private readonly Type _returnType;
+        private readonly Type[]? _parameterTypes;
         private readonly ModuleBuilderImpl _module;
 
         internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
-            Type[]? parameters, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
+            Type[]? parameterTypes, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
         {
             _module = module;
+            _returnType = returnType ?? typeof(void);
             Name = name;
             Attributes = attributes;
             CallingConvention = callingConventions;
-            _returnType = returnType ?? typeof(void);
-            _parametersTypes = parameters;
             DeclaringType = declaringType;
             Module = declaringType.Module;
+
+            if (parameterTypes != null)
+            {
+                _parameterTypes = new Type[parameterTypes.Length];
+                Array.Copy(parameterTypes, _parameterTypes, parameterTypes.Length);
+            }
         }
+
+        internal BlobBuilder GetMethodSignatureBlob() => MetadataSignatureHelper.MethodSignatureEncoder(_parameterTypes, ReturnType, IsStatic);
 
         protected override bool InitLocalsCore { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names) => throw new NotImplementedException();

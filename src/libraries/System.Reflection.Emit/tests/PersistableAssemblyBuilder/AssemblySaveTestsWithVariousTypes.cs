@@ -19,7 +19,7 @@ namespace System.Reflection.Emit.Tests
         };
 
         [Fact]
-        public void EmptyAssemblyTest()
+        public void EmptyAssemblyAndModuleTest()
         {
             using (TempFile file = TempFile.Create())
             {
@@ -40,6 +40,7 @@ namespace System.Reflection.Emit.Tests
                 Module moduleFromDisk = assemblyFromDisk.Modules.First();
 
                 Assert.NotNull(moduleFromDisk);
+                Assert.Equal(s_assemblyName.Name, moduleFromDisk.ScopeName);
                 Assert.Empty(moduleFromDisk.GetTypes());
             }
         }

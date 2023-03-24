@@ -58,13 +58,13 @@ namespace System.Reflection.Emit
                 );
         }
 
-        internal static MethodDefinitionHandle AddMethodDefinition(MetadataBuilder metadata, MethodBuilderImpl methodBuilder)
+        internal static MethodDefinitionHandle AddMethodDefinition(MetadataBuilder metadata, MethodBuilderImpl methodBuilder, BlobBuilder methodSignatureBlob)
         {
             return metadata.AddMethodDefinition(
                 methodBuilder.Attributes,
                 MethodImplAttributes.IL,
                 metadata.GetOrAddString(methodBuilder.Name),
-                metadata.GetOrAddBlob(MetadataSignatureHelper.MethodSignatureEncoder(methodBuilder._parametersTypes, methodBuilder._returnType, !methodBuilder.IsStatic)),
+                metadata.GetOrAddBlob(methodSignatureBlob),
                 -1, // No body supported yet
                 parameterList: MetadataTokens.ParameterHandle(1)
                 );

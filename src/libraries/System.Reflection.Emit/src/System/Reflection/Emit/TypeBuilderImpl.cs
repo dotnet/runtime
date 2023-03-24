@@ -47,6 +47,9 @@ namespace System.Reflection.Emit
         protected override EventBuilder DefineEventCore(string name, EventAttributes attributes, Type eventtype) => throw new NotImplementedException();
         protected override FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
+            ArgumentException.ThrowIfNullOrEmpty(fieldName);
+            ArgumentNullException.ThrowIfNull(type);
+
             var field = new FieldBuilderImpl(this, fieldName, type, attributes);
             _fieldDefStore.Add(field);
            return field;
@@ -84,7 +87,10 @@ namespace System.Reflection.Emit
             {
                 if ((_attributes & TypeAttributes.Interface) != TypeAttributes.Interface)
                 {
-                    _typeParent = typeof(object);
+                    // In this case _typeParent = typeof(object); but we don't want to emit reference to runtime System.Private.CoreLib
+                    // We will need to invent a way how to control the name of the system module. The name of the system module
+                    // may need to be an optional argument when constructing the assembly builder.
+                    throw new NotImplementedException();
                 }
                 else
                 {

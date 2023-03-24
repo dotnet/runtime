@@ -69,9 +69,9 @@ namespace System.Reflection.Emit.Tests
                     "System.Reflection.Emit.AssemblyBuilderImpl, System.Reflection.Emit",
                     throwOnError: true)!;
 
-            saveMethod = assemblyType.GetMethod("Save", BindingFlags.Public | BindingFlags.Instance, new Type[] { parameterType });
+            saveMethod = assemblyType.GetMethod("Save", BindingFlags.NonPublic | BindingFlags.Instance, new Type[] { parameterType });
 
-            return assemblyType.GetMethod("DefineDynamicAssembly", BindingFlags.Public | BindingFlags.Static,
+            return assemblyType.GetMethod("DefineDynamicAssembly", BindingFlags.NonPublic | BindingFlags.Static,
                 new Type[] { typeof(AssemblyName), typeof(List<CustomAttributeBuilder>) });
         }
 

@@ -9,20 +9,17 @@ using System.Reflection.PortableExecutable;
 
 namespace System.Reflection.Emit
 {
-    public sealed class AssemblyBuilderImpl : AssemblyBuilder
+    internal sealed class AssemblyBuilderImpl : AssemblyBuilder
     {
         private bool _previouslySaved;
-        private bool _isManifestModuleUsedAsDefinedModule;
         private readonly AssemblyName _assemblyName;
-        private readonly ModuleBuilderImpl _module;
+        private ModuleBuilderImpl? _module;
 
         internal AssemblyBuilderImpl(AssemblyName name, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             ArgumentNullException.ThrowIfNull(name);
 
             _assemblyName = name;
-
-            _module = new ModuleBuilderImpl(ModuleBuilderImpl.ManifestModuleName, this);
 
             if (assemblyAttributes != null)
             {
@@ -33,10 +30,10 @@ namespace System.Reflection.Emit
             }
         }
 
-        public static AssemblyBuilderImpl DefineDynamicAssembly(AssemblyName name)
+        internal static AssemblyBuilderImpl DefineDynamicAssembly(AssemblyName name)
             => new AssemblyBuilderImpl(name, null);
 
-        public static AssemblyBuilderImpl DefineDynamicAssembly(
+        internal static AssemblyBuilderImpl DefineDynamicAssembly(
             AssemblyName name,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
                 => new AssemblyBuilderImpl(name, assemblyAttributes);
@@ -59,9 +56,14 @@ namespace System.Reflection.Emit
             peBlob.WriteContentTo(peStream);
         }
 
-        public void Save(Stream stream)
+        internal void Save(Stream stream)
         {
             ArgumentNullException.ThrowIfNull(stream);
+
+            if (_module == null)
+            {
+                throw new InvalidOperationException(SR.AModuleRequired);
+            }
 
             if (_previouslySaved) // Cannot save an assembly multiple times. This is consistent with Save() in .Net Framework.
             {
@@ -91,7 +93,7 @@ namespace System.Reflection.Emit
             _previouslySaved = true;
         }
 
-        public void Save(string assemblyFileName)
+        internal void Save(string assemblyFileName)
         {
             ArgumentNullException.ThrowIfNull(assemblyFileName);
 
@@ -99,23 +101,20 @@ namespace System.Reflection.Emit
             Save(peStream);
         }
 
-        protected override ModuleBuilder DefineDynamicModuleCore(string _)
+        protected override ModuleBuilder DefineDynamicModuleCore(string name)
         {
-            if (_isManifestModuleUsedAsDefinedModule)
+            if (_module != null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
             }
 
-            _isManifestModuleUsedAsDefinedModule = true;
-
+            _module = new ModuleBuilderImpl(name, this);
             return _module;
         }
 
         protected override ModuleBuilder? GetDynamicModuleCore(string name)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-
-            if (ModuleBuilderImpl.ManifestModuleName.Equals(name))
+            if (_module != null && _module.ScopeName.Equals(name))
             {
                 return _module;
             }

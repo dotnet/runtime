@@ -12,6 +12,7 @@ namespace System.Reflection.Emit
     internal sealed class ModuleBuilderImpl : ModuleBuilder
     {
         private readonly AssemblyBuilderImpl _assemblyBuilder;
+        private readonly string _name;
 
         #region Internal Data Members
 
@@ -20,15 +21,13 @@ namespace System.Reflection.Emit
         internal List<TypeBuilderImpl> _typeDefStore = new List<TypeBuilderImpl>();
         internal int _nextMethodDefRowId = 1;
         internal int _nextFieldDefRowId = 1;
-        internal const string ManifestModuleName = "RefEmit_ManifestModule";
 
         #endregion
-
 
         internal ModuleBuilderImpl(string name, AssemblyBuilderImpl assembly)
         {
             _assemblyBuilder = assembly;
-            ScopeName = name;
+            _name = name;
         }
 
         internal void AppendMetadata(MetadataBuilder metadata)
@@ -56,6 +55,7 @@ namespace System.Reflection.Emit
                 TypeReferenceHandle parent = default;
                 if (typeBuilder.BaseType is not null)
                 {
+                    // TODO: need to handle the case when the base is from same assembly
                     parent = GetTypeReference(metadata, typeBuilder.BaseType);
                 }
 
@@ -64,7 +64,7 @@ namespace System.Reflection.Emit
                 // Add each method definition to metadata table.
                 foreach (MethodBuilderImpl method in typeBuilder._methodDefStore)
                 {
-                    MetadataHelper.AddMethodDefinition(metadata, method);
+                    MetadataHelper.AddMethodDefinition(metadata, method, method.GetMethodSignatureBlob());
                     _nextMethodDefRowId++;
                 }
 
@@ -96,8 +96,9 @@ namespace System.Reflection.Emit
 
             return MetadataHelper.AddAssemblyReference(assembly, metadata);
         }
-
-        public override string ScopeName { get; }
+        [RequiresAssemblyFiles("Returns <Unknown> for modules with no file path")]
+        public override string Name => _name;
+        public override string ScopeName => _name;
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
         public override int GetFieldMetadataToken(FieldInfo field) => throw new NotImplementedException();
         public override int GetMethodMetadataToken(ConstructorInfo constructor) => throw new NotImplementedException();
@@ -112,6 +113,8 @@ namespace System.Reflection.Emit
         protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet) => throw new NotImplementedException();
         protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr, [DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
             TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this);
             _typeDefStore.Add(_type);
             return _type;
