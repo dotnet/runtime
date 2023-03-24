@@ -2875,10 +2875,6 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 	if (g_list_find (td->dont_inline, method))
 		return FALSE;
 
-	// temp workaround for https://github.com/dotnet/runtime/issues/83792 -kg
-	if (mono_interp_jit_call_supported(method, csignature))
-		return FALSE;
-
 	return TRUE;
 }
 
@@ -3484,6 +3480,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		if (!target_method) {
 			if (td->verbose_level > 1)
 				g_print("Disabling inlining because we have no target_method for call in %s\n", td->method->name);
+			return FALSE;
+		} else if (td->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
+			// This scenario causes https://github.com/dotnet/runtime/issues/83792
 			return FALSE;
 		} else if (has_doesnotreturn_attribute(target_method)) {
 			/*
