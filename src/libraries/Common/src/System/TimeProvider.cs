@@ -17,6 +17,9 @@ namespace System
         /// a time zone based on <see cref="TimeZoneInfo.Local"/>, a high-performance time stamp based on <see cref="Stopwatch"/>,
         /// and a timer based on <see cref="Timer"/>.
         /// </summary>
+        /// <remarks>
+        /// If the <see cref="TimeZoneInfo.Local"/> changes after the object is returned, the change will be reflected in any subsequent operations that retrieve <see cref="TimeProvider.LocalNow"/>.
+        /// </remarks>
         public static TimeProvider System { get; } = new SystemTimeProvider(null);
 
         /// <summary>
