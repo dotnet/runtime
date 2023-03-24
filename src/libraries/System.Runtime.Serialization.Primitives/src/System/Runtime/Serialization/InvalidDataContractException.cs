@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization
@@ -25,6 +26,8 @@ namespace System.Runtime.Serialization
         {
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected InvalidDataContractException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

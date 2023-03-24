@@ -38,6 +38,8 @@ System.Management.SelectQuery</PackageDescription>
              Link="Common\Interop\Windows\Ole32\Interop.CoGetObjectContext.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <Compile Include="System\Management\ManagementBaseObject.cs" />
     <Compile Include="System\Management\ManagementClass.cs" />
     <Compile Include="System\Management\ManagementDateTime.cs" />

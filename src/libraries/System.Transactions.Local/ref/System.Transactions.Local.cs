@@ -144,6 +144,8 @@ namespace System.Transactions
     public partial class TransactionAbortedException : System.Transactions.TransactionException
     {
         public TransactionAbortedException() { }
+        [System.ObsoleteAttribute("Legacy formatter-based serialization (IMPL) is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected TransactionAbortedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TransactionAbortedException(string? message) { }
         public TransactionAbortedException(string? message, System.Exception? innerException) { }
@@ -157,6 +159,8 @@ namespace System.Transactions
     public partial class TransactionException : System.SystemException
     {
         public TransactionException() { }
+        [System.ObsoleteAttribute("Legacy formatter-based serialization (IMPL) is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected TransactionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TransactionException(string? message) { }
         public TransactionException(string? message, System.Exception? innerException) { }
@@ -164,6 +168,8 @@ namespace System.Transactions
     public partial class TransactionInDoubtException : System.Transactions.TransactionException
     {
         public TransactionInDoubtException() { }
+        [System.ObsoleteAttribute("Legacy formatter-based serialization (IMPL) is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected TransactionInDoubtException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TransactionInDoubtException(string? message) { }
         public TransactionInDoubtException(string? message, System.Exception? innerException) { }
@@ -201,6 +207,8 @@ namespace System.Transactions
     public partial class TransactionManagerCommunicationException : System.Transactions.TransactionException
     {
         public TransactionManagerCommunicationException() { }
+        [System.ObsoleteAttribute("Legacy formatter-based serialization (IMPL) is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected TransactionManagerCommunicationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TransactionManagerCommunicationException(string? message) { }
         public TransactionManagerCommunicationException(string? message, System.Exception? innerException) { }
@@ -219,6 +227,8 @@ namespace System.Transactions
     public partial class TransactionPromotionException : System.Transactions.TransactionException
     {
         public TransactionPromotionException() { }
+        [System.ObsoleteAttribute("Legacy formatter-based serialization (IMPL) is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected TransactionPromotionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TransactionPromotionException(string? message) { }
         public TransactionPromotionException(string? message, System.Exception? innerException) { }

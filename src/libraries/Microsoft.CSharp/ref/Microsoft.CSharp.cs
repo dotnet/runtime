@@ -68,6 +68,8 @@ namespace Microsoft.CSharp.RuntimeBinder
     public partial class RuntimeBinderException : System.Exception
     {
         public RuntimeBinderException() { }
+        [System.ObsoleteAttribute("Legacy formatter-based serialization (IMPL) is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected RuntimeBinderException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public RuntimeBinderException(string? message) { }
         public RuntimeBinderException(string? message, System.Exception? innerException) { }
@@ -75,6 +77,8 @@ namespace Microsoft.CSharp.RuntimeBinder
     public partial class RuntimeBinderInternalCompilerException : System.Exception
     {
         public RuntimeBinderInternalCompilerException() { }
+        [System.ObsoleteAttribute("Legacy formatter-based serialization (IMPL) is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected RuntimeBinderInternalCompilerException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public RuntimeBinderInternalCompilerException(string? message) { }
         public RuntimeBinderInternalCompilerException(string? message, System.Exception? innerException) { }

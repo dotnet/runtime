@@ -55,6 +55,8 @@ namespace System.Reflection
 
         public virtual int MetadataToken => MetadataToken_ParamDef;
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public object GetRealObject(StreamingContext context)
         {
             // Once all the serializable fields have come in we can set up the real

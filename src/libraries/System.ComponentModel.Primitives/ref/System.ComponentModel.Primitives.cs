@@ -221,6 +221,8 @@ namespace System.ComponentModel
     public partial class InvalidAsynchronousStateException : System.ArgumentException
     {
         public InvalidAsynchronousStateException() { }
+        [System.ObsoleteAttribute("Legacy formatter-based serialization (IMPL) is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected InvalidAsynchronousStateException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public InvalidAsynchronousStateException(string? message) { }
         public InvalidAsynchronousStateException(string? message, System.Exception? innerException) { }
@@ -228,6 +230,8 @@ namespace System.ComponentModel
     public partial class InvalidEnumArgumentException : System.ArgumentException
     {
         public InvalidEnumArgumentException() { }
+        [System.ObsoleteAttribute("Legacy formatter-based serialization (IMPL) is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected InvalidEnumArgumentException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public InvalidEnumArgumentException(string? message) { }
         public InvalidEnumArgumentException(string? message, System.Exception? innerException) { }

@@ -29,6 +29,7 @@ namespace System.Resources
             HResult = System.HResults.COR_E_MISSINGMANIFESTRESOURCE;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         protected MissingManifestResourceException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

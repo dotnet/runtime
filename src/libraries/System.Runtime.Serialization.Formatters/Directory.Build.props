@@ -3,6 +3,6 @@
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <!-- don't warn on usage of BinaryFormatter and legacy formatter infrastructure from the projects which implement or test it -->
-    <NoWarn>$(NoWarn);SYSLIB0011;SYSLIB0049</NoWarn>
+    <NoWarn>$(NoWarn);SYSLIB0011;SYSLIB0049;SYSLIB0050</NoWarn>
   </PropertyGroup>
 </Project>

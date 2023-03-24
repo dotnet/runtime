@@ -239,6 +239,8 @@ namespace System.Diagnostics.Tracing
     public partial class EventSourceException : System.Exception
     {
         public EventSourceException() { }
+        [System.ObsoleteAttribute("Legacy formatter-based serialization (IMPL) is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected EventSourceException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public EventSourceException(string? message) { }
         public EventSourceException(string? message, System.Exception? innerException) { }

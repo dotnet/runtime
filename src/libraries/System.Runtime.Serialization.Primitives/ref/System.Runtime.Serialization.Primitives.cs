@@ -66,6 +66,8 @@ namespace System.Runtime.Serialization
     public partial class InvalidDataContractException : System.Exception
     {
         public InvalidDataContractException() { }
+        [System.ObsoleteAttribute("Legacy formatter-based serialization (IMPL) is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected InvalidDataContractException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public InvalidDataContractException(string? message) { }
         public InvalidDataContractException(string? message, System.Exception? innerException) { }

@@ -259,6 +259,10 @@ namespace System.Data.OleDb
         internal OleDbException() { }
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Content)]
         public System.Data.OleDb.OleDbErrorCollection Errors { get { throw null; } }
+#if NET8_0_OR_GREATER
+        [System.ObsoleteAttribute("Legacy formatter-based serialization (IMPL) is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
     }
     public sealed partial class OleDbFactory : System.Data.Common.DbProviderFactory

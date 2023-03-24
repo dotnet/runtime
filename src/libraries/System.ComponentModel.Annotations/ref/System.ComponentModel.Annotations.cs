@@ -360,6 +360,8 @@ namespace System.ComponentModel.DataAnnotations
     {
         public ValidationException() { }
         public ValidationException(System.ComponentModel.DataAnnotations.ValidationResult validationResult, System.ComponentModel.DataAnnotations.ValidationAttribute? validatingAttribute, object? value) { }
+        [System.ObsoleteAttribute("Legacy formatter-based serialization (IMPL) is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected ValidationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ValidationException(string? message) { }
         public ValidationException(string? errorMessage, System.ComponentModel.DataAnnotations.ValidationAttribute? validatingAttribute, object? value) { }

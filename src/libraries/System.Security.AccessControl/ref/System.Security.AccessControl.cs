@@ -444,6 +444,8 @@ namespace System.Security.AccessControl
         public PrivilegeNotHeldException(string? privilege) { }
         public PrivilegeNotHeldException(string? privilege, System.Exception? inner) { }
         public string? PrivilegeName { get { throw null; } }
+        [System.ObsoleteAttribute("Legacy formatter-based serialization (IMPL) is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     [System.FlagsAttribute]
