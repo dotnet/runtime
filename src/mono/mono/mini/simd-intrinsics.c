@@ -1939,7 +1939,8 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
 #ifdef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg)) {
-		if (size != 16)
+		return NULL;
+		/*if (size != 16)
 			return NULL;
 		switch (id) {
 		case SN_get_One:
@@ -1957,7 +1958,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			break;
 		default:
 			return NULL;
-		}
+		}*/
 	}
 #endif
 
