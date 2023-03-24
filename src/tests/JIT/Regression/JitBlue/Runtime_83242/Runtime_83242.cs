@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Runtime_83242
+public class Runtime_83242
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int Map(int i)

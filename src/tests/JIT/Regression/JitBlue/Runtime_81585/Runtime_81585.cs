@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -7,9 +7,9 @@ using System.Runtime.CompilerServices;
 
 [module: SkipLocalsInit]
 
-class Runtime_81585
+public class Runtime_81585
 {
-    static int Main()
+    public static int Main()
     {
         Vector4 a = new Vector4(new Vector2(1.051f, 2.05f), 3.478f, 1.0f);
         Vector4 b = new Vector4(new Vector3(1.051f, 2.05f, 3.478f), 0.0f);
