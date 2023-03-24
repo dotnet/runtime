@@ -12,14 +12,13 @@
 .assembly identity3 {}
 .namespace PrimitiveVT
 {
-  .class private auto ansi beforefieldinit Identity3
+  .class public auto ansi beforefieldinit Identity3
          extends [mscorlib]System.Object
   {
     .field private static class [mscorlib]System.Random rand
     .field private valuetype [nativeinthelper]PrimitiveVT.VT1A vt1a
     .field private static valuetype [nativeinthelper]PrimitiveVT.VT1A x
-    .method private hidebysig static int32 
-            Main() cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

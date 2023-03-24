@@ -11,7 +11,7 @@
 
 .assembly extern legacy library mscorlib {}
 .assembly legacy library ldfldstatic1 { }
-.class private auto ansi beforefieldinit ldfldstatic1
+.class public auto ansi beforefieldinit ldfldstatic1
        extends [mscorlib]System.Object
 {
   .field private static int32 fld

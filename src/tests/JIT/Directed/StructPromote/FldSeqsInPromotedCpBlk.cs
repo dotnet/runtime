@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // In this test, we have a block assignment with a source that is a promoted struct and
 // an indirect destination. When morphing it, we would decompose that assignment into a series
@@ -21,9 +22,10 @@ using System.Runtime.CompilerServices;
 //
 // The fix was to reuse the address for the last field instead.
 
-class FldSeqsInPromotedCpBlk
+public class FldSeqsInPromotedCpBlk
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         PromotableStruct s = default;
         return Problem(new PromotableStruct[1]) == 2 ? 100 : 101;

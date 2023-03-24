@@ -7,10 +7,12 @@
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-unsafe class ObjBlkLiveness
+public unsafe class ObjBlkLiveness
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var a = Vector128<int>.Zero;
         return Problem(&a, 1) ? 100 : 101;

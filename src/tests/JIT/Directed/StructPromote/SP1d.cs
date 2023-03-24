@@ -4,8 +4,9 @@
 
 using System.Runtime.CompilerServices;
 using System;
+using Xunit;
 
-class SP1d
+public class SP1d
 {
 
     // Struct in reg (2 ints)
@@ -31,7 +32,8 @@ class SP1d
         // outarg[0] <= inarg[8]; outarg[4] <= r3; outarg[8] <= r2
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int res = M(4, 5, 6, 7, 3, 2, 1);
         Console.WriteLine("M(4, 5, 6, 7, 3, 2, 1) is {0}.", res);

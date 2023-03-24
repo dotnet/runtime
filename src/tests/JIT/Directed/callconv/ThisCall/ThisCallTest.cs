@@ -76,9 +76,10 @@ unsafe class ThisCallNative
     public static extern CLong GetWidthAsLongFromManaged(C* c);
 }
 
-unsafe class ThisCallTest
+public unsafe class ThisCallTest
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

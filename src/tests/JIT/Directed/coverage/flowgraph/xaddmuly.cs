@@ -3,11 +3,13 @@
 //
 
 using System;
-internal class Test_xaddmuly
+using Xunit;
+public class Test_xaddmuly
 {
     static public float x = 0x8000;
     static public float y = 0xF;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         x += y * x;
         x += y * x;

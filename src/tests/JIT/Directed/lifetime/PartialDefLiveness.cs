@@ -8,10 +8,12 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
-class PartialDefLiveness
+public class PartialDefLiveness
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // Just making sure we'll not hit any asserts in SSA.
         Problem();

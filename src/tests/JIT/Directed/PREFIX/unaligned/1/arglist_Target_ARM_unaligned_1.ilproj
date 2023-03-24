@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <!-- Needed for CLRTestTargetUnsupported -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestPriority>1</CLRTestPriority>
+    <!-- There is a 32, arm and 64 version of this test to allow it to be compiled for all targets -->
+    <CLRTestTargetUnsupported Condition="'$(TargetBits)' != '32'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'arm' and '$(TargetArchitecture)' != 'armel'">true</CLRTestTargetUnsupported>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="arglistARM.il" />
+  </ItemGroup>
+</Project>

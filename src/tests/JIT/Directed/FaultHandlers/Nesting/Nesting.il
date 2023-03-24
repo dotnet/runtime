@@ -22,7 +22,7 @@
   }
 }
 
-.class TEST
+.class public TEST
 {
 	.method public static int32 Main() il managed
 	{

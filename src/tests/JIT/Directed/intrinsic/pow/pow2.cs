@@ -5,6 +5,7 @@
 //testing plain double, array member, struct member or class member
 
 using System;
+using Xunit;
 
 internal struct vt
 {
@@ -19,58 +20,59 @@ internal class cl
         x = new double[6, 5, 4];
     }
 }
-internal class pow2
+public class pow2
 {
-    public static double CalculateSinh(double x)
+    private static double CalculateSinh(double x)
     {
         double a = Math.Pow(Math.E, x);
         double b = Math.Pow(Math.E, -x);
         return (a - b) / 2;
     }
 
-    public static double CalculateSinh(double[] x)
+    private static double CalculateSinh(double[] x)
     {
         double a = Math.Pow(Math.E, x[1]);
         double b = Math.Pow(Math.E, -x[1]);
         return (a - b) / 2;
     }
 
-    public static double CalculateSinh(double[,] x)
+    private static double CalculateSinh(double[,] x)
     {
         double a = Math.Pow(Math.E, x[1, 1]);
         double b = Math.Pow(Math.E, -x[1, 1]);
         return (a - b) / 2;
     }
 
-    public static double CalculateSinh(double[,,] x)
+    private static double CalculateSinh(double[,,] x)
     {
         double a = Math.Pow(Math.E, x[2, 1, 1]);
         double b = Math.Pow(Math.E, -x[2, 1, 1]);
         return (a - b) / 2;
     }
 
-    public static double CalculateSinh(double[][,] x)
+    private static double CalculateSinh(double[][,] x)
     {
         double a = Math.Pow(Math.E, x[2][1, 1]);
         double b = Math.Pow(Math.E, -x[2][1, 1]);
         return (a - b) / 2;
     }
 
-    public static double CalculateSinh(vt vt1)
+    private static double CalculateSinh(vt vt1)
     {
         double a = Math.Pow(Math.E, vt1.x[1, 1]);
         double b = Math.Pow(Math.E, -vt1.x[1, 1]);
         return (a - b) / 2;
     }
 
-    public static double CalculateSinh(cl cl1)
+    private static double CalculateSinh(cl cl1)
     {
         double a = Math.Pow(Math.E, cl1.x[5, 1, 3]);
         double b = Math.Pow(Math.E, -cl1.x[5, 1, 3]);
         return (a - b) / 2;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = true;
 

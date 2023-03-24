@@ -4,8 +4,9 @@
 
 using System.Runtime.CompilerServices;
 using System;
+using Xunit;
 
-class SpAddr
+public class SpAddr
 {
 
     // Struct in reg (2 ints)
@@ -34,7 +35,8 @@ class SpAddr
         return Foo(s0, s1); // r0 <= r1; r1 <= r0; r2 <= r3; r3 <= r2
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int res = M(1, 2, 3, 4);
         Console.WriteLine("M(1, 2, 3, 4) is {0}.", res);

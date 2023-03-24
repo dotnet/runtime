@@ -5,10 +5,12 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 public class Program
 {
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         int result = 0;
         try {

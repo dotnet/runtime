@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct SingleByte
 {
@@ -2153,7 +2154,8 @@ public static partial class StructABI
 		return ok;
 	}
 
-	static int Main()
+	[Fact]
+	public static int TestEntryPoint()
 	{
 		var ok = true;
 	

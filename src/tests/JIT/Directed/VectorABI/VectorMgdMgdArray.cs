@@ -5,6 +5,7 @@ using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 // Test passing and returning HVAs (homogeneous vector aggregates) to/from managed code.
 // Test various sizes (including ones that exceed the limit for being treated as HVAs),
@@ -1083,7 +1084,8 @@ public static class VectorMgdMgd
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         HVATests<byte> byteTests = new HVATests<byte>();
