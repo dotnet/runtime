@@ -20,7 +20,7 @@ namespace System.Reflection.Emit
         internal List<TypeBuilderImpl> _typeDefStore = new List<TypeBuilderImpl>();
         internal int _nextMethodDefRowId = 1;
         internal int _nextFieldDefRowId = 1;
-        internal const string ManifestModuleName = "RefEmit_InMemoryManifestModule";
+        internal const string ManifestModuleName = "RefEmit_ManifestModule";
 
         #endregion
 
@@ -59,7 +59,7 @@ namespace System.Reflection.Emit
                     parent = GetTypeReference(metadata, typeBuilder.BaseType);
                 }
 
-                TypeDefinitionHandle typeDefinitionHandle = MetadataHelper.AddTypeDef(metadata, typeBuilder, parent, _nextMethodDefRowId, _nextFieldDefRowId);
+                TypeDefinitionHandle typeDefinitionHandle = MetadataHelper.AddTypeDefinition(metadata, typeBuilder, parent, _nextMethodDefRowId, _nextFieldDefRowId);
 
                 // Add each method definition to metadata table.
                 foreach (MethodBuilderImpl method in typeBuilder._methodDefStore)

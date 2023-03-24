@@ -42,21 +42,22 @@ namespace System.Reflection.Emit
         #region FieldInfo Overrides
         public override Type FieldType => _fieldType;
 
-        public override object? GetValue(object? obj) => throw new NotSupportedException();
+        public override object? GetValue(object? obj) => throw new NotSupportedException(SR.NotSupported_DynamicModule);
 
-        public override void SetValue(object? obj, object? val, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture) => throw new NotSupportedException();
-        public override RuntimeFieldHandle FieldHandle => throw new NotSupportedException();
+        public override void SetValue(object? obj, object? val, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
+            => throw new NotSupportedException(SR.NotSupported_DynamicModule);
+        public override RuntimeFieldHandle FieldHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
 
         public override FieldAttributes Attributes => _attributes;
 
         #endregion
 
         #region ICustomAttributeProvider Implementation
-        public override object[] GetCustomAttributes(bool inherit) => throw new NotSupportedException();
+        public override object[] GetCustomAttributes(bool inherit) => throw new NotSupportedException(SR.NotSupported_DynamicModule);
 
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotSupportedException();
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_DynamicModule);
 
-        public override bool IsDefined(Type attributeType, bool inherit) => throw new NotSupportedException();
+        public override bool IsDefined(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_DynamicModule);
         #endregion
     }
 }

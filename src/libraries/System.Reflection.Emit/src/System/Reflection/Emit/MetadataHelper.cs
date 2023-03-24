@@ -32,7 +32,7 @@ namespace System.Reflection.Emit
                 hashValue: default); // not sure where to find hashValue.
         }
 
-        internal static TypeDefinitionHandle AddTypeDef(MetadataBuilder metadata, TypeBuilderImpl typeBuilder, EntityHandle baseType, int methodToken, int fieldToken)
+        internal static TypeDefinitionHandle AddTypeDefinition(MetadataBuilder metadata, TypeBuilderImpl typeBuilder, EntityHandle baseType, int methodToken, int fieldToken)
         {
             // Add type metadata
             return metadata.AddTypeDefinition(

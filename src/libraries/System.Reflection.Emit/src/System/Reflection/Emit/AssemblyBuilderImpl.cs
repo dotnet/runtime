@@ -12,6 +12,7 @@ namespace System.Reflection.Emit
     public sealed class AssemblyBuilderImpl : AssemblyBuilder
     {
         private bool _previouslySaved;
+        private bool _isManifestModuleUsedAsDefinedModule;
         private readonly AssemblyName _assemblyName;
         private readonly ModuleBuilderImpl _module;
 
@@ -54,7 +55,7 @@ namespace System.Reflection.Emit
 
             // Write executable into the specified stream.
             var peBlob = new BlobBuilder();
-            BlobContentId contentId = peBuilder.Serialize(peBlob);
+            peBuilder.Serialize(peBlob);
             peBlob.WriteContentTo(peStream);
         }
 
@@ -69,7 +70,7 @@ namespace System.Reflection.Emit
 
             if (string.IsNullOrEmpty(_assemblyName.Name))
             {
-                throw new InvalidOperationException();
+                throw new InvalidOperationException(SR.AssemblyNameCannotBeNull);
             }
 
             // Add assembly metadata
@@ -94,12 +95,19 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(assemblyFileName);
 
-            using var peStream = new FileStream(assemblyFileName, FileMode.OpenOrCreate, FileAccess.ReadWrite);
+            using var peStream = new FileStream(assemblyFileName, FileMode.CreateNew, FileAccess.Write);
             Save(peStream);
         }
 
-        protected override ModuleBuilder DefineDynamicModuleCore(string name)
+        protected override ModuleBuilder DefineDynamicModuleCore(string _)
         {
+            if (_isManifestModuleUsedAsDefinedModule)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
+            }
+
+            _isManifestModuleUsedAsDefinedModule = true;
+
             return _module;
         }
 
@@ -115,8 +123,8 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotSupportedException();
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotImplementedException();
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotSupportedException();
+        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
     }
 }

@@ -10,7 +10,6 @@ namespace System.Reflection.Emit
 {
     internal sealed class TypeBuilderImpl : TypeBuilder
     {
-        public override Module Module => _module;
         internal List<MethodBuilderImpl> _methodDefStore = new();
         internal List<FieldBuilderImpl> _fieldDefStore = new();
         private readonly ModuleBuilderImpl _module;
@@ -106,6 +105,7 @@ namespace System.Reflection.Emit
         public override string? FullName => throw new NotSupportedException();
         public override string? Namespace => _namespace;
         public override Assembly Assembly => _module.Assembly;
+        public override Module Module => _module;
         public override Type UnderlyingSystemType => throw new NotSupportedException();
         public override Guid GUID => throw new NotSupportedException();
         public override Type? BaseType => _typeParent;

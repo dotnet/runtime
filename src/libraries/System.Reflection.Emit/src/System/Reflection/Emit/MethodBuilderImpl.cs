@@ -8,7 +8,7 @@ namespace System.Reflection.Emit
 {
     internal sealed class MethodBuilderImpl : MethodBuilder
     {
-        internal Type? _returnType;
+        internal Type _returnType;
         internal Type[]? _parametersTypes;
         private readonly ModuleBuilderImpl _module;
 
@@ -19,7 +19,7 @@ namespace System.Reflection.Emit
             Name = name;
             Attributes = attributes;
             CallingConvention = callingConventions;
-            _returnType = returnType;
+            _returnType = returnType ?? typeof(void);
             _parametersTypes = parameters;
             DeclaringType = declaringType;
             Module = declaringType.Module;
@@ -32,33 +32,31 @@ namespace System.Reflection.Emit
         protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotImplementedException();
         protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
         protected override void SetImplementationFlagsCore(MethodImplAttributes attributes) => throw new NotImplementedException();
-        protected override void SetSignatureCore(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers) => throw new NotImplementedException();
+        protected override void SetSignatureCore(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
+            Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers) => throw new NotImplementedException();
         public override string Name { get; }
         public override MethodAttributes Attributes { get; }
         public override CallingConventions CallingConvention { get; }
         public override TypeBuilder DeclaringType { get; }
         public override Module Module { get; }
-        public override bool ContainsGenericParameters { get => throw new NotImplementedException(); }
+        public override bool ContainsGenericParameters { get => throw new NotSupportedException(SR.NotSupported_DynamicModule); }
         public override bool IsGenericMethod { get => throw new NotImplementedException(); }
         public override bool IsGenericMethodDefinition { get => throw new NotImplementedException(); }
-        public override bool IsSecurityCritical { get => throw new NotImplementedException(); }
-        public override bool IsSecuritySafeCritical { get => throw new NotImplementedException(); }
-        public override bool IsSecurityTransparent { get => throw new NotImplementedException(); }
+        public override bool IsSecurityCritical => true;
+        public override bool IsSecuritySafeCritical => false;
+        public override bool IsSecurityTransparent => false;
         public override int MetadataToken { get => throw new NotImplementedException(); }
-        public override RuntimeMethodHandle MethodHandle { get => throw new NotImplementedException(); }
+        public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException(SR.NotSupported_DynamicModule);
         public override Type? ReflectedType { get => throw new NotImplementedException(); }
         public override ParameterInfo ReturnParameter { get => throw new NotImplementedException(); }
-        public override Type ReturnType { get => throw new NotImplementedException(); }
+        public override Type ReturnType => _returnType;
         public override ICustomAttributeProvider ReturnTypeCustomAttributes { get => throw new NotImplementedException(); }
 
-        public override MethodInfo GetBaseDefinition()
-            => throw new NotImplementedException();
+        public override MethodInfo GetBaseDefinition() => this;
 
-        public override object[] GetCustomAttributes(bool inherit)
-            => throw new NotImplementedException();
+        public override object[] GetCustomAttributes(bool inherit) => throw new NotSupportedException(SR.NotSupported_DynamicModule);
 
-        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
-            => throw new NotImplementedException();
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_DynamicModule);
 
         public override Type[] GetGenericArguments()
             => throw new NotImplementedException();
@@ -76,10 +74,9 @@ namespace System.Reflection.Emit
             => throw new NotImplementedException();
 
         public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
-            => throw new NotImplementedException();
+             => throw new NotSupportedException(SR.NotSupported_DynamicModule);
 
-        public override bool IsDefined(Type attributeType, bool inherit)
-            => throw new NotImplementedException();
+        public override bool IsDefined(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_DynamicModule);
 
         [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCodeAttribute("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]

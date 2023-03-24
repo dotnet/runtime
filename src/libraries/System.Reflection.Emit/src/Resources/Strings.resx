@@ -120,22 +120,22 @@
   <data name="CannotSaveMultipleTimes" xml:space="preserve">
     <value>Cannot save an assembly multiple times.</value>
   </data>
-  <data name="AModuleRequired" xml:space="preserve">
-    <value>Assembly needs at least one module defined.</value>
-  </data>
   <data name="Argument_CannotSetParentToInterface" xml:space="preserve">
     <value>Cannot set parent to an interface.</value>
-  </data>
-  <data name="AssemblyNameRequired" xml:space="preserve">
-    <value>Internal AssemblyName cannot be null.</value>
   </data>
   <data name="InvalidOperation_BadInterfaceNotAbstract" xml:space="preserve">
     <value>Interface must be declared abstract.</value>
   </data>
-  <data name="ModuleNotFound" xml:space="preserve">
-    <value>Module not found.</value>
-  </data>
   <data name="SignatureNotSupported" xml:space="preserve">
     <value>The signature {0} is not yet supported.</value>
+  </data>
+  <data name="AssemblyNameCannotBeNull" xml:space="preserve">
+    <value>Assembly name cannot be null</value>
+  </data>
+  <data name="InvalidOperation_NoMultiModuleAssembly" xml:space="preserve">
+    <value>You cannot have more than one dynamic module in each dynamic assembly in this version of the runtime.</value>
+  </data>
+  <data name="NotSupported_DynamicModule" xml:space="preserve">
+    <value>The invoked member is not supported in a dynamic module.</value>
   </data>
 </root>
