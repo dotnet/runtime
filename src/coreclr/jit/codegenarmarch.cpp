@@ -3106,9 +3106,10 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
         }
     };
 
-    // Eventually we want to emit CPYP+CPYM+CPYE on armv9 for large sizes
+    // Eventually, we'll emit CPYP+CPYM+CPYE on armv9 for large sizes here.
 
-    // TODO-CQ: Emit stp/ldp (32 bytes at once).
+    // Let's not use stp/ldp here and rely on the underlying peephole optimizations to merge subsequent
+    // ldr/str pairs into stp/ldp, see https://github.com/dotnet/runtime/issues/64815
     unsigned simdSize = FP_REGSIZE_BYTES;
     if (size >= simdSize)
     {
