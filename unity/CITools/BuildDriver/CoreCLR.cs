@@ -22,7 +22,6 @@ public class CoreCLR
             "-subset clr+libs",
             $"-a {gConfig.Architecture}",
             $"-c {gConfig.Configuration}",
-            $"-v:{gConfig.DotNetVerbosity}"
         };
 
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -108,7 +107,6 @@ public class CoreCLR
             "-test /p:RunSmokeTestsOnly=true",
             $"-a {gConfig.Architecture}",
             $"-c {gConfig.Configuration}",
-            $"-v:{gConfig.DotNetVerbosity}"
         };
 
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
