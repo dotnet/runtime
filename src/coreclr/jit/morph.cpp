@@ -11502,7 +11502,7 @@ GenTree* Compiler::fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow,
     assert(fgGlobalMorph);
     assert(fgIsCommaThrow(commaThrow));
 
-    bool mightBeLocation = (parent->OperIsLocal() || parent->OperIsIndir()) && ((parent->gtFlags & GTF_DONT_CSE) != 0);
+    bool mightBeLocation = parent->OperIsIndir() && ((parent->gtFlags & GTF_DONT_CSE) != 0);
 
     if (mightBeLocation)
     {

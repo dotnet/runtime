@@ -1595,7 +1595,7 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
 {
     if (!tree->Data()->OperIs(GT_CNS_INT, GT_INIT_VAL))
     {
-        // Data is a location.
+        // Data is a location and required to have GTF_DONT_CSE.
         tree->Data()->gtFlags |= GTF_DONT_CSE;
     }
 
