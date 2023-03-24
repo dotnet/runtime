@@ -105,6 +105,10 @@ if(CLR_CMAKE_HOST_UNIX)
         endif()
     endif()
 
+    if(CLR_CMAKE_TARGET_LINUX AND CLR_CMAKE_TARGET_ARCH_I386)
+      add_linker_flag(-Wl,-z,notext)
+    endif()
+
     add_subdirectory(pal)
     add_subdirectory(hosts)
 else()
