@@ -38,7 +38,7 @@ namespace Internal.Reflection.Core.Execution
         //
         // Retrieves a type by name. Helper to implement Type.GetType();
         //
-        public Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly?, string, bool, Type?> typeResolver, bool throwOnError, bool ignoreCase, bool extensibleParser, IList<string> defaultAssemblyNames)
+        public Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly?, string, bool, Type?> typeResolver, bool throwOnError, bool ignoreCase, bool extensibleParser, string defaultAssemblyName)
         {
             return TypeNameParser.GetType(
                 typeName,
@@ -47,7 +47,7 @@ namespace Internal.Reflection.Core.Execution
                 throwOnError: throwOnError,
                 ignoreCase: ignoreCase,
                 extensibleParser: extensibleParser,
-                defaultAssemblyNames: defaultAssemblyNames);
+                defaultAssemblyName: defaultAssemblyName);
         }
 
         //

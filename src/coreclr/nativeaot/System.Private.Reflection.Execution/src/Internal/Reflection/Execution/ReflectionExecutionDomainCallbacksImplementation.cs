@@ -33,11 +33,7 @@ namespace Internal.Reflection.Execution
 
         public sealed override Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, bool extensibleParser, string defaultAssemblyName)
         {
-            LowLevelListWithIList<string> defaultAssemblies = new LowLevelListWithIList<string>();
-            if (defaultAssemblyName != null)
-                defaultAssemblies.Add(defaultAssemblyName);
-            defaultAssemblies.Add(AssemblyBinder.DefaultAssemblyNameForGetType);
-            return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, extensibleParser, defaultAssemblies);
+            return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, extensibleParser, defaultAssemblyName);
         }
 
         public sealed override bool IsReflectionBlocked(RuntimeTypeHandle typeHandle)

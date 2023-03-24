@@ -504,7 +504,7 @@ namespace System.Reflection
         }
 
         //
-        // Abstract base for array, byref and pointer type names.
+        // Array, byref or pointer type name.
         //
         private sealed class ModifierTypeName : TypeName
         {
@@ -543,7 +543,7 @@ namespace System.Reflection
         }
 
         //
-        // A constructed generic type.
+        // Constructed generic type name.
         //
         private sealed class GenericTypeName : TypeName
         {

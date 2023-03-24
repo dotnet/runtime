@@ -20,18 +20,17 @@ namespace System.Reflection
         private bool _throwOnError;
         private bool _ignoreCase;
         private bool _extensibleParser;
-        private Assembly _topLevelAssembly;
-        private IList<string> _defaultAssemblyNames;
+        private Assembly? _topLevelAssembly;
+        private string? _defaultAssemblyName;
 
         internal static Type? GetType(
             string typeName,
-            Func<AssemblyName, Assembly?>? assemblyResolver = null,
-            Func<Assembly?, string, bool, Type?>? typeResolver = null,
+            Func<AssemblyName, Assembly?>? assemblyResolver,
+            Func<Assembly?, string, bool, Type?>? typeResolver,
             bool throwOnError = false,
             bool ignoreCase = false,
-            bool extensibleParser = false,
-            Assembly topLevelAssembly = null,
-            IList<string> defaultAssemblyNames = null)
+            bool extensibleParser = true,
+            string? defaultAssemblyName = null)
         {
             ArgumentNullException.ThrowIfNull(typeName);
 
@@ -51,8 +50,21 @@ namespace System.Reflection
                 _throwOnError = throwOnError,
                 _ignoreCase = ignoreCase,
                 _extensibleParser = extensibleParser,
+                _defaultAssemblyName = defaultAssemblyName
+            }.Parse();
+        }
+
+        internal static Type? GetType(
+            string typeName,
+            bool throwOnError,
+            bool ignoreCase,
+            Assembly topLevelAssembly)
+        {
+            return new TypeNameParser(typeName)
+            {
+                _throwOnError = throwOnError,
+                _ignoreCase = ignoreCase,
                 _topLevelAssembly = topLevelAssembly,
-                _defaultAssemblyNames = defaultAssemblyNames
             }.Parse();
         }
 
@@ -147,27 +159,31 @@ namespace System.Reflection
                 }
                 else
                 {
-                    Debug.Assert(_defaultAssemblyNames is not null);
-
-                    foreach (string defaultAssemblyName in _defaultAssemblyNames)
+                    RuntimeAssemblyInfo? defaultAssembly = null;
+                    if (_defaultAssemblyName != null)
                     {
-                        RuntimeAssemblyName runtimeAssemblyName = RuntimeAssemblyName.Parse(defaultAssemblyName);
-                        RuntimeAssemblyInfo defaultAssembly = RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(runtimeAssemblyName);
-                        if (defaultAssembly is null)
-                            continue;
-                        type = defaultAssembly.GetTypeCore(typeName, throwOnError: false, ignoreCase: _ignoreCase);
-                        if (type is not null)
-                            break;
+                        defaultAssembly = RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(RuntimeAssemblyName.Parse(_defaultAssemblyName));
+                        if (defaultAssembly != null)
+                        {
+                            type = defaultAssembly.GetTypeCore(typeName, throwOnError: false, ignoreCase: _ignoreCase);
+                        }
+                    }
+
+                    RuntimeAssemblyInfo? coreLib = null;
+                    if (type is null)
+                    {
+                        coreLib = (RuntimeAssemblyInfo)typeof(object).Assembly;
+                        if (coreLib != assembly)
+                        {
+                            type = coreLib.GetTypeCore(typeName, throwOnError: false, ignoreCase: _ignoreCase);
+                        }
                     }
 
                     if (type is null)
                     {
                         if (_throwOnError)
                         {
-                            if (_defaultAssemblyNames.Count > 0)
-                                throw Helpers.CreateTypeLoadException(typeName, _defaultAssemblyNames[0]);
-                            else
-                                throw new TypeLoadException(SR.Format(SR.TypeLoad_TypeNotFound, typeName));
+                            throw Helpers.CreateTypeLoadException(typeName, (defaultAssembly ?? coreLib).FullName);
                         }
                         return null;
                     }
