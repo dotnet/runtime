@@ -31,7 +31,7 @@ public class SevenZip
     {
         NPath zipArtifact = new (Environment.GetEnvironmentVariable("ARTIFACT_FILENAME") ??
                                  $"dotnet-unity-{gConfig.Architecture}.7z");
-        SevenZip.Create7z(zipExe, artifacts, Paths.Artifacts.Combine(zipArtifact));
+        SevenZip.Create7z(zipExe, artifacts, Paths.Artifacts.Combine("unity", zipArtifact));
     }
 
     public static void Get7ZipUrl(out string url, out string filename)
