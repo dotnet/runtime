@@ -718,7 +718,8 @@ CMiniMdBase::InitColsForTable(
 {
     const CMiniTableDef *pTemplate;     // Template table definition.
     // Mark the array of columns as not allocated (not ALLOCATED_MEMORY_MARKER) for SetNewColumnDefinition
-    BYTE colData[1 + sizeof(CMiniColDef) * 9];
+    const uint8_t MAX_COL_COUNT = 9;
+    BYTE colData[1 + sizeof(CMiniColDef) * MAX_COL_COUNT];
     colData[0] = 0;
     CMiniColDef* pCols = BYTEARRAY_TO_COLDES(colData);
     BYTE        iOffset;                // Running size of a record.
@@ -726,7 +727,7 @@ CMiniMdBase::InitColsForTable(
     HRESULT     hr = S_OK;
 
     _ASSERTE((bExtra == 0) || (bExtra == 1));
-    _ASSERTE(ARRAY_SIZE(pCols) >= pTable->m_cCols);
+    _ASSERTE(MAX_COL_COUNT >= pTable->m_cCols);
 
     bExtra = 0;//<TODO>@FUTURE: save in schema header.  until then use 0.</TODO>
 
