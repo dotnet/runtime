@@ -227,10 +227,12 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonSerializerOptions options = new();
             options.Converters.Add(new InvalidJsonConverterFactory());
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new TestInfo("Hello"), options));
+            var ex = Assert.Throws<InvalidOperationException>(() => 
+                JsonSerializer.Serialize(new InvalidTestInfo("Hello"), options));
+            Assert.Contains(typeof(InvalidTestInfo).Name, ex.Message);
         }
 
-        private sealed record TestInfo(string Name);
+        private sealed record InvalidTestInfo(string Name);
 
         private sealed class InvalidJsonConverterFactory : JsonConverterFactory
         {
