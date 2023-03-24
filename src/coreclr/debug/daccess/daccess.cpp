@@ -7634,8 +7634,8 @@ void DacHandleWalker::WalkHandles()
 
     DacHandleWalkerParam param(&mList);
     
-    dac_handle_table_map *map = g_gcDacGlobals->handle_table_map;
-    while (SUCCEEDED(param.Result) && map)
+    
+    for (dac_handle_table_map *map = g_gcDacGlobals->handle_table_map; SUCCEEDED(param.Result) && map; map = map->pNext)
     {
         for (int i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE && SUCCEEDED(param.Result); ++i)
         {
@@ -7672,8 +7672,6 @@ void DacHandleWalker::WalkHandles()
                     }
                 }
             }
-
-            map = map->pNext;
         }
     }
 }
