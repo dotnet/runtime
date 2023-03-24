@@ -53,9 +53,7 @@ namespace System.Diagnostics.Tracing
                 if (e.Command == EventCommand.Enable)
                 {
                     Debug.Assert(e.Arguments != null);
-                    Debug.Assert(_refCount >= 0);
 
-                    ++_refCount;
                     float intervalValue = 1.0f;
                     if (e.Arguments.TryGetValue("EventCounterIntervalSec", out string? valueStr)
                         && float.TryParse(valueStr, out float value))
@@ -63,7 +61,18 @@ namespace System.Diagnostics.Tracing
                         intervalValue = value;
                     }
 
-                    EnableTimer(intervalValue);
+                    if (intervalValue > 0)
+                    {
+                        Debug.Assert(_refCount >= 0);
+                        ++_refCount;
+                        EnableTimer(intervalValue);
+                    }
+                    else
+                    {
+                        Debug.Assert(_refCount >= 1);
+                        --_refCount;
+                        DisableTimer();
+                    }
                 }
                 else if (e.Command == EventCommand.Disable)
                 {
@@ -140,11 +149,7 @@ namespace System.Diagnostics.Tracing
         private void EnableTimer(float pollingIntervalInSeconds)
         {
             Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
-            if (pollingIntervalInSeconds <= 0)
-            {
-                DisableTimer();
-            }
-            else if (_pollingIntervalInMilliseconds == 0 || pollingIntervalInSeconds * 1000 < _pollingIntervalInMilliseconds)
+            if (_pollingIntervalInMilliseconds == 0 || pollingIntervalInSeconds * 1000 < _pollingIntervalInMilliseconds)
             {
                 _pollingIntervalInMilliseconds = (int)(pollingIntervalInSeconds * 1000);
                 ResetCounters(); // Reset statistics for counters before we start the thread.
