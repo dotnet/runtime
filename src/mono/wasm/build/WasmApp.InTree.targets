@@ -50,4 +50,14 @@
     <ZipDirectory SourceDirectory="$(WasmAppDir)" DestinationFile="$(ZippedApp)" />
     <Copy SourceFiles="$(ZippedApp)" DestinationFolder="$(HelixArchiveRunOnlyAppsDir)" />
   </Target>
+
+  <Target Name="_DropIntermediaryFilesFromOuput" AfterTargets="ResolveRuntimePackAssets">
+    <PropertyGroup>
+      <_WasmExtensionsToDrop>.a;.c;.h;.rsp;.json;.symbols;.ts;</_WasmExtensionsToDrop>
+    </PropertyGroup>
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" 
+       Condition="$(_WasmExtensionsToDrop.Contains('%(ReferenceCopyLocalPaths.Extension);')) or ('%(Extension)' == '.js' and $([MSBuild]::ValueOrDefault('%(FullPath)', '').Contains('src')))" />
+    </ItemGroup>
+  </Target>
 </Project>
