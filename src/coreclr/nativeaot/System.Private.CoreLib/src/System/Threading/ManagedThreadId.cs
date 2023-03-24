@@ -238,7 +238,7 @@ namespace System.Threading
             var priorIdDispenser = Volatile.Read(ref s_idDispenser);
             for (;;)
             {
-                var updatedIdDispenser = s_idDispenser.RecycleId(id);
+                var updatedIdDispenser = s_idDispenser!.RecycleId(id);
                 var interlockedResult = Interlocked.CompareExchange(ref s_idDispenser, updatedIdDispenser, priorIdDispenser);
                 if (object.ReferenceEquals(priorIdDispenser, interlockedResult))
                     break;

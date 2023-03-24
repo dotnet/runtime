@@ -17,6 +17,29 @@ namespace System.Threading
         private string? _name;
         private StartHelper? _startHelper;
 
+        /*=========================================================================
+        ** The base implementation of Thread is all native.  The following fields
+        ** should never be used in the C# code.  They are here to define the proper
+        ** space so the thread object may be allocated.  DON'T CHANGE THESE UNLESS
+        ** YOU MODIFY ThreadBaseObject in vm\object.h
+        =========================================================================*/
+#pragma warning disable CA1823, 169 // These fields are not used from managed.
+        // IntPtrs need to be together, and before ints, because IntPtrs are 64-bit
+        // fields on 64-bit platforms, where they will be sorted together.
+
+        private IntPtr _DONT_USE_InternalThread; // Pointer
+        private int _priority_portableCore; // INT32
+
+        // The following field is required for interop with the VS Debugger
+        // Prior to making any changes to this field, please reach out to the VS Debugger
+        // team to make sure that your changes are not going to prevent the debugger
+        // from working.
+        private int _managedThreadId_portableCore; // INT32
+#pragma warning restore CA1823, 169
+
+        private ThreadPriority _priority_core;
+        private ManagedThreadId _managedThreadId_core;
+
         // This is used for a quick check on thread pool threads after running a work item to determine if the name, background
         // state, or priority were changed by the work item, and if so to reset it. Other threads may also change some of those,
         // but those types of changes may race with the reset anyway, so this field doesn't need to be synchronized.
@@ -86,12 +109,15 @@ namespace System.Threading
         {
             if (ThreadPool.UseWindowsThreadPool)
             {
-                _managedThreadId = System.Threading.ManagedThreadId.GetCurrentThreadId();
+                _managedThreadId_core = System.Threading.ManagedThreadId.GetCurrentThreadId();
 
                 PlatformSpecificInitialize();
                 RegisterThreadExitCallback();
             }
         }
+
+        private bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError) =>
+            ThreadPool.UseWindowsThreadPool ? SetApartmentStateUncheckedCore(state, throwOnError) : SetApartmentStateUncheckedPortableCore(state, throwOnError);
 
         private unsafe void StartCore() => ThreadPool.UseWindowsThreadPool ? StartWindowsThreadPoolCore() : StartCLRCore();
 
@@ -129,7 +155,7 @@ namespace System.Threading
             InformThreadNameChange(GetNativeHandle(), value, value?.Length ?? 0);
         }
 
-        public ApartmentState GetApartmentState() => GetApartmentStatePortableCore();
+        public ApartmentState GetApartmentState() => ThreadPool.UseWindowsThreadPool ? GetApartmentStateCore() :  GetApartmentStatePortableCore();
 
 #if FEATURE_COMINTEROP
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -145,7 +171,7 @@ namespace System.Threading
         /// thread is not currently blocked in that manner, it will be interrupted
         /// when it next begins to block.
         /// </summary>
-        public void Interrupt() => InterruptCore();
+        public void Interrupt() => ThreadPool.UseWindowsThreadPool ? InterruptCore() : InterruptPortableCore();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ResetThreadPoolThread() => ResetThreadPoolThreadCore();

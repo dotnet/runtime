@@ -106,5 +106,14 @@ namespace System.Threading
         internal static void DecrementRunningForeground() => DecrementRunningForegroundCore();
 
         internal static void WaitForForegroundThreads() => WaitForForegroundThreadsCore();
+
+#if WINDOWS
+        private bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError) =>
+            SetApartmentStateUncheckedCore(state, throwOnError);
+
+        public ApartmentState GetApartmentState() => GetApartmentStateCore();
+
+        public void Interrupt() => InterruptCore();
+#endif
     }
 }

@@ -32,26 +32,6 @@ namespace System.Threading
         internal ExecutionContext? _executionContext; // this call context follows the logical thread
         internal SynchronizationContext? _synchronizationContext; // maintained separately from ExecutionContext
 
-        /*=========================================================================
-        ** The base implementation of Thread is all native.  The following fields
-        ** should never be used in the C# code.  They are here to define the proper
-        ** space so the thread object may be allocated.  DON'T CHANGE THESE UNLESS
-        ** YOU MODIFY ThreadBaseObject in vm\object.h
-        =========================================================================*/
-#pragma warning disable CA1823, 169 // These fields are not used from managed.
-        // IntPtrs need to be together, and before ints, because IntPtrs are 64-bit
-        // fields on 64-bit platforms, where they will be sorted together.
-
-        private IntPtr _DONT_USE_InternalThread; // Pointer
-        private int _priority; // INT32
-
-        // The following field is required for interop with the VS Debugger
-        // Prior to making any changes to this field, please reach out to the VS Debugger
-        // team to make sure that your changes are not going to prevent the debugger
-        // from working.
-        private int _managedThreadId; // INT32
-#pragma warning restore CA1823, 169
-
         public extern int ManagedThreadId
         {
             [Intrinsic]
@@ -143,7 +123,7 @@ namespace System.Threading
             {
                 fixed (char* pThreadName = _name)
                 {
-                    StartInternal(GetNativeHandle(), _startHelper?._maxStackSize ?? 0, _priority, pThreadName);
+                    StartInternal(GetNativeHandle(), _startHelper?._maxStackSize ?? 0, _priority_portableCore, pThreadName);
                 }
             }
         }
@@ -180,6 +160,7 @@ namespace System.Threading
         /// only take a few machine instructions.  Calling this API is preferable to coding
         /// a explicit busy loop because the hardware can be informed that it is busy waiting.
         /// </summary>
+        [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void SpinWaitInternalPortableCore(int iterations);
 
         private static void SpinWaitPortableCore(int iterations) => SpinWaitInternal(iterations);
@@ -234,7 +215,7 @@ namespace System.Threading
         /// single-threaded or multi-threaded apartment.
         /// </summary>
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        private bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
+        private bool SetApartmentStateUncheckedPortableCore(ApartmentState state, bool throwOnError)
         {
             ApartmentState retState = (ApartmentState)SetApartmentStateNative((int)state);
 
@@ -267,7 +248,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal extern int SetApartmentStateNative(int state);
 #else // FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        private static bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
+        private static bool SetApartmentStateUncheckedPortableCore(ApartmentState state, bool throwOnError)
         {
             if (state != ApartmentState.Unknown)
             {
@@ -284,7 +265,7 @@ namespace System.Threading
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern void InterruptCore();
+        private extern void InterruptPortableCore();
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool JoinPortableCore(int millisecondsTimeout);
