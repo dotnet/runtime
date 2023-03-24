@@ -95,7 +95,10 @@ namespace System.Threading
                 }
 
                 _period = value;
-                _timer.Change(value, value);
+                if (!_timer.Change(value, value))
+                {
+                    ThrowHelper.ThrowObjectDisposedException(this);
+                }
             }
         }
 

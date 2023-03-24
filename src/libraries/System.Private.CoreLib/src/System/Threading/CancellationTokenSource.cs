@@ -446,14 +446,7 @@ namespace System.Threading
                 }
             }
 
-            if (timer is TimerQueueTimer tqt)
-            {
-                tqt.Change(millisecondsDelay, Timeout.UnsignedInfinite);
-            }
-            else
-            {
-                timer.Change(TimeSpan.FromMilliseconds(millisecondsDelay), Timeout.InfiniteTimeSpan);
-            }
+            timer.Change(TimeSpan.FromMilliseconds(millisecondsDelay), Timeout.InfiniteTimeSpan);
         }
 
         /// <summary>

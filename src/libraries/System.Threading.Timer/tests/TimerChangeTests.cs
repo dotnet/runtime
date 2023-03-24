@@ -41,6 +41,7 @@ namespace System.Threading.Tests
         public void Timer_Change_AfterDispose_Test()
         {
             var t = new Timer(new TimerCallback(EmptyTimerTarget), null, 1, 1);
+            Assert.True(t.Change(1, 1));
             t.Dispose();
             Assert.False(t.Change(1, 1));
             Assert.False(t.Change(1L, 1L));
