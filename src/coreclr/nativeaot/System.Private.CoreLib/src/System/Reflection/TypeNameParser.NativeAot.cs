@@ -25,6 +25,16 @@ namespace System.Reflection
 
         internal static Type? GetType(
             string typeName,
+            bool throwOnError = false,
+            bool ignoreCase = false,
+            string? defaultAssemblyName = null)
+        {
+            return GetType(typeName, assemblyResolver: null, typeResolver: null,
+                throwOnError: throwOnError, ignoreCase: ignoreCase, extensibleParser: false, defaultAssemblyName: defaultAssemblyName);
+        }
+
+        internal static Type? GetType(
+            string typeName,
             Func<AssemblyName, Assembly?>? assemblyResolver,
             Func<Assembly?, string, bool, Type?>? typeResolver,
             bool throwOnError = false,

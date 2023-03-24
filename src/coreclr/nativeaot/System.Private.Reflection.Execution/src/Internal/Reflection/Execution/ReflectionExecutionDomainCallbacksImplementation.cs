@@ -31,11 +31,6 @@ namespace Internal.Reflection.Execution
             _executionEnvironment = executionEnvironment;
         }
 
-        public sealed override Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, bool extensibleParser, string defaultAssemblyName)
-        {
-            return _executionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, extensibleParser, defaultAssemblyName);
-        }
-
         public sealed override bool IsReflectionBlocked(RuntimeTypeHandle typeHandle)
         {
             return _executionEnvironment.IsReflectionBlocked(typeHandle);

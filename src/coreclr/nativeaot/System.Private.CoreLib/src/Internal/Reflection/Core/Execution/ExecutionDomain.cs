@@ -36,21 +36,6 @@ namespace Internal.Reflection.Core.Execution
         }
 
         //
-        // Retrieves a type by name. Helper to implement Type.GetType();
-        //
-        public Type GetType(string typeName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly?, string, bool, Type?> typeResolver, bool throwOnError, bool ignoreCase, bool extensibleParser, string defaultAssemblyName)
-        {
-            return TypeNameParser.GetType(
-                typeName,
-                assemblyResolver: assemblyResolver,
-                typeResolver: typeResolver,
-                throwOnError: throwOnError,
-                ignoreCase: ignoreCase,
-                extensibleParser: extensibleParser,
-                defaultAssemblyName: defaultAssemblyName);
-        }
-
-        //
         // Retrieves the MethodBase for a given method handle. Helper to implement Delegate.GetMethodInfo()
         //
         public MethodBase GetMethod(RuntimeTypeHandle declaringTypeHandle, QMethodDefinition methodHandle, RuntimeTypeHandle[] genericMethodTypeArgumentHandles)
