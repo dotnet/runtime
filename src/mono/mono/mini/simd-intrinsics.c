@@ -3169,12 +3169,12 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_ShiftArithmeticScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SSHL},
 	{SN_ShiftLeftAndInsert, OP_ARM64_SLI},
 	{SN_ShiftLeftAndInsertScalar, OP_ARM64_SLI},
-	{SN_ShiftLeftLogical, OP_ARM64_SHL},
+	{SN_ShiftLeftLogical, OP_SHL},
 	{SN_ShiftLeftLogicalSaturate},
 	{SN_ShiftLeftLogicalSaturateScalar},
 	{SN_ShiftLeftLogicalSaturateUnsigned, OP_ARM64_SQSHLU},
 	{SN_ShiftLeftLogicalSaturateUnsignedScalar, OP_ARM64_SQSHLU_SCALAR},
-	{SN_ShiftLeftLogicalScalar, OP_ARM64_SHL},
+	{SN_ShiftLeftLogicalScalar, OP_SHL},
 	{SN_ShiftLeftLogicalWideningLower, OP_SSHLL, None, OP_USHLL},
 	{SN_ShiftLeftLogicalWideningUpper, OP_SSHLL2, None, OP_USHLL2},
 	{SN_ShiftLogical, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_USHL},
@@ -4707,6 +4707,9 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Multiply},
 	{SN_Negate},
 	{SN_ReplaceLane},
+	{SN_ShiftLeft},
+	{SN_ShiftRightArithmetic},
+	{SN_ShiftRightLogical},
 	{SN_Shuffle},
 	{SN_Splat},
 	{SN_Subtract},
@@ -4838,6 +4841,12 @@ emit_wasm_supported_intrinsics (
 				ins->inst_c1 = arg0_type;
 				return ins;
 			}
+			case SN_ShiftLeft:
+				return emit_simd_ins_for_sig (cfg, klass, OP_SHL, -1, -1, fsig, args);
+			case SN_ShiftRightArithmetic:
+				return emit_simd_ins_for_sig (cfg, klass, OP_SSHR, -1, -1, fsig, args);
+			case SN_ShiftRightLogical:
+				return emit_simd_ins_for_sig (cfg, klass, OP_USHR, -1, -1, fsig, args);
 			case SN_Splat: {
 				MonoType *etype = get_vector_t_elem_type (fsig->ret);
 				g_assert (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype));
