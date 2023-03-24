@@ -1,14 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
-    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-  </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="*/**/*_d.??proj" />
-
-    <MergedWrapperProjectReference Update="**"
-      Aliases="$([System.String]::Concat(&quot;_&quot;,$([System.String]::Copy(&quot;%(Filename)&quot;).Replace(&quot;-&quot;,&quot;_&quot;))))" />
-
-    <ProjectReference Include="@(MergedWrapperProjectReference)" />
   </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
 </Project>

@@ -17,7 +17,7 @@ namespace Test
         static void AA_Static1(ref uint param2, ref uint param4) { }
         static JJ CC_Static1() { return new JJ(); }
 
-        public static void FF_Static1(ref uint param3)
+        internal static void FF_Static1(ref uint param3)
         {
             CC_Static1();
             AA_Static1(

@@ -27,7 +27,7 @@ public class Runtime_65694
     public Dictionary<Key, Problem> _d;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public void D()
+    internal void D()
     {
         Problem p = new Problem { s0 = "hello", s1 = "world", x = 33 };
         Key k = new Key() { a = 0, s = "a" };
@@ -38,7 +38,7 @@ public class Runtime_65694
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void F() 
+    internal static void F() 
     {
         GC.Collect();
     }

@@ -14,7 +14,7 @@ public class _74773 {
         }
     }
 
-    public void Method3() {
+    internal void Method3() {
         unchecked {
             int __loopvar3 = s_loopInvariant;
             do {

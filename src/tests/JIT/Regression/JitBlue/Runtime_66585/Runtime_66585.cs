@@ -19,7 +19,7 @@ public unsafe class Runtime_66585
     }
 
     private static SLarge s_s;
-    public static void Caller(int r0, int r1, int r2, int r3)
+    internal static void Caller(int r0, int r1, int r2, int r3)
     {
         SLarge s = s_s;
         Consume(s);
@@ -27,7 +27,7 @@ public unsafe class Runtime_66585
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Callee(int r0, int r1, int r2, int r3)
+    internal static void Callee(int r0, int r1, int r2, int r3)
     {
     }
 

@@ -6,7 +6,7 @@ using Xunit;
 public class ovf
 {
 
-    public static void f()
+    internal static void f()
     {
 
         uint x = 0xfffffffe;

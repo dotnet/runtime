@@ -7,7 +7,7 @@ using Xunit;
 
 public class AA
 {
-    public static void Static5(int param1)
+    internal static void Static5(int param1)
     {
         if (param1 != 0)
         {

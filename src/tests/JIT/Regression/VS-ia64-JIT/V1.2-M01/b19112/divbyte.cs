@@ -22,7 +22,7 @@ public class foo
         return 100;
     }
 
-    public static void div()
+    internal static void div()
     {
 
         sbyte b = 3;

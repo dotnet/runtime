@@ -33,14 +33,14 @@ public class Test_test1
         return 100;
     }
 
-    public static void test1()
+    internal static void test1()
     {
         C c = new C();
 
         foo(C.s1);
     }
 
-    public static void test2()
+    internal static void test2()
     {
         C c = new C();
         S s = C.s1;

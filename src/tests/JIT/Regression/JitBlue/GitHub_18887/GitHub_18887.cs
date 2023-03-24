@@ -62,16 +62,16 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public void ThrowIfDisposed()
+    internal void ThrowIfDisposed()
     {
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public void QueueCurrentBufferForUploadAndSetNewBuffer()
+    internal void QueueCurrentBufferForUploadAndSetNewBuffer()
     {
     }
 
-    public void Test()
+    internal void Test()
     {
         this.ThrowIfDisposed();
 

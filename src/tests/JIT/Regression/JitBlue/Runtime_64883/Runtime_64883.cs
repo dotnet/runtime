@@ -29,7 +29,7 @@ public class Runtime_64883
         return 100;
     }
 
-    public static void MainT()
+    internal static void MainT()
     {
         long vr7 = 4447329742151181917L;
         vr7 /= (vr7 ^ s_29);

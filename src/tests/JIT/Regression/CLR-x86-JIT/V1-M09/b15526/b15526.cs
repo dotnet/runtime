@@ -11,7 +11,7 @@ namespace DefaultNamespace
 
     public class Bug
     {
-        public virtual void runTest()
+        internal virtual void runTest()
         {
             int iVal1 = 2;
             int iVal2 = 3;

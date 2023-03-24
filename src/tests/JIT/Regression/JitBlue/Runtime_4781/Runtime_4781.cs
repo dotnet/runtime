@@ -28,7 +28,7 @@ public class Runtime_4781
 {
     private static int Throw() => throw new NotSupportedException();
     private static bool failed = false;
-    public static void Fail() { failed = true; }
+    internal static void Fail() { failed = true; }
     
     private static IDisposable Test()
     {

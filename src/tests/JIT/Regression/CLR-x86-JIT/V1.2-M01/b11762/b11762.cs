@@ -13,7 +13,7 @@ public class test1
         return 1.0;
     }
 
-    public static void foo()
+    internal static void foo()
     {
         Console.Write(".");
     }

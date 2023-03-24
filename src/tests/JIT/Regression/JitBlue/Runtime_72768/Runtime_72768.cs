@@ -28,7 +28,7 @@ public class Program
     public static bool s_43;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test()
+    internal static void Test()
     {
         try
         {

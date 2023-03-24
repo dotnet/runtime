@@ -10,7 +10,7 @@ namespace Test
     {
         public static uint m_uStatic3 = 205u;
 
-        public static void Static1()
+        internal static void Static1()
         {
             try
             {

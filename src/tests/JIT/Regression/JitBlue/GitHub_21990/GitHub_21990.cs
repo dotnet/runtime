@@ -533,7 +533,7 @@ public class Test_GitHub_21990
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void SetStructValue(ref S s)
+    internal static void SetStructValue(ref S s)
     {
         s.i9782 = 17;
     }

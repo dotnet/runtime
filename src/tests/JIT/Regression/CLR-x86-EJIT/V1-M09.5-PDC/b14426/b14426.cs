@@ -14,7 +14,7 @@ namespace SetIPTest
         }
 
 
-        public static void F()
+        internal static void F()
         {
             String s;
             double d;

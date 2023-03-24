@@ -31,7 +31,7 @@ public class Test_b119294
         return 100;
     }
 
-    public void EstablishIdentityTransform()
+    internal void EstablishIdentityTransform()
     {
         //MessageBox.Show("EstablishIdentityTransform() enter");
         int nSourceElements = m_coSourceLength;

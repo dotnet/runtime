@@ -8,12 +8,12 @@ using Xunit;
 
 public class Foo
 {
-    public virtual void callee()
+    internal virtual void callee()
     {
         Console.WriteLine("callee");
     }
 
-    public static void caller(object o)
+    internal static void caller(object o)
     {
         if (o == null)
             return;

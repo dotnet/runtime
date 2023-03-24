@@ -20,7 +20,7 @@ public class TestClass_65988
     S1 s1_33 = new S1();
     public decimal LeafMethod3() => 67.1m;
 
-    public void Method0()
+    internal void Method0()
     {
         unchecked
         {

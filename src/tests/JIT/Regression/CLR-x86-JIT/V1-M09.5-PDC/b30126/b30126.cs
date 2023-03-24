@@ -11,7 +11,7 @@ namespace Test
     {
         public int[] m_anField1 = new int[7];
 
-        public static void Method1()
+        internal static void Method1()
         {
             AA[] local2 = new AA[7];
             while (true)

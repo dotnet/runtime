@@ -7,7 +7,7 @@ using Xunit;
 
 public class M
 {
-    public static void GenericClassStaticMethod()
+    internal static void GenericClassStaticMethod()
     {
         GenericClass<int>.classParameterType = typeof(int);
         GenericClass<string>.classParameterType = typeof(string);
@@ -335,7 +335,7 @@ public class M
         }
     }
 
-    public static void GenericClassInstanceMethod()
+    internal static void GenericClassInstanceMethod()
     {
         GenericClass<int>.classParameterType = typeof(int);
         GenericClass<string>.classParameterType = typeof(string);
@@ -668,7 +668,7 @@ public class M
         }
     }
 
-    public static void GenericClassVirtualMethod()
+    internal static void GenericClassVirtualMethod()
     {
         GenericClass<int>.classParameterType = typeof(int);
         GenericClass<string>.classParameterType = typeof(string);
@@ -1651,7 +1651,7 @@ public class M
         }
     }
 
-    public static void GenericClassDelegate()
+    internal static void GenericClassDelegate()
     {
         GenericClass<int>.classParameterType = typeof(int);
         GenericClass<string>.classParameterType = typeof(string);
@@ -1984,7 +1984,7 @@ public class M
         }
     }
 
-    public static void GenericClassField()
+    internal static void GenericClassField()
     {
         GenericClass<int>.classParameterType = typeof(int);
         GenericClass<string>.classParameterType = typeof(string);
@@ -2120,7 +2120,7 @@ public class M
         }
     }
 
-    public static void GenericClassProperty()
+    internal static void GenericClassProperty()
     {
         GenericClass<int>.classParameterType = typeof(int);
         GenericClass<string>.classParameterType = typeof(string);
@@ -2257,7 +2257,7 @@ public class M
         }
     }
 
-    public static void GenericClassVirtualProperty()
+    internal static void GenericClassVirtualProperty()
     {
         GenericClass<int>.classParameterType = typeof(int);
         GenericClass<string>.classParameterType = typeof(string);

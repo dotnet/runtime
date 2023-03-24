@@ -117,7 +117,7 @@ public class TestClass
             return 15|4;
         }
     }
-    public void Method0()
+    internal void Method0()
     {
         unchecked
         {

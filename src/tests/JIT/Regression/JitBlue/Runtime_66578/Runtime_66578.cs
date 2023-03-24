@@ -55,7 +55,7 @@ public class Program2
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void M52(C0 argThis)
+    internal static void M52(C0 argThis)
     {
         I1 vr9 = s_18[0][0];
         if (argThis.F1)

@@ -17,13 +17,13 @@ using Xunit;
 public class DevDiv_142976
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static String Foo()
+    internal static String Foo()
     {
         return null;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Bar()
+    internal static void Bar()
     {
         String[] args = new String[10];
         if (args != null) 

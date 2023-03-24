@@ -25,7 +25,7 @@ namespace DefaultNamespace
         internal int m_rr = -1;
         internal int m_cc = 2;
 
-        public virtual void Problem()
+        internal virtual void Problem()
         {
             int uu = 20;
             int oo = 12;

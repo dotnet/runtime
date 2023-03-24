@@ -70,7 +70,7 @@ public class Runtime_64700
         return t + p2.FirstLngValue;
     }
 
-    public static void Use<T>(ref T arg) { }
+    internal static void Use<T>(ref T arg) { }
 
     struct SmallerStruct
     {

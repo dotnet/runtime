@@ -17,7 +17,7 @@ public class Program
     public delegate void CopyToDelegate(float[] array, int start);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void MyCopyTo(CopyToDelegate doCopy, float[] array, int start)
+    internal static void MyCopyTo(CopyToDelegate doCopy, float[] array, int start)
     {
         doCopy(array, start);
     }

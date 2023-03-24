@@ -11,7 +11,7 @@ namespace DefaultNamespace
     public class test
     {
 
-        public static void ccc(byte[] bytes)
+        internal static void ccc(byte[] bytes)
         {
             int[] m_array;
             int m_length;

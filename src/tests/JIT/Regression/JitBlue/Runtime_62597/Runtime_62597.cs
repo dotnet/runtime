@@ -53,7 +53,7 @@ public static class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void TheTest(SmallString foo)
+    internal static void TheTest(SmallString foo)
     {
         Execute(foo);
     }

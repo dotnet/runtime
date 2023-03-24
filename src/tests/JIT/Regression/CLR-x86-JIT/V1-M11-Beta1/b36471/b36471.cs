@@ -10,7 +10,7 @@ namespace Test
     public class AA
     {
         public static object[] m_axStatic2 = null;
-        public static void Static3()
+        internal static void Static3()
         {
             bool flag1 = false, flag2 = false, flag3 = false;
             double local4 = 0.19;

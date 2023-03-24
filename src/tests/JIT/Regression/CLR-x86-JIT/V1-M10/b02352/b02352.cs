@@ -36,7 +36,7 @@ namespace DefaultNamespace
               ,"Method_Covered:  Convert.ToByte( Object )"           //System/Object
               ,"Method_Covered:  Convert.ToByte( String, Int32 )"     //System/String, int
           };
-        public static void printoutCoveredMethods()
+        internal static void printoutCoveredMethods()
         {
             Console.Error.WriteLine("");
             Console.Error.WriteLine("Method_Count==12 (" + s_strMethodsCovered.Length + "==confirm) !!");

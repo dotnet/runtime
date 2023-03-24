@@ -13,7 +13,7 @@ public unsafe class Runtime_58259
 
     static delegate* unmanaged<out int, void> _f;
 
-    public static void M(out int index)
+    internal static void M(out int index)
     {
         if (_f != null)
         {

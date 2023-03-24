@@ -11285,7 +11285,7 @@ public class Test_b311420
     public static int counter = 0;
     public static bool result = true;
 
-    public static void Eval(bool expr)
+    internal static void Eval(bool expr)
     {
         counter++;
         if (!expr)
@@ -11296,7 +11296,7 @@ public class Test_b311420
 
     }
 
-    public static void Eval(object obj1, object obj2)
+    internal static void Eval(object obj1, object obj2)
     {
         counter++;
 

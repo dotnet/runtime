@@ -216,7 +216,7 @@ public static class Runtime_72550
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void IsTrue(bool condition, [CallerLineNumber] int line = 0)
+    internal static void IsTrue(bool condition, [CallerLineNumber] int line = 0)
     {
         if (!condition)
         {

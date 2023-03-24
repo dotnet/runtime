@@ -17,7 +17,7 @@ public class Program
         return 100;
     }
 
-    public static void M27(uint arg4, ulong[][] arg5)
+    internal static void M27(uint arg4, ulong[][] arg5)
     {
         arg5[0][0] = arg5[0][0];
         for (int var7 = 0; var7 < 1; var7++)

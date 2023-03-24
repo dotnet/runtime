@@ -29,7 +29,7 @@ namespace X
         }
         */
 
-        public static void bomb()
+        internal static void bomb()
         {
             char[] p = null;
             p[0] = (char)0;

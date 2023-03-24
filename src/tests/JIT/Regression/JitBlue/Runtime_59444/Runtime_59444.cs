@@ -27,7 +27,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test0()
+    internal static void Test0()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 0);
@@ -35,7 +35,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test1()
+    internal static void Test1()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 1);
@@ -43,7 +43,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test2()
+    internal static void Test2()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 2);
@@ -51,7 +51,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test3()
+    internal static void Test3()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 3);
@@ -59,7 +59,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test4()
+    internal static void Test4()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 4);
@@ -67,7 +67,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test5()
+    internal static void Test5()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 5);
@@ -75,7 +75,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test6()
+    internal static void Test6()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 6);
@@ -83,7 +83,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test7()
+    internal static void Test7()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 7);
@@ -91,7 +91,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test8()
+    internal static void Test8()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 8);
@@ -99,7 +99,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test9()
+    internal static void Test9()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 9);
@@ -107,7 +107,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test10()
+    internal static void Test10()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 10);
@@ -115,7 +115,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test11()
+    internal static void Test11()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 11);
@@ -123,7 +123,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test12()
+    internal static void Test12()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 12);
@@ -131,7 +131,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test13()
+    internal static void Test13()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 13);
@@ -139,7 +139,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test14()
+    internal static void Test14()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 14);
@@ -147,7 +147,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test15()
+    internal static void Test15()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 15);
@@ -155,7 +155,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test16()
+    internal static void Test16()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 16);
@@ -163,7 +163,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test17()
+    internal static void Test17()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 17);
@@ -171,7 +171,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test18()
+    internal static void Test18()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 18);
@@ -179,7 +179,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test19()
+    internal static void Test19()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 19);
@@ -187,7 +187,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test20()
+    internal static void Test20()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 20);
@@ -195,7 +195,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test21()
+    internal static void Test21()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 21);
@@ -203,7 +203,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test22()
+    internal static void Test22()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 22);
@@ -211,7 +211,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test23()
+    internal static void Test23()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 23);
@@ -219,7 +219,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test24()
+    internal static void Test24()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 24);
@@ -227,7 +227,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test25()
+    internal static void Test25()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 25);
@@ -235,7 +235,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test26()
+    internal static void Test26()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 26);
@@ -243,7 +243,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test27()
+    internal static void Test27()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 27);
@@ -251,7 +251,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test28()
+    internal static void Test28()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 28);
@@ -259,7 +259,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test29()
+    internal static void Test29()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 29);
@@ -267,7 +267,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test30()
+    internal static void Test30()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 30);
@@ -275,7 +275,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test31()
+    internal static void Test31()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 31);
@@ -283,7 +283,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test32()
+    internal static void Test32()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 32);
@@ -291,7 +291,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test33()
+    internal static void Test33()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 33);
@@ -299,7 +299,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test34()
+    internal static void Test34()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 34);
@@ -307,7 +307,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test35()
+    internal static void Test35()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 35);
@@ -315,7 +315,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test36()
+    internal static void Test36()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 36);
@@ -323,7 +323,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test37()
+    internal static void Test37()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 37);
@@ -331,7 +331,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test38()
+    internal static void Test38()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 38);
@@ -339,7 +339,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test39()
+    internal static void Test39()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 39);
@@ -347,7 +347,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test40()
+    internal static void Test40()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 40);
@@ -355,7 +355,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test41()
+    internal static void Test41()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 41);
@@ -363,7 +363,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test42()
+    internal static void Test42()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 42);
@@ -371,7 +371,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test43()
+    internal static void Test43()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 43);
@@ -379,7 +379,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test44()
+    internal static void Test44()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 44);
@@ -387,7 +387,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test45()
+    internal static void Test45()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 45);
@@ -395,7 +395,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test46()
+    internal static void Test46()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 46);
@@ -403,7 +403,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test47()
+    internal static void Test47()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 47);
@@ -411,7 +411,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test48()
+    internal static void Test48()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 48);
@@ -419,7 +419,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test49()
+    internal static void Test49()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 49);
@@ -427,7 +427,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test50()
+    internal static void Test50()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 50);
@@ -435,7 +435,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test51()
+    internal static void Test51()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 51);
@@ -443,7 +443,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test52()
+    internal static void Test52()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 52);
@@ -451,7 +451,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test53()
+    internal static void Test53()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 53);
@@ -459,7 +459,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test54()
+    internal static void Test54()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 54);
@@ -467,7 +467,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test55()
+    internal static void Test55()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 55);
@@ -475,7 +475,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test56()
+    internal static void Test56()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 56);
@@ -483,7 +483,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test57()
+    internal static void Test57()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 57);
@@ -491,7 +491,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test58()
+    internal static void Test58()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 58);
@@ -499,7 +499,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test59()
+    internal static void Test59()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 59);
@@ -507,7 +507,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test60()
+    internal static void Test60()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 60);
@@ -515,7 +515,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test61()
+    internal static void Test61()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 61);
@@ -523,7 +523,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test62()
+    internal static void Test62()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 62);
@@ -531,7 +531,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test63()
+    internal static void Test63()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 63);
@@ -539,7 +539,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test64()
+    internal static void Test64()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 64);
@@ -547,7 +547,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test65()
+    internal static void Test65()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 65);
@@ -555,7 +555,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test66()
+    internal static void Test66()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 66);
@@ -563,7 +563,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test67()
+    internal static void Test67()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 67);
@@ -571,7 +571,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test68()
+    internal static void Test68()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 68);
@@ -579,7 +579,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test69()
+    internal static void Test69()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 69);
@@ -587,7 +587,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test70()
+    internal static void Test70()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 70);
@@ -595,7 +595,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test71()
+    internal static void Test71()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 71);
@@ -603,7 +603,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test72()
+    internal static void Test72()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 72);
@@ -611,7 +611,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test73()
+    internal static void Test73()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 73);
@@ -619,7 +619,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test74()
+    internal static void Test74()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 74);
@@ -627,7 +627,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test75()
+    internal static void Test75()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 75);
@@ -635,7 +635,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test76()
+    internal static void Test76()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 76);
@@ -643,7 +643,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test77()
+    internal static void Test77()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 77);
@@ -651,7 +651,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test78()
+    internal static void Test78()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 78);
@@ -659,7 +659,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test79()
+    internal static void Test79()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 79);
@@ -667,7 +667,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test80()
+    internal static void Test80()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 80);
@@ -675,7 +675,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test81()
+    internal static void Test81()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 81);
@@ -683,7 +683,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test82()
+    internal static void Test82()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 82);
@@ -691,7 +691,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test83()
+    internal static void Test83()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 83);
@@ -699,7 +699,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test84()
+    internal static void Test84()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 84);
@@ -707,7 +707,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test85()
+    internal static void Test85()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 85);
@@ -715,7 +715,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test86()
+    internal static void Test86()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 86);
@@ -723,7 +723,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test87()
+    internal static void Test87()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 87);
@@ -731,7 +731,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test88()
+    internal static void Test88()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 88);
@@ -739,7 +739,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test89()
+    internal static void Test89()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 89);
@@ -747,7 +747,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test90()
+    internal static void Test90()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 90);
@@ -755,7 +755,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test91()
+    internal static void Test91()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 91);
@@ -763,7 +763,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test92()
+    internal static void Test92()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 92);
@@ -771,7 +771,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test93()
+    internal static void Test93()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 93);
@@ -779,7 +779,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test94()
+    internal static void Test94()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 94);
@@ -787,7 +787,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test95()
+    internal static void Test95()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 95);
@@ -795,7 +795,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test96()
+    internal static void Test96()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 96);
@@ -803,7 +803,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test97()
+    internal static void Test97()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 97);
@@ -811,7 +811,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test98()
+    internal static void Test98()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 98);
@@ -819,7 +819,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test99()
+    internal static void Test99()
     {
         byte[] bytes = TestData();
         Unsafe.InitBlockUnaligned(ref bytes[0], Value, 99);

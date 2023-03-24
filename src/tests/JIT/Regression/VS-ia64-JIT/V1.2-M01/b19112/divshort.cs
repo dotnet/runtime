@@ -20,7 +20,7 @@ public class foo
         return 100;
     }
 
-    public static void div()
+    internal static void div()
     {
 
         c = (short)(a / b);

@@ -12,7 +12,7 @@ using Xunit;
 public class X
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void E(ImmutableArray<string> a) {}
+    internal static void E(ImmutableArray<string> a) {}
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static ImmutableArray<string> G() => ImmutableArray<string>.Empty;

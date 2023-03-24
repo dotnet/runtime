@@ -53,7 +53,7 @@ public class Runtime_78310
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Copy(bool small, ref S1 lhs, S1 rhs)
+    internal static void Copy(bool small, ref S1 lhs, S1 rhs)
     {
         if (small)
         {

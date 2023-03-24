@@ -26,7 +26,7 @@ public class MainApp
     static int zero = 0;
     static int result;
 
-    public static void Foo()
+    internal static void Foo()
     {
         result = one / zero;
         Foo();

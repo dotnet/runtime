@@ -18,7 +18,7 @@ public class Program
         }
     }
     
-    public static void Test()
+    internal static void Test()
     {
         var box = new BoundingBoxTest();
         box.Min = Vector3.Min(box.Min, box.Min);

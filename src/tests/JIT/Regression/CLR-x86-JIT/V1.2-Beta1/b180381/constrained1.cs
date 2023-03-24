@@ -7,7 +7,7 @@ using Xunit;
 
 public class Test_constrained1
 {
-    public static void M<T>(T t)
+    internal static void M<T>(T t)
     {
         System.Type type = t.GetType();
         Console.WriteLine(type);

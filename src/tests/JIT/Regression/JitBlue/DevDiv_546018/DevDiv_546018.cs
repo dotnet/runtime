@@ -28,7 +28,7 @@ public class Test
     }
 
     [MethodImpl (MethodImplOptions.NoInlining)]
-    public static void VectorSingle_op_Division_VectorSingle_VectorSingle (long iterations)
+    internal static void VectorSingle_op_Division_VectorSingle_VectorSingle (long iterations)
     {
         Vector<float> dividend = CreateRandomVector ();
         Vector<float> divisor = CreateRandomVector ();

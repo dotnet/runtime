@@ -14,7 +14,7 @@ public class Test_b00719
         return 2;
     }
 
-    public static void f()
+    internal static void f()
     {
         int i = 4;
         i = i - 10;

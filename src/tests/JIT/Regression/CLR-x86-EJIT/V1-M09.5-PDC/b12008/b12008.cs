@@ -7,13 +7,13 @@ using Xunit;
 
 public class Bug
 {
-    public void Func(ref String str)
+    internal void Func(ref String str)
     {
         Console.WriteLine(str.ToString());
         str = "Abc";
     }
 
-    public void run()
+    internal void run()
     {
         String[] str = new String[10];
         str[0] = "DEF";

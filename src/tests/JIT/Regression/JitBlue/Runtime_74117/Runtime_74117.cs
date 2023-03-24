@@ -25,5 +25,5 @@ public unsafe class Runtime_74117
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void JitUse<T>(T* arg) where T : unmanaged { }
+    internal static void JitUse<T>(T* arg) where T : unmanaged { }
 }

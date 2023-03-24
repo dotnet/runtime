@@ -11,7 +11,7 @@ namespace DefaultNamespace
 
     public class Bug
     {
-        public virtual void runTest()
+        internal virtual void runTest()
         {
             Decimal dcml1;
             dcml1 = (new Decimal(6) - new Decimal(2)) / new Decimal(4);

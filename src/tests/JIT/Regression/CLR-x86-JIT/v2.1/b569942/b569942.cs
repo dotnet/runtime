@@ -10,7 +10,7 @@ public class TEST
         Test();
         return 100;
     }
-    public static void Test()
+    internal static void Test()
     {
         int SSS;
         try

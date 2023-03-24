@@ -25,7 +25,7 @@ public class Runtime_77886
         return 100;
     }
 
-    public static void M37(sbyte arg0, bool arg1, short arg2)
+    internal static void M37(sbyte arg0, bool arg1, short arg2)
     {
         s_3 = new long[1];
 

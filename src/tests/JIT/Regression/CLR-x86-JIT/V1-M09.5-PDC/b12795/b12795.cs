@@ -19,7 +19,7 @@ namespace DefaultNamespace
             return 100;
         }
 
-        public static void Mainy()
+        internal static void Mainy()
         {
             try
             {

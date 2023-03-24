@@ -5,7 +5,7 @@ using System;
 using Xunit;
 public unsafe class bug1
 {
-    public static void Func1(double* a01)
+    internal static void Func1(double* a01)
     {
         Console.WriteLine("The result should be 12");
         Console.WriteLine(*a01 + (*a01 - (*a01 + -5.0)));

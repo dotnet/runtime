@@ -8,7 +8,7 @@ public class a
 {
     static int temp = 0;
 
-    public static void MiddleMethod()
+    internal static void MiddleMethod()
     {
         temp += 1;
         try

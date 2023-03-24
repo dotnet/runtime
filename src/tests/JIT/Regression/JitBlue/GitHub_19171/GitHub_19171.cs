@@ -18,7 +18,7 @@ public class GitHub_19171
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Function(long value)
+    internal static void Function(long value)
     {
         g_static = value;
 

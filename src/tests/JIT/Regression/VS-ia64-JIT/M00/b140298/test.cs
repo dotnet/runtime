@@ -45,7 +45,7 @@ public class History
         return new History();
     }
 
-    public void initHistory
+    internal void initHistory
     (short inCustomerId,
                sbyte inCustomerDistrictId,
                short inCustomerWarehouseId,

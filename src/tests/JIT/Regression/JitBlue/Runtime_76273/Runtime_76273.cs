@@ -34,13 +34,13 @@ public class Program
         return 100;
     }
 
-    public static void MainInner(IRuntime rt)
+    internal static void MainInner(IRuntime rt)
     {
         var vr2 = new C0();
         M11(vr2, 1);
     }
 
-    public static void M11(C0 argThis, short arg0)
+    internal static void M11(C0 argThis, short arg0)
     {
         short var0 = default(short);
 

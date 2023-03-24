@@ -48,7 +48,7 @@ public class TestClass13
             return s_s3_16;
         }
     }
-    public void Method0()
+    internal void Method0()
     {
         unchecked
         {

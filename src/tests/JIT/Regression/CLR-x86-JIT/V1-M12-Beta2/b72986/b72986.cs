@@ -20,7 +20,7 @@ public unsafe class testout1
 
     public static VT_0_2 vtstatic_0_2 = new VT_0_2();
 
-    public static void Func_0_2(CL_0_2 cl_0_2, double* a3_0_2)
+    internal static void Func_0_2(CL_0_2 cl_0_2, double* a3_0_2)
     {
         VT_0_2 vt_0_2 = new VT_0_2();
         vt_0_2.a0_0_2 = 10;

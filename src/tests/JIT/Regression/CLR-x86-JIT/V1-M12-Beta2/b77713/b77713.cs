@@ -9,7 +9,7 @@ namespace Test
 
     public class BB
     {
-        public static void Main1()
+        internal static void Main1()
         {
             bool local2 = false;
             try

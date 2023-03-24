@@ -19,7 +19,7 @@ public class P
         return 100;
     }
 
-    public static void TestCatchReturn()
+    internal static void TestCatchReturn()
     {
         try
         {

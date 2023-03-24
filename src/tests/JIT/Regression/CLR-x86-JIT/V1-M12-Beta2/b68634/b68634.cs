@@ -9,7 +9,7 @@ namespace Test
 
     public class AA
     {
-        public static void Main1()
+        internal static void Main1()
         {
             bool local2 = true;
             while (local2) { throw new Exception(); }

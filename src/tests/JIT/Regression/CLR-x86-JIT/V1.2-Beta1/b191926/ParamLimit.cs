@@ -6,7 +6,7 @@ using System;
 using Xunit;
 public class f8192
 {
-    public static void Callee(
+    internal static void Callee(
         int a1,
         int a2,
         int a3,

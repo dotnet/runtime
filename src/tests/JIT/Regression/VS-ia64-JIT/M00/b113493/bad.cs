@@ -54,7 +54,7 @@ namespace DefaultNamespace
             return ExitCode;
         }
 
-        public virtual void runtest()
+        internal virtual void runtest()
         {
             int counter = 0;
             for (int j = 0; j < 10; j++)
@@ -111,7 +111,7 @@ namespace DefaultNamespace
             }
         }
 
-        public virtual void recurse(int counter, int i)
+        internal virtual void recurse(int counter, int i)
         {
             char[] abc = new char[100];
 

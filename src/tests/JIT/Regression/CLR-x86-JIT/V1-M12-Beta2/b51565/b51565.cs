@@ -12,7 +12,7 @@ namespace Test
 
     public class AA
     {
-        public static void Method1()
+        internal static void Method1()
         {
             uint L = 0;
 #pragma warning disable 1718

@@ -19,7 +19,7 @@ namespace DefaultNamespace
             _ => DefaultSeed
         };
 
-        public virtual void runTest()
+        internal virtual void runTest()
         {
             Random rand = new Random(Seed);
             Object o = ((UInt64)rand.Next((int)UInt64.MinValue, Int32.MaxValue));

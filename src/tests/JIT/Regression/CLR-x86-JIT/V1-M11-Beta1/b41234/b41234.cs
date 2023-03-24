@@ -23,7 +23,7 @@ namespace Nullstone
         static int[] zero = new int[50];
         static short[] a = new short[50];
 
-        public void kernel()
+        internal void kernel()
         {
             short reg;
 
@@ -65,13 +65,13 @@ namespace Nullstone
 
         }
 
-        public void Init()
+        internal void Init()
         {
             a[0] = 1;
             return;
         }
 
-        public void Finish()
+        internal void Finish()
         {
 
             System.Console.WriteLine(a[0]);

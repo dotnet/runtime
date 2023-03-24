@@ -46,7 +46,7 @@ namespace DefaultNamespace
             return c;
         }
 
-        public static void x()
+        internal static void x()
         {
             int foo;
 
@@ -98,7 +98,7 @@ namespace DefaultNamespace
             return (true);
         }
 
-        public static void w()
+        internal static void w()
         {
             int a = 1;
             int b = 2;

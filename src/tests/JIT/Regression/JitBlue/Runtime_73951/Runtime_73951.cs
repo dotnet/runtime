@@ -24,7 +24,7 @@ public class Runtime_73951
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Problem(IRuntime rt)
+    internal static void Problem(IRuntime rt)
     {
         s_rt = rt;
         S0 vr21 = s_17.F1;

@@ -8,7 +8,7 @@ using Xunit;
 public class Runtime_63354
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test1(Vector3 v1, ref Vector3 v2)
+    internal static void Test1(Vector3 v1, ref Vector3 v2)
     {
         v1.X = 100;
         v2 = v1;
@@ -27,7 +27,7 @@ public class Runtime_63354
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Box(object o) {}
+    internal static void Box(object o) {}
 
     [Fact]
     public static int TestEntryPoint()

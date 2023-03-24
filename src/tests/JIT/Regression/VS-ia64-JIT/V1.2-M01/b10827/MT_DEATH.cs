@@ -20308,7 +20308,7 @@ public class testout1
         if (ab_false[index] && ab_false[index] ? ab_false[index] : ab_false[index]) True_Sum++; else False_Sum++;
         sum += (True_Sum * 2) - False_Sum; return;
     }
-    public void Fire()
+    internal void Fire()
     {
         int temp = sum;
         sum = 0;

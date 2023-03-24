@@ -16,7 +16,7 @@ public class Program
         return Test();
     }
 
-    public static int Test()
+    internal static int Test()
     {
         try
         {
@@ -66,7 +66,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void ThrowException()
+    internal static void ThrowException()
     {
         if (flag)
         {

@@ -85,7 +85,7 @@ public static class GitHub_18362
         }
     }
 
-    public static void Conjugate(double real, double imaginary)
+    internal static void Conjugate(double real, double imaginary)
     {
         int returnVal = 100;
 

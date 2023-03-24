@@ -27,7 +27,7 @@ namespace GitHub_23861
             return returnVal;
         }
 
-        public static void LessThanAllDouble() { TestVectorLessThanAll<double>(); }
+        internal static void LessThanAllDouble() { TestVectorLessThanAll<double>(); }
 
         private static void TestVectorLessThanAll<T>() where T : struct, INumber<T>
         {

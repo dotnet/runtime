@@ -33,7 +33,7 @@ public class Repro
         return 100;
     }
 
-    public static void Test(object obj, byte[] buf)
+    internal static void Test(object obj, byte[] buf)
     {
         ((Repro)obj).x = ReadFloat(buf, 0);
         ((Repro)obj).y = ReadFloat(buf, 4);
@@ -52,7 +52,7 @@ public class Repro
         return IntBitsToFloat(ReadInt(buf, offset));
     }
 
-    public static void WriteInt(byte[] buf, int offset, int val)
+    internal static void WriteInt(byte[] buf, int offset, int val)
     {
         buf[offset + 3] = (byte)(val);
         buf[offset + 2] = (byte)(val >> 8);
@@ -60,7 +60,7 @@ public class Repro
         buf[offset] = (byte)(val >> 24);
     }
 
-    public static void WriteFloat(byte[] buf, int offset, float value)
+    internal static void WriteFloat(byte[] buf, int offset, float value)
     {
         WriteInt(buf, offset, FloatToRawIntBits(value));
     }

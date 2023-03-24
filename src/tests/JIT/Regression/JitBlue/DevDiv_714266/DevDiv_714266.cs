@@ -15,13 +15,12 @@ using Xunit;
 public class DevDiv_714266
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-
-    public static void CallWithoutUsesAndDefs()
+    internal static void CallWithoutUsesAndDefs()
     {
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void MethodWithManyLiveVectors()
+    internal static void MethodWithManyLiveVectors()
     {
         Vector<float> v = new Vector<float>();
 

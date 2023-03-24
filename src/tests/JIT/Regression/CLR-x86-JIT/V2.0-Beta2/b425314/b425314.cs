@@ -185,7 +185,7 @@ public static class Util
         return new Timer(callback, null, dueTimeInMilliseconds, Timeout.Infinite);
     }
 
-    public static void PrintFailureAndAddToTestResults(string format, params object[] args)
+    internal static void PrintFailureAndAddToTestResults(string format, params object[] args)
     {
         Console.WriteLine(format, args);
         Mutate.RecordFailure(new Exception(String.Format(format, args)));
@@ -922,7 +922,7 @@ public class Mutate
     private static object s_syncRoot = new object();
     private static volatile List<Exception> s_exceptions = new List<Exception>();
 
-    public static void RecordFailure(Exception ex)
+    internal static void RecordFailure(Exception ex)
     {
         lock (Mutate.s_syncRoot)
         {

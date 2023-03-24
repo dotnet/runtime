@@ -9,7 +9,7 @@ namespace DefaultNamespace
 
     public class Bug
     {
-        public void runTest(Object var2)
+        internal void runTest(Object var2)
         {
             int iTemp = 5;
             Object VarResult = (iTemp);

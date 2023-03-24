@@ -106,7 +106,7 @@ public class GitHub_18582
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int q() => s_x + 1;
 
-    public static void Test()
+    internal static void Test()
     {
         int z = s_x;
         Consume(

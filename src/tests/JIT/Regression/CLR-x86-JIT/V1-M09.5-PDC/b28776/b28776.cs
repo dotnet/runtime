@@ -13,7 +13,7 @@ namespace Test
         public bool[] m_abField2 = (new bool[7]);
         public float[] m_afField3 = (new float[7]);
 
-        public static void Method1()
+        internal static void Method1()
         {
             object local1 = 0.0;
             AA[] local2 = new AA[7];
