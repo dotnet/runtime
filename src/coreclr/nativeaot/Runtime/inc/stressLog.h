@@ -489,15 +489,22 @@ public:
 
 //==========================================================================================
 // StressMsg
-// The order of fields is important.  Keep the prefix length as the first field.
-// And make sure the timeStamp field is naturally aligned if possible, so we don't waste
-// space on 32-bit platforms
+// The order of fields is important.  Ensure that we minimize padding
+// to fit more messages in a chunk.
 struct StressMsg {
+#ifdef TARGET_64BIT
+    uint32_t facility;                      // facility used to log the entry
+    uint8_t numberOfArgs;                   // number of arguments
+    size_t   formatOffset;                  // offset of the format string in the module
+    uint64_t timeStamp;                     // time when mssg was logged
+    void*     args[0];                      // size given by numberOfArgs
+#else
     uint32_t facility;                      // facility used to log the entry
     size_t   formatOffset;                  // offset of the format string in the module
     uint64_t timeStamp;                     // time when mssg was logged
     uint8_t numberOfArgs;                   // number of arguments
     void*     args[0];                      // size given by numberOfArgs
+#endif
 
     static const size_t maxArgCnt = 63;
     static size_t maxMsgSize ()
