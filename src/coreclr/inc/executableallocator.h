@@ -125,6 +125,7 @@ private:
     // This is handled as a 3 element cache with an LRU replacement policy
 #ifdef VARIABLE_SIZED_CACHEDMAPPING_SIZE
     // If variable sized mappings enabled, make the cache physically big enough to cover all interesting sizes
+    static int g_cachedMappingSize;
     BlockRW* m_cachedMapping[16] = { 0 };
 #else
     BlockRW* m_cachedMapping[3] = { 0 };

@@ -4,9 +4,6 @@
 #include "pedecoder.h"
 #include "executableallocator.h"
 
-#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
-#endif
-
 #ifdef VARIABLE_SIZED_CACHEDMAPPING_SIZE
 static int ExecutableAllocator_CachedMappingSize = 1;
 #endif
@@ -27,9 +24,11 @@ ExecutableAllocator::FatalErrorHandler ExecutableAllocator::g_fatalErrorHandler 
 ExecutableAllocator* ExecutableAllocator::g_instance = NULL;
 
 #ifndef VARIABLE_SIZED_CACHEDMAPPING_SIZE
+int ExecutableAllocator::g_cachedMappingSize = 0;
+
 #define EXECUTABLE_ALLOCATOR_CACHE_SIZE ARRAY_SIZE(m_cachedMapping)
 #else
-#define EXECUTABLE_ALLOCATOR_CACHE_SIZE ExecutableAllocator_CachedMappingSize
+#define EXECUTABLE_ALLOCATOR_CACHE_SIZE ExecutableAllocator::g_cachedMappingSize
 #endif
 
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
@@ -108,11 +107,11 @@ void ExecutableAllocator::DumpHolderUsage()
     fprintf(stderr, "Reserve count: %lld\n", g_reserveCount);
     fprintf(stderr, "Release count: %lld\n", g_releaseCount);
 
-    printf("g_MapRW_Calls: %lld\n", g_MapRW_Calls);
-    printf("g_MapRW_CallsWithCacheMiss: %lld\n", g_MapRW_CallsWithCacheMiss);
-    printf("g_MapRW_LinkedListWalkDepth: %lld\n", g_MapRW_LinkedListWalkDepth);
-    printf("g_MapRW_LinkedListAverageDepth: %f\n", (double)g_MapRW_LinkedListWalkDepth/(double)g_MapRW_CallsWithCacheMiss);
-    printf("g_LinkedListTotalDepth: %lld\n", g_LinkedListTotalDepth);
+    fprintf(stderr, "g_MapRW_Calls: %lld\n", g_MapRW_Calls);
+    fprintf(stderr, "g_MapRW_CallsWithCacheMiss: %lld\n", g_MapRW_CallsWithCacheMiss);
+    fprintf(stderr, "g_MapRW_LinkedListWalkDepth: %lld\n", g_MapRW_LinkedListWalkDepth);
+    fprintf(stderr, "g_MapRW_LinkedListAverageDepth: %f\n", (double)g_MapRW_LinkedListWalkDepth/(double)g_MapRW_CallsWithCacheMiss);
+    fprintf(stderr, "g_LinkedListTotalDepth: %lld\n", g_LinkedListTotalDepth);
 
     fprintf(stderr, "ExecutableWriterHolder usage:\n");
 
