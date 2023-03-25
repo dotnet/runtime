@@ -1419,6 +1419,27 @@ bool CallArg::IsArgAddedLate() const
     }
 }
 
+//---------------------------------------------------------------
+// IsUserArg: Check if this is an argument that can be treated as
+//   user-defined (in IL).
+//
+// Remarks:
+//   "this" and ShiftLow/ShiftHigh are recognized as user-defined
+//
+bool CallArg::IsUserArg() const
+{
+    switch (static_cast<WellKnownArg>(m_wellKnownArg))
+    {
+        case WellKnownArg::None:
+        case WellKnownArg::ShiftLow:
+        case WellKnownArg::ShiftHigh:
+        case WellKnownArg::ThisPointer:
+            return true;
+        default:
+            return false;
+    }
+}
+
 #ifdef DEBUG
 //---------------------------------------------------------------
 // CheckIsStruct: Verify that the struct ABI information is consistent with the IR node.
@@ -1600,6 +1621,37 @@ CallArg* CallArgs::GetArgByIndex(unsigned index)
         cur = cur->GetNext();
     }
 
+    return cur;
+}
+
+//---------------------------------------------------------------
+// GetUserArgByIndex: Get an argument with the specified index.
+//   Unlike GetArgByIndex, this function ignores non-user args
+//   like r2r cells.
+//
+// Parameters:
+//   index - The index of the argument to find.
+//
+// Returns:
+//   A pointer to the argument.
+//
+// Remarks:
+//   This function assumes enough arguments exist. Also, see IsUserArg's
+//   comments
+//
+CallArg* CallArgs::GetUserArgByIndex(unsigned index)
+{
+    CallArg* cur = m_head;
+    assert((cur != nullptr) && "Not enough user arguments in GetUserArgByIndex");
+    for (unsigned i = 0; i < index || !cur->IsUserArg();)
+    {
+        if (cur->IsUserArg())
+        {
+            i++;
+        }
+        cur = cur->GetNext();
+        assert((cur != nullptr) && "Not enough user arguments in GetUserArgByIndex");
+    }
     return cur;
 }
 
@@ -16241,7 +16293,6 @@ bool Compiler::gtSplitTree(
         {
             if (*use == m_splitNode)
             {
-                bool userIsLocation = false;
                 bool userIsReturned = false;
                 // Split all siblings and ancestor siblings.
                 int i;
@@ -16258,18 +16309,16 @@ bool Compiler::gtSplitTree(
                     // that contains the split node.
                     if (m_useStack.BottomRef(i + 1).User == useInf.User)
                     {
-                        SplitOutUse(useInf, userIsLocation, userIsReturned);
+                        SplitOutUse(useInf, userIsReturned);
                     }
                     else
                     {
                         // This is an ancestor of the node we're splitting on.
-                        userIsLocation = IsLocation(useInf, userIsLocation);
                         userIsReturned = IsReturned(useInf, userIsReturned);
                     }
                 }
 
                 assert(m_useStack.Bottom(i).Use == use);
-                userIsLocation = IsLocation(m_useStack.BottomRef(i), userIsLocation);
                 userIsReturned = IsReturned(m_useStack.BottomRef(i), userIsReturned);
 
                 // The remaining nodes should be operands of the split node.
@@ -16277,7 +16326,7 @@ bool Compiler::gtSplitTree(
                 {
                     const UseInfo& useInf = m_useStack.BottomRef(i);
                     assert(useInf.User == *use);
-                    SplitOutUse(useInf, userIsLocation, userIsReturned);
+                    SplitOutUse(useInf, userIsReturned);
                 }
 
                 SplitNodeUse = use;
@@ -16294,25 +16343,22 @@ bool Compiler::gtSplitTree(
         }
 
     private:
-        bool IsLocation(const UseInfo& useInf, bool userIsLocation)
+        bool IsLocation(const UseInfo& useInf)
         {
-            if (useInf.User != nullptr)
+            if (useInf.User == nullptr)
             {
-                if (useInf.User->OperIs(GT_ADDR, GT_ASG) && (useInf.Use == &useInf.User->AsUnOp()->gtOp1))
-                {
-                    return true;
-                }
+                return false;
+            }
 
-                if (useInf.User->OperIs(GT_STORE_DYN_BLK) && !(*useInf.Use)->OperIs(GT_CNS_INT, GT_INIT_VAL) &&
-                    (useInf.Use == &useInf.User->AsStoreDynBlk()->Data()))
-                {
-                    return true;
-                }
+            if (useInf.User->OperIs(GT_ADDR, GT_ASG) && (useInf.Use == &useInf.User->AsUnOp()->gtOp1))
+            {
+                return true;
+            }
 
-                if (userIsLocation && useInf.User->OperIs(GT_COMMA) && (useInf.Use == &useInf.User->AsOp()->gtOp2))
-                {
-                    return true;
-                }
+            if (useInf.User->OperIs(GT_STORE_DYN_BLK) && !(*useInf.Use)->OperIs(GT_CNS_INT, GT_INIT_VAL) &&
+                (useInf.Use == &useInf.User->AsStoreDynBlk()->Data()))
+            {
+                return true;
             }
 
             return false;
@@ -16336,7 +16382,7 @@ bool Compiler::gtSplitTree(
             return false;
         }
 
-        void SplitOutUse(const UseInfo& useInf, bool userIsLocation, bool userIsReturned)
+        void SplitOutUse(const UseInfo& useInf, bool userIsReturned)
         {
             GenTree** use  = useInf.Use;
             GenTree*  user = useInf.User;
@@ -16367,52 +16413,13 @@ bool Compiler::gtSplitTree(
                 return;
             }
 
-            if (IsLocation(useInf, userIsLocation))
+            if (IsLocation(useInf))
             {
-                if ((*use)->OperIs(GT_COMMA))
-                {
-                    // We have:
-                    // User
-                    //   COMMA
-                    //     op1
-                    //     op2
-                    //   rhs
-                    // where the comma is a location, and we want to split it out.
-                    //
-                    // The first use will be the COMMA --- op1 edge, which we
-                    // expect to be handled by simple side effect extraction in
-                    // the recursive call.
-                    UseInfo use1{&(*use)->AsOp()->gtOp1, *use};
-
-                    // For the second use we will update the user to use op2
-                    // directly instead of the comma so that we get the proper
-                    // location treatment. The edge will then be the User ---
-                    // op2 edge.
-                    *use        = (*use)->gtGetOp2();
-                    MadeChanges = true;
-
-                    UseInfo use2{use, user};
-
-                    // Locations are never returned.
-                    assert(!IsReturned(useInf, userIsReturned));
-                    if ((*use)->IsReverseOp())
-                    {
-                        SplitOutUse(use2, true, false);
-                        SplitOutUse(use1, false, false);
-                    }
-                    else
-                    {
-                        SplitOutUse(use1, false, false);
-                        SplitOutUse(use2, true, false);
-                    }
-                    return;
-                }
-
                 // Only a handful of nodes can be location, and they are all unary or nullary.
                 assert((*use)->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_LCL_VAR, GT_LCL_FLD));
                 if ((*use)->OperIsUnary())
                 {
-                    SplitOutUse(UseInfo{&(*use)->AsUnOp()->gtOp1, user}, false, false);
+                    SplitOutUse(UseInfo{&(*use)->AsUnOp()->gtOp1, user}, false);
                 }
 
                 return;
@@ -16425,7 +16432,7 @@ bool Compiler::gtSplitTree(
             if ((user != nullptr) && user->OperIs(GT_MUL) && user->Is64RsltMul())
             {
                 assert((*use)->OperIs(GT_CAST));
-                SplitOutUse(UseInfo{&(*use)->AsCast()->gtOp1, *use}, false, false);
+                SplitOutUse(UseInfo{&(*use)->AsCast()->gtOp1, *use}, false);
                 return;
             }
 #endif
@@ -16434,7 +16441,7 @@ bool Compiler::gtSplitTree(
             {
                 for (GenTree** operandUse : (*use)->UseEdges())
                 {
-                    SplitOutUse(UseInfo{operandUse, *use}, false, false);
+                    SplitOutUse(UseInfo{operandUse, *use}, false);
                 }
                 return;
             }

@@ -163,12 +163,10 @@ GenTree* MorphInitBlockHelper::Morph()
 //
 void MorphInitBlockHelper::PrepareDst()
 {
-    GenTree* origDst = m_asg->gtGetOp1();
-    m_dst            = MorphBlock(m_comp, origDst, true);
-    if (m_dst != origDst)
-    {
-        m_asg->gtOp1 = m_dst;
-    }
+    m_dst = m_asg->gtGetOp1();
+
+    // Commas cannot be destinations.
+    assert(!m_dst->OperIs(GT_COMMA));
 
     if (m_asg->TypeGet() != m_dst->TypeGet())
     {
@@ -213,7 +211,7 @@ void MorphInitBlockHelper::PrepareDst()
 #if defined(DEBUG)
     if (m_comp->verbose)
     {
-        printf("PrepareDst for [%06u] ", m_comp->dspTreeID(origDst));
+        printf("PrepareDst for [%06u] ", m_comp->dspTreeID(m_dst));
         if (m_dstLclNode != nullptr)
         {
             printf("have found a local var V%02u.\n", m_dstLclNum);
@@ -1595,6 +1593,12 @@ GenTree* Compiler::fgMorphInitBlock(GenTree* tree)
 //
 GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
 {
+    if (!tree->Data()->OperIs(GT_CNS_INT, GT_INIT_VAL))
+    {
+        // Data is a location and required to have GTF_DONT_CSE.
+        tree->Data()->gtFlags |= GTF_DONT_CSE;
+    }
+
     tree->Addr()        = fgMorphTree(tree->Addr());
     tree->Data()        = fgMorphTree(tree->Data());
     tree->gtDynamicSize = fgMorphTree(tree->gtDynamicSize);
