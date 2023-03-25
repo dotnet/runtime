@@ -1613,6 +1613,12 @@ private:
 #endif
     PhasedVar<regMaskTP>* availableRegs[TYP_COUNT];
 
+#if defined(TARGET_XARCH)
+#define allAvailableRegs (availableIntRegs | availableFloatRegs | availableMaskRegs)
+#else
+#define allAvailableRegs (availableIntRegs | availableFloatRegs)
+#endif
+
     // Register mask of argument registers currently occupied because we saw a
     // PUTARG_REG node. Tracked between the PUTARG_REG and its corresponding
     // CALL node and is used to avoid preferring these registers for locals
@@ -1694,7 +1700,7 @@ private:
 
     void resetAvailableRegs()
     {
-        m_AvailableRegs          = (availableIntRegs | availableFloatRegs);
+        m_AvailableRegs          = allAvailableRegs;
         m_RegistersWithConstants = RBM_NONE;
     }
 
