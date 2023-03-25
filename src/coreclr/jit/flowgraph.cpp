@@ -465,11 +465,20 @@ PhaseStatus Compiler::fgExpandStaticInit()
         return result;
     }
 
-    if (opts.OptimizationDisabled() || (opts.compCodeOpt == SMALL_CODE))
+    if (opts.OptimizationDisabled())
     {
-        // It doesn't make sense to expand them for -Od or -Os
-        // since it's just a perf optimization that comes with a codegen size increase
-        JITDUMP("Optimizations aren't allowed or small code is requested - bail out.\n")
+        JITDUMP("Optimizations aren't allowed - bail out.\n")
+        return result;
+    }
+
+    // TODO: Replace with opts.compCodeOpt once it's fixed
+    const bool preferSize  = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
+    const bool preferSpeed = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT);
+
+    if (preferSize)
+    {
+        // The optimization comes with a codegen size increase
+        JITDUMP("Optimized for size - bail out.\n")
         return result;
     }
 
@@ -556,18 +565,15 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 //
                 // Create new blocks. Essentially, we want to transform this:
                 //
-                //     result = helperCall();
+                //   staticBase = helperCall();
                 //
                 // into:
                 //
-                //     if (isInited)
-                //     {
-                //         goto fastPathBb;
-                //     }
-                //     helperCall(); // we don't use its return value
-                // fastPathBb:
-                //     result = fastPath;
-                // block:
+                //   if (!isInitialized)
+                //   {
+                //       helperCall(); // we don't use its return value
+                //   }
+                //   staticBase = fastPath;
                 //
 
                 // TODO: do we need double-indirect for staticBaseAccessType == IAT_PVALUE ?
@@ -581,6 +587,8 @@ PhaseStatus Compiler::fgExpandStaticInit()
                     fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp), debugInfo);
 
                 // Fallback basic block
+                // TODO-CQ: for JIT we can replace the original call with CORINFO_HELP_INITCLASS
+                // that only accepts a single argument
                 BasicBlock* fallbackBb = fgNewBBFromTreeAfter(BBJ_NONE, isInitedBb, call, debugInfo, true);
 
                 //
@@ -609,9 +617,15 @@ PhaseStatus Compiler::fgExpandStaticInit()
 
                 block->inheritWeight(prevBb);
                 isInitedBb->inheritWeight(prevBb);
-                // 80% chance we pass isInitedBb. NOTE: we don't want to make it "run-rarely" to avoid
-                // regressions for startup time
-                fallbackBb->inheritWeightPercentage(isInitedBb, 20);
+                if (!preferSpeed)
+                {
+                    // Keep fallbackBb non-cold for size and faster startup
+                    fallbackBb->inheritWeightPercentage(isInitedBb, 20);
+                }
+                else
+                {
+                    fallbackBb->bbSetRunRarely();
+                }
 
                 //
                 // Update loop info if loop table is known to be valid
