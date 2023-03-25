@@ -40,23 +40,6 @@ extern "C"
         // TODO-AVX512: Enabling this for OSX requires ensuring threads explicitly trigger
         // the AVX-512 enablement so that arbitrary usage doesn't cause downstream problems
 
-        // int cpuidInfo[4];
-        //
-        // const int CPUID_EAX = 0;
-        // const int CPUID_EBX = 1;
-        // const int CPUID_ECX = 2;
-        // const int CPUID_EDX = 3;
-        //
-        // __cpuid(cpuidInfo, 0x00000000);
-        //
-        // if (static_cast<uint32_t>(cpuidInfo[CPUID_EAX]) < 0x0D)
-        // {
-        //     return false;
-        // }
-        //
-        // __cpuidex(cpuidInfo, 0x0000000D, 0x00000000);
-        // return (cpuidInfo[CPUID_EAX] & XSTATE_MASK_AVX512) == XSTATE_MASK_AVX512;
-
         return false;
 #else
         DWORD eax;

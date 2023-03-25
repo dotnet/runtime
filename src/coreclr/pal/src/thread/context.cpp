@@ -316,9 +316,23 @@ typedef int __ptrace_request;
         ASSIGN_CONTROL_REGS \
         ASSIGN_INTEGER_REGS \
 
-#if defined(XSTATE_SUPPORTED)
+#if defined(XSTATE_SUPPORTED) || defined(HOST_AMD64) && defined(TARGET_OSX)
 bool Xstate_IsAvx512Supported()
 {
+#if defined(TARGET_OSX)
+    // MacOS has specialized behavior where it reports AVX512 support but doesnt
+    // actually enable AVX512 until the first instruction is executed and does so
+    // on a per thread basis. It does this by catching the faulting instruction and
+    // checking for the EVEX encoding. The kmov instructions, despite being part
+    // of the AVX512 instruction set are VEX encoded and dont trigger the enablement
+    //
+    // See https://github.com/apple/darwin-xnu/blob/main/osfmk/i386/fpu.c#L174
+
+    // TODO-AVX512: Enabling this for OSX requires ensuring threads explicitly trigger
+    // the AVX-512 enablement so that arbitrary usage doesn't cause downstream problems
+
+    return false;
+#else
     static int Xstate_Avx512Supported = -1;
 
     if (Xstate_Avx512Supported == -1)
@@ -367,26 +381,9 @@ bool Xstate_IsAvx512Supported()
     }
 
     return Xstate_Avx512Supported == 1;
+#endif
 }
-#endif // XSTATE_SUPPORTED
-
-#if defined(HOST_AMD64) && defined(TARGET_OSX)
-bool Xstate_IsAvx512Supported()
-{
-    // MacOS has specialized behavior where it reports AVX512 support but doesnt
-    // actually enable AVX512 until the first instruction is executed and does so
-    // on a per thread basis. It does this by catching the faulting instruction and
-    // checking for the EVEX encoding. The kmov instructions, despite being part
-    // of the AVX512 instruction set are VEX encoded and dont trigger the enablement
-    //
-    // See https://github.com/apple/darwin-xnu/blob/main/osfmk/i386/fpu.c#L174
-
-    // TODO-AVX512: Enabling this for OSX requires ensuring threads explicitly trigger
-    // the AVX-512 enablement so that arbitrary usage doesn't cause downstream problems
-
-    return false;
-}
-#endif // HOST_AMD64 && TARGET_OSX
+#endif // XSTATE_SUPPORTED || defined(HOST_AMD64) && defined(TARGET_OSX)
 
 #if !HAVE_MACH_EXCEPTIONS
 
