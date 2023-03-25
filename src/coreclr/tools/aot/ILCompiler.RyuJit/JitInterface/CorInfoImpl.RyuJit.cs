@@ -2355,12 +2355,25 @@ namespace Internal.JitInterface
         private UIntPtr getIsClassInitedFieldAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref InfoAccessType pAccessType, UIntPtr* pStaticBase, byte* pIsInitedMask)
 #pragma warning restore CA1822 // Mark members as static
         {
-            // MetadataType type = (MetadataType)HandleToObject(cls);
-            // ISortableSymbolNode symbol = isGc ?
-            //     _compilation.NodeFactory.TypeGCStaticsSymbol(type) :
-            //     _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
+            /*
+            if (isGc)
+            {
+                return 0;
+            }
 
-            // int offset = NonGCStaticsNode.GetClassConstructorContextSize(_compilation.NodeFactory.Target);
+            MetadataType type = (MetadataType)HandleToObject(cls);
+            ISortableSymbolNode symbol = _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
+
+            pAccessType = InfoAccessType.IAT_VALUE;
+            *pIsInitedMask = 0xFF; // means Mask is not needed
+            *pStaticBase = (UIntPtr)ObjectToHandle(symbol);
+
+            int offset = NonGCStaticsNode.GetClassConstructorContextSize(_compilation.NodeFactory.Target);
+
+            // TODO: introduce a new argument to pass offset since the subtraction has to be done in codegen
+            // (can we create a new relocation for it?)
+            return *pStaticBase;
+            */
             return 0;
         }
     }
