@@ -25,29 +25,13 @@ namespace System.Threading
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads) => WindowsThreadPool.SetMaxThreads(workerThreads, completionPortThreads);
 
-        public static void GetMaxThreads(out int workerThreads, out int completionPortThreads) => WindowsThreadPool.GetMaxThreads(workerThreads, completionPortThreads);
+        public static void GetMaxThreads(out int workerThreads, out int completionPortThreads) => WindowsThreadPool.GetMaxThreads(out workerThreads, out completionPortThreads);
 
         public static bool SetMinThreads(int workerThreads, int completionPortThreads) => WindowsThreadPool.SetMinThreads(workerThreads, completionPortThreads);
 
-        public static void GetMinThreads(out int workerThreads, out int completionPortThreads) => WindowsThreadPool.GetMinThreads(workerThreads, completionPortThreads);
+        public static void GetMinThreads(out int workerThreads, out int completionPortThreads) => WindowsThreadPool.GetMinThreads(out workerThreads, out completionPortThreads);
 
-        public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads) => WindowsThreadPool.GetAvailableThreads(workerThreads, completionPortThreads);
-
-        /// <summary>
-        /// Gets the number of thread pool threads that currently exist.
-        /// </summary>
-        /// <remarks>
-        /// For a thread pool implementation that may have different types of threads, the count includes all types.
-        /// </remarks>
-        public static int ThreadCount => WindowsThreadPool.ThreadCount;
-
-        /// <summary>
-        /// Gets the number of work items that have been processed so far.
-        /// </summary>
-        /// <remarks>
-        /// For a thread pool implementation that may have different types of work items, the count includes all types.
-        /// </remarks>
-        public static long CompletedWorkItemCount => WindowsThreadPool.CompletedWorkItemCount;
+        public static void GetAvailableThreads(out int workerThreads, out int completionPortThreads) => WindowsThreadPool.GetAvailableThreads(out workerThreads, out completionPortThreads);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void NotifyWorkItemProgress() => WindowsThreadPool.NotifyWorkItemProgress();
