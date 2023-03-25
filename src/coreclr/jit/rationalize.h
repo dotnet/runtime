@@ -39,9 +39,6 @@ private:
 
     void RewriteIndir(LIR::Use& use);
 
-    // SIMD related
-    void RewriteSIMDIndir(LIR::Use& use);
-
     // Intrinsic related transformations
     void RewriteNodeAsCall(GenTree**             use,
                            ArrayStack<GenTree*>& parents,
