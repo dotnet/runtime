@@ -181,7 +181,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Illegal;
     }
 
-    bool isIsaSupported = comp->compSupportsHWIntrinsic(isa);
+    bool isIsaSupported                         = comp->compSupportsHWIntrinsic(isa);
+    bool isBaselineVector512IsaUsedAndSupported = false;
 
     bool isHardwareAcceleratedProp = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
 #ifdef TARGET_XARCH
@@ -201,7 +202,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         }
         else if (strcmp(className, "Vector512") == 0)
         {
-            isa = InstructionSet_Vector512;
+            isBaselineVector512IsaUsedAndSupported = comp->IsBaselineVector512IsaSupported();
         }
     }
 #endif
@@ -236,7 +237,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 
         if (isIsaSupported)
         {
-            if (comp->compExactlyDependsOn(isa))
+            if (comp->compExactlyDependsOn(isa) || isBaselineVector512IsaUsedAndSupported)
             {
                 return NI_IsSupported_True;
             }

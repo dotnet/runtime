@@ -103,7 +103,7 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
 
     const emitter* emit = GetEmitter();
 
-    if (emit->IsVexOrEvexEncodableInstruction(ins))
+    if (emit->IsVexOrEvexEncodedInstruction(ins))
     {
         if (!emit->IsBMIInstruction(ins) && !emit->IsKInstruction(ins))
         {
