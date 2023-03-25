@@ -12629,8 +12629,10 @@ void Compiler::impImport()
         // We now import all the IR and keep it around so we can
         // analyze address exposure more robustly.
         //
+        JITDUMP("OSR: protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
         impImportBlockPending(fgEntryBB);
-        fgEntryBB->bbFlags |= BBF_DONT_REMOVE;
+        fgEntryBB->bbRefs++;
+        fgEntryBBExtraRefs++;
     }
 
     /* Import blocks in the worker-list until there are no more */
