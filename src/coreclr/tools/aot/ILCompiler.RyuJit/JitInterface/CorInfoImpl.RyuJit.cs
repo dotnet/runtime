@@ -2355,20 +2355,23 @@ namespace Internal.JitInterface
         private UIntPtr getIsClassInitedFieldAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref InfoAccessType pAccessType, UIntPtr* pStaticBase, ref uint pIsInitedMask, int* pIsInitedOffset)
 #pragma warning restore CA1822 // Mark members as static
         {
+            MetadataType type = (MetadataType)HandleToObject(cls);
+            ISortableSymbolNode nonGcStaticBaseSymbol = _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
+
             if (isGc)
             {
-                // TODO: implement
-                return 0;
+                pAccessType = InfoAccessType.IAT_PVALUE;
+                *pStaticBase = (UIntPtr)ObjectToHandle(_compilation.NodeFactory.TypeGCStaticsSymbol(type));
+            }
+            else
+            {
+                pAccessType = InfoAccessType.IAT_VALUE;
+                *pStaticBase = (UIntPtr)ObjectToHandle(nonGcStaticBaseSymbol);
             }
 
-            MetadataType type = (MetadataType)HandleToObject(cls);
-            ISortableSymbolNode symbol = _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
-
-            pAccessType = InfoAccessType.IAT_VALUE;
             pIsInitedMask = uint.MaxValue; // mask is not needed
-            *pStaticBase = (UIntPtr)ObjectToHandle(symbol);
             *pIsInitedOffset = _compilation.NodeFactory.Target.PointerSize - NonGCStaticsNode.GetClassConstructorContextSize(_compilation.NodeFactory.Target);
-            return *pStaticBase;
+            return (UIntPtr)ObjectToHandle(nonGcStaticBaseSymbol);
         }
     }
 }
