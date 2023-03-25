@@ -76,7 +76,12 @@ namespace System.Reflection.Emit
 
         public FieldBuilder DefineField(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers,
             FieldAttributes attributes)
-                => DefineFieldCore(fieldName, type, requiredCustomModifiers, optionalCustomModifiers, attributes);
+        {
+            ArgumentException.ThrowIfNullOrEmpty(fieldName);
+            ArgumentNullException.ThrowIfNull(type);
+
+            return DefineFieldCore(fieldName, type, requiredCustomModifiers, optionalCustomModifiers, attributes);
+        }
 
         protected abstract FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers,
             FieldAttributes attributes);

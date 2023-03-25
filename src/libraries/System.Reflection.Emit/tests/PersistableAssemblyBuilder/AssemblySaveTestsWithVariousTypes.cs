@@ -35,6 +35,7 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(s_assemblyName.Version, aNameFromDisk.Version);
                 Assert.Equal(s_assemblyName.CultureInfo, aNameFromDisk.CultureInfo);
                 Assert.Equal(s_assemblyName.CultureName, aNameFromDisk.CultureName);
+                Assert.Equal(s_assemblyName.ContentType, aNameFromDisk.ContentType);
                 Assert.Equal(s_assemblyName.Flags | AssemblyNameFlags.PublicKey, aNameFromDisk.Flags); // Not sure AssemblyNameFlags.PublicKey is expected
 
                 Module moduleFromDisk = assemblyFromDisk.Modules.First();

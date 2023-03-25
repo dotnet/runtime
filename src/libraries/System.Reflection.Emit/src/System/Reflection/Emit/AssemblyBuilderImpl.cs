@@ -19,6 +19,13 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(name);
 
+            name = (AssemblyName)name.Clone();
+
+            if (string.IsNullOrEmpty(name.Name))
+            {
+                throw new ArgumentException(SR.Argument_NullOrEmptyAssemblyName);
+            }
+
             _assemblyName = name;
 
             if (assemblyAttributes != null)
@@ -70,20 +77,19 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.CannotSaveMultipleTimes);
             }
 
-            if (string.IsNullOrEmpty(_assemblyName.Name))
-            {
-                throw new InvalidOperationException(SR.AssemblyNameCannotBeNull);
-            }
-
             // Add assembly metadata
             var metadata = new MetadataBuilder();
+
             metadata.AddAssembly(
-               metadata.GetOrAddString(value: _assemblyName.Name),
+               metadata.GetOrAddString(value: _assemblyName.Name!),
                version: _assemblyName.Version ?? new Version(0, 0, 0, 0),
                culture: _assemblyName.CultureName == null ? default : metadata.GetOrAddString(value: _assemblyName.CultureName),
                publicKey: _assemblyName.GetPublicKey() is byte[] publicKey ? metadata.GetOrAddBlob(value: publicKey) : default,
-               flags: (AssemblyFlags)_assemblyName.Flags,
-               hashAlgorithm: AssemblyHashAlgorithm.None); // AssemblyName.HashAlgorithm is obsolete so default value used.
+               flags: AddContentType((AssemblyFlags)_assemblyName.Flags, _assemblyName.ContentType),
+#pragma warning disable SYSLIB0037 // Type or member is obsolete
+               hashAlgorithm: (AssemblyHashAlgorithm)_assemblyName.HashAlgorithm
+#pragma warning restore SYSLIB0037
+               );
 
             // Add module's metadata
             _module.AppendMetadata(metadata);
@@ -92,6 +98,9 @@ namespace System.Reflection.Emit
             WritePEImage(stream, metadata, ilBuilder);
             _previouslySaved = true;
         }
+
+        private static AssemblyFlags AddContentType(AssemblyFlags flags, AssemblyContentType contentType)
+            => (AssemblyFlags)((int)contentType << 9) | flags;
 
         internal void Save(string assemblyFileName)
         {

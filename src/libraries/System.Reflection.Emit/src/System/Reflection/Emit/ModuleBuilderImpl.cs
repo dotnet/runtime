@@ -113,8 +113,6 @@ namespace System.Reflection.Emit
         protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet) => throw new NotImplementedException();
         protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr, [DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-
             TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this);
             _typeDefStore.Add(_type);
             return _type;

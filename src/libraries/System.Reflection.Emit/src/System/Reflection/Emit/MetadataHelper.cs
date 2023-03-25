@@ -13,12 +13,7 @@ namespace System.Reflection.Emit
         {
             AssemblyName assemblyName = assembly.GetName();
 
-            if (assemblyName == null || assemblyName.Name == null)
-            {
-                throw new ArgumentNullException(nameof(assemblyName));
-            }
-
-            return AddAssemblyReference(metadata, assemblyName.Name, assemblyName.Version, assemblyName.CultureName, assemblyName.GetPublicKey(), (AssemblyFlags)assemblyName.Flags);
+            return AddAssemblyReference(metadata, assemblyName.Name!, assemblyName.Version, assemblyName.CultureName, assemblyName.GetPublicKey(), (AssemblyFlags)assemblyName.Flags);
         }
 
         internal static AssemblyReferenceHandle AddAssemblyReference(MetadataBuilder metadata, string name, Version? version, string? culture, byte[]? publicKey, AssemblyFlags flags)

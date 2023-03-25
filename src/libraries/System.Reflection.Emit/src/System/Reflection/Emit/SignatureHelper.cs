@@ -18,49 +18,32 @@ namespace System.Reflection.Emit
             return fieldSignature;
         }
 
-        internal static BlobBuilder MethodSignatureEncoder(ParameterInfo[]? parameters, ParameterInfo? returnType, bool isInstance)
-        {
-            Type[]? typeParameters = null;
-            Type? typeReturn = null;
-
-            if (parameters != null)
-            {
-                typeParameters = Array.ConvertAll(parameters, parameter => parameter.ParameterType);
-            }
-
-            if (returnType != null)
-            {
-                typeReturn = returnType.ParameterType;
-            }
-
-            return MethodSignatureEncoder(typeParameters, typeReturn, isInstance);
-        }
         internal static BlobBuilder MethodSignatureEncoder(Type[]? parameters, Type? returnType, bool isInstance)
         {
             // Encoding return type and parameters.
             var methodSignature = new BlobBuilder();
 
-            ParametersEncoder _parEncoder;
-            ReturnTypeEncoder _retEncoder;
+            ParametersEncoder parEncoder;
+            ReturnTypeEncoder retEncoder;
 
             new BlobEncoder(methodSignature).
                 MethodSignature(isInstanceMethod: isInstance).
-                Parameters((parameters == null) ? 0 : parameters.Length, out _retEncoder, out _parEncoder);
+                Parameters((parameters == null) ? 0 : parameters.Length, out retEncoder, out parEncoder);
 
             if (returnType != null && returnType.FullName != "System.Void")
             {
-                WriteSignatureTypeForReflectionType(_retEncoder.Type(), returnType);
+                WriteSignatureTypeForReflectionType(retEncoder.Type(), returnType);
             }
             else // If null mark ReturnTypeEncoder as void
             {
-                _retEncoder.Void();
+                retEncoder.Void();
             }
 
             if (parameters != null) // If parameters null, just keep the ParametersEncoder empty
             {
                 foreach (Type parameter in parameters)
                 {
-                    WriteSignatureTypeForReflectionType(_parEncoder.AddParameter().Type(), parameter);
+                    WriteSignatureTypeForReflectionType(parEncoder.AddParameter().Type(), parameter);
                 }
             }
             return methodSignature;

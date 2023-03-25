@@ -13,20 +13,28 @@ namespace System.Reflection.Emit
         private readonly Type _returnType;
         private readonly Type[]? _parameterTypes;
         private readonly ModuleBuilderImpl _module;
+        private readonly MethodAttributes _attributes;
+        private readonly string _name;
+        private readonly CallingConventions _callingConventions;
+        private readonly TypeBuilderImpl _declaringType;
 
         internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
             Type[]? parameterTypes, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
         {
             _module = module;
-            _returnType = returnType ?? typeof(void);
-            Name = name;
-            Attributes = attributes;
-            CallingConvention = callingConventions;
-            DeclaringType = declaringType;
-            Module = declaringType.Module;
+            _returnType = returnType ?? TypeBuilderImpl.GetObjectType();
+            _name = name;
+            _attributes = attributes;
+            _callingConventions = callingConventions;
+            _declaringType = declaringType;
 
             if (parameterTypes != null)
             {
+                foreach (Type t in parameterTypes)
+                {
+                    ArgumentNullException.ThrowIfNull(t, nameof(parameterTypes));
+                }
+
                 _parameterTypes = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, _parameterTypes, parameterTypes.Length);
             }
@@ -43,11 +51,11 @@ namespace System.Reflection.Emit
         protected override void SetImplementationFlagsCore(MethodImplAttributes attributes) => throw new NotImplementedException();
         protected override void SetSignatureCore(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
             Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers) => throw new NotImplementedException();
-        public override string Name { get; }
-        public override MethodAttributes Attributes { get; }
-        public override CallingConventions CallingConvention { get; }
-        public override TypeBuilder DeclaringType { get; }
-        public override Module Module { get; }
+        public override string Name => _name;
+        public override MethodAttributes Attributes => _attributes;
+        public override CallingConventions CallingConvention => _callingConventions;
+        public override TypeBuilder DeclaringType => _declaringType;
+        public override Module Module => _module;
         public override bool ContainsGenericParameters { get => throw new NotSupportedException(SR.NotSupported_DynamicModule); }
         public override bool IsGenericMethod { get => throw new NotImplementedException(); }
         public override bool IsGenericMethodDefinition { get => throw new NotImplementedException(); }
