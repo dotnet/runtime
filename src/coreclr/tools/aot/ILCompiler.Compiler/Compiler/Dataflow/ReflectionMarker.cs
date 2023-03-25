@@ -71,7 +71,7 @@ namespace ILCompiler.Dataflow
                     MarkEvent(origin, @event, reason);
                     break;
                     // case InterfaceImplementation
-                    //  Nothing to do currently as Native AOT will presere all interfaces on a preserved type
+                    //  Nothing to do currently as Native AOT will preserve all interfaces on a preserved type
             }
         }
 
@@ -83,6 +83,9 @@ namespace ILCompiler.Dataflow
             TypeDesc foundType = System.Reflection.TypeNameParser.ResolveType(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context, referencedModules);
             if (foundType == null)
             {
+                if (needsAssemblyName)
+                    diagnosticContext.AddDiagnostic(DiagnosticId.TypeWasNotFoundInAssemblyNorBaseLibrary, typeName);
+
                 type = default;
                 return false;
             }
