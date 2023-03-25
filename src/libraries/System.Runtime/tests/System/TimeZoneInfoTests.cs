@@ -117,7 +117,9 @@ namespace System.Tests
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) Pacific Time (Los Angeles)", "Pacific Standard Time", "Pacific Daylight Time" },
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Eastern Australia Time (Sydney)", "Australian Eastern Standard Time", "Australian Eastern Daylight Time" },
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Australian Western Standard Time (Perth)", "Australian Western Standard Time", "Australian Western Daylight Time" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Iran Time", "Iran Standard Time", "Iran Daylight Time" },
+
+                    // https://github.com/dotnet/runtime/issues/83901 The name is not same accross different OS updates.
+                    // { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Iran Time", "Iran Standard Time", "Iran Daylight Time" },
 
                     { s_NewfoundlandTz, "(UTC-03:30) Newfoundland Time (St. John’s)", "Newfoundland Standard Time", "Newfoundland Daylight Time" },
                     { s_catamarcaTz, "(UTC-03:00) Argentina Standard Time (Catamarca)", "Argentina Standard Time", "Argentina Summer Time" }
