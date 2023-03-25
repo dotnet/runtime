@@ -95,6 +95,8 @@ namespace System.IO.Pipes
         None = 0,
         CurrentUserOnly = 536870912,
         Asynchronous = 1073741824,
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        FirstPipeInstance = 524288
     }
     public abstract partial class PipeStream : System.IO.Stream
     {

@@ -52,7 +52,8 @@ namespace System.IO.Pipes.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, direction, 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, direction, 1, PipeTransmissionMode.Byte));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, direction, 1, PipeTransmissionMode.Byte, PipeOptions.None));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, direction, 1, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));}
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, direction, 1, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
+        }
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
@@ -253,6 +254,13 @@ namespace System.IO.Pipes.Tests
             {
                 Assert.Throws<UnauthorizedAccessException>(() => new NamedPipeServerStream(uniqueServerName, PipeDirection.Out));
             }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public static void Unix_PipeOptions_FirstPipeInstance_ThrowsPlatformNotSupportedException()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeServerStream(PipeStreamConformanceTests.GetUniquePipeName(), PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.FirstPipeInstance));
         }
     }
 }

@@ -243,6 +243,9 @@
   <data name="PlatformNotSupported_MessageTransmissionMode" xml:space="preserve">
     <value>Message transmission mode is not supported on this platform.</value>
   </data>
+  <data name="PlatformNotSupported_PipeOptions_FirstPipeInstance" xml:space="preserve">
+    <value>First Pipe Instance option is not supported on this platform.</value>
+  </data>
   <data name="PlatformNotSupported_RemotePipes" xml:space="preserve">
     <value>Access to remote named pipes is not supported on this platform.</value>
   </data>
