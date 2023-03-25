@@ -581,22 +581,24 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 //   staticBase = fastPath;
                 //
 
-                var_types indirType = TYP_INT;
-                if (isInitMask <= 0xFF)
-                {
-                    indirType = TYP_UBYTE;
-                }
-
-                // TODO: do we need double-indirect for staticBaseAccessType == IAT_PVALUE ?
-                GenTree* isInitAdrNode = gtNewIndOfIconHandleNode(indirType, staticInitAddr, GTF_ICON_CONST_PTR, true);
+                GenTree* isInitAdrNode;
 
                 if (isInitOffset != 0)
                 {
-                    // isInitAddr = isInitAddr + initOffset;
-                    isInitAdrNode = gtNewOperNode(GT_ADD, TYP_INT, isInitAdrNode, gtNewIconNode(isInitOffset));
+                    // Don't fold ADD(CNS1, CNS2) here since the result won't be reloc-friendly for AOT
+                    isInitAdrNode =
+                        gtNewIndir(TYP_INT, gtNewOperNode(GT_ADD, TYP_I_IMPL,
+                                                          gtNewIconHandleNode(staticInitAddr, GTF_ICON_CONST_PTR),
+                                                          gtNewIconNode(isInitOffset)));
+                    isInitAdrNode->gtFlags &= ~GTF_EXCEPT;
+                    isInitAdrNode->gtFlags |= (GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+                }
+                else
+                {
+                    isInitAdrNode = gtNewIndOfIconHandleNode(TYP_INT, staticInitAddr, GTF_ICON_CONST_PTR, true);
                 }
 
-                // "((*isInitAddr) & isInitMask != 0"
+                // Don't emit mask if it's 0xFFFFFFFF, although, JIT should be able to drop it as redundant itself
                 if (isInitMask < 0xFFFFFFFF)
                 {
                     isInitAdrNode = gtNewOperNode(GT_AND, TYP_INT, isInitAdrNode, gtNewIconNode(isInitMask));

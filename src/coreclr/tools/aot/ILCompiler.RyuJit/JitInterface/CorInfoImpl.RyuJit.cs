@@ -2357,7 +2357,7 @@ namespace Internal.JitInterface
         {
             if (isGc)
             {
-                // TODO:
+                // TODO: implement
                 return 0;
             }
 
@@ -2365,9 +2365,9 @@ namespace Internal.JitInterface
             ISortableSymbolNode symbol = _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
 
             pAccessType = InfoAccessType.IAT_VALUE;
-            pIsInitedMask = 0xFFFFFFFF; // means Mask is not needed
+            pIsInitedMask = uint.MaxValue; // mask is not needed
             *pStaticBase = (UIntPtr)ObjectToHandle(symbol);
-            *pIsInitedOffset = -NonGCStaticsNode.GetClassConstructorContextSize(_compilation.NodeFactory.Target);
+            *pIsInitedOffset = _compilation.NodeFactory.Target.PointerSize - NonGCStaticsNode.GetClassConstructorContextSize(_compilation.NodeFactory.Target);
             return *pStaticBase;
         }
     }
