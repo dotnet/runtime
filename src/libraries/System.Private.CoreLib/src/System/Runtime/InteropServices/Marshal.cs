@@ -798,10 +798,6 @@ namespace System.Runtime.InteropServices
                 case HResults.RO_E_CLOSED:
                 case HResults.COR_E_OBJECTDISPOSED:
                     return new System.ObjectDisposedException(null);
-                //case HResults.COR_E_HOSTPROTECTION:
-                //case HResults.COR_E_SAFEHANDLEMISSINGATTRIBUTE:
-                //case HResults.COR_E_SEMAPHOREFULL:
-                //case HResults.COR_E_THREADSTOP:
 
                 case HResults.STG_E_PATHNOTFOUND:
                 case HResults.CTL_E_PATHNOTFOUND:
