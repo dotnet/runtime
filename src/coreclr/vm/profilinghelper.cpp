@@ -533,7 +533,7 @@ HRESULT ProfilingAPIUtility::ProfilerCLSIDFromString(
     // Translate the string into a CLSID
     if (*wszClsid == W('{'))
     {
-        hr = IIDFromString(wszClsid, pClsid);
+        hr = LPCWSTRToGuid(wszClsid, pClsid) ? S_OK : E_FAIL;
     }
     else
     {
@@ -702,8 +702,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
         return hr;
     }
 
-    GuidString clsidUtf8;
-    GuidString::Create(clsid, clsidUtf8);
+    char clsidUtf8[GUID_STR_BUFFER_LEN];
+    GuidToLPSTR(clsid, clsidUtf8);
     hr = LoadProfiler(
         kStartupLoad,
         &clsid,
@@ -736,8 +736,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiler loading from GUID/Path stored from the IPC channel."));
         CLSID *pClsid = &(item->guid);
 
-        GuidString clsidUtf8;
-        GuidString::Create(*pClsid, clsidUtf8);
+        char clsidUtf8[GUID_STR_BUFFER_LEN];
+        GuidToLPSTR(*pClsid, clsidUtf8);
         HRESULT hr = LoadProfiler(
             kStartupLoad,
             pClsid,
@@ -816,8 +816,8 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
             continue;
         }
 
-        GuidString clsidUtf8;
-        GuidString::Create(clsid, clsidUtf8);
+        char clsidUtf8[GUID_STR_BUFFER_LEN];
+        GuidToLPSTR(clsid, clsidUtf8);
         hr = LoadProfiler(
             kStartupLoad,
             &clsid,
@@ -931,7 +931,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
 
         if (profilerCompatibilityFlag == kPreventLoad)
         {
-            LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPlus_ProfAPI_ProfilerCompatibilitySetting is set to PreventLoad. "
+            LOG((LF_CORPROF, LL_INFO10, "**PROF: DOTNET_ProfAPI_ProfilerCompatibilitySetting is set to PreventLoad. "
                  "Profiler will not be loaded.\n"));
 
             MAKE_UTF8PTR_FROMWIDE(szEnvVarName, CLRConfig::EXTERNAL_ProfAPI_ProfilerCompatibilitySetting.name);
@@ -1014,7 +1014,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
     {
         if (profilerCompatibilityFlag == kDisableV2Profiler)
         {
-            LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPlus_ProfAPI_ProfilerCompatibilitySetting is set to DisableV2Profiler (the default). "
+            LOG((LF_CORPROF, LL_INFO10, "**PROF: DOTNET_ProfAPI_ProfilerCompatibilitySetting is set to DisableV2Profiler (the default). "
                  "V2 profilers are not allowed, so that the configured V2 profiler is going to be unloaded.\n"));
 
             LogProfInfo(IDS_PROF_V2PROFILER_DISABLED, szClsid);
@@ -1023,7 +1023,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
 
         _ASSERTE(profilerCompatibilityFlag == kEnableV2Profiler);
 
-        LOG((LF_CORPROF, LL_INFO10, "**PROF: COMPlus_ProfAPI_ProfilerCompatibilitySetting is set to EnableV2Profiler. "
+        LOG((LF_CORPROF, LL_INFO10, "**PROF: DOTNET_ProfAPI_ProfilerCompatibilitySetting is set to EnableV2Profiler. "
              "The configured V2 profiler is going to be initialized.\n"));
 
         MAKE_UTF8PTR_FROMWIDE(szEnvVarName, CLRConfig::EXTERNAL_ProfAPI_ProfilerCompatibilitySetting.name);

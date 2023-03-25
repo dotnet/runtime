@@ -12,6 +12,11 @@
           DependsOnTargets="BundleTestWasmApp"
           Condition="'$(TargetArchitecture)' == 'wasm' And '$(TargetOS)' == 'browser'" />
 
+  <PropertyGroup Condition="'$(PublishAot)' == 'true'">
+    <AotRuntimePackageLoadedViaSDK>true</AotRuntimePackageLoadedViaSDK>
+    <ILCompilerTargetsPath>$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets</ILCompilerTargetsPath>
+  </PropertyGroup>
+
   <!-- Overriding these targets as these projects won't need to binplace -->
   <Target Name="PublishTestAsSelfContained" />
 

@@ -162,7 +162,7 @@ void DynamicMethodTable::AddMethodsToList()
     // allocate as many chunks as needed to hold the methods
     //
     MethodDescChunk* pChunk = MethodDescChunk::CreateChunk(pHeap, 0 /* one chunk of maximum size */,
-        mcDynamic, TRUE /* fNonVtableSlot */, TRUE /* fNativeCodeSlot */, FALSE /* fComPlusCallInfo */, m_pMethodTable, &amt);
+        mcDynamic, TRUE /* fNonVtableSlot */, TRUE /* fNativeCodeSlot */, m_pMethodTable, &amt);
     if (m_DynamicMethodList) RETURN;
 
     int methodCount = pChunk->GetCount();
@@ -457,7 +457,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
     m_pHeapList = (PTR_HeapList)pHp;
 
     LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap creation {0x%p} - size available 0x%p, private data ptr [0x%p, 0x%p]\n",
-        (HostCodeHeap*)this, m_TotalBytesAvailable, pTracker, pTracker->size));
+        (HostCodeHeap*)this, m_TotalBytesAvailable, pTracker, (pTracker ? pTracker->size : 0)));
 
     // It is important to exclude the CLRPersonalityRoutine from the tracked range
     pHp->startAddress = dac_cast<TADDR>(m_pBaseAddr) + (pTracker ? pTracker->size : 0);

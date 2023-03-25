@@ -362,8 +362,6 @@ namespace System.Reflection
          * The idea behind this optimization is to use a pair of delegates to simulate the same effect of doing a reflection call.
          * The first delegate cast the this argument to the right type and the second does points to the target method.
          */
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:UnrecognizedReflectionPattern",
-            Justification = "MethodInfo used with MakeGenericMethod doesn't have DynamicallyAccessedMembers generic parameters")]
         [DynamicDependency("GetterAdapterFrame`2")]
         [DynamicDependency("StaticGetterAdapterFrame`1")]
         private static GetterAdapter CreateGetterDelegate(MethodInfo method)
@@ -404,7 +402,7 @@ namespace System.Reflection
                 {
                     MethodInfo? method = GetGetMethod(true);
                     if (method == null)
-                        throw new ArgumentException($"Get Method not found for '{Name}'");
+                        throw new ArgumentException(SR.Arg_GetMethNotFnd);
                     if (!DeclaringType.IsValueType && !PropertyType.IsByRef && !method.ContainsGenericParameters)
                     {
                         //FIXME find a way to build an invoke delegate for value types.
@@ -442,7 +440,7 @@ namespace System.Reflection
 
             MethodInfo? method = GetGetMethod(true);
             if (method == null)
-                throw new ArgumentException($"Get Method not found for '{Name}'");
+                throw new ArgumentException(SR.Arg_GetMethNotFnd);
 
             if (index == null || index.Length == 0)
                 ret = method.Invoke(obj, invokeAttr, binder, null, culture);
@@ -456,7 +454,7 @@ namespace System.Reflection
         {
             MethodInfo? method = GetSetMethod(true);
             if (method == null)
-                throw new ArgumentException("Set Method not found for '" + Name + "'");
+                throw new ArgumentException(System.SR.Arg_SetMethNotFnd);
 
             object?[] parms;
             if (index == null || index.Length == 0)
@@ -502,10 +500,10 @@ namespace System.Reflection
         internal static PropertyInfo GetPropertyFromHandle(RuntimePropertyHandle handle, RuntimeTypeHandle reflectedType)
         {
             if (handle.Value == IntPtr.Zero)
-                throw new ArgumentException("The handle is invalid.");
+                throw new ArgumentException(SR.Argument_InvalidHandle);
             PropertyInfo pi = internal_from_handle_type(handle.Value, reflectedType.Value);
             if (pi == null)
-                throw new ArgumentException("The property handle and the type handle are incompatible.");
+                throw new ArgumentException(SR.Argument_FieldPropertyEventAndTypeHandleIncompatibility);
             return pi;
         }
     }

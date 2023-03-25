@@ -38,7 +38,7 @@ namespace VectorMathTests
             return s.X;
         }
 
-        static int Main(string[] args)
+        static int Main()
         {
             System.Diagnostics.Stopwatch clock = new System.Diagnostics.Stopwatch();
             clock.Start();

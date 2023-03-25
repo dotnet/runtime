@@ -78,6 +78,9 @@ namespace BINDER_SPACE
 
     typedef SHash<SimpleNameToFileNameMapTraits> SimpleNameToFileNameMap;
 
+    class AssemblyHashTraits;
+    typedef SHash<AssemblyHashTraits> ExecutionContext;
+
     class ApplicationContext
     {
     public:

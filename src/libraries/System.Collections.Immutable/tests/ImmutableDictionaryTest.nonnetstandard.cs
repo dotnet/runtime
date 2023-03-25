@@ -21,7 +21,7 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void EnumeratorWithHashCollisionsTest()
         {
-            var emptyMap = Empty<int, GenericParameterHelper>(new BadHasher<int>());
+            ImmutableDictionary<int, GenericParameterHelper> emptyMap = Empty<int, GenericParameterHelper>(new BadHasher<int>());
             this.EnumeratorTestHelper(emptyMap);
         }
 

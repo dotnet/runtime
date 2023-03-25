@@ -59,7 +59,7 @@ namespace Microsoft.NET.HostModel.AppHost
                 {
                     if (!appHostIsPEImage)
                     {
-                        throw new AppHostNotPEFileException();
+                        throw new AppHostNotPEFileException("PE file signature not found.");
                     }
 
                     PEUtils.SetWindowsGraphicalUserInterfaceBit(accessor);
@@ -141,7 +141,7 @@ namespace Microsoft.NET.HostModel.AppHost
 
                     if (chmodReturnCode == -1)
                     {
-                        throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {filePermissionOctal} for {appHostDestinationFilePath}.");
+                        throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {Convert.ToString(filePermissionOctal, 8)} for {appHostDestinationFilePath}.");
                     }
 
                     if (enableMacOSCodeSign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
@@ -224,9 +224,9 @@ namespace Microsoft.NET.HostModel.AppHost
             long headerOffset = 0;
             void FindBundleHeader()
             {
-                using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostFilePath))
+                using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostFilePath, FileMode.Open, null, 0, MemoryMappedFileAccess.Read))
                 {
-                    using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor())
+                    using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
                     {
                         int position = BinaryUtils.SearchInFile(accessor, bundleSignature);
                         if (position == -1)

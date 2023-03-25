@@ -37,32 +37,25 @@ namespace System.Net.Security
             get { return _isDefault; }
         }
 
-        public SafeFreeNegoCredentials(Interop.NetSecurityNative.PackageType packageType, string username, string password, string domain)
+        public SafeFreeNegoCredentials(Interop.NetSecurityNative.PackageType packageType, string username, string password, ReadOnlySpan<char> domain)
             : base(IntPtr.Zero, true)
         {
             Debug.Assert(username != null && password != null, "Username and Password can not be null");
-            const char At = '@';
-            const char Backwhack = '\\';
 
             // any invalid user format will not be manipulated and passed as it is.
-            int index = username.IndexOf(Backwhack);
-            if (index > 0 && username.IndexOf(Backwhack, index + 1) < 0 && string.IsNullOrEmpty(domain))
+            int index = username.IndexOf('\\');
+            if (index > 0 && username.IndexOf('\\', index + 1) < 0 && domain.IsEmpty)
             {
-                domain = username.Substring(0, index);
+                domain = username.AsSpan(0, index);
                 username = username.Substring(index + 1);
             }
 
             // remove any leading and trailing whitespace
-            if (domain != null)
-            {
-                domain = domain.Trim();
-            }
-
             username = username.Trim();
-
-            if ((username.IndexOf(At) < 0) && !string.IsNullOrEmpty(domain))
+            domain = domain.Trim();
+            if (!username.Contains('@') && !domain.IsEmpty)
             {
-                username += At + domain;
+                username = string.Concat(username, "@", domain);
             }
 
             bool ignore = false;

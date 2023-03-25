@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifndef __regdisplay_h__
+#define __regdisplay_h__
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
 struct REGDISPLAY
@@ -160,3 +163,5 @@ struct REGDISPLAY
 #endif // HOST_X86 || HOST_AMD64 || HOST_ARM || HOST_ARM64 || HOST_WASM
 
 typedef REGDISPLAY * PREGDISPLAY;
+
+#endif //__regdisplay_h__

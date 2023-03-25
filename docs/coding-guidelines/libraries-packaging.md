@@ -28,7 +28,7 @@ Such transport packages represent the set of libraries which are produced in dot
 
 To add a library to the target's shared framework, that library should be listed in the `AspNetCoreAppLibrary` or `WindowsDesktopAppLibrary` section in `NetCoreAppLibrary.props`.
 
-Source generators and analyzers can be included in the package by adding them to the `Microsoft.Internal.Runtime.**TARGET**.Transport.proj` as an AnalyzerReference. The analyzer projects should specify `AnalyzerLanguage` as mentioned [below](#analyzers--source-generators).
+Source generators and analyzers can be included in the package by adding them to the `Microsoft.Internal.Runtime.**TARGET**.Transport.proj` as a ProjectReference with the `ReferenceOutputAssembly=false` and `PackAsAnalyzer=true` metadata set. The analyzer projects should specify `AnalyzerLanguage` as mentioned [below](#analyzers--source-generators).
 
 Libraries included in this transport package should ensure all direct and transitive assembly references are also included in either the target's shared framework or the Microsoft.NETCore.App shared framework. This is not validated in dotnet/runtime at the moment: https://github.com/dotnet/runtime/issues/52562
 
@@ -40,21 +40,28 @@ Libraries to be packaged must set `IsPackable` to true. By default, all `librari
 
 Package versions and shipping state should be controlled using the properties defined by the [Arcade SDK](https://github.com/dotnet/arcade/blob/master/Documentation/ArcadeSdk.md#project-properties-defined-by-the-sdk). Typically libraries should not need to explicitly set any of these properties.
 
-Most metadata for packages is controlled centrally in the repository and individual projects may not need to make any changes to these. One property is required to be set in each project: `PackageDescription`. This should be set to a descriptive summary of the purpose of the package, and a list of common entry-point types for the package: to aide in search engine optimization. Example:
-```xml
-<PackageDescription>Logging abstractions for Microsoft.Extensions.Logging.
+Most metadata for packages is controlled centrally in the repository and individual projects may not need to make any changes to these. One property is required to be set in each project: `PackageDescription`. This should be set to a descriptive summary of the purpose of the package. Example:
 
-Commonly Used Types:
-Microsoft.Extensions.Logging.ILogger
-Microsoft.Extensions.Logging.ILoggerFactory
-Microsoft.Extensions.Logging.ILogger&lt;TCategoryName&gt;
-Microsoft.Extensions.Logging.LogLevel
-Microsoft.Extensions.Logging.Logger&lt;T&gt;
-Microsoft.Extensions.Logging.LoggerMessage
-Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
+```xml
+<PackageDescription>Logging abstractions for Microsoft.Extensions.Logging.</PackageDescription>
 ```
 
 Package content can be defined using any of the publicly defined Pack inputs: https://docs.microsoft.com/en-us/nuget/reference/msbuild-targets
+
+### Package Readme
+
+Packages can include a Markdown Readme file with a short usage documentation. To include a package Readme, create a `PACKAGE.md` file in the library `src` directory. The file will be automatically included in the package and used as a Readme if its name matches this convention.
+
+The package Readme is displayed on the package details page on [NuGet gallery](https://nuget.org/). You can include the following content in it:
+
+- A description of the package purpose.
+- Information when package should be used. For example, if the library is included in the shared framework in .NET, but needs to be installed via NuGet on .NET Framework, it should be mentioned.
+- Information on how to get started with the package.
+- Links to related documentation.
+- A list of common entry-point types for the package, with links to their API docs under [.NET API Browser](https://learn.microsoft.com/dotnet/api/).
+- A short code example that demostrates the package usage.
+
+For a list of supported Markdown features, see [NuGet documentation](https://learn.microsoft.com/nuget/nuget-org/package-readme-on-nuget-org#supported-markdown-features).
 
 ### Build props / targets and other content
 
@@ -70,10 +77,13 @@ Build props and targets may be needed in NuGet packages. To define these, author
 
 Some packages may wish to include a companion analyzer or source-generator with their library. Analyzers are much different from normal library contributors: their dependencies shouldn't be treated as nuget package dependencies, their TargetFramework isn't applicable to the project they are consumed in (since they run in the compiler). To facilitate this, we've defined some common infrastructure for packaging Analyzers.
 
-To include an analyzer in a package, simply add an `AnalyzerReference` item to the project that produces the package that should contain the analyzer and set the `Pack` metadata to true. If you just want to include the analyzer but not consume it, set the `ReferenceAnalyzer` metadata to false.
+To include an analyzer in a package, simply add a `ProjectReference` item to the project that produces the package that should contain the analyzer and set the `ReferenceOutputAssembly` metadata to false and the `PackAsAnalyzer` metadata to true. If you also want to consume the analyzer, set the `OutputItemType` metadata to `Analyzer`.
 ```xml
   <ItemGroup>
-    <AnalyzerReference Include="..\gen\System.Banana.Generators.csproj" Pack="true" ReferenceAnalyzer="false" />
+    <!-- Includes the analyzer in the package without consuming it. -->
+    <ProjectReference Include="..\gen\System.Banana.Generators.csproj" ReferenceOutputAssembly="false" PackAsAnalyzer="true" />
+    <!-- Includes the analyzer in the package and consumes it. -->
+    <ProjectReference Include="..\gen\System.Banana.Generators.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" PackAsAnalyzer="true" />
   </ItemGroup>
 ```
 

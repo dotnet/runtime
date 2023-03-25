@@ -3,7 +3,7 @@
 
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlDocumentTests
 {
     public enum InsertType { Prepend, Append, InsertBefore, InsertAfter }
 

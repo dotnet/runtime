@@ -80,11 +80,7 @@ namespace Microsoft.Interop
         /// </summary>
         public Stage CurrentStage { get; init; } = Stage.Invalid;
 
-        /// <summary>
-        /// <c>CustomTypeMarshallingDirection.In</c> means method import like <c>[LibraryImport]</c>.
-        /// <c>CustomTypeMarshallingDirection.Out</c> means method export like in <c>[UnmanagedCallersOnly]</c> or in <c>[JSExport]</c>
-        /// </summary>
-        public CustomTypeMarshallingDirection Direction { get; init; } = CustomTypeMarshallingDirection.In;
+        public MarshalDirection Direction { get; init; } = MarshalDirection.ManagedToUnmanaged;
 
         /// <summary>
         /// Gets the currently targeted framework and version for stub code generation.
@@ -141,6 +137,25 @@ namespace Microsoft.Interop
         public virtual string GetAdditionalIdentifier(TypePositionInfo info, string name)
         {
             return $"{GetIdentifiers(info).native}__{name}";
+        }
+
+        /// <summary>
+        /// Compute if the provided element is the return element for the stub that is being generated (not any inner call).
+        /// </summary>
+        /// <param name="info">The element information</param>
+        /// <returns><c>true</c> if the element is in the return position for this stub; otherwise, false.</returns>
+        public bool IsInStubReturnPosition(TypePositionInfo info)
+        {
+            if (Direction == MarshalDirection.ManagedToUnmanaged)
+            {
+                return info.IsManagedReturnPosition;
+            }
+            else if (Direction == MarshalDirection.UnmanagedToManaged)
+            {
+                return info.IsNativeReturnPosition;
+            }
+
+            throw new InvalidOperationException("Stub contexts should not be bidirectional");
         }
     }
 }

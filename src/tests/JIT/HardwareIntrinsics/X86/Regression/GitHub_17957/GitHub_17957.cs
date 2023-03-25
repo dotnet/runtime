@@ -1,17 +1,20 @@
 using System;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 namespace GitHub_17957
 {
-    class Program
+    public class Program
     {
         const int Pass = 100;
         const int Fail = 0;
 
-        static int Main(string[] args)
+        [Fact]
+        public static void Test()
         {
-            return (Test128() && Test256()) ? Pass : Fail;
+            Assert.True(Test128());
+            Assert.True(Test256());
         }
 
         public static bool Test128()

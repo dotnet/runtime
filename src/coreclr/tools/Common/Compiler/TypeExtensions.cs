@@ -3,8 +3,6 @@
 
 using System;
 using System.Runtime.CompilerServices;
-
-using Internal.IL;
 using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
@@ -91,24 +89,10 @@ namespace ILCompiler
         public static bool IsArrayMethod(this MethodDesc method)
         {
             var arrayMethod = method as ArrayMethod;
-            return arrayMethod != null && (arrayMethod.Kind == ArrayMethodKind.Address || 
-                                           arrayMethod.Kind == ArrayMethodKind.Get || 
-                                           arrayMethod.Kind == ArrayMethodKind.Set || 
+            return arrayMethod != null && (arrayMethod.Kind == ArrayMethodKind.Address ||
+                                           arrayMethod.Kind == ArrayMethodKind.Get ||
+                                           arrayMethod.Kind == ArrayMethodKind.Set ||
                                            arrayMethod.Kind == ArrayMethodKind.Ctor);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether this type has any generic virtual methods.
-        /// </summary>
-        public static bool HasGenericVirtualMethods(this TypeDesc type)
-        {
-            foreach (var method in type.GetAllMethods())
-            {
-                if (method.IsVirtual && method.HasInstantiation)
-                    return true;
-            }
-
-            return false;
         }
 
         /// <summary>
@@ -279,7 +263,7 @@ namespace ILCompiler
                 if (ta.IsInterface)
                 {
                     //
-                    // Both classes are interfaces.  Check that if one 
+                    // Both classes are interfaces.  Check that if one
                     // interface extends the other.
                     //
                     // Does tb extend ta ?

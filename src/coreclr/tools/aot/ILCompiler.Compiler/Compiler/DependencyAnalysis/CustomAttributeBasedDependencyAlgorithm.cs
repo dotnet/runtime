@@ -17,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Computes the list of dependencies that are necessary to generate metadata for a custom attribute, but also the dependencies to
     /// make the custom attributes usable by the reflection stack at runtime.
     /// </summary>
-    internal class CustomAttributeBasedDependencyAlgorithm
+    internal static class CustomAttributeBasedDependencyAlgorithm
     {
         public static void AddDependenciesDueToCustomAttributes(ref DependencyList dependencies, NodeFactory factory, EcmaMethod method)
         {
@@ -128,15 +128,34 @@ namespace ILCompiler.DependencyAnalysis
                     // Make a new list in case we need to abort.
                     var caDependencies = factory.MetadataManager.GetDependenciesForCustomAttribute(factory, constructor, decodedValue, parent) ?? new DependencyList();
 
-                    caDependencies.Add(factory.ReflectableMethod(constructor), "Attribute constructor");
-                    caDependencies.Add(factory.ConstructedTypeSymbol(constructor.OwningType), "Attribute type");
+                    caDependencies.Add(factory.ReflectedMethod(constructor), "Attribute constructor");
+                    caDependencies.Add(factory.ReflectedType(constructor.OwningType), "Attribute type");
 
                     if (AddDependenciesFromCustomAttributeBlob(caDependencies, factory, constructor.OwningType, decodedValue))
                     {
-                        dependencies = dependencies ?? new DependencyList();
+                        dependencies ??= new DependencyList();
                         dependencies.AddRange(caDependencies);
                         dependencies.Add(factory.CustomAttributeMetadata(new ReflectableCustomAttribute(module, caHandle)), "Attribute metadata");
                     }
+
+                    // Works around https://github.com/dotnet/runtime/issues/81459
+                    if (constructor.OwningType is MetadataType { Name: "EventSourceAttribute" } eventSourceAttributeType)
+                    {
+                        foreach (var namedArg in decodedValue.NamedArguments)
+                        {
+                            if (namedArg.Name == "LocalizationResources" && namedArg.Value is string resName
+                                && InlineableStringsResourceNode.IsInlineableStringsResource(module, resName + ".resources"))
+                            {
+                                dependencies ??= new DependencyList();
+                                var accessorMethod = module.GetType(
+                                    InlineableStringsResourceNode.ResourceAccessorTypeNamespace,
+                                    InlineableStringsResourceNode.ResourceAccessorTypeName)
+                                    .GetMethod(InlineableStringsResourceNode.ResourceAccessorGetStringMethodName, null);
+                                dependencies.Add(factory.ReflectedMethod(accessorMethod), "EventSource used resource");
+                            }
+                        }
+                    }
+                    // End of workaround for https://github.com/dotnet/runtime/issues/81459
                 }
                 catch (TypeSystemException)
                 {
@@ -156,8 +175,6 @@ namespace ILCompiler.DependencyAnalysis
 
         private static bool AddDependenciesFromCustomAttributeBlob(DependencyList dependencies, NodeFactory factory, TypeDesc attributeType, CustomAttributeValue<TypeDesc> value)
         {
-            MetadataManager mdManager = factory.MetadataManager;
-
             foreach (CustomAttributeTypedArgument<TypeDesc> decodedArgument in value.FixedArguments)
             {
                 if (!AddDependenciesFromCustomAttributeArgument(dependencies, factory, decodedArgument.Type, decodedArgument.Value))
@@ -195,7 +212,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (factory.MetadataManager.IsReflectionBlocked(field))
                     return false;
 
-                dependencies.Add(factory.ReflectableField(field), "Custom attribute blob");
+                dependencies.Add(factory.ReflectedField(field), "Custom attribute blob");
 
                 return true;
             }
@@ -236,7 +253,7 @@ namespace ILCompiler.DependencyAnalysis
                             setterMethod = factory.TypeSystemContext.GetMethodForInstantiatedType(setterMethod, (InstantiatedType)attributeType);
                         }
 
-                        dependencies.Add(factory.ReflectableMethod(setterMethod), "Custom attribute blob");
+                        dependencies.Add(factory.ReflectedMethod(setterMethod), "Custom attribute blob");
                     }
 
                     return true;
@@ -261,7 +278,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // Reflection will need to be able to allocate this type at runtime
             // (e.g. this could be an array that needs to be allocated, or an enum that needs to be boxed).
-            dependencies.Add(factory.ConstructedTypeSymbol(type), "Custom attribute blob");
+            dependencies.Add(factory.ReflectedType(type), "Custom attribute blob");
 
             if (type.UnderlyingType.IsPrimitive || type.IsString || value == null)
                 return true;

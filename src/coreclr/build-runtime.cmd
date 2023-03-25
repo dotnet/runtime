@@ -32,6 +32,8 @@ set "__ProjectDir=%~dp0"
 :: remove trailing slash
 if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__RepoRootDir=%__ProjectDir%\..\.."
+:: normalize
+for %%i in ("%__RepoRootDir%") do set "__RepoRootDir=%%~fi"
 
 set "__ProjectFilesDir=%__ProjectDir%"
 set "__RootBinDir=%__RepoRootDir%\artifacts"
@@ -68,6 +70,7 @@ set __PgoOptDataPath=
 set __CMakeArgs=
 set __Ninja=1
 set __RequestedBuildComponents=
+set __OutputRid=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -126,6 +129,7 @@ if [!__PassThroughArgs!]==[] (
 
 if /i "%1" == "-hostarch"            (set __HostArch=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-os"                  (set __TargetOS=%2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-outputrid"           (set __OutputRid=%2&shift&shift&goto Arg_Loop)
 
 if /i "%1" == "-cmakeargs"           (set __CMakeArgs=%2 %__CMakeArgs%&set __remainingArgs="!__remainingArgs:*%2=!"&shift&shift&goto Arg_Loop)
 if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&shift&goto Arg_Loop)
@@ -325,6 +329,14 @@ REM === Build Native assets including CLR runtime
 REM ===
 REM =========================================================================================
 
+:: When the host runs on an unknown rid, it falls back to the output rid
+:: Strip the architecture
+for /f "delims=-" %%i in ("%__OutputRid%") do set __HostFallbackOS=%%i
+:: The "win" host build is Windows 10 compatible
+if "%__HostFallbackOS%" == "win"       (set __HostFallbackOS=win10)
+:: Default to "win10" fallback
+if "%__HostFallbackOS%" == ""          (set __HostFallbackOS=win10)
+
 if %__BuildNative% EQU 1 (
     REM Scope environment changes start {
     setlocal
@@ -353,9 +365,9 @@ if %__BuildNative% EQU 1 (
         set __ExtraCmakeArgs="-DCMAKE_BUILD_TYPE=!__BuildType!"
     )
 
-    set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLR_CMAKE_TARGET_ARCH=%__TargetArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" %__CMakeArgs%
-    echo Calling "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__HostArch% !__ExtraCmakeArgs!
-    call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__HostArch% !__ExtraCmakeArgs!
+    set __ExtraCmakeArgs=!__ExtraCmakeArgs! "-DCLR_CMAKE_TARGET_ARCH=%__TargetArch%" "-DCLR_CMAKE_TARGET_OS=%__TargetOS%" "-DCLI_CMAKE_FALLBACK_OS=%__HostFallbackOS%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_PATH=%__PgoOptDataPath%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%" %__CMakeArgs%
+    echo Calling "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__HostArch% %__TargetOS% !__ExtraCmakeArgs!
+    call "%__RepoRootDir%\eng\native\gen-buildsys.cmd" "%__ProjectDir%" "%__IntermediatesDir%" %__VSVersion% %__HostArch% %__TargetOS% !__ExtraCmakeArgs!
     if not !errorlevel! == 0 (
         echo %__ErrMsgPrefix%%__MsgPrefix%Error: failed to generate native component build project!
         goto ExitWithError

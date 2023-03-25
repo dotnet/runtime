@@ -419,10 +419,9 @@ namespace System.Xml.Xsl.Runtime
         public sbyte ReadSByte(sbyte minValue, sbyte maxValue)
         {
             sbyte value = ReadSByte();
-            if (value < minValue)
-                throw new ArgumentOutOfRangeException(nameof(minValue));
-            if (maxValue < value)
-                throw new ArgumentOutOfRangeException(nameof(maxValue));
+
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(minValue, value);
+            ArgumentOutOfRangeException.ThrowIfLessThan(maxValue, value);
 
             return value;
         }

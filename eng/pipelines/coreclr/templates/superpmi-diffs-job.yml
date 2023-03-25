@@ -3,6 +3,7 @@ parameters:
   archType: ''                    # required -- targeting CPU architecture
   osGroup: ''                     # required -- operating system for the job
   osSubgroup: ''                  # optional -- operating system subgroup
+  condition: true
   pool: ''
   timeoutInMinutes: 180           # build timeout
   variables: {}
@@ -20,6 +21,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    condition: ${{ parameters.condition }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     helixQueues: ${{ parameters.helixQueues }}
@@ -28,13 +30,8 @@ jobs:
      - ${{ format('coreclr_jit_build_{0}{1}_{2}_release', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
 
     variables:
-
     - ${{ each variable in parameters.variables }}:
-      - ${{ if ne(variable.name, '') }}:
-        - name: ${{ variable.name }}
-          value: ${{ variable.value }}
-      - ${{ if ne(variable.group, '') }}:
-        - group: ${{ variable.group }}
+      - ${{insert}}: ${{ variable }}
 
     - name: releaseProductRootFolderPath
       value: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).Release'

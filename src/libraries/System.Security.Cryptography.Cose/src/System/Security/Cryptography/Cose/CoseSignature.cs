@@ -14,7 +14,6 @@ namespace System.Security.Cryptography.Cose
     /// </summary>
     public sealed class CoseSignature
     {
-        private readonly byte[] _encodedBodyProtectedHeaders;
         internal readonly byte[] _encodedSignProtectedHeaders;
         internal readonly byte[] _signature;
         private CoseMultiSignMessage? _message;
@@ -43,17 +42,16 @@ namespace System.Security.Cryptography.Cose
         /// <value>A region of memory that contains the digital signature.</value>
         public ReadOnlyMemory<byte> Signature => _signature;
 
-        internal CoseSignature(CoseMultiSignMessage message, CoseHeaderMap protectedHeaders, CoseHeaderMap unprotectedHeaders, byte[] encodedBodyProtectedHeaders, byte[] encodedSignProtectedHeaders, byte[] signature)
-            : this(protectedHeaders, unprotectedHeaders, encodedBodyProtectedHeaders, encodedSignProtectedHeaders, signature)
+        internal CoseSignature(CoseMultiSignMessage message, CoseHeaderMap protectedHeaders, CoseHeaderMap unprotectedHeaders, byte[] encodedSignProtectedHeaders, byte[] signature)
+            : this(protectedHeaders, unprotectedHeaders, encodedSignProtectedHeaders, signature)
         {
             Message = message;
         }
 
-        internal CoseSignature(CoseHeaderMap protectedHeaders, CoseHeaderMap unprotectedHeaders, byte[] encodedBodyProtectedHeaders, byte[] encodedSignProtectedHeaders, byte[] signature)
+        internal CoseSignature(CoseHeaderMap protectedHeaders, CoseHeaderMap unprotectedHeaders, byte[] encodedSignProtectedHeaders, byte[] signature)
         {
             ProtectedHeaders = protectedHeaders;
             UnprotectedHeaders = unprotectedHeaders;
-            _encodedBodyProtectedHeaders = encodedBodyProtectedHeaders;
             _encodedSignProtectedHeaders = encodedSignProtectedHeaders;
             _signature = signature;
         }
@@ -400,7 +398,7 @@ namespace System.Security.Cryptography.Cose
             {
                 int bufferLength = CoseMessage.ComputeToBeSignedEncodedSize(
                     SigStructureContext.Signature,
-                    _encodedBodyProtectedHeaders.Length,
+                    Message.RawProtectedHeaders.Length,
                     _encodedSignProtectedHeaders.Length,
                     associatedData.Length,
                     contentLength: 0);
@@ -408,7 +406,7 @@ namespace System.Security.Cryptography.Cose
 
                 try
                 {
-                    await CoseMessage.AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature, _encodedBodyProtectedHeaders, _encodedSignProtectedHeaders, associatedData, content, cancellationToken).ConfigureAwait(false);
+                    await CoseMessage.AppendToBeSignedAsync(buffer, hasher, SigStructureContext.Signature, Message.RawProtectedHeaders, _encodedSignProtectedHeaders, associatedData, content, cancellationToken).ConfigureAwait(false);
                     return VerifyHash(key, hasher, hashAlgorithm, keyType, padding);
                 }
                 finally
@@ -432,7 +430,7 @@ namespace System.Security.Cryptography.Cose
             {
                 int bufferLength = CoseMessage.ComputeToBeSignedEncodedSize(
                     SigStructureContext.Signature,
-                    _encodedBodyProtectedHeaders.Length,
+                    Message.RawProtectedHeaders.Length,
                     _encodedSignProtectedHeaders.Length,
                     associatedData.Length,
                     contentLength: 0);
@@ -440,7 +438,7 @@ namespace System.Security.Cryptography.Cose
 
                 try
                 {
-                    CoseMessage.AppendToBeSigned(buffer, hasher, SigStructureContext.Signature, _encodedBodyProtectedHeaders, _encodedSignProtectedHeaders, associatedData, contentBytes, contentStream);
+                    CoseMessage.AppendToBeSigned(buffer, hasher, SigStructureContext.Signature, Message.RawProtectedHeaders.Span, _encodedSignProtectedHeaders, associatedData, contentBytes, contentStream);
                     return VerifyHash(key, hasher, hashAlgorithm, keyType, padding);
                 }
                 finally

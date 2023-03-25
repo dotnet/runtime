@@ -24,6 +24,7 @@ typedef unsigned short char16_t;
 #include <pal.h>
 #include <palprivate.h>
 #include <minipal/utils.h>
+#include <minipal/types.h>
 
 #define PALTEST(testfunc, testname) \
  int __cdecl testfunc(int argc, char* argv[]); \
@@ -217,7 +218,15 @@ mkAbsoluteFilenameA (
     DWORD dwFileLength,
     LPSTR absPathName );
 
+BOOL
+CreatePipe(
+        OUT PHANDLE hReadPipe,
+        OUT PHANDLE hWritePipe,
+        IN LPSECURITY_ATTRIBUTES lpPipeAttributes,
+        IN DWORD nSize);
+
+BOOL
+DeleteFileW(
+        IN LPCWSTR lpFileName);
+
 #endif
-
-
-

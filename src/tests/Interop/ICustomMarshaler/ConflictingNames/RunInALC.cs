@@ -10,7 +10,7 @@ using Xunit;
 
 public class RunInALC
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         try
         {

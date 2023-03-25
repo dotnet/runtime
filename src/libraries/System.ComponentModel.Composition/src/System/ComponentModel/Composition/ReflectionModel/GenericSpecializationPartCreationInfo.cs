@@ -455,7 +455,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        private IDictionary<string, object?> TranslateExportMetadata(ReflectionMemberExportDefinition originalExport)
+        private Dictionary<string, object?> TranslateExportMetadata(ReflectionMemberExportDefinition originalExport)
         {
             Dictionary<string, object?> metadata = new Dictionary<string, object?>(originalExport.Metadata, StringComparers.MetadataKeyNames);
 

@@ -707,12 +707,12 @@ namespace System.Net
             makeNtlm2Hash(_credential.Domain, _credential.UserName, _credential.Password, ntlm2hash);
 
             // Get random bytes for client challenge
-            byte[] clientChallenge = new byte[ChallengeLength];
+            Span<byte> clientChallenge = stackalloc byte[ChallengeLength];
             RandomNumberGenerator.Fill(clientChallenge);
 
             // Create empty LM2 response.
             SetField(ref response.LmChallengeResponse, ChallengeResponseLength, payloadOffset);
-            payload.Slice(payloadOffset, ChallengeResponseLength).Fill(0);
+            payload.Slice(payloadOffset, ChallengeResponseLength).Clear();
             payloadOffset += ChallengeResponseLength;
 
             // Create NTLM2 response
@@ -1013,7 +1013,7 @@ namespace System.Net
             return null;
         }
 
-        internal NegotiateAuthenticationStatusCode Wrap(ReadOnlySpan<byte> input, IBufferWriter<byte> outputWriter, bool requestEncryption, out bool isEncrypted)
+        internal NegotiateAuthenticationStatusCode Wrap(ReadOnlySpan<byte> input, IBufferWriter<byte> outputWriter, bool _/*requestEncryption*/, out bool isEncrypted)
         {
             if (_clientSeal == null)
             {
@@ -1084,7 +1084,7 @@ namespace System.Net
             return NegotiateAuthenticationStatusCode.Completed;
         }
 
-#pragma warning disable CA1822
+#pragma warning disable CA1822, IDE0060
         internal int Encrypt(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? output)
         {
             throw new PlatformNotSupportedException();
@@ -1106,6 +1106,6 @@ namespace System.Net
         internal bool IsValidContext => true;
 
         internal string? ClientSpecifiedSpn => _spn;
-#pragma warning restore CA1822
+#pragma warning restore CA1822, IDE0060
     }
 }

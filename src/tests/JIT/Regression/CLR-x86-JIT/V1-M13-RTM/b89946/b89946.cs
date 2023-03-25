@@ -17,7 +17,7 @@ public class AA
             m_ax[param1, param1] = null;
     }
 
-    static int Main()
+    public static int Main()
     {
         try
         {

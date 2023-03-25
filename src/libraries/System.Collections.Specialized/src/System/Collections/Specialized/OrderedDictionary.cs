@@ -310,10 +310,8 @@ namespace System.Collections.Specialized
             {
                 throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
             }
-            if (index > Count || index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index, Count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
             Hashtable objectsTable = EnsureObjectsTable();
             ArrayList objectsArray = EnsureObjectsArray();
             objectsTable.Add(key, value);
@@ -329,10 +327,8 @@ namespace System.Collections.Specialized
             {
                 throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
             }
-            if (index >= Count || index < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
+            ArgumentOutOfRangeException.ThrowIfNegative(index);
             Hashtable objectsTable = EnsureObjectsTable();
             ArrayList objectsArray = EnsureObjectsArray();
             object key = ((DictionaryEntry)objectsArray[index]!).Key;
@@ -556,8 +552,7 @@ namespace System.Collections.Specialized
             {
                 ArgumentNullException.ThrowIfNull(array);
 
-                if (index < 0)
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
+                ArgumentOutOfRangeException.ThrowIfNegative(index);
                 foreach (object? o in _objects)
                 {
                     Debug.Assert(o != null);

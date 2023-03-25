@@ -40,8 +40,7 @@ namespace System.Collections.Immutable
         {
             Requires.NotNull(items, nameof(items));
 
-            var array = items as T[];
-            if (array != null)
+            if (items is T[] array)
             {
                 return Create(items: array);
             }
@@ -53,8 +52,8 @@ namespace System.Collections.Immutable
                     return ImmutableQueue<T>.Empty;
                 }
 
-                var forwards = ImmutableStack.Create(e.Current);
-                var backwards = ImmutableStack<T>.Empty;
+                ImmutableStack<T> forwards = ImmutableStack.Create(e.Current);
+                ImmutableStack<T> backwards = ImmutableStack<T>.Empty;
 
                 while (e.MoveNext())
                 {
@@ -80,7 +79,7 @@ namespace System.Collections.Immutable
                 return ImmutableQueue<T>.Empty;
             }
 
-            var forwards = ImmutableStack<T>.Empty;
+            ImmutableStack<T> forwards = ImmutableStack<T>.Empty;
 
             for (int i = items.Length - 1; i >= 0; i--)
             {

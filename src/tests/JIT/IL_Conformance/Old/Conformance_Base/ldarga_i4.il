@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 
+.namespace ldarga_i4
+{
 .class public _ldarga {
 .method public static	int32 args(int32) {
 .maxstack	5
@@ -15,36 +18,39 @@
 }
 
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
 	ldc.i4		0x80000002
 	ldc.i4		0x80000000
-	call	int32 _ldarga::args(int32)
+	call	int32 ldarga_i4._ldarga::args(int32)
 	ceq
 	brfalse		FAIL
 
 	ldc.i4		0x00000001
 	ldc.i4		0xFFFFFFFF
-	call	int32 _ldarga::args(int32)
+	call	int32 ldarga_i4._ldarga::args(int32)
 	ceq
 	brfalse		FAIL
 
 	ldc.i4		0x00000002
 	ldc.i4		0x00000000
-	call	int32 _ldarga::args(int32)
+	call	int32 ldarga_i4._ldarga::args(int32)
 	ceq
 	brfalse		FAIL
 
 	ldc.i4		0x00000003
 	ldc.i4		0x00000001
-	call	int32 _ldarga::args(int32)
+	call	int32 ldarga_i4._ldarga::args(int32)
 	ceq
 	brfalse		FAIL
 
 	ldc.i4		0x80000001
 	ldc.i4		0x7FFFFFFF
-	call	int32 _ldarga::args(int32)
+	call	int32 ldarga_i4._ldarga::args(int32)
 	ceq
 	brfalse		FAIL
 
@@ -58,3 +64,4 @@ FAIL:
 }
 }
 .assembly ldarga_i4{}
+}

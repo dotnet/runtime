@@ -34,7 +34,7 @@ endif()
 
 # add the shared library
 add_library (${PROJECT_NAME} SHARED ${SOURCES})
-target_link_libraries(${PROJECT_NAME} ${LINK_LIBRARIES_ADDITIONAL})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 
 # Copy manifest file to project output
 file(GENERATE OUTPUT $<TARGET_FILE_DIR:${PROJECT_NAME}>/DynamicTestServer.X.manifest INPUT ${CMAKE_CURRENT_SOURCE_DIR}/DynamicTestServer.X.manifest)

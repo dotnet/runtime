@@ -361,7 +361,7 @@ namespace System.Speech.Internal.SrgsParser
                                 catch (ArgumentException)
                                 {
                                     // Unknown Culture info, fall back to the base culture.
-                                    int pos = reader.Value.IndexOf("-", StringComparison.Ordinal);
+                                    int pos = reader.Value.IndexOf('-');
                                     if (pos > 0)
                                     {
                                         grammar.Culture = _langId = new CultureInfo(reader.Value.Substring(0, pos));
@@ -1767,7 +1767,7 @@ namespace System.Speech.Internal.SrgsParser
             minRepeat = maxRepeat = 1;
             if (!string.IsNullOrEmpty(repeat))
             {
-                int sep = repeat.IndexOf("-", StringComparison.Ordinal);
+                int sep = repeat.IndexOf('-');
 
                 if (sep < 0)
                 {
@@ -1847,7 +1847,7 @@ namespace System.Speech.Internal.SrgsParser
             // in srgs.xml: or  <ruleref uri="srgs.xml>
             if (_filename != null)
             {
-                if (uri.IndexOf(_shortFilename, StringComparison.Ordinal) == 0 && (uri.Length > _shortFilename.Length && uri[_shortFilename.Length] == '#' || uri.Length == _shortFilename.Length))
+                if (uri.StartsWith(_shortFilename, StringComparison.Ordinal) && (uri.Length > _shortFilename.Length && uri[_shortFilename.Length] == '#' || uri.Length == _shortFilename.Length))
                 {
                     ThrowSrgsException(SRID.InvalidRuleRefSelf);
                 }

@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection.Metadata;
 using System.Text;
 using Internal.IL;
 using Internal.TypeSystem;
@@ -41,6 +40,17 @@ namespace ILCompiler.Logging
             MemberDefinition = memberDefinition;
             SourceLine = sourceLine;
             SourceColumn = sourceColumn;
+            ILOffset = null;
+        }
+
+        // The assembly parameter should be specified if available as it allows assigning the diagnostic
+        // to a an assembly (we group based on assembly).
+        public MessageOrigin(string fileName, int sourceLine, int sourceColumn, ModuleDesc? assembly)
+        {
+            FileName = fileName;
+            SourceLine = sourceLine;
+            SourceColumn = sourceColumn;
+            MemberDefinition = assembly;
             ILOffset = null;
         }
 
@@ -82,11 +92,11 @@ namespace ILCompiler.Logging
             StringBuilder sb = new StringBuilder(FileName);
             if (SourceLine.HasValue)
             {
-                sb.Append("(").Append(SourceLine);
+                sb.Append('(').Append(SourceLine);
                 if (SourceColumn.HasValue)
-                    sb.Append(",").Append(SourceColumn);
+                    sb.Append(',').Append(SourceColumn);
 
-                sb.Append(")");
+                sb.Append(')');
             }
 
             return sb.ToString();

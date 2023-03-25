@@ -20,20 +20,20 @@ namespace ILCompiler.Dataflow
     // Currently this is implemented using heuristics
     public class CompilerGeneratedState
     {
-        readonly record struct TypeArgumentInfo(
+        private readonly record struct TypeArgumentInfo(
             /// <summary>The method which calls the ctor for the given type</summary>
             MethodDesc CreatingMethod,
             /// <summary>Attributes for the type, pulled from the creators type arguments</summary>
             IReadOnlyList<GenericParameterDesc?>? OriginalAttributes);
 
-        readonly TypeCacheHashtable _typeCacheHashtable;
+        private readonly TypeCacheHashtable _typeCacheHashtable;
 
         public CompilerGeneratedState(ILProvider ilProvider, Logger logger)
         {
             _typeCacheHashtable = new TypeCacheHashtable(ilProvider, logger);
         }
 
-        class TypeCacheHashtable : LockFreeReaderHashtable<MetadataType, TypeCache>
+        private sealed class TypeCacheHashtable : LockFreeReaderHashtable<MetadataType, TypeCache>
         {
             private ILProvider _ilProvider;
             private Logger? _logger;
@@ -49,7 +49,7 @@ namespace ILCompiler.Dataflow
                 => new TypeCache(key, _logger, _ilProvider);
         }
 
-        class TypeCache
+        private sealed class TypeCache
         {
             public readonly MetadataType Type;
 
@@ -484,7 +484,7 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        static IEnumerable<MetadataType> GetCompilerGeneratedNestedTypes(MetadataType type)
+        private static IEnumerable<MetadataType> GetCompilerGeneratedNestedTypes(MetadataType type)
         {
             foreach (var nestedType in type.GetNestedTypes())
             {
@@ -500,10 +500,17 @@ namespace ILCompiler.Dataflow
 
         public static bool IsHoistedLocal(FieldDesc field)
         {
-            // Treat all fields on compiler-generated types as hoisted locals.
-            // This avoids depending on the name mangling scheme for hoisted locals.
-            var declaringTypeName = field.OwningType.Name;
-            return CompilerGeneratedNames.IsLambdaDisplayClass(declaringTypeName) || CompilerGeneratedNames.IsStateMachineType(declaringTypeName);
+            if (CompilerGeneratedNames.IsLambdaDisplayClass(field.OwningType.Name))
+                return true;
+
+            if (CompilerGeneratedNames.IsStateMachineType(field.OwningType.Name))
+            {
+                // Don't track the "current" field which is used for state machine return values,
+                // because this can be expensive to track.
+                return !CompilerGeneratedNames.IsStateMachineCurrentField(field.Name);
+            }
+
+            return false;
         }
 
         // "Nested function" refers to lambdas and local functions.
@@ -524,13 +531,9 @@ namespace ILCompiler.Dataflow
             // Discover state machine methods.
             if (method is not EcmaMethod ecmaMethod)
                 return false;
-
-            CustomAttributeValue<TypeDesc>? decodedAttribute = null;
-            decodedAttribute = ecmaMethod.GetDecodedCustomAttribute("System.Runtime.CompilerServices", "AsyncIteratorStateMachineAttribute");
-            if (decodedAttribute == null)
-                decodedAttribute = ecmaMethod.GetDecodedCustomAttribute("System.Runtime.CompilerServices", "AsyncStateMachineAttribute");
-            if (decodedAttribute == null)
-                decodedAttribute = ecmaMethod.GetDecodedCustomAttribute("System.Runtime.CompilerServices", "IteratorStateMachineAttribute");
+            CustomAttributeValue<TypeDesc>? decodedAttribute = ecmaMethod.GetDecodedCustomAttribute("System.Runtime.CompilerServices", "AsyncIteratorStateMachineAttribute");
+            decodedAttribute ??= ecmaMethod.GetDecodedCustomAttribute("System.Runtime.CompilerServices", "AsyncStateMachineAttribute");
+            decodedAttribute ??= ecmaMethod.GetDecodedCustomAttribute("System.Runtime.CompilerServices", "IteratorStateMachineAttribute");
 
             if (decodedAttribute == null)
                 return false;
@@ -558,7 +561,7 @@ namespace ILCompiler.Dataflow
             return _typeCacheHashtable.GetOrCreateValue(userType);
         }
 
-        static TypeDesc? GetFirstConstructorArgumentAsType(CustomAttributeValue<TypeDesc> attribute)
+        private static TypeDesc? GetFirstConstructorArgumentAsType(CustomAttributeValue<TypeDesc> attribute)
         {
             if (attribute.FixedArguments.Length == 0)
                 return null;
@@ -643,7 +646,7 @@ namespace ILCompiler.Dataflow
                 return false;
 
             TypeSystemEntity member = sourceMember;
-            MethodDesc? userMethodCandidate = null;
+            MethodDesc? userMethodCandidate;
             while (TryGetOwningMethodForCompilerGeneratedMember(member, out userMethodCandidate))
             {
                 Debug.Assert(userMethodCandidate != member);
@@ -653,7 +656,7 @@ namespace ILCompiler.Dataflow
 
             if (userMethod != null)
             {
-                Debug.Assert(!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(userMethod));
+                Debug.Assert(!IsNestedFunctionOrStateMachineMember(userMethod));
                 return true;
             }
 

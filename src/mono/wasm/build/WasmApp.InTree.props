@@ -9,9 +9,17 @@
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'emsdk'))</EMSDK_PATH>
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">false</RunAOTCompilation>
     <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>partial</TrimMode>
     <RunAnalyzers>false</RunAnalyzers>
+
+    <DisableImplicitFrameworkReferences>false</DisableImplicitFrameworkReferences>
+    <UseLocalTargetingRuntimePack Condition="'$(UseLocalTargetingRuntimePack)' == ''">true</UseLocalTargetingRuntimePack>
+    <!-- Tests don't yet use a live build of the apphost: https://github.com/dotnet/runtime/issues/58109. -->
+    <UseLocalAppHostPack Condition="'$(UseLocalAppHostPack)' == ''">false</UseLocalAppHostPack>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <GenerateErrorForMissingTargetingPacks>false</GenerateErrorForMissingTargetingPacks>
+    <ImportTargetingPacksTargetsInWasmAppTargets>true</ImportTargetingPacksTargetsInWasmAppTargets>
   </PropertyGroup>
+
   <!-- This is temporary hack for https://github.com/dotnet/runtime/issues/61294 -->
   <ItemGroup>
     <_MonoRuntimeComponentDontLink Include="libmono-component-debugger-stub-static.a" />

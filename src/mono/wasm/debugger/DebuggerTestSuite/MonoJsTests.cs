@@ -136,7 +136,7 @@ namespace DebuggerTests
                             :  await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
             });
 
-            byte[] bytes = File.ReadAllBytes(asm_path);
+            byte[] bytes = File.Exists(asm_path) ? File.ReadAllBytes(asm_path) : File.ReadAllBytes(Path.ChangeExtension(asm_path, ".webcil")); // hack!
             string asm_base64 = Convert.ToBase64String(bytes);
 
             string pdb_base64 = String.Empty;

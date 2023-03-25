@@ -7,7 +7,10 @@
     <OfficialBuildRID Include="linux-musl-x64" Platform="x64" />
     <OfficialBuildRID Include="linux-x64" Platform="x64" />
     <OfficialBuildRID Include="osx-x64" Platform="x64" />
+    <OfficialBuildRID Include="osx-arm64" Platform="arm64" />
     <OfficialBuildRID Include="win-arm64" Platform="arm64" />
     <OfficialBuildRID Include="win-x64" Platform="x64" />
+    <OfficialBuildRID Include="freebsd-x64" Platform="x64" />
+    <OfficialBuildRID Include="freebsd-arm64" Platform="arm64" />
   </ItemGroup>
 </Project>

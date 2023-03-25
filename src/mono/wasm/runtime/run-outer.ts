@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // WARNING: code in this file is executed before any of the emscripten code, so there is very little initialized already
-import { ENVIRONMENT_IS_WEB, emscriptenEntrypoint, runtimeHelpers, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_NODE } from "./imports";
+import { emscriptenEntrypoint, runtimeHelpers } from "./imports";
 import { setup_proxy_console } from "./logging";
 import { mono_exit } from "./run";
 import { DotnetModuleConfig, MonoConfig, MonoConfigInternal, mono_assert, RuntimeAPI } from "./types";
@@ -18,6 +18,7 @@ export interface DotnetHostBuilder {
     withDebugging(level: number): DotnetHostBuilder
     withMainAssembly(mainAssemblyName: string): DotnetHostBuilder
     withApplicationArgumentsFromQuery(): DotnetHostBuilder
+    withStartupMemoryCache(value: boolean): DotnetHostBuilder
     create(): Promise<RuntimeAPI>
     run(): Promise<number>
 }
@@ -32,6 +33,7 @@ class HostBuilder implements DotnetHostBuilder {
         config: runtimeHelpers.config,
     };
 
+    // internal
     withModuleConfig(moduleConfig: DotnetModuleConfig): DotnetHostBuilder {
         try {
             Object.assign(this.moduleConfig!, moduleConfig);
@@ -42,6 +44,7 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    // internal
     withConsoleForwarding(): DotnetHostBuilder {
         try {
             const configInternal: MonoConfigInternal = {
@@ -55,6 +58,30 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    // internal
+    withExitOnUnhandledError(): DotnetHostBuilder {
+        const handler = function fatal_handler(event: Event, error: any) {
+            event.preventDefault();
+            try {
+                mono_exit(1, error);
+            } catch (err) {
+                // no not re-throw from the fatal handler
+            }
+        };
+        try {
+            // it seems that emscripten already does the right thing for NodeJs and that there is no good solution for V8 shell.
+            if (ENVIRONMENT_IS_WEB) {
+                window.addEventListener("unhandledrejection", (event) => handler(event, event.reason));
+                window.addEventListener("error", (event) => handler(event, event.error));
+            }
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    // internal
     withAsyncFlushOnExit(): DotnetHostBuilder {
         try {
             const configInternal: MonoConfigInternal = {
@@ -68,6 +95,7 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    // internal
     withExitCodeLogging(): DotnetHostBuilder {
         try {
             const configInternal: MonoConfigInternal = {
@@ -81,6 +109,7 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    // internal
     withElementOnExit(): DotnetHostBuilder {
         try {
             const configInternal: MonoConfigInternal = {
@@ -94,11 +123,25 @@ class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    // internal
     //  todo fallback later by debugLevel
     withWaitingForDebugger(level: number): DotnetHostBuilder {
         try {
             const configInternal: MonoConfigInternal = {
                 waitForDebugger: level
+            };
+            Object.assign(this.moduleConfig.config!, configInternal);
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    withStartupMemoryCache(value: boolean): DotnetHostBuilder {
+        try {
+            const configInternal: MonoConfigInternal = {
+                startupMemoryCache: value
             };
             Object.assign(this.moduleConfig.config!, configInternal);
             return this;
@@ -200,7 +243,8 @@ class HostBuilder implements DotnetHostBuilder {
     withRuntimeOptions(runtimeOptions: string[]): DotnetHostBuilder {
         try {
             mono_assert(runtimeOptions && Array.isArray(runtimeOptions), "must be array of strings");
-            Object.assign(this.moduleConfig, { runtimeOptions });
+            const configInternal = this.moduleConfig.config as MonoConfigInternal;
+            configInternal.runtimeOptions = [...(configInternal.runtimeOptions || []), ...(runtimeOptions|| [])];
             return this;
         } catch (err) {
             mono_exit(1, err);
@@ -217,16 +261,20 @@ class HostBuilder implements DotnetHostBuilder {
             throw err;
         }
     }
-    
+
     withApplicationArgumentsFromQuery(): DotnetHostBuilder {
         try {
-            if (typeof globalThis.URLSearchParams != "undefined") {
-                const params = new URLSearchParams(window.location.search);
-                const values = params.getAll("arg");
-                return this.withApplicationArguments(...values);
+            if (!globalThis.window) {
+                throw new Error("Missing window to the query parameters from");
             }
-            
-            throw new Error("URLSearchParams is supported");
+
+            if (typeof globalThis.URLSearchParams == "undefined") {
+                throw new Error("URLSearchParams is supported");
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const values = params.getAll("arg");
+            return this.withApplicationArguments(...values);
         } catch (err) {
             mono_exit(1, err);
             throw err;
@@ -236,7 +284,7 @@ class HostBuilder implements DotnetHostBuilder {
     async create(): Promise<RuntimeAPI> {
         try {
             if (!this.instance) {
-                if (ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_PTHREAD && (this.moduleConfig.config! as MonoConfigInternal).forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
+                if (ENVIRONMENT_IS_WEB && (this.moduleConfig.config! as MonoConfigInternal).forwardConsoleLogsToWS && typeof globalThis.WebSocket != "undefined") {
                     setup_proxy_console("main", globalThis.console, globalThis.location.origin);
                 }
                 if (ENVIRONMENT_IS_NODE) {

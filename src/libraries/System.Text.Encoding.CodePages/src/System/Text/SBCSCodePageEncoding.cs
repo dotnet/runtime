@@ -696,7 +696,7 @@ namespace System.Text
             // Have to do it the hard way.
             // Assume charCount will be == count
             int charCount = count;
-            byte[] byteBuffer = new byte[1];
+            byte[]? byteBuffer = null;
 
             // Do it our fast way
             byte* byteEnd = bytes + count;
@@ -727,6 +727,7 @@ namespace System.Text
                     }
 
                     // Use fallback buffer
+                    byteBuffer ??= new byte[1];
                     byteBuffer[0] = *(bytes - 1);
                     charCount--;                            // We'd already reserved one for *(bytes-1)
                     charCount += fallbackHelper.InternalFallback(byteBuffer, bytes);
@@ -828,7 +829,7 @@ namespace System.Text
 
             // Slower way's going to need a fallback buffer
             DecoderFallbackBuffer? fallbackBuffer = null;
-            byte[] byteBuffer = new byte[1];
+            byte[]? byteBuffer = null;
             char* charEnd = chars + charCount;
 
             DecoderFallbackBufferHelper fallbackHelper = new DecoderFallbackBufferHelper(null);
@@ -859,6 +860,7 @@ namespace System.Text
                     // Use fallback buffer
                     Debug.Assert(bytes > byteStart,
                         "[SBCSCodePageEncoding.GetChars]Expected bytes to have advanced already (unknown byte)");
+                    byteBuffer ??= new byte[1];
                     byteBuffer[0] = *(bytes - 1);
                     // Fallback adds fallback to chars, but doesn't increment chars unless the whole thing fits.
                     if (!fallbackHelper.InternalFallback(byteBuffer, bytes, ref chars))

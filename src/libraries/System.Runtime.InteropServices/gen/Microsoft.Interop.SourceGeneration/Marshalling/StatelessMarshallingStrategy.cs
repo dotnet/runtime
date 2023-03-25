@@ -18,19 +18,19 @@ namespace Microsoft.Interop
     internal sealed class StatelessValueMarshalling : ICustomTypeMarshallingStrategy
     {
         private readonly TypeSyntax _marshallerTypeSyntax;
-        private readonly TypeSyntax _nativeTypeSyntax;
+        private readonly ManagedTypeInfo _unmanagedType;
         private readonly MarshallerShape _shape;
 
-        public StatelessValueMarshalling(TypeSyntax marshallerTypeSyntax, TypeSyntax nativeTypeSyntax, MarshallerShape shape)
+        public StatelessValueMarshalling(TypeSyntax marshallerTypeSyntax, ManagedTypeInfo unmanagedType, MarshallerShape shape)
         {
             _marshallerTypeSyntax = marshallerTypeSyntax;
-            _nativeTypeSyntax = nativeTypeSyntax;
+            _unmanagedType = unmanagedType;
             _shape = shape;
         }
 
-        public TypeSyntax AsNativeType(TypePositionInfo info)
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
-            return _nativeTypeSyntax;
+            return _unmanagedType;
         }
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
@@ -64,17 +64,36 @@ namespace Microsoft.Interop
 
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
 
-            // <nativeIdentifier> = <marshallerType>.ConvertToUnmanaged(<managedIdentifier>);
-            yield return ExpressionStatement(
-                AssignmentExpression(
-                    SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName(nativeIdentifier),
-                    InvocationExpression(
+            // <marshallerType>.ConvertToUnmanaged(<managedIdentifier>)
+            ExpressionSyntax convertToUnmanaged = InvocationExpression(
                         MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                             _marshallerTypeSyntax,
                             IdentifierName(ShapeMemberNames.Value.Stateless.ConvertToUnmanaged)),
                         ArgumentList(SingletonSeparatedList(
-                            Argument(IdentifierName(managedIdentifier)))))));
+                            Argument(IdentifierName(managedIdentifier)))));
+
+            if (_unmanagedType == SpecialTypeInfo.Void)
+            {
+                // To support our exception marshalling scenarios, we allow a "marshal to void" marshaller.
+                // In this case, we don't assign the result to the native identifier because there is no native identifier.
+                // <convertToUnmanaged>
+                yield return ExpressionStatement(convertToUnmanaged);
+                yield break;
+            }
+
+            // <nativeIdentifier> = <convertToUnmanaged>;
+            var assignment = AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(nativeIdentifier),
+                    convertToUnmanaged);
+
+
+            if (_unmanagedType is PointerTypeInfo pointer)
+            {
+                var rewriter = new PointerNativeTypeAssignmentRewriter(assignment.Right.ToString(), (PointerTypeSyntax)pointer.Syntax);
+                assignment = (AssignmentExpressionSyntax)rewriter.Visit(assignment);
+            }
+            yield return ExpressionStatement(assignment);
         }
 
         public IEnumerable<StatementSyntax> GeneratePinnedMarshalStatements(TypePositionInfo info, StubCodeContext context)
@@ -141,7 +160,7 @@ namespace Microsoft.Interop
             _isLinearCollectionMarshalling = isLinearCollectionMarshalling;
         }
 
-        public TypeSyntax AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateCleanupStatements(info, context);
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
 
@@ -247,10 +266,14 @@ namespace Microsoft.Interop
             _marshallerType = marshallerType;
         }
 
-        public TypeSyntax AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateCleanupStatements(info, context))
+            {
+                yield return statement;
+            }
             // <marshallerType>.Free(<nativeIdentifier>);
             yield return ExpressionStatement(
                 InvocationExpression(
@@ -278,22 +301,22 @@ namespace Microsoft.Interop
     internal sealed class StatelessLinearCollectionBlittableElementsMarshalling : BlittableElementsMarshalling, ICustomTypeMarshallingStrategy
     {
         private readonly TypeSyntax _marshallerTypeSyntax;
-        private readonly TypeSyntax _nativeTypeSyntax;
+        private readonly ManagedTypeInfo _unmanagedType;
         private readonly MarshallerShape _shape;
         private readonly ExpressionSyntax _numElementsExpression;
 
-        public StatelessLinearCollectionBlittableElementsMarshalling(TypeSyntax marshallerTypeSyntax, TypeSyntax nativeTypeSyntax, MarshallerShape shape, TypeSyntax managedElementType, TypeSyntax unmanagedElementType, ExpressionSyntax numElementsExpression)
+        public StatelessLinearCollectionBlittableElementsMarshalling(TypeSyntax marshallerTypeSyntax, ManagedTypeInfo unmanagedType, MarshallerShape shape, TypeSyntax managedElementType, TypeSyntax unmanagedElementType, ExpressionSyntax numElementsExpression)
             : base(managedElementType, unmanagedElementType)
         {
             _marshallerTypeSyntax = marshallerTypeSyntax;
-            _nativeTypeSyntax = nativeTypeSyntax;
+            _unmanagedType = unmanagedType;
             _shape = shape;
             _numElementsExpression = numElementsExpression;
         }
 
-        public TypeSyntax AsNativeType(TypePositionInfo info)
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
-            return _nativeTypeSyntax;
+            return _unmanagedType;
         }
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
@@ -372,11 +395,19 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
         public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context)
         {
+            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
             yield return LocalDeclarationStatement(
                 VariableDeclaration(
                     PredefinedType(Token(SyntaxKind.IntKeyword)),
                     SingletonSeparatedList(
-                        VariableDeclarator(MarshallerHelpers.GetNumElementsIdentifier(info, context)))));
+                        VariableDeclarator(numElementsIdentifier))));
+            // Use the numElements local to ensure the compiler doesn't give errors for using an uninitialized variable.
+            // The value will never be used unless it has been initialized, so this is safe.
+            yield return MarshallerHelpers.SkipInitOrDefaultInit(
+                new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance)
+                {
+                    InstanceIdentifier = numElementsIdentifier
+                }, context);
         }
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
@@ -490,29 +521,37 @@ namespace Microsoft.Interop
     internal sealed class StatelessLinearCollectionNonBlittableElementsMarshalling : NonBlittableElementsMarshalling, ICustomTypeMarshallingStrategy
     {
         private readonly TypeSyntax _marshallerTypeSyntax;
-        private readonly TypeSyntax _nativeTypeSyntax;
+        private readonly ManagedTypeInfo _unmanagedType;
         private readonly MarshallerShape _shape;
         private readonly ExpressionSyntax _numElementsExpression;
 
         public StatelessLinearCollectionNonBlittableElementsMarshalling(
             TypeSyntax marshallerTypeSyntax,
-            TypeSyntax nativeTypeSyntax,
+            ManagedTypeInfo unmanagedType,
             MarshallerShape shape,
             TypeSyntax unmanagedElementType,
             IMarshallingGenerator elementMarshaller,
             TypePositionInfo elementInfo,
             ExpressionSyntax numElementsExpression)
-            : base (unmanagedElementType, elementMarshaller, elementInfo)
+            : base(unmanagedElementType, elementMarshaller, elementInfo)
         {
             _marshallerTypeSyntax = marshallerTypeSyntax;
-            _nativeTypeSyntax = nativeTypeSyntax;
+            _unmanagedType = unmanagedType;
             _shape = shape;
             _numElementsExpression = numElementsExpression;
         }
 
-        public TypeSyntax AsNativeType(TypePositionInfo info) => _nativeTypeSyntax;
+        public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _unmanagedType;
 
-        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
+        public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            StatementSyntax elementCleanup = GenerateElementCleanupStatement(info, context);
+
+            if (!elementCleanup.IsKind(SyntaxKind.EmptyStatement))
+            {
+                yield return elementCleanup;
+            }
+        }
 
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
@@ -588,11 +627,19 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateSetupStatements(TypePositionInfo info, StubCodeContext context)
         {
+            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
             yield return LocalDeclarationStatement(
                 VariableDeclaration(
                     PredefinedType(Token(SyntaxKind.IntKeyword)),
                     SingletonSeparatedList(
-                        VariableDeclarator(MarshallerHelpers.GetNumElementsIdentifier(info, context)))));
+                        VariableDeclarator(numElementsIdentifier))));
+            // Use the numElements local to ensure the compiler doesn't give errors for using an uninitialized variable.
+            // The value will never be used unless it has been initialized, so this is safe.
+            yield return MarshallerHelpers.SkipInitOrDefaultInit(
+                new TypePositionInfo(SpecialTypeInfo.Int32, NoMarshallingInfo.Instance)
+                {
+                    InstanceIdentifier = numElementsIdentifier
+                }, context);
         }
 
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();

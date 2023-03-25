@@ -10,7 +10,7 @@ namespace System.Threading
         /// <summary>
         /// The worker thread infastructure for the CLR thread pool.
         /// </summary>
-        private static class WorkerThread
+        private static partial class WorkerThread
         {
             private const int SemaphoreSpinCountDefaultBaseline = 70;
 #if !TARGET_ARM64 && !TARGET_ARM && !TARGET_LOONGARCH64
@@ -113,6 +113,12 @@ namespace System.Threading
                             // the number of working workers to reflect that we are done working for now
                             RemoveWorkingWorker(threadPoolInstance);
                         }
+                    }
+
+                    // The thread cannot exit if it has IO pending, otherwise the IO may be canceled
+                    if (IsIOPending)
+                    {
+                        continue;
                     }
 
                     threadAdjustmentLock.Acquire();
@@ -239,27 +245,8 @@ namespace System.Threading
 
                 while (toCreate > 0)
                 {
-                    if (TryCreateWorkerThread())
-                    {
-                        toCreate--;
-                        continue;
-                    }
-
-                    counts = threadPoolInstance._separated.counts;
-                    while (true)
-                    {
-                        ThreadCounts newCounts = counts;
-                        newCounts.NumProcessingWork -= (short)toCreate;
-                        newCounts.NumExistingThreads -= (short)toCreate;
-
-                        ThreadCounts oldCounts = threadPoolInstance._separated.counts.InterlockedCompareExchange(newCounts, counts);
-                        if (oldCounts == counts)
-                        {
-                            break;
-                        }
-                        counts = oldCounts;
-                    }
-                    break;
+                    CreateWorkerThread();
+                    toCreate--;
                 }
             }
 
@@ -314,28 +301,15 @@ namespace System.Threading
                 return false;
             }
 
-            private static bool TryCreateWorkerThread()
+            private static void CreateWorkerThread()
             {
-                try
-                {
-                    // Thread pool threads must start in the default execution context without transferring the context, so
-                    // using UnsafeStart() instead of Start()
-                    Thread workerThread = new Thread(s_workerThreadStart);
-                    workerThread.IsThreadPoolThread = true;
-                    workerThread.IsBackground = true;
-                    // thread name will be set in thread proc
-                    workerThread.UnsafeStart();
-                }
-                catch (ThreadStartException)
-                {
-                    return false;
-                }
-                catch (OutOfMemoryException)
-                {
-                    return false;
-                }
-
-                return true;
+                // Thread pool threads must start in the default execution context without transferring the context, so
+                // using UnsafeStart() instead of Start()
+                Thread workerThread = new Thread(s_workerThreadStart);
+                workerThread.IsThreadPoolThread = true;
+                workerThread.IsBackground = true;
+                // thread name will be set in thread proc
+                workerThread.UnsafeStart();
             }
         }
     }

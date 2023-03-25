@@ -65,7 +65,7 @@ void ThreadLocalBlock::FreeTLM(SIZE_T i, BOOL isThreadShuttingdown)
                     pThreadLocalModule->m_pDynamicClassTable[k].m_pDynamicEntry = NULL;
                 }
             }
-            delete pThreadLocalModule->m_pDynamicClassTable;
+            delete[] pThreadLocalModule->m_pDynamicClassTable;
             pThreadLocalModule->m_pDynamicClassTable = NULL;
         }
 
@@ -525,32 +525,22 @@ void    ThreadLocalModule::AllocateDynamicClass(MethodTable *pMT)
     {
         if (pDynamicStatics == NULL)
         {
-            SIZE_T dynamicEntrySize;
+            // If these allocations fail, we will throw
             if (pMT->Collectible())
             {
-                dynamicEntrySize = sizeof(CollectibleDynamicEntry);
+                pDynamicStatics = new CollectibleDynamicEntry(pMT->GetLoaderAllocator());
             }
             else
             {
-                dynamicEntrySize = DynamicEntry::GetOffsetOfDataBlob() + dwStaticBytes;
+                pDynamicStatics = new({dwStaticBytes}) NormalDynamicEntry();
             }
 
-            // If this allocation fails, we will throw
-            pDynamicStatics = (DynamicEntry*)new BYTE[dynamicEntrySize];
 
 #ifdef FEATURE_64BIT_ALIGNMENT
             // The memory block has be aligned at MAX_PRIMITIVE_FIELD_SIZE to guarantee alignment of statics
             static_assert_no_msg(sizeof(NormalDynamicEntry) % MAX_PRIMITIVE_FIELD_SIZE == 0);
             _ASSERTE(IS_ALIGNED(pDynamicStatics, MAX_PRIMITIVE_FIELD_SIZE));
 #endif
-
-            // Zero out the new DynamicEntry
-            memset((BYTE*)pDynamicStatics, 0, dynamicEntrySize);
-
-            if (pMT->Collectible())
-            {
-                ((CollectibleDynamicEntry*)pDynamicStatics)->m_pLoaderAllocator = pMT->GetLoaderAllocator();
-            }
 
             // Save the DynamicEntry in the DynamicClassTable
             m_pDynamicClassTable[dwID].m_pDynamicEntry = pDynamicStatics;

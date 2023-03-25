@@ -3,6 +3,7 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
@@ -13,6 +14,8 @@
 //======================================
 
 //---- CLASS ----------------
+.namespace ldc_conv_ovf_r8_i8
+{
 .class public		conv_ovf_i8 {
 
 //---- GLOBAL DATA ----------
@@ -1848,7 +1851,10 @@ END2:
 }
 
 //---- MAIN -----------------
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		5
 //====== begin testing ======
@@ -1856,77 +1862,77 @@ END2:
 //-- -inf r8 --
 	ldc.r8			float64(0xFFF0000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_0(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_0(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- -min r8 --
 	ldc.r8			float64(0xFFEFFFFFFFFFFFFF)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_1(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_1(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- -1 r8 --
 	ldc.r8			float64(0xBFF0000000000000)
 	ldc.i8			0xFFFFFFFFFFFFFFFF
-	call		int32 conv_ovf_i8::conv_2(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_2(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- -0 r8 --
 	ldc.r8			float64(0x8000000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_3(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_3(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- +0 r8 --
 	ldc.r8			float64(0x0000000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_4(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_4(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- +1 r8 --
 	ldc.r8			float64(0x3FF0000000000000)
 	ldc.i8			0x0000000000000001
-	call		int32 conv_ovf_i8::conv_5(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_5(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- +max r8 --
 	ldc.r8			float64(0x7FEFFFFFFFFFFFFF)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_6(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_6(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- +inf r8 --
 	ldc.r8			float64(0x7FF0000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_7(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_7(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- NaN r8 --
 	ldc.r8			float64(0x7FF8000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_8(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_8(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- 1.5 r8 --
 	ldc.r8			1.5
 	ldc.i8			0x0000000000000001
-	call		int32 conv_ovf_i8::conv_9(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_9(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- 999.99 r8 --
 	ldc.r8			99.99
 	ldc.i8			0x0000000000000063
-	call		int32 conv_ovf_i8::conv_10(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_10(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -1937,7 +1943,7 @@ END2:
 	// overflow is 0xC3DFFFFFFFFFFFFF.
 	ldc.r8			float64(0xC3DFFFFFFFFFFFFF)
 	ldc.i8			0x8000000000000400
-	call		int32 conv_ovf_i8::conv_11(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_11(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -1947,7 +1953,7 @@ END2:
 	// overflow is 0x43C0000000000000.
 	ldc.r8			float64(0x43C0000000000000)
 	ldc.i8			0x2000000000000000
-	call		int32 conv_ovf_i8::conv_12(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_12(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -1957,77 +1963,77 @@ END2:
 //-- -inf r8 --
 /*	ldc.r8			float64(0xFFF0000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_un_13(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_un_13(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- -min r8 --
 	ldc.r8			float64(0xFFEFFFFFFFFFFFFF)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_un_14(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_un_14(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- -1 r8 --
 	ldc.r8			float64(0xBFF0000000000000)
 	ldc.i8			0xFFFFFFFFFFFFFFFF
-	call		int32 conv_ovf_i8::conv_un_15(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_un_15(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- -0 r8 --
 	ldc.r8			float64(0x8000000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_un_16(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_un_16(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 *///-- +0 r8 --
 	ldc.r8			float64(0x0000000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_un_17(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_un_17(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- +1 r8 --
 	ldc.r8			float64(0x3FF0000000000000)
 	ldc.i8			0x0000000000000001
-	call		int32 conv_ovf_i8::conv_un_18(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_un_18(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- +max r8 --
 	ldc.r8			float64(0x7FEFFFFFFFFFFFFF)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_un_19(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_un_19(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- +inf r8 --
 	ldc.r8			float64(0x7FF0000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_un_20(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_un_20(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- NaN r8 --
 	ldc.r8			float64(0x7FF8000000000000)
 	ldc.i8			0x0000000000000000
-	call		int32 conv_ovf_i8::conv_un_21(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_un_21(float64,int64)
 	ldc.i4			0xEEEEEEEE
 	ceq
 	brfalse			FAIL
 //-- 1.5 r8 --
 	ldc.r8			1.5
 	ldc.i8			0x0000000000000001
-	call		int32 conv_ovf_i8::conv_un_22(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_un_22(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
 //-- 999.99 r8 --
 	ldc.r8			99.99
 	ldc.i8			0x0000000000000063
-	call		int32 conv_ovf_i8::conv_un_23(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_un_23(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -2038,7 +2044,7 @@ END2:
 	// overflow is 0xC3DFFFFFFFFFFFFF.
 	ldc.r8			float64(0xC3DFFFFFFFFFFFFF)
 	ldc.i8			0x8000000000000400
-	call		int32 conv_ovf_i8::conv_un_24(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_un_24(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -2048,7 +2054,7 @@ END2:
 	// overflow is 0x43C0000000000000.
 	ldc.r8			float64(0x43C0000000000000)
 	ldc.i8			0x2000000000000000
-	call		int32 conv_ovf_i8::conv_un_25(float64,int64)
+	call		int32 ldc_conv_ovf_r8_i8.conv_ovf_i8::conv_un_25(float64,int64)
 	ldc.i4			0x11111111
 	ceq
 	brfalse			FAIL
@@ -2075,3 +2081,4 @@ END:
 
 .assembly ldc_conv_ovf_r8_i8{}
 
+}

@@ -71,10 +71,7 @@ namespace Internal.IL
         {
             get
             {
-                if (_signature == null)
-                {
-                    _signature = _delegateType.GetKnownMethod("Invoke", null).Signature;
-                }
+                _signature ??= _delegateType.GetKnownMethod("Invoke", null).Signature;
                 return _signature;
             }
         }

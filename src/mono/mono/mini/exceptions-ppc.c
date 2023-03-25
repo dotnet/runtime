@@ -564,9 +564,9 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 
 		unwind_info = mono_jinfo_get_unwind_info (ji, &unwind_info_len);
 
-		sframe = (MonoPPCStackFrame*)MONO_CONTEXT_GET_SP (ctx);
-		MONO_CONTEXT_SET_BP (new_ctx, sframe->sp);
 		if (!ji->is_trampoline && jinfo_get_method (ji)->save_lmf) {
+			sframe = (MonoPPCStackFrame*)MONO_CONTEXT_GET_SP (ctx);
+			MONO_CONTEXT_SET_BP (new_ctx, sframe->sp);
 			/* sframe->sp points just past the end of the LMF */
 			guint8 *lmf_addr = (guint8*)sframe->sp - sizeof (MonoLMF);
 			memcpy (&new_ctx->fregs [MONO_PPC_FIRST_SAVED_FREG], lmf_addr + G_STRUCT_OFFSET (MonoLMF, fregs), sizeof (double) * MONO_SAVED_FREGS);

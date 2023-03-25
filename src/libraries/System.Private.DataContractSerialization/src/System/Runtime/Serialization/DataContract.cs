@@ -24,6 +24,7 @@ namespace System.Runtime.Serialization.DataContracts
     {
         internal const string SerializerTrimmerWarning = "Data Contract Serialization and Deserialization might require types that cannot be statically analyzed. Make sure all of the " +
             "required types are preserved.";
+        internal const string SerializerAOTWarning = "Data Contract Serialization and Deserialization might require types that cannot be statically analyzed.";
 
         internal const DynamicallyAccessedMemberTypes DataContractPreserveMemberTypes =
             DynamicallyAccessedMemberTypes.PublicMethods |
@@ -33,10 +34,8 @@ namespace System.Runtime.Serialization.DataContracts
             DynamicallyAccessedMemberTypes.PublicFields |
             DynamicallyAccessedMemberTypes.PublicProperties;
 
-        internal static ReadOnlyCollection<DataMember> s_emptyDataMemberList = new List<DataMember>().AsReadOnly();
-
-        private XmlDictionaryString _name;
-        private XmlDictionaryString _ns;
+        private readonly XmlDictionaryString _name;
+        private readonly XmlDictionaryString _ns;
         private readonly DataContractCriticalHelper _helper;
 
         internal DataContract(DataContractCriticalHelper helper)
@@ -50,20 +49,23 @@ namespace System.Runtime.Serialization.DataContracts
 
         internal MethodInfo? ParseMethod => _helper.ParseMethod;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static DataContract GetDataContract(Type type)
         {
-            return GetDataContract(type.TypeHandle, type);
+            return GetDataContract(type.TypeHandle);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static DataContract GetDataContract(RuntimeTypeHandle typeHandle, Type? type)
+        internal static DataContract GetDataContract(RuntimeTypeHandle typeHandle)
         {
             int id = GetId(typeHandle);
             DataContract dataContract = GetDataContractSkipValidation(id, typeHandle, null);
             return dataContract.GetValidContract();
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static DataContract GetDataContract(int id, RuntimeTypeHandle typeHandle)
         {
@@ -71,12 +73,14 @@ namespace System.Runtime.Serialization.DataContracts
             return dataContract.GetValidContract();
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static DataContract GetDataContractSkipValidation(int id, RuntimeTypeHandle typeHandle, Type? type)
         {
             return DataContractCriticalHelper.GetDataContractSkipValidation(id, typeHandle, type);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static DataContract GetGetOnlyCollectionDataContract(int id, RuntimeTypeHandle typeHandle, Type? type)
         {
@@ -84,11 +88,12 @@ namespace System.Runtime.Serialization.DataContracts
             dataContract = dataContract.GetValidContract();
             if (dataContract is ClassDataContract)
             {
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.Format(SR.ErrorDeserializing, SR.Format(SR.ErrorTypeInfo, DataContract.GetClrTypeFullName(dataContract.UnderlyingType)), SR.Format(SR.NoSetMethodForProperty, string.Empty, string.Empty))));
+                throw new SerializationException(SR.Format(SR.ErrorDeserializing, SR.Format(SR.ErrorTypeInfo, DataContract.GetClrTypeFullName(dataContract.UnderlyingType)), SR.Format(SR.NoSetMethodForProperty, string.Empty, string.Empty)));
             }
             return dataContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static DataContract GetGetOnlyCollectionDataContractSkipValidation(int id, RuntimeTypeHandle typeHandle, Type? type)
         {
@@ -110,18 +115,21 @@ namespace System.Runtime.Serialization.DataContracts
             return DataContractCriticalHelper.GetId(typeHandle);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static DataContract? GetBuiltInDataContract(Type type)
         {
             return DataContractCriticalHelper.GetBuiltInDataContract(type);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public static DataContract? GetBuiltInDataContract(string name, string ns)
         {
             return DataContractCriticalHelper.GetBuiltInDataContract(name, ns);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static DataContract? GetBuiltInDataContract(string typeName)
         {
@@ -155,27 +163,30 @@ namespace System.Runtime.Serialization.DataContracts
 
         internal Type TypeForInitialization => _helper.TypeForInitialization;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
-            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.UnexpectedContractType, DataContract.GetClrTypeFullName(GetType()), DataContract.GetClrTypeFullName(UnderlyingType))));
+            throw new InvalidDataContractException(SR.Format(SR.UnexpectedContractType, DataContract.GetClrTypeFullName(GetType()), DataContract.GetClrTypeFullName(UnderlyingType)));
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
-            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.UnexpectedContractType, DataContract.GetClrTypeFullName(GetType()), DataContract.GetClrTypeFullName(UnderlyingType))));
+            throw new InvalidDataContractException(SR.Format(SR.UnexpectedContractType, DataContract.GetClrTypeFullName(GetType()), DataContract.GetClrTypeFullName(UnderlyingType)));
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.UnexpectedContractType, DataContract.GetClrTypeFullName(GetType()), DataContract.GetClrTypeFullName(UnderlyingType))));
+            throw new InvalidDataContractException(SR.Format(SR.UnexpectedContractType, DataContract.GetClrTypeFullName(GetType()), DataContract.GetClrTypeFullName(UnderlyingType)));
         }
 
         internal virtual object ReadXmlElement(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context)
         {
-            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.UnexpectedContractType, DataContract.GetClrTypeFullName(GetType()), DataContract.GetClrTypeFullName(UnderlyingType))));
+            throw new InvalidDataContractException(SR.Format(SR.UnexpectedContractType, DataContract.GetClrTypeFullName(GetType()), DataContract.GetClrTypeFullName(UnderlyingType)));
         }
 
         public virtual bool IsValueType
@@ -198,12 +209,14 @@ namespace System.Runtime.Serialization.DataContracts
 
         public virtual DataContract? BaseContract
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => null;
         }
 
         internal GenericInfo? GenericInfo
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => _helper.GenericInfo;
             set => _helper.GenericInfo = value;
@@ -211,6 +224,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         public virtual DataContractDictionary? KnownDataContracts
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => _helper.KnownDataContracts;
             internal set => _helper.KnownDataContracts = value;
@@ -254,7 +268,7 @@ namespace System.Runtime.Serialization.DataContracts
             return false;
         }
 
-        public virtual ReadOnlyCollection<DataMember> DataMembers => s_emptyDataMemberList;
+        public virtual ReadOnlyCollection<DataMember> DataMembers => ReadOnlyCollection<DataMember>.Empty;
 
         internal virtual void WriteRootElement(XmlWriterDelegator writer, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -264,6 +278,7 @@ namespace System.Runtime.Serialization.DataContracts
                 writer.WriteStartElement(name, ns);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual DataContract BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract>? boundContracts = null)
         {
@@ -288,7 +303,7 @@ namespace System.Runtime.Serialization.DataContracts
             private static Dictionary<Type, DataContract?>? s_typeToBuiltInContract;
             private static Dictionary<XmlQualifiedName, DataContract?>? s_nameToBuiltInContract;
             private static Dictionary<string, DataContract?>? s_typeNameToBuiltInContract;
-            private static Hashtable s_namespaces = new Hashtable();
+            private static readonly Hashtable s_namespaces = new Hashtable();
             private static Dictionary<string, XmlDictionaryString>? s_clrTypeStrings;
             private static XmlDictionary? s_clrTypeStringsDictionary;
 
@@ -318,6 +333,7 @@ namespace System.Runtime.Serialization.DataContracts
             /// </SecurityNote>
             private Type _typeForInitialization;
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal static DataContract GetDataContractSkipValidation(int id, RuntimeTypeHandle typeHandle, Type? type)
             {
@@ -333,14 +349,11 @@ namespace System.Runtime.Serialization.DataContracts
                 return dataContract;
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal static DataContract GetGetOnlyCollectionDataContractSkipValidation(int id, RuntimeTypeHandle typeHandle, Type? type)
             {
-                DataContract dataContract = s_dataContractCache[id];
-                if (dataContract == null)
-                {
-                    dataContract = CreateGetOnlyCollectionDataContract(id, typeHandle, type);
-                }
+                DataContract dataContract = s_dataContractCache[id] ?? CreateGetOnlyCollectionDataContract(id, typeHandle, type);
                 return dataContract;
             }
 
@@ -349,7 +362,7 @@ namespace System.Runtime.Serialization.DataContracts
                 DataContract dataContract = s_dataContractCache[id];
                 if (dataContract == null)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.DataContractCacheOverflow));
+                    throw new SerializationException(SR.DataContractCacheOverflow);
                 }
                 return dataContract;
             }
@@ -369,7 +382,7 @@ namespace System.Runtime.Serialization.DataContracts
                         return i;
                     }
                 }
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.DataContractCacheOverflow));
+                throw new SerializationException(SR.DataContractCacheOverflow);
             }
 
             private static bool ContractMatches(DataContract contract, DataContract cachedContract)
@@ -401,8 +414,8 @@ namespace System.Runtime.Serialization.DataContracts
                             int newSize = (nextId < int.MaxValue / 2) ? nextId * 2 : int.MaxValue;
                             if (newSize <= nextId)
                             {
-                                DiagnosticUtility.DebugAssert("DataContract cache overflow");
-                                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.DataContractCacheOverflow));
+                                Debug.Fail("DataContract cache overflow");
+                                throw new SerializationException(SR.DataContractCacheOverflow);
                             }
                             Array.Resize<DataContract>(ref s_dataContractCache, newSize);
                         }
@@ -412,16 +425,14 @@ namespace System.Runtime.Serialization.DataContracts
                         return id.Value;
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (!ExceptionUtility.IsFatal(ex))
                 {
-                    if (Fx.IsFatal(ex))
-                        throw;
-
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
+                    throw new Exception(ex.Message, ex);
                 }
             }
 
             // check whether a corresponding update is required in ClassDataContract.IsNonAttributedTypeValidForSerialization
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private static DataContract CreateDataContract(int id, RuntimeTypeHandle typeHandle, Type? type)
             {
@@ -443,6 +454,7 @@ namespace System.Runtime.Serialization.DataContracts
                 return dataContract;
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private static DataContract CreateDataContract(Type type)
             {
@@ -498,6 +510,7 @@ namespace System.Runtime.Serialization.DataContracts
                 }
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             private static DataContract CreateGetOnlyCollectionDataContract(int id, RuntimeTypeHandle typeHandle, Type? type)
             {
@@ -522,6 +535,7 @@ namespace System.Runtime.Serialization.DataContracts
             }
 
             // This method returns adapter types used at runtime to create DataContract.
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal static Type GetDataContractAdapterType(Type type)
             {
@@ -566,6 +580,7 @@ namespace System.Runtime.Serialization.DataContracts
                 return typeHandle;
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal static DataContract? GetBuiltInDataContract(Type type)
             {
@@ -585,6 +600,7 @@ namespace System.Runtime.Serialization.DataContracts
                 }
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal static DataContract? GetBuiltInDataContract(string name, string ns)
             {
@@ -604,6 +620,7 @@ namespace System.Runtime.Serialization.DataContracts
                 }
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal static DataContract? GetBuiltInDataContract(string typeName)
             {
@@ -680,6 +697,7 @@ namespace System.Runtime.Serialization.DataContracts
                 }
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal static bool TryCreateBuiltInDataContract(Type type, [NotNullWhen(true)] out DataContract? dataContract)
             {
@@ -762,6 +780,7 @@ namespace System.Runtime.Serialization.DataContracts
                 return dataContract != null;
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal static bool TryCreateBuiltInDataContract(string name, string ns, [NotNullWhen(true)] out DataContract? dataContract)
             {
@@ -905,12 +924,9 @@ namespace System.Runtime.Serialization.DataContracts
                         return key;
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (!ExceptionUtility.IsFatal(ex))
                 {
-                    if (Fx.IsFatal(ex))
-                        throw;
-
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
+                    throw new Exception(ex.Message, ex);
                 }
             }
 
@@ -926,12 +942,9 @@ namespace System.Runtime.Serialization.DataContracts
                         {
                             s_clrTypeStrings.Add(Globals.TypeOfInt.Assembly.FullName!, s_clrTypeStringsDictionary.Add(Globals.MscorlibAssemblyName));
                         }
-                        catch (Exception ex)
+                        catch (Exception ex) when (!ExceptionUtility.IsFatal(ex))
                         {
-                            if (Fx.IsFatal(ex))
-                                throw;
-
-                            throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
+                            throw new Exception(ex.Message, ex);
                         }
                     }
                     if (s_clrTypeStrings.TryGetValue(key, out XmlDictionaryString? value))
@@ -941,12 +954,9 @@ namespace System.Runtime.Serialization.DataContracts
                     {
                         s_clrTypeStrings.Add(key, value);
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (!ExceptionUtility.IsFatal(ex))
                     {
-                        if (Fx.IsFatal(ex))
-                            throw;
-
-                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperFatal(ex.Message, ex);
+                        throw new Exception(ex.Message, ex);
                     }
                     return value;
                 }
@@ -972,7 +982,7 @@ namespace System.Runtime.Serialization.DataContracts
                     }
                 }
 
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(message));
+                throw new InvalidDataContractException(message);
             }
 
             internal DataContractCriticalHelper(
@@ -1029,6 +1039,7 @@ namespace System.Runtime.Serialization.DataContracts
 
             internal virtual DataContractDictionary? KnownDataContracts
             {
+                [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
                 [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
                 get => null;
                 set { /* do nothing */ }
@@ -1119,12 +1130,14 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static bool IsTypeSerializable(Type type)
         {
             return IsTypeSerializable(type, null);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static bool IsTypeSerializable(Type type, HashSet<Type>? previousCollectionTypes)
         {
@@ -1174,7 +1187,7 @@ namespace System.Runtime.Serialization.DataContracts
                 itemType = itemTypeQueue.Dequeue();
                 if (previousCollectionTypes.Contains(itemType))
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.RecursiveCollectionType, GetClrTypeFullName(itemType))));
+                    throw new InvalidDataContractException(SR.Format(SR.RecursiveCollectionType, GetClrTypeFullName(itemType)));
                 }
                 if (itemType.IsGenericType)
                 {
@@ -1247,18 +1260,21 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public static XmlQualifiedName GetXmlName(Type type)
         {
             return GetXmlName(type, out _);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static XmlQualifiedName GetXmlName(Type type, out bool hasDataContract)
         {
             return GetXmlName(type, new HashSet<Type>(), out hasDataContract);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static XmlQualifiedName GetXmlName(Type type, HashSet<Type> previousCollectionTypes, out bool hasDataContract)
         {
@@ -1284,6 +1300,7 @@ namespace System.Runtime.Serialization.DataContracts
             return xmlName;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static XmlQualifiedName GetDCTypeXmlName(Type type, DataContractAttribute dataContractAttribute)
         {
@@ -1292,7 +1309,7 @@ namespace System.Runtime.Serialization.DataContracts
             {
                 name = dataContractAttribute.Name;
                 if (name == null || name.Length == 0)
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidDataContractName, DataContract.GetClrTypeFullName(type))));
+                    throw new InvalidDataContractException(SR.Format(SR.InvalidDataContractName, DataContract.GetClrTypeFullName(type)));
                 if (type.IsGenericType && !type.IsGenericTypeDefinition)
                     name = ExpandGenericParameters(name, type);
                 name = DataContract.EncodeLocalName(name);
@@ -1304,7 +1321,7 @@ namespace System.Runtime.Serialization.DataContracts
             {
                 ns = dataContractAttribute.Namespace;
                 if (ns == null)
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidDataContractNamespace, DataContract.GetClrTypeFullName(type))));
+                    throw new InvalidDataContractException(SR.Format(SR.InvalidDataContractNamespace, DataContract.GetClrTypeFullName(type)));
                 CheckExplicitDataContractNamespaceUri(ns, type);
             }
             else
@@ -1313,6 +1330,7 @@ namespace System.Runtime.Serialization.DataContracts
             return CreateQualifiedName(name, ns);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static XmlQualifiedName GetNonDCTypeXmlName(Type type, HashSet<Type> previousCollectionTypes)
         {
@@ -1337,6 +1355,7 @@ namespace System.Runtime.Serialization.DataContracts
             return CreateQualifiedName(name, ns);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static bool TryGetBuiltInXmlAndArrayTypeXmlName(Type type, HashSet<Type> previousCollectionTypes, [NotNullWhen(true)] out XmlQualifiedName? xmlName)
         {
@@ -1370,7 +1389,7 @@ namespace System.Runtime.Serialization.DataContracts
             {
 #if DEBUG
                 if (dataContractAttributes.Length > 1)
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.TooManyDataContracts, DataContract.GetClrTypeFullName(type))));
+                    throw new InvalidDataContractException(SR.Format(SR.TooManyDataContracts, DataContract.GetClrTypeFullName(type)));
 #endif
                 dataContractAttribute = (DataContractAttribute)dataContractAttributes[0];
             }
@@ -1378,12 +1397,14 @@ namespace System.Runtime.Serialization.DataContracts
             return dataContractAttribute != null;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static XmlQualifiedName GetCollectionXmlName(Type type, Type itemType, out CollectionDataContractAttribute? collectionContractAttribute)
         {
             return GetCollectionXmlName(type, itemType, new HashSet<Type>(), out collectionContractAttribute);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static XmlQualifiedName GetCollectionXmlName(Type type, Type itemType, HashSet<Type> previousCollectionTypes, out CollectionDataContractAttribute? collectionContractAttribute)
         {
@@ -1393,14 +1414,14 @@ namespace System.Runtime.Serialization.DataContracts
             {
 #if DEBUG
                 if (collectionContractAttributes.Length > 1)
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.TooManyCollectionContracts, DataContract.GetClrTypeFullName(type))));
+                    throw new InvalidDataContractException(SR.Format(SR.TooManyCollectionContracts, DataContract.GetClrTypeFullName(type)));
 #endif
                 collectionContractAttribute = (CollectionDataContractAttribute)collectionContractAttributes[0];
                 if (collectionContractAttribute.IsNameSetExplicitly)
                 {
                     name = collectionContractAttribute.Name;
                     if (name == null || name.Length == 0)
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidCollectionContractName, DataContract.GetClrTypeFullName(type))));
+                        throw new InvalidDataContractException(SR.Format(SR.InvalidCollectionContractName, DataContract.GetClrTypeFullName(type)));
                     if (type.IsGenericType && !type.IsGenericTypeDefinition)
                         name = ExpandGenericParameters(name, type);
                     name = DataContract.EncodeLocalName(name);
@@ -1412,7 +1433,7 @@ namespace System.Runtime.Serialization.DataContracts
                 {
                     ns = collectionContractAttribute.Namespace;
                     if (ns == null)
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidCollectionContractNamespace, DataContract.GetClrTypeFullName(type))));
+                        throw new InvalidDataContractException(SR.Format(SR.InvalidCollectionContractNamespace, DataContract.GetClrTypeFullName(type)));
                     CheckExplicitDataContractNamespaceUri(ns, type);
                 }
                 else
@@ -1429,6 +1450,7 @@ namespace System.Runtime.Serialization.DataContracts
             return CreateQualifiedName(name, ns);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static string GetArrayPrefix(ref Type itemType)
         {
@@ -1448,6 +1470,7 @@ namespace System.Runtime.Serialization.DataContracts
             return IsBuiltInNamespace(elementNs) ? Globals.CollectionsNamespace : elementNs;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public virtual XmlQualifiedName GetArrayTypeName(bool isNullable)
         {
@@ -1468,12 +1491,14 @@ namespace System.Runtime.Serialization.DataContracts
             return new XmlQualifiedName(name, ns);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static XmlQualifiedName GetDefaultXmlName(Type type)
         {
             return CreateQualifiedName(GetDefaultXmlLocalName(type), GetDefaultXmlNamespace(type));
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static string GetDefaultXmlLocalName(Type type)
         {
@@ -1605,6 +1630,7 @@ namespace System.Runtime.Serialization.DataContracts
             return new Uri(Globals.DataContractXsdBaseNamespaceUri, clrNs ?? string.Empty).AbsoluteUri;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static void GetDefaultXmlName(string fullTypeName, out string localName, out string ns)
         {
@@ -1612,6 +1638,7 @@ namespace System.Runtime.Serialization.DataContracts
             GetDefaultName(typeReference, out localName, out ns);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static void GetDefaultName(CodeTypeReference typeReference, out string localName, out string ns)
         {
@@ -1716,9 +1743,9 @@ namespace System.Runtime.Serialization.DataContracts
                 if (clrNsInAttribute == clrNs)
                 {
                     if (nsAttribute.ContractNamespace == null)
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidGlobalDataContractNamespace, clrNs)));
+                        throw new InvalidDataContractException(SR.Format(SR.InvalidGlobalDataContractNamespace, clrNs));
                     if (dataContractNs != null)
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.DataContractNamespaceAlreadySet, dataContractNs, nsAttribute.ContractNamespace, clrNs)));
+                        throw new InvalidDataContractException(SR.Format(SR.DataContractNamespaceAlreadySet, dataContractNs, nsAttribute.ContractNamespace, clrNs));
                     dataContractNs = nsAttribute.ContractNamespace;
                 }
             }
@@ -1874,6 +1901,7 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static string ExpandGenericParameters(string format, Type type)
         {
@@ -1881,6 +1909,7 @@ namespace System.Runtime.Serialization.DataContracts
             return ExpandGenericParameters(format, genericNameProviderForType);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static string ExpandGenericParameters(string format, IGenericNameProvider genericNameProvider)
         {
@@ -1898,7 +1927,7 @@ namespace System.Runtime.Serialization.DataContracts
                         if (format[i] == '}')
                             break;
                     if (i == format.Length)
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.GenericNameBraceMismatch, format, genericNameProvider.GetGenericTypeName())));
+                        throw new InvalidDataContractException(SR.Format(SR.GenericNameBraceMismatch, format, genericNameProvider.GetGenericTypeName()));
                     if (format[start] == '#' && i == (start + 1))
                     {
                         if (nestedParameterCounts.Count > 1 || !genericNameProvider.ParametersFromBuiltInNamespaces)
@@ -1916,7 +1945,7 @@ namespace System.Runtime.Serialization.DataContracts
                     else
                     {
                         if (!int.TryParse(format.AsSpan(start, i - start), out int paramIndex) || paramIndex < 0 || paramIndex >= genericNameProvider.GetParameterCount())
-                            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.GenericParameterNotValid, format.Substring(start, i - start), genericNameProvider.GetGenericTypeName(), genericNameProvider.GetParameterCount() - 1)));
+                            throw new InvalidDataContractException(SR.Format(SR.GenericParameterNotValid, format.Substring(start, i - start), genericNameProvider.GetGenericTypeName(), genericNameProvider.GetParameterCount() - 1));
                         typeName.Append(genericNameProvider.GetParameterName(paramIndex));
                     }
                 }
@@ -1933,6 +1962,7 @@ namespace System.Runtime.Serialization.DataContracts
                     type.GetGenericTypeDefinition() == Globals.TypeOfNullable);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static DataContractDictionary? ImportKnownTypeAttributes(Type type)
         {
@@ -1942,6 +1972,7 @@ namespace System.Runtime.Serialization.DataContracts
             return knownDataContracts;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static void ImportKnownTypeAttributes(Type? type, Dictionary<Type, Type> typesChecked, ref DataContractDictionary? knownDataContracts)
         {
@@ -2047,6 +2078,7 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static void CheckAndAdd(Type type, Dictionary<Type, Type> typesChecked, [NotNullIfNotNull(nameof(nameToDataContractTable))] ref DataContractDictionary? nameToDataContractTable)
         {
@@ -2061,7 +2093,7 @@ namespace System.Runtime.Serialization.DataContracts
                 // The alreadyExistingContract type was used as-is in NetFx. The call to get the appropriate adapter type was added in CoreFx with https://github.com/dotnet/runtime/commit/50c0a70c52fa66fafa1227be552ccdab5e4cf8e4
                 // Don't throw duplicate if its a KeyValuePair<K,T> as it could have been added by Dictionary<K,T>
                 if (DataContractCriticalHelper.GetDataContractAdapterType(alreadyExistingContract.UnderlyingType) != DataContractCriticalHelper.GetDataContractAdapterType(type))
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.DupContractInKnownTypes, type, alreadyExistingContract.UnderlyingType, dataContract.XmlName.Namespace, dataContract.XmlName.Name)));
+                    throw new InvalidOperationException(SR.Format(SR.DupContractInKnownTypes, type, alreadyExistingContract.UnderlyingType, dataContract.XmlName.Namespace, dataContract.XmlName.Name));
                 return;
             }
             nameToDataContractTable.Add(dataContract.XmlName, dataContract);
@@ -2255,13 +2287,16 @@ namespace System.Runtime.Serialization.DataContracts
     {
         int GetParameterCount();
         IList<int> GetNestedParameterCounts();
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         string GetParameterName(int paramIndex);
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         string GetNamespaces();
         string? GetGenericTypeName();
         bool ParametersFromBuiltInNamespaces
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get;
         }
@@ -2297,12 +2332,14 @@ namespace System.Runtime.Serialization.DataContracts
             return _nestedParamCounts;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public string GetParameterName(int paramIndex)
         {
             return GetXmlName(paramIndex).Name;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public string GetNamespaces()
         {
@@ -2319,6 +2356,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         public bool ParametersFromBuiltInNamespaces
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
@@ -2334,6 +2372,7 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private XmlQualifiedName GetXmlName(int i)
         {
@@ -2353,10 +2392,10 @@ namespace System.Runtime.Serialization.DataContracts
 
     internal sealed class GenericInfo : IGenericNameProvider
     {
-        private string? _genericTypeName;
-        private XmlQualifiedName _xmlName;
+        private readonly string? _genericTypeName;
+        private readonly XmlQualifiedName _xmlName;
         private List<GenericInfo>? _paramGenericInfos;
-        private List<int> _nestedParamCounts;
+        private readonly List<int> _nestedParamCounts;
 
         internal GenericInfo(XmlQualifiedName xmlName, string? genericTypeName)
         {
@@ -2366,6 +2405,7 @@ namespace System.Runtime.Serialization.DataContracts
             _nestedParamCounts.Add(0);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public XmlQualifiedName GetExpandedXmlName()
         {
@@ -2380,8 +2420,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         internal void Add(GenericInfo actualParamInfo)
         {
-            if (_paramGenericInfos == null)
-                _paramGenericInfos = new List<GenericInfo>();
+            _paramGenericInfos ??= new List<GenericInfo>();
             _paramGenericInfos.Add(actualParamInfo);
         }
 
@@ -2413,6 +2452,7 @@ namespace System.Runtime.Serialization.DataContracts
             return _nestedParamCounts;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         string IGenericNameProvider.GetParameterName(int paramIndex)
         {
@@ -2420,6 +2460,7 @@ namespace System.Runtime.Serialization.DataContracts
             return _paramGenericInfos[paramIndex].GetExpandedXmlName().Name;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         string IGenericNameProvider.GetNamespaces()
         {
@@ -2439,6 +2480,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         bool IGenericNameProvider.ParametersFromBuiltInNamespaces
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
@@ -2461,8 +2503,8 @@ namespace System.Runtime.Serialization.DataContracts
 
     internal sealed class DataContractPairKey
     {
-        private object _object1;
-        private object _object2;
+        private readonly object _object1;
+        private readonly object _object2;
 
         internal DataContractPairKey(object object1, object object2)
         {

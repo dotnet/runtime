@@ -39,7 +39,7 @@ namespace System.Speech.Internal
             Marshal.Copy(ab, 0, buffer, sizeObject);
             for (int i = 0; i < c; i++)
             {
-                ao[i] = Marshal.PtrToStructure<T>((IntPtr)((long)buffer + i * sizeOfOne));
+                ao[i] = Marshal.PtrToStructure<T>((nint)buffer + (nint)i * sizeOfOne);
             }
         }
 
@@ -52,7 +52,7 @@ namespace System.Speech.Internal
 
             for (int i = 0; i < c; i++)
             {
-                Marshal.StructureToPtr<T>(ao[i], (IntPtr)((long)buffer + i * sizeOfOne), false);
+                Marshal.StructureToPtr<T>(ao[i], (nint)buffer + (nint)i * sizeOfOne, false);
             }
 
             Marshal.Copy(buffer, ab, 0, sizeObject);

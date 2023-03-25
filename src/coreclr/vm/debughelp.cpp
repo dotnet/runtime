@@ -295,8 +295,7 @@ static StackWalkAction PrintStackTraceCallback(CrawlFrame* pCF, VOID* pData)
 
     if (pCBD->toStdout)
     {
-        strcat_s(buff, nLen + 1, "\n");
-        PrintToStdOutA(buff);
+        printf("%s\n", buff);
     }
 #ifdef _DEBUG
     else if (pCBD->toLOG)

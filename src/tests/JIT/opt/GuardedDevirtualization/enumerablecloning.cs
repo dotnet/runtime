@@ -4,7 +4,7 @@
 // PGO enables an invariant GDV type test in a loop.
 // We then clone the loop based on this test.
 //
-// COMPlus_TieredPGO=1
+// DOTNET_TieredPGO=1
 
 using System;
 using System.Collections.Generic;

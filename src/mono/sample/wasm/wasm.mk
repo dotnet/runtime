@@ -8,7 +8,7 @@ endif
 
 CONFIG?=Release
 
-WASM_DEFAULT_BUILD_ARGS?=/p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=$(CONFIG)
+WASM_DEFAULT_BUILD_ARGS?=/p:TargetArchitecture=wasm /p:TargetOS=browser /p:Configuration=$(CONFIG)
 
 # we set specific headers to enable SharedArrayBuffer support in browsers for threading: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer#security_requirements
 CORS_HEADERS?= -h "Cross-Origin-Opener-Policy:same-origin" -h "Cross-Origin-Embedder-Policy:require-corp"

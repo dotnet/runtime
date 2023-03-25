@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 
+#pragma warning disable IDE0060
+
 namespace System
 {
     internal sealed class NSLogStream : CachedConsoleStream

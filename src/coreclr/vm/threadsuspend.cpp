@@ -250,7 +250,7 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
             if (InterlockedOr(&m_dwForbidSuspendThread, 0))
             {
 #if defined(_DEBUG)
-                // Enable the diagnostic ::SuspendThread() if the
+                // Enable the diagnostic ClrSuspendThread() if the
                 //     DiagnosticSuspend config setting is set.
                 // This will interfere with the mutual suspend race but it's
                 //     here only for diagnostic purposes anyway
@@ -259,7 +259,7 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
                     goto retry;
             }
 
-            dwSuspendCount = ::SuspendThread(hThread);
+            dwSuspendCount = ClrSuspendThread(hThread);
 
             //
             // Since SuspendThread is asynchronous, we now must wait for the thread to
@@ -271,7 +271,7 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
             {
                 if (!EnsureThreadIsSuspended(hThread, this))
                 {
-                    ::ResumeThread(hThread);
+                    ClrResumeThread(hThread);
                     str = STR_Failure;
                     break;
                 }
@@ -308,7 +308,7 @@ Thread::SuspendThreadResult Thread::SuspendThread(BOOL fOneTryOnly, DWORD *pdwSu
                     ++nCnt;
                 }
 #endif // _DEBUG
-                ::ResumeThread(hThread);
+                ClrResumeThread(hThread);
 
 #if defined(_DEBUG)
                 // If the suspend diagnostics are enabled we need to spin here in order to avoid
@@ -388,10 +388,10 @@ retry:
 
         if (i64TimestampCur - i64TimestampStart >= i64TimestampTicksMax)
         {
-            dwSuspendCount = ::SuspendThread(hThread);
+            dwSuspendCount = ClrSuspendThread(hThread);
             _ASSERTE(!"It takes too long to suspend a thread");
             if ((int)dwSuspendCount >= 0)
-                ::ResumeThread(hThread);
+                ClrResumeThread(hThread);
         }
 #endif // _DEBUG
 
@@ -444,8 +444,8 @@ DWORD Thread::ResumeThread()
 
     _ASSERTE (m_ThreadHandleForResume != INVALID_HANDLE_VALUE);
 
-    //DWORD res = ::ResumeThread(GetThreadHandle());
-    DWORD res = ::ResumeThread(m_ThreadHandleForResume);
+    //DWORD res = ClrResumeThread(GetThreadHandle());
+    DWORD res = ClrResumeThread(m_ThreadHandleForResume);
     _ASSERTE (res != 0 && "Thread is not previously suspended");
 #ifdef _DEBUG_IMPL
     _ASSERTE (!m_Creator.IsCurrentThread());
@@ -1970,14 +1970,14 @@ CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
     // Determine if the processor supports AVX so we could
     // retrieve extended registers
     DWORD64 FeatureMask = GetEnabledXStateFeatures();
-    if ((FeatureMask & XSTATE_MASK_AVX) != 0)
+    if ((FeatureMask & (XSTATE_MASK_AVX | XSTATE_MASK_AVX512)) != 0)
     {
         context = context | CONTEXT_XSTATE;
     }
 
     // Retrieve contextSize by passing NULL for Buffer
     DWORD contextSize = 0;
-    ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_AVX;
+    ULONG64 xStateCompactionMask = XSTATE_MASK_LEGACY | XSTATE_MASK_AVX | XSTATE_MASK_MPX | XSTATE_MASK_AVX512;
     // The initialize call should fail but return contextSize
     BOOL success = g_pfnInitializeContext2 ?
         g_pfnInitializeContext2(NULL, context, NULL, &contextSize, xStateCompactionMask) :
@@ -2899,7 +2899,7 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     // This should not normally fail.
     // The system silently ignores any feature specified in the FeatureMask
     // which is not enabled on the processor.
-    SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX);
+    SetXStateFeaturesMask(pCtx, (XSTATE_MASK_AVX | XSTATE_MASK_AVX512));
 #endif //defined(TARGET_X86) || defined(TARGET_AMD64)
 
     // Make sure we specify CONTEXT_EXCEPTION_REQUEST to detect "trap frame reporting".
@@ -3035,7 +3035,7 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
     // Get may return 0 if no XState is set, which Set would not accept.
     if (srcFeatures != 0)
     {
-        success = SetXStateFeaturesMask(pCurrentThreadCtx, srcFeatures & XSTATE_MASK_AVX);
+        success = SetXStateFeaturesMask(pCurrentThreadCtx, srcFeatures & (XSTATE_MASK_AVX | XSTATE_MASK_AVX512));
         _ASSERTE(success);
         if (!success)
             return FALSE;
@@ -3391,6 +3391,12 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 
             if (observeOnly)
             {
+                continue;
+            }
+
+            if (thread->IsGCSpecial())
+            {
+                // GC threads can not be forced to run preemptively, so we will not try.
                 continue;
             }
 
@@ -3996,8 +4002,8 @@ BOOL Thread::HandleJITCaseForAbort()
     return FALSE;
 }
 
-// Threads suspended by the Win32 ::SuspendThread() are resumed in two ways.  If we
-// suspended them in error, they are resumed via the Win32 ::ResumeThread().  But if
+// Threads suspended by ClrSuspendThread() are resumed in two ways.  If we
+// suspended them in error, they are resumed via ClrResumeThread().  But if
 // this is the HandledJIT() case and the thread is in fully interruptible code, we
 // can resume them under special control.  ResumeRuntime and UserResume are cases
 // of this.

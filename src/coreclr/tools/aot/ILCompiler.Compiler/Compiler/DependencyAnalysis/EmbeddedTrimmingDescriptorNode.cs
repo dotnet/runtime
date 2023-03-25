@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             _module = module;
         }
-        
+
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             PEMemoryBlock resourceDirectory = _module.PEReader.GetSectionData(_module.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
                     }
 
                     var metadataManager = (UsageBasedMetadataManager)factory.MetadataManager;
-                    return DescriptorMarker.GetDependencies(factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), metadataManager.FeatureSwitches);
+                    return DescriptorMarker.GetDependencies(metadataManager.Logger, factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), metadataManager.FeatureSwitches);
                 }
             }
             return Array.Empty<DependencyListEntry>();
@@ -60,7 +60,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory)
         {
-            return $"Embedded descriptor from {_module.ToString()}";
+            return $"Embedded descriptor from {_module}";
         }
 
         public override bool InterestingForDynamicDependencyAnalysis => false;

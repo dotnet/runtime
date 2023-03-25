@@ -99,12 +99,12 @@ namespace System
 
         public override string ToString()
         {
-            return Number.UInt64ToDecStr(m_value, -1);
+            return Number.UInt64ToDecStr(m_value);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return Number.UInt64ToDecStr(m_value, -1);
+            return Number.UInt64ToDecStr(m_value);
         }
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
@@ -298,18 +298,23 @@ namespace System
         public static (ulong Quotient, ulong Remainder) DivRem(ulong left, ulong right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
+        [Intrinsic]
         public static ulong LeadingZeroCount(ulong value) => (ulong)BitOperations.LeadingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
+        [Intrinsic]
         public static ulong PopCount(ulong value) => (ulong)BitOperations.PopCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
+        [Intrinsic]
         public static ulong RotateLeft(ulong value, int rotateAmount) => BitOperations.RotateLeft(value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
+        [Intrinsic]
         public static ulong RotateRight(ulong value, int rotateAmount) => BitOperations.RotateRight(value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
+        [Intrinsic]
         public static ulong TrailingZeroCount(ulong value) => (ulong)BitOperations.TrailingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
@@ -480,6 +485,7 @@ namespace System
         public static bool IsPow2(ulong value) => BitOperations.IsPow2(value);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        [Intrinsic]
         public static ulong Log2(ulong value) => (ulong)BitOperations.Log2(value);
 
         //
@@ -948,7 +954,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<ulong>.TryConvertToChecked<TOther>(ulong value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<ulong>.TryConvertToChecked<TOther>(ulong value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1015,14 +1021,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<ulong>.TryConvertToSaturating<TOther>(ulong value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<ulong>.TryConvertToSaturating<TOther>(ulong value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1089,14 +1095,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<ulong>.TryConvertToTruncating<TOther>(ulong value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<ulong>.TryConvertToTruncating<TOther>(ulong value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1163,7 +1169,7 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
@@ -1172,6 +1178,7 @@ namespace System
         // IParsable
         //
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out ulong result) => TryParse(s, NumberStyles.Integer, provider, out result);
 
         //

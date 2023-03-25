@@ -682,6 +682,13 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
 	} while (0)
 
+#define x86_alu_membase8_reg(inst,opc,basereg,disp,reg)	\
+	do {	\
+		x86_codegen_pre(&(inst), 1 + kMaxMembaseEmitPadding); \
+		x86_byte (inst, (((unsigned char)(opc)) << 3));	\
+		x86_membase_emit ((inst), (reg), (basereg), (disp));	\
+	} while (0)
+
 #define x86_alu_reg_reg(inst,opc,dreg,reg)	\
 	do {	\
 		x86_codegen_pre(&(inst), 2); \

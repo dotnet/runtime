@@ -3,13 +3,13 @@
 //
 
 /*
-set COMPlus_JITStress=1
+set DOTNET_JITStress=1
 */
 namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
         public static void Method1()
         {
@@ -29,7 +29,7 @@ namespace Test
                 }
             }
         }
-        static int Main()
+        public static int Main()
         {
             try
             {

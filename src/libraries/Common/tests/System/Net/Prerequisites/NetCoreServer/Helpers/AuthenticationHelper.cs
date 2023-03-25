@@ -49,7 +49,7 @@ namespace NetCoreServer
             if (authHeader == null)
             {
                 context.Response.StatusCode = 401;
-                context.Response.Headers.Add("WWW-Authenticate", WwwAuthenticateHeaderValue);
+                context.Response.Headers["WWW-Authenticate"] = WwwAuthenticateHeaderValue;
                 return false;
             }
 
@@ -82,7 +82,7 @@ namespace NetCoreServer
             if (pair.Length != 2 || pair[0] != user || pair[1] != password)
             {
                 context.Response.StatusCode = 401;
-                context.Response.Headers.Add("WWW-Authenticate", WwwAuthenticateHeaderValue);
+                context.Response.Headers["WWW-Authenticate"] = WwwAuthenticateHeaderValue;
                 return false;
             }
 
@@ -100,7 +100,7 @@ namespace NetCoreServer
             if (authHeader == null)
             {
                 context.Response.StatusCode = 401;
-                context.Response.Headers.Add("WWW-Authenticate", authType);
+                context.Response.Headers["WWW-Authenticate"] = authType;
                 return false;
             }
 

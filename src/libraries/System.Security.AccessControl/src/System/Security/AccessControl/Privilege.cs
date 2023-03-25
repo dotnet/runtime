@@ -87,10 +87,8 @@ namespace System.Security.AccessControl
             {
                 privilegeLock.EnterReadLock();
 
-                if (luids.ContainsKey(privilege))
+                if (luids.TryGetValue(privilege, out luid))
                 {
-                    luid = luids[privilege];
-
                     privilegeLock.ExitReadLock();
                 }
                 else
@@ -99,7 +97,7 @@ namespace System.Security.AccessControl
 
                     if (false == Interop.Advapi32.LookupPrivilegeValue(null, privilege, out luid))
                     {
-                        int error = Marshal.GetLastWin32Error();
+                        int error = Marshal.GetLastPInvokeError();
 
                         if (error == Interop.Errors.ERROR_NOT_ENOUGH_MEMORY)
                         {
@@ -134,9 +132,8 @@ namespace System.Security.AccessControl
 
                 if (privilegeLock.IsWriteLockHeld)
                 {
-                    if (!luids.ContainsKey(privilege))
+                    if (luids.TryAdd(privilege, luid))
                     {
-                        luids[privilege] = luid;
                         privileges[luid] = privilege;
                     }
 
@@ -177,7 +174,7 @@ namespace System.Security.AccessControl
                                             TokenAccessLevels.Duplicate,
                                             out localProcessHandle))
                             {
-                                cachingError = Marshal.GetLastWin32Error();
+                                cachingError = Marshal.GetLastPInvokeError();
                                 success = false;
                             }
                             processHandle = localProcessHandle;
@@ -223,7 +220,7 @@ namespace System.Security.AccessControl
                                                 System.Security.Principal.TokenType.TokenImpersonation,
                                                 ref this.threadHandle))
                                 {
-                                    error = Marshal.GetLastWin32Error();
+                                    error = Marshal.GetLastPInvokeError();
                                     success = false;
                                 }
                             }
@@ -456,9 +453,9 @@ namespace System.Security.AccessControl
                                   &previousState,
                                   &previousSize))
                 {
-                    error = Marshal.GetLastWin32Error();
+                    error = Marshal.GetLastPInvokeError();
                 }
-                else if (Interop.Errors.ERROR_NOT_ALL_ASSIGNED == Marshal.GetLastWin32Error())
+                else if (Interop.Errors.ERROR_NOT_ALL_ASSIGNED == Marshal.GetLastPInvokeError())
                 {
                     error = Interop.Errors.ERROR_NOT_ALL_ASSIGNED;
                 }
@@ -551,7 +548,7 @@ namespace System.Security.AccessControl
                                       null,
                                       null))
                     {
-                        error = Marshal.GetLastWin32Error();
+                        error = Marshal.GetLastPInvokeError();
                         success = false;
                     }
                 }

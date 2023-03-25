@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 // Note: This test case is found by Antigen. It catches a scenario where we were not accounting
@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class TestClass_Loops
 {
     public struct S1
@@ -121,7 +122,7 @@ public class TestClass_Loops
         }
     }
 
-    public void Method0()
+    internal void Method0()
     {
         unchecked
         {
@@ -134,7 +135,8 @@ public class TestClass_Loops
             return;
         }
     }
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         new TestClass_Loops().Method0();
         return 100;

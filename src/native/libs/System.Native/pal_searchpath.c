@@ -11,7 +11,7 @@ const char* SystemNative_SearchPath(int32_t folderId)
     return NULL;
 }
 
-const char* SystemNative_SearchPath_TempDirectory()
+const char* SystemNative_SearchPath_TempDirectory(void)
 {
     __builtin_unreachable();
     return NULL;

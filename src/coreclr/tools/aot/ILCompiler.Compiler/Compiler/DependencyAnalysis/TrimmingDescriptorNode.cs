@@ -1,14 +1,10 @@
 ﻿//Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
 
 using ILCompiler.DependencyAnalysisFramework;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -26,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis
             using (Stream fs = File.OpenRead(_fileName))
             {
                 var metadataManager = (UsageBasedMetadataManager)factory.MetadataManager;
-                return DescriptorMarker.GetDependencies(factory, fs, default, default, _fileName, metadataManager.FeatureSwitches);
+                return DescriptorMarker.GetDependencies(metadataManager.Logger, factory, fs, default, default, _fileName, metadataManager.FeatureSwitches);
             }
         }
 

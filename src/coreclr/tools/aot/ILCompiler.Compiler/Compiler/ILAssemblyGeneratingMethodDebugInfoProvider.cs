@@ -19,7 +19,7 @@ namespace ILCompiler
     {
         private readonly DebugInformationProvider _wrappedProvider;
         private readonly string _fileName;
-        private readonly TextWriter _tw;
+        private readonly StreamWriter _tw;
         private readonly Dictionary<MethodDesc, MethodDebugInformation> _generatedInfos = new Dictionary<MethodDesc, MethodDebugInformation>();
 
         private int _currentLine;
@@ -55,13 +55,13 @@ namespace ILCompiler
             }
         }
 
-        private MethodDebugInformation GetDebugInformation(MethodIL methodIL)
+        private SyntheticMethodDebugInformation GetDebugInformation(MethodIL methodIL)
         {
             MethodDesc owningMethod = methodIL.OwningMethod;
             var disasm = new ILDisassembler(methodIL);
             var fmt = new ILDisassembler.ILTypeNameFormatter(null);
 
-            ArrayBuilder<ILSequencePoint> sequencePoints = new ArrayBuilder<ILSequencePoint>();
+            ArrayBuilder<ILSequencePoint> sequencePoints = default(ArrayBuilder<ILSequencePoint>);
 
             _tw.Write(".method ");
             // TODO: accessibility, specialname, calling conventions etc.
@@ -146,7 +146,7 @@ namespace ILCompiler
             _tw.Dispose();
         }
 
-        private class SyntheticMethodDebugInformation : MethodDebugInformation
+        private sealed class SyntheticMethodDebugInformation : MethodDebugInformation
         {
             private readonly ILSequencePoint[] _sequencePoints;
 

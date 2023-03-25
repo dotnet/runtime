@@ -10,7 +10,6 @@ namespace System.Net.Mime
     internal class MimeBasePart
     {
         internal const string DefaultCharSet = "utf-8";
-        private static readonly char[] s_decodeEncodingSplitChars = new char[] { '?', '\r', '\n' };
 
         protected ContentType? _contentType;
         protected ContentDisposition? _contentDisposition;
@@ -43,7 +42,6 @@ namespace System.Net.Mime
         }
 
         private static readonly char[] s_headerValueSplitChars = new char[] { '\r', '\n', ' ' };
-        private static readonly char[] s_questionMarkSplitChars = new char[] { '?' };
 
         internal static string DecodeHeaderValue(string? value)
         {
@@ -65,7 +63,7 @@ namespace System.Net.Mime
                 //the third is the unicode encoding type, and the fourth is encoded message itself.  '?' is not valid inside of
                 //an encoded string other than as a separator for these five parts.
                 //If this check fails, the string is either not encoded or cannot be decoded by this method
-                string[] subStrings = foldedSubString.Split(s_questionMarkSplitChars);
+                string[] subStrings = foldedSubString.Split('?');
                 if ((subStrings.Length != 5 || subStrings[0] != "=" || subStrings[4] != "="))
                 {
                     return value;
@@ -97,32 +95,23 @@ namespace System.Net.Mime
                 return null;
             }
 
-            string[] subStrings = value.Split(s_decodeEncodingSplitChars);
-            if ((subStrings.Length < 5 || subStrings[0] != "=" || subStrings[4] != "="))
+            ReadOnlySpan<char> valueSpan = value;
+            Span<Range> subStrings = stackalloc Range[6];
+            if (valueSpan.SplitAny(subStrings, "?\r\n") < 5 ||
+                valueSpan[subStrings[0]] is not "=" ||
+                valueSpan[subStrings[4]] is not "=")
             {
                 return null;
             }
 
-            string charSet = subStrings[1];
-            return Encoding.GetEncoding(charSet);
+            return Encoding.GetEncoding(value[subStrings[1]]);
         }
 
         internal static bool IsAscii(string value, bool permitCROrLF)
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            foreach (char c in value)
-            {
-                if (c > 0x7f)
-                {
-                    return false;
-                }
-                if (!permitCROrLF && (c == '\r' || c == '\n'))
-                {
-                    return false;
-                }
-            }
-            return true;
+            return Ascii.IsValid(value) && (permitCROrLF || value.AsSpan().IndexOfAny('\r', '\n') < 0);
         }
 
         internal string? ContentID

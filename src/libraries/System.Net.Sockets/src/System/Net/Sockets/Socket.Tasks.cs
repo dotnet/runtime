@@ -733,15 +733,8 @@ namespace System.Net.Sockets
         private static void ValidateBufferArguments(byte[] buffer, int offset, int size)
         {
             ArgumentNullException.ThrowIfNull(buffer);
-
-            if ((uint)offset > (uint)buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if ((uint)size > (uint)(buffer.Length - offset))
-            {
-                throw new ArgumentOutOfRangeException(nameof(size));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)offset, (uint)buffer.Length, nameof(offset));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)size, (uint)(buffer.Length - offset), nameof(size));
         }
 
         /// <summary>Validates the supplied array segment, throwing if its array or indices are null or out-of-bounds, respectively.</summary>
@@ -925,26 +918,13 @@ namespace System.Net.Sockets
         /// <summary>A SocketAsyncEventArgs that can be awaited to get the result of an operation.</summary>
         internal sealed class AwaitableSocketAsyncEventArgs : SocketAsyncEventArgs, IValueTaskSource, IValueTaskSource<int>, IValueTaskSource<Socket>, IValueTaskSource<SocketReceiveFromResult>, IValueTaskSource<SocketReceiveMessageFromResult>
         {
-            private static readonly Action<object?> s_completedSentinel = new Action<object?>(state => throw new InvalidOperationException(SR.Format(SR.net_sockets_valuetaskmisuse, nameof(s_completedSentinel))));
             /// <summary>The owning socket.</summary>
             private readonly Socket _owner;
             /// <summary>Whether this should be cached as a read or a write on the <see cref="_owner"/></summary>
-            private bool _isReadForCaching;
-            /// <summary>
-            /// <see cref="s_completedSentinel"/> if it has completed. Another delegate if OnCompleted was called before the operation could complete,
-            /// in which case it's the delegate to invoke when the operation does complete.
-            /// </summary>
-            private Action<object?>? _continuation;
-            private ExecutionContext? _executionContext;
-            private object? _scheduler;
-            /// <summary>Current token value given to a ValueTask and then verified against the value it passes back to us.</summary>
-            /// <remarks>
-            /// This is not meant to be a completely reliable mechanism, doesn't require additional synchronization, etc.
-            /// It's purely a best effort attempt to catch misuse, including awaiting for a value task twice and after
-            /// it's already being reused by someone else.
-            /// </remarks>
-            private short _token;
-            /// <summary>The cancellation token used for the current operation.</summary>
+            private readonly bool _isReadForCaching;
+            /// <summary>Core logic for the IValueTaskSource implementations.</summary>
+            private ManualResetValueTaskSourceCore<bool> _mrvtsc;
+            /// <summary>The cancellation token used for the current operation. Stored to propagate the most relevant exception.</summary>
             private CancellationToken _cancellationToken;
 
             /// <summary>Initializes the event args.</summary>
@@ -957,12 +937,18 @@ namespace System.Net.Sockets
 
             public bool WrapExceptionsForNetworkStream { get; set; }
 
-            private void Release()
+            /// <summary>Resets this instance after an asynchronous completion and puts it back into the pool.</summary>
+            private void ReleaseForAsyncCompletion()
             {
                 _cancellationToken = default;
-                _token++;
-                _continuation = null;
+                _mrvtsc.Reset();
+                ReleaseForSyncCompletion();
+            }
 
+            /// <summary>Resets this instance after a synchronous completion and puts it back into the pool.</summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private void ReleaseForSyncCompletion()
+            {
                 ref AwaitableSocketAsyncEventArgs? cache = ref _isReadForCaching ? ref _owner._singleBufferReceiveEventArgs : ref _owner._singleBufferSendEventArgs;
                 if (Interlocked.CompareExchange(ref cache, this, null) != null)
                 {
@@ -970,49 +956,16 @@ namespace System.Net.Sockets
                 }
             }
 
-            protected override void OnCompleted(SocketAsyncEventArgs _)
-            {
-                // When the operation completes, see if OnCompleted was already called to hook up a continuation.
-                // If it was, invoke the continuation.
-                Action<object?>? c = _continuation;
-                if (c != null || (c = Interlocked.CompareExchange(ref _continuation, s_completedSentinel, null)) != null)
-                {
-                    Debug.Assert(c != s_completedSentinel, "The delegate should not have been the completed sentinel.");
-
-                    object? continuationState = UserToken;
-                    UserToken = null;
-                    _continuation = s_completedSentinel; // in case someone's polling IsCompleted
-
-                    ExecutionContext? ec = _executionContext;
-                    if (ec == null)
-                    {
-                        InvokeContinuation(c, continuationState, forceAsync: false, requiresExecutionContextFlow: false);
-                    }
-                    else
-                    {
-                        // This case should be relatively rare, as the async Task/ValueTask method builders
-                        // use the awaiter's UnsafeOnCompleted, so this will only happen with code that
-                        // explicitly uses the awaiter's OnCompleted instead.
-                        _executionContext = null;
-                        ExecutionContext.Run(ec, runState =>
-                        {
-                            var t = ((AwaitableSocketAsyncEventArgs, Action<object?>, object))runState!;
-                            t.Item1.InvokeContinuation(t.Item2, t.Item3, forceAsync: false, requiresExecutionContextFlow: false);
-                        }, (this, c, continuationState));
-                    }
-                }
-            }
+            protected override void OnCompleted(SocketAsyncEventArgs _) => _mrvtsc.SetResult(true);
 
             /// <summary>Initiates an accept operation on the associated socket.</summary>
             /// <returns>This instance.</returns>
             public ValueTask<Socket> AcceptAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
-
                 if (socket.AcceptAsync(this, cancellationToken))
                 {
                     _cancellationToken = cancellationToken;
-                    return new ValueTask<Socket>(this, _token);
+                    return new ValueTask<Socket>(this, _mrvtsc.Version);
                 }
 
                 Socket acceptSocket = AcceptSocket!;
@@ -1020,7 +973,7 @@ namespace System.Net.Sockets
 
                 AcceptSocket = null;
 
-                Release();
+                ReleaseForSyncCompletion();
 
                 return error == SocketError.Success ?
                     new ValueTask<Socket>(acceptSocket) :
@@ -1031,18 +984,16 @@ namespace System.Net.Sockets
             /// <returns>This instance.</returns>
             public ValueTask<int> ReceiveAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
-
                 if (socket.ReceiveAsync(this, cancellationToken))
                 {
                     _cancellationToken = cancellationToken;
-                    return new ValueTask<int>(this, _token);
+                    return new ValueTask<int>(this, _mrvtsc.Version);
                 }
 
                 int bytesTransferred = BytesTransferred;
                 SocketError error = SocketError;
 
-                Release();
+                ReleaseForSyncCompletion();
 
                 return error == SocketError.Success ?
                     new ValueTask<int>(bytesTransferred) :
@@ -1051,19 +1002,17 @@ namespace System.Net.Sockets
 
             public ValueTask<SocketReceiveFromResult> ReceiveFromAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
-
                 if (socket.ReceiveFromAsync(this, cancellationToken))
                 {
                     _cancellationToken = cancellationToken;
-                    return new ValueTask<SocketReceiveFromResult>(this, _token);
+                    return new ValueTask<SocketReceiveFromResult>(this, _mrvtsc.Version);
                 }
 
                 int bytesTransferred = BytesTransferred;
                 EndPoint remoteEndPoint = RemoteEndPoint!;
                 SocketError error = SocketError;
 
-                Release();
+                ReleaseForSyncCompletion();
 
                 return error == SocketError.Success ?
                     new ValueTask<SocketReceiveFromResult>(new SocketReceiveFromResult() { ReceivedBytes = bytesTransferred, RemoteEndPoint = remoteEndPoint }) :
@@ -1072,12 +1021,10 @@ namespace System.Net.Sockets
 
             public ValueTask<SocketReceiveMessageFromResult> ReceiveMessageFromAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
-
                 if (socket.ReceiveMessageFromAsync(this, cancellationToken))
                 {
                     _cancellationToken = cancellationToken;
-                    return new ValueTask<SocketReceiveMessageFromResult>(this, _token);
+                    return new ValueTask<SocketReceiveMessageFromResult>(this, _mrvtsc.Version);
                 }
 
                 int bytesTransferred = BytesTransferred;
@@ -1086,7 +1033,7 @@ namespace System.Net.Sockets
                 IPPacketInformation packetInformation = ReceiveMessageFromPacketInfo;
                 SocketError error = SocketError;
 
-                Release();
+                ReleaseForSyncCompletion();
 
                 return error == SocketError.Success ?
                     new ValueTask<SocketReceiveMessageFromResult>(new SocketReceiveMessageFromResult() { ReceivedBytes = bytesTransferred, RemoteEndPoint = remoteEndPoint, SocketFlags = socketFlags, PacketInformation = packetInformation }) :
@@ -1097,18 +1044,16 @@ namespace System.Net.Sockets
             /// <returns>This instance.</returns>
             public ValueTask<int> SendAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
-
                 if (socket.SendAsync(this, cancellationToken))
                 {
                     _cancellationToken = cancellationToken;
-                    return new ValueTask<int>(this, _token);
+                    return new ValueTask<int>(this, _mrvtsc.Version);
                 }
 
                 int bytesTransferred = BytesTransferred;
                 SocketError error = SocketError;
 
-                Release();
+                ReleaseForSyncCompletion();
 
                 return error == SocketError.Success ?
                     new ValueTask<int>(bytesTransferred) :
@@ -1117,17 +1062,15 @@ namespace System.Net.Sockets
 
             public ValueTask SendAsyncForNetworkStream(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
-
                 if (socket.SendAsync(this, cancellationToken))
                 {
                     _cancellationToken = cancellationToken;
-                    return new ValueTask(this, _token);
+                    return new ValueTask(this, _mrvtsc.Version);
                 }
 
                 SocketError error = SocketError;
 
-                Release();
+                ReleaseForSyncCompletion();
 
                 return error == SocketError.Success ?
                     default :
@@ -1136,17 +1079,15 @@ namespace System.Net.Sockets
 
             public ValueTask SendPacketsAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
-
                 if (socket.SendPacketsAsync(this, cancellationToken))
                 {
                     _cancellationToken = cancellationToken;
-                    return new ValueTask(this, _token);
+                    return new ValueTask(this, _mrvtsc.Version);
                 }
 
                 SocketError error = SocketError;
 
-                Release();
+                ReleaseForSyncCompletion();
 
                 return error == SocketError.Success ?
                     default :
@@ -1155,18 +1096,16 @@ namespace System.Net.Sockets
 
             public ValueTask<int> SendToAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
-
                 if (socket.SendToAsync(this, cancellationToken))
                 {
                     _cancellationToken = cancellationToken;
-                    return new ValueTask<int>(this, _token);
+                    return new ValueTask<int>(this, _mrvtsc.Version);
                 }
 
                 int bytesTransferred = BytesTransferred;
                 SocketError error = SocketError;
 
-                Release();
+                ReleaseForSyncCompletion();
 
                 return error == SocketError.Success ?
                     new ValueTask<int>(bytesTransferred) :
@@ -1175,24 +1114,22 @@ namespace System.Net.Sockets
 
             public ValueTask ConnectAsync(Socket socket)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, "Expected null continuation to indicate reserved for use");
-
                 try
                 {
                     if (socket.ConnectAsync(this, userSocket: true, saeaCancelable: false))
                     {
-                        return new ValueTask(this, _token);
+                        return new ValueTask(this, _mrvtsc.Version);
                     }
                 }
                 catch
                 {
-                    Release();
+                    ReleaseForSyncCompletion();
                     throw;
                 }
 
                 SocketError error = SocketError;
 
-                Release();
+                ReleaseForSyncCompletion();
 
                 return error == SocketError.Success ?
                     default :
@@ -1201,17 +1138,15 @@ namespace System.Net.Sockets
 
             public ValueTask DisconnectAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
-
                 if (socket.DisconnectAsync(this, cancellationToken))
                 {
                     _cancellationToken = cancellationToken;
-                    return new ValueTask(this, _token);
+                    return new ValueTask(this, _mrvtsc.Version);
                 }
 
                 SocketError error = SocketError;
 
-                Release();
+                ReleaseForSyncCompletion();
 
                 return error == SocketError.Success ?
                     ValueTask.CompletedTask :
@@ -1219,108 +1154,12 @@ namespace System.Net.Sockets
             }
 
             /// <summary>Gets the status of the operation.</summary>
-            public ValueTaskSourceStatus GetStatus(short token)
-            {
-                if (token != _token)
-                {
-                    ThrowIncorrectTokenException();
-                }
-
-                return
-                    !ReferenceEquals(_continuation, s_completedSentinel) ? ValueTaskSourceStatus.Pending :
-                    SocketError == SocketError.Success ? ValueTaskSourceStatus.Succeeded :
-                    ValueTaskSourceStatus.Faulted;
-            }
+            public ValueTaskSourceStatus GetStatus(short token) =>
+                _mrvtsc.GetStatus(token);
 
             /// <summary>Queues the provided continuation to be executed once the operation has completed.</summary>
-            public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
-            {
-                if (token != _token)
-                {
-                    ThrowIncorrectTokenException();
-                }
-
-                if ((flags & ValueTaskSourceOnCompletedFlags.FlowExecutionContext) != 0)
-                {
-                    _executionContext = ExecutionContext.Capture();
-                }
-
-                if ((flags & ValueTaskSourceOnCompletedFlags.UseSchedulingContext) != 0)
-                {
-                    SynchronizationContext? sc = SynchronizationContext.Current;
-                    if (sc != null && sc.GetType() != typeof(SynchronizationContext))
-                    {
-                        _scheduler = sc;
-                    }
-                    else
-                    {
-                        TaskScheduler ts = TaskScheduler.Current;
-                        if (ts != TaskScheduler.Default)
-                        {
-                            _scheduler = ts;
-                        }
-                    }
-                }
-
-                UserToken = state; // Use UserToken to carry the continuation state around
-                Action<object>? prevContinuation = Interlocked.CompareExchange(ref _continuation, continuation, null);
-                if (ReferenceEquals(prevContinuation, s_completedSentinel))
-                {
-                    // Lost the race condition and the operation has now already completed.
-                    // We need to invoke the continuation, but it must be asynchronously to
-                    // avoid a stack dive.  However, since all of the queueing mechanisms flow
-                    // ExecutionContext, and since we're still in the same context where we
-                    // captured it, we can just ignore the one we captured.
-                    bool requiresExecutionContextFlow = _executionContext != null;
-                    _executionContext = null;
-                    UserToken = null; // we have the state in "state"; no need for the one in UserToken
-                    InvokeContinuation(continuation, state, forceAsync: true, requiresExecutionContextFlow);
-                }
-                else if (prevContinuation != null)
-                {
-                    // Flag errors with the continuation being hooked up multiple times.
-                    // This is purely to help alert a developer to a bug they need to fix.
-                    ThrowMultipleContinuationsException();
-                }
-            }
-
-            private void InvokeContinuation(Action<object?> continuation, object? state, bool forceAsync, bool requiresExecutionContextFlow)
-            {
-                object? scheduler = _scheduler;
-                _scheduler = null;
-
-                if (scheduler != null)
-                {
-                    if (scheduler is SynchronizationContext sc)
-                    {
-                        sc.Post(s =>
-                        {
-                            var t = ((Action<object>, object))s!;
-                            t.Item1(t.Item2);
-                        }, (continuation, state));
-                    }
-                    else
-                    {
-                        Debug.Assert(scheduler is TaskScheduler, $"Expected TaskScheduler, got {scheduler}");
-                        Task.Factory.StartNew(continuation, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach, (TaskScheduler)scheduler);
-                    }
-                }
-                else if (forceAsync)
-                {
-                    if (requiresExecutionContextFlow)
-                    {
-                        ThreadPool.QueueUserWorkItem(continuation, state, preferLocal: true);
-                    }
-                    else
-                    {
-                        ThreadPool.UnsafeQueueUserWorkItem(continuation, state, preferLocal: true);
-                    }
-                }
-                else
-                {
-                    continuation(state);
-                }
-            }
+            public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) =>
+                _mrvtsc.OnCompleted(continuation, state, token, flags);
 
             /// <summary>Gets the result of the completion operation.</summary>
             /// <returns>Number of bytes transferred.</returns>
@@ -1330,7 +1169,7 @@ namespace System.Net.Sockets
             /// </remarks>
             int IValueTaskSource<int>.GetResult(short token)
             {
-                if (token != _token)
+                if (token != _mrvtsc.Version)
                 {
                     ThrowIncorrectTokenException();
                 }
@@ -1339,7 +1178,7 @@ namespace System.Net.Sockets
                 int bytes = BytesTransferred;
                 CancellationToken cancellationToken = _cancellationToken;
 
-                Release();
+                ReleaseForAsyncCompletion();
 
                 if (error != SocketError.Success)
                 {
@@ -1350,7 +1189,7 @@ namespace System.Net.Sockets
 
             void IValueTaskSource.GetResult(short token)
             {
-                if (token != _token)
+                if (token != _mrvtsc.Version)
                 {
                     ThrowIncorrectTokenException();
                 }
@@ -1358,7 +1197,7 @@ namespace System.Net.Sockets
                 SocketError error = SocketError;
                 CancellationToken cancellationToken = _cancellationToken;
 
-                Release();
+                ReleaseForAsyncCompletion();
 
                 if (error != SocketError.Success)
                 {
@@ -1368,7 +1207,7 @@ namespace System.Net.Sockets
 
             Socket IValueTaskSource<Socket>.GetResult(short token)
             {
-                if (token != _token)
+                if (token != _mrvtsc.Version)
                 {
                     ThrowIncorrectTokenException();
                 }
@@ -1379,7 +1218,7 @@ namespace System.Net.Sockets
 
                 AcceptSocket = null;
 
-                Release();
+                ReleaseForAsyncCompletion();
 
                 if (error != SocketError.Success)
                 {
@@ -1390,7 +1229,7 @@ namespace System.Net.Sockets
 
             SocketReceiveFromResult IValueTaskSource<SocketReceiveFromResult>.GetResult(short token)
             {
-                if (token != _token)
+                if (token != _mrvtsc.Version)
                 {
                     ThrowIncorrectTokenException();
                 }
@@ -1400,7 +1239,7 @@ namespace System.Net.Sockets
                 EndPoint remoteEndPoint = RemoteEndPoint!;
                 CancellationToken cancellationToken = _cancellationToken;
 
-                Release();
+                ReleaseForAsyncCompletion();
 
                 if (error != SocketError.Success)
                 {
@@ -1412,7 +1251,7 @@ namespace System.Net.Sockets
 
             SocketReceiveMessageFromResult IValueTaskSource<SocketReceiveMessageFromResult>.GetResult(short token)
             {
-                if (token != _token)
+                if (token != _mrvtsc.Version)
                 {
                     ThrowIncorrectTokenException();
                 }
@@ -1424,7 +1263,7 @@ namespace System.Net.Sockets
                 IPPacketInformation packetInformation = ReceiveMessageFromPacketInfo;
                 CancellationToken cancellationToken = _cancellationToken;
 
-                Release();
+                ReleaseForAsyncCompletion();
 
                 if (error != SocketError.Success)
                 {
@@ -1436,14 +1275,12 @@ namespace System.Net.Sockets
 
             private static void ThrowIncorrectTokenException() => throw new InvalidOperationException(SR.InvalidOperation_IncorrectToken);
 
-            private static void ThrowMultipleContinuationsException() => throw new InvalidOperationException(SR.InvalidOperation_MultipleContinuations);
-
             private void ThrowException(SocketError error, CancellationToken cancellationToken)
             {
                 // Most operations will report OperationAborted when canceled.
                 // On Windows, SendFileAsync will report ConnectionAborted.
                 // There's a race here anyway, so there's no harm in also checking for ConnectionAborted in all cases.
-                if (error == SocketError.OperationAborted || error == SocketError.ConnectionAborted)
+                if (error is SocketError.OperationAborted or SocketError.ConnectionAborted)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                 }

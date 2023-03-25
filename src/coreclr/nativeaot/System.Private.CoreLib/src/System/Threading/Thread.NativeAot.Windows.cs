@@ -497,8 +497,5 @@ namespace System.Threading
             InitializedByUs = 1,
             Locked = 2,
         }
-
-        // TODO: Use GetCurrentProcessorNumberEx for NUMA
-        private static int ComputeCurrentProcessorId() => (int)Interop.Kernel32.GetCurrentProcessorNumber();
     }
 }

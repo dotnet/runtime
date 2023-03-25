@@ -86,6 +86,8 @@
     <Compile Include="Span\IndexOfAny.char.cs" />
     <Compile Include="Span\IndexOfAny.T.cs" />
     <Compile Include="Span\IndexOfAnyExcept.T.cs" />
+    <Compile Include="Span\IndexOfAnyInRange.cs" />
+    <Compile Include="Span\IndexOfAnyValues.cs" />
     <Compile Include="Span\IndexOfSequence.byte.cs" />
     <Compile Include="Span\IndexOfSequence.char.cs" />
     <Compile Include="Span\IndexOfSequence.T.cs" />
@@ -99,6 +101,7 @@
     <Compile Include="Span\LastIndexOfSequence.T.cs" />
     <Compile Include="Span\Overflow.cs" />
     <Compile Include="Span\Overlaps.cs" />
+    <Compile Include="Span\Replace.T.cs" />
     <Compile Include="Span\Reverse.cs" />
     <Compile Include="Span\SequenceCompareTo.bool.cs" />
     <Compile Include="Span\SequenceCompareTo.byte.cs" />
@@ -138,6 +141,8 @@
     <Compile Include="ReadOnlySpan\AsSpan.cs" />
     <Compile Include="ReadOnlySpan\BinarySearch.cs" />
     <Compile Include="ReadOnlySpan\CopyTo.cs" />
+    <Compile Include="ReadOnlySpan\Count.byte.cs" />
+    <Compile Include="ReadOnlySpan\Count.T.cs" />
     <Compile Include="ReadOnlySpan\CtorArray.cs" />
     <Compile Include="ReadOnlySpan\CtorArrayIntInt.cs" />
     <Compile Include="ReadOnlySpan\CtorPointerInt.cs" />

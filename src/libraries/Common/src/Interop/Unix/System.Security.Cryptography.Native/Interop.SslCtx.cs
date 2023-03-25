@@ -33,7 +33,7 @@ internal static partial class Interop
         internal static unsafe partial void SslCtxSetAlpnSelectCb(SafeSslContextHandle ctx, delegate* unmanaged<IntPtr, byte**, byte*, byte*, uint, IntPtr, int> callback, IntPtr arg);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetCaching")]
-        internal static unsafe partial int SslCtxSetCaching(SafeSslContextHandle ctx, int mode, int cacheSize, delegate* unmanaged<IntPtr, IntPtr, int> neewSessionCallback, delegate* unmanaged<IntPtr, IntPtr, void> removeSessionCallback);
+        internal static unsafe partial int SslCtxSetCaching(SafeSslContextHandle ctx, int mode, int cacheSize, int contextIdLength, Span<byte> contextId, delegate* unmanaged<IntPtr, IntPtr, int> neewSessionCallback, delegate* unmanaged<IntPtr, IntPtr, void> removeSessionCallback);
 
         internal static bool AddExtraChainCertificates(SafeSslContextHandle ctx, X509Certificate2[] chain)
         {
@@ -134,7 +134,7 @@ namespace Microsoft.Win32.SafeHandles
             if (!string.IsNullOrEmpty(targetName))
             {
                 // We do this only for lookup in RemoveSession.
-                // Since this is part of chache manipulation and no function impact it is done here.
+                // Since this is part of cache manipulation and no function impact it is done here.
                 // This will use strdup() so it is safe to pass in raw pointer.
                 Interop.Ssl.SessionSetHostname(session, namePtr);
 
@@ -158,7 +158,7 @@ namespace Microsoft.Win32.SafeHandles
             return false;
         }
 
-        internal void RemoveSession(IntPtr namePtr, IntPtr session)
+        internal void RemoveSession(IntPtr namePtr)
         {
             Debug.Assert(_sslSessions != null);
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -344,21 +345,26 @@ public static class XmlDictionaryWriterTest
         AssertBytesWritten(x => x.WriteValue((long)0x12345678), XmlBinaryNodeType.Int32Text, new byte[] { 0x78, 0x56, 0x34, 0x12 });
         AssertBytesWritten(x => x.WriteValue(unchecked((long)0xfffffffff2345678)), XmlBinaryNodeType.Int32Text, new byte[] { 0x78, 0x56, 0x34, 0xf2 });
 
-        decimal decMax = decimal.MaxValue;
-        float f = 1.23f;
+        float f = 1.23456788f;
+        ReadOnlySpan<byte> floatBytes = new byte[] { 0x52, 0x06, 0x9e, 0x3f };
         double d = 1.0 / 3.0;
-        Guid guid = Guid.NewGuid();
+        ReadOnlySpan<byte> doubleBytes = new byte[] { 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0xd5, 0x3f };
+        Guid guid = new Guid(new byte[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 });
+        DateTime datetime = new DateTime(2022, 8, 26, 12, 34, 56, DateTimeKind.Utc);
+        Span<byte> datetimeBytes = stackalloc byte[8];
+        BinaryPrimitives.WriteInt64LittleEndian(datetimeBytes, datetime.ToBinary());
 
-        // Remarks: Of these types only timespan handles BigEndian/LittleEndian so for other types compare against bare bytes
-        AssertBytesWritten(x => x.WriteValue(decimal.MaxValue), XmlBinaryNodeType.DecimalText, MemoryMarshal.AsBytes(new ReadOnlySpan<decimal>(in decMax)));
-        AssertBytesWritten(x => x.WriteValue(f), XmlBinaryNodeType.FloatText, MemoryMarshal.AsBytes(new ReadOnlySpan<float>(in f)));
+        AssertBytesWritten(x => x.WriteValue(f), XmlBinaryNodeType.FloatText, floatBytes);
+        AssertBytesWritten(x => x.WriteValue(new decimal(0x20212223, 0x10111213, 0x01020304, true, scale: 0x1b)), XmlBinaryNodeType.DecimalText,
+                           new byte[] { 0x0, 0x0, 0x1b, 0x80, 0x4, 0x3, 0x2, 0x1, 0x23, 0x22, 0x21, 0x20, 0x13, 0x12, 0x11, 0x10 });
         AssertBytesWritten(x => x.WriteValue(guid), XmlBinaryNodeType.GuidText, guid.ToByteArray());
         AssertBytesWritten(x => x.WriteValue(new TimeSpan(0x0807060504030201)), XmlBinaryNodeType.TimeSpanText, new byte[] { 01, 02, 03, 04, 05, 06, 07, 08 });
+        AssertBytesWritten(x => x.WriteValue(datetime), XmlBinaryNodeType.DateTimeText, datetimeBytes);
 
-        // Double can be represented as float or inte as long as no detail is lost
-        AssertBytesWritten(x => x.WriteValue((double)f), XmlBinaryNodeType.FloatText, MemoryMarshal.AsBytes(new ReadOnlySpan<float>(in f)));
+        // Double can be represented as float or int as long as no detail is lost
+        AssertBytesWritten(x => x.WriteValue((double)f), XmlBinaryNodeType.FloatText, floatBytes);
         AssertBytesWritten(x => x.WriteValue((double)0x0100), XmlBinaryNodeType.Int16Text, new byte[] { 0x00, 0x01 });
-        AssertBytesWritten(x => x.WriteValue(d), XmlBinaryNodeType.DoubleText, MemoryMarshal.AsBytes(new ReadOnlySpan<double>(in d)));
+        AssertBytesWritten(x => x.WriteValue(d), XmlBinaryNodeType.DoubleText, doubleBytes);
 
 
         void AssertBytesWritten(Action<XmlDictionaryWriter> action, XmlBinaryNodeType nodeType, ReadOnlySpan<byte> expected)
@@ -390,20 +396,76 @@ public static class XmlDictionaryWriterTest
         int offset = 1;
         int count = 2;
 
+        bool[] bools = new bool[] { false, true, false, true };
+        AssertBytesWritten(x => x.WriteArray(null, "a", null, bools, offset, count), XmlBinaryNodeType.BoolTextWithEndElement,
+                           count, new byte[] { 1, 0 });
+
+        short[] shorts = new short[] { -1, 0x0102, 0x1122, -1 };
+        AssertBytesWritten(x => x.WriteArray(null, "a", null, shorts, offset, count), XmlBinaryNodeType.Int16TextWithEndElement,
+                           count, new byte[] { 2, 1, 0x22, 0x11 });
+
         int[] ints = new int[] { -1, 0x01020304, 0x11223344, -1 };
-        AssertBytesWritten(x => x.WriteArray(null, "a", null, ints, offset, count), XmlBinaryNodeType.Int32TextWithEndElement, count, new byte[] { 4, 3, 2, 1, 0x44, 0x33, 0x22, 0x11 });
+        AssertBytesWritten(x => x.WriteArray(null, "a", null, ints, offset, count), XmlBinaryNodeType.Int32TextWithEndElement,
+                           count, new byte[] { 4, 3, 2, 1, 0x44, 0x33, 0x22, 0x11 });
+
+        long[] longs = new long[] { -1, 0x0102030405060708, 0x1122334455667788, -1 };
+        AssertBytesWritten(x => x.WriteArray(null, "a", null, longs, offset, count), XmlBinaryNodeType.Int64TextWithEndElement,
+                           count, new byte[] { 8, 7, 6, 5, 4, 3, 2, 1, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11 });
+
+        float[] floats = new float[] { -1.0f, 1.23456788f, 1.23456788f, -1.0f };
+        AssertBytesWritten(x => x.WriteArray(null, "a", null, floats, offset, count), XmlBinaryNodeType.FloatTextWithEndElement,
+                           count, new byte[] { 0x52, 0x06, 0x9e, 0x3f, 0x52, 0x06, 0x9e, 0x3f });
+
+        double[] doubles = new double[] { -1.0, 1.0 / 3.0, 1.0 / 3.0, -1.0 };
+        AssertBytesWritten(x => x.WriteArray(null, "a", null, doubles, offset, count), XmlBinaryNodeType.DoubleTextWithEndElement,
+                           count, new byte[] { 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0xd5, 0x3f,
+                                               0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0xd5, 0x3f });
+
+        decimal[] decimals = new[] {
+            new decimal(0x20212223, 0x10111213, 0x01020304, true, scale: 0x1b),
+            new decimal(0x50515253, 0x40414243, 0x31323334, false, scale: 0x1c)
+        };
+        AssertBytesWritten(x => x.WriteArray(null, "a", null, decimals, 0, decimals.Length), XmlBinaryNodeType.DecimalTextWithEndElement,
+                           decimals.Length, new byte[] { 0x0, 0x0, 0x1b, 0x80, 0x4, 0x3, 0x2, 0x1,
+                                                         0x23, 0x22, 0x21, 0x20, 0x13, 0x12, 0x11, 0x10,
+                                                         0x0, 0x0, 0x1c, 0x00, 0x34, 0x33, 0x32, 0x31,
+                                                         0x53, 0x52, 0x51, 0x50, 0x43, 0x42, 0x41, 0x40 });
+
+        DateTime[] datetimes = new[] {
+            new DateTime(2022, 8, 26, 12, 34, 56, DateTimeKind.Utc),
+            new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Local)
+        };
+        Span<byte> datetimeBytes = stackalloc byte[8 * datetimes.Length];
+        for (int i = 0; i < datetimes.Length; i++)
+        {
+            BinaryPrimitives.WriteInt64LittleEndian(datetimeBytes.Slice(8 * i), datetimes[i].ToBinary());
+        }
+        AssertBytesWritten(x => x.WriteArray(null, "a", null, datetimes, 0, datetimes.Length), XmlBinaryNodeType.DateTimeTextWithEndElement,
+                           datetimes.Length, datetimeBytes);
+
+        TimeSpan[] timespans = new[] { new TimeSpan(0x0807060504030201), new TimeSpan(0x1817161514131211) };
+        AssertBytesWritten(x => x.WriteArray(null, "a", null, timespans, 0, timespans.Length), XmlBinaryNodeType.TimeSpanTextWithEndElement,
+                           timespans.Length, new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                                                          0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18 });
 
         Guid[] guids = new Guid[]
         {
             new Guid(new ReadOnlySpan<byte>(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 })),
             new Guid(new ReadOnlySpan<byte>(new byte[] { 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160 }))
         };
-        AssertBytesWritten(x => x.WriteArray(null, "a", null, guids, 0, guids.Length), XmlBinaryNodeType.GuidTextWithEndElement, guids.Length
-            , new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160 });
+        AssertBytesWritten(x => x.WriteArray(null, "a", null, guids, 0, guids.Length), XmlBinaryNodeType.GuidTextWithEndElement,
+                           guids.Length, new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+                                                      10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160 });
 
         // Write more than 512 bytes in a single call to trigger different writing logic in XmlStreamNodeWriter.WriteBytes
-        long[] longs = Enumerable.Range(0x01020304, 127).Select(i => (long)i | (long)(~i << 32)).ToArray();
-        AssertBytesWritten(x => x.WriteArray(null, "a", null, longs, 0, longs.Length), XmlBinaryNodeType.Int64TextWithEndElement, longs.Length, MemoryMarshal.AsBytes(longs.AsSpan()));
+        long[] many_longs = Enumerable.Range(0x01020304, 127).Select(i => (long)i | (long)(~i << 32)).ToArray();
+        Span<byte> many_longBytes = stackalloc byte[8 * many_longs.Length];
+        for (int i = 0; i < many_longs.Length; i++)
+        {
+            BinaryPrimitives.WriteInt64LittleEndian(many_longBytes.Slice(8 * i), many_longs[i]);
+        }
+        AssertBytesWritten(x => x.WriteArray(null, "a", null, many_longs, 0, many_longs.Length), XmlBinaryNodeType.Int64TextWithEndElement,
+                           many_longs.Length, many_longBytes);
 
         void AssertBytesWritten(Action<XmlDictionaryWriter> action, XmlBinaryNodeType nodeType, int count, ReadOnlySpan<byte> expected)
         {
@@ -420,11 +482,11 @@ public static class XmlDictionaryWriterTest
             var actual = segement.AsSpan();
             Assert.Equal(XmlBinaryNodeType.Array, (XmlBinaryNodeType)actual[0]);
             Assert.Equal(XmlBinaryNodeType.ShortElement, (XmlBinaryNodeType)actual[1]);
-            int elementLenght = actual[2];
-            Assert.InRange(elementLenght, 0, 0x8f); // verify count is single byte
-            Assert.Equal(XmlBinaryNodeType.EndElement, (XmlBinaryNodeType)actual[3 + elementLenght]);
+            int elementLength = actual[2];
+            Assert.InRange(elementLength, 0, 0x8f); // verify count is single byte
+            Assert.Equal(XmlBinaryNodeType.EndElement, (XmlBinaryNodeType)actual[3 + elementLength]);
 
-            actual = actual.Slice(4 + elementLenght);
+            actual = actual.Slice(4 + elementLength);
             // nodetype and count
             Assert.Equal(nodeType, (XmlBinaryNodeType)actual[0]);
             Assert.Equal(checked((sbyte)count), (sbyte)actual[1]);

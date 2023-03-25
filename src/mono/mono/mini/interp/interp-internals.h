@@ -20,13 +20,17 @@
 #define MINT_TYPE_R8 7
 #define MINT_TYPE_O  8
 #define MINT_TYPE_VT 9
+#define MINT_TYPE_VOID 10
 
 #define INLINED_METHOD_FLAG 0xffff
 #define TRACING_FLAG 0x1
 #define PROFILING_FLAG 0x2
 
-#define MINT_VT_ALIGNMENT 8
 #define MINT_STACK_SLOT_SIZE (sizeof (stackval))
+// This alignment provides us with straight forward support for Vector128
+#define MINT_STACK_ALIGNMENT (2 * MINT_STACK_SLOT_SIZE)
+#define MINT_SIMD_ALIGNMENT (MINT_STACK_ALIGNMENT)
+#define SIZEOF_V128 16
 
 #define INTERP_STACK_SIZE (1024*1024)
 #define INTERP_REDZONE_SIZE (8*1024)
@@ -98,6 +102,10 @@ typedef enum {
 
 #define PROFILE_INTERP 0
 
+#if !HOST_BROWSER && __GNUC__
+#define INTERP_ENABLE_SIMD
+#endif
+
 #define INTERP_IMETHOD_TAG_1(im) ((gpointer)((mono_u)(im) | 1))
 #define INTERP_IMETHOD_IS_TAGGED_1(im) ((mono_u)(im) & 1)
 #define INTERP_IMETHOD_UNTAG_1(im) ((InterpMethod*)((mono_u)(im) & ~1))
@@ -168,6 +176,13 @@ struct InterpMethod {
 	unsigned int vararg : 1;
 	unsigned int optimized : 1;
 	unsigned int needs_thread_attach : 1;
+	// If set, this method is MulticastDelegate.Invoke
+	unsigned int is_invoke : 1;
+#if HOST_BROWSER
+	unsigned int contains_traces : 1;
+	guint16 *backward_branch_offsets;
+	unsigned int backward_branch_offsets_count;
+#endif
 #if PROFILE_INTERP
 	long calls;
 	long opcounts;
@@ -297,6 +312,37 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig);
 void
 mono_interp_error_cleanup (MonoError *error);
 
+#if HOST_BROWSER
+
+gboolean
+mono_jiterp_isinst (MonoObject* object, MonoClass* klass);
+
+void
+mono_jiterp_check_pending_unwind (ThreadContext *context);
+
+void *
+mono_jiterp_get_context (void);
+
+int
+mono_jiterp_overflow_check_i4 (gint32 lhs, gint32 rhs, int opcode);
+
+int
+mono_jiterp_overflow_check_u4 (guint32 lhs, guint32 rhs, int opcode);
+
+void
+mono_jiterp_ld_delegate_method_ptr (gpointer *destination, MonoDelegate **source);
+
+int
+mono_jiterp_stackval_to_data (MonoType *type, stackval *val, void *data);
+
+int
+mono_jiterp_stackval_from_data (MonoType *type, stackval *result, const void *data);
+
+gpointer
+mono_jiterp_frame_data_allocator_alloc (FrameDataAllocator *stack, InterpFrame *frame, int size);
+
+#endif
+
 static inline int
 mint_type(MonoType *type)
 {
@@ -346,6 +392,8 @@ enum_type:
 	case MONO_TYPE_GENERICINST:
 		type = m_class_get_byval_arg (type->data.generic_class->container_class);
 		goto enum_type;
+	case MONO_TYPE_VOID:
+		return MINT_TYPE_VOID;
 	default:
 		g_warning ("got type 0x%02x", type->type);
 		g_assert_not_reached ();

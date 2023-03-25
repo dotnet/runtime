@@ -56,7 +56,9 @@ namespace System
             // reference to TypedReference is banned, so have to pass result as pointer
             unsafe
             {
+#pragma warning disable CS8500 // Takes a pointer to a managed type
                 FCallGetNextArg(&result);
+#pragma warning restore CS8500
             }
             return result;
         }
@@ -92,7 +94,9 @@ namespace System
                 // reference to TypedReference is banned, so have to pass result as pointer
                 unsafe
                 {
+#pragma warning disable CS8500 // Takes a pointer to a managed type
                     InternalGetNextArg(&result, rth.GetRuntimeType());
+#pragma warning restore CS8500
                 }
                 return result;
             }
@@ -123,7 +127,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return RuntimeHelpers.GetHashCodeOfPtr(ArgCookie);
+            return HashCode.Combine(ArgCookie);
         }
 
         // Inherited from object

@@ -117,6 +117,7 @@ enum CorJitAllocMemFlag
     CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN = 0x00000002, // The read-only data will be 16-byte aligned
     CORJIT_ALLOCMEM_FLG_32BYTE_ALIGN   = 0x00000004, // The code will be 32-byte aligned
     CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN = 0x00000008, // The read-only data will be 32-byte aligned
+    CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN = 0x00000010, // The read-only data will be 64-byte aligned
 };
 
 inline CorJitAllocMemFlag operator |(CorJitAllocMemFlag a, CorJitAllocMemFlag b)
@@ -418,7 +419,8 @@ public:
         Blend = 3,      // PGO data comes from blend of prior runs and current run
         Text = 4,       // PGO data comes from text file
         IBC = 5,        // PGO data from classic IBC
-        Sampling= 6,    // PGO data derived from sampling
+        Sampling = 6,   // PGO data derived from sampling
+        Synthesis = 7,  // PGO data derived from synthesis
     };
 
 #define DEFAULT_UNKNOWN_HANDLE 1

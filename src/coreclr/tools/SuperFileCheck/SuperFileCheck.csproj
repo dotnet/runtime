@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>SuperFileCheck</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <OutputPath>$(RuntimeBinDir)\SuperFileCheck</OutputPath>
+    <RunAnalyzers>false</RunAnalyzers>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Massage the OutputRid into an JITTools package RID that we can download -->
+    <_jitToolsRidPlatformIndex>$(OutputRid.LastIndexOf('-'))</_jitToolsRidPlatformIndex>
+    <JITToolsRidWithoutPlatform>$(OutputRid.Substring(0, $(_jitToolsRidPlatformIndex)))</JITToolsRidWithoutPlatform>
+    <JITToolsRidPlatform>$(OutputRid.Substring($(_jitToolsRidPlatformIndex)).TrimStart('-'))</JITToolsRidPlatform>
+
+    <!-- If it's not win/osx/linux-musl, it's a non-portable Linux. Treat as Linux. -->
+    <JITToolsRidWithoutPlatform Condition="'$(JITToolsRidWithoutPlatform)' != 'win' and '$(JITToolsRidWithoutPlatform)' != 'osx' and '$(JITToolsRidWithoutPlatform)' != 'linux-musl'">linux</JITToolsRidWithoutPlatform>
+
+    <!-- OSX builds have a version -->
+    <JITToolsRidWithoutPlatform Condition="'$(JITToolsRidWithoutPlatform)' == 'osx' and '$(JITToolsRidPlatform)' == 'x64'">osx.10.12</JITToolsRidWithoutPlatform>
+    <JITToolsRidWithoutPlatform Condition="'$(JITToolsRidWithoutPlatform)' == 'osx' and '$(JITToolsRidPlatform)' == 'arm64'">osx.11.0</JITToolsRidWithoutPlatform>
+
+    <!-- There are no x86 packages, so use x64 -->
+    <JITToolsRidPlatform Condition="'$(JITToolsRidPlatform)' == 'x86'">x64</JITToolsRidPlatform>
+    <JITToolsRidPlatform Condition="'$(JITToolsRidPlatform)' == 'arm' and '$(JITToolsRidWithoutPlatform)' == 'win'">arm64</JITToolsRidPlatform>
+    <JITToolsRid Condition="'$(JITToolsRid)' == ''">$(JITToolsRidWithoutPlatform)-$(JITToolsRidPlatform)</JITToolsRid>
+
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'linux-arm64'">$(runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'linux-x64'">$(runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'linux-musl-arm64'">$(runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'linux-musl-x64'">$(runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'win-arm64'">$(runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'win-x64'">$(runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'osx.11.0-arm64'">$(runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+    <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'osx.10.12-x64'">$(runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
+    <PackageReference Condition="'$(DotNetBuildFromSource)' != 'true'" Include="runtime.$(JITToolsRid).Microsoft.NETCore.Runtime.JIT.Tools">
+      <Version>$(JITToolsVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

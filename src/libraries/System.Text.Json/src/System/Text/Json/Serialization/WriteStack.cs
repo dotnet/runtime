@@ -139,7 +139,12 @@ namespace System.Text.Json
             }
         }
 
-        internal void Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation = false, bool supportAsync = false)
+        internal void Initialize(
+            JsonTypeInfo jsonTypeInfo,
+            object? rootValueBoxed = null,
+            bool isPolymorphicRootValue = false,
+            bool supportContinuation = false,
+            bool supportAsync = false)
         {
             Debug.Assert(!supportAsync || supportContinuation, "supportAsync must imply supportContinuation");
             Debug.Assert(!IsContinuation);
@@ -148,6 +153,7 @@ namespace System.Text.Json
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
+            IsPolymorphicRootValue = isPolymorphicRootValue;
             SupportContinuation = supportContinuation;
             SupportAsync = supportAsync;
 
@@ -156,6 +162,13 @@ namespace System.Text.Json
             {
                 Debug.Assert(options.ReferenceHandler != null);
                 ReferenceResolver = options.ReferenceHandler.CreateResolver(writing: true);
+
+                if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
+                    rootValueBoxed is not null && jsonTypeInfo.Type.IsValueType)
+                {
+                    // Root object is a boxed value type, we need to push it to the reference stack before starting the serializer.
+                    ReferenceResolver.PushReferenceForCycleDetection(rootValueBoxed);
+                }
             }
         }
 
@@ -414,7 +427,7 @@ namespace System.Text.Json
             {
                 if (propertyName != null)
                 {
-                    if (propertyName.IndexOfAny(ReadStack.SpecialCharacters) != -1)
+                    if (propertyName.AsSpan().ContainsSpecialCharacters())
                     {
                         sb.Append(@"['");
                         sb.Append(propertyName);
@@ -430,6 +443,6 @@ namespace System.Text.Json
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"Path:{PropertyPath()} Current: ConverterStrategy.{Current.JsonPropertyInfo?.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
+        private string DebuggerDisplay => $"Path:{PropertyPath()} Current: ConverterStrategy.{Current.JsonPropertyInfo?.EffectiveConverter.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

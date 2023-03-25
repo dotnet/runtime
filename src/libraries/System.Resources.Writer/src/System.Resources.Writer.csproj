@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>System.Resources</RootNamespace>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <NoWarn>$(NoWarn);CA1510</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Resources\__FastResourceComparer.cs" />

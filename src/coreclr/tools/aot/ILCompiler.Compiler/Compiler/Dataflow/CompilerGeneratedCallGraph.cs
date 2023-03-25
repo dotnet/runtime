@@ -5,19 +5,18 @@ using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 #nullable enable
 
 namespace ILCompiler.Dataflow
 {
-    sealed class CompilerGeneratedCallGraph
+    internal sealed class CompilerGeneratedCallGraph
     {
-        readonly Dictionary<TypeSystemEntity, HashSet<TypeSystemEntity>> _callGraph;
+        private readonly Dictionary<TypeSystemEntity, HashSet<TypeSystemEntity>> _callGraph;
 
         public CompilerGeneratedCallGraph() => _callGraph = new Dictionary<TypeSystemEntity, HashSet<TypeSystemEntity>>();
 
-        void TrackCallInternal(TypeSystemEntity fromMember, TypeSystemEntity toMember)
+        private void TrackCallInternal(TypeSystemEntity fromMember, TypeSystemEntity toMember)
         {
             if (!_callGraph.TryGetValue(fromMember, out HashSet<TypeSystemEntity>? toMembers))
             {

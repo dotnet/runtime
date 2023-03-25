@@ -230,7 +230,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 return false;
             }
 
-            throw Error.CouldNotGetDispId(name, string.Format(CultureInfo.InvariantCulture, "0x{0:X})", hresult));
+            throw Error.CouldNotGetDispId(name, $"0x{(uint)hresult:X})");
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
@@ -267,7 +267,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
                 return false;
             }
 
-            throw Error.CouldNotGetDispId(name, string.Format(CultureInfo.InvariantCulture, "0x{0:X})", hresult));
+            throw Error.CouldNotGetDispId(name, $"0x{(uint)hresult:X})");
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]

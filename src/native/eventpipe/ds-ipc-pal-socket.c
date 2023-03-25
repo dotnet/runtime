@@ -537,6 +537,7 @@ ipc_socket_accept (
 #endif
 	} while (ipc_retry_syscall (client_socket));
 
+#ifndef HOST_WIN32
 #if !HAVE_ACCEPT4 || !defined(SOCK_CLOEXEC)
 #if defined(FD_CLOEXEC)
 		if (client_socket != -1)
@@ -544,6 +545,7 @@ ipc_socket_accept (
 			// ignore any failures; this is best effort
 			fcntl (client_socket, F_SETFD, FD_CLOEXEC);
 		}
+#endif
 #endif
 #endif
 	DS_EXIT_BLOCKING_PAL_SECTION;
@@ -632,7 +634,7 @@ ipc_socket_recv (
 	while (continue_recv && bytes_to_read - total_bytes_read > 0) {
 		current_bytes_read = recv (
 			s,
-			buffer_cursor,
+			(char *)buffer_cursor,
 			bytes_to_read - total_bytes_read,
 			0);
 		if (ipc_retry_syscall (current_bytes_read))
@@ -666,7 +668,7 @@ ipc_socket_send (
 	while (continue_send && bytes_to_write - total_bytes_written > 0) {
 		current_bytes_written = send (
 			s,
-			buffer_cursor,
+			(const char *)buffer_cursor,
 			bytes_to_write - total_bytes_written,
 			0);
 		if (ipc_retry_syscall (current_bytes_written))

@@ -84,14 +84,13 @@ private:
     void ContainCheckArrOffset(GenTreeArrOffs* node);
     void ContainCheckLclHeap(GenTreeOp* node);
     void ContainCheckRet(GenTreeUnOp* ret);
-    void ContainCheckJTrue(GenTreeOp* node);
 #ifdef TARGET_ARM64
-    bool IsValidCompareChain(GenTree* child, GenTree* parent);
-    bool ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree** earliestValid);
-    void ContainCheckCompareChainForAnd(GenTree* tree);
-    void ContainCheckConditionalCompare(GenTreeOp* cmp);
-    void ContainCheckSelect(GenTreeConditional* node);
+    GenTree* TryLowerAndOrToCCMP(GenTreeOp* tree);
+    insCflags TruthifyingFlags(GenCondition cond);
+    void ContainCheckConditionalCompare(GenTreeCCMP* ccmp);
+    void ContainCheckNeg(GenTreeOp* neg);
 #endif
+    void ContainCheckSelect(GenTreeOp* select);
     void ContainCheckBitCast(GenTree* node);
     void ContainCheckCallOperands(GenTreeCall* call);
     void ContainCheckIndir(GenTreeIndir* indirNode);
@@ -107,9 +106,6 @@ private:
     void ContainCheckFloatBinary(GenTreeOp* node);
     void ContainCheckIntrinsic(GenTreeOp* node);
 #endif // TARGET_XARCH
-#ifdef FEATURE_SIMD
-    void ContainCheckSIMD(GenTreeSIMD* simdNode);
-#endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
     void ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* addr);
     void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
@@ -125,12 +121,13 @@ private:
     void LowerBlock(BasicBlock* block);
     GenTree* LowerNode(GenTree* node);
 
-    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive);
+    bool IsCFGCallArgInvariantInRange(GenTree* node, GenTree* endExclusive);
 
     // ------------------------------
     // Call Lowering
     // ------------------------------
-    void LowerCall(GenTree* call);
+    GenTree* LowerCall(GenTree* call);
+    GenTree* LowerCallMemmove(GenTreeCall* call);
     void LowerCFGCall(GenTreeCall* call);
     void MoveCFGCallArg(GenTreeCall* call, GenTree* node);
 #ifndef TARGET_64BIT
@@ -139,6 +136,8 @@ private:
     GenTree* OptimizeConstCompare(GenTree* cmp);
     GenTree* LowerCompare(GenTree* cmp);
     GenTree* LowerJTrue(GenTreeOp* jtrue);
+    GenTree* LowerSelect(GenTreeConditional* cond);
+    bool TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition, GenCondition* code);
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void LowerJmpMethod(GenTree* jmp);
     void LowerRet(GenTreeUnOp* ret);
@@ -161,6 +160,8 @@ private:
                                   GenTree*     lookForUsesStart,
                                   GenTreeCall* callNode);
     void InsertProfTailCallHook(GenTreeCall* callNode, GenTree* insertionPoint);
+    GenTree* FindEarliestPutArg(GenTreeCall* call);
+    size_t MarkPutArgNodes(GenTree* node);
     GenTree* LowerVirtualVtableCall(GenTreeCall* call);
     GenTree* LowerVirtualStubCall(GenTreeCall* call);
     void LowerArgsForCall(GenTreeCall* call);
@@ -279,13 +280,11 @@ private:
         GenTree* const op1 = tree->gtGetOp1();
         GenTree* const op2 = tree->gtGetOp2();
 
-        const unsigned operatorSize = genTypeSize(tree->TypeGet());
-
-        const bool op1Legal =
-            isSafeToMarkOp1 && tree->OperIsCommutative() && (operatorSize == genTypeSize(op1->TypeGet()));
-        const bool op2Legal = isSafeToMarkOp2 && (operatorSize == genTypeSize(op2->TypeGet()));
+        const bool op1Legal = isSafeToMarkOp1 && tree->OperIsCommutative() && IsContainableMemoryOpSize(tree, op1);
+        const bool op2Legal = isSafeToMarkOp2 && IsContainableMemoryOpSize(tree, op2);
 
         GenTree* regOptionalOperand = nullptr;
+
         if (op1Legal)
         {
             regOptionalOperand = op2Legal ? PreferredRegOptionalOperand(tree) : op1;
@@ -294,9 +293,10 @@ private:
         {
             regOptionalOperand = op2;
         }
+
         if (regOptionalOperand != nullptr)
         {
-            regOptionalOperand->SetRegOptional();
+            MakeSrcRegOptional(tree, regOptionalOperand);
         }
     }
 #endif // defined(TARGET_XARCH)
@@ -307,21 +307,25 @@ private:
     void LowerStoreIndir(GenTreeStoreInd* node);
     GenTree* LowerAdd(GenTreeOp* node);
     GenTree* LowerMul(GenTreeOp* mul);
+    bool TryLowerAndNegativeOne(GenTreeOp* node, GenTree** nextNode);
     GenTree* LowerBinaryArithmetic(GenTreeOp* binOp);
     bool LowerUnsignedDivOrMod(GenTreeOp* divMod);
     GenTree* LowerConstIntDivOrMod(GenTree* node);
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void LowerBlockStore(GenTreeBlk* blkNode);
     void LowerBlockStoreCommon(GenTreeBlk* blkNode);
-    void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr);
+    void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
     void LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
 #ifdef TARGET_XARCH
     void LowerPutArgStk(GenTreePutArgStk* putArgStk);
+    GenTree* TryLowerMulWithConstant(GenTreeOp* node);
 #endif // TARGET_XARCH
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
 
     bool TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode);
+
+    void TryRetypingFloatingPointStoreToIntegerStore(GenTree* store);
 
     GenTree* LowerSwitch(GenTree* node);
     bool TryLowerSwitchToBitTest(
@@ -337,25 +341,22 @@ private:
 #endif
 
     void WidenSIMD12IfNecessary(GenTreeLclVarCommon* node);
-    bool CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc* retTypeDesc);
+    bool CheckMultiRegLclVar(GenTreeLclVar* lclNode, int registerCount);
     void LowerStoreLoc(GenTreeLclVarCommon* tree);
     GenTree* LowerArrElem(GenTreeArrElem* arrElem);
     void LowerRotate(GenTree* tree);
     void LowerShift(GenTreeOp* shift);
-#ifdef FEATURE_SIMD
-    void LowerSIMD(GenTreeSIMD* simdNode);
-#endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
     GenTree* LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp);
-    void LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicDot(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
     void LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node);
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
@@ -368,6 +369,11 @@ private:
     void LowerModPow2(GenTree* node);
     GenTree* LowerAddForPossibleContainment(GenTreeOp* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
+
+    GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types   type,
+                                                 GenTree*    op1,
+                                                 CorInfoType simdBaseJitType,
+                                                 unsigned    simdSize);
 #endif // FEATURE_HW_INTRINSICS
 
     //----------------------------------------------------------------------------------------------
@@ -388,10 +394,11 @@ private:
             return op;
         }
 
-        GenTreeCast* cast = op->AsCast();
+        GenTreeCast* cast   = op->AsCast();
+        GenTree*     castOp = cast->CastOp();
 
         // FP <-> INT casts should be kept
-        if (varTypeIsFloating(cast->CastFromType()) ^ varTypeIsFloating(expectedType))
+        if (varTypeIsFloating(castOp) ^ varTypeIsFloating(expectedType))
         {
             return op;
         }
@@ -402,17 +409,23 @@ private:
             return op;
         }
 
+        // Keep casts with operands usable from memory.
+        if (castOp->isContained() || castOp->IsRegOptional())
+        {
+            return op;
+        }
+
         if (genTypeSize(cast->CastToType()) >= genTypeSize(expectedType))
         {
 #ifndef TARGET_64BIT
             // Don't expose TYP_LONG on 32bit
-            if (varTypeIsLong(cast->CastFromType()))
+            if (castOp->TypeIs(TYP_LONG))
             {
                 return op;
             }
 #endif
             BlockRange().Remove(op);
-            return cast->CastOp();
+            return castOp;
         }
 
         return op;
@@ -433,16 +446,36 @@ public:
         return m_lsra->isContainableMemoryOp(node);
     }
 
+    // Return true if 'childNode' is a containable memory op by its size relative to the 'parentNode'.
+    // Currently very conservative.
+    bool IsContainableMemoryOpSize(GenTree* parentNode, GenTree* childNode) const
+    {
+        if (parentNode->OperIsBinary())
+        {
+            const unsigned operatorSize = genTypeSize(parentNode->TypeGet());
+
+#ifdef TARGET_XARCH
+
+            // Conservative - only do this for AND, OR, XOR.
+            if (parentNode->OperIs(GT_AND, GT_OR, GT_XOR))
+            {
+                return genTypeSize(childNode->TypeGet()) >= operatorSize;
+            }
+
+#endif // TARGET_XARCH
+
+            return genTypeSize(childNode->TypeGet()) == operatorSize;
+        }
+
+        return false;
+    }
+
 #ifdef TARGET_ARM64
     bool IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const;
 #endif // TARGET_ARM64
 
-#ifdef FEATURE_HW_INTRINSICS
-    // Tries to get a containable node for a given HWIntrinsic
-    bool TryGetContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode,
-                                        GenTree**           pNode,
-                                        bool*               supportsRegOptional,
-                                        GenTreeHWIntrinsic* transparentParentNode = nullptr);
+#if defined(FEATURE_HW_INTRINSICS)
+    bool IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTree* childNode, bool* supportsRegOptional);
 #endif // FEATURE_HW_INTRINSICS
 
     static void TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, BasicBlock* block);
@@ -455,8 +488,26 @@ private:
     // Makes 'childNode' contained in the 'parentNode'
     void MakeSrcContained(GenTree* parentNode, GenTree* childNode) const;
 
+    // Makes 'childNode' regOptional in the 'parentNode'
+    void MakeSrcRegOptional(GenTree* parentNode, GenTree* childNode) const;
+
+    // Tries to make 'childNode' contained or regOptional in the 'parentNode'
+    void TryMakeSrcContainedOrRegOptional(GenTree* parentNode, GenTree* childNode) const;
+
+#if defined(FEATURE_HW_INTRINSICS)
+    // Tries to make 'childNode' contained or regOptional in the 'parentNode'
+    void TryMakeSrcContainedOrRegOptional(GenTreeHWIntrinsic* parentNode, GenTree* childNode) const;
+#endif
+
     // Checks and makes 'childNode' contained in the 'parentNode'
     bool CheckImmedAndMakeContained(GenTree* parentNode, GenTree* childNode);
+
+    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive) const;
+    bool IsInvariantInRange(GenTree* node, GenTree* endExclusive, GenTree* ignoreNode) const;
+    bool IsRangeInvariantInRange(GenTree* rangeStart,
+                                 GenTree* rangeEnd,
+                                 GenTree* endExclusive,
+                                 GenTree* ignoreNode) const;
 
     // Checks for memory conflicts in the instructions between childNode and parentNode, and returns true if childNode
     // can be contained.
@@ -464,6 +515,9 @@ private:
 
     // Similar to above, but allows bypassing a "transparent" parent.
     bool IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode, GenTree* childNode) const;
+
+    // Check if marking an operand of a node as reg-optional is safe.
+    bool IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* node) const;
 
     inline LIR::Range& BlockRange() const
     {

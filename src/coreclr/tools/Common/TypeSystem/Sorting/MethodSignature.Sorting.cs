@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Functionality related to deterministic ordering of types
-    partial class MethodSignature
+    public partial class MethodSignature
     {
         internal int CompareTo(MethodSignature other, TypeSystemComparer comparer)
         {

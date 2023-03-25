@@ -389,7 +389,7 @@ size_t DisAssembler::disCchFixupMember(
             if (anyReloc)
             {
                 // Make instructions like "mov rcx, 7FE8247A638h" diffable.
-                swprintf_s(wz, cchMax, W("%IXh"), dspAddr(targetAddr));
+                swprintf_s(wz, cchMax, W("%zXh"), dspAddr(targetAddr));
                 break;
             }
 
@@ -494,7 +494,7 @@ size_t DisAssembler::disCchFixupMember(
                  * "addr" is the address of the immediate */
 
                 // Make instructions like "mov rcx, 7FE8247A638h" diffable.
-                swprintf_s(wz, cchMax, W("%IXh"), dspAddr(targetAddr));
+                swprintf_s(wz, cchMax, W("%zXh"), dspAddr(targetAddr));
                 break;
             }
 
@@ -913,9 +913,9 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
 
     if (cb == 0)
     {
-        DISASM_DUMP("CbDisassemble offs %Iu addr %I64u\n", offs, addr);
+        DISASM_DUMP("CbDisassemble offs %zu addr %llu\n", offs, addr);
         // assert(!"can't disassemble instruction!!!");
-        fprintf(pfile, "MSVCDIS can't disassemble instruction @ offset %Iu (0x%02x)!!!\n", offs, offs);
+        fprintf(pfile, "MSVCDIS can't disassemble instruction @ offset %zu (0x%02zx)!!!\n", offs, offs);
 #if defined(TARGET_ARM64)
         fprintf(pfile, "%08Xh\n", *(unsigned int*)pb);
         return 4;
@@ -1147,13 +1147,13 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
                 cchBytes = CCH_INDENT;
             }
 
-            fprintf(pfile, "  %ls", wzBytes);
+            fprintf(pfile, "  %S", wzBytes);
             cchIndent = CCH_INDENT - cchBytes;
         }
 
         // print the dis-assembled instruction
 
-        fprintf(pfile, "%*c %ls\n", cchIndent, ' ', wz);
+        fprintf(pfile, "%*c %S\n", cchIndent, ' ', wz);
     }
 
     return cb;
@@ -1170,7 +1170,7 @@ size_t CbDisassembleWithBytes(DIS* pdis, DIS::ADDR addr, const BYTE* pb, size_t 
 
     pdis->CchFormatAddr(addr, wz, ArrLen(wz));
 
-    size_t cchIndent = (size_t)fprintf(pfile, "  %ls: ", wz);
+    size_t cchIndent = (size_t)fprintf(pfile, "  %S: ", wz);
 
     size_t cb = pdis->CbDisassemble(addr, pb, cbMax);
 
@@ -1229,12 +1229,12 @@ size_t CbDisassembleWithBytes(DIS* pdis, DIS::ADDR addr, const BYTE* pb, size_t 
         if (fFirst)
         {
             pdis->CchFormatInstr(wz, ArrLen(wz));
-            fprintf(pfile, "%-*ls %ls\n", cchBytesMax, pwzBytes, wz);
+            fprintf(pfile, "%-*S %S\n", cchBytesMax, pwzBytes, wz);
         }
 
         else
         {
-            fprintf(pfile, "%*c%ls\n", cchIndent, ' ', pwzBytes);
+            fprintf(pfile, "%*c%S\n", cchIndent, ' ', pwzBytes);
         }
     }
 

@@ -480,7 +480,7 @@ namespace System.Net.Http
             private const int FirstHPackNormalHeaderId = 15;
             private const int LastHPackNormalHeaderId = 61;
 
-            private static readonly int[] s_hpackStaticStatusCodeTable = new int[LastHPackStatusPseudoHeaderId - FirstHPackStatusPseudoHeaderId + 1] { 200, 204, 206, 304, 400, 404, 500 };
+            private static ReadOnlySpan<int> HpackStaticStatusCodeTable => new int[LastHPackStatusPseudoHeaderId - FirstHPackStatusPseudoHeaderId + 1] { 200, 204, 206, 304, 400, 404, 500 };
 
             private static readonly (HeaderDescriptor descriptor, byte[] value)[] s_hpackStaticHeaderTable = new (HeaderDescriptor, byte[])[LastHPackNormalHeaderId - FirstHPackNormalHeaderId + 1]
             {
@@ -544,7 +544,7 @@ namespace System.Net.Http
                 }
                 else if (index <= LastHPackStatusPseudoHeaderId)
                 {
-                    int statusCode = s_hpackStaticStatusCodeTable[index - FirstHPackStatusPseudoHeaderId];
+                    int statusCode = HpackStaticStatusCodeTable[index - FirstHPackStatusPseudoHeaderId];
 
                     OnStatus(statusCode);
                 }

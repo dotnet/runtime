@@ -7,7 +7,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly bge2{}
+.assembly 'b84590'{}
+.class public auto ansi Test_b84590 extends [mscorlib] System.Object {
 .method public	static int32 main() {
 .entrypoint
 // r4 real >= unordered
@@ -18,5 +19,6 @@
 	ret
 pass:	ldc.i4		100
 	ret
+}
 }
 

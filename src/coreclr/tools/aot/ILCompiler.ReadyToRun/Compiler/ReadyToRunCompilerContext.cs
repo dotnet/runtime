@@ -52,6 +52,8 @@ namespace ILCompiler
                 matchingVectorType = "Vector128`1";
             else if (details.MaximumSimdVectorLength == SimdVectorLength.Vector256Bit)
                 matchingVectorType = "Vector256`1";
+            else if (details.MaximumSimdVectorLength == SimdVectorLength.Vector512Bit)
+                matchingVectorType = "Vector512`1";
 
             // No architecture has completely stable handling of Vector<T> in the abi (Arm64 may change to SVE)
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, _vectorFieldLayoutAlgorithm, matchingVectorType, bubbleIncludesCorelib);
