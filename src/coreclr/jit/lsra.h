@@ -51,12 +51,12 @@ RegisterType regType(T type)
     {
         return IntRegisterType;
     }
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
     else if (varTypeUsesMaskReg(type))
     {
         return MaskRegisterType;
     }
-#endif // TARGET_XARCH
+#endif // TARGET_XARCH && FEATURE_SIMD
     else
     {
         assert(varTypeUsesFloatReg(type));
