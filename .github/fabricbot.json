@@ -879,15 +879,6 @@
             "parameters": {
               "label": "breaking-change"
             }
-          },
-          {
-            "operator": "and",
-            "operands": [
-              {
-                "name": "",
-                "parameters": {}
-              }
-            ]
           }
         ]
       },
