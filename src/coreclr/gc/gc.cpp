@@ -6976,6 +6976,7 @@ void gc_heap::gc_thread_function ()
             {
                 gradual_decommit_in_progress_p = decommit_step (DECOMMIT_TIME_STEP_MILLISECONDS);
             }
+#ifdef USE_REGIONS
             // quick hack for initial testing
             if ((settings.gc_index >= (prev_redistribute_regions_gc_index + 100))
                 && !gc_heap::background_running_p())
@@ -6988,6 +6989,7 @@ void gc_heap::gc_thread_function ()
 
                 GCToEEInterface::RestartEE(TRUE);
             }
+#endif //USE_REGIONS
         }
         else
         {
