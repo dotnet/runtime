@@ -1657,6 +1657,13 @@ GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolv
 
     op1->setEntryPoint(lookup);
 
+    if (IsStaticHelperEligibleForExpansion(op1))
+    {
+        // Re-use gtRetClsHnd field to store information about the class this helper is initialized
+        // (it is difficult to restore that from arguments)
+        op1->gtRetClsHnd = pResolvedToken->hClass;
+    }
+
     return op1;
 }
 #endif
@@ -4167,6 +4174,14 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 {
                     m_preferredInitCctor = pFieldInfo->helper;
                 }
+
+                if (IsStaticHelperEligibleForExpansion(op1))
+                {
+                    // Re-use gtRetClsHnd field to store information about the class this helper is initialized
+                    // (it is difficult to restore that from arguments)
+                    op1->AsCall()->gtRetClsHnd = pResolvedToken->hClass;
+                }
+
                 op1->gtFlags |= callFlags;
 
                 op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);

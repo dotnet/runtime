@@ -2350,5 +2350,18 @@ namespace Internal.JitInterface
                 _ => -1
             };
         }
+
+#pragma warning disable CA1822 // Mark members as static
+        private UIntPtr getIsClassInitedFieldAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref InfoAccessType pAccessType, UIntPtr* pStaticBase, byte* pIsInitedMask)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            // MetadataType type = (MetadataType)HandleToObject(cls);
+            // ISortableSymbolNode symbol = isGc ?
+            //     _compilation.NodeFactory.TypeGCStaticsSymbol(type) :
+            //     _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
+
+            // int offset = NonGCStaticsNode.GetClassConstructorContextSize(_compilation.NodeFactory.Target);
+            return 0;
+        }
     }
 }

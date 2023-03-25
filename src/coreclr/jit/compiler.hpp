@@ -3590,10 +3590,12 @@ inline bool Compiler::IsStaticHelperEligibleForExpansion(GenTree* tree, bool* is
     bool result = false;
     switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
     {
+        case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
         case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
             result = true;
             gc     = true;
             break;
+        case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
             result = true;
             gc     = false;

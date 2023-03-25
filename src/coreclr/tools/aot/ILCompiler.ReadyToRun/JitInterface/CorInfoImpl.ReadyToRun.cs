@@ -3051,5 +3051,10 @@ namespace Internal.JitInterface
         {
             return -1;
         }
+
+        private UIntPtr getIsClassInitedFieldAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref InfoAccessType pAccessType, UIntPtr* pStaticBase, byte* pIsInitedMask)
+        {
+            return 0;
+        }
     }
 }

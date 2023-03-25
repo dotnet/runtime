@@ -472,9 +472,7 @@ PhaseStatus Compiler::fgExpandStaticInit()
     }
 
     // TODO: Replace with opts.compCodeOpt once it's fixed
-    const bool preferSize  = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
-    const bool preferSpeed = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SPEED_OPT);
-
+    const bool preferSize = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
     if (preferSize)
     {
         // The optimization comes with a codegen size increase
@@ -515,6 +513,12 @@ PhaseStatus Compiler::fgExpandStaticInit()
 
                 assert(call->gtRetClsHnd != NO_CLASS_HANDLE);
                 JITDUMP("Expanding static initialization for %s\n", eeGetClassName(call->gtRetClsHnd))
+
+                if (call->gtRetClsHnd == NO_CLASS_HANDLE)
+                {
+                    assert(!"helper call was created without gtRetClsHnd");
+                    continue;
+                }
 
                 UINT8          isInitMask;
                 InfoAccessType staticBaseAccessType;
@@ -589,7 +593,7 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 // Fallback basic block
                 // TODO-CQ: for JIT we can replace the original call with CORINFO_HELP_INITCLASS
                 // that only accepts a single argument
-                BasicBlock* fallbackBb = fgNewBBFromTreeAfter(BBJ_NONE, isInitedBb, call, debugInfo, true);
+                BasicBlock* helperCallBb = fgNewBBFromTreeAfter(BBJ_NONE, isInitedBb, call, debugInfo, true);
 
                 //
                 // Update preds in all new blocks
@@ -598,17 +602,17 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 // Unlink block and prevBb
                 fgRemoveRefPred(block, prevBb);
 
-                // Block has two preds now: either isInitedBb or fallbackBb
+                // Block has two preds now: either isInitedBb or helperCallBb
                 fgAddRefPred(block, isInitedBb);
-                fgAddRefPred(block, fallbackBb);
+                fgAddRefPred(block, helperCallBb);
 
                 // prevBb always flow into isInitedBb
                 fgAddRefPred(isInitedBb, prevBb);
 
-                // Both fastPathBb and fallbackBb have a single common pred - isInitedBb
-                fgAddRefPred(fallbackBb, isInitedBb);
+                // Both fastPathBb and helperCallBb have a single common pred - isInitedBb
+                fgAddRefPred(helperCallBb, isInitedBb);
 
-                // fallbackBb unconditionally jumps to the last block (jumps over fastPathBb)
+                // helperCallBb unconditionally jumps to the last block (jumps over fastPathBb)
                 isInitedBb->bbJumpDest = block;
 
                 //
@@ -617,15 +621,7 @@ PhaseStatus Compiler::fgExpandStaticInit()
 
                 block->inheritWeight(prevBb);
                 isInitedBb->inheritWeight(prevBb);
-                if (!preferSpeed)
-                {
-                    // Keep fallbackBb non-cold for size and faster startup
-                    fallbackBb->inheritWeightPercentage(isInitedBb, 20);
-                }
-                else
-                {
-                    fallbackBb->bbSetRunRarely();
-                }
+                helperCallBb->bbSetRunRarely();
 
                 //
                 // Update loop info if loop table is known to be valid
@@ -633,8 +629,8 @@ PhaseStatus Compiler::fgExpandStaticInit()
 
                 if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
                 {
-                    isInitedBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-                    fallbackBb->bbNatLoopNum = prevBb->bbNatLoopNum;
+                    isInitedBb->bbNatLoopNum   = prevBb->bbNatLoopNum;
+                    helperCallBb->bbNatLoopNum = prevBb->bbNatLoopNum;
                     // Update lpBottom after block split
                     if (optLoopTable[prevBb->bbNatLoopNum].lpBottom == prevBb)
                     {
@@ -1011,9 +1007,12 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         result = gtNewHelperCallNode(helper, type, opModuleIDArg);
     }
 
-    // Re-use gtRetClsHnd field to store information about the class this helper is initialized
-    // (it is difficult to restore that from arguments)
-    result->gtRetClsHnd = cls;
+    if (IsStaticHelperEligibleForExpansion(result))
+    {
+        // Re-use gtRetClsHnd field to store information about the class this helper is initialized
+        // (it is difficult to restore that from arguments)
+        result->gtRetClsHnd = cls;
+    }
     result->gtFlags |= callFlags;
 
     // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
