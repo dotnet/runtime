@@ -661,6 +661,12 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 assert(BasicBlock::sameEHRegion(prevBb, block));
                 assert(BasicBlock::sameEHRegion(prevBb, isInitedBb));
 
+                // Extra step: merge prevBb with isInitedBb if possible
+                if (fgCanCompactBlocks(prevBb, isInitedBb))
+                {
+                    fgCompactBlocks(prevBb, isInitedBb);
+                }
+
                 result = PhaseStatus::MODIFIED_EVERYTHING;
 
                 // We've modified the graph and the current "block" might still have
