@@ -7,7 +7,7 @@ namespace System.Security.Cryptography
 {
     public sealed partial class Shake128 : IDisposable
     {
-        private readonly LiteXof _hashProvider;
+        private LiteXof _hashProvider; // MUTABLE STRUCT!
         private bool _disposed;
 
         public Shake128()

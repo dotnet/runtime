@@ -3,6 +3,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 using BCryptCreateHashFlags = Interop.BCrypt.BCryptCreateHashFlags;
@@ -25,24 +26,99 @@ namespace System.Security.Cryptography
 
         internal static LiteXof CreateXof(string hashAlgorithmId)
         {
-            _ = hashAlgorithmId;
-            throw new PlatformNotSupportedException();
+            return new LiteXof(hashAlgorithmId);
         }
     }
 
     internal struct LiteXof : ILiteHash
     {
-        // Nothing uses this for Browser but we need the type.
-#pragma warning disable CA1822 // Member does not access instance data
-#pragma warning disable IDE0060 // Remove unused parameter
-        public int HashSizeInBytes => throw new PlatformNotSupportedException();
-        public void Append(ReadOnlySpan<byte> data) =>  throw new PlatformNotSupportedException();
-        public int Finalize(Span<byte> destination) =>  throw new PlatformNotSupportedException();
-        public void Current(Span<byte> destination) =>  throw new PlatformNotSupportedException();
-        public int Reset() =>  throw new PlatformNotSupportedException();
-        public void Dispose() =>  throw new PlatformNotSupportedException();
-#pragma warning restore IDE0060
-#pragma warning restore CA1822
+        private readonly nuint _algorithm;
+        private SafeBCryptHashHandle _hashHandle;
+        private const nuint BCRYPT_CSHAKE128_ALG_HANDLE = 0x00000411;
+        private const nuint BCRYPT_CSHAKE256_ALG_HANDLE = 0x00000421;
+
+        internal LiteXof(string algorithm)
+        {
+            _algorithm = algorithm switch
+            {
+                HashAlgorithmNames.CSHAKE128 => BCRYPT_CSHAKE128_ALG_HANDLE,
+                HashAlgorithmNames.CSHAKE256 => BCRYPT_CSHAKE256_ALG_HANDLE,
+                _ => throw new CryptographicException(),
+            };
+
+            Reset();
+        }
+
+        public int HashSizeInBytes => throw new NotSupportedException();
+
+        public void Append(ReadOnlySpan<byte> data)
+        {
+            if (data.IsEmpty)
+            {
+                return;
+            }
+
+            NTSTATUS ntStatus = Interop.BCrypt.BCryptHashData(_hashHandle, data, data.Length, dwFlags: 0);
+
+            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+            {
+                throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+            }
+        }
+
+        public int Finalize(Span<byte> destination)
+        {
+            NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(_hashHandle, destination, destination.Length, dwFlags: 0);
+
+            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+            {
+                throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+            }
+
+            return destination.Length;
+        }
+
+        [MemberNotNull(nameof(_hashHandle))]
+        public void Reset()
+        {
+            SafeBCryptHashHandle hashHandle;
+
+            NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(
+                _algorithm,
+                out hashHandle,
+                pbHashObject: IntPtr.Zero,
+                cbHashObject: 0,
+                secret: ReadOnlySpan<byte>.Empty,
+                cbSecret: 0,
+                BCryptCreateHashFlags.None);
+
+            if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+            {
+                hashHandle.Dispose();
+                throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+            }
+
+            _hashHandle?.Dispose();
+            _hashHandle = hashHandle;
+        }
+
+        public void Current(Span<byte> destination)
+        {
+            using (SafeBCryptHashHandle tmpHash = Interop.BCrypt.BCryptDuplicateHash(_hashHandle))
+            {
+                NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(tmpHash, destination, destination.Length, dwFlags: 0);
+
+                if (ntStatus != NTSTATUS.STATUS_SUCCESS)
+                {
+                    throw Interop.BCrypt.CreateCryptographicException(ntStatus);
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            _hashHandle.Dispose();
+        }
     }
 
 
