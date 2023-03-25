@@ -166,6 +166,8 @@ export function generate_wasm_body (
 
         if (ip >= endOfBody) {
             record_abort(traceIp, ip, traceName, "end-of-body");
+            if (instrumentedTraceId)
+                console.log(`instrumented trace ${traceName} exited at end of body @${(<any>ip).toString(16)}`);
             break;
         }
 
@@ -177,6 +179,8 @@ export function generate_wasm_body (
         if (builder.size >= spaceLeft) {
             // console.log(`trace too big, estimated size is ${builder.size + builder.bytesGeneratedSoFar}`);
             record_abort(traceIp, ip, traceName, "trace-too-big");
+            if (instrumentedTraceId)
+                console.log(`instrumented trace ${traceName} exited because of size limit at @${(<any>ip).toString(16)} (spaceLeft=${spaceLeft}b)`);
             break;
         }
 
@@ -332,13 +336,18 @@ export function generate_wasm_body (
                     isConditionallyExecuted = true;
                 break;
 
-            // Non-conditional branch doesn't set isConditionallyExecuted
             case MintOpcode.MINT_LEAVE_S:
             case MintOpcode.MINT_BR_S:
             case MintOpcode.MINT_CALL_HANDLER:
             case MintOpcode.MINT_CALL_HANDLER_S:
                 if (!emit_branch(builder, ip, frame, opcode))
                     ip = abort;
+                else
+                    // Technically incorrect, but the instructions following this one may not be executed
+                    //  since we might have skipped over them.
+                    // FIXME: Identify when we should actually set the conditionally executed flag, perhaps
+                    //  by doing a simple static flow analysis based on the displacements. Update heuristic too!
+                    isConditionallyExecuted = true;
                 break;
 
             case MintOpcode.MINT_CKNULL: {
@@ -2435,8 +2444,10 @@ function emit_branch (
                     counters.backBranchesEmitted++;
                     return true;
                 } else {
-                    if (traceBackBranches > 0)
-                        console.log(`back branch target 0x${destination.toString(16)} not found`);
+                    if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
+                        console.log(`back branch target 0x${destination.toString(16)} not found in list ` +
+                            builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
+                        );
                     cwraps.mono_jiterp_boost_back_branch_target(destination);
                     // FIXME: Should there be a safepoint here?
                     append_bailout(builder, destination, BailoutReason.BackwardBranch);
@@ -2523,8 +2534,10 @@ function emit_branch (
             builder.cfg.branch(destination, true, true);
             counters.backBranchesEmitted++;
         } else {
-            if (traceBackBranches > 0)
-                console.log(`back branch target 0x${destination.toString(16)} not found`);
+            if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
+                console.log(`back branch target 0x${destination.toString(16)} not found in list ` +
+                    builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
+                );
             // We didn't find a loop to branch to, so bail out
             cwraps.mono_jiterp_boost_back_branch_target(destination);
             append_bailout(builder, destination, BailoutReason.BackwardBranch);
