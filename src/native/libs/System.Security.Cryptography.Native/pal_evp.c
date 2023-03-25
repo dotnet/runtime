@@ -66,6 +66,12 @@ int32_t CryptoNative_EvpDigestFinalEx(EVP_MD_CTX* ctx, uint8_t* md, uint32_t* s)
     return ret;
 }
 
+int32_t CryptoNative_EvpDigestFinalXOF(EVP_MD_CTX* ctx, uint8_t* md, uint32_t len)
+{
+    ERR_clear_error();
+    return EVP_DigestFinalXOF(ctx, md, len);
+}
+
 static EVP_MD_CTX* EvpDup(const EVP_MD_CTX* ctx)
 {
     if (ctx == NULL)
@@ -102,6 +108,22 @@ int32_t CryptoNative_EvpDigestCurrent(const EVP_MD_CTX* ctx, uint8_t* md, uint32
     if (dup != NULL)
     {
         int ret = CryptoNative_EvpDigestFinalEx(dup, md, s);
+        EVP_MD_CTX_free(dup);
+        return ret;
+    }
+
+    return 0;
+}
+
+int32_t CryptoNative_EvpDigestCurrentXOF(const EVP_MD_CTX* ctx, uint8_t* md, uint32_t len)
+{
+    ERR_clear_error();
+
+    EVP_MD_CTX* dup = EvpDup(ctx);
+
+    if (dup != NULL)
+    {
+        int ret = CryptoNative_EvpDigestFinalXOF(dup, md, len);
         EVP_MD_CTX_free(dup);
         return ret;
     }
@@ -208,6 +230,19 @@ const EVP_MD* CryptoNative_EvpSha3_512(void)
     if (API_EXISTS(EVP_sha3_512))
     {
         return EVP_sha3_512();
+    }
+#endif
+
+    return NULL;
+}
+
+const EVP_MD* CryptoNative_EvpShake128(void)
+{
+    // No error queue impact.
+#if HAVE_OPENSSL_SHA3
+    if (API_EXISTS(EVP_shake128))
+    {
+        return EVP_shake128();
     }
 #endif
 

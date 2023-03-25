@@ -37,6 +37,22 @@ internal static partial class Interop
         [LibraryImport(Libraries.AndroidCryptoNative, EntryPoint = "CryptoNative_GetMaxMdSize")]
         private static partial int GetMaxMdSize();
 
+        internal static unsafe int EvpDigestFinalXOF(SafeEvpMdCtxHandle ctx, Span<byte> destination)
+        {
+            // The partial needs to match the OpenSSL parameters.
+            _ = ctx;
+            _ = destination;
+            throw new NotSupportedException();
+        }
+
+        internal static unsafe int EvpDigestCurrentXOF(SafeEvpMdCtxHandle ctx, Span<byte> destination)
+        {
+            // The partial needs to match the OpenSSL parameters.
+            _ = ctx;
+            _ = destination;
+            throw new NotSupportedException();
+        }
+
         internal static readonly int EVP_MAX_MD_SIZE = GetMaxMdSize();
     }
 }

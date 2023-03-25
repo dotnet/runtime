@@ -25,6 +25,12 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestFinalEx")]
         internal static partial int EvpDigestFinalEx(SafeEvpMdCtxHandle ctx, ref byte md, ref uint s);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestFinalXOF")]
+        private static unsafe partial int EvpDigestFinalXOF(SafeEvpMdCtxHandle ctx, byte* md, uint len);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestCurrentXOF")]
+        private static unsafe partial int EvpDigestCurrentXOF(SafeEvpMdCtxHandle ctx, byte* md, uint len);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestCurrent")]
         internal static partial int EvpDigestCurrent(SafeEvpMdCtxHandle ctx, ref byte md, ref uint s);
 
@@ -68,6 +74,22 @@ internal static partial class Interop
                     digestEvp,
                     pDestination,
                     destination.Length);
+            }
+        }
+
+        internal static unsafe int EvpDigestFinalXOF(SafeEvpMdCtxHandle ctx, Span<byte> destination)
+        {
+            fixed (byte* pDestination = destination)
+            {
+                return EvpDigestFinalXOF(ctx, pDestination, (uint)destination.Length);
+            }
+        }
+
+        internal static unsafe int EvpDigestCurrentXOF(SafeEvpMdCtxHandle ctx, Span<byte> destination)
+        {
+            fixed (byte* pDestination = destination)
+            {
+                return EvpDigestCurrentXOF(ctx, pDestination, (uint)destination.Length);
             }
         }
 
