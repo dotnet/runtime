@@ -1428,8 +1428,7 @@ mono_jiterp_boost_back_branch_target (guint16 *ip) {
 	TraceInfo *trace_info = trace_info_get (trace_index);
 	// We need to make sure we don't boost the hit count too high, because if we do
 	//  it will increment past the compile threshold and never compile
-	int limit = mono_opt_jiterpreter_minimum_trace_hit_count - 1,
-		old_hit_count = trace_info->hit_count;
+	int limit = mono_opt_jiterpreter_minimum_trace_hit_count - 1;
 	trace_info->hit_count = MIN (limit, trace_info->hit_count + mono_opt_jiterpreter_back_branch_boost);
 	/*
 	if (trace_info->hit_count > old_hit_count)
