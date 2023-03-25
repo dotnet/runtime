@@ -107,7 +107,11 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
-    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Use dotnet/runtime fork of assert.xunit if netcore, otherwise use xunit.assert package. -->
+    <ProjectReference Include="$(RepoRoot)src/tests/Common/xunit/assert.xunit/DXUnit.Assert.csproj" Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'"/>
+    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <!-- Upgrade the NetStandard.Library transitive xunit dependency to avoid 1.x NS dependencies. -->

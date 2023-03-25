@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- dotnet/runtime fork of xunit.assert, with modifications for AOT-compatibilty -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFrameworks>$(NetCoreAppMinimum)</TargetFrameworks>
+    <DefineConstants>$(DefineConstants);XUNIT_NULLABLE</DefineConstants>
+
+    <!-- Baselining warnings -->
+    <NoWarn>$(NoWarn);SA1400;CA1852;CA1859;CA2007;SA1121;CA2249;CA1845;CA1822;CA1823;IDE0020;IDE0054;IDE0031;IDE0059;CA1510;CA1805;CA1825;IDE0036;IDE0074</NoWarn>
+  </PropertyGroup>
+
+</Project>

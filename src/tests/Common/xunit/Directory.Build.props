@@ -1,0 +1,4 @@
+<Project>
+  <!-- ignore coreclr-specific props -->
+  <Import Project="..\..\..\..\Directory.Build.props" />
+</Project>

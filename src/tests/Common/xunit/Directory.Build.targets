@@ -1,0 +1,5 @@
+<Project>
+  <!-- ignore coreclr-specific targets -->
+  <Import Project="..\..\..\..\Directory.Build.targets" />
+
+</Project>

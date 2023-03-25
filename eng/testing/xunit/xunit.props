@@ -8,8 +8,13 @@
   <ItemGroup>
     <PackageReference Condition="'$(IncludeRemoteExecutor)' == 'true'" Include="Microsoft.DotNet.RemoteExecutor" Version="$(MicrosoftDotNetRemoteExecutorVersion)" />
 
-    <!-- Excluding xunit.core/build as it enables deps file generation. -->
-    <PackageReference Include="xunit" Version="$(XUnitVersion)" ExcludeAssets="build" />
+    <!-- Excluding xunit.core/build as it enables deps file generation -->
+    <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
+
+    <!-- Use dotnet/runtime fork of assert.xunit if netcore, otherwise use xunit.assert package. -->
+    <ProjectReference Include="$(RepoRoot)src/tests/Common/xunit/assert.xunit/DXUnit.Assert.csproj" Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'"/>
+    <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+
     <PackageReference Include="xunit.analyzers" Version="$(XUnitAnalyzersVersion)" ExcludeAssets="build" />
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
 
