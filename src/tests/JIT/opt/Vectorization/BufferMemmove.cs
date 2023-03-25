@@ -46,15 +46,24 @@ unsafe class BufferMemmoveUnrolling
 
         // Some large simds
         TestMemmove((dst, src) => src.AsSpan(0, 33).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(33)).CopyTo(dst));
+        TestMemmove((dst, src) => src.AsSpan(0, 47).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(47)).CopyTo(dst));
+        TestMemmove((dst, src) => src.AsSpan(0, 48).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(48)).CopyTo(dst));
+        TestMemmove((dst, src) => src.AsSpan(0, 49).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(49)).CopyTo(dst));
         TestMemmove((dst, src) => src.AsSpan(0, 63).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(63)).CopyTo(dst));
         TestMemmove((dst, src) => src.AsSpan(0, 64).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(64)).CopyTo(dst));
         TestMemmove((dst, src) => src.AsSpan(0, 65).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(65)).CopyTo(dst));
+        TestMemmove((dst, src) => src.AsSpan(0, 95).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(95)).CopyTo(dst));
+        TestMemmove((dst, src) => src.AsSpan(0, 96).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(96)).CopyTo(dst));
+        TestMemmove((dst, src) => src.AsSpan(0, 97).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(97)).CopyTo(dst));
         TestMemmove((dst, src) => src.AsSpan(0, 127).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(127)).CopyTo(dst));
         TestMemmove((dst, src) => src.AsSpan(0, 128).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(128)).CopyTo(dst));
         TestMemmove((dst, src) => src.AsSpan(0, 129).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(129)).CopyTo(dst));
         TestMemmove((dst, src) => src.AsSpan(0, 159).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(159)).CopyTo(dst));
         TestMemmove((dst, src) => src.AsSpan(0, 160).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(160)).CopyTo(dst));
         TestMemmove((dst, src) => src.AsSpan(0, 161).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(161)).CopyTo(dst));
+        TestMemmove((dst, src) => src.AsSpan(0, 191).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(191)).CopyTo(dst));
+        TestMemmove((dst, src) => src.AsSpan(0, 192).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(192)).CopyTo(dst));
+        TestMemmove((dst, src) => src.AsSpan(0, 193).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(193)).CopyTo(dst));
         TestMemmove((dst, src) => src.AsSpan(0, 255).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(255)).CopyTo(dst));
         TestMemmove((dst, src) => src.AsSpan(0, 256).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(256)).CopyTo(dst));
         TestMemmove((dst, src) => src.AsSpan(0, 257).CopyTo(dst), (dst, src) => src.AsSpan(0, ToVar(257)).CopyTo(dst));
