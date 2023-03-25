@@ -7959,7 +7959,9 @@ MONO_RESTORE_WARNING
 				break;
 			}
 			case OP_IMAX:
-			case OP_IMIN: {
+			case OP_IMIN:
+			case OP_IMAX_UN:
+			case OP_IMIN_UN: {
 				gboolean is_unsigned = ins->inst_c1 == MONO_TYPE_U1 || ins->inst_c1 == MONO_TYPE_U2 || ins->inst_c1 == MONO_TYPE_U4 || ins->inst_c1 == MONO_TYPE_U8;
 				LLVMIntPredicate op;
 				switch (ins->inst_c0) {
@@ -7968,6 +7970,12 @@ MONO_RESTORE_WARNING
 					break;
 				case OP_IMIN:
 					op = is_unsigned ? LLVMIntULT : LLVMIntSLT;
+					break;
+				case OP_IMAX_UN:
+					op = LLVMIntUGT;
+					break;
+				case OP_IMIN_UN:
+					op = LLVMIntULT;
 					break;
 				default:
 					g_assert_not_reached ();
@@ -7984,6 +7992,12 @@ MONO_RESTORE_WARNING
 						break;
 					case OP_IMIN:
 						iid = is_unsigned ? INTRINS_AARCH64_ADV_SIMD_UMIN : INTRINS_AARCH64_ADV_SIMD_SMIN;
+						break;
+					case OP_IMAX_UN:
+						iid = INTRINS_AARCH64_ADV_SIMD_UMAX;
+						break;
+					case OP_IMIN_UN:
+						iid = INTRINS_AARCH64_ADV_SIMD_UMIN;
 						break;
 					default:
 						g_assert_not_reached ();

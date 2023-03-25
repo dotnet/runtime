@@ -9,21 +9,27 @@
   .ver 4:0:0:0
 }
 .assembly 'switchdefaultonly3' {}
-.class private auto ansi beforefieldinit switchdefaultonly1
+.class public auto ansi beforefieldinit switchdefaultonly1
        extends [mscorlib]System.Object
 {
-  .method private hidebysig static int32  Main(string[] args) cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
     .entrypoint
-    // Code size       49 (0x31)
+
+    ldc.i4.0
+    call int32 switchdefaultonly1::MainX(int32)
+    ret
+  }
+
+  .method public hidebysig static int32
+          MainX(int32 arg) cil managed noinlining
+  {
     .maxstack  2
     .locals init (int32 V_0)
-    IL_0000:  ldarg.0
-    IL_0001:  ldlen
-    IL_0002:  conv.i4
+              ldarg.0
     IL_0003:  stloc.0
     IL_0004:  ldloc.0
     IL_0005:  ldc.i4.1
@@ -32,7 +38,8 @@
     IL_0014:  br.s       IL_0026
     IL_0026:  .try
     {
-      ldarg.0
+      ldc.i4.s 0
+      newarr [mscorlib]System.String
       ldlen
       conv.i4
       call       void [System.Console]System.Console::WriteLine(int32)

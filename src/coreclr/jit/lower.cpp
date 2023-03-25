@@ -473,8 +473,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
             return LowerSwitch(node);
 
         case GT_CALL:
-            LowerCall(node);
-            break;
+        {
+            GenTree* newNode = LowerCall(node);
+            if (newNode != nullptr)
+            {
+                return newNode;
+            }
+        }
+        break;
 
         case GT_LT:
         case GT_LE:
@@ -1775,6 +1781,56 @@ GenTree* Lowering::AddrGen(void* addr)
     return AddrGen((ssize_t)addr);
 }
 
+//------------------------------------------------------------------------
+// LowerCallMemmove: Replace Buffer.Memmove(DST, SRC, CNS_SIZE) with a GT_STORE_BLK:
+//
+//    *  STORE_BLK struct<CNS_SIZE> (copy) (Unroll)
+//    +--*  LCL_VAR   byref  dst
+//    \--*  IND       struct
+//       \--*  LCL_VAR   byref  src
+//
+// Arguments:
+//    tree - GenTreeCall node to replace with STORE_BLK
+//
+GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
+{
+    assert(comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove);
+    assert(call->gtArgs.CountArgs() == 3);
+
+    GenTree* lengthArg = call->gtArgs.GetArgByIndex(2)->GetNode();
+    if (lengthArg->IsIntegralConst())
+    {
+        ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
+        // TODO-CQ: drop the whole thing in case of 0
+        if ((cnsSize > 0) && (cnsSize <= (ssize_t)comp->getUnrollThreshold(Compiler::UnrollKind::Memmove)))
+        {
+            GenTree* dstAddr = call->gtArgs.GetArgByIndex(0)->GetNode();
+            GenTree* srcAddr = call->gtArgs.GetArgByIndex(1)->GetNode();
+
+            // TODO-CQ: Try to create an addressing mode
+            GenTreeIndir* srcBlk = comp->gtNewIndir(TYP_STRUCT, srcAddr);
+            srcBlk->gtFlags |= GTF_GLOB_REF;
+            srcBlk->SetContained();
+
+            GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
+                GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, dstAddr, srcBlk, comp->typGetBlkLayout((unsigned)cnsSize));
+            storeBlk->gtFlags |= (GTF_BLK_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
+
+            // TODO-CQ: Use GenTreeObj::BlkOpKindUnroll here if srcAddr and dstAddr don't overlap, thus, we can
+            // unroll this memmove as memcpy - it doesn't require lots of temp registers
+            storeBlk->gtBlkOpKind = GenTreeObj::BlkOpKindUnrollMemmove;
+
+            BlockRange().InsertBefore(call, srcBlk);
+            BlockRange().InsertBefore(call, storeBlk);
+            BlockRange().Remove(lengthArg);
+            BlockRange().Remove(call);
+
+            return storeBlk;
+        }
+    }
+    return nullptr;
+}
+
 // do lowering steps for a call
 // this includes:
 //   - adding the placement nodes (either stack or register variety) for arguments
@@ -1782,13 +1838,30 @@ GenTree* Lowering::AddrGen(void* addr)
 //   - adding nodes for other operations that occur after the call sequence starts and before
 //        control transfer occurs (profiling and tail call helpers, pinvoke incantations)
 //
-void Lowering::LowerCall(GenTree* node)
+GenTree* Lowering::LowerCall(GenTree* node)
 {
     GenTreeCall* call = node->AsCall();
 
     JITDUMP("lowering call (before):\n");
     DISPTREERANGE(BlockRange(), call);
     JITDUMP("\n");
+
+    // All runtime lookups are expected to be expanded in fgExpandRuntimeLookups
+    assert(!call->IsExpRuntimeLookup());
+
+    if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+    {
+#ifdef TARGET_AMD64
+        if (comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove)
+        {
+            GenTree* newNode = LowerCallMemmove(call);
+            if (newNode != nullptr)
+            {
+                return newNode->gtNext;
+            }
+        }
+#endif
+    }
 
     call->ClearOtherRegs();
     LowerArgsForCall(call);
@@ -1908,6 +1981,7 @@ void Lowering::LowerCall(GenTree* node)
     JITDUMP("lowering call (after):\n");
     DISPTREERANGE(BlockRange(), call);
     JITDUMP("\n");
+    return nullptr;
 }
 
 // Inserts profiler hook, GT_PROF_HOOK for a tail call node.
@@ -3378,6 +3452,14 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
             // Codegen will use cbz or cbnz in codegen which do not affect the flag register
             flags   = cond->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
             useJCMP = true;
+        }
+        else if (cond->OperIs(GT_LT, GT_GE) && !cond->IsUnsigned() && relopOp2->IsIntegralConst(0))
+        {
+            // Codegen will use tbnz or tbz in codegen which do not affect the flag register
+            flags   = GTF_JCMP_TST | (cond->OperIs(GT_LT) ? GTF_EMPTY : GTF_JCMP_EQ);
+            useJCMP = true;
+            relopOp2->AsIntConCommon()->SetIntegralValue(
+                (static_cast<INT64>(1) << (8 * genTypeSize(genActualType(relopOp1)) - 1)));
         }
         else if (cond->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
         {

@@ -7047,14 +7047,8 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     // If pRuntimeLookup->indirections is equal to CORINFO_USEHELPER, it specifies that a run-time helper should be
     // used; otherwise, it specifies the number of indirections via pRuntimeLookup->offsets array.
     if ((pRuntimeLookup->indirections == CORINFO_USEHELPER) || (pRuntimeLookup->indirections == CORINFO_USENULL) ||
-        pRuntimeLookup->testForNull || pRuntimeLookup->testForFixup)
+        pRuntimeLookup->testForNull)
     {
-        // If the first condition is true, runtime lookup tree is available only via the run-time helper function.
-        // TODO-CQ If the second or third condition is true, we are always using the slow path since we can't
-        // introduce control flow at this point. See impRuntimeLookupToTree for the logic to avoid calling the helper.
-        // The long-term solution is to introduce a new node representing a runtime lookup, create instances
-        // of that node both in the importer and here, and expand the node in lower (introducing control flow if
-        // necessary).
         return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup,
                                                 getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind),
                                                 compileTimeHandle);
@@ -7111,7 +7105,6 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     assert(!pRuntimeLookup->testForNull);
     if (pRuntimeLookup->indirections > 0)
     {
-        assert(!pRuntimeLookup->testForFixup);
         result = gtNewOperNode(GT_IND, TYP_I_IMPL, result);
         result->gtFlags |= GTF_IND_NONFAULTING;
     }
@@ -9834,12 +9827,10 @@ DONE_MORPHING_CHILDREN:
 
             // Only do this optimization when we are in the global optimizer. Doing this after value numbering
             // could result in an invalid value number for the newly generated GT_IND node.
-            if ((op1->OperGet() == GT_COMMA) && fgGlobalMorph)
+            // We skip INDs with GTF_DONT_CSE which is set if the IND is a location.
+            if (op1->OperIs(GT_COMMA) && fgGlobalMorph && ((tree->gtFlags & GTF_DONT_CSE) == 0))
             {
                 // Perform the transform IND(COMMA(x, ..., z)) -> COMMA(x, ..., IND(z)).
-                // TBD: this transformation is currently necessary for correctness -- it might
-                // be good to analyze the failures that result if we don't do this, and fix them
-                // in other ways.  Ideally, this should be optional.
                 GenTree*     commaNode = op1;
                 GenTreeFlags treeFlags = tree->gtFlags;
                 commaNode->gtType      = typ;
@@ -11510,6 +11501,13 @@ GenTree* Compiler::fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow,
     // Comma throw propagation does not preserve VNs, and deletes nodes.
     assert(fgGlobalMorph);
     assert(fgIsCommaThrow(commaThrow));
+
+    bool mightBeLocation = parent->OperIsIndir() && ((parent->gtFlags & GTF_DONT_CSE) != 0);
+
+    if (mightBeLocation)
+    {
+        return nullptr;
+    }
 
     if ((commaThrow->gtFlags & GTF_COLON_COND) == 0)
     {

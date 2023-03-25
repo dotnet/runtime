@@ -12498,6 +12498,13 @@ namespace System.Runtime.CompilerServices
     {
         public InterpolatedStringHandlerAttribute() { }
     }
+    [AttributeUsage(System.AttributeTargets.Struct, AllowMultiple = false)]
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class InlineArrayAttribute : System.Attribute
+    {
+        public InlineArrayAttribute(int length) { }
+        public int Length { get { throw null; } }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class IsByRefLikeAttribute : System.Attribute

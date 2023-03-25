@@ -72,6 +72,17 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public void Ctor_PassNullForMediaType_DefaultMediaTypeUsed()
+        {
+            string sourceString = "\u00C4\u00E4\u00FC\u00DC";
+            Encoding defaultStringEncoding = Encoding.GetEncoding("utf-8");
+            var content = new StringContent(sourceString, defaultStringEncoding, ((string)null)!);
+
+            // If no media is passed-in, the default is used
+            Assert.Equal("text/plain", content.Headers.ContentType.MediaType);
+        }
+        
+        [Fact]
         public async Task Ctor_UseCustomMediaTypeHeaderValue_SpecificEncoding()
         {
             // Use UTF-8 encoding to serialize a chinese string.

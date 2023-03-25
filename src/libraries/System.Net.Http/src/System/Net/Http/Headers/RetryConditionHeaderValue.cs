@@ -9,22 +9,20 @@ namespace System.Net.Http.Headers
 {
     public class RetryConditionHeaderValue : ICloneable
     {
-        private readonly DateTimeOffset? _date;
-        private readonly TimeSpan? _delta;
+        private const long DeltaNotSetTicksSentinel = long.MaxValue;
 
-        public DateTimeOffset? Date
-        {
-            get { return _date; }
-        }
+        // Only one of date and delta may be set.
+        private readonly DateTimeOffset _date;
+        private readonly TimeSpan _delta;
 
-        public TimeSpan? Delta
-        {
-            get { return _delta; }
-        }
+        public DateTimeOffset? Date => _delta.Ticks == DeltaNotSetTicksSentinel ? _date : null;
+
+        public TimeSpan? Delta => _delta.Ticks == DeltaNotSetTicksSentinel ? null : _delta;
 
         public RetryConditionHeaderValue(DateTimeOffset date)
         {
             _date = date;
+            _delta = new TimeSpan(DeltaNotSetTicksSentinel);
         }
 
         public RetryConditionHeaderValue(TimeSpan delta)
@@ -43,45 +41,18 @@ namespace System.Net.Http.Headers
             _date = source._date;
         }
 
-        public override string ToString()
-        {
-            if (_delta.HasValue)
-            {
-                return ((int)_delta.Value.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo);
-            }
+        public override string ToString() =>
+            _delta.Ticks != DeltaNotSetTicksSentinel
+                ? ((int)_delta.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo)
+                : _date.ToString("r");
 
-            Debug.Assert(_date != null);
-            return _date.GetValueOrDefault().ToString("r");
-        }
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is RetryConditionHeaderValue other &&
+            _delta == other._delta &&
+            _date == other._date;
 
-        public override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            RetryConditionHeaderValue? other = obj as RetryConditionHeaderValue;
-
-            if (other == null)
-            {
-                return false;
-            }
-
-            if (_delta.HasValue)
-            {
-                return (other._delta != null) && (_delta.Value == other._delta.Value);
-            }
-
-            Debug.Assert(_date != null);
-            return (other._date != null) && (_date.Value == other._date.Value);
-        }
-
-        public override int GetHashCode()
-        {
-            if (_delta == null)
-            {
-                Debug.Assert(_date != null);
-                return _date.Value.GetHashCode();
-            }
-
-            return _delta.Value.GetHashCode();
-        }
+        public override int GetHashCode() =>
+            HashCode.Combine(_delta, _date);
 
         public static RetryConditionHeaderValue Parse(string input)
         {

@@ -203,7 +203,11 @@ namespace ILCompiler.Dataflow
             if (!_enabled)
                 return;
 
-            if (entity.DoesMemberRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute))
+            // Note that we're using `ShouldSuppressAnalysisWarningsForRequires` instead of `DoesMemberRequire`.
+            // This is because reflection access is actually problematic on all members which are in a "requires" scope
+            // so for example even instance methods. See for example https://github.com/dotnet/linker/issues/3140 - it's possible
+            // to call a method on a "null" instance via reflection.
+            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute))
             {
                 if (_typeHierarchyDataFlowOrigin is not null)
                 {
@@ -215,11 +219,11 @@ namespace ILCompiler.Dataflow
                 }
                 else
                 {
-                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute);
+                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, requiresAttribute.Value);
                 }
             }
 
-            if (entity.DoesMemberRequire(DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _))
+            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out requiresAttribute))
             {
                 if (_typeHierarchyDataFlowOrigin is not null)
                 {
@@ -229,11 +233,11 @@ namespace ILCompiler.Dataflow
                 }
                 else
                 {
-                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute);
+                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, requiresAttribute.Value);
                 }
             }
 
-            if (entity.DoesMemberRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _))
+            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, out requiresAttribute))
             {
                 if (_typeHierarchyDataFlowOrigin is not null)
                 {
@@ -243,7 +247,7 @@ namespace ILCompiler.Dataflow
                 }
                 else
                 {
-                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresDynamicCodeAttribute);
+                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, requiresAttribute.Value);
                 }
             }
 
@@ -277,7 +281,7 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        private void ReportRequires(in MessageOrigin origin, TypeSystemEntity entity, string requiresAttributeName)
+        private void ReportRequires(in MessageOrigin origin, TypeSystemEntity entity, string requiresAttributeName, in CustomAttributeValue<TypeDesc> requiresAttribute)
         {
             var diagnosticContext = new DiagnosticContext(
                 origin,
@@ -286,7 +290,7 @@ namespace ILCompiler.Dataflow
                 _logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
                 _logger);
 
-            ReflectionMethodBodyScanner.CheckAndReportRequires(diagnosticContext, entity, requiresAttributeName);
+            ReflectionMethodBodyScanner.ReportRequires(diagnosticContext, entity, requiresAttributeName, requiresAttribute);
         }
     }
 }

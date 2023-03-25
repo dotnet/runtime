@@ -492,13 +492,10 @@ public:
     // Morph will update if this local is passed in a register.
     LclVarDsc()
         : _lvArgReg(REG_STK)
-        ,
 #if FEATURE_MULTIREG_ARGS
-        _lvOtherArgReg(REG_STK)
-        ,
+        , _lvOtherArgReg(REG_STK)
 #endif // FEATURE_MULTIREG_ARGS
-        lvClassHnd(NO_CLASS_HANDLE)
-        , lvRefBlks(BlockSetOps::UninitVal())
+        , lvClassHnd(NO_CLASS_HANDLE)
         , lvPerSsaData()
     {
     }
@@ -553,9 +550,8 @@ public:
 #endif                             // defined(TARGET_LOONGARCH64)
 
     unsigned char lvIsBoolean : 1; // set if variable is boolean
-    unsigned char lvSingleDef : 1; // variable has a single def
-                                   // before lvaMarkLocalVars: identifies ref type locals that can get type updates
-                                   // after lvaMarkLocalVars: identifies locals that are suitable for optAddCopies
+    unsigned char lvSingleDef : 1; // variable has a single def. Used to identify ref type locals that can get type
+                                   // updates
 
     unsigned char lvSingleDefRegCandidate : 1; // variable has a single def and hence is a register candidate
                                                // Currently, this is only used to decide if an EH variable can be
@@ -571,7 +567,6 @@ public:
                                           // in earlier phase and the information might not be appropriate
                                           // in LSRA.
 
-    unsigned char lvDisqualify : 1;   // variable is no longer OK for add copy optimization
     unsigned char lvVolatileHint : 1; // hint for AssertionProp
 
 #ifndef TARGET_64BIT
@@ -1090,10 +1085,6 @@ private:
     ClassLayout* m_layout; // layout info for structs
 
 public:
-    BlockSet   lvRefBlks;          // Set of blocks that contain refs
-    Statement* lvDefStmt;          // Pointer to the statement with the single definition
-    void       lvaDisqualifyVar(); // Call to disqualify a local variable from use in optAddCopies
-
     var_types TypeGet() const
     {
         return (var_types)lvType;
@@ -4414,7 +4405,6 @@ public:
     unsigned                     fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
     jitstd::vector<BasicBlock*>* fgBBOrder;          // ordered vector of BBs
 #endif
-    unsigned     fgBBNumMin;           // The min bbNum that has been assigned to basic blocks
     unsigned     fgBBNumMax;           // The max bbNum that has been assigned to basic blocks
     unsigned     fgDomBBcount;         // # of BBs for which we have dominator and reachability information
     BasicBlock** fgBBReversePostorder; // Blocks in reverse postorder
@@ -4801,6 +4791,7 @@ public:
     BasicBlock* fgSplitBlockAfterStatement(BasicBlock* curr, Statement* stmt);
     BasicBlock* fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node); // for LIR
     BasicBlock* fgSplitEdge(BasicBlock* curr, BasicBlock* succ);
+    BasicBlock* fgSplitBlockBeforeTree(BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse);
 
     Statement* fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const DebugInfo& di);
     Statement* fgNewStmtFromTree(GenTree* tree);
@@ -4934,6 +4925,17 @@ public:
             m_nodeToLoopMemoryBlockMap = new (getAllocator()) NodeToLoopMemoryBlockMap(getAllocator());
         }
         return m_nodeToLoopMemoryBlockMap;
+    }
+
+    typedef JitHashTable<void*, JitPtrKeyFuncs<void>, CORINFO_RUNTIME_LOOKUP> SignatureToLookupInfoMap;
+    SignatureToLookupInfoMap* m_signatureToLookupInfoMap;
+    SignatureToLookupInfoMap* GetSignatureToLookupInfoMap()
+    {
+        if (m_signatureToLookupInfoMap == nullptr)
+        {
+            m_signatureToLookupInfoMap = new (getAllocator()) SignatureToLookupInfoMap(getAllocator());
+        }
+        return m_signatureToLookupInfoMap;
     }
 
     void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);
@@ -5268,6 +5270,7 @@ public:
     PhaseStatus StressSplitTree();
     void SplitTreesRandomly();
     void SplitTreesRemoveCommas();
+    PhaseStatus fgExpandRuntimeLookups();
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
@@ -5560,7 +5563,7 @@ public:
 
 #endif // DEBUG
 
-    static bool fgProfileWeightsEqual(weight_t weight1, weight_t weight2);
+    static bool fgProfileWeightsEqual(weight_t weight1, weight_t weight2, weight_t epsilon = 0.01);
     static bool fgProfileWeightsConsistent(weight_t weight1, weight_t weight2);
 
     static GenTree* fgGetFirstNode(GenTree* tree);
@@ -6766,12 +6769,6 @@ protected:
         treeStmtLst* csdTreeList; // list of matching tree nodes: head
         treeStmtLst* csdTreeLast; // list of matching tree nodes: tail
 
-        // ToDo: This can be removed when gtGetStructHandleIfPresent stops guessing
-        // and GT_IND nodes always have valid struct handle.
-        //
-        CORINFO_CLASS_HANDLE csdStructHnd; // The class handle, currently needed to create a SIMD LclVar in PerformCSE
-        bool                 csdStructHndMismatch;
-
         ValueNum defExcSetPromise; // The exception set that is now required for all defs of this CSE.
                                    // This will be set to NoVN if we decide to abandon this CSE
 
@@ -7071,13 +7068,6 @@ public:
     {
         optMethodFlags |= OMF_HAS_EXPRUNTIMELOOKUP;
     }
-
-    void clearMethodHasExpRuntimeLookup()
-    {
-        optMethodFlags &= ~OMF_HAS_EXPRUNTIMELOOKUP;
-    }
-
-    void addExpRuntimeLookupCandidate(GenTreeCall* call);
 
     bool doesMethodHavePatchpoints()
     {
@@ -7443,10 +7433,7 @@ public:
     };
 
 protected:
-    static fgWalkPreFn optAddCopiesCallback;
     static fgWalkPreFn optVNAssertionPropCurStmtVisitor;
-    unsigned           optAddCopyLclNum;
-    GenTree*           optAddCopyAsgnNode;
 
     bool optLocalAssertionProp;  // indicates that we are performing local assertion prop
     bool optAssertionPropagated; // set to true if we modified the trees
@@ -7593,8 +7580,6 @@ public:
 
     static void optDumpAssertionIndices(const char* header, ASSERT_TP assertions, const char* footer = nullptr);
     static void optDumpAssertionIndices(ASSERT_TP assertions, const char* footer = nullptr);
-
-    PhaseStatus optAddCopies();
 
     /**************************************************************************
      *                          Range checks
@@ -8944,8 +8929,9 @@ private:
 public:
     enum UnrollKind
     {
-        Memset, // Initializing memory with some value
-        Memcpy  // Copying memory from src to dst
+        Memset,
+        Memcpy,
+        Memmove
     };
 
     //------------------------------------------------------------------------
@@ -8975,7 +8961,7 @@ public:
             threshold *= 2;
 #elif defined(TARGET_XARCH)
             // TODO-XARCH-AVX512: Consider enabling this for AVX512 where it's beneficial
-            threshold = max(threshold, YMM_REGSIZE_BYTES);
+            threshold = min(threshold, YMM_REGSIZE_BYTES);
 #endif
         }
 #if defined(TARGET_XARCH)
@@ -9008,7 +8994,11 @@ public:
         //
         // We might want to use a different multiplier for trully hot/cold blocks based on PGO data
         //
-        return threshold * 4;
+        threshold *= 4;
+
+        // NOTE: Memmove's unrolling is currently limitted with LSRA -
+        // up to LinearScan::MaxInternalCount number of temp regs, e.g. 5*32=160 bytes for AVX cpu.
+        return threshold;
     }
 
     //------------------------------------------------------------------------
@@ -9190,7 +9180,7 @@ private:
     //
     bool IsBaselineVector512IsaSupportedDebugOnly() const
     {
-#ifdef TARGET_AMD64
+#ifdef TARGET_XARCH
         return (compIsaSupportedDebugOnly(InstructionSet_Vector512));
 #else
         return false;
@@ -9206,7 +9196,7 @@ private:
     //
     bool IsBaselineVector512IsaSupported() const
     {
-#ifdef TARGET_AMD64
+#ifdef TARGET_XARCH
         return (compExactlyDependsOn(InstructionSet_Vector512));
 #else
         return false;
@@ -9227,13 +9217,6 @@ private:
     //
     bool canUseEvexEncoding() const
     {
-#ifdef DEBUG
-        if (JitConfig.JitForceEVEXEncoding())
-        {
-            return true;
-        }
-#endif // DEBUG
-
         return compOpportunisticallyDependsOn(InstructionSet_AVX512F);
     }
 
@@ -9248,16 +9231,19 @@ private:
 #ifdef DEBUG
         // Using JitStressEVEXEncoding flag will force instructions which would
         // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
-        // This requires AVX512VL support. JitForceEVEXEncoding forces this encoding, thus
-        // causing failure if not running on compatible hardware.
+        // This requires AVX512F, AVX512BW, AVX512CD, AVX512DQ, and AVX512VL support
 
-        if (JitConfig.JitForceEVEXEncoding())
+        if (JitConfig.JitStressEvexEncoding() && IsBaselineVector512IsaSupported())
         {
-            return true;
-        }
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW_VL));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512CD));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512CD_VL));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ_VL));
 
-        if (JitConfig.JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
-        {
             return true;
         }
 #endif // DEBUG
@@ -9810,6 +9796,7 @@ public:
         STRESS_MODE(MERGED_RETURNS)                                                             \
         STRESS_MODE(BB_PROFILE)                                                                 \
         STRESS_MODE(OPT_BOOLS_GC)                                                               \
+        STRESS_MODE(OPT_BOOLS_COMPARE_CHAIN_COST)                                               \
         STRESS_MODE(REMORPH_TREES)                                                              \
         STRESS_MODE(64RSLT_MUL)                                                                 \
         STRESS_MODE(DO_WHILE_LOOPS)                                                             \

@@ -243,7 +243,8 @@ class HostBuilder implements DotnetHostBuilder {
     withRuntimeOptions(runtimeOptions: string[]): DotnetHostBuilder {
         try {
             mono_assert(runtimeOptions && Array.isArray(runtimeOptions), "must be array of strings");
-            Object.assign(this.moduleConfig, { runtimeOptions });
+            const configInternal = this.moduleConfig.config as MonoConfigInternal;
+            configInternal.runtimeOptions = [...(configInternal.runtimeOptions || []), ...(runtimeOptions|| [])];
             return this;
         } catch (err) {
             mono_exit(1, err);

@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection.Metadata;
 using ILCompiler.Logging;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
@@ -61,6 +62,11 @@ namespace ILCompiler.Dataflow
             if (!calledMember.DoesMemberRequire(requiresAttributeName, out var requiresAttribute))
                 return;
 
+            ReportRequires(diagnosticContext, calledMember, requiresAttributeName, requiresAttribute.Value);
+        }
+
+        internal static void ReportRequires(in DiagnosticContext diagnosticContext, TypeSystemEntity calledMember, string requiresAttributeName, in CustomAttributeValue<TypeDesc> requiresAttribute)
+        {
             DiagnosticId diagnosticId = requiresAttributeName switch
             {
                 DiagnosticUtilities.RequiresUnreferencedCodeAttribute => DiagnosticId.RequiresUnreferencedCode,
@@ -69,8 +75,8 @@ namespace ILCompiler.Dataflow
                 _ => throw new NotImplementedException($"{requiresAttributeName} is not a valid supported Requires attribute"),
             };
 
-            string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresAttribute.Value));
-            string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresAttribute.Value));
+            string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresAttribute));
+            string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresAttribute));
 
             diagnosticContext.AddDiagnostic(diagnosticId, calledMember.GetDisplayName(), arg1, arg2);
         }
@@ -152,6 +158,11 @@ namespace ILCompiler.Dataflow
         {
             _origin = _origin.WithInstructionOffset(methodBody, offset);
 
+            if (field.DoesFieldRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
+                field.DoesFieldRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _) ||
+                field.DoesFieldRequire(DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _))
+                TrimAnalysisPatterns.Add(new TrimAnalysisFieldAccessPattern(field, _origin));
+
             ProcessGenericArgumentDataFlow(field);
 
             return _annotations.GetFieldValue(field);
@@ -159,8 +170,7 @@ namespace ILCompiler.Dataflow
 
         private void HandleStoreValueWithDynamicallyAccessedMembers(MethodIL methodBody, int offset, ValueWithDynamicallyAccessedMembers targetValue, MultiValue sourceValue, string reason)
         {
-            // We must record all field accesses since we need to check RUC/RDC/RAF attributes on them regardless of annotations
-            if (targetValue.DynamicallyAccessedMemberTypes != 0 || targetValue is FieldValue)
+            if (targetValue.DynamicallyAccessedMemberTypes != 0)
             {
                 _origin = _origin.WithInstructionOffset(methodBody, offset);
                 HandleAssignmentPattern(_origin, sourceValue, targetValue, reason);
@@ -531,6 +541,27 @@ namespace ILCompiler.Dataflow
                             }
                         }
                     }
+                    break;
+
+                //
+                // string System.Reflection.Assembly.Location getter
+                // string System.Reflection.AssemblyName.CodeBase getter
+                // string System.Reflection.AssemblyName.EscapedCodeBase getter
+                //
+                case IntrinsicId.Assembly_get_Location:
+                case IntrinsicId.AssemblyName_get_CodeBase:
+                case IntrinsicId.AssemblyName_get_EscapedCodeBase:
+                    diagnosticContext.AddDiagnostic(DiagnosticId.AvoidAssemblyLocationInSingleFile, calledMethod.GetDisplayName());
+                    break;
+
+                //
+                // string System.Reflection.Assembly.GetFile(string)
+                // string System.Reflection.Assembly.GetFiles()
+                // string System.Reflection.Assembly.GetFiles(bool)
+                //
+                case IntrinsicId.Assembly_GetFile:
+                case IntrinsicId.Assembly_GetFiles:
+                    diagnosticContext.AddDiagnostic(DiagnosticId.AvoidAssemblyGetFilesInSingleFile, calledMethod.GetDisplayName());
                     break;
 
                 default:

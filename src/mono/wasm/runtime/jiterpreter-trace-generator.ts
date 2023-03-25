@@ -12,7 +12,7 @@ import { MintOpcode, OpcodeInfo } from "./mintops";
 import cwraps from "./cwraps";
 import {
     MintOpcodePtr, WasmValtype, WasmBuilder,
-    append_memset_dest, append_bailout,
+    append_memset_dest, append_bailout, append_exit,
     append_memmove_dest_src, try_append_memset_fast,
     try_append_memmove_fast, counters,
     getMemberOffset, JiterpMember, BailoutReason,
@@ -114,6 +114,14 @@ function get_imethod_data (frame: NativePointer, index: number) {
     return getU32_unaligned(dataOffset);
 }
 
+function get_imethod_clause_data_offset (frame: NativePointer, index: number) {
+    // FIXME: Encoding this data directly into the trace will prevent trace reuse
+    const iMethod = getU32_unaligned(<any>frame + getMemberOffset(JiterpMember.Imethod));
+    const pData = getU32_unaligned(iMethod + getMemberOffset(JiterpMember.ClauseDataOffsets));
+    const dataOffset = pData + (index * sizeOfDataItem);
+    return getU32_unaligned(dataOffset);
+}
+
 function is_backward_branch_target (
     ip: MintOpcodePtr, startOfBody: MintOpcodePtr,
     backwardBranchTable: Uint16Array | null
@@ -139,7 +147,9 @@ export function generate_wasm_body (
     const abort = <MintOpcodePtr><any>0;
     let isFirstInstruction = true, inBranchBlock = false,
         firstOpcodeInBlock = true;
-    let result = 0;
+    let result = 0,
+        prologueOpcodeCounter = 0,
+        conditionalOpcodeCounter = 0;
     const traceIp = ip;
 
     addressTakenLocals.clear();
@@ -162,8 +172,8 @@ export function generate_wasm_body (
         // HACK: Browsers set a limit of 4KB, we lower it slightly since a single opcode
         //  might generate a ton of code and we generate a bit of an epilogue after
         //  we finish
-        const maxModuleSize = 3850,
-            spaceLeft = maxModuleSize - builder.bytesGeneratedSoFar - builder.cfg.overheadBytes;
+        const maxBytesGenerated = 3840,
+            spaceLeft = maxBytesGenerated - builder.bytesGeneratedSoFar - builder.cfg.overheadBytes;
         if (builder.size >= spaceLeft) {
             // console.log(`trace too big, estimated size is ${builder.size + builder.bytesGeneratedSoFar}`);
             record_abort(traceIp, ip, traceName, "trace-too-big");
@@ -188,7 +198,14 @@ export function generate_wasm_body (
             startBranchBlock = isBackBranchTarget || isForwardBranchTarget ||
                 // If a method contains backward branches, we also need to check eip at the first insn
                 //  because a backward branch might target a point in the middle of the trace
-                (isFirstInstruction && backwardBranchTable);
+                (isFirstInstruction && backwardBranchTable),
+            // We want to approximate the number of unconditionally executed instructions along with
+            //  the ones that were probably conditionally executed by the time we reached the exit point
+            // We don't know the exact path that would have taken us to a given point, but it's a reasonable
+            //  guess that methods dense with branches are more likely to take a complex path to reach
+            //  a given exit
+            exitOpcodeCounter = conditionalOpcodeCounter + prologueOpcodeCounter +
+                builder.branchTargets.size;
         let isLowValueOpcode = false,
             skipDregInvalidation = false;
 
@@ -212,6 +229,11 @@ export function generate_wasm_body (
             inBranchBlock = true;
             firstOpcodeInBlock = true;
             eraseInferredState();
+            // Monitoring wants an opcode count that is a measurement of how many opcodes
+            //  we definitely executed, so we want to ignore any opcodes that might
+            //  have been skipped due to forward branching. This gives us an approximation
+            //  of that by only counting how far we are from the most recent branch target
+            conditionalOpcodeCounter = 0;
         }
 
         isFirstInstruction = false;
@@ -306,7 +328,9 @@ export function generate_wasm_body (
             case MintOpcode.MINT_BRTRUE_I8_S:
             case MintOpcode.MINT_LEAVE_S:
             case MintOpcode.MINT_BR_S:
-                if (!emit_branch(builder, ip, opcode))
+            case MintOpcode.MINT_CALL_HANDLER:
+            case MintOpcode.MINT_CALL_HANDLER_S:
+                if (!emit_branch(builder, ip, frame, opcode))
                     ip = abort;
                 break;
 
@@ -377,6 +401,7 @@ export function generate_wasm_body (
                         builder.i32_const(targetTrace);
                         builder.local("frame");
                         builder.local("pLocals");
+                        builder.local("cinfo");
                         builder.callImport("transfer");
                         builder.appendU8(WasmOpcode.return_);
                         ip = abort;
@@ -384,6 +409,7 @@ export function generate_wasm_body (
                 }
                 break;
 
+            case MintOpcode.MINT_TIER_MONITOR_JITERPRETER:
             case MintOpcode.MINT_TIER_PREPARE_JITERPRETER:
             case MintOpcode.MINT_TIER_NOP_JITERPRETER: // FIXME: Should we abort for NOPs like ENTERs?
             case MintOpcode.MINT_NOP:
@@ -613,13 +639,6 @@ export function generate_wasm_body (
                 builder.callImport("ldtsflda");
                 break;
             }
-            case MintOpcode.MINT_INTRINS_UNSAFE_BYTE_OFFSET:
-                builder.local("pLocals");
-                append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
-                append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
-                builder.appendU8(WasmOpcode.i32_sub);
-                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
-                break;
             case MintOpcode.MINT_INTRINS_GET_TYPE:
                 builder.block();
                 // dest, src
@@ -823,7 +842,7 @@ export function generate_wasm_body (
                     // We generate a bailout instead of aborting, because we don't want calls
                     //  to abort the entire trace if we have branch support enabled - the call
                     //  might be infrequently hit and as a result it's worth it to keep going.
-                    append_bailout(builder, ip, BailoutReason.Call);
+                    append_exit(builder, ip, exitOpcodeCounter, BailoutReason.Call);
                     isLowValueOpcode = true;
                 } else {
                     // We're in a block that executes unconditionally, and no branches have been
@@ -843,11 +862,27 @@ export function generate_wasm_body (
             case MintOpcode.MINT_CALL_DELEGATE:
                 // See comments for MINT_CALL
                 if (builder.branchTargets.size > 0) {
-                    append_bailout(builder, ip,
+                    append_exit(builder, ip, exitOpcodeCounter,
                         opcode == MintOpcode.MINT_CALL_DELEGATE
                             ? BailoutReason.CallDelegate
                             : BailoutReason.Call
                     );
+                    isLowValueOpcode = true;
+                } else {
+                    ip = abort;
+                }
+                break;
+
+            // TODO: Verify that this isn't worse
+            case MintOpcode.MINT_ICALL_V_P:
+            case MintOpcode.MINT_ICALL_V_V:
+            case MintOpcode.MINT_ICALL_P_P:
+            case MintOpcode.MINT_ICALL_P_V:
+            case MintOpcode.MINT_ICALL_PP_V:
+            case MintOpcode.MINT_ICALL_PP_P:
+                // See comments for MINT_CALL
+                if (builder.branchTargets.size > 0) {
+                    append_bailout(builder, ip, BailoutReason.Icall);
                     isLowValueOpcode = true;
                 } else {
                     ip = abort;
@@ -861,6 +896,8 @@ export function generate_wasm_body (
                 // As above, only abort if this throw happens unconditionally.
                 // Otherwise, it may be in a branch that is unlikely to execute
                 if (builder.branchTargets.size > 0) {
+                    // Not an exit, because throws are by definition unlikely
+                    // We shouldn't make optimization decisions based on them.
                     append_bailout(builder, ip, BailoutReason.Throw);
                     isLowValueOpcode = true;
                 } else {
@@ -1059,6 +1096,9 @@ export function generate_wasm_body (
                     )
                 ) {
                     if ((builder.branchTargets.size > 0) || trapTraceErrors || builder.options.countBailouts) {
+                        // Not an exit, because returns are normal and we don't want to make them more expensive.
+                        // FIXME: Or do we want to record them? Early conditional returns might reduce the value of a trace,
+                        //  but the main problem is more likely to be calls early in traces. Worth testing later.
                         append_bailout(builder, ip, BailoutReason.Return);
                         isLowValueOpcode = true;
                     } else
@@ -1086,7 +1126,7 @@ export function generate_wasm_body (
                     if (!emit_unop(builder, ip, opcode))
                         ip = abort;
                 } else if (relopbranchTable[opcode]) {
-                    if (!emit_relop_branch(builder, ip, opcode))
+                    if (!emit_relop_branch(builder, ip, frame, opcode))
                         ip = abort;
                 } else if (
                     // instance ldfld/stfld
@@ -1131,7 +1171,8 @@ export function generate_wasm_body (
                     //  to only perform a conditional bailout
                     // complex safepoint branches, just generate a bailout
                     if (builder.branchTargets.size > 0) {
-                        append_bailout(builder, ip, BailoutReason.ComplexBranch);
+                        // FIXME: Try to reduce the number of these
+                        append_exit(builder, ip, exitOpcodeCounter, BailoutReason.ComplexBranch);
                         isLowValueOpcode = true;
                     } else
                         ip = abort;
@@ -1176,8 +1217,13 @@ export function generate_wasm_body (
                 builder.traceBuf.push(stmtText);
             }
 
-            if (!isLowValueOpcode)
+            if (!isLowValueOpcode) {
+                if (inBranchBlock)
+                    conditionalOpcodeCounter++;
+                else
+                    prologueOpcodeCounter++;
                 result++;
+            }
 
             ip += <any>(info[1] * 2);
             if (<any>ip <= (<any>endOfBody))
@@ -1187,7 +1233,7 @@ export function generate_wasm_body (
                 builder.appendU8(WasmOpcode.nop);
         } else {
             if (instrumentedTraceId)
-                console.log(`instrumented trace ${traceName} aborted for opcode ${opname} @${_ip}`);
+                console.log(`instrumented trace ${traceName} aborted for opcode ${opname} @${(<any>_ip).toString(16)}`);
             record_abort(traceIp, _ip, traceName, opcode);
         }
     }
@@ -1598,7 +1644,7 @@ function emit_fieldop (
 
             if (!notNull) {
                 builder.appendU8(WasmOpcode.br_if);
-                builder.appendLeb(0);
+                builder.appendULeb(0);
                 append_bailout(builder, ip, BailoutReason.NullCheck);
                 builder.endBlock();
             } else {
@@ -1853,6 +1899,18 @@ const unopTable : { [opcode: number]: OpRec3 | undefined } = {
     [MintOpcode.MINT_SHR_I8_IMM]:     [WasmOpcode.i64_shr_s,     WasmOpcode.i64_load, WasmOpcode.i64_store],
     [MintOpcode.MINT_SHR_UN_I4_IMM]:  [WasmOpcode.i32_shr_u,     WasmOpcode.i32_load, WasmOpcode.i32_store],
     [MintOpcode.MINT_SHR_UN_I8_IMM]:  [WasmOpcode.i64_shr_u,     WasmOpcode.i64_load, WasmOpcode.i64_store],
+
+    [MintOpcode.MINT_ROL_I4_IMM]:     [WasmOpcode.i32_rotl,      WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_ROL_I8_IMM]:     [WasmOpcode.i64_rotl,      WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_ROR_I4_IMM]:     [WasmOpcode.i32_rotr,      WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_ROR_I8_IMM]:     [WasmOpcode.i64_rotr,      WasmOpcode.i64_load, WasmOpcode.i64_store],
+
+    [MintOpcode.MINT_CLZ_I4]:         [WasmOpcode.i32_clz,       WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CTZ_I4]:         [WasmOpcode.i32_ctz,       WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_POPCNT_I4]:      [WasmOpcode.i32_popcnt,    WasmOpcode.i32_load, WasmOpcode.i32_store],
+    [MintOpcode.MINT_CLZ_I8]:         [WasmOpcode.i64_clz,       WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_CTZ_I8]:         [WasmOpcode.i64_ctz,       WasmOpcode.i64_load, WasmOpcode.i64_store],
+    [MintOpcode.MINT_POPCNT_I8]:      [WasmOpcode.i64_popcnt,    WasmOpcode.i32_load, WasmOpcode.i32_store],
 };
 
 // HACK: Generating correct wasm for these is non-trivial so we hand them off to C.
@@ -2276,6 +2334,8 @@ function emit_unop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode)
         case MintOpcode.MINT_SHL_I4_IMM:
         case MintOpcode.MINT_SHR_I4_IMM:
         case MintOpcode.MINT_SHR_UN_I4_IMM:
+        case MintOpcode.MINT_ROL_I4_IMM:
+        case MintOpcode.MINT_ROR_I4_IMM:
             append_ldloc(builder, getArgU16(ip, 2), loadOp);
             builder.i32_const(getArgI16(ip, 3));
             break;
@@ -2285,6 +2345,8 @@ function emit_unop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode)
         case MintOpcode.MINT_SHL_I8_IMM:
         case MintOpcode.MINT_SHR_I8_IMM:
         case MintOpcode.MINT_SHR_UN_I8_IMM:
+        case MintOpcode.MINT_ROL_I8_IMM:
+        case MintOpcode.MINT_ROR_I8_IMM:
             append_ldloc(builder, getArgU16(ip, 2), loadOp);
             builder.i52_const(getArgI16(ip, 3));
             break;
@@ -2302,9 +2364,28 @@ function emit_unop (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode)
     return true;
 }
 
+function append_call_handler_store_ret_ip (
+    builder: WasmBuilder, ip: MintOpcodePtr,
+    frame: NativePointer, opcode: MintOpcode
+) {
+    const shortOffset = (opcode === MintOpcode.MINT_CALL_HANDLER_S),
+        retIp = shortOffset ? <any>ip + (3 * 2) : <any>ip + (4 * 2),
+        clauseIndex = getU16(retIp - 2),
+        clauseDataOffset = get_imethod_clause_data_offset(frame, clauseIndex);
+
+    // note: locals here is unsigned char *, not stackval *, so clauseDataOffset is in bytes
+    // *(const guint16**)(locals + frame->imethod->clause_data_offsets [clause_index]) = ret_ip;
+    builder.local("pLocals");
+    builder.ptr_const(retIp);
+    builder.appendU8(WasmOpcode.i32_store);
+    builder.appendMemarg(clauseDataOffset, 0); // FIXME: 32-bit alignment?
+
+    // console.log(`call_handler clauseDataOffset=0x${clauseDataOffset.toString(16)} retIp=0x${retIp.toString(16)}`);
+}
+
 function emit_branch (
     builder: WasmBuilder, ip: MintOpcodePtr,
-    opcode: MintOpcode, displacement?: number
+    frame: NativePointer, opcode: MintOpcode, displacement?: number
 ) : boolean {
     const info = OpcodeInfo[opcode];
     const isSafepoint = (opcode >= MintOpcode.MINT_BRFALSE_I4_SP) &&
@@ -2320,11 +2401,20 @@ function emit_branch (
     switch (opcode) {
         case MintOpcode.MINT_LEAVE:
         case MintOpcode.MINT_LEAVE_S:
+        case MintOpcode.MINT_CALL_HANDLER:
+        case MintOpcode.MINT_CALL_HANDLER_S:
         case MintOpcode.MINT_BR:
         case MintOpcode.MINT_BR_S: {
-            displacement = ((opcode === MintOpcode.MINT_LEAVE) || (opcode === MintOpcode.MINT_BR))
+            const isCallHandler = (opcode === MintOpcode.MINT_CALL_HANDLER) ||
+                (opcode === MintOpcode.MINT_CALL_HANDLER_S);
+            displacement = (
+                (opcode === MintOpcode.MINT_LEAVE) ||
+                (opcode === MintOpcode.MINT_BR) ||
+                (opcode === MintOpcode.MINT_CALL_HANDLER)
+            )
                 ? getArgI32(ip, 1)
                 : getArgI16(ip, 1);
+
             if (traceBranchDisplacements)
                 console.log(`br.s @${ip} displacement=${displacement}`);
             const destination = <any>ip + (displacement * 2);
@@ -2336,6 +2426,8 @@ function emit_branch (
                     // append_safepoint(builder, ip);
                     if (traceBackBranches)
                         console.log(`performing backward branch to 0x${destination.toString(16)}`);
+                    if (isCallHandler)
+                        append_call_handler_store_ret_ip(builder, ip, frame, opcode);
                     builder.cfg.branch(destination, true, false);
                     counters.backBranchesEmitted++;
                     return true;
@@ -2352,6 +2444,8 @@ function emit_branch (
                 //  don't need to wrap things in a block here, we can just exit
                 //  the current branch block after updating eip
                 builder.branchTargets.add(destination);
+                if (isCallHandler)
+                    append_call_handler_store_ret_ip(builder, ip, frame, opcode);
                 builder.cfg.branch(destination, false, false);
                 return true;
             }
@@ -2444,7 +2538,10 @@ function emit_branch (
     return true;
 }
 
-function emit_relop_branch (builder: WasmBuilder, ip: MintOpcodePtr, opcode: MintOpcode) : boolean {
+function emit_relop_branch (
+    builder: WasmBuilder, ip: MintOpcodePtr,
+    frame: NativePointer, opcode: MintOpcode
+) : boolean {
     const relopBranchInfo = relopbranchTable[opcode];
     if (!relopBranchInfo)
         return false;
@@ -2501,7 +2598,7 @@ function emit_relop_branch (builder: WasmBuilder, ip: MintOpcodePtr, opcode: Min
         builder.callImport("relop_fp");
     }
 
-    return emit_branch(builder, ip, opcode, displacement);
+    return emit_branch(builder, ip, frame, opcode, displacement);
 }
 
 const mathIntrinsicTable : { [opcode: number] : [isUnary: boolean, isF32: boolean, opcodeOrFuncName: WasmOpcode | string] } = {
@@ -2821,7 +2918,7 @@ function append_getelema1 (
     builder.appendU8(WasmOpcode.i32_lt_u);
     // bailout unless (index < array.length)
     builder.appendU8(WasmOpcode.br_if);
-    builder.appendLeb(0);
+    builder.appendULeb(0);
     append_bailout(builder, ip, BailoutReason.ArrayLoadFailed);
     builder.endBlock();
 
@@ -2881,7 +2978,7 @@ function emit_arrayop (builder: WasmBuilder, frame: NativePointer, ip: MintOpcod
             append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.i32_load);
             builder.callImport("stelem_ref");
             builder.appendU8(WasmOpcode.br_if);
-            builder.appendLeb(0);
+            builder.appendULeb(0);
             append_bailout(builder, ip, BailoutReason.ArrayStoreFailed);
             builder.endBlock();
             return true;

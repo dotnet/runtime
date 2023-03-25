@@ -1867,6 +1867,12 @@ public:
         m_likelihood = likelihood;
     }
 
+    void clearLikelihood()
+    {
+        m_likelihood = 0.0;
+        INDEBUG(m_likelihoodSet = false);
+    }
+
 #ifdef DEBUG
     bool hasLikelihood() const
     {

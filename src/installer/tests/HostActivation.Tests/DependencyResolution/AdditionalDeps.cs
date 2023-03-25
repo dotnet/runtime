@@ -110,12 +110,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             }
             else
             {
+                // Specifying an additional deps file triggers file existence checking, so execution
+                // should fail when the dependency doesn't exist.
                 result.Should().Fail()
-                    .And.HaveStdErrContaining(
-                        $"Error:{Environment.NewLine}" +
-                        $"  An assembly specified in the application dependencies manifest ({additionalLibName}.deps.json) was not found:" + Environment.NewLine +
-                        $"    package: \'{additionalLibName}\', version: \'1.0.0\'" + Environment.NewLine +
-                        $"    path: \'{additionalLibName}.dll\'");
+                    .And.ErrorWithMissingAssembly($"{additionalLibName}.deps.json", additionalLibName, "1.0.0");
             }
         }
 

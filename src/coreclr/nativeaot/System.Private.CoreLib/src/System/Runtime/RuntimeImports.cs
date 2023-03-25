@@ -305,7 +305,7 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhTypeCast_AreTypesAssignable")]
-        private static extern unsafe bool AreTypesAssignable(MethodTable* pSourceType, MethodTable* pTargetType);
+        internal static extern unsafe bool AreTypesAssignable(MethodTable* pSourceType, MethodTable* pTargetType);
 
         internal static unsafe bool AreTypesAssignable(EETypePtr pSourceType, EETypePtr pTargetType)
             => AreTypesAssignable(pSourceType.ToPointer(), pTargetType.ToPointer());
@@ -351,7 +351,7 @@ namespace System.Runtime
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhNewObject")]
-        private static extern unsafe object RhNewObject(MethodTable* pEEType);
+        internal static extern unsafe object RhNewObject(MethodTable* pEEType);
 
         internal static unsafe object RhNewObject(EETypePtr pEEType)
             => RhNewObject(pEEType.ToPointer());

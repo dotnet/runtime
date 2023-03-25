@@ -901,6 +901,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
     {
         case NI_Vector128_CreateScalarUnsafe:
         case NI_Vector256_CreateScalarUnsafe:
+        case NI_Vector512_CreateScalarUnsafe:
         {
             if (varTypeIsIntegral(baseType))
             {

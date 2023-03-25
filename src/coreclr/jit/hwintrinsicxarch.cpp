@@ -36,6 +36,22 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_AVX_X64;
         case InstructionSet_AVX2:
             return InstructionSet_AVX2_X64;
+        case InstructionSet_AVX512BW:
+            return InstructionSet_AVX512BW_X64;
+        case InstructionSet_AVX512BW_VL:
+            return InstructionSet_AVX512BW_VL_X64;
+        case InstructionSet_AVX512CD:
+            return InstructionSet_AVX512CD_X64;
+        case InstructionSet_AVX512CD_VL:
+            return InstructionSet_AVX512CD_VL_X64;
+        case InstructionSet_AVX512DQ:
+            return InstructionSet_AVX512DQ_X64;
+        case InstructionSet_AVX512DQ_VL:
+            return InstructionSet_AVX512DQ_VL_X64;
+        case InstructionSet_AVX512F:
+            return InstructionSet_AVX512F_X64;
+        case InstructionSet_AVX512F_VL:
+            return InstructionSet_AVX512F_VL_X64;
         case InstructionSet_AVXVNNI:
             return InstructionSet_AVXVNNI_X64;
         case InstructionSet_AES:
@@ -54,6 +70,31 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_POPCNT_X64;
         case InstructionSet_X86Serialize:
             return InstructionSet_X86Serialize_X64;
+        default:
+            return InstructionSet_NONE;
+    }
+}
+
+//------------------------------------------------------------------------
+// VLVersionOfIsa: Gets the corresponding AVX512VL only InstructionSet for a given InstructionSet
+//
+// Arguments:
+//    isa -- The InstructionSet ID
+//
+// Return Value:
+//    The AVX512VL only InstructionSet associated with isa
+static CORINFO_InstructionSet VLVersionOfIsa(CORINFO_InstructionSet isa)
+{
+    switch (isa)
+    {
+        case InstructionSet_AVX512BW:
+            return InstructionSet_AVX512BW_VL;
+        case InstructionSet_AVX512CD:
+            return InstructionSet_AVX512CD_VL;
+        case InstructionSet_AVX512DQ:
+            return InstructionSet_AVX512DQ_VL;
+        case InstructionSet_AVX512F:
+            return InstructionSet_AVX512F_VL;
         default:
             return InstructionSet_NONE;
     }
@@ -83,6 +124,22 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         if (strcmp(className, "Avx2") == 0)
         {
             return InstructionSet_AVX2;
+        }
+        if (strcmp(className, "Avx512BW") == 0)
+        {
+            return InstructionSet_AVX512BW;
+        }
+        if (strcmp(className, "Avx512CD") == 0)
+        {
+            return InstructionSet_AVX512CD;
+        }
+        if (strcmp(className, "Avx512DQ") == 0)
+        {
+            return InstructionSet_AVX512DQ;
+        }
+        if (strcmp(className, "Avx512F") == 0)
+        {
+            return InstructionSet_AVX512F;
         }
         if (strcmp(className, "AvxVnni") == 0)
         {
@@ -152,6 +209,11 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
         {
             return InstructionSet_Vector512;
         }
+        else if (strcmp(className, "VL") == 0)
+        {
+            assert(!"VL.X64 support doesn't exist in the managed libraries and so is not yet implemented");
+            return InstructionSet_ILLEGAL;
+        }
     }
     else if (strcmp(className, "Fma") == 0)
     {
@@ -190,6 +252,11 @@ CORINFO_InstructionSet HWIntrinsicInfo::lookupIsa(const char* className, const c
     {
         assert(enclosingClassName != nullptr);
         return X64VersionOfIsa(lookupInstructionSet(enclosingClassName));
+    }
+    else if (strcmp(className, "VL") == 0)
+    {
+        assert(enclosingClassName != nullptr);
+        return VLVersionOfIsa(lookupInstructionSet(enclosingClassName));
     }
     else
     {
@@ -364,6 +431,22 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVX_X64:
         case InstructionSet_AVX2:
         case InstructionSet_AVX2_X64:
+        case InstructionSet_AVX512F:
+        case InstructionSet_AVX512F_VL:
+        case InstructionSet_AVX512F_VL_X64:
+        case InstructionSet_AVX512F_X64:
+        case InstructionSet_AVX512BW:
+        case InstructionSet_AVX512BW_VL:
+        case InstructionSet_AVX512BW_VL_X64:
+        case InstructionSet_AVX512BW_X64:
+        case InstructionSet_AVX512CD:
+        case InstructionSet_AVX512CD_VL:
+        case InstructionSet_AVX512CD_VL_X64:
+        case InstructionSet_AVX512CD_X64:
+        case InstructionSet_AVX512DQ:
+        case InstructionSet_AVX512DQ_VL:
+        case InstructionSet_AVX512DQ_VL_X64:
+        case InstructionSet_AVX512DQ_X64:
         case InstructionSet_AVXVNNI:
         case InstructionSet_AVXVNNI_X64:
         case InstructionSet_BMI1:
@@ -392,6 +475,7 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_SSE42_X64:
         case InstructionSet_Vector128:
         case InstructionSet_Vector256:
+        case InstructionSet_Vector512:
         case InstructionSet_X86Base:
         case InstructionSet_X86Base_X64:
         case InstructionSet_X86Serialize:
@@ -553,6 +637,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_AndNot:
         case NI_Vector256_AndNot:
+        case NI_Vector512_AndNot:
         {
             assert(sig->numArgs == 2);
 
@@ -780,8 +865,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_BitwiseAnd:
         case NI_Vector256_BitwiseAnd:
+        case NI_Vector512_BitwiseAnd:
         case NI_Vector128_op_BitwiseAnd:
         case NI_Vector256_op_BitwiseAnd:
+        case NI_Vector512_op_BitwiseAnd:
         {
             assert(sig->numArgs == 2);
 
@@ -795,8 +882,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_BitwiseOr:
         case NI_Vector256_BitwiseOr:
+        case NI_Vector512_BitwiseOr:
         case NI_Vector128_op_BitwiseOr:
         case NI_Vector256_op_BitwiseOr:
+        case NI_Vector512_op_BitwiseOr:
         {
             assert(sig->numArgs == 2);
 
@@ -1088,6 +1177,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_CreateScalar:
         case NI_Vector256_CreateScalar:
+        case NI_Vector512_CreateScalar:
         {
             assert(sig->numArgs == 1);
 
@@ -1108,6 +1198,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_CreateScalarUnsafe:
         case NI_Vector256_CreateScalarUnsafe:
+        case NI_Vector512_CreateScalarUnsafe:
         {
             assert(sig->numArgs == 1);
 
@@ -1250,6 +1341,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector512_ExtractMostSignificantBits:
         {
+#if defined(TARGET_X86)
+            // TODO-XARCH-CQ: It may be beneficial to decompose this operation
+            break;
+#endif // TARGET_X86
+
             if (IsBaselineVector512IsaSupported())
             {
                 var_types simdType = getSIMDTypeForSize(simdSize);
@@ -1308,7 +1404,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                             simdVal.u64[3] = 0x8080808080808080;
 
                             shuffleIntrinsic  = NI_AVX2_Shuffle;
-                            moveMaskIntrinsic = NI_AVX2_MoveMask;
+                            moveMaskIntrinsic = NI_SSE2_MoveMask;
                         }
                         else if (compOpportunisticallyDependsOn(InstructionSet_SSSE3))
                         {
@@ -1403,6 +1499,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_get_AllBitsSet:
         case NI_Vector256_get_AllBitsSet:
+        case NI_Vector512_get_AllBitsSet:
         {
             assert(sig->numArgs == 0);
             retNode = gtNewAllBitsSetConNode(retType);
@@ -1411,6 +1508,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_get_One:
         case NI_Vector256_get_One:
+        case NI_Vector512_get_One:
         {
             assert(sig->numArgs == 0);
             retNode = gtNewOneConNode(retType, simdBaseType);
@@ -1676,6 +1774,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_SSE_LoadVector128:
         case NI_SSE2_LoadVector128:
         case NI_AVX_LoadVector256:
+        case NI_AVX512F_LoadVector512:
         case NI_Vector128_Load:
         case NI_Vector256_Load:
         case NI_Vector512_Load:
@@ -1856,8 +1955,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_OnesComplement:
         case NI_Vector256_OnesComplement:
+        case NI_Vector512_OnesComplement:
         case NI_Vector128_op_OnesComplement:
         case NI_Vector256_op_OnesComplement:
+        case NI_Vector512_op_OnesComplement:
         {
             assert(sig->numArgs == 1);
             op1 = impSIMDPopStack(retType);
@@ -2082,6 +2183,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_SSE_Store:
         case NI_SSE2_Store:
         case NI_AVX_Store:
+        case NI_AVX512F_Store:
         {
             assert(retType == TYP_VOID);
             assert(sig->numArgs == 2);
@@ -2364,8 +2466,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Xor:
         case NI_Vector256_Xor:
+        case NI_Vector512_Xor:
         case NI_Vector128_op_ExclusiveOr:
         case NI_Vector256_op_ExclusiveOr:
+        case NI_Vector512_op_ExclusiveOr:
         {
             assert(sig->numArgs == 2);
 

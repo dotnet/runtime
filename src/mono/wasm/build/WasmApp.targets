@@ -49,6 +49,8 @@
       - $(EmccFlags)                        - Emcc flags used for both compiling native files, and linking
       - $(EmccExtraLDFlags)                 - Extra emcc flags for linking
       - $(EmccExtraCFlags)                  - Extra emcc flags for compiling native files
+      - $(EmccEnableAssertions)             - Corresponds to `ASSERTIONS` arg for emcc. Default false.
+      - $(EmccEnvironment)                  - Corresponds to `ENVIRONMENT` arg for emcc. Default is `web,webview,worker,node,shell`.
       - $(EmccInitialHeapSize)              - Initial heap size specified with `emcc`. Default value: 16777216 or size of the DLLs, whichever is larger.
                                               Corresponds to `-s INITIAL_MEMORY=...` emcc arg.
                                               (previously named EmccTotalMemory, which is still kept as an alias)
@@ -90,6 +92,7 @@
                                     <WasmExtraConfig Include="string_val" Value="&quot;abc&quot;" />
                                     <WasmExtraConfig Include="string_with_json" Value="&quot;{ &quot;abc&quot;: 4 }&quot;" />
       - @(EmccExportedRuntimeMethod) - Extra method for emcc flag EXPORTED_RUNTIME_METHODS
+      - @(EmccExportedLibraryFunction) - Extra method for emcc flag DEFAULT_LIBRARY_FUNCS_TO_INCLUDE
       - @(EmccExportedFunction)      - Extra function for emcc flag EXPORTED_FUNCTIONS
   -->
 
@@ -341,7 +344,6 @@
                        Condition="'$(WasmEmitSymbolMap)' == 'true' and
                                   '$(_HasDotnetJsSymbols)' != 'true' and
                                   Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.symbols')" />
-      <WasmFilesToIncludeInFileSystem Include="@(WasmNativeAsset)" Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
