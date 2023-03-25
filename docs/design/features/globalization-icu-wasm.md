@@ -60,4 +60,8 @@ To force the full data to be loaded, add this to your `.csproj`:
 ```xml
 <BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>
 ```
-Custom files loading for Blazor is not possible.
+Custom files loading for Blazor is supported **only** for files with names starting with `icudt`, e.g. `icudt_custom.dat`. To load the file use `BlazorIcuDataFileName` property with full path to the file.
+
+```xml
+<BlazorIcuDataFileName>C:\Users\wasmUser\icuSources\icudt_custom.dat</BlazorIcuDataFileName>
+```
