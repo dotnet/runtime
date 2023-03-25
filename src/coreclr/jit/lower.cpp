@@ -473,8 +473,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
             return LowerSwitch(node);
 
         case GT_CALL:
-            LowerCall(node);
-            break;
+        {
+            GenTree* newNode = LowerCall(node);
+            if (newNode != nullptr)
+            {
+                return newNode;
+            }
+        }
+        break;
 
         case GT_LT:
         case GT_LE:
@@ -1775,6 +1781,90 @@ GenTree* Lowering::AddrGen(void* addr)
     return AddrGen((ssize_t)addr);
 }
 
+//------------------------------------------------------------------------
+// LowerCallMemmove: Replace Buffer.Memmove(DST, SRC, CNS_SIZE) with a GT_STORE_BLK:
+//
+//    *  STORE_BLK struct<CNS_SIZE> (copy) (Unroll)
+//    +--*  LCL_VAR   byref  dst
+//    \--*  IND       struct
+//       \--*  LCL_VAR   byref  src
+//
+// Arguments:
+//    tree - GenTreeCall node to replace with STORE_BLK
+//
+// Return Value:
+//    nullptr if no changes were made
+//
+GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
+{
+    JITDUMP("Considering Memmove [%06d] for unrolling.. ", comp->dspTreeID(call))
+    assert(comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove);
+
+    assert(call->gtArgs.CountUserArgs() == 3);
+
+    if (comp->info.compHasNextCallRetAddr)
+    {
+        JITDUMP("compHasNextCallRetAddr=true so we won't be able to remove the call - bail out.\n")
+        return nullptr;
+    }
+
+    GenTree* lengthArg = call->gtArgs.GetUserArgByIndex(2)->GetNode();
+    if (lengthArg->IsIntegralConst())
+    {
+        ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
+        JITDUMP("Size=%ld.. ", (LONG)cnsSize);
+        // TODO-CQ: drop the whole thing in case of 0
+        if ((cnsSize > 0) && (cnsSize <= (ssize_t)comp->getUnrollThreshold(Compiler::UnrollKind::Memmove)))
+        {
+            JITDUMP("Accepted for unrolling!\nOld tree:\n")
+            DISPTREE(call);
+
+            GenTree* dstAddr = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* srcAddr = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+            // TODO-CQ: Try to create an addressing mode
+            GenTreeIndir* srcBlk = comp->gtNewIndir(TYP_STRUCT, srcAddr);
+            srcBlk->gtFlags |= GTF_GLOB_REF;
+            srcBlk->SetContained();
+
+            GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
+                GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, dstAddr, srcBlk, comp->typGetBlkLayout((unsigned)cnsSize));
+            storeBlk->gtFlags |= (GTF_BLK_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
+
+            // TODO-CQ: Use GenTreeObj::BlkOpKindUnroll here if srcAddr and dstAddr don't overlap, thus, we can
+            // unroll this memmove as memcpy - it doesn't require lots of temp registers
+            storeBlk->gtBlkOpKind = GenTreeObj::BlkOpKindUnrollMemmove;
+
+            BlockRange().InsertBefore(call, srcBlk);
+            BlockRange().InsertBefore(call, storeBlk);
+            BlockRange().Remove(lengthArg);
+            BlockRange().Remove(call);
+
+            // Remove all non-user args (e.g. r2r cell)
+            for (CallArg& arg : call->gtArgs.Args())
+            {
+                if (arg.IsArgAddedLate())
+                {
+                    arg.GetNode()->SetUnusedValue();
+                }
+            }
+
+            JITDUMP("\nNew tree:\n")
+            DISPTREE(storeBlk);
+            return storeBlk;
+        }
+        else
+        {
+            JITDUMP("Size is either 0 or too big to unroll.\n")
+        }
+    }
+    else
+    {
+        JITDUMP("size is not a constant.\n")
+    }
+    return nullptr;
+}
+
 // do lowering steps for a call
 // this includes:
 //   - adding the placement nodes (either stack or register variety) for arguments
@@ -1782,7 +1872,7 @@ GenTree* Lowering::AddrGen(void* addr)
 //   - adding nodes for other operations that occur after the call sequence starts and before
 //        control transfer occurs (profiling and tail call helpers, pinvoke incantations)
 //
-void Lowering::LowerCall(GenTree* node)
+GenTree* Lowering::LowerCall(GenTree* node)
 {
     GenTreeCall* call = node->AsCall();
 
@@ -1792,6 +1882,20 @@ void Lowering::LowerCall(GenTree* node)
 
     // All runtime lookups are expected to be expanded in fgExpandRuntimeLookups
     assert(!call->IsExpRuntimeLookup());
+
+    if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+    {
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+        if (comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove)
+        {
+            GenTree* newNode = LowerCallMemmove(call);
+            if (newNode != nullptr)
+            {
+                return newNode->gtNext;
+            }
+        }
+#endif
+    }
 
     call->ClearOtherRegs();
     LowerArgsForCall(call);
@@ -1911,6 +2015,7 @@ void Lowering::LowerCall(GenTree* node)
     JITDUMP("lowering call (after):\n");
     DISPTREERANGE(BlockRange(), call);
     JITDUMP("\n");
+    return nullptr;
 }
 
 // Inserts profiler hook, GT_PROF_HOOK for a tail call node.

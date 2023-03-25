@@ -754,7 +754,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512CD,     W("EnableAVX512CD"),     1
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512CD_VL,  W("EnableAVX512CD_VL"),  1, "Allows AVX512CD_VL+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512DQ,     W("EnableAVX512DQ"),     1, "Allows AVX512DQ+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512DQ_VL,  W("EnableAVX512DQ_VL"),  1, "Allows AVX512DQ_VL+ hardware intrinsics to be disabled")
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512F,      W("EnableAVX512F"),      1, "Allows AVX512F+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512F,      W("EnableAVX512F"),      0, "Allows AVX512F+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512F_VL,   W("EnableAVX512F_VL"),   1, "Allows AVX512F_VL+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVXVNNI,      W("EnableAVXVNNI"),      1, "Allows AVX VNNI+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableBMI1,         W("EnableBMI1"),         1, "Allows BMI1+ hardware intrinsics to be disabled")

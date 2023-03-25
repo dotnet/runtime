@@ -1255,7 +1255,6 @@ namespace Microsoft.Extensions
             var configurationBuilder = new ConfigurationBuilder();
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
-
             var options = config.Get<ByteArrayOptions>();
             Assert.Equal(bytes, options.MyByteArray);
         }

@@ -6591,7 +6591,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     coldCodeBlock = nullptr;
 
     // This restricts the data alignment to: 4, 8, 16, 32 or 64 bytes
-    // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
+    // Alignments greater than 64 would require VM support in ICorJitInfo::allocMem
     uint32_t dataAlignment = emitConsDsc.alignment;
     assert((dataSection::MIN_DATA_ALIGN <= dataAlignment) && (dataAlignment <= dataSection::MAX_DATA_ALIGN) &&
            isPow2(dataAlignment));
@@ -6710,11 +6710,16 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     {
         assert(((size_t)codeBlock & 15) == 0);
     }
-    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+
+    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN) != 0)
+    {
+        assert(((size_t)consBlock & 63) == 0);
+    }
+    else if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
     {
         assert(((size_t)consBlock & 31) == 0);
     }
-    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
+    else if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
     {
         assert(((size_t)consBlock & 15) == 0);
     }

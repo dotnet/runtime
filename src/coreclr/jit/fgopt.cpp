@@ -2224,34 +2224,42 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
     }
 
-    // If either block or bNext has a profile weight
+    // If bNext is BBJ_THROW, block will become run rarely.
+    //
+    // Otherwise, if either block or bNext has a profile weight
     // or if both block and bNext have non-zero weights
     // then we will use the max weight for the block.
     //
-    const bool hasProfileWeight = block->hasProfileWeight() || bNext->hasProfileWeight();
-    const bool hasNonZeroWeight = (block->bbWeight > BB_ZERO_WEIGHT) || (bNext->bbWeight > BB_ZERO_WEIGHT);
-
-    if (hasProfileWeight || hasNonZeroWeight)
+    if (bNext->bbJumpKind == BBJ_THROW)
     {
-        weight_t const newWeight = max(block->bbWeight, bNext->bbWeight);
-
-        if (hasProfileWeight)
-        {
-            block->setBBProfileWeight(newWeight);
-        }
-        else
-        {
-            assert(newWeight != BB_ZERO_WEIGHT);
-            block->bbWeight = newWeight;
-            block->bbFlags &= ~BBF_RUN_RARELY;
-        }
+        block->bbSetRunRarely();
     }
-    // otherwise if either block has a zero weight we select the zero weight
     else
     {
-        noway_assert((block->bbWeight == BB_ZERO_WEIGHT) || (bNext->bbWeight == BB_ZERO_WEIGHT));
-        block->bbWeight = BB_ZERO_WEIGHT;
-        block->bbFlags |= BBF_RUN_RARELY; // Set the RarelyRun flag
+        const bool hasProfileWeight = block->hasProfileWeight() || bNext->hasProfileWeight();
+        const bool hasNonZeroWeight = (block->bbWeight > BB_ZERO_WEIGHT) || (bNext->bbWeight > BB_ZERO_WEIGHT);
+
+        if (hasProfileWeight || hasNonZeroWeight)
+        {
+            weight_t const newWeight = max(block->bbWeight, bNext->bbWeight);
+
+            if (hasProfileWeight)
+            {
+                block->setBBProfileWeight(newWeight);
+            }
+            else
+            {
+                assert(newWeight != BB_ZERO_WEIGHT);
+                block->bbWeight = newWeight;
+                block->bbFlags &= ~BBF_RUN_RARELY;
+            }
+        }
+        // otherwise if either block has a zero weight we select the zero weight
+        else
+        {
+            noway_assert((block->bbWeight == BB_ZERO_WEIGHT) || (bNext->bbWeight == BB_ZERO_WEIGHT));
+            block->bbSetRunRarely();
+        }
     }
 
     /* set the right links */

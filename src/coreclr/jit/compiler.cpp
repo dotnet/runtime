@@ -2275,64 +2275,51 @@ void Compiler::compSetProcessor()
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
     }
+
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX))
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
     }
-    // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL and
-    // AVX512F/AVX512BW/AVX512CD/AVX512DQ/VX512VL have been shipped together historically.
-    // It is therefore unlikely that future CPUs only support "just one" and
-    // not worth the additional complexity in the JIT to support.
-    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F) &&
-        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW) &&
-        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ))
+
+    // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL
+    // These have been shipped together historically and at the time of this writing
+    // there exists no hardware which doesn't support the entire feature set. To simplify
+    // the overall JIT implementation, we currently require the entire set of ISAs to be
+    // supported and disable AVX512 support otherwise.
+
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL) &&
+        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL) &&
+        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL))
     {
-        // Using JitStressEVEXEncoding flag will force instructions which would
-        // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
-        // This requires AVX512VL support. JitForceEVEXEncoding forces this encoding, thus
-        // causing failure if not running on compatible hardware.
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL));
 
-        // We can't use !DoJitStressEvexEncoding() yet because opts.compSupportsISA hasn't
-        // been set yet as that's what we're trying to set here
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
+    }
+    else
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL);
 
-        bool enableAvx512 = false;
-
-#if defined(DEBUG)
-        if (JitConfig.JitForceEVEXEncoding())
-        {
-            enableAvx512 = true;
-        }
-        else if (JitConfig.JitStressEvexEncoding() && instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL))
-        {
-            enableAvx512 = true;
-        }
-#endif // DEBUG
-
-        if (!enableAvx512)
-        {
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL);
 #ifdef TARGET_AMD64
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_X64);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL_X64);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_X64);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL_X64);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_X64);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL_X64);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_X64);
-            instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL_X64);
 #endif // TARGET_AMD64
-        }
-        else
-        {
-            instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
-        }
     }
 #elif defined(TARGET_ARM64)
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
@@ -3399,7 +3386,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     rbmFltCalleeTrash   = RBM_FLT_CALLEE_TRASH_INIT;
     cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
 
-    if (DoJitStressEvexEncoding())
+    if (canUseEvexEncoding())
     {
         rbmAllFloat |= RBM_HIGHFLOAT;
         rbmFltCalleeTrash |= RBM_HIGHFLOAT;
@@ -6027,6 +6014,46 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableAVXVNNI() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
+        }
+
+        if (JitConfig.EnableAVX512F() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512F);
+        }
+
+        if (JitConfig.EnableAVX512F_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512F_VL);
+        }
+
+        if (JitConfig.EnableAVX512BW() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512BW);
+        }
+
+        if (JitConfig.EnableAVX512BW_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512BW_VL);
+        }
+
+        if (JitConfig.EnableAVX512CD() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512CD);
+        }
+
+        if (JitConfig.EnableAVX512CD_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512CD_VL);
+        }
+
+        if (JitConfig.EnableAVX512DQ() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512DQ);
+        }
+
+        if (JitConfig.EnableAVX512DQ_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512DQ_VL);
         }
 #endif
 

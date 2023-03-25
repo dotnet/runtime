@@ -368,8 +368,8 @@ enum LsraStat
 #include "lsra_stats.h"
 #undef LSRA_STAT_DEF
 #define REG_SEL_DEF(enum_name, value, short_str, orderSeqId) STAT_##enum_name,
+#define BUSY_REG_SEL_DEF(enum_name, value, short_str, orderSeqId) REG_SEL_DEF(enum_name, value, short_str, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
     COUNT
 };
 #endif // TRACK_LSRA_STATS
@@ -395,8 +395,8 @@ struct LsraBlockInfo
 enum RegisterScore
 {
 #define REG_SEL_DEF(enum_name, value, short_str, orderSeqId) enum_name = value,
+#define BUSY_REG_SEL_DEF(enum_name, value, short_str, orderSeqId) REG_SEL_DEF(enum_name, value, short_str, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
     NONE = 0
 };
 
@@ -1313,8 +1313,8 @@ private:
         FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId) FORCEINLINE void try_##stat();
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
     };
 
     RegisterSelection* regSelector;
@@ -1831,12 +1831,15 @@ private:
     RefPosition* tgtPrefUse  = nullptr;
     RefPosition* tgtPrefUse2 = nullptr;
 
+public:
     // The following keep track of information about internal (temporary register) intervals
     // during the building of a single node.
     static const int MaxInternalCount = 5;
-    RefPosition*     internalDefs[MaxInternalCount];
-    int              internalCount = 0;
-    bool             setInternalRegsDelayFree;
+
+private:
+    RefPosition* internalDefs[MaxInternalCount];
+    int          internalCount = 0;
+    bool         setInternalRegsDelayFree;
 
     // When a RefTypeUse is marked as 'delayRegFree', we also want to mark the RefTypeDef
     // in the next Location as 'hasInterferingUses'. This is accomplished by setting this
