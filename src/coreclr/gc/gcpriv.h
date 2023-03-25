@@ -759,6 +759,16 @@ struct etw_bucket_info
 };
 #endif //FEATURE_EVENT_TRACE
 
+#if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
+struct min_fl_list_info
+{
+    uint8_t* head;
+    uint8_t* tail;
+
+    void thread_item (uint8_t* item);
+};
+#endif //MULTIPLE_HEAPS && USE_REGIONS
+
 class allocator
 {
     int first_bucket_bits;
@@ -873,6 +883,15 @@ public:
     void unlink_item_no_undo (uint8_t* item, size_t size);
     void unlink_item_no_undo (unsigned int bn, uint8_t* item, size_t size);
     void unlink_item_no_undo_added (unsigned int bn, uint8_t* item, uint8_t* previous_item);
+#if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
+    void count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* fl_items_for_oh_count);
+    void rethread_items (size_t* num_total_fl_items, 
+                         size_t* num_total_fl_items_rethread, 
+                         gc_heap* current_heap,
+                         min_fl_list_info* min_fl_list,
+                         int num_heap);
+    void merge_items (gc_heap* current_heap, int to_num_heaps, int from_num_heaps);
+#endif //MULTIPLE_HEAPS && USE_REGIONS
 #endif //DOUBLY_LINKED_FL
 
     void copy_to_alloc_list (alloc_list* toalist);
@@ -1443,6 +1462,7 @@ class gc_heap
     friend class seg_free_spaces;
     friend class mark;
     friend class CObjectHeader;
+    friend class allocator;
 
 #ifdef BACKGROUND_GC
     friend class exclusive_sync;
@@ -1587,12 +1607,12 @@ private:
     PER_HEAP_ISOLATED_METHOD void set_region_gen_num (heap_segment* region, int gen_num);
     PER_HEAP_ISOLATED_METHOD int get_region_plan_gen_num (uint8_t* obj);
     PER_HEAP_ISOLATED_METHOD bool is_region_demoted (uint8_t* obj);
-    PER_HEAP_METHOD void set_region_plan_gen_num (heap_segment* region, int plan_gen_num);
+    PER_HEAP_METHOD void set_region_plan_gen_num (heap_segment* region, int plan_gen_num, bool replace_p = false);
     PER_HEAP_METHOD void set_region_plan_gen_num_sip (heap_segment* region, int plan_gen_num);
     PER_HEAP_METHOD void set_region_sweep_in_plan (heap_segment* region);
     PER_HEAP_METHOD void clear_region_sweep_in_plan (heap_segment* region);
     PER_HEAP_METHOD void clear_region_demoted (heap_segment* region);
-    PER_HEAP_METHOD void decide_on_demotion_pin_surv (heap_segment* region);
+    PER_HEAP_METHOD void decide_on_demotion_pin_surv (heap_segment* region, int* no_pinned_surv_region_count);
     PER_HEAP_METHOD void skip_pins_in_alloc_region (generation* consing_gen, int plan_gen_num);
     PER_HEAP_METHOD void process_last_np_surv_region (generation* consing_gen,
                                       int current_plan_gen_num,
@@ -1613,7 +1633,7 @@ private:
     PER_HEAP_METHOD bool decide_on_compaction_space();
     PER_HEAP_METHOD bool try_get_new_free_region();
     PER_HEAP_METHOD bool init_table_for_region (int gen_number, heap_segment* region);
-    PER_HEAP_METHOD heap_segment* find_first_valid_region (heap_segment* region, bool compact_p);
+    PER_HEAP_METHOD heap_segment* find_first_valid_region (heap_segment* region, bool compact_p, int* num_returned_regions);
     PER_HEAP_METHOD void thread_final_regions (bool compact_p);
     PER_HEAP_METHOD void thread_start_region (generation* gen, heap_segment* region);
     PER_HEAP_METHOD heap_segment* get_new_region (int gen_number, size_t size = 0);
@@ -2080,6 +2100,12 @@ private:
     // in svr GC on entry and exit of this method, the GC threads are not
     // synchronized
     PER_HEAP_METHOD void gc1();
+
+#if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
+    PER_HEAP_ISOLATED_METHOD void fl_exp();
+    PER_HEAP_METHOD void rethread_fl_items();
+    PER_HEAP_ISOLATED_METHOD void merge_fl_from_other_heaps (int to_n_heaps, int from_n_heaps);
+#endif //MULTIPLE_HEAPS && USE_REGIONS
 
     PER_HEAP_ISOLATED_METHOD void save_data_for_no_gc();
 
@@ -2980,6 +3006,14 @@ private:
     PER_HEAP_ISOLATED_METHOD size_t get_total_committed_size();
     PER_HEAP_ISOLATED_METHOD size_t get_total_fragmentation();
     PER_HEAP_ISOLATED_METHOD size_t get_total_gen_fragmentation (int gen_number);
+
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED_METHOD int get_total_reverted_demoted_regions ();
+    PER_HEAP_ISOLATED_METHOD int get_total_new_gen0_regions_in_plns ();
+    PER_HEAP_ISOLATED_METHOD int get_total_new_regions_in_prr ();
+    PER_HEAP_ISOLATED_METHOD int get_total_new_regions_in_threading ();
+#endif //USE_REGIONS
+
     PER_HEAP_ISOLATED_METHOD size_t get_total_gen_estimated_reclaim (int gen_number);
     PER_HEAP_ISOLATED_METHOD size_t get_total_gen_size (int gen_number);
     PER_HEAP_ISOLATED_METHOD void get_memory_info (uint32_t* memory_load,
@@ -3323,9 +3357,12 @@ private:
     PER_HEAP_FIELD_SINGLE_GC heap_segment* saved_loh_segment_no_gc;
 
 #ifdef MULTIPLE_HEAPS
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+    PER_HEAP_FIELD_SINGLE_GC min_fl_list_info* min_fl_list;
+    PER_HEAP_FIELD_SINGLE_GC size_t num_fl_items_rethreaded_stage2;
+#else //USE_REGIONS
     PER_HEAP_FIELD_SINGLE_GC heap_segment* new_heap_segment;
-#endif //!USE_REGIONS
+#endif //USE_REGIONS
 #else //MULTIPLE_HEAPS
     PER_HEAP_FIELD_SINGLE_GC uint8_t* shigh; //keeps track of the highest marked object
     PER_HEAP_FIELD_SINGLE_GC uint8_t* slow; //keeps track of the lowest marked object
@@ -3413,6 +3450,10 @@ private:
 
     PER_HEAP_FIELD_SINGLE_GC int sip_maxgen_regions_per_gen[max_generation + 1];
     PER_HEAP_FIELD_SINGLE_GC heap_segment* reserved_free_regions_sip[max_generation];
+
+    // Used to keep track of how many regions we have planned to see if any generation
+    // doens't have a region yet and act accordingly.
+    PER_HEAP_FIELD_SINGLE_GC int planned_regions_per_gen[max_generation + 1];
 
     // After plan we calculate this as the planned end gen0 space;
     // but if we end up sweeping, we recalculate it at the end of
@@ -3799,6 +3840,10 @@ private:
 #ifdef USE_REGIONS
     // Used in a single GC.
     PER_HEAP_FIELD_DIAG_ONLY int regions_per_gen[max_generation + 1];
+    PER_HEAP_FIELD_DIAG_ONLY int reverted_demoted_regions;
+    PER_HEAP_FIELD_DIAG_ONLY int new_gen0_regions_in_plns;
+    PER_HEAP_FIELD_DIAG_ONLY int new_regions_in_prr;
+    PER_HEAP_FIELD_DIAG_ONLY int new_regions_in_threading;
 
 #ifdef STRESS_REGIONS
     // TODO: could consider dynamically grow this.
@@ -3937,6 +3982,11 @@ private:
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC int* g_mark_stack_busy;
 #endif //MH_SC_MARK
 
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC size_t total_num_fl_items_stage1;
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC size_t total_num_fl_items_moved_stage1;
+#endif //USE_REGIONS
+
 #if !defined(USE_REGIONS) || defined(_DEBUG)
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC size_t* g_promoted;
 #endif //!USE_REGIONS || _DEBUG
@@ -3981,10 +4031,6 @@ private:
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC BOOL dont_restart_ee_p;
 
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC GCEvent bgc_start_event;
-
-#ifdef MULTIPLE_HEAPS
-    PER_HEAP_ISOLATED_FIELD_SINGLE_GC bool bgc_rebuild_free_list;
-#endif //MULTIPLE_HEAPS
 
 #ifdef BGC_SERVO_TUNING
     // Total allocated last BGC's plan + between last and this bgc +
@@ -4970,6 +5016,8 @@ struct generation_region_info
 
 class heap_segment
 {
+    friend class allocator;
+
 public:
     // For regions allocated is used to indicate whether this is a valid segment
     // or not, ie, if it's 0 it means it's freed; else it's either a valid value
@@ -4988,6 +5036,8 @@ public:
     uint8_t*        background_allocated;
 #ifdef MULTIPLE_HEAPS
     gc_heap*        heap;
+    //// A temporary thing only used by fl_exp
+    //gc_heap*        temp_heap;
 #ifdef _DEBUG
     uint8_t*        saved_committed;
     size_t          saved_desired_allocation;
