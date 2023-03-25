@@ -298,7 +298,6 @@ C_ASSERT((FEATURE_TAILCALL_OPT == 0) || (FEATURE_FASTTAILCALL == 1));
 /*****************************************************************************/
 
 #define BITS_PER_BYTE              8
-#define RBM_ALL(type) (varTypeUsesFloatReg(type) ? RBM_ALLFLOAT : RBM_ALLINT)
 
 /*****************************************************************************/
 
@@ -612,6 +611,7 @@ inline regMaskTP genRegMask(regNumber regNum, var_types type)
     }
     else
     {
+        assert(varTypeUsesIntReg(type));
         regMask = genRegMask(regNum);
     }
     return regMask;
@@ -654,16 +654,27 @@ inline regNumber regNextOfType(regNumber reg, var_types type)
     regReturn = REG_NEXT(reg);
 #endif
 
-    if (varTypeUsesFloatReg(type))
+    if (varTypeUsesIntReg(type))
     {
-        if (regReturn > REG_FP_LAST)
+        if (regReturn > REG_INT_LAST)
         {
             regReturn = REG_NA;
         }
     }
+#if defined(TARGET_XARCH)
+    else if (varTypeUsesMaskReg(type))
+    {
+        if (regReturn > REG_MASK_LAST)
+        {
+            regReturn = REG_NA;
+        }
+    }
+#endif // TARGET_XARCH
     else
     {
-        if (regReturn > REG_INT_LAST)
+        assert(varTypeUsesFloatReg(type));
+
+        if (regReturn > REG_FP_LAST)
         {
             regReturn = REG_NA;
         }
@@ -680,11 +691,6 @@ inline regNumber regNextOfType(regNumber reg, var_types type)
 inline bool isFloatRegType(var_types type)
 {
     return varTypeUsesFloatReg(type);
-}
-
-inline bool isMaskReg(var_types type)
-{
-    return varTypeIsMask(type);
 }
 
 // If the WINDOWS_AMD64_ABI is defined make sure that TARGET_AMD64 is also defined.

@@ -307,6 +307,12 @@ inline bool varTypeIsStruct(T vt)
     return ((varTypeClassification[TypeGet(vt)] & VTF_S) != 0);
 }
 
+template <class T, class U>
+inline bool varTypeUsesSameRegType(T vt, U vu)
+{
+    return varTypeRegister[TypeGet(vt)] == varTypeRegister[TypeGet(vu)];
+}
+
 template <class T>
 inline bool varTypeUsesIntReg(T vt)
 {

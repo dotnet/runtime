@@ -7767,7 +7767,18 @@ void CodeGen::genReturn(GenTree* treeNode)
             else
 #endif // TARGET_ARM
             {
-                regNumber retReg = varTypeUsesFloatReg(treeNode) ? REG_FLOATRET : REG_INTRET;
+                regNumber retReg;
+
+                if (varTypeUsesIntReg(treeNode))
+                {
+                    retReg = REG_INTRET;
+                }
+                else
+                {
+                    assert(varTypeUsesFloatReg(treeNode));
+                    retReg = REG_FLOATRET;
+                }
+
                 inst_Mov_Extend(targetType, /* srcInReg */ true, retReg, op1->GetRegNum(), /* canSkip */ true);
             }
 #endif // !TARGET_ARM64 || !TARGET_LOONGARCH64
@@ -9335,10 +9346,10 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 //
 void CodeGen::genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg)
 {
-    const bool srcFltReg = varTypeUsesFloatReg(srcType) || varTypeIsSIMD(srcType);
+    const bool srcFltReg = varTypeUsesFloatReg(srcType);
     assert(srcFltReg == genIsValidFloatReg(srcReg));
 
-    const bool dstFltReg = varTypeUsesFloatReg(targetType) || varTypeIsSIMD(targetType);
+    const bool dstFltReg = varTypeUsesFloatReg(targetType);
     assert(dstFltReg == genIsValidFloatReg(targetReg));
 
     inst_Mov(targetType, targetReg, srcReg, /* canSkip */ true);

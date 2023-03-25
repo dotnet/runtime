@@ -33,6 +33,7 @@ const unsigned int RegisterTypeCount    = 2;
 * Register types
 *****************************************************************************/
 typedef var_types RegisterType;
+
 #define IntRegisterType TYP_INT
 #define FloatRegisterType TYP_FLOAT
 #define MaskRegisterType TYP_MASK
@@ -46,7 +47,21 @@ typedef var_types RegisterType;
 template <class T>
 RegisterType regType(T type)
 {
-    return varTypeUsesFloatReg(TypeGet(type)) ? FloatRegisterType : IntRegisterType;
+    if (varTypeUsesIntReg(type))
+    {
+        return IntRegisterType;
+    }
+#if defined(TARGET_XARCH)
+    else if (varTypeUsesMaskReg(type))
+    {
+        return MaskRegisterType;
+    }
+#endif // TARGET_XARCH
+    else
+    {
+        assert(varTypeUsesFloatReg(type));
+        return FloatRegisterType;
+    }
 }
 
 //------------------------------------------------------------------------

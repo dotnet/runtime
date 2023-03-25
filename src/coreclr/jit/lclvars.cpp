@@ -1069,7 +1069,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
 #if FEATURE_FASTTAILCALL
             // Check if arg was split between registers and stack.
-            if (!varTypeUsesFloatReg(argType))
+            if (varTypeUsesIntReg(argType))
             {
                 unsigned firstRegArgNum = genMapIntRegNumToRegArgNum(varDsc->GetArgReg());
                 unsigned lastRegArgNum  = firstRegArgNum + cSlots - 1;
@@ -1118,6 +1118,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 else
 #endif // defined(UNIX_AMD64_ABI)
                 {
+                    assert(varTypeUsesFloatReg(argType) || varTypeUsesIntReg(argType));
+
                     bool     isFloat   = varTypeUsesFloatReg(argType);
                     unsigned regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), argType);
 
@@ -1170,9 +1172,14 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         {
 #if defined(TARGET_ARM)
             varDscInfo->setAllRegArgUsed(argType);
+
             if (varTypeUsesFloatReg(argType))
             {
                 varDscInfo->setAnyFloatStackArgs();
+            }
+            else
+            {
+                assert(varTypeUsesIntReg(argType));
             }
 
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
@@ -2405,7 +2412,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
     {
         const lvaStructFieldInfo* pFieldInfo = &structPromotionInfo.fields[index];
 
-        if (varTypeUsesFloatReg(pFieldInfo->fldType))
+        if (!varTypeUsesIntReg(pFieldInfo->fldType))
         {
             // Whenever we promote a struct that contains a floating point field
             // it's possible we transition from a method that originally only had integer
