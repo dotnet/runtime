@@ -3460,7 +3460,9 @@ size_t CEEInfo::getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls, bool isGc
 
     *pAccessType = IAT_VALUE;
     *pIsInitedOffset = 0;
+    *pIsInitedMask = ClassInitFlags::INITIALIZED_FLAG;
 
+    // Impl is based on IsPrecomputedClassInitialized()
     UINT32 clsIndex = 0;
     if (pMT->IsDynamicStatics())
     {
@@ -3471,15 +3473,11 @@ size_t CEEInfo::getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls, bool isGc
         clsIndex = (UINT32)pMT->GetClassIndex();
     }
 
-    Module* pModule = pMT->GetModuleForStatics();
-    size_t moduleId = pModule->GetModuleID();
+    size_t moduleId = pMT->GetModuleForStatics()->GetModuleID();
     result = (size_t)((UINT8*)moduleId + DomainLocalModule::GetOffsetOfDataBlob() + clsIndex);
 
-    *pIsInitedMask = ClassInitFlags::INITIALIZED_FLAG;
-    {
-        GCX_COOP();
-        *pStaticBase = (size_t)(isGc ? pMT->GetGCStaticsBasePointer() : pMT->GetNonGCStaticsBasePointer());
-    }
+    GCX_COOP();
+    *pStaticBase = (size_t)(isGc ? pMT->GetGCStaticsBasePointer() : pMT->GetNonGCStaticsBasePointer());
 
     EE_TO_JIT_TRANSITION_LEAF();
 

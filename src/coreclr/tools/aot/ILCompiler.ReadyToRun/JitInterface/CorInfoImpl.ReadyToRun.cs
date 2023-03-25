@@ -3054,6 +3054,7 @@ namespace Internal.JitInterface
 
         private UIntPtr getIsClassInitedFieldAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref InfoAccessType pAccessType, UIntPtr* pStaticBase, ref uint pIsInitedMask, int* pIsInitedOffset)
         {
+            // Implemented for JIT and NativeAOT only for now.
             return 0;
         }
     }

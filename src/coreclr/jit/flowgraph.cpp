@@ -511,10 +511,10 @@ PhaseStatus Compiler::fgExpandStaticInit()
                     continue;
                 }
 
-                assert(call->gtRetClsHnd != NO_CLASS_HANDLE);
-                JITDUMP("Expanding static initialization for %s\n", eeGetClassName(call->gtRetClsHnd))
+                JITDUMP("Expanding static initialization for '%s', call: [%06d] in " FMT_BB "\n",
+                        eeGetClassName(call->gtRetClsHnd), dspTreeID(tree), block->bbNum)
 
-                if (call->gtRetClsHnd == NO_CLASS_HANDLE)
+                if (call->gtInitClsHnd == NO_CLASS_HANDLE)
                 {
                     assert(!"helper call was created without gtRetClsHnd");
                     continue;
@@ -529,6 +529,7 @@ PhaseStatus Compiler::fgExpandStaticInit()
                                                                    &staticBase, &isInitMask, &isInitOffset);
                 if (staticInitAddr == 0)
                 {
+                    JITDUMP("getIsClassInitedFieldAddress returned 0 - bail out.\n")
                     continue;
                 }
                 assert((staticBase != 0) && (isInitMask != 0));
@@ -581,8 +582,27 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 //   staticBase = fastPath;
                 //
 
+                // The initialization check looks like this for JIT:
+                //
+                // *  JTRUE     void
+                // \--*  NE        int
+                //    +--*  AND       int
+                //    |  +--*  IND       int
+                //    |  |  \--*  CNS_INT(h) long   0x.... const ptr
+                //    |  \--*  CNS_INT   int    1 (bit mask)
+                //    \--*  CNS_INT   int    0
+                //
+                // For NativeAOT it's:
+                //
+                // *  JTRUE     void
+                // \--*  NE        int
+                //    +--*  IND       int
+                //    |  \--*  ADD       long
+                //    |     +--*  CNS_INT(h) long   0x.... const ptr
+                //    |     \--*  CNS_INT   int    -8 (offset)
+                //    \--*  CNS_INT   int    0
+                //
                 GenTree* isInitAdrNode;
-
                 if (isInitOffset != 0)
                 {
                     // Don't fold ADD(CNS1, CNS2) here since the result won't be reloc-friendly for AOT
@@ -1034,9 +1054,9 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
     if (IsStaticHelperEligibleForExpansion(result))
     {
-        // Re-use gtRetClsHnd field to store information about the class this helper is initialized
-        // (it is difficult to restore that from arguments)
-        result->gtRetClsHnd = cls;
+        // Keep class handle attached to the helper call since it's difficult to restore it
+        // from arguments/EntryPoint
+        result->gtInitClsHnd = cls;
     }
     result->gtFlags |= callFlags;
 

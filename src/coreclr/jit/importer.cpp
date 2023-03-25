@@ -1659,9 +1659,9 @@ GenTreeCall* Compiler::impReadyToRunHelperToTree(CORINFO_RESOLVED_TOKEN* pResolv
 
     if (IsStaticHelperEligibleForExpansion(op1))
     {
-        // Re-use gtRetClsHnd field to store information about the class this helper is initialized
-        // (it is difficult to restore that from arguments)
-        op1->gtRetClsHnd = pResolvedToken->hClass;
+        // Keep class handle attached to the helper call since it's difficult to restore it
+        // from arguments/EntryPoint
+        op1->gtInitClsHnd = pResolvedToken->hClass;
     }
 
     return op1;
@@ -4177,9 +4177,9 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
                 if (IsStaticHelperEligibleForExpansion(op1))
                 {
-                    // Re-use gtRetClsHnd field to store information about the class this helper is initialized
-                    // (it is difficult to restore that from arguments)
-                    op1->AsCall()->gtRetClsHnd = pResolvedToken->hClass;
+                    // Keep class handle attached to the helper call since it's difficult to restore it
+                    // from arguments/EntryPoint
+                    op1->AsCall()->gtInitClsHnd = pResolvedToken->hClass;
                 }
 
                 op1->gtFlags |= callFlags;

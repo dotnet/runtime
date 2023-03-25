@@ -4396,11 +4396,27 @@ void MethodContext::recGetIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls,
                                                     int32_t*             pIsInitedOffset,
                                                     size_t               result)
 {
-    // TODO: implement in this PR
+    if (GetIsClassInitedFieldAddress == nullptr)
+        GetIsClassInitedFieldAddress = new LightWeightMap<DLD, Agnostic_GetIsClassInitedFieldAddress>();
+
+    Agnostic_GetIsClassInitedFieldAddress value;
+    value.accessType = (DWORD)*pAccessType;
+    value.isInitedMask = (DWORD)*pIsInitedMask;
+    value.isInitedOffset = (DWORD)*pIsInitedOffset;
+    value.staticBase = CastHandle(*pStaticBase);
+    value.result = (DWORDLONG)result;
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.A = CastHandle(cls);
+    key.B = (DWORD)isGc;
+
+    GetIsClassInitedFieldAddress->Add(key, value);
+    DEBUG_REC(dmpGetIsClassInitedFieldAddress(key, value));
 }
 void MethodContext::dmpGetIsClassInitedFieldAddress(DLD key, const Agnostic_GetIsClassInitedFieldAddress& value)
 {
-    // TODO: implement in this PR
+    printf("GetIsClassInitedFieldAddress key hnd-%016" PRIX64 ", value staticBase-%016" PRIX64 ", result-%016" PRIX64 "", key.A, value.staticBase, value.result);
 }
 size_t MethodContext::repGetIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls,
                                                       bool                 isGc,
@@ -4409,8 +4425,19 @@ size_t MethodContext::repGetIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls,
                                                       uint32_t*            pIsInitedMask,
                                                       int32_t*             pIsInitedOffset)
 {
-    // TODO: implement in this PR
-    return 0;
+    DLD key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.A = CastHandle(cls);
+    key.B = (DWORD)isGc;
+
+    Agnostic_GetIsClassInitedFieldAddress value = LookupByKeyOrMiss(GetIsClassInitedFieldAddress, key, ": key %016" PRIX64 "", key.A);
+    DEBUG_REP(dmpGetIsClassInitedFieldAddress(key, value));
+
+    *pAccessType = (InfoAccessType)value.accessType;
+    *pIsInitedMask = (uint32_t)value.isInitedMask;
+    *pIsInitedOffset = (int32_t)value.isInitedOffset;
+    *pStaticBase = (size_t)value.staticBase;
+    return (size_t)value.result;
 }
 
 void MethodContext::recGetThreadTLSIndex(void** ppIndirection, DWORD result)

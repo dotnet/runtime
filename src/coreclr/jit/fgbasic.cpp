@@ -6065,6 +6065,24 @@ BasicBlock* Compiler::fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool
     return newBlk;
 }
 
+//------------------------------------------------------------------------
+// fgNewBBFromTreeAfter: Create a basic block from the given tree and insert it
+//    after the specified block.
+//
+// Arguments:
+//    jumpKind          - jump kind for the new block.
+//    block             - insertion point.
+//    tree              - tree that will be wrapped into a statement and
+//                        inserted in the new block.
+//    debugInfo         - debug info to propagate into the new statement.
+//    updateSideEffects - update side effects for the whole statement.
+//
+// Return Value:
+//    The new block
+//
+// Notes:
+//    The new block will have BBF_INTERNAL flag and EH region will be extended
+//
 BasicBlock* Compiler::fgNewBBFromTreeAfter(
     BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, bool updateSideEffects)
 {

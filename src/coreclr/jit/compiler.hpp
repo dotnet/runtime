@@ -3579,6 +3579,17 @@ inline CorInfoHelpFunc Compiler::eeGetHelperNum(CORINFO_METHOD_HANDLE method)
     return ((CorInfoHelpFunc)(((size_t)method) >> 2));
 }
 
+//------------------------------------------------------------------------
+// IsStaticHelperEligibleForExpansion: Determine whether this node is a static init
+//    helper eligible for late expansion
+//
+// Arguments:
+//    tree - tree node
+//    isGC - [OUT] whether the helper returns GCStaticBase or NonGCStaticBase
+//
+// Return Value:
+//    Returns true if eligible for late expansion
+//
 inline bool Compiler::IsStaticHelperEligibleForExpansion(GenTree* tree, bool* isGc)
 {
     if (!tree->IsHelperCall())

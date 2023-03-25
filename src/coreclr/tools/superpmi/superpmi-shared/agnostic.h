@@ -465,8 +465,8 @@ struct Agnostic_GetClassModuleIdForStatics
 
 struct Agnostic_GetIsClassInitedFieldAddress
 {
-    DWORDLONG cls;
     DWORDLONG staticBase;
+    DWORDLONG result;
     DWORD     accessType;
     DWORD     isInitedMask;
     DWORD     isInitedOffset;
