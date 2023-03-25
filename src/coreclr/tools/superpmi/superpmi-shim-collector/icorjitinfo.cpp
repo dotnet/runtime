@@ -594,11 +594,12 @@ size_t interceptor_ICJI::getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls,
                                                       bool                 isGc,
                                                       InfoAccessType*      pAccessType,
                                                       size_t*              pStaticBase,
-                                                      uint8_t*             pIsInitedMask)
+                                                      uint32_t*            pIsInitedMask,
+                                                      int32_t*             pIsInitedOffset)
 {
     mc->cr->AddCall("getIsClassInitedFieldAddress");
-    size_t temp = original_ICorJitInfo->getIsClassInitedFieldAddress(cls, isGc, pAccessType, pStaticBase, pIsInitedMask);
-    mc->recGetIsClassInitedFieldAddress(cls, isGc, pAccessType, pStaticBase, pIsInitedMask, temp);
+    size_t temp = original_ICorJitInfo->getIsClassInitedFieldAddress(cls, isGc, pAccessType, pStaticBase, pIsInitedMask, pIsInitedOffset);
+    mc->recGetIsClassInitedFieldAddress(cls, isGc, pAccessType, pStaticBase, pIsInitedMask, pIsInitedOffset, temp);
     return temp;
 }
 

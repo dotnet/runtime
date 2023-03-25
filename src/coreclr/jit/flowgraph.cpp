@@ -520,12 +520,13 @@ PhaseStatus Compiler::fgExpandStaticInit()
                     continue;
                 }
 
-                UINT8          isInitMask;
+                unsigned       isInitMask;
+                int            isInitOffset;
                 InfoAccessType staticBaseAccessType;
                 size_t         staticBase;
                 size_t         staticInitAddr =
                     info.compCompHnd->getIsClassInitedFieldAddress(call->gtRetClsHnd, isGc, &staticBaseAccessType,
-                                                                   &staticBase, &isInitMask);
+                                                                   &staticBase, &isInitMask, &isInitOffset);
                 if (staticInitAddr == 0)
                 {
                     continue;
@@ -580,11 +581,27 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 //   staticBase = fastPath;
                 //
 
-                // TODO: do we need double-indirect for staticBaseAccessType == IAT_PVALUE ?
-                GenTree* isInitAdrNode = gtNewIndOfIconHandleNode(TYP_UBYTE, staticInitAddr, GTF_ICON_CONST_PTR, true);
+                var_types indirType = TYP_INT;
+                if (isInitMask <= 0xFF)
+                {
+                    indirType = TYP_UBYTE;
+                }
 
-                // "((uint)*isInitAddr) & isInitMask != 0"
-                isInitAdrNode        = gtNewOperNode(GT_AND, TYP_INT, isInitAdrNode, gtNewIconNode(isInitMask));
+                // TODO: do we need double-indirect for staticBaseAccessType == IAT_PVALUE ?
+                GenTree* isInitAdrNode = gtNewIndOfIconHandleNode(indirType, staticInitAddr, GTF_ICON_CONST_PTR, true);
+
+                if (isInitOffset != 0)
+                {
+                    // isInitAddr = isInitAddr + initOffset;
+                    isInitAdrNode = gtNewOperNode(GT_ADD, TYP_INT, isInitAdrNode, gtNewIconNode(isInitOffset));
+                }
+
+                // "((*isInitAddr) & isInitMask != 0"
+                if (isInitMask < 0xFFFFFFFF)
+                {
+                    isInitAdrNode = gtNewOperNode(GT_AND, TYP_INT, isInitAdrNode, gtNewIconNode(isInitMask));
+                }
+
                 GenTree* isInitedCmp = gtNewOperNode(GT_NE, TYP_INT, isInitAdrNode, gtNewIconNode(0));
                 isInitedCmp->gtFlags |= GTF_RELOP_JMP_USED;
                 BasicBlock* isInitedBb =

@@ -2381,7 +2381,8 @@ public:
             bool                 isGc,
             InfoAccessType*      pAccessType,
             size_t*              pStaticBase,
-            uint8_t*             pIsInitedMask
+            uint32_t*            pIsInitedMask,
+            int32_t*             pIsInitedOffset
             ) = 0;
 
     // return the number of bytes needed by an instance of the class

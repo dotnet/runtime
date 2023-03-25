@@ -4267,7 +4267,8 @@ void MethodContext::recGetIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls,
                                                     bool                 isGc,
                                                     InfoAccessType*      pAccessType,
                                                     size_t*              pStaticBase,
-                                                    uint8_t*             pIsInitedMask,
+                                                    uint32_t*            pIsInitedMask,
+                                                    int32_t*             pIsInitedOffset,
                                                     size_t               result)
 {
     // TODO: implement in this PR
@@ -4280,7 +4281,8 @@ size_t MethodContext::repGetIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls,
                                                       bool                 isGc,
                                                       InfoAccessType*      pAccessType,
                                                       size_t*              pStaticBase,
-                                                      uint8_t*             pIsInitedMask)
+                                                      uint32_t*            pIsInitedMask,
+                                                      int32_t*             pIsInitedOffset)
 {
     // TODO: implement in this PR
     return 0;

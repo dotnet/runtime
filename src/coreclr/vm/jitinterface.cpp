@@ -3443,7 +3443,7 @@ size_t CEEInfo::getClassModuleIdForStatics(CORINFO_CLASS_HANDLE clsHnd, CORINFO_
 }
 
 /*********************************************************************/
-size_t CEEInfo::getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls, bool isGc, InfoAccessType* pAccessType, size_t* pStaticBase, uint8_t* pIsInitedMask)
+size_t CEEInfo::getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls, bool isGc, InfoAccessType* pAccessType, size_t* pStaticBase, uint32_t* pIsInitedMask, int32_t* pIsInitedOffset)
 {
     CONTRACTL {
         NOTHROW;
@@ -3459,6 +3459,7 @@ size_t CEEInfo::getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls, bool isGc
     PTR_MethodTable pMT = VMClsHnd.AsMethodTable();
 
     *pAccessType = IAT_VALUE;
+    *pIsInitedOffset = 0;
 
     UINT32 clsIndex = 0;
     if (pMT->IsDynamicStatics())

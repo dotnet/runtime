@@ -469,6 +469,7 @@ struct Agnostic_GetIsClassInitedFieldAddress
     DWORDLONG staticBase;
     DWORD     accessType;
     DWORD     isInitedMask;
+    DWORD     isInitedOffset;
 };
 
 struct Agnostic_IsCompatibleDelegate

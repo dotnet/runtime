@@ -516,10 +516,11 @@ size_t WrapICorJitInfo::getIsClassInitedFieldAddress(
           bool isGc,
           InfoAccessType* pAccessType,
           size_t* pStaticBase,
-          uint8_t* pIsInitedMask)
+          uint32_t* pIsInitedMask,
+          int32_t* pIsInitedOffset)
 {
     API_ENTER(getIsClassInitedFieldAddress);
-    size_t temp = wrapHnd->getIsClassInitedFieldAddress(cls, isGc, pAccessType, pStaticBase, pIsInitedMask);
+    size_t temp = wrapHnd->getIsClassInitedFieldAddress(cls, isGc, pAccessType, pStaticBase, pIsInitedMask, pIsInitedOffset);
     API_LEAVE(getIsClassInitedFieldAddress);
     return temp;
 }

@@ -507,10 +507,11 @@ size_t MyICJI::getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls,
                                             bool                 isGc,
                                             InfoAccessType*      pAccessType,
                                             size_t*              pStaticBase,
-                                            uint8_t*             pIsInitedMask)
+                                            uint32_t*            pIsInitedMask,
+                                            int32_t*             pIsInitedOffset)
 {
     jitInstance->mc->cr->AddCall("getIsClassInitedFieldAddress");
-    return jitInstance->mc->repGetIsClassInitedFieldAddress(cls, isGc, pAccessType, pStaticBase, pIsInitedMask);
+    return jitInstance->mc->repGetIsClassInitedFieldAddress(cls, isGc, pAccessType, pStaticBase, pIsInitedMask, pIsInitedOffset);
 }
 
 // return the number of bytes needed by an instance of the class

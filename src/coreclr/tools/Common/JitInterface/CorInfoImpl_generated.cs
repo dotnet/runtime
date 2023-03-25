@@ -763,12 +763,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static UIntPtr _getIsClassInitedFieldAddress(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, byte isGc, InfoAccessType* pAccessType, UIntPtr* pStaticBase, byte* pIsInitedMask)
+        private static UIntPtr _getIsClassInitedFieldAddress(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, byte isGc, InfoAccessType* pAccessType, UIntPtr* pStaticBase, uint* pIsInitedMask, int* pIsInitedOffset)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getIsClassInitedFieldAddress(cls, isGc != 0, ref *pAccessType, pStaticBase, pIsInitedMask);
+                return _this.getIsClassInitedFieldAddress(cls, isGc != 0, ref *pAccessType, pStaticBase, ref *pIsInitedMask, pIsInitedOffset);
             }
             catch (Exception ex)
             {
@@ -2724,7 +2724,7 @@ namespace Internal.JitInterface
             callbacks[48] = (delegate* unmanaged<IntPtr, IntPtr*, UIntPtr, void*>)&_LongLifetimeMalloc;
             callbacks[49] = (delegate* unmanaged<IntPtr, IntPtr*, void*, void>)&_LongLifetimeFree;
             callbacks[50] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_MODULE_STRUCT_**, void**, UIntPtr>)&_getClassModuleIdForStatics;
-            callbacks[51] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte, InfoAccessType*, UIntPtr*, byte*, UIntPtr>)&_getIsClassInitedFieldAddress;
+            callbacks[51] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte, InfoAccessType*, UIntPtr*, uint*, int*, UIntPtr>)&_getIsClassInitedFieldAddress;
             callbacks[52] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getClassSize;
             callbacks[53] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getHeapClassSize;
             callbacks[54] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte>)&_canAllocateOnStack;

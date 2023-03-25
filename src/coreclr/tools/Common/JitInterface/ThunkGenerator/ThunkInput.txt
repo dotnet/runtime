@@ -209,7 +209,7 @@ FUNCTIONS
     void* LongLifetimeMalloc(size_t sz)
     void LongLifetimeFree(void* obj)
     size_t getClassModuleIdForStatics(CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE* pModule, VOIDSTARSTAR ppIndirection)
-    size_t getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls, bool isGc, InfoAccessType* pAccessType, size_t* pStaticBase, uint8_t* pIsInitedMask)
+    size_t getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls, bool isGc, InfoAccessType* pAccessType, size_t* pStaticBase, uint32_t* pIsInitedMask, int32_t* pIsInitedOffset)
     unsigned getClassSize(CORINFO_CLASS_HANDLE cls)
     unsigned getHeapClassSize(CORINFO_CLASS_HANDLE        cls)
     bool canAllocateOnStack(CORINFO_CLASS_HANDLE cls)

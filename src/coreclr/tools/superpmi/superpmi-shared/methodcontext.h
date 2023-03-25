@@ -569,14 +569,16 @@ public:
                                          bool                 isGc,
                                          InfoAccessType*      pAccessType,
                                          size_t*              pStaticBase,
-                                         uint8_t*             pIsInitedMask,
+                                         uint32_t*            pIsInitedMask,
+                                         int32_t*             pIsInitedOffset,
                                          size_t               result);
     void dmpGetIsClassInitedFieldAddress(DLD key, const Agnostic_GetIsClassInitedFieldAddress& value);
     size_t repGetIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls,
                                            bool                 isGc,
                                            InfoAccessType*      pAccessType,
                                            size_t*              pStaticBase,
-                                           uint8_t*             pIsInitedMask);
+                                           uint32_t*            pIsInitedMask,
+                                           int32_t*             pIsInitedOffset);
 
     void recGetThreadTLSIndex(void** ppIndirection, DWORD result);
     void dmpGetThreadTLSIndex(DWORD key, DLD value);

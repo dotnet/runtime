@@ -2352,12 +2352,12 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private UIntPtr getIsClassInitedFieldAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref InfoAccessType pAccessType, UIntPtr* pStaticBase, byte* pIsInitedMask)
+        private UIntPtr getIsClassInitedFieldAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref InfoAccessType pAccessType, UIntPtr* pStaticBase, ref uint pIsInitedMask, int* pIsInitedOffset)
 #pragma warning restore CA1822 // Mark members as static
         {
-            /*
             if (isGc)
             {
+                // TODO:
                 return 0;
             }
 
@@ -2365,16 +2365,10 @@ namespace Internal.JitInterface
             ISortableSymbolNode symbol = _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
 
             pAccessType = InfoAccessType.IAT_VALUE;
-            *pIsInitedMask = 0xFF; // means Mask is not needed
+            pIsInitedMask = 0xFFFFFFFF; // means Mask is not needed
             *pStaticBase = (UIntPtr)ObjectToHandle(symbol);
-
-            int offset = NonGCStaticsNode.GetClassConstructorContextSize(_compilation.NodeFactory.Target);
-
-            // TODO: introduce a new argument to pass offset since the subtraction has to be done in codegen
-            // (can we create a new relocation for it?)
+            *pIsInitedOffset = -NonGCStaticsNode.GetClassConstructorContextSize(_compilation.NodeFactory.Target);
             return *pStaticBase;
-            */
-            return 0;
         }
     }
 }

@@ -234,7 +234,8 @@ size_t getIsClassInitedFieldAddress(
           bool isGc,
           InfoAccessType* pAccessType,
           size_t* pStaticBase,
-          uint8_t* pIsInitedMask) override;
+          uint32_t* pIsInitedMask,
+          int32_t* pIsInitedOffset) override;
 
 unsigned getClassSize(
           CORINFO_CLASS_HANDLE cls) override;
