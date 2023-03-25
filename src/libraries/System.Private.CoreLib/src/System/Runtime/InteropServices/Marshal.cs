@@ -739,7 +739,7 @@ namespace System.Runtime.InteropServices
                 case HResults.E_POINTER:
                     return new System.NullReferenceException();
                 case HResults.COR_E_OBJECTDISPOSED:
-                    return new System.ObjectDisposedException("");
+                    return new System.ObjectDisposedException(null);
                 case HResults.COR_E_OPERATIONCANCELED:
                     return new System.OperationCanceledException();
                 case HResults.COR_E_OUTOFMEMORY:
@@ -783,7 +783,7 @@ namespace System.Runtime.InteropServices
                 case HResults.COR_E_TYPEACCESS:
                     return new System.TypeAccessException();
                 case HResults.COR_E_TYPEINITIALIZATION:
-                    return new System.TypeInitializationException("");
+                    return new System.TypeInitializationException(null);
                 case HResults.COR_E_TYPELOAD:
                     return new System.TypeLoadException();
                 case HResults.COR_E_TYPEUNLOADED:
@@ -798,7 +798,7 @@ namespace System.Runtime.InteropServices
                     return new System.NotImplementedException();
                 //case HResults.E_POINTER:
                 case HResults.RO_E_CLOSED:
-                    return new System.ObjectDisposedException("");
+                    return new System.ObjectDisposedException(null);
                 case HResults.COR_E_ABANDONEDMUTEX:
                 case HResults.COR_E_AMBIGUOUSIMPLEMENTATION:
                 case HResults.COR_E_CANNOTUNLOADAPPDOMAIN:
@@ -824,7 +824,7 @@ namespace System.Runtime.InteropServices
                 case HResults.TYPE_E_TYPEMISMATCH:
                 case HResults.CO_E_NOTINITIALIZED:
                 case HResults.RPC_E_CHANGED_MODE:
-                    return new COMException("", errorCode);
+                    return new COMException(null, errorCode);
 
                 case HResults.STG_E_PATHNOTFOUND:
                 case HResults.CTL_E_PATHNOTFOUND:
@@ -861,7 +861,7 @@ namespace System.Runtime.InteropServices
                         };
                     }
                 default:
-                    return new COMException("", errorCode);
+                    return new COMException(null, errorCode);
             }
         }
 #pragma warning restore IDE0060
