@@ -316,10 +316,10 @@ typedef int __ptrace_request;
         ASSIGN_CONTROL_REGS \
         ASSIGN_INTEGER_REGS \
 
-#if defined(XSTATE_SUPPORTED) || defined(HOST_AMD64) && defined(TARGET_OSX)
+#if defined(XSTATE_SUPPORTED) || defined(HOST_AMD64) && defined(HAVE_MACH_EXCEPTIONS)
 bool Xstate_IsAvx512Supported()
 {
-#if defined(TARGET_OSX)
+#if defined(HAVE_MACH_EXCEPTIONS)
     // MacOS has specialized behavior where it reports AVX512 support but doesnt
     // actually enable AVX512 until the first instruction is executed and does so
     // on a per thread basis. It does this by catching the faulting instruction and
@@ -383,7 +383,7 @@ bool Xstate_IsAvx512Supported()
     return Xstate_Avx512Supported == 1;
 #endif
 }
-#endif // XSTATE_SUPPORTED || defined(HOST_AMD64) && defined(TARGET_OSX)
+#endif // XSTATE_SUPPORTED || defined(HOST_AMD64) && defined(HAVE_MACH_EXCEPTIONS)
 
 #if !HAVE_MACH_EXCEPTIONS
 
