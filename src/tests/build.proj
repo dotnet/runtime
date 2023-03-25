@@ -64,11 +64,6 @@
           TaskParameter="Filtered"
           ItemName="TestDirectories"/>
     </RemoveDuplicates>
-    <PropertyGroup>
-      <TestDirectories>$(XunitTestBinBase)tracing/eventpipe</TestDirectories>
-    </PropertyGroup>
-    <Message Text="Test directories are %(TestDirectories.Identity)" Importance="High" />
-
   </Target>
 
   <!-- Target to check the test build, to see if it looks ok. We've had several cases where a change inadvertently and drastically changes
@@ -278,7 +273,7 @@
       <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','_'))</Category>
       <XUnitWrapperFileName>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/', '.')).XUnitWrapper.dll</XUnitWrapperFileName>
       <XUnitWrapperDll>$(CMDDIR_GrandParent)/$(CategoryWithSlash)/$(XUnitWrapperFileName)</XUnitWrapperDll>
-      <BuildDir>$(__TestIntermediatesDir)\iOSApps\$(Category)</BuildDir>
+      <BuildDir>$(IntermediateOutputPath)\iOSApps\$(Category)</BuildDir>
       <FinalPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).app</FinalPath>
       <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
       <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
@@ -570,8 +565,9 @@
     <!-- See https://github.com/Microsoft/msbuild/issues/2993 -->
 
     <!-- We need to build group #1 manually as it doesn't have a _GroupStartsWith item associated with it, see the comment in Common\dirs.proj -->
-    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=1;__SkipRestorePackages=1" />
-    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=%(_GroupStartsWith.GroupNumber);__SkipRestorePackages=1" />
+    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=1;__SkipRestorePackages=1" Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator'" />
+    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=9;__SkipRestorePackages=9" Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator'" />
+    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=%(_GroupStartsWith.GroupNumber);__SkipRestorePackages=1" Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator'" />
   </Target>
 
   <Target Name="BuildManagedTestGroup"
