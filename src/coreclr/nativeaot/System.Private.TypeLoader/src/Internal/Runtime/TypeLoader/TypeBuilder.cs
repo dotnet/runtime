@@ -504,7 +504,7 @@ namespace Internal.Runtime.TypeLoader
 
                 _bitfield = null;
                 _isReferenceTypeGCLayout = false; // This field is only used for the LowLevelList<bool> path
-                _gcdesc = MethodTable->HasGCPointers ? (void**)MethodTable - 1 : null;
+                _gcdesc = MethodTable->ContainsGCPointers ? (void**)MethodTable - 1 : null;
                 _size = (int)MethodTable->BaseSize;
             }
 

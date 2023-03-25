@@ -400,11 +400,19 @@ internal sealed class Xcode
             toLink += $"    {asmLinkFile}{Environment.NewLine}";
         }
 
+        string frameworks = "";
+        if ((Target == TargetNames.iOS) || (Target == TargetNames.iOSsim) || (Target == TargetNames.MacCatalyst))
+        {
+            frameworks = "\"-framework GSS\"";
+        }
+
         string appLinkerArgs = "";
         foreach(string linkerArg in extraLinkerArgs)
         {
             appLinkerArgs += $"    \"{linkerArg}\"{Environment.NewLine}";
         }
+
+        appLinkerArgs += $"    {frameworks}{Environment.NewLine}";
 
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
         cmakeLists = cmakeLists.Replace("%APP_LINKER_ARGS%", appLinkerArgs);

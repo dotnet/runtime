@@ -3,13 +3,12 @@
 
 namespace Microsoft.Interop.UnitTests
 {
-    public class CustomCollectionMarshallingCodeSnippets<TSignatureTestProvider>
-        where TSignatureTestProvider : ICustomMarshallingSignatureTestProvider
+    public class CustomCollectionMarshallingCodeSnippets
     {
-        TSignatureTestProvider _provider;
+        ICustomMarshallingSignatureTestProvider _provider;
         public StatelessSnippets Stateless { get; }
         public StatefulSnippets Stateful { get; }
-        public CustomCollectionMarshallingCodeSnippets(TSignatureTestProvider provider)
+        public CustomCollectionMarshallingCodeSnippets(ICustomMarshallingSignatureTestProvider provider)
         {
             _provider = provider;
             Stateless = new StatelessSnippets(this, provider);
@@ -77,9 +76,9 @@ static class CustomIntMarshaller
 ";
         public class StatelessSnippets
         {
-            TSignatureTestProvider _provider;
-            CustomCollectionMarshallingCodeSnippets<TSignatureTestProvider> _snippets;
-            public StatelessSnippets(CustomCollectionMarshallingCodeSnippets<TSignatureTestProvider> instance, TSignatureTestProvider provider)
+            ICustomMarshallingSignatureTestProvider _provider;
+            CustomCollectionMarshallingCodeSnippets _snippets;
+            public StatelessSnippets(CustomCollectionMarshallingCodeSnippets instance, ICustomMarshallingSignatureTestProvider provider)
             {
                 _provider = provider;
                 _snippets = instance;
@@ -304,9 +303,9 @@ static unsafe class Marshaller<T, U, TUnmanagedElement> where TUnmanagedElement 
 
         public class StatefulSnippets
         {
-            private readonly TSignatureTestProvider _provider;
-            private readonly CustomCollectionMarshallingCodeSnippets<TSignatureTestProvider> _snippets;
-            public StatefulSnippets(CustomCollectionMarshallingCodeSnippets<TSignatureTestProvider> snippets, TSignatureTestProvider provider)
+            private readonly ICustomMarshallingSignatureTestProvider _provider;
+            private readonly CustomCollectionMarshallingCodeSnippets _snippets;
+            public StatefulSnippets(CustomCollectionMarshallingCodeSnippets snippets, ICustomMarshallingSignatureTestProvider provider)
             {
                 _provider = provider;
                 _snippets = snippets;

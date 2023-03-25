@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection.Metadata;
 
 using ILCompiler.Logging;
 
@@ -1378,7 +1377,7 @@ namespace ILCompiler.Dataflow
                     else
                     {
                         // When we know the index, we can record the value at that index.
-                        StoreMethodLocalValue(arrValue.IndexValues, valueToStore.Value, indexToStoreAtInt.Value, curBasicBlock, MaxTrackedArrayValues);
+                        StoreMethodLocalValue(arrValue.IndexValues, ArrayValue.SanitizeArrayElementValue(valueToStore.Value), indexToStoreAtInt.Value, curBasicBlock, MaxTrackedArrayValues);
                     }
                 }
             }

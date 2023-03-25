@@ -234,7 +234,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonConverter? customConverter;
             try
             {
-                customConverter = DefaultJsonTypeInfoResolver.GetCustomConverterForMember(typeToConvert, memberInfo, options);
+                customConverter = GetCustomConverterForMember(typeToConvert, memberInfo, options);
             }
             catch (InvalidOperationException) when (ignoreCondition == JsonIgnoreCondition.Always)
             {

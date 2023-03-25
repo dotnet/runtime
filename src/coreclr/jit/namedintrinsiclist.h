@@ -20,6 +20,8 @@ enum NamedIntrinsic : unsigned short
     NI_System_BitConverter_Int64BitsToDouble,
     NI_System_BitConverter_SingleToInt32Bits,
 
+    NI_System_Buffer_Memmove,
+
     NI_SYSTEM_MATH_START,
     NI_System_Math_Abs,
     NI_System_Math_Acos,
@@ -179,6 +181,7 @@ enum NamedIntrinsic : unsigned short
     NI_SRCS_UNSAFE_As,
     NI_SRCS_UNSAFE_AsPointer,
     NI_SRCS_UNSAFE_AsRef,
+    NI_SRCS_UNSAFE_BitCast,
     NI_SRCS_UNSAFE_ByteOffset,
     NI_SRCS_UNSAFE_Copy,
     NI_SRCS_UNSAFE_CopyBlock,

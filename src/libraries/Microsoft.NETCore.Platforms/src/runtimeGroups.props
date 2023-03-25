@@ -11,7 +11,7 @@
     </RuntimeGroup>
     <RuntimeGroup Include="linux-musl">
       <Parent>linux</Parent>
-      <Architectures>x64;x86;arm;armv6;armel;arm64;s390x;ppc64le</Architectures>
+      <Architectures>x64;x86;arm;armv6;armel;arm64;s390x;ppc64le;riscv64</Architectures>
     </RuntimeGroup>
 
     <RuntimeGroup Include="alpine">

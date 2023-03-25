@@ -665,5 +665,29 @@ namespace System.Runtime.Intrinsics.Wasm
         /// </summary>
         [Intrinsic]
         public static Vector128<nuint>  CompareNotEqual(Vector128<nuint>  left, Vector128<nuint>  right) => CompareNotEqual(left, right);
+
+        /// <summary>
+        ///   i8x16.narrow_i16x8_s
+        /// </summary>
+        [Intrinsic]
+        internal static Vector128<sbyte> ConvertNarrowingSignedSaturate(Vector128<short> lower, Vector128<short> upper) => ConvertNarrowingSignedSaturate(lower, upper);
+
+        /// <summary>
+        ///   i16x8.narrow_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        internal static Vector128<short> ConvertNarrowingSignedSaturate(Vector128<int>   lower, Vector128<int>   upper) => ConvertNarrowingSignedSaturate(lower, upper);
+
+        /// <summary>
+        ///   i8x16.narrow_i16x8_u
+        /// </summary>
+        [Intrinsic]
+        internal static Vector128<byte>  ConvertNarrowingUnsignedSaturate(Vector128<short> lower, Vector128<short> upper) => ConvertNarrowingUnsignedSaturate(lower, upper);
+
+        /// <summary>
+        ///   i16x8.narrow_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        internal static Vector128<ushort> ConvertNarrowingUnsignedSaturate(Vector128<int>  lower, Vector128<int>   upper) => ConvertNarrowingUnsignedSaturate(lower, upper);
     }
 }

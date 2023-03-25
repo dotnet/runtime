@@ -117,7 +117,9 @@ namespace System.Tests
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) Pacific Time (Los Angeles)", "Pacific Standard Time", "Pacific Daylight Time" },
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Eastern Australia Time (Sydney)", "Australian Eastern Standard Time", "Australian Eastern Daylight Time" },
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Australian Western Standard Time (Perth)", "Australian Western Standard Time", "Australian Western Daylight Time" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Iran Time", "Iran Standard Time", "Iran Daylight Time" },
+
+                    // https://github.com/dotnet/runtime/issues/83901 The name is not same accross different OS updates.
+                    // { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Iran Time", "Iran Standard Time", "Iran Daylight Time" },
 
                     { s_NewfoundlandTz, "(UTC-03:30) Newfoundland Time (St. John’s)", "Newfoundland Standard Time", "Newfoundland Daylight Time" },
                     { s_catamarcaTz, "(UTC-03:00) Argentina Standard Time (Catamarca)", "Argentina Standard Time", "Argentina Summer Time" }
@@ -2083,6 +2085,11 @@ namespace System.Tests
             yield return new object[] { s_strPacific + "\\Display" };
             yield return new object[] { s_strPacific + "\n" }; // no trailing newline
             yield return new object[] { new string('a', 100) }; // long string
+            yield return new object[] { "/dev/random" };
+            yield return new object[] { "Invalid Id" };
+            yield return new object[] { "Invalid/Invalid" };
+            yield return new object[] { $"./{s_strPacific}" };
+            yield return new object[] { $"{s_strPacific}/../{s_strPacific}" };
         }
 
         [Theory]
@@ -3235,6 +3242,8 @@ namespace System.Tests
                 }
 
                 var list = new List<CultureInfo>();
+
+#if !TARGET_BROWSER
                 GCHandle handle = GCHandle.Alloc(list);
                 try
                 {
@@ -3247,10 +3256,12 @@ namespace System.Tests
                 {
                     handle.Free();
                 }
+#endif
 
                 return list.ToArray();
             }
 
+#if !TARGET_BROWSER
             [UnmanagedCallersOnly]
             private static unsafe int EnumUiLanguagesCallback(char* lpUiLanguageString, IntPtr lParam)
             {
@@ -3283,6 +3294,7 @@ namespace System.Tests
 
             [DllImport("Kernel32.dll", CharSet = CharSet.Auto)]
             private static extern unsafe bool EnumUILanguages(delegate* unmanaged<char*, IntPtr, int> lpUILanguageEnumProc, uint dwFlags, IntPtr lParam);
+#endif
         }
     }
 }

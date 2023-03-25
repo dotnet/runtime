@@ -830,7 +830,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                         sb.Append(@$"
     {InfoVarName} = new()
     {{
-        Name = ""{spec.Property.JsonPropertyName ?? spec.Property.ClrName}"",
+        Name = ""{spec.Property.ClrName}"",
         ParameterType = typeof({spec.Property.TypeGenerationSpec.TypeRef}),
         Position = {spec.ParameterIndex},
         HasDefaultValue = false,

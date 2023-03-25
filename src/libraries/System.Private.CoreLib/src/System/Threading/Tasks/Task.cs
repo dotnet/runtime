@@ -9,7 +9,6 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -120,19 +119,15 @@ namespace System.Threading.Tasks
         [ThreadStatic]
         internal static Task? t_currentTask;  // The currently executing task.
 
-        internal static int s_taskIdCounter; // static counter used to generate unique task IDs
+        private static int s_taskIdCounter; // static counter used to generate unique task IDs
 
         private int m_taskId; // this task's unique ID. initialized only if it is ever requested
 
-        internal Delegate? m_action;    // The body of the task.  Might be Action<object>, Action<TState> or Action.  Or possibly a Func.
-        // If m_action is set to null it will indicate that we operate in the
-        // "externally triggered completion" mode, which is exclusively meant
-        // for the signalling Task<TResult> (aka. promise). In this mode,
-        // we don't call InnerInvoke() in response to a Wait(), but simply wait on
-        // the completion event which will be set when the Future class calls Finish().
-        // But the event would now be signalled if Cancel() is called
+        // The delegate to invoke for a delegate-backed Task.
+        // This field also may be used by async state machines to cache an Action.
+        internal Delegate? m_action;
 
-        internal object? m_stateObject; // A state object that can be optionally supplied, passed to action.
+        private protected object? m_stateObject; // A state object that can be optionally supplied, passed to action.
         internal TaskScheduler? m_taskScheduler; // The task scheduler this task runs under.
 
         internal volatile int m_stateFlags; // SOS DumpAsync command depends on this name
@@ -566,6 +561,7 @@ namespace System.Threading.Tasks
             int illegalInternalOptions =
                     (int)(internalOptions &
                             ~(InternalTaskOptions.PromiseTask |
+                              InternalTaskOptions.HiddenState |
                               InternalTaskOptions.ContinuationTask |
                               InternalTaskOptions.LazyCancellation |
                               InternalTaskOptions.QueuedByRuntime));
@@ -1446,7 +1442,7 @@ namespace System.Threading.Tasks
         /// Gets the state object supplied when the <see cref="Task">Task</see> was created,
         /// or null if none was supplied.
         /// </summary>
-        public object? AsyncState => m_stateObject;
+        public object? AsyncState => (m_stateFlags & (int)InternalTaskOptions.HiddenState) == 0 ? m_stateObject : null;
 
         /// <summary>
         /// Gets an indication of whether the asynchronous operation completed synchronously.
@@ -3270,8 +3266,6 @@ namespace System.Threading.Tasks
         /// <returns>true if the task was transitioned to ran to completion; false if it was already completed.</returns>
         internal bool TrySetResult()
         {
-            Debug.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
-
             if (AtomicStateUpdate(
                 (int)TaskStateFlags.CompletionReserved | (int)TaskStateFlags.RanToCompletion,
                 (int)TaskStateFlags.CompletionReserved | (int)TaskStateFlags.RanToCompletion | (int)TaskStateFlags.Faulted | (int)TaskStateFlags.Canceled))
@@ -3298,8 +3292,6 @@ namespace System.Threading.Tasks
         // Called from TaskCompletionSource<T>.SetException(IEnumerable<Exception>).
         internal bool TrySetException(object exceptionObject)
         {
-            Debug.Assert(m_action == null, "Task<T>.TrySetException(): non-null m_action");
-
             // TCS.{Try}SetException() should have checked for this
             Debug.Assert(exceptionObject != null, "Expected non-null exceptionObject argument");
 
@@ -3346,7 +3338,6 @@ namespace System.Threading.Tasks
         // This method is only valid for promise tasks.
         internal bool TrySetCanceled(CancellationToken tokenToRecord, object? cancellationException)
         {
-            Debug.Assert(m_action == null, "Task<T>.TrySetCanceled(): non-null m_action");
             Debug.Assert(
                 cancellationException == null ||
                 cancellationException is OperationCanceledException ||
@@ -6570,7 +6561,6 @@ namespace System.Threading.Tasks
 
                 if (continuationObject is Task continuationTask)
                 {
-                    Debug.Assert(continuationTask.m_action == null);
                     Delegate[]? delegates = continuationTask.GetDelegateContinuationsForDebugger();
                     if (delegates != null)
                         return delegates;
@@ -6716,6 +6706,11 @@ namespace System.Threading.Tasks
 
         ContinuationTask = 0x0200,
         PromiseTask = 0x0400,
+
+        /// <summary>
+        /// The state object should not be returned from the AsyncState property.
+        /// </summary>
+        HiddenState = 0x0800,
 
         /// <summary>
         /// Store the presence of TaskContinuationOptions.LazyCancellation, since it does not directly

@@ -67,6 +67,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL3002", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
 			static IEnumerable<int> TestReflectionAccess ()
 			{
 				yield return 0;
@@ -78,6 +80,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 #if !RELEASE
 			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
 #else
 			// In release mode, the compiler optimizes away the unused Action (and reference to MethodWithRequires)
 #endif
@@ -93,8 +97,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			// Cannot annotate fields either with RUC nor RAF therefore the warning persists
 			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static IEnumerable<int> TestLazyDelegate ()
@@ -105,6 +109,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
 			static IEnumerable<int> TestDynamicallyAccessedMethod ()
 			{
 				typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
@@ -160,8 +166,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			// Cannot annotate fields either with RUC nor RAF therefore the warning persists
 			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static IEnumerable<int> TestLazyDelegate ()
@@ -249,6 +255,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL3002", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
 			static async void TestReflectionAccess ()
 			{
 				await MethodAsync ();
@@ -260,6 +268,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 #if !RELEASE
 			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
 #endif
 			[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
@@ -271,8 +281,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static async void TestLazyDelegate ()
@@ -282,6 +292,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
 			static async void TestDynamicallyAccessedMethod ()
 			{
 				typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
@@ -335,8 +347,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			// Cannot annotate fields either with RUC nor RAF therefore the warning persists
 			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static async void TestLazyDelegate ()
@@ -424,6 +436,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL3002", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
 			static async IAsyncEnumerable<int> TestReflectionAccess ()
 			{
 				yield return 0;
@@ -437,6 +451,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 #if !RELEASE
 			[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot, CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL3002", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
 #endif
 			[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
 			[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
@@ -449,8 +465,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static async IAsyncEnumerable<int> TestLazyDelegate ()
@@ -461,6 +477,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = Tool.NativeAot)]
 			static async IAsyncEnumerable<int> TestDynamicallyAccessedMethod ()
 			{
 				typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
@@ -519,8 +537,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			// Cannot annotate fields either with RUC nor RAF therefore the warning persists
 			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static async IAsyncEnumerable<int> TestLazyDelegate ()
@@ -656,6 +674,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				LocalFunction ();
 
 				[ExpectedWarning ("IL2026", "--MethodWithRequires--")]
+				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.NativeAot)]
+				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.NativeAot)]
 				void LocalFunction () => typeof (RequiresInCompilerGeneratedCode)
 					.GetMethod ("MethodWithRequires", System.Reflection.BindingFlags.NonPublic)
 					.Invoke (null, new object[] { });
@@ -667,6 +687,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 #if !RELEASE
 				[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.NativeAot)]
+				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.NativeAot)]
 #endif
 				[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
 				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
@@ -678,8 +700,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static void TestLazyDelegate ()
@@ -697,6 +719,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				LocalFunction ();
 
 				[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--")]
+				[ExpectedWarning ("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", ProducedBy = Tool.NativeAot)]
+				[ExpectedWarning ("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", ProducedBy = Tool.NativeAot)]
 				void LocalFunction () => typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
 			}
 
@@ -781,8 +805,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "Message from --MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static void TestLazyDelegate ()
@@ -1129,8 +1153,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--LambdaWithRequires--")]
-			[ExpectedWarning ("IL3002", "--LambdaWithRequires--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "--LambdaWithRequires--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "--LambdaWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--LambdaWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void TestLambdaWithRequires ()
 			{
 				Action lambda =
@@ -1152,8 +1176,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--LambdaWithRequires--")]
-			[ExpectedWarning ("IL3002", "--LambdaWithRequires--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "--LambdaWithRequires--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "--LambdaWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--LambdaWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void TestLambdaWithRequiresUnused ()
 			{
 				Action _ =
@@ -1198,6 +1222,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				Action _ =
 				[ExpectedWarning ("IL2026", "--MethodWithRequires--")]
+				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.NativeAot)]
+				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.NativeAot)]
 				() => {
 					typeof (RequiresInCompilerGeneratedCode)
 						.GetMethod ("MethodWithRequires", System.Reflection.BindingFlags.NonPublic)
@@ -1210,6 +1236,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				Action _ =
 #if !RELEASE
 				[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.NativeAot)]
+				[ExpectedWarning ("IL3050", "--MethodWithRequires--", ProducedBy = Tool.NativeAot)]
 #endif
 				[ExpectedWarning ("IL2026", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
 				[ExpectedWarning ("IL3002", "--MethodWithRequires--", ProducedBy = Tool.Analyzer)]
@@ -1220,8 +1248,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "--MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "--MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "--MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static void TestLazyDelegate ()
@@ -1235,6 +1263,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				Action _ =
 				[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--")]
+				[ExpectedWarning ("IL3002", "--TypeWithMethodWithRequires.MethodWithRequires--", ProducedBy = Tool.NativeAot)]
+				[ExpectedWarning ("IL3050", "--TypeWithMethodWithRequires.MethodWithRequires--", ProducedBy = Tool.NativeAot)]
 				() => {
 					typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
 				};
@@ -1323,8 +1353,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--MethodWithRequiresAndReturns--", CompilerGeneratedCode = true)]
-			[ExpectedWarning ("IL3002", "--MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "--MethodWithRequiresAndReturns--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "--MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--MethodWithRequiresAndReturns--", CompilerGeneratedCode = true, ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			public static Lazy<string> _default = new Lazy<string> (MethodWithRequiresAndReturns);
 
 			static void TestLazyDelegate ()
@@ -1380,8 +1410,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026")]
-			[ExpectedWarning ("IL3002", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void TestSuppressionOnLambda ()
 			{
 				var lambda =
@@ -1394,8 +1424,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026")]
-			[ExpectedWarning ("IL3002", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void TestSuppressionOnLambdaWithNestedLambda ()
 			{
 				var lambda =
@@ -1409,8 +1439,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					// However, we don't make this association, for consistency with local functions.
 					var nestedLambda =
 					[ExpectedWarning ("IL2026", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-					[ExpectedWarning ("IL3002", ProducedBy = Tool.NativeAot)]
-					[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot)]
+					[ExpectedWarning ("IL3002", ProducedBy = Tool.NativeAot | Tool.NativeAot)]
+					[ExpectedWarning ("IL3050", ProducedBy = Tool.NativeAot | Tool.NativeAot)]
 					() => MethodWithRequires ();
 				};
 
@@ -1862,17 +1892,64 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--")]
+			[ExpectedWarning ("IL3002", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--")]
+			[ExpectedWarning ("IL3002", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
 			// Analyzer doesn't emit additional warnings about reflection access to the compiler-generated
 			// state machine members.
-			[ExpectedWarning ("IL2026", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+
+			// The MoveNext, Current.get and Reset methods produces warning in NativeAOT
+			// https://github.com/dotnet/runtime/issues/82447
+			[ExpectedWarning ("IL2026", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
 #if !RELEASE
-			[ExpectedWarning ("IL2026", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL2026", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
 			// In debug mode, the async state machine is a class with a constructor, so a warning is emitted for the constructor.
 			// The MoveNext method is virtual, so doesn't warn either way.
 #else
 			// In release mode, the async state machine is a struct which doesn't have a constructor, so no warning is emitted.
 #endif
+			// The MoveNext method produces warning in NativeAOT
+			// https://github.com/dotnet/runtime/issues/82447
+			[ExpectedWarning ("IL2026", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+
 			// ILLink warns about reflection access to compiler-generated state machine members.
 			// https://github.com/dotnet/runtime/issues/68786
 			[ExpectedWarning ("IL2118", nameof (StateMachinesOnlyReferencedViaReflection), "<" + nameof (TestAsyncOnlyReferencedViaReflectionWhichShouldWarn) + ">", "MoveNext()",
@@ -1885,7 +1962,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--")]
+			[ExpectedWarning ("IL3002", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--")]
+			[ExpectedWarning ("IL3002", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress--", ProducedBy = Tool.NativeAot)]
 			// NonPublicMethods doesn't warn for members emitted into compiler-generated state machine types.
 			static void TestNonPublicMethods ()
 			{
@@ -1975,18 +2056,32 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			// Warnings for Reflection access to methods with Requires
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequires--")]
+			[ExpectedWarning ("IL3002", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--")]
+			[ExpectedWarning ("IL3002", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--")]
+			[ExpectedWarning ("IL3002", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--", ProducedBy = Tool.NativeAot)]
 			// Trimming tools correctly emit warnings about reflection access to local functions with Requires
 			// or which inherit Requires from the containing method. The analyzer doesn't bind to local functions
 			// so does not warn here.
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestLocalFunctionWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLocalFunctionWithRequires--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithRequiresOnlyAccessedViaReflection--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestLocalFunctionWithRequiresOnlyAccessedViaReflection--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLocalFunctionWithRequiresOnlyAccessedViaReflection--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			// BUG: https://github.com/dotnet/runtime/issues/68786
-			// NativeAot doesn't associate Requires on method with the local functions it contains.
-			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL3002", "--TestLocalFunctionWithClosureWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLocalFunctionWithClosureWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
 			// ILLink warn about reflection access to compiler-generated code
 			// https://github.com/dotnet/runtime/issues/68786
 			[ExpectedWarning ("IL2118", nameof (LocalFunctionsReferencedViaReflection), nameof (TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection),
@@ -1998,16 +2093,30 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			// Warnings for Reflection access to methods with Requires
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequires--")]
+			[ExpectedWarning ("IL3002", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--")]
+			[ExpectedWarning ("IL3002", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--")]
+			[ExpectedWarning ("IL3002", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection--", ProducedBy = Tool.NativeAot)]
 			// NonPublicMethods warns for local functions not emitted into display classes.
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestLocalFunctionWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLocalFunctionWithRequires--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithRequiresOnlyAccessedViaReflection--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestLocalFunctionWithRequiresOnlyAccessedViaReflection--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLocalFunctionWithRequiresOnlyAccessedViaReflection--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			// BUG: https://github.com/dotnet/runtime/issues/68786
-			// NativeAot doesn't associate Requires on method with the local functions it contains.
-			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL3002", "--TestLocalFunctionWithClosureWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLocalFunctionWithClosureWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLocalFunctionInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLocalFunctionWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
 			// ILLink warn about reflection access to compiler-generated code
 			// https://github.com/dotnet/runtime/issues/68786
 			[ExpectedWarning ("IL2118", nameof (LocalFunctionsReferencedViaReflection), "<" + nameof (TestLocalFunctionInMethodWithRequiresOnlyAccessedViaReflection) + ">",
@@ -2027,8 +2136,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		class LambdasReferencedViaReflection
 		{
 			[ExpectedWarning ("IL2026", "--TestLambdaWithRequires--")]
-			[ExpectedWarning ("IL3002", "--TestLambdaWithRequires--", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "--TestLambdaWithRequires--", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "--TestLambdaWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLambdaWithRequires--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void TestLambdaWithRequires ()
 			{
 				var lambda =
@@ -2041,8 +2150,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026", "Lambda")]
-			[ExpectedWarning ("IL3002", "Lambda", ProducedBy = Tool.Analyzer)]
-			[ExpectedWarning ("IL3050", "Lambda", ProducedBy = Tool.Analyzer)]
+			[ExpectedWarning ("IL3002", "Lambda", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "Lambda", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			static void TestLambdaWithClosureWithRequires (int p = 0)
 			{
 				var lambda =
@@ -2082,16 +2191,26 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			// Warnings for Reflection access to methods with Requires
 			[ExpectedWarning ("IL2026", "--TestLambdaInMethodWithRequires--")]
+			[ExpectedWarning ("IL3002", "--TestLambdaInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLambdaInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "--TestLambdaWithClosureInMethodWithRequires--")]
+			[ExpectedWarning ("IL3002", "--TestLambdaWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLambdaWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
 			// Trimming tools correctly emit warnings about reflection access to lambdas with Requires
 			// or which inherit Requires from the containing method. The analyzer doesn't bind to lambdas
 			// so does not warn here.
 			[ExpectedWarning ("IL2026", "--TestLambdaWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestLambdaWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLambdaWithRequires--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "--TestLambdaWithClosureWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			// BUG: https://github.com/dotnet/runtime/issues/68786
-			// NativeAot doesn't associate Requires on method with the lambdas it contains.
-			[ExpectedWarning ("IL2026", "--TestLambdaInMethodWithRequires--", ProducedBy = Tool.Trimmer)]
-			[ExpectedWarning ("IL2026", "--TestLambdaWithClosureInMethodWithRequires--", ProducedBy = Tool.Trimmer)]
+			[ExpectedWarning ("IL3002", "--TestLambdaWithClosureWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLambdaWithClosureWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--TestLambdaInMethodWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestLambdaInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLambdaInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--TestLambdaWithClosureInMethodWithRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--TestLambdaWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLambdaWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
 			static void TestAll ()
 			{
 				typeof (LambdasReferencedViaReflection).RequiresAll ();
@@ -2099,7 +2218,11 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			// Warnings for Reflection access to methods with Requires
 			[ExpectedWarning ("IL2026", "--TestLambdaInMethodWithRequires--")]
+			[ExpectedWarning ("IL3002", "--TestLambdaInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLambdaInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL2026", "--TestLambdaWithClosureInMethodWithRequires--")]
+			[ExpectedWarning ("IL3002", "--TestLambdaWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TestLambdaWithClosureInMethodWithRequires--", ProducedBy = Tool.NativeAot)]
 			// NonPublicMethods doesn't warn for lambdas emitted into display class types.
 			static void TestNonPublicMethods ()
 			{

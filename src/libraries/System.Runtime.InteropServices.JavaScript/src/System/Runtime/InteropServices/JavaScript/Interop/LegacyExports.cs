@@ -9,8 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
-    // this maps to src\mono\wasm\runtime\legacy\corebindings.ts
-    // the public methods are protected from trimming by DynamicDependency on JSFunctionBinding.BindJSFunction
+    // the public methods are protected from trimming by ILLink.Descriptors.LegacyJsInterop.xml
     internal static unsafe partial class LegacyExports
     {
         public static void GetCSOwnedObjectByJSHandleRef(nint jsHandle, int shouldAddInflight, out JSObject? result)
