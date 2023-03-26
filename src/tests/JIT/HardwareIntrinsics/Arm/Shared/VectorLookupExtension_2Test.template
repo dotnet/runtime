@@ -89,6 +89,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 this.inArray1 = new byte[alignment * 2];
                 this.inArray2 = new byte[alignment * 2];
                 this.inArray3 = new byte[alignment * 2];
+                this.outArray = new byte[alignment * 2];
 
                 this.inHandle0 = GCHandle.Alloc(this.inArray0, GCHandleType.Pinned);
                 this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
