@@ -624,7 +624,7 @@ PhaseStatus Compiler::fgExpandStaticInit()
                     isInitAdrNode = gtNewOperNode(GT_AND, TYP_INT, isInitAdrNode, gtNewIconNode(isInitMask));
                 }
 
-                GenTree* isInitedCmp = gtNewOperNode(GT_NE, TYP_INT, isInitAdrNode, gtNewIconNode(0));
+                GenTree* isInitedCmp = gtNewOperNode(GT_EQ, TYP_INT, isInitAdrNode, gtNewIconNode(1));
                 isInitedCmp->gtFlags |= GTF_RELOP_JMP_USED;
                 BasicBlock* isInitedBb =
                     fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp), debugInfo);
