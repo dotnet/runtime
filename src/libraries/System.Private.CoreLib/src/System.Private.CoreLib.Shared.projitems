@@ -1318,6 +1318,12 @@
     <Compile Include="$(CommonPath)SkipLocalsInit.cs">
       <Link>Common\SkipLocalsInit.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\ITimer.cs">
+      <Link>Common\System\ITimer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\TimeProvider.cs">
+      <Link>Common\System\TimeProvider.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
       <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
     </Compile>

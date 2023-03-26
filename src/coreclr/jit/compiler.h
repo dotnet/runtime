@@ -8941,22 +8941,24 @@ public:
     //
     unsigned int getUnrollThreshold(UnrollKind type, bool canUseSimd = true)
     {
-        unsigned threshold = TARGET_POINTER_SIZE;
+        unsigned maxRegSize = REGSIZE_BYTES;
+        unsigned threshold  = maxRegSize;
 
 #if defined(FEATURE_SIMD)
         if (canUseSimd)
         {
-            threshold = maxSIMDStructBytes();
-#if defined(TARGET_ARM64)
+            maxRegSize = maxSIMDStructBytes();
+#if defined(TARGET_XARCH)
+            // TODO-XARCH-AVX512: Consider enabling this for AVX512 where it's beneficial
+            maxRegSize = min(maxRegSize, YMM_REGSIZE_BYTES);
+            threshold  = maxRegSize;
+#elif defined(TARGET_ARM64)
             // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
             //
             //   ldp q0, q1, [x1]
             //   stp q0, q1, [x0]
             //
-            threshold *= 2;
-#elif defined(TARGET_XARCH)
-            // TODO-XARCH-AVX512: Consider enabling this for AVX512 where it's beneficial
-            threshold = min(threshold, YMM_REGSIZE_BYTES);
+            threshold = maxRegSize * 2;
 #endif
         }
 #if defined(TARGET_XARCH)
@@ -8987,12 +8989,17 @@ public:
         // | arm         |    32  |    16  | no SIMD support
         // | loongarch64 |    64  |    32  | no SIMD support
         //
-        // We might want to use a different multiplier for trully hot/cold blocks based on PGO data
+        // We might want to use a different multiplier for truly hot/cold blocks based on PGO data
         //
         threshold *= 4;
 
-        // NOTE: Memmove's unrolling is currently limitted with LSRA -
-        // up to LinearScan::MaxInternalCount number of temp regs, e.g. 5*32=160 bytes for AVX cpu.
+        if (type == UnrollKind::Memmove)
+        {
+            // NOTE: Memmove's unrolling is currently limited with LSRA -
+            // up to LinearScan::MaxInternalCount number of temp regs, e.g. 5*16=80 bytes on arm64
+            threshold = maxRegSize * 4;
+        }
+
         return threshold;
     }
 

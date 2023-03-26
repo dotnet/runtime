@@ -2556,8 +2556,8 @@ void CodeGen::genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta)
 
 //------------------------------------------------------------------------
 // genCodeForMemmove: Perform an unrolled memmove. The idea that we can
-//    ignore the fact that dst and src might overlap if we save the whole
-//    dst to temp regs in advance, e.g. for memmove(rax, rcx, 120):
+//    ignore the fact that src and dst might overlap if we save the whole
+//    src to temp regs in advance, e.g. for memmove(dst: rcx, src: rax, len: 120):
 //
 //       vmovdqu  ymm0, ymmword ptr[rax +  0]
 //       vmovdqu  ymm1, ymmword ptr[rax + 32]
@@ -2598,7 +2598,7 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
         // temporary SIMD registers to fully load the source and avoid any potential issues with overlap.
         assert(numberOfSimdRegs * simdSize >= size);
 
-        // Pop all temp regs to a local array, currently, this impl is limitted with LSRA's MaxInternalCount
+        // Pop all temp regs to a local array, currently, this impl is limited with LSRA's MaxInternalCount
         regNumber tempRegs[LinearScan::MaxInternalCount] = {};
         for (unsigned i = 0; i < numberOfSimdRegs; i++)
         {
@@ -2630,7 +2630,7 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
                 assert(size > offset);
                 if ((size - offset) < simdSize)
                 {
-                    // Overlap with the previosly processed data. We'll always use SIMD for that for simplicity
+                    // Overlap with the previously processed data. We'll always use SIMD for simplicity
                     // TODO-CQ: Consider using smaller SIMD reg or GPR for the remainder.
                     offset = size - simdSize;
                 }
@@ -3285,7 +3285,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
         size -= bytesWritten;
 
-        // Handle the remainder by overlapping with previosly processed data (only for zeroing)
+        // Handle the remainder by overlapping with previously processed data (only for zeroing)
         if (zeroing && (size > 0) && (size < regSize) && (regSize >= XMM_REGSIZE_BYTES))
         {
             if (isPow2(size) && (size <= REGSIZE_BYTES))
@@ -3550,7 +3550,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         assert((size >= 0) && (size < regSize));
 
-        // Handle the remainder by overlapping with previosly processed data
+        // Handle the remainder by overlapping with previously processed data
         if ((size > 0) && (size < regSize))
         {
             assert(regSize >= XMM_REGSIZE_BYTES);
