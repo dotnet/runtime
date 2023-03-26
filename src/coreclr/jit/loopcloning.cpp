@@ -3172,6 +3172,7 @@ bool Compiler::optObtainLoopCloningOpts(LoopCloneContext* context)
 // Return Value:
 //      true if loop cloning is allowed, false if disallowed.
 //
+// static
 bool Compiler::optLoopCloningEnabled()
 {
 #ifdef DEBUG
