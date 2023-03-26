@@ -4,8 +4,6 @@
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'osx'">true</GCStressIncompatible>
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm'">true</GCStressIncompatible>
 
-    <_IncludeArm64HWIntrinsicTests>false</_IncludeArm64HWIntrinsicTests>
-    <_IncludeArm64HWIntrinsicTests Condition="'$(CLRTestPriorityToBuild)' &gt;= '1' OR '$(TargetArchitecture)' == 'arm64'">true</_IncludeArm64HWIntrinsicTests>
     <_IncludeXarchHWIntrinsicTests>false</_IncludeXarchHWIntrinsicTests>
     <_IncludeXarchHWIntrinsicTests Condition="'$(CLRTestPriorityToBuild)' &gt;= '1' OR '$(TargetArchitecture)' == 'x64' OR ('$(TargetArchitecture)' == 'x86' AND '$(TargetsWindows)' == 'true')">true</_IncludeXarchHWIntrinsicTests>
   </PropertyGroup>
@@ -17,9 +15,6 @@
 
     <MergedWrapperProjectReference Include="*/**/*_ro.csproj" />
 
-    <MergedWrapperProjectReference Remove="Arm/**/*_ro.csproj" Condition="'$(_IncludeArm64HWIntrinsicTests)' != 'true'" />
-    <MergedWrapperProjectReference Remove="General/Vector64/**/*_ro.csproj" Condition="'$(_IncludeArm64HWIntrinsicTests)' != 'true'" />
-    <MergedWrapperProjectReference Remove="General/Vector64_1/**/*_ro.csproj" Condition="'$(_IncludeArm64HWIntrinsicTests)' != 'true'" />
     <MergedWrapperProjectReference Remove="General/Vector256/**/*_ro.csproj" Condition="'$(_IncludeXarchHWIntrinsicTests)' != 'true'" />
     <MergedWrapperProjectReference Remove="General/Vector256_1/**/*_ro.csproj" Condition="'$(_IncludeXarchHWIntrinsicTests)' != 'true'" />
     <MergedWrapperProjectReference Remove="General/Vector512/**/*_ro.csproj" Condition="'$(_IncludeXarchHWIntrinsicTests)' != 'true'" />
