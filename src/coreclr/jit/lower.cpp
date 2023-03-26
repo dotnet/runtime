@@ -1865,6 +1865,16 @@ GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
     return nullptr;
 }
 
+//------------------------------------------------------------------------
+// LowerCallMemcmp: Replace SpanHelpers.SequenceEqual)(left, right, CNS_SIZE)
+//    with a series of merged comparisons (via GT_IND nodes)
+//
+// Arguments:
+//    tree - GenTreeCall node to unroll as memcmp
+//
+// Return Value:
+//    nullptr if no changes were made
+//
 GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
 {
     JITDUMP("Considering Memcmp [%06d] for unrolling.. ", comp->dspTreeID(call))
