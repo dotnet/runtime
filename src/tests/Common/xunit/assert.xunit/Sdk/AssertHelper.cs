@@ -24,12 +24,15 @@ namespace Xunit.Internal
 		static ConcurrentDictionary<Type, Dictionary<string, Func<object, object>>> gettersByType = new ConcurrentDictionary<Type, Dictionary<string, Func<object, object>>>();
 #endif
 
-#if XUNIT_NULLABLE
-		static Dictionary<string, Func<object?, object?>> GetGettersForType(Type type) =>
-#else
-		static Dictionary<string, Func<object, object>> GetGettersForType(Type type) =>
-#endif
-			gettersByType.GetOrAdd(type, _type =>
+		static Dictionary<string, Func<object?, object?>> GetGettersForType(
+			Type type) =>
+			gettersByType.GetOrAdd(type,
+			([DynamicallyAccessedMembers(
+				DynamicallyAccessedMemberTypes.PublicProperties
+				| DynamicallyAccessedMemberTypes.NonPublicProperties
+				| DynamicallyAccessedMemberTypes.PublicFields
+				| DynamicallyAccessedMemberTypes.NonPublicFields)]
+			Type _type) =>
 			{
 				var fieldGetters =
 					_type

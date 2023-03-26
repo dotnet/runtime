@@ -10,6 +10,7 @@ using System.Reflection;
 
 #if XUNIT_NULLABLE
 using System.Diagnostics.CodeAnalysis;
+using System.Threading.Tasks;
 #endif
 
 namespace Xunit.Sdk
@@ -116,11 +117,6 @@ namespace Xunit.Sdk
 			if (dictionariesEqual.HasValue)
 				return dictionariesEqual.GetValueOrDefault();
 
-			// Sets?
-			var setsEqual = CheckIfSetsAreEqual(x, y, typeInfo);
-			if (setsEqual.HasValue)
-				return setsEqual.GetValueOrDefault();
-
 			// Enumerable?
 			var enumerablesEqual = CheckIfEnumerablesAreEqual(x, y, out mismatchIndex);
 			if (enumerablesEqual.HasValue)
@@ -150,47 +146,8 @@ namespace Xunit.Sdk
 
 			// Implements IStructuralEquatable?
 			var structuralEquatable = x as IStructuralEquatable;
-			if (structuralEquatable != null && structuralEquatable.Equals(y, new TypeErasedEqualityComparer(innerComparerFactory())))
+			if (structuralEquatable != null && structuralEquatable.Equals(y, EqualityComparer<T>.Default))
 				return true;
-
-			// Implements IEquatable<typeof(y)>?
-			var iequatableY = typeof(IEquatable<>).MakeGenericType(y.GetType()).GetTypeInfo();
-			if (iequatableY.IsAssignableFrom(x.GetType().GetTypeInfo()))
-			{
-				var equalsMethod = iequatableY.GetDeclaredMethod(nameof(IEquatable<T>.Equals));
-				if (equalsMethod == null)
-					return false;
-
-#if XUNIT_NULLABLE
-				return equalsMethod.Invoke(x, new object[] { y }) is true;
-#else
-				return (bool)equalsMethod.Invoke(x, new object[] { y });
-#endif
-			}
-
-			// Implements IComparable<typeof(y)>?
-			var icomparableY = typeof(IComparable<>).MakeGenericType(y.GetType()).GetTypeInfo();
-			if (icomparableY.IsAssignableFrom(x.GetType().GetTypeInfo()))
-			{
-				var compareToMethod = icomparableY.GetDeclaredMethod(nameof(IComparable<T>.CompareTo));
-				if (compareToMethod == null)
-					return false;
-
-				try
-				{
-#if XUNIT_NULLABLE
-					return compareToMethod.Invoke(x, new object[] { y }) is 0;
-#else
-					return (int)compareToMethod.Invoke(x, new object[] { y }) == 0;
-#endif
-				}
-				catch
-				{
-					// Some implementations of IComparable.CompareTo throw exceptions in
-					// certain situations, such as if x can't compare against y.
-					// If this happens, just swallow up the exception and continue comparing.
-				}
-			}
 
 			// Last case, rely on object.Equals
 			return object.Equals(x, y);
@@ -296,136 +253,10 @@ namespace Xunit.Sdk
 			return dictionaryYKeys.Count == 0;
 		}
 
-#if XUNIT_NULLABLE
-		static MethodInfo? s_compareTypedSetsMethod;
-#else
-		static MethodInfo s_compareTypedSetsMethod;
-#endif
-
-		bool? CheckIfSetsAreEqual(
-#if XUNIT_NULLABLE
-			[AllowNull] T x,
-			[AllowNull] T y,
-#else
-			T x,
-			T y,
-#endif
-			TypeInfo typeInfo)
-		{
-			if (!IsSet(typeInfo))
-				return null;
-
-			var enumX = x as IEnumerable;
-			var enumY = y as IEnumerable;
-			if (enumX == null || enumY == null)
-				return null;
-
-			Type elementType;
-			if (typeof(T).GenericTypeArguments.Length != 1)
-				elementType = typeof(object);
-			else
-				elementType = typeof(T).GenericTypeArguments[0];
-
-			if (s_compareTypedSetsMethod == null)
-			{
-				s_compareTypedSetsMethod = GetType().GetTypeInfo().GetDeclaredMethod(nameof(CompareTypedSets));
-				if (s_compareTypedSetsMethod == null)
-					return false;
-			}
-
-			var method = s_compareTypedSetsMethod.MakeGenericMethod(new Type[] { elementType });
-#if XUNIT_NULLABLE
-			return method.Invoke(this, new object[] { enumX, enumY }) is true;
-#else
-			return (bool)method.Invoke(this, new object[] { enumX, enumY });
-#endif
-		}
-
-		bool CompareTypedSets<R>(
-			IEnumerable enumX,
-			IEnumerable enumY)
-		{
-			var setX = new HashSet<R>(enumX.Cast<R>());
-			var setY = new HashSet<R>(enumY.Cast<R>());
-
-			return setX.SetEquals(setY);
-		}
-
-		bool IsSet(TypeInfo typeInfo) =>
-			typeInfo
-				.ImplementedInterfaces
-				.Select(i => i.GetTypeInfo())
-				.Where(ti => ti.IsGenericType)
-				.Select(ti => ti.GetGenericTypeDefinition())
-				.Contains(typeof(ISet<>).GetGenericTypeDefinition());
-
 		/// <inheritdoc/>
 		public int GetHashCode(T obj)
 		{
 			throw new NotImplementedException();
-		}
-
-		private class TypeErasedEqualityComparer : IEqualityComparer
-		{
-			readonly IEqualityComparer innerComparer;
-
-			public TypeErasedEqualityComparer(IEqualityComparer innerComparer)
-			{
-				this.innerComparer = innerComparer;
-			}
-
-#if XUNIT_NULLABLE
-			static MethodInfo? s_equalsMethod;
-#else
-			static MethodInfo s_equalsMethod;
-#endif
-
-			public new bool Equals(
-#if XUNIT_NULLABLE
-				object? x,
-				object? y)
-#else
-				object x,
-				object y)
-#endif
-			{
-				if (x == null)
-					return y == null;
-				if (y == null)
-					return false;
-
-				// Delegate checking of whether two objects are equal to AssertEqualityComparer.
-				// To get the best result out of AssertEqualityComparer, we attempt to specialize the
-				// comparer for the objects that we are checking.
-				// If the objects are the same, great! If not, assume they are objects.
-				// This is more naive than the C# compiler which tries to see if they share any interfaces
-				// etc. but that's likely overkill here as AssertEqualityComparer<object> is smart enough.
-				Type objectType = x.GetType() == y.GetType() ? x.GetType() : typeof(object);
-
-				// Lazily initialize and cache the EqualsGeneric<U> method.
-				if (s_equalsMethod == null)
-				{
-					s_equalsMethod = typeof(TypeErasedEqualityComparer).GetTypeInfo().GetDeclaredMethod(nameof(EqualsGeneric));
-					if (s_equalsMethod == null)
-						return false;
-				}
-
-#if XUNIT_NULLABLE
-				return s_equalsMethod.MakeGenericMethod(objectType).Invoke(this, new object[] { x, y }) is true;
-#else
-				return (bool)s_equalsMethod.MakeGenericMethod(objectType).Invoke(this, new object[] { x, y });
-#endif
-			}
-
-			bool EqualsGeneric<U>(
-				U x,
-				U y) =>
-					new AssertEqualityComparer<U>(innerComparer: innerComparer).Equals(x, y);
-
-			public int GetHashCode(object obj)
-			{
-				throw new NotImplementedException();
-			}
 		}
 	}
 }
