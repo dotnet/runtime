@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
@@ -335,7 +336,7 @@ namespace System.Xml
             }
         }
 
-        protected unsafe int UnsafeGetUnicodeChars(char* chars, int charCount, byte[] buffer, int offset)
+        protected static unsafe int UnsafeGetUnicodeChars(char* chars, int charCount, byte[] buffer, int offset)
         {
             if (BitConverter.IsLittleEndian)
             {
@@ -344,13 +345,8 @@ namespace System.Xml
             }
             else
             {
-                char* charsMax = chars + charCount;
-                while (chars < charsMax)
-                {
-                    char value = *chars++;
-                    buffer[offset++] = (byte)value;
-                    buffer[offset++] = (byte)(value >> 8);
-                }
+                BinaryPrimitives.ReverseEndianness(new ReadOnlySpan<short>(chars, charCount),
+                    MemoryMarshal.Cast<byte, short>(buffer.AsSpan(offset)));
             }
 
             return charCount * 2;
@@ -358,6 +354,7 @@ namespace System.Xml
 
         protected unsafe int UnsafeGetUTF8Length(char* chars, int charCount)
         {
+            // Length will always be at least ( 128 / maxBytesPerChar) = 42
             return (_encoding ?? DataContractSerializer.ValidatingUTF8).GetByteCount(chars, charCount);
         }
 
