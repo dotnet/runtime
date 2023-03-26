@@ -2839,7 +2839,7 @@ FCIMPL1(INT32, ModuleHandle::GetMDStreamVersion, ReflectModuleBaseObject * pModu
     REFLECTMODULEBASEREF refModule = (REFLECTMODULEBASEREF)ObjectToOBJECTREF(pModuleUNSAFE);
 
     if (refModule == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+        return -1;
 
     Module *pModule = refModule->GetModule();
     return pModule->GetMDImport()->GetMetadataStreamVersion();

@@ -30,7 +30,7 @@ namespace System
             get
             {
                 if (value == IntPtr.Zero)
-                    throw new ArgumentNullException(string.Empty, SR.Arg_InvalidHandle);
+                    return -1;
                 return RuntimeModule.GetMDStreamVersion(value);
             }
         }

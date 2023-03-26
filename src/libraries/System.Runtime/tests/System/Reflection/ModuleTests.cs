@@ -59,6 +59,12 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public void EmptyHandleVersionIsMinus1()
+        {
+            Assert.Equal(-1, System.ModuleHandle.EmptyHandle.MDStreamVersion);
+        }
+
+        [Fact]
         public void CustomAttributes()
         {
             List<CustomAttributeData> customAttributes = Module.CustomAttributes.ToList();
