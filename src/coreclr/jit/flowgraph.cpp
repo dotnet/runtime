@@ -585,22 +585,22 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 // The initialization check looks like this for JIT:
                 //
                 // *  JTRUE     void
-                // \--*  NE        int
+                // \--*  EQ        int
                 //    +--*  AND       int
                 //    |  +--*  IND       int
                 //    |  |  \--*  CNS_INT(h) long   0x.... const ptr
                 //    |  \--*  CNS_INT   int    1 (bit mask)
-                //    \--*  CNS_INT   int    0
+                //    \--*  CNS_INT   int    1
                 //
                 // For NativeAOT it's:
                 //
                 // *  JTRUE     void
-                // \--*  NE        int
+                // \--*  EQ        int
                 //    +--*  IND       int
                 //    |  \--*  ADD       long
                 //    |     +--*  CNS_INT(h) long   0x.... const ptr
                 //    |     \--*  CNS_INT   int    -8 (offset)
-                //    \--*  CNS_INT   int    0
+                //    \--*  CNS_INT   int    1
                 //
                 GenTree* isInitAdrNode;
                 if (isInitOffset != 0)
