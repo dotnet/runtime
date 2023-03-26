@@ -488,7 +488,7 @@ regMaskTP CodeGenInterface::genGetRegMask(const LclVarDsc* varDsc)
     regNumber reg = varDsc->GetRegNum();
     if (genIsValidFloatReg(reg))
     {
-        regMask = genRegMaskFloat(reg, varDsc->GetRegisterType());
+        regMask = genRegMaskFloat(reg ARM_ARG(varDsc->GetRegisterType()));
     }
     else
     {
@@ -5326,11 +5326,11 @@ void CodeGen::genFinalizeFrame()
     //
     if (maskPushRegsFloat != RBM_NONE)
     {
-        regMaskTP contiguousMask = genRegMaskFloat(REG_F16, TYP_DOUBLE);
+        regMaskTP contiguousMask = genRegMaskFloat(REG_F16);
         while (maskPushRegsFloat > contiguousMask)
         {
             contiguousMask <<= 2;
-            contiguousMask |= genRegMaskFloat(REG_F16, TYP_DOUBLE);
+            contiguousMask |= genRegMaskFloat(REG_F16);
         }
         if (maskPushRegsFloat != contiguousMask)
         {

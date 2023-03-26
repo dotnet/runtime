@@ -1001,7 +1001,7 @@ public:
             else
             {
                 assert(varTypeUsesFloatReg(this));
-                regMask = genRegMaskFloat(GetRegNum(), TypeGet());
+                regMask = genRegMaskFloat(GetRegNum() ARM_ARG(TypeGet()));
             }
         }
         return regMask;

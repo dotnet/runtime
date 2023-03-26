@@ -351,7 +351,7 @@ inline bool isByteReg(regNumber reg)
 #endif
 
 inline regMaskTP genRegMask(regNumber reg);
-inline regMaskTP genRegMaskFloat(regNumber reg, var_types type = TYP_DOUBLE);
+inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
 
 /*****************************************************************************
  * Return true if the register number is valid
@@ -556,7 +556,7 @@ inline regMaskTP genRegMask(regNumber reg)
  *  Map a register number to a floating-point register mask.
  */
 
-inline regMaskTP genRegMaskFloat(regNumber reg, var_types type /* = TYP_DOUBLE */)
+inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_DOUBLE */))
 {
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64)
     assert(genIsValidFloatReg(reg));
@@ -600,21 +600,22 @@ inline regMaskTP genRegMaskFloat(regNumber reg, var_types type /* = TYP_DOUBLE *
 //
 inline regMaskTP genRegMask(regNumber regNum, var_types type)
 {
-#ifndef TARGET_ARM
-    return genRegMask(regNum);
-#else
+#if defined(TARGET_ARM)
     regMaskTP regMask = RBM_NONE;
 
-    if (varTypeUsesFloatReg(type))
+    if (varTypeUsesIntReg(type))
     {
-        regMask = genRegMaskFloat(regNum, type);
+        regMask = genRegMask(regNum);
     }
     else
     {
-        assert(varTypeUsesIntReg(type));
-        regMask = genRegMask(regNum);
+        assert(varTypeUsesFloatReg(type));
+        regMask = genRegMaskFloat(regNum, type);
     }
+
     return regMask;
+#else
+    return genRegMask(regNum);
 #endif
 }
 
