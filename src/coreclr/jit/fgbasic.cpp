@@ -43,12 +43,12 @@ void Compiler::fgInit()
 
     /* Initialize the basic block list */
 
-    fgFirstBB                     = nullptr;
-    fgLastBB                      = nullptr;
-    fgFirstColdBlock              = nullptr;
-    fgEntryBB                     = nullptr;
-    fgOSREntryBB                  = nullptr;
-    fgOSROriginalEntryBBProtected = false;
+    fgFirstBB          = nullptr;
+    fgLastBB           = nullptr;
+    fgFirstColdBlock   = nullptr;
+    fgEntryBB          = nullptr;
+    fgOSREntryBB       = nullptr;
+    fgEntryBBExtraRefs = 0;
 
 #if defined(FEATURE_EH_FUNCLETS)
     fgFirstFuncletBB  = nullptr;
