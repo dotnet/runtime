@@ -223,8 +223,6 @@ namespace System.Reflection.Emit
             this.packing_size = packing_size;
             this.nesting_type = nesting_type;
 
-            check_name(nameof(fullname), fullname);
-
             if (parent == null && (attr & TypeAttributes.Interface) != 0 && (attr & TypeAttributes.Abstract) == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_BadInterfaceNotAbstract);
 
@@ -678,9 +676,6 @@ namespace System.Reflection.Emit
 
         protected override FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
-            check_name(nameof(fieldName), fieldName);
-            if (type == typeof(void))
-                throw new ArgumentException(SR.Argument_BadFieldType);
             check_not_created();
 
             RuntimeFieldBuilder res = new RuntimeFieldBuilder(this, fieldName, type, attributes, requiredCustomModifiers, optionalCustomModifiers);

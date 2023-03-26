@@ -80,6 +80,12 @@ namespace System.Reflection.Emit
             ArgumentException.ThrowIfNullOrEmpty(fieldName);
             ArgumentNullException.ThrowIfNull(type);
 
+            if (fieldName[0] == '\0')
+                throw new ArgumentException(SR.Argument_IllegalName, nameof(fieldName));
+
+            if (type == typeof(void))
+                throw new ArgumentException(SR.Argument_BadFieldType);
+
             return DefineFieldCore(fieldName, type, requiredCustomModifiers, optionalCustomModifiers, attributes);
         }
 
@@ -164,7 +170,17 @@ namespace System.Reflection.Emit
 
         public TypeBuilder DefineNestedType(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
-                => DefineNestedTypeCore(name, attr, parent, interfaces, PackingSize.Unspecified, UnspecifiedTypeSize);
+        {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
+            if (name[0] == '\0')
+                throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
+
+            if (name.Length > 1023)
+                throw new ArgumentException(SR.Argument_TypeNameTooLong, nameof(name));
+
+            return DefineNestedTypeCore(name, attr, parent, interfaces, PackingSize.Unspecified, UnspecifiedTypeSize);
+        }
 
         protected abstract TypeBuilder DefineNestedTypeCore(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packSize, int typeSize);
@@ -179,7 +195,17 @@ namespace System.Reflection.Emit
 
         public TypeBuilder DefineNestedType(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packSize, int typeSize)
-                => DefineNestedTypeCore(name, attr, parent, null, packSize, typeSize);
+        {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
+            if (name[0] == '\0')
+                throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
+
+            if (name.Length > 1023)
+                throw new ArgumentException(SR.Argument_TypeNameTooLong, nameof(name));
+
+            return DefineNestedTypeCore(name, attr, parent, null, packSize, typeSize);
+        }
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes,

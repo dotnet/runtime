@@ -475,14 +475,6 @@ namespace System.Reflection.Emit
             string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, RuntimeModuleBuilder module,
             PackingSize iPackingSize, int iTypeSize, RuntimeTypeBuilder? enclosingType)
         {
-            ArgumentException.ThrowIfNullOrEmpty(fullname);
-
-            if (fullname[0] == '\0')
-                throw new ArgumentException(SR.Argument_IllegalName, nameof(fullname));
-
-            if (fullname.Length > 1023)
-                throw new ArgumentException(SR.Argument_TypeNameTooLong, nameof(fullname));
-
             int i;
             m_module = module;
             m_DeclaringType = enclosingType;

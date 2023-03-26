@@ -249,7 +249,6 @@ namespace System.Reflection.Emit
 
         private RuntimeTypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
-            ArgumentNullException.ThrowIfNull(name, "fullname");
             ITypeIdentifier ident = TypeIdentifiers.FromInternal(name);
             if (name_cache.ContainsKey(ident))
                 throw new ArgumentException(SR.Argument_DuplicateTypeName);
