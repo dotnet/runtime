@@ -323,7 +323,7 @@ void Compiler::lvaInitTypeRef()
         }
     }
 
-    // If this is an OSR method, mark all the OSR locals and model OSR exposure.
+    // If this is an OSR method, mark all the OSR locals.
     //
     // Do this before we add the GS Cookie Dummy or Outgoing args to the locals
     // so we don't have to do special checks to exclude them.
@@ -334,19 +334,6 @@ void Compiler::lvaInitTypeRef()
         {
             LclVarDsc* const varDsc = lvaGetDesc(lclNum);
             varDsc->lvIsOSRLocal    = true;
-
-            if (info.compPatchpointInfo->IsExposed(lclNum))
-            {
-                JITDUMP("-- V%02u is OSR exposed\n", lclNum);
-                varDsc->lvHasLdAddrOp = 1;
-
-                // todo: Why does it apply only to non-structs?
-                //
-                if (!varTypeIsStruct(varDsc) && !varTypeIsSIMD(varDsc))
-                {
-                    lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::OSR_EXPOSED));
-                }
-            }
         }
     }
 

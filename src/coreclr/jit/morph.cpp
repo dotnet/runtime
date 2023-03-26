@@ -13865,14 +13865,13 @@ void Compiler::fgMorphBlocks()
     //
     if (opts.IsOSR() && (fgEntryBB != nullptr))
     {
-        if (fgOSROriginalEntryBBProtected)
-        {
-            JITDUMP("OSR: un-protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
-            assert(fgEntryBB->bbRefs > 0);
-            fgEntryBB->bbRefs--;
-        }
+        JITDUMP("OSR: un-protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
+        assert(fgEntryBBExtraRefs == 1);
+        assert(fgEntryBB->bbRefs >= 1);
+        fgEntryBB->bbRefs--;
+        fgEntryBBExtraRefs = 0;
 
-        // And we don't need to remember this block anymore.
+        // We don't need to remember this block anymore.
         fgEntryBB = nullptr;
     }
 
