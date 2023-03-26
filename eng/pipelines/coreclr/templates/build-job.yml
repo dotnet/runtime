@@ -87,8 +87,6 @@ jobs:
       - name: publishLogsArtifactPrefix
         value: 'BuildLogs_CoreCLR_GCC'
     - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:
-      - name: compilerArg
-        value: '-clang9'
       # We need to use the stable version available on Alpine Linux
       - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, '_musl')) }}:
         - name: compilerArg
