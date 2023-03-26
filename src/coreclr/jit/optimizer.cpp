@@ -8248,6 +8248,11 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
     // block from the header block.
     // TODO: if we always create and maintain pre-headers before SSA, can we delete this?
 
+    // Assert that we haven't created SSA. It is assumed that we create all loop pre-headers before
+    // building SSA.
+    assert(fgSsaPassesCompleted == 0);
+
+#if 0
     for (Statement* const stmt : top->Statements())
     {
         GenTree* tree = stmt->GetRootNode();
@@ -8269,6 +8274,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
             }
         }
     }
+#endif // 0
 
     // In which EH region should the pre-header live?
     //
