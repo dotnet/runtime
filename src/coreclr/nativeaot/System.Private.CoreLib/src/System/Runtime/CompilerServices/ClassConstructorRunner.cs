@@ -52,13 +52,13 @@ namespace System.Runtime.CompilerServices
         public static unsafe void EnsureClassConstructorRun(StaticClassConstructionContext* pContext)
         {
             IntPtr pfnCctor = pContext->cctorMethodAddress;
-            NoisyLog("EnsureClassConstructorRun, cctor={0}, thread={1}", pfnCctor, CurrentManagedThreadId);
+            NoisyLog("EnsureClassConstructorRun, context={0}, thread={1}", (IntPtr)pContext, CurrentManagedThreadId);
 
             // If we were called from MRT, this check is redundant but harmless. This is in case someone within classlib
             // (cough, Reflection) needs to call this explicitly.
-            if (pContext->initialized == 1)
+            if (pfnCctor == 0)
             {
-                NoisyLog("Cctor already run, cctor={0}, thread={1}", pfnCctor, CurrentManagedThreadId);
+                NoisyLog("Cctor already run, context={0}, thread={1}", (IntPtr)pContext, CurrentManagedThreadId);
                 return;
             }
 
@@ -68,22 +68,22 @@ namespace System.Runtime.CompilerServices
             try
             {
                 Lock cctorLock = cctors[cctorIndex].Lock;
-                if (DeadlockAwareAcquire(cctor, pfnCctor))
+                if (DeadlockAwareAcquire(cctor, pContext))
                 {
                     int currentManagedThreadId = CurrentManagedThreadId;
                     try
                     {
-                        NoisyLog("Acquired cctor lock, cctor={0}, thread={1}", pfnCctor, currentManagedThreadId);
+                        NoisyLog("Acquired cctor lock, context={0}, thread={1}", (IntPtr)pContext, currentManagedThreadId);
 
                         cctors[cctorIndex].HoldingThread = currentManagedThreadId;
-                        if (pContext->initialized == 0)  // Check again in case some thread raced us while we were acquiring the lock.
+                        if (pContext->cctorMethodAddress != 0)  // Check again in case some thread raced us while we were acquiring the lock.
                         {
                             TypeInitializationException priorException = cctors[cctorIndex].Exception;
                             if (priorException != null)
                                 throw priorException;
                             try
                             {
-                                NoisyLog("Calling cctor, cctor={0}, thread={1}", pfnCctor, currentManagedThreadId);
+                                NoisyLog("Calling cctor, context={0}, thread={1}", (IntPtr)pContext, currentManagedThreadId);
 
                                 ((delegate*<void>)pfnCctor)();
 
@@ -94,9 +94,9 @@ namespace System.Runtime.CompilerServices
                                 // still see uninitialized static fields on the class.
                                 Interlocked.MemoryBarrier();
 
-                                NoisyLog("Set type inited, cctor={0}, thread={1}", pfnCctor, currentManagedThreadId);
+                                NoisyLog("Set type inited, context={0}, thread={1}", (IntPtr)pContext, currentManagedThreadId);
 
-                                pContext->initialized = 1;
+                                pContext->cctorMethodAddress = 0;
                             }
                             catch (Exception e)
                             {
@@ -109,7 +109,7 @@ namespace System.Runtime.CompilerServices
                     finally
                     {
                         cctors[cctorIndex].HoldingThread = ManagedThreadIdNone;
-                        NoisyLog("Releasing cctor lock, cctor={0}, thread={1}", pfnCctor, currentManagedThreadId);
+                        NoisyLog("Releasing cctor lock, context={0}, thread={1}", (IntPtr)pContext, currentManagedThreadId);
 
                         cctorLock.Release();
                     }
@@ -124,7 +124,7 @@ namespace System.Runtime.CompilerServices
             {
                 Cctor.Release(cctor);
             }
-            NoisyLog("EnsureClassConstructorRun complete, cctor={0}, thread={1}", pfnCctor, CurrentManagedThreadId);
+            NoisyLog("EnsureClassConstructorRun complete, context={0}, thread={1}", (IntPtr)pContext, CurrentManagedThreadId);
         }
 
         //=========================================================================================================
@@ -132,7 +132,7 @@ namespace System.Runtime.CompilerServices
         //   true   - lock acquired.
         //   false  - deadlock detected. Lock not acquired.
         //=========================================================================================================
-        private static bool DeadlockAwareAcquire(CctorHandle cctor, IntPtr pfnCctor)
+        private static unsafe bool DeadlockAwareAcquire(CctorHandle cctor, StaticClassConstructionContext* pContext)
         {
             const int WaitIntervalSeedInMS = 1;      // seed with 1ms and double every time through the loop
             const int WaitIntervalLimitInMS = WaitIntervalSeedInMS << 7; // limit of 128ms
@@ -181,8 +181,8 @@ namespace System.Runtime.CompilerServices
                             if (holdingThread == currentManagedThreadId)
                             {
                                 // Deadlock detected.  We will break the guarantee and return without running the .cctor.
-                                DebugLog("A class constructor was skipped due to class constructor cycle. cctor={0}, thread={1}",
-                                    pfnCctor, currentManagedThreadId);
+                                DebugLog("A class constructor was skipped due to class constructor cycle. context={0}, thread={1}",
+                                    (IntPtr)pContext, currentManagedThreadId);
 
                                 // We are maintaining an invariant that the BlockingRecords never show a cycle because,
                                 // before we add a record, we first check for a cycle.  As a result, once we've said
@@ -223,7 +223,7 @@ namespace System.Runtime.CompilerServices
                         // respect to other updates to the BlockingRecords.
                         if (unmarkCookie == -1)
                         {
-                            NoisyLog("Mark thread blocked, cctor={0}, thread={1}", pfnCctor, currentManagedThreadId);
+                            NoisyLog("Mark thread blocked, context={0}, thread={1}", (IntPtr)pContext, currentManagedThreadId);
 
                             unmarkCookie = BlockingRecord.MarkThreadAsBlocked(currentManagedThreadId, cctor);
                         }
@@ -241,7 +241,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (unmarkCookie != -1)
                 {
-                    NoisyLog("Unmark thread blocked, cctor={0}, thread={1}", pfnCctor, currentManagedThreadId);
+                    NoisyLog("Unmark thread blocked, context={0}, thread={1}", (IntPtr)pContext, currentManagedThreadId);
                     BlockingRecord.UnmarkThreadAsBlocked(unmarkCookie);
                 }
             }
