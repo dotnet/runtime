@@ -9,7 +9,7 @@ target_link_libraries(mono-icall-table PRIVATE monoapi eglib_api)
 target_include_directories(mono-icall-table PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/..)
-install(TARGETS mono-icall-table LIBRARY)
+install_with_stripped_symbols(mono-icall-table TARGETS lib)
 else()
 set(icall_table_sources "icall-table.c")
 endif()
@@ -208,4 +208,3 @@ target_compile_definitions(metadata_objects PRIVATE -DMONO_DLL_EXPORT)
 target_include_directories(metadata_objects PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/..)
-

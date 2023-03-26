@@ -300,7 +300,7 @@ target_link_libraries(mono-ee-interp PRIVATE monoapi eglib_api)
 target_include_directories(mono-ee-interp PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/..)
-install(TARGETS mono-ee-interp LIBRARY)
+install_with_stripped_symbols(mono-ee-interp TARGETS lib)
 if(HOST_WASM AND CMAKE_BUILD_TYPE STREQUAL "Debug")
 # Always optimize the interpreter, even in Debug builds.  Unoptimized interp_exec_method and
 # generate_code are so big that some browsers overflow the stack with even a few recursive
@@ -410,7 +410,7 @@ if(NOT DISABLE_SHARED_LIBS)
     # if components are disabled, link the fallback stubs into the runtime
     target_sources(monosgen-shared PRIVATE "${mono-components-stub-objects}")
   endif()
-  install(TARGETS monosgen-shared LIBRARY)
+  install_with_stripped_symbols(monosgen-shared TARGETS lib)
   if(HOST_WIN32 AND TARGET_AMD64)
     add_library(monosgen-shared-dac SHARED "mini-windows-dlldac.c")
     target_link_libraries(monosgen-shared-dac PRIVATE monoapi eglib_api)
@@ -452,9 +452,7 @@ if(NOT DISABLE_SHARED_LIBS)
           FRAMEWORK_VERSION C
           MACOSX_FRAMEWORK_IDENTIFIER net.dot.mono-framework
         )
-        install(TARGETS ${frameworkconfig}
-          FRAMEWORK DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        )
+        install_with_stripped_symbols(${frameworkconfig} TARGETS ${CMAKE_INSTALL_LIBDIR})
       endforeach()
     endif()
   endif()
@@ -465,11 +463,11 @@ if(HOST_BROWSER)
   # This is the only source file which contains a c++ throw or catch
   add_library(mono-wasm-eh-js STATIC llvm-runtime.cpp)
   target_link_libraries (mono-wasm-eh-js PRIVATE monoapi eglib_api)
-  install(TARGETS mono-wasm-eh-js LIBRARY)
+  install_with_stripped_symbols(mono-wasm-eh-js TARGETS lib)
   add_library(mono-wasm-eh-wasm STATIC llvm-runtime.cpp)
   target_link_libraries (mono-wasm-eh-wasm PRIVATE monoapi eglib_api)
   set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions")
-  install(TARGETS mono-wasm-eh-wasm LIBRARY)
+  install_with_stripped_symbols(mono-wasm-eh-wasm TARGETS lib)
 endif()
 
 find_package(Python3 COMPONENTS Interpreter)
@@ -567,8 +565,5 @@ if(NOT DISABLE_EXECUTABLES)
     target_sources(mono-sgen PRIVATE ${mono_validate_apis_source})
   endif()
 
-  install(TARGETS mono-sgen RUNTIME)
-  if(HOST_WIN32)
-    install(FILES $<TARGET_PDB_FILE:mono-sgen> DESTINATION bin OPTIONAL)
-  endif()
+  install_with_stripped_symbols(mono-sgen TARGETS bin)
 endif()
