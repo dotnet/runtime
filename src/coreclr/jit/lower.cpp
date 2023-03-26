@@ -1933,7 +1933,7 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                 GenTree* result = nullptr;
 
                 // loadWidth == cnsSize means a single load is enough for both args
-                if ((loadWidth == cnsSize) && (loadWidth <= 8))
+                if ((loadWidth == (unsigned)cnsSize) && (loadWidth <= 8))
                 {
                     // We're going to emit something like the following:
                     //
