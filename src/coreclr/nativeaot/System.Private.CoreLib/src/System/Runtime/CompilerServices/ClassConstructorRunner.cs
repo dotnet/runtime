@@ -52,13 +52,13 @@ namespace System.Runtime.CompilerServices
         public static unsafe void EnsureClassConstructorRun(StaticClassConstructionContext* pContext)
         {
             IntPtr pfnCctor = pContext->cctorMethodAddress;
-            NoisyLog("EnsureClassConstructorRun, context={0}, thread={1}", (IntPtr)pContext, CurrentManagedThreadId);
+            NoisyLog("EnsureClassConstructorRun, context={0}, thread={1}", pContext, CurrentManagedThreadId);
 
             // If we were called from MRT, this check is redundant but harmless. This is in case someone within classlib
             // (cough, Reflection) needs to call this explicitly.
             if (pfnCctor == 0)
             {
-                NoisyLog("Cctor already run, context={0}, thread={1}", (IntPtr)pContext, CurrentManagedThreadId);
+                NoisyLog("Cctor already run, context={0}, thread={1}", pContext, CurrentManagedThreadId);
                 return;
             }
 
@@ -73,7 +73,7 @@ namespace System.Runtime.CompilerServices
                     int currentManagedThreadId = CurrentManagedThreadId;
                     try
                     {
-                        NoisyLog("Acquired cctor lock, context={0}, thread={1}", (IntPtr)pContext, currentManagedThreadId);
+                        NoisyLog("Acquired cctor lock, context={0}, thread={1}", pContext, currentManagedThreadId);
 
                         cctors[cctorIndex].HoldingThread = currentManagedThreadId;
                         if (pContext->cctorMethodAddress != 0)  // Check again in case some thread raced us while we were acquiring the lock.
@@ -83,7 +83,7 @@ namespace System.Runtime.CompilerServices
                                 throw priorException;
                             try
                             {
-                                NoisyLog("Calling cctor, context={0}, thread={1}", (IntPtr)pContext, currentManagedThreadId);
+                                NoisyLog("Calling cctor, context={0}, thread={1}", pContext, currentManagedThreadId);
 
                                 ((delegate*<void>)pfnCctor)();
 
@@ -94,7 +94,7 @@ namespace System.Runtime.CompilerServices
                                 // still see uninitialized static fields on the class.
                                 Interlocked.MemoryBarrier();
 
-                                NoisyLog("Set type inited, context={0}, thread={1}", (IntPtr)pContext, currentManagedThreadId);
+                                NoisyLog("Set type inited, context={0}, thread={1}", pContext, currentManagedThreadId);
 
                                 pContext->cctorMethodAddress = 0;
                             }
@@ -109,7 +109,7 @@ namespace System.Runtime.CompilerServices
                     finally
                     {
                         cctors[cctorIndex].HoldingThread = ManagedThreadIdNone;
-                        NoisyLog("Releasing cctor lock, context={0}, thread={1}", (IntPtr)pContext, currentManagedThreadId);
+                        NoisyLog("Releasing cctor lock, context={0}, thread={1}", pContext, currentManagedThreadId);
 
                         cctorLock.Release();
                     }
@@ -124,7 +124,7 @@ namespace System.Runtime.CompilerServices
             {
                 Cctor.Release(cctor);
             }
-            NoisyLog("EnsureClassConstructorRun complete, context={0}, thread={1}", (IntPtr)pContext, CurrentManagedThreadId);
+            NoisyLog("EnsureClassConstructorRun complete, context={0}, thread={1}", pContext, CurrentManagedThreadId);
         }
 
         //=========================================================================================================
@@ -182,7 +182,7 @@ namespace System.Runtime.CompilerServices
                             {
                                 // Deadlock detected.  We will break the guarantee and return without running the .cctor.
                                 DebugLog("A class constructor was skipped due to class constructor cycle. context={0}, thread={1}",
-                                    (IntPtr)pContext, currentManagedThreadId);
+                                    pContext, currentManagedThreadId);
 
                                 // We are maintaining an invariant that the BlockingRecords never show a cycle because,
                                 // before we add a record, we first check for a cycle.  As a result, once we've said
@@ -223,7 +223,7 @@ namespace System.Runtime.CompilerServices
                         // respect to other updates to the BlockingRecords.
                         if (unmarkCookie == -1)
                         {
-                            NoisyLog("Mark thread blocked, context={0}, thread={1}", (IntPtr)pContext, currentManagedThreadId);
+                            NoisyLog("Mark thread blocked, context={0}, thread={1}", pContext, currentManagedThreadId);
 
                             unmarkCookie = BlockingRecord.MarkThreadAsBlocked(currentManagedThreadId, cctor);
                         }
@@ -241,7 +241,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (unmarkCookie != -1)
                 {
-                    NoisyLog("Unmark thread blocked, context={0}, thread={1}", (IntPtr)pContext, currentManagedThreadId);
+                    NoisyLog("Unmark thread blocked, context={0}, thread={1}", pContext, currentManagedThreadId);
                     BlockingRecord.UnmarkThreadAsBlocked(unmarkCookie);
                 }
             }
@@ -493,22 +493,22 @@ namespace System.Runtime.CompilerServices
         }
 
         [Conditional("ENABLE_NOISY_CCTOR_LOG")]
-        private static void NoisyLog(string format, IntPtr cctorMethod, int threadId)
+        private static unsafe void NoisyLog(string format, StaticClassConstructionContext* pContext, int threadId)
         {
             // We cannot utilize any of the typical number formatting code because it triggers globalization code to run
             // and this cctor code is layered below globalization.
 #if DEBUG
-            Debug.WriteLine(format, ToHexString(cctorMethod), ToHexString(threadId));
+            Debug.WriteLine(format, ToHexString((IntPtr)pContext), ToHexString(threadId));
 #endif // DEBUG
         }
 
         [Conditional("DEBUG")]
-        private static void DebugLog(string format, IntPtr cctorMethod, int threadId)
+        private static unsafe void DebugLog(string format, StaticClassConstructionContext* pContext, int threadId)
         {
             // We cannot utilize any of the typical number formatting code because it triggers globalization code to run
             // and this cctor code is layered below globalization.
 #if DEBUG
-            Debug.WriteLine(format, ToHexString(cctorMethod), ToHexString(threadId));
+            Debug.WriteLine(format, ToHexString((IntPtr)pContext), ToHexString(threadId));
 #endif
         }
 
