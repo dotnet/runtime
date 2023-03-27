@@ -1109,10 +1109,13 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
             // We always emit a move to the target register, even when op1Reg == targetReg,
             // in order to ensure that Bits MAXVL-1:128 are zeroed.
 
-            attr = emitTypeSize(TYP_SIMD16);
             if (intrinsicId == NI_Vector256_ToVector512)
             {
                 attr = emitTypeSize(TYP_SIMD32);
+            }
+            else
+            {
+                attr = emitTypeSize(TYP_SIMD16);
             }
 
             if (op1->isContained() || op1->isUsedFromSpillTemp())
@@ -1139,10 +1142,13 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
                 //
                 // For ToVector256Unsafe the upper bits don't matter and for GetLower we
                 // only actually need the lower 16-bytes, so we can just be "more efficient"
-                attr = emitTypeSize(TYP_SIMD16);
                 if ((intrinsicId == NI_Vector512_GetLower) || (intrinsicId == NI_Vector256_ToVector512Unsafe))
                 {
                     attr = emitTypeSize(TYP_SIMD32);
+                }
+                else
+                {
+                    attr = emitTypeSize(TYP_SIMD16);
                 }
                 genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1);
             }
@@ -1155,9 +1161,11 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
                 // so the upper bits aren't impactful either allowing the same.
 
                 // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
-                attr = emitTypeSize(TYP_SIMD32);
-                if ((intrinsicId == NI_Vector512_GetLower) || (intrinsicId == NI_Vector512_GetLower128) ||
-                    (intrinsicId == NI_Vector256_ToVector512Unsafe))
+                if ((intrinsicId == NI_Vector128_ToVector256Unsafe) || (intrinsicId == NI_Vector256_GetLower))
+                {
+                    attr = emitTypeSize(TYP_SIMD32);
+                }
+                else
                 {
                     attr = emitTypeSize(TYP_SIMD64);
                 }

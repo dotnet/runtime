@@ -2436,12 +2436,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_GetLower128:
         {
             assert(sig->numArgs == 1);
+            assert(IsBaselineVector512IsaSupportedDebugOnly());
 
-            if (IsBaselineVector512IsaSupported())
-            {
-                op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
-            }
+            op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
