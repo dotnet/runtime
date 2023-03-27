@@ -13,7 +13,7 @@ public class ConditionalIncrementTest
     static int cinc_byte(byte op1)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #42
-        //ARM64-FULL-LINE-NEXT: cinc {{w[0-9]+}}, {{w[0-9]+}}, gt
+        //ARM64-FULL-LINE-NEXT: cinc {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
         return op1 > 42 ? 6: 5;
     }
 
@@ -21,7 +21,7 @@ public class ConditionalIncrementTest
     static byte cinc_byte_min_max(byte op1)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #43
-        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, wzr, {{w[0-9]+}}, ge
+        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, wzr, {{w[0-9]+}}, {{ge|lt}}
         return op1 >= 43 ? byte.MinValue : byte.MaxValue;
     }
 
@@ -29,7 +29,7 @@ public class ConditionalIncrementTest
     static int cinc_short(short op1)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #44
-        //ARM64-FULL-LINE-NEXT: cinc {{w[0-9]+}}, {{w[0-9]+}}, le
+        //ARM64-FULL-LINE-NEXT: cinc {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
         return op1 <= 44 ? 6 : 5;
     }
 
@@ -38,7 +38,7 @@ public class ConditionalIncrementTest
     static short cinc_short_min_max(short op1)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #45
-        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
+        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
         return op1 > 45 ? short.MinValue : short.MaxValue;
     }
 
@@ -46,7 +46,7 @@ public class ConditionalIncrementTest
     static int cinc_int(int op1)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #46
-        //ARM64-FULL-LINE-NEXT: cinc {{w[0-9]+}}, {{w[0-9]+}}, gt
+        //ARM64-FULL-LINE-NEXT: cinc {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
         return op1 > 46 ? 6 : 5;
     }
 
@@ -54,7 +54,7 @@ public class ConditionalIncrementTest
     static int cinc_int_min_max(int op1)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #47
-        //ARM64-FULL-LINE-NEXT: cinc {{w[0-9]+}}, {{w[0-9]+}}, ge
+        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{ge|lt}}
         return op1 >= 47 ? int.MinValue : int.MaxValue;
     }
 
@@ -62,7 +62,7 @@ public class ConditionalIncrementTest
     static long cinc_long(long op1)
     {
         //ARM64-FULL-LINE: cmp {{x[0-9]+}}, #48
-        //ARM64-FULL-LINE-NEXT: cinc {{w[0-9]+}}, {{w[0-9]+}}, lt
+        //ARM64-FULL-LINE-NEXT: cinc {{w[0-9]+}}, {{w[0-9]+}}, {{ge|lt}}
         //ARM64-FULL-LINE-NEXT: sxtw {{x[0-9]+}}, {{w[0-9]+}}
         return op1 < 48 ? 6 : 5;
     }
@@ -71,7 +71,7 @@ public class ConditionalIncrementTest
     static long cinc_long_min_max(long op1)
     {
         //ARM64-FULL-LINE: cmp {{x[0-9]+}}, #49
-        //ARM64-FULL-LINE-NEXT: cinc {{x[0-9]+}}, {{x[0-9]+}}, lt
+        //ARM64-FULL-LINE-NEXT: cinc {{x[0-9]+}}, {{x[0-9]+}}, {{ge|lt}}
         return op1 < 49 ? long.MinValue : long.MaxValue;
     }
 
@@ -79,7 +79,7 @@ public class ConditionalIncrementTest
     static int cinc_float(float op1)
     {
         //ARM64-FULL-LINE: fcmp {{s[0-9]+}}, {{s[0-9]+}}
-        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, gt
+        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
         return op1 > 50.0f ? 6 : 5;
     }
 

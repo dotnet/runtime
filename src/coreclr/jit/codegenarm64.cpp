@@ -4656,31 +4656,6 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
         cond = tree->AsOpCC()->gtCondition;
     }
 
-    regNumber               targetReg = tree->GetRegNum();
-    const GenConditionDesc& prevDesc  = GenConditionDesc::Get(prevCond);
-    regNumber               srcReg1   = op1->IsIntegralConst(0) ? REG_ZR : genConsumeReg(op1);
-
-    // When abs(op2 - op1) = 1, emit cinc instaed of csel. Lowering ensures op1 is the smaller constant.
-    if (op1->IsCnsIntOrI() && op2->IsCnsIntOrI() && op2->isContained() && opcond->OperIsSimple() &&
-        !varTypeIsFloating(opcond->gtGetOp1()->TypeGet()))
-    {
-        assert(!varTypeIsFloating(opcond->gtGetOp2()->TypeGet()));
-        ssize_t diff = op1->AsIntCon()->IconValue() - op2->AsIntCon()->IconValue();
-        if (op1->TypeGet() == TYP_INT)
-        {
-            diff = (int)diff;
-        }
-
-        if (abs(diff) == 1)
-        {
-            assert(prevDesc.oper != GT_OR && prevDesc.oper != GT_AND);
-            emit->emitIns_R_R_COND(INS_cinc, attr, targetReg, srcReg1, JumpKindToInsCond(prevDesc.jumpKind1));
-            regSet.verifyRegUsed(targetReg);
-            genProduceReg(tree);
-            return;
-        }
-    }
-
     assert(!op1->isContained() || op1->IsIntegralConst(0));
     assert(!op2->isContained() || op2->IsIntegralConst(0));
 
@@ -4703,6 +4678,57 @@ void CodeGen::genCodeForSelect(GenTreeOp* tree)
 
     regSet.verifyRegUsed(targetReg);
     genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForCinc: Produce code for a GT_CINC/GT_CINCCC node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForCinc(GenTreeOp* cinc)
+{
+    assert(cinc->OperIs(GT_CINC, GT_CINCCC));
+
+    GenTree* opcond = nullptr;
+    if (cinc->OperIs(GT_CINC))
+    {
+        opcond = cinc->AsConditional()->gtCond;
+        genConsumeRegs(opcond);
+    }
+
+    emitter* emit = GetEmitter();
+
+    GenTree*  op     = cinc->gtOp1;
+    var_types opType = genActualType(op->TypeGet());
+    emitAttr  attr   = emitActualTypeSize(cinc->TypeGet());
+    assert(!op->isUsedFromMemory());
+
+    GenCondition cond;
+
+    if (cinc->OperIs(GT_CINC))
+    {
+        assert(!opcond->isContained());
+        assert(opcond->OperIsSimple());
+        assert(!varTypeIsFloating(opcond->gtGetOp1()->TypeGet()));
+        // Condition has been generated into a register - move it into flags.
+        emit->emitIns_R_I(INS_cmp, emitActualTypeSize(opcond), opcond->GetRegNum(), 0);
+        cond = GenCondition::NE;
+    }
+    else
+    {
+        assert(cinc->OperIs(GT_CINCCC));
+        cond = cinc->AsOpCC()->gtCondition;
+    }
+    const GenConditionDesc& prevDesc  = GenConditionDesc::Get(cond);
+    regNumber               targetReg = cinc->GetRegNum();
+    regNumber               srcReg    = op->IsIntegralConst(0) ? REG_ZR : genConsumeReg(op);
+
+    assert(op->IsCnsIntOrI());
+    assert(prevDesc.oper != GT_OR && prevDesc.oper != GT_AND);
+    emit->emitIns_R_R_COND(INS_cinc, attr, targetReg, srcReg, JumpKindToInsCond(prevDesc.jumpKind1));
+    regSet.verifyRegUsed(targetReg);
+    genProduceReg(cinc);
 }
 
 //------------------------------------------------------------------------

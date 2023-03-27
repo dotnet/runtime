@@ -3587,20 +3587,26 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     // we could do this on x86. We currently disable if-conversion for TYP_LONG
     // on 32-bit architectures because of this.
     GenCondition selectCond;
+    GenTreeOpCC* newSelect = nullptr;
     if (((select->gtFlags & GTF_SET_FLAGS) == 0) && TryLowerConditionToFlagsNode(select, cond, &selectCond))
     {
         select->SetOper(GT_SELECTCC);
-        GenTreeOpCC* newSelect = select->AsOpCC();
+        newSelect              = select->AsOpCC();
         newSelect->gtCondition = selectCond;
         ContainCheckSelect(newSelect);
         JITDUMP("Converted to SELECTCC:\n");
         DISPTREERANGE(BlockRange(), newSelect);
         JITDUMP("\n");
-        return newSelect->gtNext;
+    }
+    else
+    {
+        ContainCheckSelect(select);
     }
 
-    ContainCheckSelect(select);
-    return select->gtNext;
+#ifdef TARGET_ARM64
+    TryLowerCselToCinc(select, cond);
+#endif
+    return newSelect != nullptr ? newSelect->gtNext : select->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------

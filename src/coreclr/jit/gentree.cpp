@@ -6237,6 +6237,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
 // Standard unary operators
 #ifdef TARGET_ARM64
         case GT_CNEG_LT:
+        case GT_CINCCC:
 #endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
@@ -6448,7 +6449,9 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
             }
             return false;
         }
-
+#ifdef TARGET_ARM64
+        case GT_CINC:
+#endif
         case GT_SELECT:
         {
             GenTreeConditional* const conditional = this->AsConditional();
@@ -7667,7 +7670,10 @@ GenTreeConditional* Compiler::gtNewConditionalNode(
     GenTreeConditional* node = new (this, oper) GenTreeConditional(oper, type, cond, op1, op2);
     node->gtFlags |= (cond->gtFlags & GTF_ALL_EFFECT);
     node->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
-    node->gtFlags |= (op2->gtFlags & GTF_ALL_EFFECT);
+    if (op2 != nullptr)
+    {
+        node->gtFlags |= (op2->gtFlags & GTF_ALL_EFFECT);
+    }
     return node;
 }
 
@@ -9067,7 +9073,9 @@ GenTree* Compiler::gtCloneExpr(
                                    gtCloneExpr(tree->AsStoreDynBlk()->Data(), addFlags, deepVarNum, deepVarVal),
                                    gtCloneExpr(tree->AsStoreDynBlk()->gtDynamicSize, addFlags, deepVarNum, deepVarVal));
             break;
-
+#ifdef TARGET_ARM64
+        case GT_CINC:
+#endif
         case GT_SELECT:
             copy = new (this, oper)
                 GenTreeConditional(oper, tree->TypeGet(),
@@ -9613,6 +9621,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
 // Standard unary operators
 #ifdef TARGET_ARM64
         case GT_CNEG_LT:
+        case GT_CINCCC:
 #endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
@@ -9733,7 +9742,9 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             m_advance  = &GenTreeUseEdgeIterator::AdvanceCall<CALL_ARGS>;
             AdvanceCall<CALL_ARGS>();
             return;
-
+#ifdef TARGET_ARM64
+        case GT_CINC:
+#endif
         case GT_SELECT:
             m_edge = &m_node->AsConditional()->gtCond;
             assert(*m_edge != nullptr);
@@ -9881,8 +9892,15 @@ void GenTreeUseEdgeIterator::AdvanceConditional()
     switch (m_state)
     {
         case 0:
-            m_edge  = &conditional->gtOp1;
-            m_state = 1;
+            m_edge = &conditional->gtOp1;
+            if (conditional->gtOp2 == nullptr)
+            {
+                m_advance = &GenTreeUseEdgeIterator::Terminate;
+            }
+            else
+            {
+                m_state = 1;
+            }
             break;
         case 1:
             m_edge    = &conditional->gtOp2;
@@ -12208,6 +12226,10 @@ void Compiler::gtDispTree(GenTree*     tree,
             printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
         }
 #ifdef TARGET_ARM64
+        else if (tree->OperIs(GT_CINCCC))
+        {
+            printf(" cond=%s", tree->AsOpCC()->gtCondition.Name());
+        }
         else if (tree->OperIs(GT_CCMP))
         {
             printf(" cond=%s flags=%s", tree->AsCCMP()->gtCondition.Name(),

@@ -362,8 +362,16 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForSelect(treeNode->AsConditional());
             break;
 
+        case GT_CINC:
+            genCodeForCinc(treeNode->AsConditional());
+            break;
+
         case GT_SELECTCC:
             genCodeForSelect(treeNode->AsOp());
+            break;
+
+        case GT_CINCCC:
+            genCodeForCinc(treeNode->AsOp());
             break;
 #endif
 

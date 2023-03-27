@@ -2426,42 +2426,6 @@ void Lowering::ContainCheckSelect(GenTreeOp* node)
     {
         MakeSrcContained(node, op2);
     }
-
-    if (op1->IsCnsIntOrI() && op2->IsCnsIntOrI() && cond->OperIsSimple() &&
-        !varTypeIsFloating(cond->gtGetOp1()->TypeGet()))
-    {
-        assert(!varTypeIsFloating(cond->gtGetOp2()->TypeGet()));
-        ssize_t diff     = op1->AsIntCon()->IconValue() - op2->AsIntCon()->IconValue();
-        ssize_t maxValue = INT64_MAX;
-        ssize_t minValue = INT64_MIN;
-        if (op1->TypeGet() == TYP_INT)
-        {
-            diff     = (int)diff;
-            maxValue = INT32_MAX;
-            minValue = INT32_MIN;
-        }
-
-        if (abs(diff) == 1)
-        {
-            // When abs(op1 - op2) = 1, contain the larger op and emit cinc using the smaller op instead of csel with
-            // both the ops.
-            int op1Value = op1->AsIntCon()->IconValue();
-            int op2Value = op2->AsIntCon()->IconValue();
-            if (op1Value > op2Value || (op1Value == minValue && op2Value == maxValue))
-            {
-                MakeSrcContained(node, op1);
-                // Put smaller operand as op1 to simpilify checks in codegen
-                std::swap(node->gtOp1, node->gtOp2);
-            }
-            else
-            {
-                MakeSrcContained(node, op2);
-                // Reverse the condition so that op2 will be selected
-                GenTree* revCond = comp->gtReverseCond(cond);
-                assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
-            }
-        }
-    }
 #endif
 }
 
@@ -2502,6 +2466,66 @@ void Lowering::ContainCheckNeg(GenTreeOp* neg)
         if (IsInvariantInRange(childNode, neg))
         {
             MakeSrcContained(neg, childNode);
+        }
+    }
+}
+
+//----------------------------------------------------------------------------------------------
+// Try converting SELECT/SELECTCC to CINC/CINCCC. Conversion is possible only if
+// both the trueVal and falseVal are integral constants and abs(trueVal - falseVal) = 1.
+//
+// Arguments:
+//     select - The select node that is now SELECT or SELECTCC
+//     cond   - The condition node that SELECT or SELECTCC uses
+//
+void Lowering::TryLowerCselToCinc(GenTreeOp* select, GenTree* cond)
+{
+    assert(select->OperIs(GT_SELECT, GT_SELECTCC));
+
+    GenTree* trueVal  = select->gtOp1;
+    GenTree* falseVal = select->gtOp2;
+    if (trueVal->IsCnsIntOrI() && falseVal->IsCnsIntOrI() && cond->OperIsSimple() &&
+        !varTypeIsFloating(cond->gtGetOp1()->TypeGet()))
+    {
+        assert(!varTypeIsFloating(cond->gtGetOp2()->TypeGet()));
+        size_t op1Val = (size_t)trueVal->AsIntCon()->IconValue();
+        size_t op2Val = (size_t)falseVal->AsIntCon()->IconValue();
+        if (op1Val + 1 == op2Val || op2Val + 1 == op1Val)
+        {
+            // Create a cinc node, insert it and update the use.
+            if (select->OperIs(GT_SELECT))
+            {
+                if (op1Val + 1 == op2Val)
+                {
+                    // Reverse the condition so that op2 will be selected
+                    GenTree* revCond = comp->gtReverseCond(cond);
+                    assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
+                }
+                else
+                {
+                    std::swap(select->gtOp1, select->gtOp2);
+                }
+                BlockRange().Remove(select->gtOp2);
+                select->SetOper(GT_CINC);
+                DISPTREERANGE(BlockRange(), select);
+            }
+            else
+            {
+                GenTreeOpCC* selectcc   = select->AsOpCC();
+                GenCondition selectCond = selectcc->gtCondition;
+                if (op1Val + 1 == op2Val)
+                {
+                    // Reverse the condition so that op2 will be selected
+                    selectcc->gtCondition = GenCondition::Reverse(selectCond);
+                }
+                else
+                {
+                    std::swap(selectcc->gtOp1, selectcc->gtOp2);
+                }
+                BlockRange().Remove(selectcc->gtOp2);
+                selectcc->SetOper(GT_CINCCC);
+                DISPTREERANGE(BlockRange(), selectcc);
+            }
         }
     }
 }
