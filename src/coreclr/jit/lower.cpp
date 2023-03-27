@@ -4051,8 +4051,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
     //   - We're returning a floating type as an integral type or vice-versa, or
     // - If we're returning a struct as a primitive type, we change the type of
     // 'retval' in 'LowerRetStructLclVar()'
-    bool needBitcast =
-        (ret->TypeGet() != TYP_VOID) && (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(ret->gtGetOp1()));
+    bool needBitcast        = (ret->TypeGet() != TYP_VOID) && !varTypeUsesSameRegType(ret, ret->gtGetOp1());
     bool doPrimitiveBitcast = false;
     if (needBitcast)
     {
@@ -4316,7 +4315,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     }
 
     // src and dst can be in registers, check if we need a bitcast.
-    if (!src->TypeIs(TYP_STRUCT) && (varTypeUsesFloatReg(lclRegType) != varTypeUsesFloatReg(src)))
+    if (!src->TypeIs(TYP_STRUCT) && !varTypeUsesSameRegType(lclRegType, src))
     {
         assert(!srcIsMultiReg);
         assert(lclStore->OperIsLocalStore());
@@ -4379,6 +4378,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
     switch (retVal->OperGet())
     {
         case GT_CNS_INT:
+        {
             // When we promote LCL_VAR single fields into return, we could have all types of constants here.
             if (varTypeUsesFloatReg(nativeReturnType))
             {
@@ -4395,7 +4395,12 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
                     retVal->BashToConst(*reinterpret_cast<double*>(&value));
                 }
             }
+            else
+            {
+                assert(varTypeUsesIntReg(nativeReturnType));
+            }
             break;
+        }
 
         case GT_BLK:
         case GT_OBJ:
@@ -4430,7 +4435,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 
         default:
             assert(varTypeIsEnregisterable(retVal));
-            if (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(retVal))
+            if (!varTypeUsesSameRegType(ret, retVal))
             {
                 GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), retVal);
                 ret->gtOp1       = bitcast;
@@ -4501,7 +4506,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
         const var_types actualType = genActualType(lclVarType);
         lclVar->ChangeType(actualType);
 
-        if (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(lclVarType))
+        if (!varTypeUsesSameRegType(ret, lclVarType))
         {
             GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), ret->gtOp1);
             ret->gtOp1       = bitcast;
@@ -4599,7 +4604,8 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 
 #ifdef FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
-                if (varTypeUsesFloatReg(returnType) != varTypeUsesFloatReg(origType))
+            {
+                if (!varTypeUsesSameRegType(returnType, origType))
                 {
                     GenTree* bitCast = comp->gtNewBitCastNode(origType, call);
                     BlockRange().InsertAfter(call, bitCast);
@@ -4607,6 +4613,7 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
                     ContainCheckBitCast(bitCast);
                 }
                 break;
+            }
 #endif // FEATURE_HW_INTRINSICS
 
             default:

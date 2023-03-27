@@ -4079,7 +4079,7 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
     }
 
 #ifdef TARGET_X86
-    if (varTypeUsesFloatReg(tree->TypeGet()))
+    if (!varTypeUsesIntReg(tree->TypeGet()))
         return false;
     if (varTypeIsLong(tree->TypeGet()))
         return false;
@@ -15893,7 +15893,7 @@ GenTree* Compiler::gtNewTempAssign(
     // see "Zero init inlinee locals:" in fgInlinePrependStatements
     // thus we may need to set compFloatingPointUsed to true here.
     //
-    if (varTypeUsesFloatReg(dstTyp) && (compFloatingPointUsed == false))
+    if (!varTypeUsesIntReg(dstTyp))
     {
         compFloatingPointUsed = true;
     }
@@ -24365,10 +24365,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                 m_regType[i] = hfaType;
             }
 
-            if (comp->compFloatingPointUsed == false)
-            {
-                comp->compFloatingPointUsed = true;
-            }
+            comp->compFloatingPointUsed = true;
             break;
         }
 
@@ -24560,7 +24557,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
 
     if (idx == 0)
     {
-        if (varTypeIsIntegralOrI(regType0))
+        if (varTypeUsesIntReg(regType0))
         {
             resultReg = REG_INTRET;
         }
@@ -24574,7 +24571,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
     {
         var_types regType1 = GetReturnRegType(1);
 
-        if (varTypeIsIntegralOrI(regType1))
+        if (varTypeUsesIntReg(regType1))
         {
             if (varTypeIsIntegralOrI(regType0))
             {
@@ -24602,7 +24599,16 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
 #elif defined(WINDOWS_AMD64_ABI)
 
     assert(idx == 0);
-    resultReg = varTypeUsesFloatReg(GetReturnRegType(0)) ? REG_FLOATRET : REG_INTRET;
+
+    if (varTypeUsesIntReg(GetReturnRegType(0)))
+    {
+        resultReg = REG_INTRET;
+    }
+    else
+    {
+        assert(varTypeUsesFloatReg(GetReturnRegType(0)));
+        resultReg = REG_FLOATRET;
+    }
 
 #elif defined(TARGET_X86)
 
@@ -24672,12 +24678,13 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
         noway_assert(idx == 1); // Up to 2 return registers for two-float-field structs
 
         // If the first return register is from the same register file, return the one next to it.
-        if (varTypeIsIntegralOrI(regType))
+        if (varTypeUsesIntReg(regType))
         {
             resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_INTRET_1 : REG_INTRET; // A0 or A1
         }
-        else // varTypeUsesFloatReg(regType)
+        else
         {
+            assert(varTypeUsesFloatReg(regType));
             resultReg = varTypeIsIntegralOrI(GetReturnRegType(0)) ? REG_FLOATRET : REG_FLOATRET_1; // F0 or F1
         }
     }

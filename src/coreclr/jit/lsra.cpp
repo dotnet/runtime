@@ -711,9 +711,12 @@ LinearScan::LinearScan(Compiler* theCompiler)
     {
         // When the EnC option is set we have an exact set of registers that we always save
         // that are also available in future versions.
-        availableIntRegs &= ~RBM_CALLEE_SAVED | RBM_ENC_CALLEE_SAVED;
-        availableFloatRegs &= ~RBM_CALLEE_SAVED;
-        availableDoubleRegs &= ~RBM_CALLEE_SAVED;
+        availableIntRegs &= ~RBM_INT_CALLEE_SAVED | RBM_ENC_CALLEE_SAVED;
+        availableFloatRegs &= ~RBM_FLT_CALLEE_SAVED;
+        availableDoubleRegs &= ~RBM_FLT_CALLEE_SAVED;
+#if defined(TARGET_XARCH)
+        availableMaskRegs &= ~RBM_MSK_CALLEE_SAVED;
+#endif // TARGET_XARCH
     }
 #endif // TARGET_AMD64 || TARGET_ARM64
 
@@ -728,8 +731,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // Initialize the availableRegs to use for each TYP_*
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, lsra, tf)                                              \
-    availableRegs[static_cast<int>(TYP_##tn)] = &lsra;
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf)                                    \
+    availableRegs[static_cast<int>(TYP_##tn)] = &regFld;
 #include "typelist.h"
 #undef DEF_TP
 
@@ -1827,7 +1830,7 @@ void LinearScan::identifyCandidates()
         if (varDsc->lvLRACandidate)
         {
             var_types type = varDsc->GetStackSlotHomeType();
-            if (varTypeUsesFloatReg(type))
+            if (!varTypeUsesIntReg(type))
             {
                 compiler->compFloatingPointUsed = true;
             }
@@ -4767,7 +4770,7 @@ void LinearScan::allocateRegisters()
                     regMaskTP regMask = genRegMask(reg);
                     // If this isn't available or if it's still waiting to be freed (i.e. it was in
                     // delayRegsToFree and so now it's in regsToFree), then skip it.
-                    if ((regMask & (availableIntRegs | availableFloatRegs) & ~regsToFree) == RBM_NONE)
+                    if ((regMask & allAvailableRegs & ~regsToFree) == RBM_NONE)
                     {
                         continue;
                     }
