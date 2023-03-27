@@ -28,7 +28,8 @@ public class Program
                         result.AddError($"'{token.Value}' is not a valid build target");
                 }
                 return retVal;
-            }
+            },
+            Description = "Select how much of CoreCLR you wish to build."
         };
         var testOption = new Option<TestTargets>("--test")
         {
@@ -47,7 +48,8 @@ public class Program
                         result.AddError($"'{token.Value}' is not a valid test target");
                 }
                 return retVal;
-            }
+            },
+            Description = "Select how much of CoreCLR you wish to test."
         };
         var architectureOption = new Option<string>("--architecture", "--a", "--arch")
         {
@@ -73,8 +75,16 @@ public class Program
                 result.AddError($"The value of {configurationOption.Name} must be either Release or Debug");
         });
 
-        var silentOption = new Option<bool>("--silent", "--s");
-        var zipOption = new Option<bool>("--zip", "--z") { DefaultValueFactory = (_) => RunningOnYamato()};
+        var verbosityOption = new Option<Verbosity>("--verbosity", "--v")
+        {
+            Description = "Set the verbosity level for the build.",
+            DefaultValueFactory = (_) => Verbosity.Normal
+        };
+        var zipOption = new Option<bool>("--zip", "--z")
+        {
+            DefaultValueFactory = (_) => RunningOnYamato(),
+            Description = "Produce zip artifacts. This is only used when building."
+        };
 
         RootCommand rootCommand = new RootCommand("Unity CoreCLR Builder")
         {
@@ -82,7 +92,7 @@ public class Program
             testOption,
             architectureOption,
             configurationOption,
-            silentOption,
+            verbosityOption,
             zipOption
         };
         rootCommand.SetAction(Run);
@@ -114,8 +124,7 @@ public class Program
             {
                 Architecture = architecture ?? GetArchitectures()[0],
                 Configuration = configuration ?? "Release",
-                Silent = context.ParseResult.GetValue(silentOption),
-                DotNetVerbosity = "quiet"
+                VerbosityLevel = context.ParseResult.GetValue(verbosityOption)
             };
 
             // We always need to build the embedding host because on CI we have the build and tests split into separate jobs.  And the way we have artifacts setup,
