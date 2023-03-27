@@ -72,7 +72,7 @@
         <GroupNumber>3</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)tracing\eventpipe\bigevent\bigevent.csproj">
+      <_GroupStartsWith Include="$(TestRoot)baseservices\callconvs\CallFunctionPointers.ilproj">
         <GroupNumber>9</GroupNumber>
       </_GroupStartsWith>
     </ItemGroup>
