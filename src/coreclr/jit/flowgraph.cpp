@@ -555,33 +555,6 @@ PhaseStatus Compiler::fgExpandStaticInit()
                     newFirstStmt = newFirstStmt->GetNextStmt();
                 }
 
-                GenTree* replacementNode;
-                if (retValKind == SHRV_STATIC_BASE_PTR)
-                {
-                    // Replace the call with a constant pointer to the statics base
-                    assert(staticBaseAddr.addr != nullptr);
-                    if (staticBaseAddr.accessType == IAT_VALUE)
-                    {
-                        replacementNode = gtNewIconHandleNode((size_t)staticBaseAddr.addr, GTF_ICON_STATIC_HDL);
-                    }
-                    else
-                    {
-                        assert(staticBaseAddr.accessType == IAT_PVALUE);
-                        replacementNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)staticBaseAddr.addr,
-                                                                   GTF_ICON_STATIC_ADDR_PTR, true);
-                    }
-                }
-                else
-                {
-                    // Helper's return value is not used
-                    replacementNode = gtNewNothingNode();
-                }
-
-                *callUse = replacementNode;
-
-                fgMorphStmtBlockOps(block, stmt);
-                gtUpdateStmtSideEffects(stmt);
-
                 //
                 // Create new blocks. Essentially, we want to transform this:
                 //
@@ -617,14 +590,23 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 //    \--*  CNS_INT   int    1
                 //
                 assert(flagAddr.accessType == IAT_VALUE);
+
+                GenTree* cachedStaticBase = nullptr;
                 GenTree* isInitAdrNode;
                 if (isInitOffset != 0)
                 {
+                    GenTree* baseAddr = gtNewIconHandleNode((size_t)flagAddr.addr, GTF_ICON_CONST_PTR);
+
+                    // Save it to a temp - we'll be using its value for the replacementNode.
+                    // This leads to some size savings on NativeAOT
+                    if ((staticBaseAddr.addr == flagAddr.addr) && (staticBaseAddr.accessType == flagAddr.accessType))
+                    {
+                        cachedStaticBase = fgInsertCommaFormTemp(&baseAddr);
+                    }
+
                     // Don't fold ADD(CNS1, CNS2) here since the result won't be reloc-friendly for AOT
                     isInitAdrNode =
-                        gtNewIndir(TYP_INT, gtNewOperNode(GT_ADD, TYP_I_IMPL, gtNewIconHandleNode((size_t)flagAddr.addr,
-                                                                                                  GTF_ICON_CONST_PTR),
-                                                          gtNewIconNode(isInitOffset)));
+                        gtNewIndir(TYP_INT, gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr, gtNewIconNode(isInitOffset)));
                     isInitAdrNode->gtFlags &= ~GTF_EXCEPT;
                     isInitAdrNode->gtFlags |= (GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
                 }
@@ -635,6 +617,7 @@ PhaseStatus Compiler::fgExpandStaticInit()
 
                 if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
                 {
+                    // In JIT we only check a single bit (see ClassInitFlags::INITIALIZED_FLAG)
                     isInitAdrNode = gtNewOperNode(GT_AND, TYP_INT, isInitAdrNode, gtNewIconNode(1));
                 }
 
@@ -647,6 +630,40 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 // TODO-CQ: for JIT we can replace the original call with CORINFO_HELP_INITCLASS
                 // that only accepts a single argument
                 BasicBlock* helperCallBb = fgNewBBFromTreeAfter(BBJ_NONE, isInitedBb, call, debugInfo, true);
+
+                GenTree* replacementNode;
+                if (retValKind == SHRV_STATIC_BASE_PTR)
+                {
+                    // Replace the call with a constant pointer to the statics base
+                    assert(staticBaseAddr.addr != nullptr);
+
+                    // Use local if the addressed is already materialized and cached
+                    if (cachedStaticBase != nullptr)
+                    {
+                        assert(staticBaseAddr.accessType == IAT_VALUE);
+                        replacementNode = cachedStaticBase;
+                    }
+                    else if (staticBaseAddr.accessType == IAT_VALUE)
+                    {
+                        replacementNode = gtNewIconHandleNode((size_t)staticBaseAddr.addr, GTF_ICON_STATIC_HDL);
+                    }
+                    else
+                    {
+                        assert(staticBaseAddr.accessType == IAT_PVALUE);
+                        replacementNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)staticBaseAddr.addr,
+                                                                   GTF_ICON_STATIC_ADDR_PTR, true);
+                    }
+                }
+                else
+                {
+                    // Helper's return value is not used
+                    replacementNode = gtNewNothingNode();
+                }
+
+                *callUse = replacementNode;
+
+                fgMorphStmtBlockOps(block, stmt);
+                gtUpdateStmtSideEffects(stmt);
 
                 //
                 // Update preds in all new blocks
