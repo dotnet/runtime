@@ -3,9 +3,6 @@
     <NumberOfStripesToUseInStress>20</NumberOfStripesToUseInStress>
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'osx'">true</GCStressIncompatible>
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm'">true</GCStressIncompatible>
-
-    <_IncludeXarchHWIntrinsicTests>false</_IncludeXarchHWIntrinsicTests>
-    <_IncludeXarchHWIntrinsicTests Condition="'$(CLRTestPriorityToBuild)' &gt;= '1' OR '$(TargetArchitecture)' == 'x64' OR ('$(TargetArchitecture)' == 'x86' AND '$(TargetsWindows)' == 'true')">true</_IncludeXarchHWIntrinsicTests>
   </PropertyGroup>
   <ItemGroup>
     <!-- We have a lot of tests here so run them in outerloop on platforms where they aren't accelerated -->
@@ -13,12 +10,6 @@
     <!-- For Vector512, we only have a very small pool of machines with acceleration support, so they are always outerloop -->
 
     <MergedWrapperProjectReference Include="*/**/*.csproj" Exclude="**/*_ro.csproj" />
-
-    <MergedWrapperProjectReference Remove="General/Vector256/**/*.csproj" Condition="'$(_IncludeXarchHWIntrinsicTests)' != 'true'" />
-    <MergedWrapperProjectReference Remove="General/Vector256_1/**/*.csproj" Condition="'$(_IncludeXarchHWIntrinsicTests)' != 'true'" />
-    <MergedWrapperProjectReference Remove="General/Vector512/**/*.csproj" Condition="'$(_IncludeXarchHWIntrinsicTests)' != 'true'" />
-    <MergedWrapperProjectReference Remove="General/Vector512_1/**/*.csproj" Condition="'$(_IncludeXarchHWIntrinsicTests)' != 'true'" />
-    <MergedWrapperProjectReference Remove="X86/**/*.csproj" Condition="'$(_IncludeXarchHWIntrinsicTests)' != 'true'" />
 
   </ItemGroup>
 
