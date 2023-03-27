@@ -4,7 +4,7 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
-#define DATA_SLOT(stub, field) . - (. - C_FUNC(stub##Code\PAGE_SIZE)) + \STUB_PAGE_SIZE + stub##Data__##field
+#define DATA_SLOT(stub, field) . - (. - C_FUNC(stub##Code\STUB_PAGE_SIZE)) + \STUB_PAGE_SIZE + stub##Data__##field
 
     .irp STUB_PAGE_SIZE, 16384, 32768, 65536
 
@@ -23,7 +23,7 @@
     LEAF_END_MARKED FixupPrecodeCode\STUB_PAGE_SIZE
 
     LEAF_ENTRY CallCountingStubCode\STUB_PAGE_SIZE
-LOCAL_LABEL(StubStart\PAGE_SIZE):
+LOCAL_LABEL(StubStart\STUB_PAGE_SIZE):
         ldr  x9, DATA_SLOT(CallCountingStub, RemainingCallCountCell)
         ldrh w10, [x9]
         subs w10, w10, #1
