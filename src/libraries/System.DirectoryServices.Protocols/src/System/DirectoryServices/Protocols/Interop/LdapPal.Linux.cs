@@ -226,7 +226,7 @@ namespace System.DirectoryServices.Protocols
 
                 // Move to next interact challenge
                 Marshal.StructureToPtr(interactChallenge, currentInteractPtr, false);
-                currentInteractPtr = IntPtr.Add(currentInteractPtr, Marshal.SizeOf<SaslInteractiveChallenge>());
+                currentInteractPtr = IntPtr.Add(currentInteractPtr, sizeof(SaslInteractiveChallenge));
                 interactChallenge = Marshal.PtrToStructure<SaslInteractiveChallenge>(currentInteractPtr);
             }
 

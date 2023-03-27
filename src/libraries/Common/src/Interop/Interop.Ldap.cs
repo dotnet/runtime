@@ -268,7 +268,7 @@ namespace System.DirectoryServices.Protocols
             }
         }
 #else
-        public static readonly unsafe int Size = Marshal.SizeOf<LdapReferralCallback>();
+        public static readonly unsafe int Size = sizeof(LdapReferralCallback);
 #endif
     }
 
