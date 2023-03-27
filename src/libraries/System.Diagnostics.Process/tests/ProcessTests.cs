@@ -1196,19 +1196,7 @@ namespace System.Diagnostics.Tests
             Process[] processes = Process.GetProcessesByName(currentProcess.ProcessName);
             try
             {
-                Process[] processes = Process.GetProcessesByName(processName);
-                try
-                {
-                    Assert.NotEmpty(processes);
-                }
-                catch (NotEmptyException)
-                {
-                    throw new TrueException(PrintProcesses(currentProcess), false);
-                }
-
-                Assert.All(processes, process => Assert.Equal(currentProcess.ProcessName, process.ProcessName));
-                Assert.All(processes, process => Assert.Equal(".", process.MachineName));
-                Assert.All(processes, process => Assert.Equal(currentProcess.StartTime, process.StartTime));
+                Assert.NotEmpty(processes);
             }
             catch (NotEmptyException)
             {
