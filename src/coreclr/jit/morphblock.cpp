@@ -155,7 +155,7 @@ GenTree* MorphInitBlockHelper::Morph()
         if (commaPool != nullptr)
         {
             GenTree* comma = commaPool;
-            commaPool = commaPool->gtNext;
+            commaPool      = commaPool->gtNext;
 
             assert(comma->OperIs(GT_COMMA));
             comma->AsOp()->gtOp1 = sideEffects;
@@ -633,7 +633,7 @@ GenTree* MorphInitBlockHelper::EliminateCommas(GenTree** commaPool)
     auto addComma = [commaPool, &addSideEffect](GenTree* comma) {
         addSideEffect(comma->gtGetOp1());
         comma->gtNext = *commaPool;
-        *commaPool = comma;
+        *commaPool    = comma;
     };
 
     GenTree* lhs = m_asg->gtGetOp1();
