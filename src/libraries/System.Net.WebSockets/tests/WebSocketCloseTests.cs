@@ -39,56 +39,51 @@ namespace System.Net.WebSockets.Tests
         };
 
         [Theory]
-        [MemberData(nameof(ClosesData))]
+        [MemberData(nameof(CloseStatuses))]
         public void WebSocketReceiveResult_WebSocketCloseStatus_Roundtrip(WebSocketCloseStatus closeStatus)
         {
-            string closeStatusDescription = "closeStatus " + closeStatus.ToString();
-            WebSocketReceiveResult wsrr = new WebSocketReceiveResult(42, WebSocketMessageType.Close, true, closeStatus, closeStatusDescription);
+            string serverMessage = "closeStatus " + closeStatus.ToString();
+            WebSocketReceiveResult wsrr = new WebSocketReceiveResult(42, WebSocketMessageType.Close, true, closeStatus, serverMessage);
             Assert.Equal(42, wsrr.Count);
             Assert.Equal(closeStatus, wsrr.CloseStatus);
-            Assert.Equal(closeStatusDescription, wsrr.CloseStatusDescription);
+            Assert.Equal(serverMessage, wsrr.CloseStatusDescription);
         }
 
         [Theory]
-        [MemberData(nameof(ClosesData))]
+        [MemberData(nameof(CloseStatuses))]
         public async Task ReceiveAsync_ValidCloseStatus_Success(WebSocketCloseStatus closeStatus)
         {
+            byte[] receiveBuffer = new byte[1024];
             WebSocketTestStream stream = new();
+            Encoding encoding = Encoding.UTF8;
+
             using (WebSocket server = WebSocket.CreateFromStream(stream, true, null, TimeSpan.FromSeconds(3)))
             using (WebSocket client = WebSocket.CreateFromStream(stream.Remote, false, null, TimeSpan.FromSeconds(3)))
             {
                 Assert.NotNull(server);
                 Assert.NotNull(client);
 
-                string closeStatusDescription = "closeStatus " + closeStatus.ToString();
-                await SendTextAsync(closeStatusDescription, server);
-                var response = await ReceiveAsync(client);
-                Assert.Equal(closeStatusDescription, response);
+                // send something
+                string hello = "Testing " + closeStatus.ToString();
+                byte[] sendBytes = encoding.GetBytes(hello);
+                await server.SendAsync(sendBytes.AsMemory(), WebSocketMessageType.Text, WebSocketMessageFlags.DisableCompression, CancellationToken);
 
-                string closed = "Closed";
-                await SendTextAsync(closed, server);
-                await server.CloseOutputAsync(closeStatus, closeStatusDescription, CancellationToken);
+                // and then server-side close with the test status
+                string serverMessage = "CloseStatus " + closeStatus.ToString();
+                await server.CloseOutputAsync(closeStatus, serverMessage, CancellationToken);
 
-                var received = await ReceiveAsync(client);
-                Assert.Equal(closed, received);
+                // get the hello from the client (after the close message was sent)
+                WebSocketReceiveResult result = await client.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken);
+                Assert.Equal(WebSocketMessageType.Text, result.MessageType);
+                string response = encoding.GetString(receiveBuffer.AsSpan(0, result.Count));
+                Assert.Equal(hello, response);
+
+                // now look for the expected close status
+                WebSocketReceiveResult closing = await client.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken);
+                Assert.Equal(WebSocketMessageType.Close, closing.MessageType);
+                Assert.Equal(closeStatus, closing.CloseStatus);
+                Assert.Equal(serverMessage, closing.CloseStatusDescription);
             }
-        }
-
-        private async Task<string> ReceiveAsync(WebSocket client)
-        {
-            var buffer = new byte[1024];
-            ValueWebSocketReceiveResult result = await client.ReceiveAsync(buffer.AsMemory(), CancellationToken);
-
-            Assert.True(result.EndOfMessage);
-            Assert.Equal(WebSocketMessageType.Text, result.MessageType);
-            return Encoding.UTF8.GetString(buffer.AsSpan(0, result.Count));
-        }
-
-        private ValueTask SendTextAsync(string text, WebSocket websocket)
-        {
-            WebSocketMessageFlags flags = WebSocketMessageFlags.EndOfMessage | WebSocketMessageFlags.DisableCompression;
-            byte[] bytes = Encoding.UTF8.GetBytes(text);
-            return websocket.SendAsync(bytes.AsMemory(), WebSocketMessageType.Text, flags, CancellationToken);
         }
     }
 }
