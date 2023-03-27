@@ -23,7 +23,7 @@ namespace System.Net.WebSockets.Tests
 
         public CancellationToken CancellationToken => _cancellation?.Token ?? default;
 
-        public static object[][] ClosesData = {
+        public static object[][] CloseStatuses = {
             new object[] { WebSocketCloseStatus.EndpointUnavailable },
             new object[] { WebSocketCloseStatus.InternalServerError },
             new object[] { WebSocketCloseStatus.InvalidMessageType},
