@@ -902,6 +902,23 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             assert(getSIMDVectorRegisterByteLength() == XMM_REGSIZE_BYTES);
+            if (compExactlyDependsOn(InstructionSet_AVX512F))
+            {
+                // We support Vector512 but Vector<T> is only 16-bytes, so we should
+                // treat this method as a call to Vector512.GetLower128 or Vector128.ToVector512
+
+                if (intrinsic == NI_Vector512_AsVector)
+                {
+                    return impSpecialIntrinsic(NI_Vector512_GetLower128, clsHnd, method, sig, simdBaseJitType, retType,
+                                               simdSize);
+                }
+                else
+                {
+                    assert(intrinsic == NI_Vector512_AsVector512);
+                    return impSpecialIntrinsic(NI_Vector128_ToVector512, clsHnd, method, sig, simdBaseJitType, retType,
+                                               16);
+                }
+            }
             break;
         }
 
@@ -2412,9 +2429,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector128_ToVector512:
         case NI_Vector256_ToVector512:
         case NI_Vector256_ToVector512Unsafe:
         case NI_Vector512_GetLower:
+        case NI_Vector512_GetLower128:
         {
             assert(sig->numArgs == 1);
 

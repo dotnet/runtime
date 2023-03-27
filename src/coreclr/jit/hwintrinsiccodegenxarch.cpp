@@ -1102,6 +1102,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
         }
 
         case NI_Vector128_ToVector256:
+        case NI_Vector128_ToVector512:
         case NI_Vector256_ToVector512:
         {
             // ToVector256 has zero-extend semantics in order to ensure it is deterministic
@@ -1130,6 +1131,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector256_ToVector512Unsafe:
         case NI_Vector256_GetLower:
         case NI_Vector512_GetLower:
+        case NI_Vector512_GetLower128:
         {
             if (op1->isContained() || op1->isUsedFromSpillTemp())
             {
@@ -1154,7 +1156,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
 
                 // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
                 attr = emitTypeSize(TYP_SIMD32);
-                if ((intrinsicId == NI_Vector512_GetLower) || (intrinsicId == NI_Vector256_ToVector512Unsafe))
+                if ((intrinsicId == NI_Vector512_GetLower) || (intrinsicId == NI_Vector512_GetLower128) ||
+                    (intrinsicId == NI_Vector256_ToVector512Unsafe))
                 {
                     attr = emitTypeSize(TYP_SIMD64);
                 }
