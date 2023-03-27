@@ -821,15 +821,6 @@ if (MSVC)
   # production-time scenarios.
   set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:Debug>)
 
-  # If a build speicifically requests to use the dynamic sanitizer runtime, we'll honor that request
-  # and use the matching dynamic CRT.
-  if(SANITIZER_SHARED_RUNTIME)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:Debug>DLL)
-    set(STATIC_MT_CRT_LIB  "msvcrt$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
-    set(STATIC_MT_VCRT_LIB "vcruntime$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
-    set(STATIC_MT_CPP_LIB  "msvcprt$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
-    add_definitions(-DUSING_DYNAMIC_ASAN)
-  endif()
   if (NOT CLR_CMAKE_ENABLE_SANITIZERS)
     # Force uCRT to be dynamically linked for Release build
     # We won't do this for sanitized builds as the dynamic CRT is not compatible with the static sanitizer runtime and
