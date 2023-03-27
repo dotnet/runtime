@@ -105,11 +105,11 @@ namespace System.Tests
                 {
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) Pacific Time (US & Canada)", null, "Pacific Standard Time", "Pacific Daylight Time" },
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Canberra, Melbourne, Sydney", null, "AUS Eastern Standard Time", "AUS Eastern Daylight Time" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Perth", "W. Australia Standard Time", null, "W. Australia Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Perth", null, "W. Australia Standard Time", "W. Australia Daylight Time" },
                     { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Tehran", null, "Iran Standard Time", "Iran Daylight Time" },
 
-                    { s_NewfoundlandTz, "(UTC-03:30) Newfoundland", "Newfoundland Standard Time", null, "Newfoundland Daylight Time" },
-                    { s_catamarcaTz, "(UTC-03:00) City of Buenos Aires", "Argentina Standard Time", null, "Argentina Daylight Time" }
+                    { s_NewfoundlandTz, "(UTC-03:30) Newfoundland", null, "Newfoundland Standard Time", "Newfoundland Daylight Time" },
+                    { s_catamarcaTz, "(UTC-03:00) City of Buenos Aires", null, "Argentina Standard Time", "Argentina Daylight Time" }
                 };
             else
                 return new TheoryData<TimeZoneInfo, string, string, string, string>
