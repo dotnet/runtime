@@ -51,7 +51,7 @@ namespace System.Net.WebSockets.Tests
 
         [Theory]
         [MemberData(nameof(ClosesData))]
-        public async Task ReceivesClose(WebSocketCloseStatus closeStatus)
+        public async Task ReceiveAsync_ValidCloseStatus_Success(WebSocketCloseStatus closeStatus)
         {
             WebSocketTestStream stream = new();
             using (WebSocket server = WebSocket.CreateFromStream(stream, true, null, TimeSpan.FromSeconds(3)))
