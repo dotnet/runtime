@@ -1929,6 +1929,7 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                 {
                     unreached();
                 }
+                var_types actualLoadType = genActualType(loadType);
 
                 GenTree* result = nullptr;
 
@@ -1993,17 +1994,17 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                     //
                     GenTree* l1Indir   = comp->gtNewIndir(loadType, lArgUse.Def());
                     GenTree* r1Indir   = comp->gtNewIndir(loadType, rArgUse.Def());
-                    GenTree* lXor      = comp->gtNewOperNode(GT_XOR, genActualType(loadType), l1Indir, r1Indir);
+                    GenTree* lXor      = comp->gtNewOperNode(GT_XOR, actualLoadType, l1Indir, r1Indir);
                     GenTree* l2Offs    = comp->gtNewIconNode(cnsSize - loadWidth);
                     GenTree* l2AddOffs = comp->gtNewOperNode(GT_ADD, lArg->TypeGet(), lArgClone, l2Offs);
                     GenTree* l2Indir   = comp->gtNewIndir(loadType, l2AddOffs);
                     GenTree* r2Offs    = comp->gtCloneExpr(l2Offs); // offset is the same
                     GenTree* r2AddOffs = comp->gtNewOperNode(GT_ADD, rArg->TypeGet(), rArgClone, r2Offs);
                     GenTree* r2Indir   = comp->gtNewIndir(loadType, r2AddOffs);
-                    GenTree* rXor      = comp->gtNewOperNode(GT_XOR, TYP_INT, l2Indir, r2Indir);
-                    GenTree* resultOr  = comp->gtNewOperNode(GT_OR, TYP_INT, lXor, rXor);
-                    GenTree* zeroCns   = comp->gtNewIconNode(0);
-                    result             = comp->gtNewOperNode(GT_EQ, TYP_INT, resultOr, zeroCns);
+                    GenTree* rXor      = comp->gtNewOperNode(GT_XOR, actualLoadType, l2Indir, r2Indir);
+                    GenTree* resultOr  = comp->gtNewOperNode(GT_OR, actualLoadType, lXor, rXor);
+                    GenTree* zeroCns   = comp->gtNewIconNode(0, actualLoadType);
+                    result             = comp->gtNewOperNode(GT_EQ, actualLoadType, resultOr, zeroCns);
 
                     BlockRange().InsertAfter(rArgClone, l1Indir, r1Indir, lXor, l2Offs);
                     BlockRange().InsertAfter(l2Offs, l2AddOffs, l2Indir, r2Offs, r2AddOffs);
