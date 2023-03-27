@@ -8,6 +8,8 @@
     <!-- By default make shims compile against reference assemblies. -->
     <CompileUsingReferenceAssemblies>true</CompileUsingReferenceAssemblies>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <GenFacadesOutputSourcePath>$(MSBuildProjectDirectory)\$(MSBuildProjectName).g.cs</GenFacadesOutputSourcePath>
+    <GenFacadesAutoIncludeCompileItem>false</GenFacadesAutoIncludeCompileItem>
     <GenFacadesIgnoreMissingTypes>true</GenFacadesIgnoreMissingTypes>
     <!-- ensure the desktop compat shims reference the lowest possible version of dependencies
          since those do not all ship as part of the framework and we don't want to force apps
@@ -31,9 +33,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Include any forwards needed by both ref and src projects. -->
-    <Compile Include="$(MSBuildThisFileDirectory)$(MSBuildProjectName).forwards.cs"
-             Condition="Exists('$(MSBuildThisFileDirectory)$(MSBuildProjectName).forwards.cs')" />
+    <!-- Include the checked-in but generated type forwards file but mark it so that GenFacade
+         doesn't receive it as a compile input. -->
+    <Compile Include="$(GenFacadesOutputSourcePath)"
+             ExcludeFromGenFacades="true" />
+    <!-- Include a manual type forwards file, if it exists. -->
+    <Compile Include="$(MSBuildProjectDirectory)\$(MSBuildProjectName).cs"
+             Condition="Exists('$(MSBuildProjectDirectory)\$(MSBuildProjectName).cs')" />
   </ItemGroup>
 
   <ItemGroup>

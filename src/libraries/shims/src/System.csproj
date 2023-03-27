@@ -4,7 +4,4 @@
     <StrongNameKeyId>ECMA</StrongNameKeyId>
     <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="System.forwards.cs" />
-  </ItemGroup>
 </Project>
