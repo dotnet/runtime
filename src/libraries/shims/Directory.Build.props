@@ -4,14 +4,11 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)-$(TargetOS)</TargetFramework>
+    <EnableDefaultItems>true</EnableDefaultItems>
     <Nullable>disable</Nullable>
     <!-- By default make shims compile against reference assemblies. -->
     <CompileUsingReferenceAssemblies>true</CompileUsingReferenceAssemblies>
-    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <GenFacadesOutputSourcePath>$(MSBuildProjectDirectory)\$(MSBuildProjectName).g.cs</GenFacadesOutputSourcePath>
-    <GenFacadesAutoIncludeCompileItem>false</GenFacadesAutoIncludeCompileItem>
-    <GenFacadesIgnoreMissingTypes>true</GenFacadesIgnoreMissingTypes>
-    <!-- ensure the desktop compat shims reference the lowest possible version of dependencies
+    <!-- Ensure the desktop compat shims reference the lowest possible version of dependencies
          since those do not all ship as part of the framework and we don't want to force apps
          to reference the latest packages.
          netstandard.dll doesn't need to do this since it has no dangling dependencies -->
@@ -21,48 +18,20 @@
     <ApiCompatValidateAssemblies>false</ApiCompatValidateAssemblies>
     <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
     <AddOSPlatformAttributes>false</AddOSPlatformAttributes>
+    <!-- Allow shim ref projects to reference source projects which is required for referencing shared
+        framework dependencies. -->
+    <SkipValidateReferenceAssemblyProjectReferences Condition="'$(IsReferenceAssemblyProject)' == 'true'">true</SkipValidateReferenceAssemblyProjectReferences>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(MSBuildProjectName)' == 'System.Runtime' or
-                        '$(MSBuildProjectName)' == 'mscorlib' or
-                        '$(MSBuildProjectName)' == 'netstandard'">
-    <!-- Omit System.Void since C# doesn't permit the use of the `System.Void`
-         typename and instead requires callers to use the `void` keyword. -->
-    <GenFacadesOmitType Include="System.Void" />
-    <Compile Include="$(MSBuildThisFileDirectory)System.Void.cs" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
+    <ContractProject>$(MSBuildProjectDirectory)\..\ref\$(MSBuildProjectName).csproj</ContractProject>
+    <IsRuntimeAndReferenceAssembly Condition="!Exists('$(ContractProject)')">true</IsRuntimeAndReferenceAssembly>
+  </PropertyGroup>
 
-  <ItemGroup>
-    <!-- Include the checked-in but generated type forwards file but mark it so that GenFacade
-         doesn't receive it as a compile input. -->
-    <Compile Include="$(GenFacadesOutputSourcePath)"
-             ExcludeFromGenFacades="true" />
-    <!-- Include a manual type forwards file, if it exists. -->
-    <Compile Include="$(MSBuildProjectDirectory)\$(MSBuildProjectName).cs"
-             Condition="Exists('$(MSBuildProjectDirectory)\$(MSBuildProjectName).cs')" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="$(MSBuildThisFileDirectory)..\sfx-src.proj" Condition="'$(RefOnly)' != 'true'" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)..\sfx-ref.proj" Condition="'$(RefOnly)' == 'true'" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(MSBuildProjectName)' != 'netstandard'">
-    <!-- .NET Framework shims compile against OOBs and the netstandard shim. -->
-    <ProjectReference Include="$(MSBuildThisFileDirectory)src\netstandard.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)..\oob-src.proj" Condition="'$(RefOnly)' != 'true'" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)..\oob-ref.proj" Condition="'$(RefOnly)' == 'true'" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- System.Data.SqlClient is not live built anymore, reference it manually to avoid tfm nuget selection fallback errors
-         when the TargetOS i.e. is MacCatalyst. Set Private false so that it doesn't flow down to consuming projects. -->
-    <PackageDownload Include="System.Data.SqlClient" Version="[$(SystemDataSqlClientVersion)]" />
-    <Reference Include="$([MSBuild]::NormalizePath('$(NuGetPackageRoot)', 'system.data.sqlclient', '$(SystemDataSqlClientVersion)', 'ref', 'netcoreapp2.1', 'System.Data.SqlClient.dll'))" Private="false" />
-
-    <!-- Use PackageDownload to not bring in System.Drawing.Common's dependencies (Microsoft.Win32.SystemEvents). -->
-    <PackageDownload Include="System.Drawing.Common" Version="[$(SystemDrawingCommonVersion)]" />
-    <Reference Include="$([MSBuild]::NormalizePath('$(NuGetPackageRoot)', 'system.drawing.common', '$(SystemDrawingCommonVersion)', 'lib', 'net7.0', 'System.Drawing.Common.dll'))" Private="false" />
+  <ItemGroup Condition="'$(IsSourceProject)' == 'true'">
+    <!-- If an extra reference source project exists, use its source. -->
+    <Compile Include="$(MSBuildProjectDirectory)\..\ref\$(MSBuildProjectName).cs"
+             Condition="'$(IsRuntimeAndReferenceAssembly)' != 'true'"  />
   </ItemGroup>
 
 </Project>
