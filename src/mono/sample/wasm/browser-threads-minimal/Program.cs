@@ -38,7 +38,7 @@ namespace Sample
         private static partial Task<string> FetchHelperResponseText(JSObject response);
 
         [JSExport]
-        public static async Task FetchBackground(string url)
+        public static async Task<string> FetchBackground(string url)
         {
             var t = Task.Run(async () =>
             {
@@ -51,11 +51,13 @@ namespace Sample
                 {
                     var text = await FetchHelperResponseText(r);
                     Console.WriteLine($"XYZ: FetchBackground fetch returned to thread:{Thread.CurrentThread.ManagedThreadId}, text: {text}");
+                    return text;
                 }
-                return ok;
+                return "not-ok";
             });
-            await t;
+            var r = await t;
             Console.WriteLine($"XYZ: FetchBackground thread:{Thread.CurrentThread.ManagedThreadId} background thread returned");
+            return r;
         }
 
         private static async Task TimeOutThenComplete()

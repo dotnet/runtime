@@ -20,12 +20,23 @@ try {
     //console.log ("XYZ: hello done");
 
     console.log ("XYZ: running FetchBackground");
-    await exports.Sample.Test.FetchBackground("./blurst.txt");
+    let s = await exports.Sample.Test.FetchBackground("./blurst.txt");
     console.log ("XYZ: FetchBackground done");
+    if (s !== "It was the best of times, it was the blurst of times.\n") {
+        const msg = `Unexpected FetchBackground result ${s}`;
+        document.getElementById("out").innerHTML = msg;
+        throw new Error (msg);
+    }
 
     console.log ("XYZ: running FetchBackground(missing)");
-    await exports.Sample.Test.FetchBackground("./missing.txt");
+    s = await exports.Sample.Test.FetchBackground("./missing.txt");
     console.log ("XYZ: FetchBackground(missing) done");
+    if (s !== "not-ok") {
+        const msg = `Unexpected FetchBackground(missing) result ${s}`;
+        document.getElementById("out").innerHTML = msg;
+        throw new Error (msg);
+    }
+    
     //console.log ("HHH: running TaskRunCompute");
     //const r1 = await exports.Sample.Test.RunBackgroundTaskRunCompute();
     //if (r1 !== 524) {
