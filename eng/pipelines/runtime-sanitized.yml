@@ -1,7 +1,13 @@
 # This pipeline provides an easy mechanism for us to run runtime and libaries tests with native sanitizers enabled
-# without having to compilcate the runtime.yml pipeline. This pipeline is intended to be run on a rolling basis
-# but a schedule is yet to be determined.
+# without having to compilcate the runtime.yml pipeline.
 trigger: none
+
+schedules:
+- cron: "0 11 * * 2"
+  displayName: Tuesday at 3:00 AM (UTC-8:00)
+  branches:
+    include:
+    - main
 
 variables:
   - template: /eng/pipelines/common/variables.yml
