@@ -8031,7 +8031,14 @@ public:
     static CORINFO_METHOD_HANDLE eeFindHelper(unsigned helper);
     static CorInfoHelpFunc eeGetHelperNum(CORINFO_METHOD_HANDLE method);
 
-    static bool IsStaticHelperEligibleForExpansion(GenTree* tree, bool* isGc = nullptr);
+    enum StaticHelperReturnValue
+    {
+        SHRV_STATIC_BASE_PTR,
+        SHRV_VOID,
+    };
+    static bool IsStaticHelperEligibleForExpansion(GenTree*                 tree,
+                                                   bool*                    isGc       = nullptr,
+                                                   StaticHelperReturnValue* retValKind = nullptr);
     static bool IsSharedStaticHelper(GenTree* tree);
     static bool IsGcSafePoint(GenTreeCall* call);
 

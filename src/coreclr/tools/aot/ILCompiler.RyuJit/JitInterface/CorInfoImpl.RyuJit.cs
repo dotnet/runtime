@@ -2351,27 +2351,30 @@ namespace Internal.JitInterface
             };
         }
 
-#pragma warning disable CA1822 // Mark members as static
-        private UIntPtr getIsClassInitedFieldAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref InfoAccessType pAccessType, UIntPtr* pStaticBase, ref uint pIsInitedMask, int* pIsInitedOffset)
-#pragma warning restore CA1822 // Mark members as static
+        private bool getIsClassInitedFlagAddress(CORINFO_CLASS_STRUCT_* cls, ref CORINFO_CONST_LOOKUP addr, ref int offset)
         {
             MetadataType type = (MetadataType)HandleToObject(cls);
-            ISortableSymbolNode nonGcStaticBaseSymbol = _compilation.NodeFactory.TypeNonGCStaticsSymbol(type);
+            addr.addr = (void*)ObjectToHandle(_compilation.NodeFactory.TypeNonGCStaticsSymbol(type));
+            addr.accessType = InfoAccessType.IAT_VALUE;
+            offset = _compilation.NodeFactory.Target.PointerSize -
+                NonGCStaticsNode.GetClassConstructorContextSize(_compilation.NodeFactory.Target);
+            return true;
+        }
 
+        private bool getStaticBaseAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref CORINFO_CONST_LOOKUP addr)
+        {
+            MetadataType type = (MetadataType)HandleToObject(cls);
             if (isGc)
             {
-                pAccessType = InfoAccessType.IAT_PVALUE;
-                *pStaticBase = (UIntPtr)ObjectToHandle(_compilation.NodeFactory.TypeGCStaticsSymbol(type));
+                addr.accessType = InfoAccessType.IAT_PVALUE;
+                addr.addr = (void*)ObjectToHandle(_compilation.NodeFactory.TypeGCStaticsSymbol(type));
             }
             else
             {
-                pAccessType = InfoAccessType.IAT_VALUE;
-                *pStaticBase = (UIntPtr)ObjectToHandle(nonGcStaticBaseSymbol);
+                addr.accessType = InfoAccessType.IAT_VALUE;
+                addr.addr = (void*)ObjectToHandle(_compilation.NodeFactory.TypeNonGCStaticsSymbol(type));
             }
-
-            pIsInitedMask = uint.MaxValue; // mask is not needed
-            *pIsInitedOffset = _compilation.NodeFactory.Target.PointerSize - NonGCStaticsNode.GetClassConstructorContextSize(_compilation.NodeFactory.Target);
-            return (UIntPtr)ObjectToHandle(nonGcStaticBaseSymbol);
+            return true;
         }
     }
 }

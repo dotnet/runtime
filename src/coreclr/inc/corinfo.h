@@ -2376,13 +2376,16 @@ public:
             void **ppIndirection
             ) = 0;
 
-    virtual size_t getIsClassInitedFieldAddress(
-            CORINFO_CLASS_HANDLE cls,
-            bool                 isGc,
-            InfoAccessType*      pAccessType,
-            size_t*              pStaticBase,
-            uint32_t*            pIsInitedMask,
-            int32_t*             pIsInitedOffset
+    virtual bool getIsClassInitedFlagAddress(
+            CORINFO_CLASS_HANDLE  cls,
+            CORINFO_CONST_LOOKUP* addr,
+            int*                  offset
+            ) = 0;
+
+    virtual bool getStaticBaseAddress(
+            CORINFO_CLASS_HANDLE  cls,
+            bool                  isGc,
+            CORINFO_CONST_LOOKUP* addr
             ) = 0;
 
     // return the number of bytes needed by an instance of the class

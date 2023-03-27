@@ -3052,10 +3052,16 @@ namespace Internal.JitInterface
             return -1;
         }
 
-        private UIntPtr getIsClassInitedFieldAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref InfoAccessType pAccessType, UIntPtr* pStaticBase, ref uint pIsInitedMask, int* pIsInitedOffset)
+        private bool getIsClassInitedFlagAddress(CORINFO_CLASS_STRUCT_* cls, ref CORINFO_CONST_LOOKUP addr, ref int offset)
         {
             // Implemented for JIT and NativeAOT only for now.
-            return 0;
+            return false;
+        }
+
+        private bool getStaticBaseAddress(CORINFO_CLASS_STRUCT_* cls, bool isGc, ref CORINFO_CONST_LOOKUP addr)
+        {
+            // Implemented for JIT and NativeAOT only for now.
+            return false;
         }
     }
 }

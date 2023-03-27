@@ -424,16 +424,22 @@ size_t interceptor_ICJI::getClassModuleIdForStatics(
     return original_ICorJitInfo->getClassModuleIdForStatics(cls, pModule, ppIndirection);
 }
 
-size_t interceptor_ICJI::getIsClassInitedFieldAddress(
+bool interceptor_ICJI::getIsClassInitedFlagAddress(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CONST_LOOKUP* addr,
+          int* offset)
+{
+    mcs->AddCall("getIsClassInitedFlagAddress");
+    return original_ICorJitInfo->getIsClassInitedFlagAddress(cls, addr, offset);
+}
+
+bool interceptor_ICJI::getStaticBaseAddress(
           CORINFO_CLASS_HANDLE cls,
           bool isGc,
-          InfoAccessType* pAccessType,
-          size_t* pStaticBase,
-          uint32_t* pIsInitedMask,
-          int32_t* pIsInitedOffset)
+          CORINFO_CONST_LOOKUP* addr)
 {
-    mcs->AddCall("getIsClassInitedFieldAddress");
-    return original_ICorJitInfo->getIsClassInitedFieldAddress(cls, isGc, pAccessType, pStaticBase, pIsInitedMask, pIsInitedOffset);
+    mcs->AddCall("getStaticBaseAddress");
+    return original_ICorJitInfo->getStaticBaseAddress(cls, isGc, addr);
 }
 
 unsigned interceptor_ICJI::getClassSize(

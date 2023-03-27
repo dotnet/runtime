@@ -3443,7 +3443,7 @@ size_t CEEInfo::getClassModuleIdForStatics(CORINFO_CLASS_HANDLE clsHnd, CORINFO_
 }
 
 /*********************************************************************/
-size_t CEEInfo::getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls, bool isGc, InfoAccessType* pAccessType, size_t* pStaticBase, uint32_t* pIsInitedMask, int32_t* pIsInitedOffset)
+bool CEEInfo::getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset)
 {
     CONTRACTL {
         NOTHROW;
@@ -3451,16 +3451,13 @@ size_t CEEInfo::getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls, bool isGc
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    size_t result;
+    _ASSERTE(addr);
+    bool result;
 
     JIT_TO_EE_TRANSITION_LEAF();
 
-    TypeHandle VMClsHnd(cls);
-    PTR_MethodTable pMT = VMClsHnd.AsMethodTable();
-
-    *pAccessType = IAT_VALUE;
-    *pIsInitedOffset = 0;
-    *pIsInitedMask = ClassInitFlags::INITIALIZED_FLAG;
+    TypeHandle clsTypeHandle(cls);
+    PTR_MethodTable pMT = clsTypeHandle.AsMethodTable();
 
     // Impl is based on IsPrecomputedClassInitialized()
     UINT32 clsIndex = 0;
@@ -3474,10 +3471,36 @@ size_t CEEInfo::getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls, bool isGc
     }
 
     size_t moduleId = pMT->GetModuleForStatics()->GetModuleID();
-    result = (size_t)((UINT8*)moduleId + DomainLocalModule::GetOffsetOfDataBlob() + clsIndex);
+    addr->addr = (UINT8*)moduleId + DomainLocalModule::GetOffsetOfDataBlob() + clsIndex;
+    addr->accessType = IAT_VALUE;
+    *offset = 0;
+    result = true;
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return result;
+}
+
+/*********************************************************************/
+bool CEEInfo::getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool result;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    TypeHandle clsTypeHandle(cls);
+    PTR_MethodTable pMT = clsTypeHandle.AsMethodTable();
 
     GCX_COOP();
-    *pStaticBase = (size_t)(isGc ? pMT->GetGCStaticsBasePointer() : pMT->GetNonGCStaticsBasePointer());
+    addr->addr = isGc ? pMT->GetGCStaticsBasePointer() : pMT->GetNonGCStaticsBasePointer();
+    addr->accessType = IAT_VALUE;
+    result = true;
 
     EE_TO_JIT_TRANSITION_LEAF();
 

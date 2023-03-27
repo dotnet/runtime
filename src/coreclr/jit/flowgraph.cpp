@@ -498,8 +498,9 @@ PhaseStatus Compiler::fgExpandStaticInit()
 
             for (GenTree* const tree : stmt->TreeList())
             {
-                bool isGc = false;
-                if (!IsStaticHelperEligibleForExpansion(tree, &isGc))
+                bool                    isGc       = false;
+                StaticHelperReturnValue retValKind = {};
+                if (!IsStaticHelperEligibleForExpansion(tree, &isGc, &retValKind))
                 {
                     continue;
                 }
@@ -520,19 +521,21 @@ PhaseStatus Compiler::fgExpandStaticInit()
                     continue;
                 }
 
-                unsigned       isInitMask;
-                int            isInitOffset;
-                InfoAccessType staticBaseAccessType;
-                size_t         staticBase;
-                size_t         staticInitAddr =
-                    info.compCompHnd->getIsClassInitedFieldAddress(call->gtRetClsHnd, isGc, &staticBaseAccessType,
-                                                                   &staticBase, &isInitMask, &isInitOffset);
-                if (staticInitAddr == 0)
+                int                  isInitOffset = 0;
+                CORINFO_CONST_LOOKUP flagAddr     = {};
+                if (!info.compCompHnd->getIsClassInitedFlagAddress(call->gtRetClsHnd, &flagAddr, &isInitOffset))
                 {
-                    JITDUMP("getIsClassInitedFieldAddress returned 0 - bail out.\n")
+                    JITDUMP("getIsClassInitedFlagAddress returned false - bail out.\n")
                     continue;
                 }
-                assert((staticBase != 0) && (isInitMask != 0));
+
+                CORINFO_CONST_LOOKUP staticBaseAddr = {};
+                if ((retValKind == SHRV_STATIC_BASE_PTR) &&
+                    !info.compCompHnd->getStaticBaseAddress(call->gtRetClsHnd, isGc, &staticBaseAddr))
+                {
+                    JITDUMP("getStaticBaseAddress returned false - bail out.\n")
+                    continue;
+                }
 
                 DebugInfo debugInfo = stmt->GetDebugInfo();
 
@@ -552,18 +555,29 @@ PhaseStatus Compiler::fgExpandStaticInit()
                     newFirstStmt = newFirstStmt->GetNextStmt();
                 }
 
-                GenTree* staticBaseTree;
-                if (staticBaseAccessType == IAT_VALUE)
+                GenTree* replacementNode;
+                if (retValKind == SHRV_STATIC_BASE_PTR)
                 {
-                    staticBaseTree = gtNewIconHandleNode(staticBase, GTF_ICON_STATIC_HDL);
+                    // Replace the call with a constant pointer to the statics base
+                    assert(staticBaseAddr.addr != nullptr);
+                    if (staticBaseAddr.accessType == IAT_VALUE)
+                    {
+                        replacementNode = gtNewIconHandleNode((size_t)staticBaseAddr.addr, GTF_ICON_STATIC_HDL);
+                    }
+                    else
+                    {
+                        assert(staticBaseAddr.accessType == IAT_PVALUE);
+                        replacementNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)staticBaseAddr.addr,
+                                                                   GTF_ICON_STATIC_ADDR_PTR, true);
+                    }
                 }
                 else
                 {
-                    assert(staticBaseAccessType == IAT_PVALUE);
-                    staticBaseTree = gtNewIndOfIconHandleNode(TYP_I_IMPL, staticBase, GTF_ICON_STATIC_ADDR_PTR, true);
+                    // Helper's return value is not used
+                    replacementNode = gtNewNothingNode();
                 }
 
-                *callUse = staticBaseTree;
+                *callUse = replacementNode;
 
                 fgMorphStmtBlockOps(block, stmt);
                 gtUpdateStmtSideEffects(stmt);
@@ -602,26 +616,26 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 //    |     \--*  CNS_INT   int    -8 (offset)
                 //    \--*  CNS_INT   int    1
                 //
+                assert(flagAddr.accessType == IAT_VALUE);
                 GenTree* isInitAdrNode;
                 if (isInitOffset != 0)
                 {
                     // Don't fold ADD(CNS1, CNS2) here since the result won't be reloc-friendly for AOT
                     isInitAdrNode =
-                        gtNewIndir(TYP_INT, gtNewOperNode(GT_ADD, TYP_I_IMPL,
-                                                          gtNewIconHandleNode(staticInitAddr, GTF_ICON_CONST_PTR),
+                        gtNewIndir(TYP_INT, gtNewOperNode(GT_ADD, TYP_I_IMPL, gtNewIconHandleNode((size_t)flagAddr.addr,
+                                                                                                  GTF_ICON_CONST_PTR),
                                                           gtNewIconNode(isInitOffset)));
                     isInitAdrNode->gtFlags &= ~GTF_EXCEPT;
                     isInitAdrNode->gtFlags |= (GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
                 }
                 else
                 {
-                    isInitAdrNode = gtNewIndOfIconHandleNode(TYP_INT, staticInitAddr, GTF_ICON_CONST_PTR, true);
+                    isInitAdrNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_CONST_PTR, true);
                 }
 
-                // Don't emit mask if it's 0xFFFFFFFF, although, JIT should be able to drop it as redundant itself
-                if (isInitMask < 0xFFFFFFFF)
+                if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
                 {
-                    isInitAdrNode = gtNewOperNode(GT_AND, TYP_INT, isInitAdrNode, gtNewIconNode(isInitMask));
+                    isInitAdrNode = gtNewOperNode(GT_AND, TYP_INT, isInitAdrNode, gtNewIconNode(1));
                 }
 
                 GenTree* isInitedCmp = gtNewOperNode(GT_EQ, TYP_INT, isInitAdrNode, gtNewIconNode(1));

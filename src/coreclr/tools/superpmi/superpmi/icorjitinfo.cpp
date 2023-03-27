@@ -503,15 +503,20 @@ size_t MyICJI::getClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
     return jitInstance->mc->repGetClassModuleIdForStatics(cls, pModule, ppIndirection);
 }
 
-size_t MyICJI::getIsClassInitedFieldAddress(CORINFO_CLASS_HANDLE cls,
-                                            bool                 isGc,
-                                            InfoAccessType*      pAccessType,
-                                            size_t*              pStaticBase,
-                                            uint32_t*            pIsInitedMask,
-                                            int32_t*             pIsInitedOffset)
+bool MyICJI::getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE  cls,
+                                         CORINFO_CONST_LOOKUP* addr,
+                                         int*                  offset)
 {
-    jitInstance->mc->cr->AddCall("getIsClassInitedFieldAddress");
-    return jitInstance->mc->repGetIsClassInitedFieldAddress(cls, isGc, pAccessType, pStaticBase, pIsInitedMask, pIsInitedOffset);
+    jitInstance->mc->cr->AddCall("getIsClassInitedFlagAddress");
+    return jitInstance->mc->repGetIsClassInitedFlagAddress(cls, addr, offset);
+}
+
+bool MyICJI::getStaticBaseAddress(CORINFO_CLASS_HANDLE  cls,
+                                  bool                  isGc,
+                                  CORINFO_CONST_LOOKUP* addr)
+{
+    jitInstance->mc->cr->AddCall("getStaticBaseAddress");
+    return jitInstance->mc->repGetStaticBaseAddress(cls, isGc, addr);
 }
 
 // return the number of bytes needed by an instance of the class

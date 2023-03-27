@@ -229,13 +229,15 @@ size_t getClassModuleIdForStatics(
           CORINFO_MODULE_HANDLE* pModule,
           void** ppIndirection) override;
 
-size_t getIsClassInitedFieldAddress(
+bool getIsClassInitedFlagAddress(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CONST_LOOKUP* addr,
+          int* offset) override;
+
+bool getStaticBaseAddress(
           CORINFO_CLASS_HANDLE cls,
           bool isGc,
-          InfoAccessType* pAccessType,
-          size_t* pStaticBase,
-          uint32_t* pIsInitedMask,
-          int32_t* pIsInitedOffset) override;
+          CORINFO_CONST_LOOKUP* addr) override;
 
 unsigned getClassSize(
           CORINFO_CLASS_HANDLE cls) override;
