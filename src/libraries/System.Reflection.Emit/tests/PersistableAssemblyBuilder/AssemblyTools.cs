@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit.Tests
 {
-    internal class AssemblyTools
+    internal static class AssemblyTools
     {
         internal static void WriteAssemblyToDisk(AssemblyName assemblyName, Type[] types, string fileLocation)
         {
@@ -103,7 +103,7 @@ namespace System.Reflection.Emit.Tests
     }
 
     // The resolver copied from MLC tests
-    public class CoreMetadataAssemblyResolver : MetadataAssemblyResolver
+    public sealed class CoreMetadataAssemblyResolver : MetadataAssemblyResolver
     {
         public CoreMetadataAssemblyResolver() { }
 

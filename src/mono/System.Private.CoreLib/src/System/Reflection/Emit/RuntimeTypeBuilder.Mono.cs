@@ -213,7 +213,7 @@ namespace System.Reflection.Emit
 
         [DynamicDependency(nameof(state))]  // Automatically keeps all previous fields too due to StructLayout
         [DynamicDependency(nameof(IsAssignableToInternal))] // Used from reflection.c: mono_reflection_call_is_assignable_to
-        internal RuntimeTypeBuilder(RuntimeModuleBuilder mb, string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
+        internal RuntimeTypeBuilder(RuntimeModuleBuilder mb, string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]Type? parent, Type[]? interfaces, PackingSize packing_size, int type_size, Type? nesting_type)
         {
             this.is_hidden_global_type = false;
             int sep_index;
@@ -223,18 +223,20 @@ namespace System.Reflection.Emit
             this.packing_size = packing_size;
             this.nesting_type = nesting_type;
 
+            check_name(nameof(name), name);
+
             if (parent == null && (attr & TypeAttributes.Interface) != 0 && (attr & TypeAttributes.Abstract) == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_BadInterfaceNotAbstract);
 
-            sep_index = fullname.LastIndexOf('.');
+            sep_index = name.LastIndexOf('.');
             if (sep_index != -1)
             {
-                this.tname = fullname.Substring(sep_index + 1);
-                this.nspace = fullname.Substring(0, sep_index);
+                this.tname = name.Substring(sep_index + 1);
+                this.nspace = name.Substring(0, sep_index);
             }
             else
             {
-                this.tname = fullname;
+                this.tname = name;
                 this.nspace = string.Empty;
             }
             if (interfaces != null)
@@ -676,6 +678,9 @@ namespace System.Reflection.Emit
 
         protected override FieldBuilder DefineFieldCore(string fieldName, Type type, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
+            check_name(nameof(fieldName), fieldName);
+            if (type == typeof(void))
+                throw new ArgumentException(SR.Argument_BadFieldType);
             check_not_created();
 
             RuntimeFieldBuilder res = new RuntimeFieldBuilder(this, fieldName, type, attributes, requiredCustomModifiers, optionalCustomModifiers);

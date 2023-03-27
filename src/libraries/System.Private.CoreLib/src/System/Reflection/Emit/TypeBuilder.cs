@@ -80,12 +80,6 @@ namespace System.Reflection.Emit
             ArgumentException.ThrowIfNullOrEmpty(fieldName);
             ArgumentNullException.ThrowIfNull(type);
 
-            if (fieldName[0] == '\0')
-                throw new ArgumentException(SR.Argument_IllegalName, nameof(fieldName));
-
-            if (type == typeof(void))
-                throw new ArgumentException(SR.Argument_BadFieldType);
-
             return DefineFieldCore(fieldName, type, requiredCustomModifiers, optionalCustomModifiers, attributes);
         }
 
@@ -173,12 +167,6 @@ namespace System.Reflection.Emit
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            if (name[0] == '\0')
-                throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
-
-            if (name.Length > 1023)
-                throw new ArgumentException(SR.Argument_TypeNameTooLong, nameof(name));
-
             return DefineNestedTypeCore(name, attr, parent, interfaces, PackingSize.Unspecified, UnspecifiedTypeSize);
         }
 
@@ -197,12 +185,6 @@ namespace System.Reflection.Emit
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packSize, int typeSize)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
-
-            if (name[0] == '\0')
-                throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
-
-            if (name.Length > 1023)
-                throw new ArgumentException(SR.Argument_TypeNameTooLong, nameof(name));
 
             return DefineNestedTypeCore(name, attr, parent, null, packSize, typeSize);
         }

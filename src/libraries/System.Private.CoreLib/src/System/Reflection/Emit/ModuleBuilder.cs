@@ -21,12 +21,6 @@ namespace System.Reflection.Emit
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            if (name[0] == '\0')
-                throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
-
-            if (name.Length > 1023)
-                throw new ArgumentException(SR.Argument_TypeNameTooLong, nameof(name));
-
             return DefineEnumCore(name, visibility, underlyingType);
         }
 
@@ -93,12 +87,6 @@ namespace System.Reflection.Emit
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            if (name[0] == '\0')
-                throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
-
-            if (name.Length > 1023)
-                throw new ArgumentException(SR.Argument_TypeNameTooLong, nameof(name));
-
             return DefineTypeCore(name, attr, parent, interfaces, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize);
         }
 
@@ -114,12 +102,6 @@ namespace System.Reflection.Emit
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packingSize, int typesize)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
-
-            if (name[0] == '\0')
-                throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
-
-            if (name.Length > 1023)
-                throw new ArgumentException(SR.Argument_TypeNameTooLong, nameof(name));
 
             return DefineTypeCore(name, attr, parent, null, packingSize, typesize);
         }
