@@ -9,6 +9,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.PerformanceCounter\src\System.Diagnostics.PerformanceCounter.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.MemoryMappedFiles\src\System.IO.MemoryMappedFiles.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipes\src\System.IO.Pipes.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Pipes.AccessControl\src\System.IO.Pipes.AccessControl.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Linq\src\System.Linq.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Linq.Expressions\src\System.Linq.Expressions.csproj" />
