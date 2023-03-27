@@ -1968,7 +1968,8 @@ MethodTableBuilder::BuildMethodTableThrowing(
             CONSISTENCY_CHECK(!current->IsStatic());
             if (current->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
             {
-                TypeHandle th = current->LookupApproxFieldTypeHandle();
+                _ASSERTE((size_t)fields.GetValueClassCacheIndex() < bmtEnumFields->dwNumInstanceFields);
+                TypeHandle th = TypeHandle(pByValueClassCache[fields.GetValueClassCacheIndex()]);
                 CONSISTENCY_CHECK(!th.IsNull());
                 if (th.AsMethodTable()->GetClass()->IsUnsafeValueClass())
                 {
@@ -4093,12 +4094,15 @@ IS_VALUETYPE:
                     OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOAD_APPROXPARENTS);
                     // We load the approximate type of the field to avoid recursion problems.
                     // MethodTable::DoFullyLoad() will later load it fully
+                    SigPointer::HandleRecursiveGenericsForFieldLayoutLoad recursiveControl;
+                    recursiveControl.pModuleWithTokenToAvoidIfPossible = GetModule();
+                    recursiveControl.tkTypeDefToAvoidIfPossible = GetCl();
                     pByValueClass = fsig.GetArgProps().GetTypeHandleThrowing(GetModule(),
                                                                             &bmtGenerics->typeContext,
                                                                              ClassLoader::LoadTypes,
                                                                              CLASS_LOAD_APPROXPARENTS,
-                                                                             TRUE
-                                                                             ).GetMethodTable();
+                                                                             TRUE, NULL, NULL, NULL, 
+                                                                             &recursiveControl).GetMethodTable();
                 }
 
                 // #FieldDescTypeMorph  IF it is an enum, strip it down to its underlying type

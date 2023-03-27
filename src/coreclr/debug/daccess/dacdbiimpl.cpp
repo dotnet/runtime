@@ -4519,7 +4519,9 @@ void DacDbiInterfaceImpl::EnumerateModulesInAssembly(
     // Debugger isn't notified of Resource / Inspection-only modules.
     if (pDomainAssembly->GetModule()->IsVisibleToDebugger())
     {
-        _ASSERTE(pDomainAssembly->IsLoaded());
+        // If domain assembly isn't yet loaded, just return
+        if (!pDomainAssembly->IsLoaded())
+            return;
 
         VMPTR_DomainAssembly vmDomainAssembly = VMPTR_DomainAssembly::NullPtr();
         vmDomainAssembly.SetHostPtr(pDomainAssembly);
