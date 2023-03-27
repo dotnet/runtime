@@ -6,7 +6,7 @@ using System;
 namespace Mono.Linker.Tests.TestCasesRunner
 {
 	/// <summary>
-	/// Stores various customizations which can be added to the linker at runtime,
+	/// Stores various customizations which can be added to ILLink at runtime,
 	/// for example test implementations of certain interfaces.
 	/// </summary>
 	public class LinkerCustomizations

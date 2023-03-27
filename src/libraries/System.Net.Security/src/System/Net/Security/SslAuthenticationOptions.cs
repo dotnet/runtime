@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -11,6 +13,8 @@ namespace System.Net.Security
 {
     internal sealed class SslAuthenticationOptions
     {
+        private static readonly IdnMapping s_idnMapping = new IdnMapping();
+
         // Simplified version of IPAddressParser.Parse to avoid allocations and dependencies.
         // It purposely ignores scopeId as we don't really use so we do not need to map it to actual interface id.
         private static unsafe bool IsValidAddress(ReadOnlySpan<char> ipSpan)
@@ -45,6 +49,12 @@ namespace System.Net.Security
 
             return false;
         }
+
+        private static readonly IndexOfAnyValues<char> s_safeDnsChars =
+            IndexOfAnyValues.Create("-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz");
+
+        private static bool IsSafeDnsString(ReadOnlySpan<char> name) =>
+            name.IndexOfAnyExcept(s_safeDnsChars) < 0;
 
         internal SslAuthenticationOptions()
         {
@@ -86,12 +96,24 @@ namespace System.Net.Security
             if (!string.IsNullOrEmpty(sslClientAuthenticationOptions.TargetHost))
             {
                 // RFC 6066 section 3 says to exclude trailing dot from fully qualified DNS hostname
-                TargetHost = sslClientAuthenticationOptions.TargetHost.TrimEnd('.');
+                string targetHost = sslClientAuthenticationOptions.TargetHost.TrimEnd('.');
 
                 // RFC 6066 forbids IP literals
-                if (IsValidAddress(TargetHost))
+                if (IsValidAddress(targetHost))
                 {
                     TargetHost = string.Empty;
+                }
+                else
+                {
+                    try
+                    {
+                        TargetHost = s_idnMapping.GetAscii(targetHost);
+                    }
+                    catch (ArgumentException) when (IsSafeDnsString(targetHost))
+                    {
+                        // Seems like name that does not confrom to IDN but apers somewhat valid according to orogional DNS rfc.
+                        TargetHost = targetHost;
+                    }
                 }
             }
 
@@ -163,7 +185,7 @@ namespace System.Net.Security
                 if (certificateWithKey != null && certificateWithKey.HasPrivateKey)
                 {
                     // given cert is X509Certificate2 with key. We can use it directly.
-                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, null);
+                    CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, additionalCertificates: null, offline: false, trust: null, noOcspFetch: true);
                 }
                 else
                 {

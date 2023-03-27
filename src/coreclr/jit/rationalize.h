@@ -67,9 +67,6 @@ private:
 
 inline Rationalizer::Rationalizer(Compiler* _comp) : Phase(_comp, PHASE_RATIONALIZE)
 {
-#ifdef DEBUG
-    comp->compNumStatementLinksTraversed = 0;
-#endif
 }
 
 #endif

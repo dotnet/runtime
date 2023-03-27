@@ -964,6 +964,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
                 }
                 break;
 #endif
+            case GenTreeBlk::BlkOpKindUnrollMemmove:
             case GenTreeBlk::BlkOpKindUnroll:
             case GenTreeBlk::BlkOpKindInvalid:
                 // for these 'gtBlkOpKind' kinds, we leave 'killMask' = RBM_NONE
@@ -1393,6 +1394,16 @@ RefPosition* LinearScan::buildInternalFloatRegisterDefForNode(GenTree* tree, reg
     return defRefPosition;
 }
 
+#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+RefPosition* LinearScan::buildInternalMaskRegisterDefForNode(GenTree* tree, regMaskTP internalCands)
+{
+    // The candidate set should contain only float registers.
+    assert((internalCands & ~availableMaskRegs) == RBM_NONE);
+
+    return defineNewInternalTemp(tree, MaskRegisterType, internalCands);
+}
+#endif
+
 //------------------------------------------------------------------------
 // buildInternalRegisterUses - adds use positions for internal
 // registers required for tree node.
@@ -1673,7 +1684,7 @@ int LinearScan::ComputeOperandDstCount(GenTree* operand)
         // Stores and void-typed operands may be encountered when processing call nodes, which contain
         // pointers to argument setup stores.
         assert(operand->OperIsStore() || operand->OperIsBlkOp() || operand->OperIsPutArgStk() ||
-               operand->OperIsCompare() || operand->OperIs(GT_CMP) || operand->TypeGet() == TYP_VOID);
+               operand->TypeIs(TYP_VOID));
         return 0;
     }
 }
@@ -2602,8 +2613,18 @@ void LinearScan::buildIntervals()
                     // Given that we also don't have a good way to tell whether the variable is live
                     // across a call in the non-EH code, we'll be extra conservative about this.
                     // Note that for writeThru intervals we don't update the preferences to be only callee-save.
-                    unsigned calleeSaveCount =
-                        (varTypeUsesFloatReg(interval->registerType)) ? CNT_CALLEE_SAVED_FLOAT : CNT_CALLEE_ENREG;
+                    unsigned calleeSaveCount;
+
+                    if (varTypeUsesIntReg(interval->registerType))
+                    {
+                        calleeSaveCount = CNT_CALLEE_ENREG;
+                    }
+                    else
+                    {
+                        assert(varTypeUsesFloatReg(interval->registerType));
+                        calleeSaveCount = CNT_CALLEE_SAVED_FLOAT;
+                    }
+
                     if ((weight <= (BB_UNITY_WEIGHT * 7)) || varDsc->lvVarIndex >= calleeSaveCount)
                     {
                         // If this is relatively low weight, don't prefer callee-save at all.
@@ -2801,7 +2822,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
         type = tree->GetRegTypeByIndex(multiRegIdx);
     }
 
-    if (varTypeUsesFloatReg(type))
+    if (!varTypeUsesIntReg(type))
     {
         compiler->compFloatingPointUsed = true;
     }
@@ -3264,23 +3285,20 @@ void LinearScan::setDelayFree(RefPosition* use)
 }
 
 //------------------------------------------------------------------------
-// BuildDelayFreeUses: Build Use RefPositions for an operand that might be contained,
-//                     and which may need to be marked delayRegFree
+// AddDelayFreeUses: Mark useRefPosition as delay-free, if applicable, for the
+//                   rmw node.
 //
 // Arguments:
-//    node       - The node of interest
-//    rmwNode    - The node that has RMW semantics (if applicable)
-//    candidates - The set of candidates for the uses
+//    useRefPosition -    The use refposition that need to be delay-freed.
+//    rmwNode        - The node that has RMW semantics (if applicable)
 //
-// Return Value:
-//    The number of source registers used by the *parent* of this node.
-//
-int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP candidates)
+void LinearScan::AddDelayFreeUses(RefPosition* useRefPosition, GenTree* rmwNode)
 {
-    RefPosition* use          = nullptr;
-    Interval*    rmwInterval  = nullptr;
-    bool         rmwIsLastUse = false;
-    GenTree*     addr         = nullptr;
+    assert(useRefPosition != nullptr);
+
+    Interval* rmwInterval  = nullptr;
+    bool      rmwIsLastUse = false;
+    GenTree*  addr         = nullptr;
     if ((rmwNode != nullptr) && isCandidateLocalRef(rmwNode))
     {
         rmwInterval = getIntervalForLocalVarNode(rmwNode->AsLclVar());
@@ -3289,6 +3307,41 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
         assert(!rmwNode->AsLclVar()->IsMultiReg());
         rmwIsLastUse = rmwNode->AsLclVar()->IsLastUse(0);
     }
+    // If node != rmwNode, then definitely node should be marked as "delayFree".
+    // However, if node == rmwNode, then we can mark node as "delayFree" only if
+    // none of the node/rmwNode are the last uses. If either of them are last use,
+    // we can safely reuse the rmwNode as destination.
+    if ((useRefPosition->getInterval() != rmwInterval) || (!rmwIsLastUse && !useRefPosition->lastUse))
+    {
+        setDelayFree(useRefPosition);
+    }
+}
+
+//------------------------------------------------------------------------
+// BuildDelayFreeUses: Build Use RefPositions for an operand that might be contained,
+//                     and which may need to be marked delayRegFree
+//
+// Arguments:
+//    node              - The node of interest
+//    rmwNode           - The node that has RMW semantics (if applicable)
+//    candidates        - The set of candidates for the uses
+//    useRefPositionRef - If a use refposition is created, returns it. If none created, sets it to nullptr.
+//
+// Return Value:
+//    The number of source registers used by the *parent* of this node.
+//
+int LinearScan::BuildDelayFreeUses(GenTree*      node,
+                                   GenTree*      rmwNode,
+                                   regMaskTP     candidates,
+                                   RefPosition** useRefPositionRef)
+{
+    RefPosition* use  = nullptr;
+    GenTree*     addr = nullptr;
+    if (useRefPositionRef != nullptr)
+    {
+        *useRefPositionRef = nullptr;
+    }
+
     if (!node->isContained())
     {
         use = BuildUse(node, candidates);
@@ -3327,14 +3380,7 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
     }
     if (use != nullptr)
     {
-        // If node != rmwNode, then definitely node should be marked as "delayFree".
-        // However, if node == rmwNode, then we can mark node as "delayFree" only if
-        // none of the node/rmwNode are the last uses. If either of them are last use,
-        // we can safely reuse the rmwNode as destination.
-        if ((use->getInterval() != rmwInterval) || (!rmwIsLastUse && !use->lastUse))
-        {
-            setDelayFree(use);
-        }
+        AddDelayFreeUses(use, rmwNode);
         return 1;
     }
 
@@ -3346,20 +3392,21 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP ca
     if ((addrMode->Base() != nullptr) && !addrMode->Base()->isContained())
     {
         use = BuildUse(addrMode->Base(), candidates);
-        if ((use->getInterval() != rmwInterval) || (!rmwIsLastUse && !use->lastUse))
-        {
-            setDelayFree(use);
-        }
+        AddDelayFreeUses(use, rmwNode);
+
         srcCount++;
     }
     if ((addrMode->Index() != nullptr) && !addrMode->Index()->isContained())
     {
         use = BuildUse(addrMode->Index(), candidates);
-        if ((use->getInterval() != rmwInterval) || (!rmwIsLastUse && !use->lastUse))
-        {
-            setDelayFree(use);
-        }
+        AddDelayFreeUses(use, rmwNode);
+
         srcCount++;
+    }
+
+    if (useRefPositionRef != nullptr)
+    {
+        *useRefPositionRef = use;
     }
     return srcCount;
 }
@@ -3804,13 +3851,15 @@ int LinearScan::BuildReturn(GenTree* tree)
                         {
                             hasMismatchedRegTypes = true;
                             regMaskTP dstRegMask  = genRegMask(retTypeDesc.GetABIReturnReg(i));
-                            if (varTypeUsesFloatReg(dstType))
+
+                            if (varTypeUsesIntReg(dstType))
                             {
-                                buildInternalFloatRegisterDefForNode(tree, dstRegMask);
+                                buildInternalIntRegisterDefForNode(tree, dstRegMask);
                             }
                             else
                             {
-                                buildInternalIntRegisterDefForNode(tree, dstRegMask);
+                                assert(varTypeUsesFloatReg(dstType));
+                                buildInternalFloatRegisterDefForNode(tree, dstRegMask);
                             }
                         }
                     }
@@ -4082,7 +4131,13 @@ int LinearScan::BuildGCWriteBarrier(GenTree* tree)
 //
 int LinearScan::BuildCmp(GenTree* tree)
 {
-    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP) || tree->OperIs(GT_JCMP));
+#if defined(TARGET_XARCH)
+    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP, GT_BT));
+#elif defined(TARGET_ARM64)
+    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP, GT_CCMP));
+#else
+    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP, GT_TEST, GT_JCMP));
+#endif
 
     int srcCount = BuildCmpOperands(tree);
 
@@ -4112,7 +4167,6 @@ int LinearScan::BuildCmp(GenTree* tree)
 //
 int LinearScan::BuildCmpOperands(GenTree* tree)
 {
-    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP) || tree->OperIs(GT_JCMP));
     regMaskTP op1Candidates = RBM_NONE;
     regMaskTP op2Candidates = RBM_NONE;
     GenTree*  op1           = tree->gtGetOp1();

@@ -82,13 +82,6 @@ steps:
   #      overwriteExistingFiles: true
   #      cleanDestinationFolder: false
   #- task: ExtractFiles@1
-  #  displayName: Extract ios-arm runtime
-  #  inputs:
-  #      archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm.*.zip
-  #      destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm
-  #      overwriteExistingFiles: true
-  #      cleanDestinationFolder: false
-  #- task: ExtractFiles@1
   #  displayName: Extract ios-arm64 runtime
   #  inputs:
   #      archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.ios-arm64.*.zip

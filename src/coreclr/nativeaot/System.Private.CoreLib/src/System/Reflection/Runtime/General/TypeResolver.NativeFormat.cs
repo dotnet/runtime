@@ -1,22 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Text;
-using System.Reflection;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 
-using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.Assemblies;
-using System.Reflection.Runtime.TypeParsing;
 
-using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
 
 using Internal.Metadata.NativeFormat;
+using NativeFormatModifiedType = global::Internal.Metadata.NativeFormat.ModifiedType;
 
 namespace System.Reflection.Runtime.General
 {
@@ -45,7 +39,7 @@ namespace System.Reflection.Runtime.General
                 return typeDefRefOrSpec.ToTypeSpecificationHandle(reader).TryResolveTypeSignature(reader, typeContext, ref exception);
             else if (handleType == HandleType.ModifiedType)
             {
-                ModifiedType modifiedType = typeDefRefOrSpec.ToModifiedTypeHandle(reader).GetModifiedType(reader);
+                NativeFormatModifiedType modifiedType = typeDefRefOrSpec.ToModifiedTypeHandle(reader).GetModifiedType(reader);
                 return modifiedType.Type.TryResolve(reader, typeContext, ref exception);
             }
             else
@@ -213,7 +207,7 @@ namespace System.Reflection.Runtime.General
                 exception = RuntimeAssemblyInfo.TryGetRuntimeAssembly(assemblyName, out runtimeAssembly);
                 if (exception != null)
                     return null;
-                RuntimeTypeInfo runtimeType = runtimeAssembly.GetTypeCore(fullName, ignoreCase: false);
+                RuntimeTypeInfo runtimeType = runtimeAssembly.GetTypeCore(fullName, throwOnError: false, ignoreCase: false);
                 if (runtimeType == null)
                 {
                     exception = Helpers.CreateTypeLoadException(fullName, assemblyName.FullName);

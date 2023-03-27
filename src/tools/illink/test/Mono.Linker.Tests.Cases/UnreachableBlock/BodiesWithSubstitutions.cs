@@ -83,7 +83,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			return 1;
 		}
 
-		// Methods with NoInlining won't be evaluated by the linker
+		// Methods with NoInlining won't be evaluated by ILLink
 		[Kept]
 		static void NoInlining ()
 		{

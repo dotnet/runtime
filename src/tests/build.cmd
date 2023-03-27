@@ -57,11 +57,6 @@ set __SkipGenerateLayout=0
 set __GenerateLayoutOnly=0
 set __Ninja=1
 set __CMakeArgs=
-
-@REM CMD has a nasty habit of eating "=" on the argument list, so passing:
-@REM    -priority=1
-@REM appears to CMD parsing as "-priority 1". Handle -priority specially to avoid problems,
-@REM and allow the "-priority=1" syntax.
 set __Priority=0
 
 set __BuildNeedTargetArg=
@@ -126,7 +121,7 @@ if /i "%arg%" == "dir"                   (set __BuildTestDir=!__BuildTestDir!%2%
 if /i "%arg%" == "tree"                  (set __BuildTestTree=!__BuildTestTree!%2%%3B&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "log"                   (set __BuildLogRootName=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%arg%" == "exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-if /i "%arg%" == "priority"              (set __Priority=%2&set processedArgs=!processedArgs! %1=%2&shift&shift&goto Arg_Loop)
+if /i "%arg%" == "priority"              (set __Priority=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
 @REM The following arguments also consume two subsequent arguments
 if /i "%arg%" == "CMakeArgs"             (set __CMakeArgs="%2=%3" %__CMakeArgs%&set "processedArgs=!processedArgs! %1 %2 %3"&shift&shift&shift&goto Arg_Loop)
@@ -150,6 +145,8 @@ if [!processedArgs!]==[] (
 )
 
 if defined __TestArgParsing (
+    echo.
+    echo.args: "%__args%"
     echo.
     echo.PROCESSED ARGS: "%processedArgs%"
     echo.
@@ -178,6 +175,7 @@ if defined __TestArgParsing (
     echo.__GenerateLayoutOnly=%__GenerateLayoutOnly%
     echo.__Ninja=%__Ninja%
     echo.__CMakeArgs=%__CMakeArgs%
+    echo.__Priority=%__Priority%
     echo.
 )
 
@@ -192,9 +190,9 @@ set "__TestBinDir=%__TestRootDir%\%__OSPlatformConfig%"
 set "__TestIntermediatesDir=%__TestRootDir%\obj\%__OSPlatformConfig%"
 
 if "%__RebuildTests%" == "1" (
-    echo Removing test build dir^: !__TestBinDir!
+    echo %__MsgPrefix%Removing test build dir^: !__TestBinDir!
     rmdir /s /q !__TestBinDir!
-    echo Removing test intermediate dir^: !__TestIntermediatesDir!
+    echo %__MsgPrefix%Removing test intermediate dir^: !__TestIntermediatesDir!
     rmdir /s /q !__TestIntermediatesDir!
 )
 
@@ -238,7 +236,7 @@ if %__Ninja% == 0 (
 
 set __msbuildArgs=%__CommonMSBuildArgs% /nologo /verbosity:minimal /clp:Summary /maxcpucount %__UnprocessedBuildArgs%
 
-echo Common MSBuild args: %__msbuildArgs%
+echo %__MsgPrefix%Common MSBuild args: %__msbuildArgs%
 
 if defined __TestArgParsing (
     EXIT /b 0
@@ -297,7 +295,7 @@ if not exist "%__NativeTestIntermediatesDir%\CMakeCache.txt" (
     exit /b 1
 )
 
-echo Environment setup
+echo %__MsgPrefix%Environment setup
 
 set __CmakeBuildToolArgs=
 
@@ -339,7 +337,7 @@ set BuildCommand=powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -Command 
   /p:UsePartialNGENOptimization=false /maxcpucount %__Logging%^
   %__msbuildArgs%
 
-echo %BuildCommand%
+echo %__MsgPrefix%%BuildCommand%
 %BuildCommand%
 
 if errorlevel 1 (

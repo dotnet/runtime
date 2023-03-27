@@ -48,6 +48,8 @@ jobs:
       #   extraStepsParameters:
       #     creator: dotnet-bot
       #     testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      #   extraVariablesTemplates:
+      #     - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
 #
 # Android devices

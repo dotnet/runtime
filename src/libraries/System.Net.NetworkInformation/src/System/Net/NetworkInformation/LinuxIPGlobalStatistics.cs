@@ -14,9 +14,9 @@ namespace System.Net.NetworkInformation
         private readonly IPGlobalStatisticsTable _table;
 
         // Miscellaneous IP information, not defined in MIB-II.
-        private int _numRoutes;
-        private int _numInterfaces;
-        private int _numIPAddresses;
+        private readonly int _numRoutes;
+        private readonly int _numInterfaces;
+        private readonly int _numIPAddresses;
 
         public LinuxIPGlobalStatistics(bool ipv4)
         {

@@ -15,7 +15,6 @@
     <Compile Include="EndPointTest.cs" />
     <Compile Include="IPAddressMappingTest.cs" />
     <Compile Include="IPAddressParsing.cs" />
-    <Compile Include="IPAddressParsingSpan.cs" />
     <Compile Include="IPAddressSpanTest.cs" />
     <Compile Include="IPAddressTest.cs" />
     <Compile Include="IPEndPointParsing.cs" />

@@ -150,9 +150,6 @@
   <data name="ArgumentOutOfRange_HandleInheritabilityNoneOrInheritable" xml:space="preserve">
     <value>HandleInheritability.None or HandleInheritability.Inheritable required.</value>
   </data>
-  <data name="ArgumentOutOfRange_InvalidTimeout" xml:space="preserve">
-    <value>Timeout must be non-negative or equal to -1 (Timeout.Infinite)</value>
-  </data>
   <data name="ArgumentOutOfRange_MaxNumServerInstances" xml:space="preserve">
     <value>maxNumberOfServerInstances must either be a value between 1 and 254, or NamedPipeServerStream.MaxAllowedServerInstances (to obtain the maximum number allowed by system resources).</value>
   </data>

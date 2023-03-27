@@ -339,7 +339,8 @@ namespace System.Collections.Generic
         public Enumerator GetEnumerator() => new Enumerator(this, Enumerator.KeyValuePair);
 
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator() =>
-            new Enumerator(this, Enumerator.KeyValuePair);
+            Count == 0 ? GenericEmptyEnumerator<KeyValuePair<TKey, TValue>>.Instance :
+            GetEnumerator();
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
@@ -1100,7 +1101,7 @@ namespace System.Collections.Generic
             }
         }
 
-        IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this, Enumerator.KeyValuePair);
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<KeyValuePair<TKey, TValue>>)this).GetEnumerator();
 
         /// <summary>
         /// Ensures that the dictionary can hold up to 'capacity' entries without any further expansion of its backing storage
@@ -1513,9 +1514,11 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() => new Enumerator(_dictionary);
+            IEnumerator<TKey> IEnumerable<TKey>.GetEnumerator() =>
+                Count == 0 ? SZGenericArrayEnumerator<TKey>.Empty :
+                GetEnumerator();
 
-            IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<TKey>)this).GetEnumerator();
 
             void ICollection.CopyTo(Array array, int index)
             {
@@ -1705,9 +1708,11 @@ namespace System.Collections.Generic
 
             bool ICollection<TValue>.Contains(TValue item) => _dictionary.ContainsValue(item);
 
-            IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() => new Enumerator(_dictionary);
+            IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() =>
+                Count == 0 ? SZGenericArrayEnumerator<TValue>.Empty :
+                GetEnumerator();
 
-            IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
+            IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<TValue>)this).GetEnumerator();
 
             void ICollection.CopyTo(Array array, int index)
             {

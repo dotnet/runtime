@@ -1582,6 +1582,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return GetFlag(enum_flag_ContainsPointers);
     }
+
     BOOL            Collectible()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1591,6 +1592,7 @@ public:
         return FALSE;
 #endif
     }
+
     BOOL            ContainsPointersOrCollectible()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1601,6 +1603,8 @@ public:
     NOINLINE BYTE *GetLoaderAllocatorObjectForGC();
 
     BOOL            IsNotTightlyPacked();
+
+    BOOL            IsAllGCPointers();
 
     void SetContainsPointers()
     {

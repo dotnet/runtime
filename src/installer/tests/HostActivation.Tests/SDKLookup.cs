@@ -22,8 +22,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             SharedState = sharedState;
 
-            string exeDotNetPath = SharedFramework.CalculateUniqueTestDirectory(sharedState.BaseDir);
-            ExecutableDotNetBuilder = new DotNetBuilder(exeDotNetPath, sharedState.BuiltDotNet.BinPath, "exe");
+            string exeDotNetPath = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(sharedState.BaseDir, "exe"));
+            ExecutableDotNetBuilder = new DotNetBuilder(exeDotNetPath, sharedState.BuiltDotNet.BinPath, null);
             ExecutableDotNet = ExecutableDotNetBuilder
                 .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("9999.0.0")
                 .Build();

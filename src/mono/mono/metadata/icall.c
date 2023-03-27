@@ -2686,6 +2686,8 @@ set_interface_map_data_method_object (MonoMethod *method, MonoClass *iclass, int
 
 	MonoMethod* foundMethod = m_class_get_vtable (klass) [i + ioffset];
 
+	g_assert (foundMethod);
+
 	if (mono_class_has_dim_conflicts (klass) && mono_class_is_interface (foundMethod->klass)) {
 		GSList* conflicts = mono_class_get_dim_conflicts (klass);
 		GSList* l;
@@ -5394,7 +5396,7 @@ ves_icall_System_Reflection_RuntimeAssembly_GetTopLevelForwardedTypes (MonoQCall
 }
 
 void
-ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname, MonoBoolean free_struct)
+ves_icall_System_Reflection_AssemblyName_FreeAssemblyName (MonoAssemblyName *aname, MonoBoolean free_struct)
 {
 	mono_assembly_name_free_internal (aname);
 	if (free_struct)
@@ -7286,9 +7288,15 @@ ves_icall_System_GC_GetTotalAllocatedBytes (MonoBoolean precise, MonoError* erro
 }
 
 void
-ves_icall_System_GC_RecordPressure (gint64 value)
+ves_icall_System_GC_AddPressure (guint64 value)
 {
 	mono_gc_add_memory_pressure (value);
+}
+
+void
+ves_icall_System_GC_RemovePressure (guint64 value)
+{
+	mono_gc_remove_memory_pressure (value);
 }
 
 MonoBoolean

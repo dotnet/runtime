@@ -35,8 +35,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                         void Bar() {}
                     }
 
-                    public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                    public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                     {
+                        protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                     }
 
                     """;
@@ -54,8 +55,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                         void Bar() {}
                     }
 
-                    public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                    public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                     {
+                        protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                     }
 
                     """;
@@ -74,8 +76,10 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -94,8 +98,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -114,8 +119,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -134,8 +140,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -154,8 +161,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -174,8 +182,9 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -192,14 +201,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                 string snippet =
                     $$$"""
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -217,14 +227,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -238,14 +249,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [InterfaceTypeAttribute((short)1)]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -259,14 +271,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIDispatch)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -284,14 +297,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute((short)2)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -309,14 +323,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIInspectable)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -334,14 +349,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute((short)3)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -359,14 +375,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -384,14 +401,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute((short)0)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -418,11 +436,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -441,11 +460,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -464,11 +484,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -491,11 +512,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -518,11 +540,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -545,11 +568,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -572,11 +596,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;
@@ -599,11 +624,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
 
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
+                public unsafe partial class MyComWrappers : GeneratedComWrappersBase
                 {
+                    protected override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count) {count = 0; return null;}
                 }
 
                 """;

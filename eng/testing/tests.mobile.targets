@@ -9,6 +9,8 @@
 
     <PublishingTestsRun>true</PublishingTestsRun>
     <PublishTestAsSelfContainedDependsOn>Publish</PublishTestAsSelfContainedDependsOn>
+
+    <SkipWorkloadsTestingTargetsImport Condition="'$(SkipWorkloadsTestingTargetsImport)' == ''">true</SkipWorkloadsTestingTargetsImport>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -22,7 +24,7 @@
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
-    <!-- Suppress linker warnings as these are tests -->
+    <!-- Suppress trimming warnings as these are tests -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <NoWarn>$(NoWarn);IL2103;IL2105;IL2025;IL2111</NoWarn>
     <!-- Warns about missing Xamarin.iOS.dll -->
@@ -149,7 +151,7 @@
     </ItemGroup>
   </Target>
 
-  <Import Project="$(MSBuildThisFileDirectory)workloads-testing.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)workloads-testing.targets" Condition="'$(SkipWorkloadsTestingTargetsImport)' == 'true'" />
 
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"

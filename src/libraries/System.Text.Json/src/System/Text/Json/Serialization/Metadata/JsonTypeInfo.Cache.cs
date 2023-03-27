@@ -88,7 +88,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             PropertyRef propertyRef;
 
-            ValidateCanBeUsedForMetadataSerialization();
+            ValidateCanBeUsedForPropertyMetadataSerialization();
             ulong key = GetKey(propertyName);
 
             // Keep a local copy of the cache in case it changes by another thread.

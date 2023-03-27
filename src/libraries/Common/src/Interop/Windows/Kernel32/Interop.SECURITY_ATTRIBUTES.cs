@@ -12,7 +12,7 @@ internal static partial class Interop
         internal struct SECURITY_ATTRIBUTES
         {
             internal uint nLength;
-            internal IntPtr lpSecurityDescriptor;
+            internal unsafe void* lpSecurityDescriptor;
             internal BOOL bInheritHandle;
         }
     }

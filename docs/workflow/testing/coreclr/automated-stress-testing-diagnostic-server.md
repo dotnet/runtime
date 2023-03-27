@@ -15,9 +15,9 @@ Once all the tracers have connected to the server, the event will be signaled an
 ## Use:
 
 Two environment variables dictate behavior:
-- `COMPlus_AutoTrace_N_Tracers`: The number of tracers to create.  Should be a number in `[0,64]` where `0` will bypass the wait for attach.
-- `COMPlus_AutoTrace_Command`: The path to the executable to be invoked.  Typically this will be a `run.sh|cmd` script.
+- `DOTNET_AutoTrace_N_Tracers`: The number of tracers to create.  Should be a number in `[0,64]` where `0` will bypass the wait for attach.
+- `DOTNET_AutoTrace_Command`: The path to the executable to be invoked.  Typically this will be a `run.sh|cmd` script.
 
-> (NB: you should `cd` into the directory you intend to execute `COMPlus_AutoTrace_Command` from as the first line of the script.)
+> (NB: you should `cd` into the directory you intend to execute `DOTNET_AutoTrace_Command` from as the first line of the script.)
 
-Once turned on, AutoTrace will run the specified command `COMPlus_AutoTrace_N_Tracers` times.
+Once turned on, AutoTrace will run the specified command `DOTNET_AutoTrace_N_Tracers` times.

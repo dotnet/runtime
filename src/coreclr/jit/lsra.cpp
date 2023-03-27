@@ -437,7 +437,7 @@ regMaskTP LinearScan::getConstrainedRegMask(regMaskTP regMaskActual, regMaskTP r
 //    mask      - The current mask of register candidates for a node
 //
 // Return Value:
-//    A possibly-modified mask, based on the value of COMPlus_JitStressRegs.
+//    A possibly-modified mask, based on the value of DOTNET_JitStressRegs.
 //
 // Notes:
 //    This is the method used to implement the stress options that limit
@@ -636,16 +636,20 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , refPositions(theCompiler->getAllocator(CMK_LSRA_RefPosition))
     , listNodePool(theCompiler)
 {
+#if defined(TARGET_XARCH)
+    availableRegCount = ACTUAL_REG_COUNT;
+
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
-    availableRegCount = ACTUAL_REG_COUNT;
+#endif
 
-    if (!compiler->DoJitStressEvexEncoding())
+    if (!compiler->canUseEvexEncoding())
     {
         availableRegCount -= CNT_HIGHFLOAT;
+        availableRegCount -= CNT_MASK_REGS;
     }
-#endif // TARGET_AMD64
+#endif // TARGET_XARCH
 
     regSelector  = new (theCompiler, CMK_LSRA) RegisterSelection(this);
     firstColdLoc = MaxLocation;
@@ -698,51 +702,39 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
     availableFloatRegs  = RBM_ALLFLOAT;
     availableDoubleRegs = RBM_ALLDOUBLE;
+#if defined(TARGET_XARCH)
+    availableMaskRegs = RBM_ALLMASK;
+#endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (compiler->opts.compDbgEnC)
     {
         // When the EnC option is set we have an exact set of registers that we always save
         // that are also available in future versions.
-        availableIntRegs &= ~RBM_CALLEE_SAVED | RBM_ENC_CALLEE_SAVED;
-        availableFloatRegs &= ~RBM_CALLEE_SAVED;
-        availableDoubleRegs &= ~RBM_CALLEE_SAVED;
+        availableIntRegs &= ~RBM_INT_CALLEE_SAVED | RBM_ENC_CALLEE_SAVED;
+        availableFloatRegs &= ~RBM_FLT_CALLEE_SAVED;
+        availableDoubleRegs &= ~RBM_FLT_CALLEE_SAVED;
+#if defined(TARGET_XARCH)
+        availableMaskRegs &= ~RBM_MSK_CALLEE_SAVED;
+#endif // TARGET_XARCH
     }
 #endif // TARGET_AMD64 || TARGET_ARM64
 
 #if defined(TARGET_AMD64)
-    // TODO-XARCH-AVX512 switch this to canUseEvexEncoding() once we independently
-    // allow EVEX use from the stress flag (currently, if EVEX stress is turned off,
-    // we cannot use EVEX at all)
-    if (compiler->DoJitStressEvexEncoding())
+    if (compiler->canUseEvexEncoding())
     {
         availableFloatRegs |= RBM_HIGHFLOAT;
         availableDoubleRegs |= RBM_HIGHFLOAT;
     }
 #endif
 
-    for (unsigned int i = 0; i < TYP_COUNT; i++)
-    {
-        var_types thisType = (var_types)genActualTypes[i];
-        if (thisType == TYP_FLOAT)
-        {
-            availableRegs[i] = &availableFloatRegs;
-        }
-        else if (thisType == TYP_DOUBLE)
-        {
-            availableRegs[i] = &availableDoubleRegs;
-        }
-#ifdef FEATURE_SIMD
-        else if ((thisType >= TYP_SIMD8) && (thisType <= TYP_SIMD32))
-        {
-            availableRegs[i] = &availableDoubleRegs;
-        }
-#endif
-        else
-        {
-            availableRegs[i] = &availableIntRegs;
-        }
-    }
+    // Initialize the availableRegs to use for each TYP_*
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf)                                    \
+    availableRegs[static_cast<int>(TYP_##tn)] = &regFld;
+#include "typelist.h"
+#undef DEF_TP
 
     compiler->rpFrameType           = FT_NOT_SET;
     compiler->rpMustCreateEBPCalled = false;
@@ -1595,8 +1587,13 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
         case TYP_SIMD8:
         case TYP_SIMD12:
         case TYP_SIMD16:
+#if defined(TARGET_XARCH)
         case TYP_SIMD32:
+        case TYP_SIMD64:
+#endif // TARGET_XARCH
+        {
             return !varDsc->lvPromoted;
+        }
 #endif // FEATURE_SIMD
 
         case TYP_STRUCT:
@@ -1833,7 +1830,7 @@ void LinearScan::identifyCandidates()
         if (varDsc->lvLRACandidate)
         {
             var_types type = varDsc->GetStackSlotHomeType();
-            if (varTypeUsesFloatReg(type))
+            if (!varTypeUsesIntReg(type))
             {
                 compiler->compFloatingPointUsed = true;
             }
@@ -2196,7 +2193,7 @@ VarToRegMap LinearScan::setInVarToRegMap(unsigned int bbNum, VarToRegMap srcVarT
 //    same tree. However, now that last uses are computed as RefPositions are created,
 //    that is no longer necessary, and this method is simply retained as a check.
 //    The exception to the check-only behavior is when LSRA_EXTEND_LIFETIMES if set via
-//    COMPlus_JitStressRegs. In that case, this method is required, because even though
+//    DOTNET_JitStressRegs. In that case, this method is required, because even though
 //    the RefPositions will not be marked lastUse in that case, we still need to correctly
 //    mark the last uses on the tree nodes, which is done by this method.
 //
@@ -4773,7 +4770,7 @@ void LinearScan::allocateRegisters()
                     regMaskTP regMask = genRegMask(reg);
                     // If this isn't available or if it's still waiting to be freed (i.e. it was in
                     // delayRegsToFree and so now it's in regsToFree), then skip it.
-                    if ((regMask & (availableIntRegs | availableFloatRegs) & ~regsToFree) == RBM_NONE)
+                    if ((regMask & allAvailableRegs & ~regsToFree) == RBM_NONE)
                     {
                         continue;
                     }
@@ -5076,6 +5073,13 @@ void LinearScan::allocateRegisters()
                 {
                     allocate = false;
                 }
+#if defined(TARGET_XARCH)
+                else if (lclVarInterval->registerType == TYP_SIMD64)
+                {
+                    allocate                           = false;
+                    lclVarInterval->isPartiallySpilled = true;
+                }
+#endif // TARGET_XARCH
                 else
                 {
                     lclVarInterval->isPartiallySpilled = true;
@@ -7741,6 +7745,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         }
     }
 
+    LclVarDsc* terminatorNodeLclVarDsc = nullptr;
     // Next, if this blocks ends with a switch table, or for Arm64, ends with JCMP instruction,
     // make sure to not copy into the registers that are consumed at the end of this block.
     //
@@ -7773,10 +7778,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             consumedRegs |= genRegMask(srcOp1->GetRegNum());
         }
     }
-
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-    // Next, if this blocks ends with a JCMP, we have to make sure:
-    // 1. Not to copy into the register that JCMP uses
+    // Next, if this blocks ends with a JCMP/JTRUE, we have to make sure:
+    // 1. Not to copy into the register that JCMP/JTRUE uses
     //    e.g. JCMP w21, BRANCH
     // 2. Not to copy into the source of JCMP's operand before it is consumed
     //    e.g. Should not use w0 since it will contain wrong value after resolution
@@ -7785,34 +7788,37 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     //          mov w21, w0
     //          JCMP w21, BRANCH
     // 3. Not to modify the local variable it must consume
-
     // Note: GT_COPY has special handling in codegen and its generation is merged with the
     // node that consumes its result. So both, the input and output regs of GT_COPY must be
     // excluded from the set available for resolution.
-    LclVarDsc* jcmpLocalVarDsc = nullptr;
-    if (block->bbJumpKind == BBJ_COND)
+    else if (block->bbJumpKind == BBJ_COND)
     {
         GenTree* lastNode = LIR::AsRange(block).LastNode();
 
-        if (lastNode->OperIs(GT_JCMP))
+        if (lastNode->OperIs(GT_JTRUE, GT_JCMP))
         {
-            GenTree* op1 = lastNode->gtGetOp1();
-            consumedRegs |= genRegMask(op1->GetRegNum());
+            GenTree* op = lastNode->gtGetOp1();
+            consumedRegs |= genRegMask(op->GetRegNum());
 
-            if (op1->OperIs(GT_COPY))
+            if (op->OperIs(GT_COPY))
             {
-                GenTree* srcOp1 = op1->gtGetOp1();
-                consumedRegs |= genRegMask(srcOp1->GetRegNum());
+                GenTree* srcOp = op->gtGetOp1();
+                consumedRegs |= genRegMask(srcOp->GetRegNum());
             }
 
-            if (op1->IsLocal())
+            if (op->IsLocal())
             {
-                GenTreeLclVarCommon* lcl = op1->AsLclVarCommon();
-                jcmpLocalVarDsc          = &compiler->lvaTable[lcl->GetLclNum()];
+                GenTreeLclVarCommon* lcl = op->AsLclVarCommon();
+                terminatorNodeLclVarDsc  = &compiler->lvaTable[lcl->GetLclNum()];
             }
+
+#ifndef TARGET_LOONGARCH64
+            // TODO-LOONGARCH64: Take into account that on LA64, the second
+            // operand of a JCMP can be in a register too.
+            assert(!lastNode->OperIs(GT_JCMP) || lastNode->gtGetOp2()->isContained());
+#endif
         }
     }
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
     VarToRegMap sameVarToRegMap = sharedCriticalVarToRegMap;
     regMaskTP   sameWriteRegs   = RBM_NONE;
@@ -7889,7 +7895,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             }
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-            if (jcmpLocalVarDsc && (jcmpLocalVarDsc->lvVarIndex == outResolutionSetVarIndex))
+            if ((terminatorNodeLclVarDsc != nullptr) &&
+                (terminatorNodeLclVarDsc->lvVarIndex == outResolutionSetVarIndex))
             {
                 sameToReg = REG_NA;
             }
@@ -8635,7 +8642,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                     {
                         // Spill "targetReg" to the stack and add its eventual target (otherTargetReg)
                         // to "targetRegsFromStack", which will be handled below.
-                        // NOTE: This condition is very rare.  Setting COMPlus_JitStressRegs=0x203
+                        // NOTE: This condition is very rare.  Setting DOTNET_JitStressRegs=0x203
                         // has been known to trigger it in JIT SH.
 
                         // First, spill "otherInterval" from targetReg to the stack.
@@ -8739,8 +8746,8 @@ const char* LinearScan::getStatName(unsigned stat)
 #include "lsra_stats.h"
 #undef LSRA_STAT_DEF
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId) #stat,
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
     };
 
     assert(stat < ArrLen(lsraStatNames));
@@ -8754,8 +8761,8 @@ LsraStat LinearScan::getLsraStatFromScore(RegisterScore registerScore)
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     case RegisterScore::stat:                                                                                          \
         return LsraStat::STAT_##stat;
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
         default:
             return LsraStat::STAT_FREE;
     }
@@ -9057,8 +9064,8 @@ const char* LinearScan::getScoreName(RegisterScore score)
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     case stat:                                                                                                         \
         return shortname;
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
         default:
             return "  -  ";
     }
@@ -11053,8 +11060,8 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     mappingTable->Set(stat, &LinearScan::RegisterSelection::try_##stat);
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
 
     LPCWSTR ordering = JitConfig.JitLsraOrdering();
     if (ordering == nullptr)
@@ -11073,8 +11080,8 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
     case orderSeqId:                                                                                                   \
         RegSelectionOrder[orderId] = enum_name;                                                                        \
         break;
+#define BUSY_REG_SEL_DEF(enum_name, value, shortname, orderSeqId) REG_SEL_DEF(enum_name, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
             default:
                 assert(!"Invalid lsraOrdering value.");
         }
@@ -11089,13 +11096,10 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
 {
     currentInterval = interval;
     refPosition     = refPos;
-    score           = 0;
 
-    regType         = linearScan->getRegisterType(currentInterval, refPosition);
-    currentLocation = refPosition->nodeLocation;
-    nextRefPos      = refPosition->nextRefPosition;
-    candidates      = refPosition->registerAssignment;
-    preferences     = currentInterval->registerPreferences;
+    regType     = linearScan->getRegisterType(currentInterval, refPosition);
+    candidates  = refPosition->registerAssignment;
+    preferences = currentInterval->registerPreferences;
 
     // This is not actually a preference, it's merely to track the lclVar that this
     // "specialPutArg" is using.
@@ -11105,25 +11109,21 @@ void LinearScan::RegisterSelection::reset(Interval* interval, RefPosition* refPo
     rangeEndLocation    = refPosition->getRangeEndLocation();
     relatedLastLocation = rangeEndLocation;
     preferCalleeSave    = currentInterval->preferCalleeSave;
-    rangeEndRefPosition = nullptr;
     lastRefPosition     = currentInterval->lastRefPosition;
-    lastLocation        = MinLocation;
-    prevRegRec          = currentInterval->assignedReg;
 
     // These are used in the post-selection updates, and must be set for any selection.
-    freeCandidates    = RBM_NONE;
-    matchingConstants = RBM_NONE;
-    unassignedSet     = RBM_NONE;
-
-    coversSet        = RBM_NONE;
-    preferenceSet    = RBM_NONE;
-    coversRelatedSet = RBM_NONE;
-    coversFullSet    = RBM_NONE;
-
-    foundRegBit          = REG_NA;
-    found                = false;
-    skipAllocation       = false;
-    coversSetsCalculated = false;
+    freeCandidates        = RBM_NONE;
+    matchingConstants     = RBM_NONE;
+    unassignedSet         = RBM_NONE;
+    coversSet             = RBM_NONE;
+    preferenceSet         = RBM_NONE;
+    coversRelatedSet      = RBM_NONE;
+    coversFullSet         = RBM_NONE;
+    coversSetsCalculated  = false;
+    found                 = false;
+    skipAllocation        = false;
+    coversFullApplied     = false;
+    constAvailableApplied = false;
 }
 
 // ----------------------------------------------------------
@@ -11141,7 +11141,6 @@ bool LinearScan::RegisterSelection::applySelection(int selectionScore, regMaskTP
     regMaskTP newCandidates = candidates & selectionCandidates;
     if (newCandidates != RBM_NONE)
     {
-        score += selectionScore;
         candidates = newCandidates;
         return LinearScan::isSingleRegister(candidates);
     }
@@ -11199,7 +11198,13 @@ void LinearScan::RegisterSelection::try_CONST_AVAILABLE()
 
     if (currentInterval->isConstant && RefTypeIsDef(refPosition->refType))
     {
-        found = applySelection(CONST_AVAILABLE, matchingConstants);
+        regMaskTP newCandidates = candidates & matchingConstants;
+        if (newCandidates != RBM_NONE)
+        {
+            candidates            = newCandidates;
+            constAvailableApplied = true;
+            found                 = isSingleRegister(newCandidates);
+        }
     }
 }
 
@@ -11214,7 +11219,7 @@ void LinearScan::RegisterSelection::try_THIS_ASSIGNED()
         return;
     }
 
-    if (prevRegRec != nullptr)
+    if (currentInterval->assignedReg != nullptr)
     {
         found = applySelection(THIS_ASSIGNED, freeCandidates & preferences & prevRegBit);
     }
@@ -11307,7 +11312,13 @@ void LinearScan::RegisterSelection::try_COVERS_FULL()
     calculateCoversSets();
 #endif
 
-    found = applySelection(COVERS_FULL, (coversFullSet & freeCandidates));
+    regMaskTP newCandidates = candidates & coversFullSet & freeCandidates;
+    if (newCandidates != RBM_NONE)
+    {
+        candidates        = newCandidates;
+        found             = isSingleRegister(candidates);
+        coversFullApplied = true;
+    }
 }
 
 // ----------------------------------------------------------
@@ -11325,7 +11336,7 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
     regMaskTP bestFitSet = RBM_NONE;
     // If the best score includes COVERS_FULL, pick the one that's killed soonest.
     // If none cover the full range, the BEST_FIT is the one that's killed later.
-    bool         earliestIsBest  = ((score & COVERS_FULL) != 0);
+    bool         earliestIsBest  = coversFullApplied;
     LsraLocation bestFitLocation = earliestIsBest ? MaxLocation : MinLocation;
     for (regMaskTP bestFitCandidates = candidates; bestFitCandidates != RBM_NONE;)
     {
@@ -11393,7 +11404,7 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
 void LinearScan::RegisterSelection::try_IS_PREV_REG()
 {
     // TODO: We do not check found here.
-    if ((prevRegRec != nullptr) && ((score & COVERS_FULL) != 0))
+    if ((currentInterval->assignedReg != nullptr) && coversFullApplied)
     {
         found = applySingleRegSelection(IS_PREV_REG, prevRegBit);
     }
@@ -11460,7 +11471,7 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
 
         // Can and should the interval in this register be spilled for this one,
         // if we don't find a better alternative?
-        if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == currentLocation) &&
+        if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == refPosition->nodeLocation) &&
             !assignedInterval->getNextRefPosition()->RegOptional())
         {
             continue;
@@ -11751,6 +11762,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     // process data-structures
     if (RefTypeIsDef(refPosition->refType))
     {
+        RefPosition* nextRefPos = refPosition->nextRefPosition;
         if (currentInterval->hasConflictingDefUse)
         {
             linearScan->resolveConflictingDefAndUse(currentInterval, refPosition);
@@ -11960,8 +11972,8 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
             regNumber    checkConflictReg      = genRegNumFromMask(checkConflictBit);
             LsraLocation checkConflictLocation = linearScan->nextFixedRef[checkConflictReg];
 
-            if ((checkConflictLocation == currentLocation) ||
-                (refPosition->delayRegFree && (checkConflictLocation == (currentLocation + 1))))
+            if ((checkConflictLocation == refPosition->nodeLocation) ||
+                (refPosition->delayRegFree && (checkConflictLocation == (refPosition->nodeLocation + 1))))
             {
                 candidates &= ~checkConflictBit;
             }
@@ -11974,9 +11986,10 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     // been restored as inactive after a kill?
     // NOTE: this is not currently considered one of the selection criteria - it always wins
     // if it is the assignedInterval of 'prevRegRec'.
-    if (!found && (prevRegRec != nullptr))
+    if (!found && (currentInterval->assignedReg != nullptr))
     {
-        prevRegBit = genRegMask(prevRegRec->regNum);
+        RegRecord* prevRegRec = currentInterval->assignedReg;
+        prevRegBit            = genRegMask(prevRegRec->regNum);
         if ((prevRegRec->assignedInterval == currentInterval) && ((candidates & prevRegBit) != RBM_NONE))
         {
             candidates = prevRegBit;
@@ -12057,19 +12070,31 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         }
     }
 #else // RELEASE
-// In release, just invoke the default order
 
+    // In release, just invoke the default order
+    if (freeCandidates != RBM_NONE)
+    {
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     try_##stat();                                                                                                      \
     IF_FOUND_GOTO_DONE
+
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
+    }
+
+#define REG_SEL_DEF(stat, value, shortname, orderSeqId)
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                           \
+    try_##stat();                                                                                                      \
+    IF_FOUND_GOTO_DONE
+#include "lsra_score.h"
+
 #endif // DEBUG
 #undef IF_FOUND_GOTO_DONE
 
 Selection_Done:
     if (skipAllocation)
     {
+        foundRegBit = RBM_NONE;
         return RBM_NONE;
     }
 

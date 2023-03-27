@@ -769,6 +769,7 @@ cvttps2dq: dest:x src1:x len:5 clob:1
 xmove: dest:x src1:x len:5
 xzero: dest:x len:5
 xones: dest:x len:5
+xconst: dest:x len:12
 
 iconv_to_x: dest:x src1:i len:5
 extract_i4: dest:i src1:x len:5

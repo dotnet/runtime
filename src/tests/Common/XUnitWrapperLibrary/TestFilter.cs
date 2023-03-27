@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
 
 using System;
 using System.Collections.Generic;
@@ -48,7 +47,7 @@ public class TestFilter
             }
             return stringToSearch == Filter;
         }
-            
+
         public override string ToString()
         {
             return $"{Kind}{(Substring ? "~" : "=")}{Filter}";
@@ -67,7 +66,7 @@ public class TestFilter
         }
 
         public bool IsMatch(string fullyQualifiedName, string displayName, string[] traits) => _left.IsMatch(fullyQualifiedName, displayName, traits) && _right.IsMatch(fullyQualifiedName, displayName, traits);
-  
+
         public override string ToString()
         {
             return $"({_left}) && ({_right})";
@@ -86,7 +85,7 @@ public class TestFilter
         }
 
         public bool IsMatch(string fullyQualifiedName, string displayName, string[] traits) => _left.IsMatch(fullyQualifiedName, displayName, traits) || _right.IsMatch(fullyQualifiedName, displayName, traits);
-    
+
         public override string ToString()
         {
             return $"({_left}) || ({_right})";
@@ -103,7 +102,7 @@ public class TestFilter
         }
 
         public bool IsMatch(string fullyQualifiedName, string displayName, string[] traits) => !_inner.IsMatch(fullyQualifiedName, displayName, traits);
-    
+
         public override string ToString()
         {
             return $"!({_inner})";
@@ -118,11 +117,11 @@ public class TestFilter
     // issues.targets file as a split model would be very confusing for developers
     // and test monitors.
     private readonly HashSet<string>? _testExclusionList;
-    private readonly int _stripe = 0;
+    private readonly int _stripe;
     private readonly int _stripeCount = 1;
     private int _shouldRunQuery = -1;
 
-    public TestFilter(string? filterString, HashSet<string>? testExclusionList) : 
+    public TestFilter(string? filterString, HashSet<string>? testExclusionList) :
         this(filterString == null ? Array.Empty<string>() : new string[]{filterString}, testExclusionList)
     {
     }
@@ -135,25 +134,24 @@ public class TestFilter
         {
             if (filterArgs[i].StartsWith("-stripe"))
             {
-                _stripe = Int32.Parse(filterArgs[++i]);
-                _stripeCount = Int32.Parse(filterArgs[++i]);
+                _stripe = int.Parse(filterArgs[++i]);
+                _stripeCount = int.Parse(filterArgs[++i]);
             }
             else
             {
-                if (filterString == null)
-                    filterString = filterArgs[0];
+                filterString ??= filterArgs[0];
             }
         }
 
         var stripeEnvironment = Environment.GetEnvironmentVariable("TEST_HARNESS_STRIPE_TO_EXECUTE");
-        if (!String.IsNullOrEmpty(stripeEnvironment) && stripeEnvironment != ".0.1")
+        if (!string.IsNullOrEmpty(stripeEnvironment) && stripeEnvironment != ".0.1")
         {
             var stripes = stripeEnvironment.Split('.');
             if (stripes.Length == 3)
             {
                 Console.WriteLine($"Test striping enabled via TEST_HARNESS_STRIPE_TO_EXECUTE environment variable set to '{stripeEnvironment}'");
-                _stripe = Int32.Parse(stripes[1]);
-                _stripeCount = Int32.Parse(stripes[2]);
+                _stripe = int.Parse(stripes[1]);
+                _stripeCount = int.Parse(stripes[2]);
             }
         }
 
@@ -161,7 +159,7 @@ public class TestFilter
         {
             if (filterString.IndexOfAny(new[] { '!', '(', ')', '~', '=' }) != -1)
             {
-                throw new ArgumentException("Complex test filter expressions are not supported today. The only filters supported today are the simple form supported in 'dotnet test --filter' (substrings of the test's fully qualified name). If further filtering options are desired, file an issue on dotnet/runtime for support.", nameof(filterString));
+                throw new ArgumentException("Complex test filter expressions are not supported today. The only filters supported today are the simple form supported in 'dotnet test --filter' (substrings of the test's fully qualified name). If further filtering options are desired, file an issue on dotnet/runtime for support.", nameof(filterArgs));
             }
             _filter = new NameClause(TermKind.FullyQualifiedName, filterString, substring: true);
         }
@@ -176,7 +174,7 @@ public class TestFilter
 
     public bool ShouldRunTest(string fullyQualifiedName, string displayName, string[]? traits = null)
     {
-        bool shouldRun = false;
+        bool shouldRun;
         if (_testExclusionList is not null && _testExclusionList.Contains(displayName.Replace("\\", "/")))
         {
             shouldRun = false;
@@ -197,7 +195,7 @@ public class TestFilter
         }
         return false;
     }
-    
+
     public static HashSet<string> LoadTestExclusionList()
     {
         HashSet<string> output = new ();

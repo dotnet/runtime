@@ -6,10 +6,12 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
-internal class pow1
+public class pow1
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double x, y, z;
         bool pass = true;

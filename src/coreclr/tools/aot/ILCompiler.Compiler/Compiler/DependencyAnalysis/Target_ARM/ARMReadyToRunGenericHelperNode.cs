@@ -30,7 +30,11 @@ namespace ILCompiler.DependencyAnalysis
             if (!relocsOnly)
             {
                 // The concrete slot won't be known until we're emitting data - don't ask for it in relocsOnly.
-                dictionarySlot = factory.GenericDictionaryLayout(_dictionaryOwner).GetSlotForEntry(lookup);
+                if (!factory.GenericDictionaryLayout(_dictionaryOwner).TryGetSlotForEntry(lookup, out dictionarySlot))
+                {
+                    encoder.EmitMOV(result, 0);
+                    return;
+                }
             }
 
             // Load the generic dictionary cell

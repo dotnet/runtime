@@ -1589,6 +1589,9 @@ Module* SystemDomain::GetCallersModule(StackCrawlMark* stackMark)
     }
     CONTRACTL_END;
 
+    if (stackMark == NULL)
+        return NULL;
+
     GCX_COOP();
 
     CallersDataWithStackMark cdata;
@@ -4188,7 +4191,7 @@ void DomainLocalModule::EnsureDynamicClassIndex(DWORD dwID)
 
     if (oldDynamicEntries != 0)
     {
-        memcpy(pNewDynamicClassTable, m_pDynamicClassTable, sizeof(DynamicClassInfo) * oldDynamicEntries);
+        memcpy((void*)pNewDynamicClassTable, m_pDynamicClassTable, sizeof(DynamicClassInfo) * oldDynamicEntries);
     }
 
     // Note: Memory allocated on loader heap is zero filled

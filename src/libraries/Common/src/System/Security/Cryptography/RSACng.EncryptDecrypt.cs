@@ -198,7 +198,7 @@ namespace System.Security.Cryptography
         // Now that the padding mode and information have been marshaled to their native counterparts, perform the encryption or decryption.
         private unsafe byte[] EncryptOrDecrypt(SafeNCryptKeyHandle key, ReadOnlySpan<byte> input, AsymmetricPaddingMode paddingMode, void* paddingInfo, bool encrypt)
         {
-            int estimatedSize = KeySize / 8;
+            int estimatedSize = GetMaxOutputSize();
 #if DEBUG
             estimatedSize = 2;  // Make sure the NTE_BUFFER_TOO_SMALL scenario gets exercised.
 #endif

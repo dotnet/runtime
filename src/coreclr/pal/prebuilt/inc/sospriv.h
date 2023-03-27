@@ -196,7 +196,8 @@ typedef int VCSHeapType;
 
 #endif
 typedef enum { TYPEDEFTOMETHODTABLE, TYPEREFTOMETHODTABLE } ModuleMapType;
-typedef enum {IndcellHeap, LookupHeap, ResolveHeap, DispatchHeap, CacheEntryHeap} VCSHeapType;
+typedef enum {IndcellHeap, LookupHeap, ResolveHeap, DispatchHeap, CacheEntryHeap, VtableHeap} VCSHeapType;
+typedef enum {LoaderHeapKindNormal = 0, LoaderHeapKindExplicitControl = 1} LoaderHeapKind;
 typedef void ( *MODULEMAPTRAVERSE )(
     UINT index,
     CLRDATA_ADDRESS methodTable,
@@ -3070,6 +3071,109 @@ EXTERN_C const IID IID_ISOSDacInterface12;
 
 
 #endif 	/* __ISOSDacInterface12_INTERFACE_DEFINED__ */
+
+    
+#ifndef __ISOSDacInterface13_INTERFACE_DEFINED__
+#define __ISOSDacInterface13_INTERFACE_DEFINED__
+
+/* interface ISOSDacInterface13 */
+/* [uuid][local][object] */ 
+
+
+EXTERN_C const IID IID_ISOSDacInterface13;
+
+#if defined(__cplusplus) && !defined(CINTERFACE)
+    
+    MIDL_INTERFACE("3176a8ed-597b-4f54-a71f-83695c6a8c5d")
+    ISOSDacInterface13 : public IUnknown
+    {
+    public:
+        virtual HRESULT STDMETHODCALLTYPE TraverseLoaderHeap( 
+            CLRDATA_ADDRESS loaderHeapAddr,
+            LoaderHeapKind kind,
+            VISITHEAP pCallback) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetDomainLoaderAllocator( 
+            CLRDATA_ADDRESS domainAddress,
+            CLRDATA_ADDRESS *pLoaderAllocator) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocatorHeapNames( 
+            int count,
+            const char **ppNames,
+            int *pNeeded) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocatorHeaps( 
+            CLRDATA_ADDRESS loaderAllocator,
+            int count,
+            CLRDATA_ADDRESS *pLoaderHeaps,
+            LoaderHeapKind *pKinds,
+            int *pNeeded) = 0;
+    };
+    
+    
+#else 	/* C style interface */
+
+    typedef struct ISOSDacInterface13Vtbl
+    {
+        BEGIN_INTERFACE
+        
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
+        HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
+            ISOSDacInterface13 * This,
+            /* [in] */ REFIID riid,
+            /* [annotation][iid_is][out] */ 
+            _COM_Outptr_  void **ppvObject);
+        
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
+        ULONG ( STDMETHODCALLTYPE *AddRef )( 
+            ISOSDacInterface13 * This);
+        
+        DECLSPEC_XFGVIRT(IUnknown, Release)
+        ULONG ( STDMETHODCALLTYPE *Release )( 
+            ISOSDacInterface13 * This);
+        
+        DECLSPEC_XFGVIRT(ISOSDacInterface13, TraverseLoaderHeap)
+        HRESULT ( STDMETHODCALLTYPE *TraverseLoaderHeap )( 
+            ISOSDacInterface13 * This,
+            CLRDATA_ADDRESS loaderHeapAddr,
+            LoaderHeapKind kind,
+            VISITHEAP pCallback);
+        
+        END_INTERFACE
+    } ISOSDacInterface13Vtbl;
+
+    interface ISOSDacInterface13
+    {
+        CONST_VTBL struct ISOSDacInterface13Vtbl *lpVtbl;
+    };
+
+    
+
+#ifdef COBJMACROS
+
+
+#define ISOSDacInterface13_QueryInterface(This,riid,ppvObject)	\
+    ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
+
+#define ISOSDacInterface13_AddRef(This)	\
+    ( (This)->lpVtbl -> AddRef(This) ) 
+
+#define ISOSDacInterface13_Release(This)	\
+    ( (This)->lpVtbl -> Release(This) ) 
+
+
+#define ISOSDacInterface13_TraverseLoaderHeap(This,loaderHeapAddr,kind,pCallback)	\
+    ( (This)->lpVtbl -> TraverseLoaderHeap(This,loaderHeapAddr,kind,pCallback) ) 
+
+#endif /* COBJMACROS */
+
+
+#endif 	/* C style interface */
+
+
+
+
+#endif 	/* __ISOSDacInterface13_INTERFACE_DEFINED__ */
 
 
 /* Additional Prototypes for ALL interfaces */

@@ -186,7 +186,6 @@
       <Compile Include="$(BclSourcesRoot)\System\TypeIdentifier.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypedReference.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
       <Compile Include="$(BclSourcesRoot)\System\__ComObject.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.Mono.cs" />
@@ -207,6 +206,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInvoker.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\ModifiedType.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeAssembly.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeCustomAttributeData.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeEventInfo.cs" />
@@ -218,19 +218,16 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeParameterInfo.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimePropertyInfo.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeExceptionHandlingClause.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorOnTypeBuilderInst.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorOnTypeBuilderInstantiation.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DerivedTypes.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILInfo.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EventOnTypeBuilderInst.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldOnTypeBuilderInst.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldOnTypeBuilderInstantiation.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ILGenerator.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodOnTypeBuilderInst.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodOnTypeBuilderInstantiation.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MonoArrayMethod.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ParameterBuilder.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\PropertyOnTypeBuilderInst.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeAssemblyBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeConstructorBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeEnumBuilder.Mono.cs" />
@@ -242,10 +239,12 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimePropertyBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\RuntimeTypeBuilder.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureHelper.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilderInstantiation.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolType.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilderInstantiation.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\UnmanagedMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\MetadataUpdater.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeNameParser.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
@@ -266,8 +265,12 @@
       <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\ObjectHeader.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Mono.cs" />
+      <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs">
+        <Link>CommonSystem\Collections\Generic\ArrayBuilder.cs</Link>
+      </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\LowLevelLifoSemaphore.Unix.Mono.cs" />
@@ -286,7 +289,6 @@
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\HotReload.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeStructs.cs" />
-      <Compile Include="$(BclSourcesRoot)\Mono\RuntimeMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\SafeStringMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\SafeGPtrArrayHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeSpec.cs" />
@@ -308,8 +310,8 @@
 
   <Target Name="CopyCoreLibToBinDir" AfterTargets="Build">
     <Copy SourceFiles="$(RuntimeBinDir)/IL/System.Private.CoreLib.dll;$(RuntimeBinDir)/IL/System.Private.CoreLib.pdb"
-        DestinationFolder="$(RuntimeBinDir)"
-        SkipUnchangedFiles="true" />
+          DestinationFolder="$(RuntimeBinDir)"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <!-- Setup eventing file generation -->
