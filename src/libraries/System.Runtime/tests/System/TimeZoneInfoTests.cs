@@ -139,7 +139,7 @@ namespace System.Tests
             }
 
             Assert.True(displayName == tzi.DisplayName || alternativeDisplayName == tzi.DisplayName,
-                         $"Display Name: '{displayName}' not equal to '{tzi.DisplayName}'");
+                         $"Display Name: Neither '{displayName}' nor '{alternativeDisplayName}' equal to '{tzi.DisplayName}'");
             Assert.Equal(standardName, tzi.StandardName);
             Assert.Equal(daylightName, tzi.DaylightName);
         }
