@@ -167,11 +167,12 @@ namespace System.IO.Hashing
 
         private static ulong Update(ulong crc, ReadOnlySpan<byte> source)
         {
+            ReadOnlySpan<ulong> crcLookup = CrcLookup;
             for (int i = 0; i < source.Length; i++)
             {
                 ulong idx = (crc >> 56);
                 idx ^= source[i];
-                crc = s_crcLookup[idx] ^ (crc << 8);
+                crc = crcLookup[(int)idx] ^ (crc << 8);
             }
 
             return crc;

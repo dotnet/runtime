@@ -1607,6 +1607,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Linux | TestPlatforms.OSX | TestPlatforms.MacCatalyst | TestPlatforms.iOS | TestPlatforms.tvOS, "Expected behavior is different on Apple platforms and Linux")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/81946", TestPlatforms.Android)]
         public void ReceiveMessageFromAsyncV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>

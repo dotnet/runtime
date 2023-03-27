@@ -39,8 +39,12 @@ namespace System.Runtime.CompilerServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern int InternalGetHashCode(object? o);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetHashCode(object? o)
         {
+            // NOTE: the interpreter does not run this code.  It intrinsifies the whole RuntimeHelpers.GetHashCode function
+            if (Threading.ObjectHeader.TryGetHashCode (o, out int hash))
+                return hash;
             return InternalGetHashCode(o);
         }
 
@@ -55,8 +59,12 @@ namespace System.Runtime.CompilerServices
         /// The advantage of this over <see cref="GetHashCode" /> is that it avoids assigning a hash
         /// code to the object if it does not already have one.
         /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int TryGetHashCode(object? o)
         {
+            // NOTE: the interpreter does not run this code.  It intrinsifies the whole RuntimeHelpers.TryGetHashCode function
+            if (Threading.ObjectHeader.TryGetHashCode (o, out int hash))
+                return hash;
             return InternalTryGetHashCode(o);
         }
 

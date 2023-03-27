@@ -11,6 +11,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
 	class MethodByRefParameterDataFlow
@@ -111,7 +112,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// https://github.com/dotnet/linker/issues/2632
 		// This second warning should not be generated, the value of typeWithMethods should have PublicMethods
 		// after the call with out parameter.
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = Tool.Analyzer)]
 		static void TestReadFromRefParameter_MismatchOnInput ()
 		{
 			Type typeWithMethods = GetTypeWithFields ();
@@ -124,7 +125,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// https://github.com/dotnet/linker/issues/2632
 		// This third warning should not be generated, the value of typeWithMethods should have PublicMethods
 		// after the call with ref parameter.
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = Tool.Analyzer)]
 		static void TestReadFromRefParameter_MismatchOnInput_PassedTwice ()
 		{
 			Type typeWithMethods = GetTypeWithFields ();

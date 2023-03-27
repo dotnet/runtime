@@ -77,7 +77,7 @@ internal class BrowserRunner : IAsyncDisposable
             throw new Exception($"Process ended before the url was found");
         }
         if (!urlAvailable.Task.IsCompleted)
-            throw new Exception("Timed out waiting for the app host url");
+            throw new Exception("Timed out waiting for the web server url");
 
         var url = new Uri(urlAvailable.Task.Result);
         Playwright = await Microsoft.Playwright.Playwright.CreateAsync();

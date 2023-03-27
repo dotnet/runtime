@@ -162,7 +162,7 @@ namespace System
                 return;
 
             // Get namespace
-            int nsDelimiter = fullname.LastIndexOf(".", StringComparison.Ordinal);
+            int nsDelimiter = fullname.LastIndexOf('.');
             if (nsDelimiter != -1)
             {
                 ns = fullname.Substring(0, nsDelimiter);
@@ -236,7 +236,7 @@ namespace System
                     listType = MemberListType.CaseSensitive;
                 }
 
-                if (allowPrefixLookup && name.EndsWith("*", StringComparison.Ordinal))
+                if (allowPrefixLookup && name.EndsWith('*'))
                 {
                     // We set prefixLookup to true if name ends with a "*".
                     // We will also set listType to All so that all members are included in
@@ -1744,7 +1744,7 @@ namespace System
             {
                 Type elementType = this.GetRootElementType();
                 if (ReferenceEquals(elementType, typeof(TypedReference)) || ReferenceEquals(elementType, typeof(RuntimeArgumentHandle)))
-                    throw new NotSupportedException("NotSupported_ContainsStackPtr");
+                    throw new NotSupportedException(SR.NotSupported_ContainsStackPtr);
 
                 if (IsValueType)
                 {
@@ -1758,7 +1758,7 @@ namespace System
             // TODO: .net does more checks in unmanaged land in RuntimeTypeHandle::CreateInstance
             if (IsAbstract)
             {
-                throw new MissingMethodException("Cannot create an abstract class '{0}'.", FullName);
+                throw new MissingMethodException(SR.Format(SR.Acc_CreateAbstEx, this));
             }
 
             unsafe
@@ -2004,7 +2004,7 @@ namespace System
         public override Type MakeByRefType()
         {
             if (IsByRef)
-                throw new TypeLoadException("Can not call MakeByRefType on a ByRef type");
+                throw new TypeLoadException(SR.Format(SR.CannotCreateByRefOfByRef, GetType()));
             Type? type = null;
             var base_type = this;
             make_byref_type(new QCallTypeHandle(ref base_type), ObjectHandleOnStack.Create(ref type));
@@ -2017,7 +2017,7 @@ namespace System
         public override Type MakePointerType()
         {
             if (IsByRef)
-                throw new TypeLoadException($"Could not load type '{GetType()}' from assembly '{AssemblyQualifiedName}");
+                throw new TypeLoadException(SR.Format(SR.CannotCreatePointerOfByRef, GetType()));
             Type? type = null;
             var base_type = this;
             make_pointer_type(new QCallTypeHandle(ref base_type), ObjectHandleOnStack.Create(ref type));

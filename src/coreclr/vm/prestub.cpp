@@ -2399,12 +2399,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     }
 #endif
 
-    // FUTURE: Consider always passing in module and section index to avoid the lookups
-    if (pModule == NULL)
-    {
-        pModule = ExecutionManager::FindZapModule(pIndirection);
-        sectionIndex = (DWORD)-1;
-    }
     _ASSERTE(pModule != NULL);
 
     pEMFrame->SetCallSite(pModule, pIndirection);
@@ -2849,9 +2843,8 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
 
     TADDR genericContextPtr = *(TADDR*)GetFirstArgumentRegisterValuePtr(pTransitionBlock);
 
-    pResult->testForFixup = pResult->testForNull = false;
     pResult->signature = NULL;
-
+    pResult->testForNull = false;
     pResult->indirectFirstOffset = 0;
     pResult->indirectSecondOffset = 0;
     // Dictionary size checks skipped by default, unless we decide otherwise

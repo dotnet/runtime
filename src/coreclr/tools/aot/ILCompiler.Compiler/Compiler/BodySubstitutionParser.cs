@@ -134,7 +134,7 @@ namespace ILCompiler
             {
                 // We would need to also mess with the cctor of the type to set the field to this value:
                 //
-                // * Linker will remove all stsfld instructions referencing this field from the cctor
+                // * ILLink will remove all stsfld instructions referencing this field from the cctor
                 // * It will place an explicit stsfld in front of the last "ret" instruction in the cctor
                 //
                 // This approach... has issues.

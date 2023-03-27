@@ -32,6 +32,7 @@ namespace System.Reflection.TypeLoading
         public sealed override object? RawDefaultValue => _backingParameter.RawDefaultValue;
         public sealed override Type[] GetOptionalCustomModifiers() => _backingParameter.GetOptionalCustomModifiers();
         public sealed override Type[] GetRequiredCustomModifiers() => _backingParameter.GetRequiredCustomModifiers();
+        public sealed override Type GetModifiedParameterType() => _backingParameter.GetModifiedParameterType();
         public sealed override string ToString() => _backingParameter.ToString();
     }
 }

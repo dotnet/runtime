@@ -78,6 +78,29 @@
       "label": "os-wasi"
     }
   ],
+  "trimming": [
+    {
+      "lead": "",
+      "owners": [
+        "eerhardt",
+        "vitek-karas",
+        "LakshanF",
+        "sbomer",
+        "joperezr",
+        "marek-safar"
+      ],
+      "label": "linkable-framework"
+    },
+    {
+      "lead": "",
+      "owners": [
+        "eerhardt",
+        "SamMonoRT",
+        "marek-safar"
+      ],
+      "label": "size-reduction"
+    }
+  ],
   "areas": [
     {
       "lead": "agocke",
@@ -740,21 +763,24 @@
       "owners": [
         "ajcvickers",
         "david-engel",
-        "davoudeshtehari"
+        "davoudeshtehari",
+        "roji"
       ],
       "label": "area-System.Data"
     },
     {
       "lead": "ajcvickers",
       "owners": [
-        "ajcvickers"
+        "ajcvickers",
+        "roji"
       ],
       "label": "area-System.Data.Odbc"
     },
     {
       "lead": "ajcvickers",
       "owners": [
-        "ajcvickers"
+        "ajcvickers",
+        "roji"
       ],
       "label": "area-System.Data.OleDB"
     },
@@ -1490,7 +1516,8 @@
     {
       "lead": "ajcvickers",
       "owners": [
-        "roji"
+        "roji",
+		"ajcvickers"
       ],
       "label": "area-System.Transactions"
     },

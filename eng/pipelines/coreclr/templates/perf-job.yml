@@ -111,8 +111,7 @@ jobs:
 
     variables:
     - ${{ each variable in parameters.variables }}:
-      - name: ${{ variable.name }}
-        value: ${{ variable.value }}
+      - ${{insert}}: ${{ variable }}
 
     - name: _compareArg
       ${{ if eq(parameters.compare, 'true') }}:

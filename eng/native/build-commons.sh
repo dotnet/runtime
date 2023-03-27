@@ -84,7 +84,7 @@ build_native()
             exit 1
         fi
 
-        # keep ANDROID_PLATFORM in sync with src/mono/Directory.Build.props
+        # keep ANDROID_PLATFORM in sync with SetOSTargetMinVersions in the root Directory.Build.props
         cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_PLATFORM=android-21 $cmakeArgs"
 
         # Don't try to set CC/CXX in init-compiler.sh - it's handled in android.toolchain.cmake already
@@ -100,6 +100,58 @@ build_native()
             cmakeArgs="-DANDROID_ABI=armeabi-v7a $cmakeArgs"
         else
             echo "Error: Unknown Android architecture $hostArch."
+            exit 1
+        fi
+    elif [[ "$__TargetOS" == iossimulator ]]; then
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default iOS simulator deployment target
+        # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $cmakeArgs"
+        if [[ "$__TargetArch" == x64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
+        elif [[ "$__TargetArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown iOS Simulator architecture $__TargetArch."
+            exit 1
+        fi
+    elif [[ "$__TargetOS" == ios ]]; then
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default iOS device deployment target
+        # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $cmakeArgs"
+        if [[ "$__TargetArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown iOS architecture $__TargetArch."
+            exit 1
+        fi
+    elif [[ "$__TargetOS" == tvossimulator ]]; then
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default tvOS simulator deployment target
+        # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvsimulator -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $cmakeArgs"
+        if [[ "$__TargetArch" == x64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
+        elif [[ "$__TargetArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown tvOS Simulator architecture $__TargetArch."
+            exit 1
+        fi
+    elif [[ "$__TargetOS" == tvos ]]; then
+        cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
+
+        # set default tvOS device deployment target
+        # keep in sync with SetOSTargetMinVersions in the root Directory.Build.props
+        cmakeArgs="-DCMAKE_SYSTEM_NAME=tvOS -DCMAKE_OSX_SYSROOT=appletvos -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 $cmakeArgs"
+        if [[ "$__TargetArch" == arm64 ]]; then
+            cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
+        else
+            echo "Error: Unknown tvOS architecture $__TargetArch."
             exit 1
         fi
     fi
@@ -490,3 +542,6 @@ initTargetDistroRid
 if [ -z "$__OutputRid" ]; then
     __OutputRid="$(echo $__DistroRid | tr '[:upper:]' '[:lower:]')"
 fi
+
+# When the host runs on an unknown rid, it falls back to the output rid
+__HostFallbackOS="${__OutputRid%-*}" # Strip architecture

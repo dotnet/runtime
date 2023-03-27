@@ -360,7 +360,6 @@ jobs:
   #    - maccatalyst_x64
   #    - iossimulator_x64
   #    - ios_arm64
-  #    - ios_arm
   #    jobParameters:
   #      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
   #      nameSuffix: Maui_Packs_Mono
@@ -386,7 +385,6 @@ jobs:
         #  - Build_android_x64_release_Maui_Packs_Mono
         #  - Build_maccatalyst_x64_release_Maui_Packs_Mono
         #  - Build_iossimulator_x64_release_Maui_Packs_Mono
-        #  - Build_ios_arm_release_Maui_Packs_Mono
         #  - Build_ios_arm64_release_Maui_Packs_Mono
         buildArgs: -s mono -c $(_BuildConfig)
         nameSuffix: MACiOSAndroidMauiNet7

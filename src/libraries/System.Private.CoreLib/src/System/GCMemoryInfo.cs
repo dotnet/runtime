@@ -116,7 +116,7 @@ namespace System
         /// <summary>
         /// Total available memory for the GC to use when this GC occurred.
         ///
-        /// If the environment variable COMPlus_GCHeapHardLimit is set,
+        /// If the environment variable DOTNET_GCHeapHardLimit is set,
         /// or "Server.GC.HeapHardLimit" is in runtimeconfig.json, this will come from that.
         /// If the program is run in a container, this will be an implementation-defined fraction of the container's size.
         /// Else, this is the physical memory on the machine that was available for the GC to use when this GC occurred.

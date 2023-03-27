@@ -34,9 +34,9 @@ namespace System.Reflection.TypeLoading
 
         public sealed override int GetArrayRank() => _rank;
 
-        protected sealed override RoType? ComputeBaseTypeWithoutDesktopQuirk() => Loader.GetCoreType(CoreType.Array);
+        internal sealed override RoType? ComputeBaseTypeWithoutDesktopQuirk() => Loader.GetCoreType(CoreType.Array);
 
-        protected sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces()
+        internal sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces()
         {
             if (_multiDim)
                 yield break;

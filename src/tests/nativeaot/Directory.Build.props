@@ -6,5 +6,8 @@
     <!-- NativeAOT tests don't need this xunit Assert compat quirk.
          The tests explicitly test customer scenarios with eager type construction checks present. -->
     <EagerlyValidateTypeConstruction>false</EagerlyValidateTypeConstruction>
+
+    <!-- We expect trimming to be fully enabled in these tests -->
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
   </PropertyGroup>
 </Project>

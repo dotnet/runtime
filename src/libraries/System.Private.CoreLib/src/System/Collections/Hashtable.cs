@@ -1245,7 +1245,7 @@ namespace System.Collections
         // Synchronized wrapper for hashtable
         private sealed class SyncHashtable : Hashtable, IEnumerable
         {
-            private Hashtable _table;
+            private readonly Hashtable _table;
 
             internal SyncHashtable(Hashtable table) : base(false)
             {

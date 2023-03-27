@@ -881,15 +881,17 @@ namespace System.Numerics
                 return Crc32.Arm64.ComputeCrc32C(crc, data);
             }
 
-            return Crc32Fallback.Crc32C(crc, data);
+            return Crc32C(Crc32C(crc, (uint)(data)), (uint)(data >> 32));
         }
 
         private static class Crc32Fallback
         {
-            // Pre-computed CRC-32 transition table.
+            // CRC-32 transition table.
             // While this implementation is based on the Castagnoli CRC-32 polynomial (CRC-32C),
             // x32 + x28 + x27 + x26 + x25 + x23 + x22 + x20 + x19 + x18 + x14 + x13 + x11 + x10 + x9 + x8 + x6 + x0,
-            // this version uses reflected bit ordering, so 0x1EDC6F41 becomes 0x82F63B78u
+            // this version uses reflected bit ordering, so 0x1EDC6F41 becomes 0x82F63B78u.
+            // This is computed lazily so as to avoid increasing the assembly size for data that's
+            // only needed on a fallback path.
             private static readonly uint[] s_crcTable = Crc32ReflectedTable.Generate(0x82F63B78u);
 
             internal static uint Crc32C(uint crc, byte data)
@@ -915,12 +917,6 @@ namespace System.Numerics
             {
                 ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
                 return Crc32CCore(ref lookupTable, crc, data);
-            }
-
-            internal static uint Crc32C(uint crc, ulong data)
-            {
-                uint result = BitOperations.Crc32C(crc, (uint)(data));
-                return BitOperations.Crc32C(result, (uint)(data >> 32));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

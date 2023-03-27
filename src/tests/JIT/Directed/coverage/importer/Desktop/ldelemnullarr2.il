@@ -11,7 +11,7 @@
 .assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
 .assembly legacy library ldelemnullarr2 { }
-.class private auto ansi beforefieldinit ldelemnullarr2
+.class public auto ansi beforefieldinit ldelemnullarr2
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void  f() cil managed

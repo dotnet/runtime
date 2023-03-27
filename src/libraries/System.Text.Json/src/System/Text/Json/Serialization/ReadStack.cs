@@ -15,13 +15,6 @@ namespace System.Text.Json
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     internal struct ReadStack
     {
-        private const string SpecialCharacters = ". '/\"[]()\t\n\r\f\b\\\u0085\u2028\u2029";
-#if NET8_0_OR_GREATER
-        internal static readonly IndexOfAnyValues<char> s_specialCharacters = IndexOfAnyValues.Create(SpecialCharacters);
-#else
-        internal static ReadOnlySpan<char> s_specialCharacters => SpecialCharacters.AsSpan();
-#endif
-
         /// <summary>
         /// Exposes the stackframe that is currently active.
         /// </summary>
@@ -325,7 +318,7 @@ namespace System.Text.Json
             {
                 if (propertyName != null)
                 {
-                    if (propertyName.AsSpan().IndexOfAny(s_specialCharacters) >= 0)
+                    if (propertyName.AsSpan().ContainsSpecialCharacters())
                     {
                         sb.Append(@"['");
                         sb.Append(propertyName);
