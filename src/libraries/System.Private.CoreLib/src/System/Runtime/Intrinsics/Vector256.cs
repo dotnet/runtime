@@ -1522,27 +1522,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="vector">The vector to get the upper 128-bits from.</param>
         /// <returns>The value of the upper 128-bits as a new <see cref="Vector128{T}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> GetUpper<T>(this Vector256<T> vector)
             where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
-
-            if (Avx2.IsSupported && ((typeof(T) != typeof(float)) && (typeof(T) != typeof(double))))
-            {
-                // All integral types generate the same instruction, so just pick one rather than handling each T separately
-                return Avx2.ExtractVector128(vector.AsByte(), 1).As<byte, T>();
-            }
-            else if (Avx.IsSupported)
-            {
-                // All floating-point types generate the same instruction, so just pick one rather than handling each T separately
-                // We also just fallback to this for integral types if AVX2 isn't supported, since that is still faster than software
-                return Avx.ExtractVector128(vector.AsSingle(), 1).As<float, T>();
-            }
-            else
-            {
-                return vector._upper;
-            }
+            return vector._upper;
         }
 
         /// <summary>Compares two vectors to determine which is greater on a per-element basis.</summary>
