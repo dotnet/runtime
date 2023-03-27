@@ -53,10 +53,72 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
     GenTreeIndir* indir = use.Def()->AsIndir();
     assert(indir->OperIs(GT_IND, GT_BLK, GT_OBJ));
 
-    if (varTypeIsSIMD(indir) && indir->OperIs(GT_BLK, GT_OBJ))
+    if (varTypeIsSIMD(indir))
     {
-        indir->SetOper(GT_IND);
+        if (indir->OperIs(GT_BLK, GT_OBJ))
+        {
+            indir->SetOper(GT_IND);
+        }
+
+        RewriteSIMDIndir(use);
     }
+}
+
+// RewriteSIMDIndir: Rewrite a SIMD indirection as a simple lclVar if possible.
+//
+// Arguments:
+//    use - A use of a GT_IND node of SIMD type
+//
+// TODO-ADDR: today this only exists because the xarch backend does not handle
+// IND<simd12>(LCL_VAR_ADDR/LCL_FLD_ADDR) when the address is contained correctly.
+//
+void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
+{
+#ifdef FEATURE_SIMD
+    GenTreeIndir* indir = use.Def()->AsIndir();
+    assert(indir->OperIs(GT_IND));
+    var_types simdType = indir->TypeGet();
+    assert(varTypeIsSIMD(simdType));
+
+    GenTree* addr = indir->Addr();
+
+    if (addr->OperIs(GT_LCL_VAR_ADDR) && varTypeIsSIMD(comp->lvaGetDesc(addr->AsLclVar())))
+    {
+        // If we have GT_IND(GT_LCL_VAR_ADDR) and the var is a SIMD type,
+        // replace the expression by GT_LCL_VAR or GT_LCL_FLD.
+        BlockRange().Remove(indir);
+
+        const GenTreeLclVar* lclAddr = addr->AsLclVar();
+        const unsigned       lclNum  = lclAddr->GetLclNum();
+        LclVarDsc*           varDsc  = comp->lvaGetDesc(lclNum);
+
+        var_types lclType = varDsc->TypeGet();
+
+        if (lclType == simdType)
+        {
+            addr->SetOper(GT_LCL_VAR);
+        }
+        else
+        {
+            addr->SetOper(GT_LCL_FLD);
+            addr->AsLclFld()->SetLclOffs(0);
+
+            if (((addr->gtFlags & GTF_VAR_DEF) != 0) && (genTypeSize(simdType) < genTypeSize(lclType)))
+            {
+                addr->gtFlags |= GTF_VAR_USEASG;
+            }
+
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+        }
+        if (varDsc->lvPromoted)
+        {
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
+        }
+
+        addr->gtType = simdType;
+        use.ReplaceWith(addr);
+    }
+#endif // FEATURE_SIMD
 }
 
 // RewriteNodeAsCall : Replace the given tree node by a GT_CALL.
