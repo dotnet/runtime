@@ -90,26 +90,26 @@ namespace System.Tests
         public static IEnumerable<object[]> Platform_TimeZoneNamesTestData()
         {
             if (PlatformDetection.IsBrowser || PlatformDetection.IsiOS || PlatformDetection.IstvOS)
-                return new TheoryData<TimeZoneInfo, string, string, string>
+                return new TheoryData<TimeZoneInfo, string, string, string, string>
                 {
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) America/Los_Angeles", "PST", "PDT" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Australia/Sydney", "AEST", "AEDT" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Australia/Perth", "AWST", "AWDT" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Asia/Tehran", "+0330", "+0430" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) America/Los_Angeles", null, "PST", "PDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Australia/Sydney", null, "AEST", "AEDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Australia/Perth", null, "AWST", "AWDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Asia/Tehran", null, "+0330", "+0430" },
 
-                    { s_NewfoundlandTz, "(UTC-03:30) America/St_Johns", "NST", "NDT" },
-                    { s_catamarcaTz, "(UTC-03:00) America/Argentina/Catamarca", "-03", "-02" }
+                    { s_NewfoundlandTz, "(UTC-03:30) America/St_Johns", null, "NST", "NDT" },
+                    { s_catamarcaTz, "(UTC-03:00) America/Argentina/Catamarca", null, "-03", "-02" }
                 };
             else if (PlatformDetection.IsWindows)
-                return new TheoryData<TimeZoneInfo, string, string, string>
+                return new TheoryData<TimeZoneInfo, string, string, string, string>
                 {
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) Pacific Time (US & Canada)", "Pacific Standard Time", "Pacific Daylight Time" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Canberra, Melbourne, Sydney", "AUS Eastern Standard Time", "AUS Eastern Daylight Time" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Perth", "W. Australia Standard Time", "W. Australia Daylight Time" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Tehran", "Iran Standard Time", "Iran Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) Pacific Time (US & Canada)", null, "Pacific Standard Time", "Pacific Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Canberra, Melbourne, Sydney", null, "AUS Eastern Standard Time", "AUS Eastern Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Perth", "W. Australia Standard Time", null, "W. Australia Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Tehran", null, "Iran Standard Time", "Iran Daylight Time" },
 
-                    { s_NewfoundlandTz, "(UTC-03:30) Newfoundland", "Newfoundland Standard Time", "Newfoundland Daylight Time" },
-                    { s_catamarcaTz, "(UTC-03:00) City of Buenos Aires", "Argentina Standard Time", "Argentina Daylight Time" }
+                    { s_NewfoundlandTz, "(UTC-03:30) Newfoundland", "Newfoundland Standard Time", null, "Newfoundland Daylight Time" },
+                    { s_catamarcaTz, "(UTC-03:00) City of Buenos Aires", "Argentina Standard Time", null, "Argentina Daylight Time" }
                 };
             else
                 return new TheoryData<TimeZoneInfo, string, string, string, string>
