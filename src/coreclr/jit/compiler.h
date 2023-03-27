@@ -6262,7 +6262,6 @@ public:
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(unsigned loopInd, LoopCloneContext* context);
-    void optEnsureUniqueHead(unsigned loopInd, weight_t ambientWeight);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
     void        optRemoveRedundantZeroInits();
     PhaseStatus optIfConversion(); // If conversion
@@ -6643,7 +6642,7 @@ protected:
     bool optIsLoopEntry(BasicBlock* block) const;
 
     // The depth of the loop described by "lnum" (an index into the loop table.) (0 == top level)
-    unsigned optLoopDepth(unsigned lnum)
+    unsigned optLoopDepth(unsigned lnum) const
     {
         assert(lnum < optLoopCount);
         unsigned depth = 0;
