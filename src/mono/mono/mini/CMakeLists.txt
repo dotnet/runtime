@@ -300,7 +300,7 @@ target_link_libraries(mono-ee-interp PRIVATE monoapi eglib_api)
 target_include_directories(mono-ee-interp PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/..)
-install_with_stripped_symbols(mono-ee-interp TARGETS lib)
+install(TARGETS mono-ee-interp LIBRARY)
 if(HOST_WASM AND CMAKE_BUILD_TYPE STREQUAL "Debug")
 # Always optimize the interpreter, even in Debug builds.  Unoptimized interp_exec_method and
 # generate_code are so big that some browsers overflow the stack with even a few recursive
