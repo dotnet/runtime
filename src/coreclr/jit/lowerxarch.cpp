@@ -1126,6 +1126,33 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicWithElement(node);
         }
 
+        case NI_Vector256_WithLower:
+        case NI_Vector256_WithUpper:
+        {
+            assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
+            var_types simdBaseType = node->GetSimdBaseType();
+            int       index        = (intrinsicId == NI_Vector256_WithUpper) ? 1 : 0;
+
+            if (varTypeIsFloating(simdBaseType) || !comp->compOpportunisticallyDependsOn(InstructionSet_AVX2))
+            {
+                intrinsicId = NI_AVX_InsertVector128;
+            }
+            else
+            {
+                intrinsicId = NI_AVX2_InsertVector128;
+            }
+
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            GenTree* op3 = comp->gtNewIconNode(index);
+            BlockRange().InsertBefore(node, op3);
+            LowerNode(op3);
+
+            node->ResetHWIntrinsicId(intrinsicId, comp, op1, op2, op3);
+            break;
+        }
+
         case NI_Vector128_op_Equality:
         case NI_Vector256_op_Equality:
         {
@@ -2244,14 +2271,13 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             //   idx  =    CNS_INT       int    0
             //          /--*  tmp3 simd32
             //          +--*  tmp1 simd16
-            //          +--*  idx  int
-            //   node = *  HWINTRINSIC simd32 T InsertVector128
+            //   node = *  HWINTRINSIC simd32 T WithUpper
 
             // This is roughly the following managed code:
             //   var tmp1 = Vector128.Create(op1);
             //   var tmp2 = tmp1;
             //   var tmp3 = tmp2.ToVector256Unsafe();
-            //   return Avx.InsertVector128(tmp3, tmp1, 0x01);
+            //   return tmp3.WithUpper(tmp1);
 
             tmp1 = comp->gtNewSimdCreateBroadcastNode(TYP_SIMD16, op1, simdBaseJitType, 16, false);
             BlockRange().InsertAfter(op1, tmp1);
@@ -2270,10 +2296,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                 comp->gtNewSimdHWIntrinsicNode(TYP_SIMD32, tmp2, NI_Vector128_ToVector256Unsafe, simdBaseJitType, 16);
             BlockRange().InsertAfter(tmp2, tmp3);
 
-            idx = comp->gtNewIconNode(0x01, TYP_INT);
-            BlockRange().InsertAfter(tmp3, idx);
-
-            node->ResetHWIntrinsicId(NI_AVX_InsertVector128, comp, tmp3, tmp1, idx);
+            node->ResetHWIntrinsicId(NI_Vector256_WithUpper, comp, tmp3, tmp1);
             LowerNode(tmp3);
 
             return LowerNode(node);
@@ -2692,11 +2715,8 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                                                      NI_Vector128_Create, simdBaseJitType, 16);
         BlockRange().InsertAfter(node->Op(argCnt), hi);
 
-        idx = comp->gtNewIconNode(0x01, TYP_INT);
-        BlockRange().InsertAfter(hi, idx);
-
         assert(argCnt >= 3);
-        node->ResetHWIntrinsicId(NI_AVX_InsertVector128, comp, lo, hi, idx);
+        node->ResetHWIntrinsicId(NI_Vector256_WithUpper, comp, lo, hi);
 
         LowerNode(lo);
         LowerNode(hi);
@@ -3499,9 +3519,14 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
         op1 = tmp1;
 
         // Now we will insert our "result" into our simd32 temporary.
-        idx = comp->gtNewIconNode((cachedImm8 >= count / 2) ? 1 : 0);
-        BlockRange().InsertBefore(node, idx);
-        node->ChangeHWIntrinsicId(NI_AVX_InsertVector128, tmp32, result, idx);
+        if (cachedImm8 >= count / 2)
+        {
+            node->ChangeHWIntrinsicId(NI_Vector256_WithUpper, tmp32, result);
+        }
+        else
+        {
+            node->ChangeHWIntrinsicId(NI_Vector256_WithLower, tmp32, result);
+        }
     }
 
     switch (simdBaseType)
@@ -3699,7 +3724,8 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
     {
         // Now that we have finalized the shape of the tree, lower the insertion node as well.
 
-        assert(node->GetHWIntrinsicId() == NI_AVX_InsertVector128);
+        assert((node->GetHWIntrinsicId() == NI_Vector256_WithLower) ||
+               (node->GetHWIntrinsicId() == NI_Vector256_WithUpper));
         assert(node != result);
 
         nextNode = LowerNode(node);

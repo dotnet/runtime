@@ -2375,7 +2375,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
 
-            op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
+            op1     = impSIMDPopStack(TYP_SIMD32);
             retNode = gtNewSimdGetLowerNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             break;
         }
@@ -2385,7 +2385,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
 
-            op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
+            op1     = impSIMDPopStack(TYP_SIMD32);
             retNode = gtNewSimdGetUpperNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             break;
         }
@@ -2480,6 +2480,30 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             retNode = gtNewSimdWithElementNode(retType, vectorOp, indexOp, valueOp, simdBaseJitType, simdSize,
                                                /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
+        case NI_Vector256_WithLower:
+        {
+            assert(sig->numArgs == 2);
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+
+            op1     = impSIMDPopStack(TYP_SIMD32);
+            op2     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdWithLowerNode(retType, op1, op2, simdBaseJitType, simdSize,
+                                             /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
+        case NI_Vector256_WithUpper:
+        {
+            assert(sig->numArgs == 2);
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+
+            op1     = impSIMDPopStack(TYP_SIMD32);
+            op2     = impSIMDPopStack(TYP_SIMD16);
+            retNode = gtNewSimdWithUpperNode(retType, op1, op2, simdBaseJitType, simdSize,
+                                             /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
