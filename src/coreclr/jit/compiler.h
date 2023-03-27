@@ -11336,10 +11336,6 @@ public:
                 break;
 #endif // defined(FEATURE_HW_INTRINSICS)
 
-#if defined(TARGET_ARM64)
-            case GT_CINC:
-                assert(false);
-#endif
             case GT_SELECT:
             {
                 GenTreeConditional* const conditional = node->AsConditional();
