@@ -365,7 +365,7 @@ namespace System.Xml
                 fixed (byte* _bytes = &buffer[offset])
                 {
                     // Fast path for small strings, use Encoding.GetBytes for larger strings since it is faster when vectorization is possible
-                    if ((uint)charCount < 25)
+                    if ((uint)charCount < 32)
                     {
                         byte* bytes = _bytes;
                         char* charsMax = &chars[charCount];
