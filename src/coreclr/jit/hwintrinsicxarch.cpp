@@ -2488,8 +2488,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
 
-            op1     = impSIMDPopStack(TYP_SIMD32);
             op2     = impSIMDPopStack(TYP_SIMD16);
+            op1     = impSIMDPopStack(TYP_SIMD32);
             retNode = gtNewSimdWithLowerNode(retType, op1, op2, simdBaseJitType, simdSize,
                                              /* isSimdAsHWIntrinsic */ false);
             break;
@@ -2500,8 +2500,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
 
-            op1     = impSIMDPopStack(TYP_SIMD32);
             op2     = impSIMDPopStack(TYP_SIMD16);
+            op1     = impSIMDPopStack(TYP_SIMD32);
             retNode = gtNewSimdWithUpperNode(retType, op1, op2, simdBaseJitType, simdSize,
                                              /* isSimdAsHWIntrinsic */ false);
             break;
