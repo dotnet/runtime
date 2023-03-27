@@ -21815,11 +21815,8 @@ GenTree* Compiler::gtNewSimdGetElementNode(var_types   type,
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 }
 
-GenTree* Compiler::gtNewSimdGetLowerNode(var_types   type,
-                                         GenTree*    op1,
-                                         CorInfoType simdBaseJitType,
-                                         unsigned    simdSize,
-                                         bool        isSimdAsHWIntrinsic)
+GenTree* Compiler::gtNewSimdGetLowerNode(
+    var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
 {
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
@@ -21841,11 +21838,8 @@ GenTree* Compiler::gtNewSimdGetLowerNode(var_types   type,
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsicId, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 }
 
-GenTree* Compiler::gtNewSimdGetUpperNode(var_types   type,
-                                         GenTree*    op1,
-                                         CorInfoType simdBaseJitType,
-                                         unsigned    simdSize,
-                                         bool        isSimdAsHWIntrinsic)
+GenTree* Compiler::gtNewSimdGetUpperNode(
+    var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
 {
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
@@ -22992,8 +22986,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
             op1Lower = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Lower, op2, NI_SSSE3_Shuffle, simdBaseJitType, 16,
                                                 isSimdAsHWIntrinsic);
 
-            GenTree* op1Upper = gtNewSimdGetUpperNode(TYP_SIMD16, op1Dup, simdBaseJitType, simdSize,
-                                                      isSimdAsHWIntrinsic);
+            GenTree* op1Upper =
+                gtNewSimdGetUpperNode(TYP_SIMD16, op1Dup, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
             op2                          = gtNewVconNode(TYP_SIMD16);
             op2->AsVecCon()->gtSimd16Val = vecCns.v128[1];
