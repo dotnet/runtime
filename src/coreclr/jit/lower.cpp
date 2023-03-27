@@ -1993,7 +1993,7 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                     //
                     GenTree* l1Indir   = comp->gtNewIndir(loadType, lArgUse.Def());
                     GenTree* r1Indir   = comp->gtNewIndir(loadType, rArgUse.Def());
-                    GenTree* lXor      = comp->gtNewOperNode(GT_XOR, TYP_INT, l1Indir, r1Indir);
+                    GenTree* lXor      = comp->gtNewOperNode(GT_XOR, genActualType(loadType), l1Indir, r1Indir);
                     GenTree* l2Offs    = comp->gtNewIconNode(cnsSize - loadWidth);
                     GenTree* l2AddOffs = comp->gtNewOperNode(GT_ADD, lArg->TypeGet(), lArgClone, l2Offs);
                     GenTree* l2Indir   = comp->gtNewIndir(loadType, l2AddOffs);
