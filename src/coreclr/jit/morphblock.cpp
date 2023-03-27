@@ -160,9 +160,8 @@ GenTree* MorphInitBlockHelper::Morph()
             assert(comma->OperIs(GT_COMMA));
             comma->AsOp()->gtOp1 = sideEffects;
             comma->AsOp()->gtOp2 = m_result;
+            comma->gtFlags       = (sideEffects->gtFlags | m_result->gtFlags) & GTF_ALL_EFFECT;
 
-            comma->gtFlags &= ~GTF_ALL_EFFECT;
-            comma->gtFlags |= (sideEffects->gtFlags | m_result->gtFlags) & GTF_ALL_EFFECT;
             m_result = comma;
         }
         else
