@@ -705,7 +705,7 @@ namespace System.Text.Json
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal void ConfigureForJsonSerializer()
         {
-            if (!AppContextSwitchHelper.IsDefaultReflectionDisabled)
+            if (AppContextSwitchHelper.UseReflectionDefault)
             {
                 // Even if a resolver has already been specified, we need to root
                 // the default resolver to gain access to the default converters.
@@ -855,13 +855,13 @@ namespace System.Text.Json
         {
             var options = new JsonSerializerOptions
             {
-                // Because're marking the default instance as read-only,
+                // Because we're marking the default instance as read-only,
                 // we need to specify a resolver instance for the case where
                 // reflection is disabled by default: use one that returns null for all types.
 
-                TypeInfoResolver = AppContextSwitchHelper.IsDefaultReflectionDisabled
-                    ? JsonTypeInfoResolver.Combine()
-                    : DefaultJsonTypeInfoResolver.RootDefaultInstance(),
+                TypeInfoResolver = AppContextSwitchHelper.UseReflectionDefault
+                    ? DefaultJsonTypeInfoResolver.RootDefaultInstance()
+                    : new JsonTypeInfoResolverChain(),
 
                 _isReadOnly = true,
             };

@@ -1,7 +1,11 @@
 <linker>
   <assembly fullname="System.Text.Json">
     <type fullname="System.Text.Json.AppContextSwitchHelper">
-      <method signature="System.Boolean get_IsDefaultReflectionDisabled()" body="stub" value="true" feature="System.Text.Json.Serialization.DisableDefaultReflection" featurevalue="true"/>
+      <method signature="System.Boolean get_UseReflectionDefault()" body="stub" value="true" 
+              feature="System.Text.Json.Serialization.UseReflectionDefault" featurevalue="true"/>
+
+      <method signature="System.Boolean get_IsSourceGenReflectionFallbackEnabled()" body="stub" value="true"
+              feature="System.Text.Json.Serialization.EnableSourceGenReflectionFallback" featurevalue="true"/>
     </type>
   </assembly>
 </linker>

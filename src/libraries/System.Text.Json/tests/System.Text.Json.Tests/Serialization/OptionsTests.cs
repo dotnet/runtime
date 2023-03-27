@@ -483,13 +483,13 @@ namespace System.Text.Json.Serialization.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void Options_DisableDefaultReflectionSwitch_DefaultOptionsDoesNotSupportReflection()
+        public static void Options_DisablingUseReflectionDefaultSwitch_DefaultOptionsDoesNotSupportReflection()
         {
             var options = new RemoteInvokeOptions
             {
                 RuntimeConfigurationOptions =
                 {
-                    ["System.Text.Json.Serialization.DisableDefaultReflection"] = true
+                    ["System.Text.Json.Serialization.UseReflectionDefault"] = false
                 }
             };
 
@@ -519,13 +519,13 @@ namespace System.Text.Json.Serialization.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void Options_DisableDefaultReflectionSwitch_NewOptionsDoesNotSupportReflection()
+        public static void Options_DisablingUseReflectionDefaultSwitch_NewOptionsDoesNotSupportReflection()
         {
             var options = new RemoteInvokeOptions
             {
                 RuntimeConfigurationOptions =
                 {
-                    ["System.Text.Json.Serialization.DisableDefaultReflection"] = true
+                    ["System.Text.Json.Serialization.UseReflectionDefault"] = false
                 }
             };
 
@@ -555,6 +555,30 @@ namespace System.Text.Json.Serialization.Tests
                 string json = JsonSerializer.Serialize("string", options);
                 string value = JsonSerializer.Deserialize<string>(json, options);
                 Assert.Equal("string", value);
+
+            }, options).Dispose();
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Options_DisablingUseReflectionDefaultSwitch_CanUseSourceGen()
+        {
+            var options = new RemoteInvokeOptions
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Text.Json.Serialization.UseReflectionDefault"] = false
+                }
+            };
+
+            RemoteExecutor.Invoke(static () =>
+            {
+                var options = new JsonSerializerOptions();
+                options.TypeInfoResolverChain.Add(JsonContext.Default);
+
+                string json = JsonSerializer.Serialize(new WeatherForecastWithPOCOs(), options);
+                WeatherForecastWithPOCOs result = JsonSerializer.Deserialize<WeatherForecastWithPOCOs>(json, options);
+                Assert.NotNull(result);
 
             }, options).Dispose();
         }
@@ -630,13 +654,13 @@ namespace System.Text.Json.Serialization.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void Options_JsonSerializerContext_Net6CompatibilitySwitch_IsOverriddenByDisableDefaultReflection()
+        public static void Options_JsonSerializerContext_Net6CompatibilitySwitch_IsOverriddenByDisablingUseReflectionDefault()
         {
             var options = new RemoteInvokeOptions
             {
                 RuntimeConfigurationOptions =
                 {
-                    ["System.Text.Json.Serialization.DisableDefaultReflection"] = true,
+                    ["System.Text.Json.Serialization.UseReflectionDefault"] = false,
                     ["System.Text.Json.Serialization.EnableSourceGenReflectionFallback"] = true
                 }
             };
