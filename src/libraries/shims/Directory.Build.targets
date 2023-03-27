@@ -1,0 +1,9 @@
+<Project>
+
+  <Import Project="..\Directory.Build.targets" />
+
+  <PropertyGroup Condition="'$(CompileUsingReferenceAssemblies)' == 'true'">
+    <TrimOutPrivateAssembliesFromReferencePath>true</TrimOutPrivateAssembliesFromReferencePath>
+  </PropertyGroup>
+
+</Project>
