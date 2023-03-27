@@ -14,19 +14,21 @@ namespace System.Buffers.Binary.Tests
         [Fact]
         public void SpanRead()
         {
-            ulong value; // [11 22 33 44 55 66 77 88]
+            UInt128 value; // [11 22 33 44 55 66 77 88, 99 AA BB CC DD EE FF 00]
+
             if (BitConverter.IsLittleEndian)
             {
-                value = 0x8877665544332211;
+                value = new UInt128(0x00FFEEDDCCBBAA99, 0x8877665544332211);
             }
             else
             {
-                value = 0x1122334455667788;
+                value = new UInt128(0x1122334455667788, 0x99AABBCCDDEEFF00);
             }
+
             Span<byte> span;
             unsafe
             {
-                span = new Span<byte>(&value, 8);
+                span = new Span<byte>(&value, sizeof(UInt128));
             }
 
             Assert.Equal<byte>(0x11, MemoryMarshal.Read<byte>(span));
@@ -84,6 +86,59 @@ namespace System.Buffers.Binary.Tests
             Assert.Equal<long>(unchecked((long)0x8877665544332211), ReadInt64LittleEndian(span));
             Assert.True(TryReadInt64LittleEndian(span, out longValue));
             Assert.Equal<long>(unchecked((long)0x8877665544332211), longValue);
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal<nuint>(unchecked((nuint)0x1122334455667788), ReadUIntPtrBigEndian(span));
+                Assert.True(TryReadUIntPtrBigEndian(span, out nuint nuintValue));
+                Assert.Equal<nuint>(unchecked((nuint)0x1122334455667788), nuintValue);
+
+                Assert.Equal<nuint>(unchecked((nuint)0x8877665544332211), ReadUIntPtrLittleEndian(span));
+                Assert.True(TryReadUIntPtrLittleEndian(span, out nuintValue));
+                Assert.Equal<nuint>(unchecked((nuint)0x8877665544332211), nuintValue);
+
+                Assert.Equal<nint>(unchecked((nint)0x1122334455667788), ReadIntPtrBigEndian(span));
+                Assert.True(TryReadIntPtrBigEndian(span, out nint nintValue));
+                Assert.Equal<nint>(unchecked((nint)0x1122334455667788), nintValue);
+
+                Assert.Equal<nint>(unchecked((nint)0x8877665544332211), ReadIntPtrLittleEndian(span));
+                Assert.True(TryReadIntPtrLittleEndian(span, out nintValue));
+                Assert.Equal<nint>(unchecked((nint)0x8877665544332211), nintValue);
+            }
+            else
+            {
+                Assert.Equal<nuint>(0x11223344, ReadUIntPtrBigEndian(span));
+                Assert.True(TryReadUIntPtrBigEndian(span, out nuint nuintValue));
+                Assert.Equal<nuint>(0x11223344, nuintValue);
+
+                Assert.Equal<nuint>(0x44332211, ReadUIntPtrLittleEndian(span));
+                Assert.True(TryReadUIntPtrLittleEndian(span, out nuintValue));
+                Assert.Equal<nuint>(0x44332211, nuintValue);
+
+                Assert.Equal<nint>(0x11223344, ReadIntPtrBigEndian(span));
+                Assert.True(TryReadIntPtrBigEndian(span, out nint nintValue));
+                Assert.Equal<nint>(0x11223344, nintValue);
+
+                Assert.Equal<nint>(0x44332211, ReadIntPtrLittleEndian(span));
+                Assert.True(TryReadIntPtrLittleEndian(span, out nintValue));
+                Assert.Equal<nint>(0x44332211, nintValue);
+            }
+
+            Assert.Equal<UInt128>(new UInt128(0x1122334455667788, 0x99AABBCCDDEEFF00), ReadUInt128BigEndian(span));
+            Assert.True(TryReadUInt128BigEndian(span, out UInt128 uint128Value));
+            Assert.Equal<UInt128>(new UInt128(0x1122334455667788, 0x99AABBCCDDEEFF00), uint128Value);
+
+            Assert.Equal<UInt128>(new UInt128(0x00FFEEDDCCBBAA99, 0x8877665544332211), ReadUInt128LittleEndian(span));
+            Assert.True(TryReadUInt128LittleEndian(span, out uint128Value));
+            Assert.Equal<UInt128>(new UInt128(0x00FFEEDDCCBBAA99, 0x8877665544332211), uint128Value);
+
+            Assert.Equal<Int128>(new Int128(0x1122334455667788, 0x99AABBCCDDEEFF00), ReadInt128BigEndian(span));
+            Assert.True(TryReadInt128BigEndian(span, out Int128 int128Value));
+            Assert.Equal<Int128>(new Int128(0x1122334455667788, 0x99AABBCCDDEEFF00), int128Value);
+
+            Assert.Equal<Int128>(new Int128(0x00FFEEDDCCBBAA99, 0x8877665544332211), ReadInt128LittleEndian(span));
+            Assert.True(TryReadInt128LittleEndian(span, out int128Value));
+            Assert.Equal<Int128>(new Int128(0x00FFEEDDCCBBAA99, 0x8877665544332211), int128Value);
 
             Half expectedHalf = BitConverter.Int16BitsToHalf(0x1122);
             Assert.Equal<Half>(expectedHalf, ReadHalfBigEndian(span));
@@ -119,19 +174,21 @@ namespace System.Buffers.Binary.Tests
         [Fact]
         public void ReadOnlySpanRead()
         {
-            ulong value; // [11 22 33 44 55 66 77 88]
+            UInt128 value; // [11 22 33 44 55 66 77 88, 99 AA BB CC DD EE FF 00]
+
             if (BitConverter.IsLittleEndian)
             {
-                value = 0x8877665544332211;
+                value = new UInt128(0x00FFEEDDCCBBAA99, 0x8877665544332211);
             }
             else
             {
-                value = 0x1122334455667788;
+                value = new UInt128(0x1122334455667788, 0x99AABBCCDDEEFF00);
             }
+
             ReadOnlySpan<byte> span;
             unsafe
             {
-                span = new ReadOnlySpan<byte>(&value, 8);
+                span = new ReadOnlySpan<byte>(&value, sizeof(UInt128));
             }
 
             Assert.Equal<byte>(0x11, MemoryMarshal.Read<byte>(span));
@@ -189,6 +246,59 @@ namespace System.Buffers.Binary.Tests
             Assert.Equal<long>(unchecked((long)0x8877665544332211), ReadInt64LittleEndian(span));
             Assert.True(TryReadInt64LittleEndian(span, out longValue));
             Assert.Equal<long>(unchecked((long)0x8877665544332211), longValue);
+
+            if (Environment.Is64BitProcess)
+            {
+                Assert.Equal<nuint>(unchecked((nuint)0x1122334455667788), ReadUIntPtrBigEndian(span));
+                Assert.True(TryReadUIntPtrBigEndian(span, out nuint nuintValue));
+                Assert.Equal<nuint>(unchecked((nuint)(0x1122334455667788)), nuintValue);
+
+                Assert.Equal<nuint>(unchecked((nuint)0x8877665544332211), ReadUIntPtrLittleEndian(span));
+                Assert.True(TryReadUIntPtrLittleEndian(span, out nuintValue));
+                Assert.Equal<nuint>(unchecked((nuint)0x8877665544332211), nuintValue);
+
+                Assert.Equal<nint>(unchecked((nint)0x1122334455667788), ReadIntPtrBigEndian(span));
+                Assert.True(TryReadIntPtrBigEndian(span, out nint nintValue));
+                Assert.Equal<nint>(unchecked((nint)0x1122334455667788), nintValue);
+
+                Assert.Equal<nint>(unchecked((nint)0x8877665544332211), ReadIntPtrLittleEndian(span));
+                Assert.True(TryReadIntPtrLittleEndian(span, out nintValue));
+                Assert.Equal<nint>(unchecked((nint)0x8877665544332211), nintValue);
+            }
+            else
+            {
+                Assert.Equal<nuint>(0x11223344, ReadUIntPtrBigEndian(span));
+                Assert.True(TryReadUIntPtrBigEndian(span, out nuint nuintValue));
+                Assert.Equal<nuint>(0x11223344, nuintValue);
+
+                Assert.Equal<nuint>(0x44332211, ReadUIntPtrLittleEndian(span));
+                Assert.True(TryReadUIntPtrLittleEndian(span, out nuintValue));
+                Assert.Equal<nuint>(0x44332211, nuintValue);
+
+                Assert.Equal<nint>(0x11223344, ReadIntPtrBigEndian(span));
+                Assert.True(TryReadIntPtrBigEndian(span, out nint nintValue));
+                Assert.Equal<nint>(0x11223344, nintValue);
+
+                Assert.Equal<nint>(0x44332211, ReadIntPtrLittleEndian(span));
+                Assert.True(TryReadIntPtrLittleEndian(span, out nintValue));
+                Assert.Equal<nint>(0x44332211, nintValue);
+            }
+
+            Assert.Equal<UInt128>(new UInt128(0x1122334455667788, 0x99AABBCCDDEEFF00), ReadUInt128BigEndian(span));
+            Assert.True(TryReadUInt128BigEndian(span, out UInt128 uint128Value));
+            Assert.Equal<UInt128>(new UInt128(0x1122334455667788, 0x99AABBCCDDEEFF00), uint128Value);
+
+            Assert.Equal<UInt128>(new UInt128(0x00FFEEDDCCBBAA99, 0x8877665544332211), ReadUInt128LittleEndian(span));
+            Assert.True(TryReadUInt128LittleEndian(span, out uint128Value));
+            Assert.Equal<UInt128>(new UInt128(0x00FFEEDDCCBBAA99, 0x8877665544332211), uint128Value);
+
+            Assert.Equal<Int128>(new Int128(0x1122334455667788, 0x99AABBCCDDEEFF00), ReadInt128BigEndian(span));
+            Assert.True(TryReadInt128BigEndian(span, out Int128 int128Value));
+            Assert.Equal<Int128>(new Int128(0x1122334455667788, 0x99AABBCCDDEEFF00), int128Value);
+
+            Assert.Equal<Int128>(new Int128(0x00FFEEDDCCBBAA99, 0x8877665544332211), ReadInt128LittleEndian(span));
+            Assert.True(TryReadInt128LittleEndian(span, out int128Value));
+            Assert.Equal<Int128>(new Int128(0x00FFEEDDCCBBAA99, 0x8877665544332211), int128Value);
 
             Half expectedHalf = BitConverter.Int16BitsToHalf(0x1122);
             Assert.Equal<Half>(expectedHalf, ReadHalfBigEndian(span));
@@ -236,6 +346,10 @@ namespace System.Buffers.Binary.Tests
             Assert.False(MemoryMarshal.TryRead(span, out int intValue));
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<long>(_span));
             Assert.False(MemoryMarshal.TryRead(span, out long longValue));
+            TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<nint>(_span));
+            Assert.False(MemoryMarshal.TryRead(span, out nint nintValue));
+            TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<Int128>(_span));
+            Assert.False(MemoryMarshal.TryRead(span, out Int128 int128Value));
 
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<ushort>(_span));
             Assert.False(MemoryMarshal.TryRead(span, out ushort ushortValue));
@@ -243,6 +357,10 @@ namespace System.Buffers.Binary.Tests
             Assert.False(MemoryMarshal.TryRead(span, out uint uintValue));
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<ulong>(_span));
             Assert.False(MemoryMarshal.TryRead(span, out ulong ulongValue));
+            TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<nuint>(_span));
+            Assert.False(MemoryMarshal.TryRead(span, out nuint nuintValue));
+            TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<UInt128>(_span));
+            Assert.False(MemoryMarshal.TryRead(span, out UInt128 uint128Value));
 
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<Half>(_span));
             Assert.False(MemoryMarshal.TryRead(span, out Half halfValue));
@@ -271,6 +389,10 @@ namespace System.Buffers.Binary.Tests
             Assert.False(MemoryMarshal.TryRead(span, out int intValue));
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<long>(_span));
             Assert.False(MemoryMarshal.TryRead(span, out long longValue));
+            TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<nint>(_span));
+            Assert.False(MemoryMarshal.TryRead(span, out nint nintValue));
+            TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<Int128>(_span));
+            Assert.False(MemoryMarshal.TryRead(span, out Int128 int128Value));
 
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<ushort>(_span));
             Assert.False(MemoryMarshal.TryRead(span, out ushort ushortValue));
@@ -278,6 +400,10 @@ namespace System.Buffers.Binary.Tests
             Assert.False(MemoryMarshal.TryRead(span, out uint uintValue));
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<ulong>(_span));
             Assert.False(MemoryMarshal.TryRead(span, out ulong ulongValue));
+            TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<nuint>(_span));
+            Assert.False(MemoryMarshal.TryRead(span, out nuint nuintValue));
+            TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<UInt128>(_span));
+            Assert.False(MemoryMarshal.TryRead(span, out UInt128 uint128Value));
 
             TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Read<Half>(_span));
             Assert.False(MemoryMarshal.TryRead(span, out Half halfValue));
@@ -314,6 +440,25 @@ namespace System.Buffers.Binary.Tests
             WriteDoubleBigEndian(spanBE.Slice(72), s_testStruct.D1);
             WriteHalfBigEndian(spanBE.Slice(80), s_testStruct.H0);
             WriteHalfBigEndian(spanBE.Slice(82), s_testStruct.H1);
+            WriteInt128BigEndian(spanBE.Slice(84), s_testStruct.I128_0);
+            WriteInt128BigEndian(spanBE.Slice(100), s_testStruct.I128_1);
+            WriteUInt128BigEndian(spanBE.Slice(116), s_testStruct.U128_0);
+            WriteUInt128BigEndian(spanBE.Slice(132), s_testStruct.U128_1);
+
+            if (Environment.Is64BitProcess)
+            {
+                WriteIntPtrBigEndian(spanBE.Slice(148), s_testStruct.N0);
+                WriteIntPtrBigEndian(spanBE.Slice(156), s_testStruct.N1);
+                WriteUIntPtrBigEndian(spanBE.Slice(164), s_testStruct.UN0);
+                WriteUIntPtrBigEndian(spanBE.Slice(172), s_testStruct.UN1);
+            }
+            else
+            {
+                WriteIntPtrBigEndian(spanBE.Slice(148), s_testStruct.N0);
+                WriteIntPtrBigEndian(spanBE.Slice(152), s_testStruct.N1);
+                WriteUIntPtrBigEndian(spanBE.Slice(156), s_testStruct.UN0);
+                WriteUIntPtrBigEndian(spanBE.Slice(160), s_testStruct.UN1);
+            }
 
             ReadOnlySpan<byte> readOnlySpanBE = new ReadOnlySpan<byte>(spanBE.ToArray());
 
@@ -336,8 +481,27 @@ namespace System.Buffers.Binary.Tests
                 F1 = ReadSingleBigEndian(spanBE.Slice(68)),
                 D1 = ReadDoubleBigEndian(spanBE.Slice(72)),
                 H0 = ReadHalfBigEndian(spanBE.Slice(80)),
-                H1 = ReadHalfBigEndian(spanBE.Slice(82))
+                H1 = ReadHalfBigEndian(spanBE.Slice(82)),
+                I128_0 = ReadInt128BigEndian(spanBE.Slice(84)),
+                I128_1 = ReadInt128BigEndian(spanBE.Slice(100)),
+                U128_0 = ReadUInt128BigEndian(spanBE.Slice(116)),
+                U128_1 = ReadUInt128BigEndian(spanBE.Slice(132)),
             };
+
+            if (Environment.Is64BitProcess)
+            {
+                readStruct.N0 = ReadIntPtrBigEndian(spanBE.Slice(148));
+                readStruct.N1 = ReadIntPtrBigEndian(spanBE.Slice(156));
+                readStruct.UN0 = ReadUIntPtrBigEndian(spanBE.Slice(164));
+                readStruct.UN1 = ReadUIntPtrBigEndian(spanBE.Slice(172));
+            }
+            else
+            {
+                readStruct.N0 = ReadIntPtrBigEndian(spanBE.Slice(148));
+                readStruct.N1 = ReadIntPtrBigEndian(spanBE.Slice(152));
+                readStruct.UN0 = ReadUIntPtrBigEndian(spanBE.Slice(156));
+                readStruct.UN1 = ReadUIntPtrBigEndian(spanBE.Slice(160));
+            }
 
             var readStructFromReadOnlySpan = new TestStruct
             {
@@ -358,8 +522,27 @@ namespace System.Buffers.Binary.Tests
                 F1 = ReadSingleBigEndian(readOnlySpanBE.Slice(68)),
                 D1 = ReadDoubleBigEndian(readOnlySpanBE.Slice(72)),
                 H0 = ReadHalfBigEndian(readOnlySpanBE.Slice(80)),
-                H1 = ReadHalfBigEndian(readOnlySpanBE.Slice(82))
+                H1 = ReadHalfBigEndian(readOnlySpanBE.Slice(82)),
+                I128_0 = ReadInt128BigEndian(readOnlySpanBE.Slice(84)),
+                I128_1 = ReadInt128BigEndian(readOnlySpanBE.Slice(100)),
+                U128_0 = ReadUInt128BigEndian(readOnlySpanBE.Slice(116)),
+                U128_1 = ReadUInt128BigEndian(readOnlySpanBE.Slice(132)),
             };
+
+            if (Environment.Is64BitProcess)
+            {
+                readStructFromReadOnlySpan.N0 = ReadIntPtrBigEndian(readOnlySpanBE.Slice(148));
+                readStructFromReadOnlySpan.N1 = ReadIntPtrBigEndian(readOnlySpanBE.Slice(156));
+                readStructFromReadOnlySpan.UN0 = ReadUIntPtrBigEndian(readOnlySpanBE.Slice(164));
+                readStructFromReadOnlySpan.UN1 = ReadUIntPtrBigEndian(readOnlySpanBE.Slice(172));
+            }
+            else
+            {
+                readStructFromReadOnlySpan.N0 = ReadIntPtrBigEndian(readOnlySpanBE.Slice(148));
+                readStructFromReadOnlySpan.N1 = ReadIntPtrBigEndian(readOnlySpanBE.Slice(152));
+                readStructFromReadOnlySpan.UN0 = ReadUIntPtrBigEndian(readOnlySpanBE.Slice(156));
+                readStructFromReadOnlySpan.UN1 = ReadUIntPtrBigEndian(readOnlySpanBE.Slice(160));
+            }
 
             Assert.Equal(s_testStruct, readStruct);
             Assert.Equal(s_testStruct, readStructFromReadOnlySpan);
@@ -388,6 +571,25 @@ namespace System.Buffers.Binary.Tests
             WriteDoubleLittleEndian(spanLE.Slice(72), s_testStruct.D1);
             WriteHalfLittleEndian(spanLE.Slice(80), s_testStruct.H0);
             WriteHalfLittleEndian(spanLE.Slice(82), s_testStruct.H1);
+            WriteInt128LittleEndian(spanLE.Slice(84), s_testStruct.I128_0);
+            WriteInt128LittleEndian(spanLE.Slice(100), s_testStruct.I128_1);
+            WriteUInt128LittleEndian(spanLE.Slice(116), s_testStruct.U128_0);
+            WriteUInt128LittleEndian(spanLE.Slice(132), s_testStruct.U128_1);
+
+            if (Environment.Is64BitProcess)
+            {
+                WriteIntPtrLittleEndian(spanLE.Slice(148), s_testStruct.N0);
+                WriteIntPtrLittleEndian(spanLE.Slice(156), s_testStruct.N1);
+                WriteUIntPtrLittleEndian(spanLE.Slice(164), s_testStruct.UN0);
+                WriteUIntPtrLittleEndian(spanLE.Slice(172), s_testStruct.UN1);
+            }
+            else
+            {
+                WriteIntPtrLittleEndian(spanLE.Slice(148), s_testStruct.N0);
+                WriteIntPtrLittleEndian(spanLE.Slice(152), s_testStruct.N1);
+                WriteUIntPtrLittleEndian(spanLE.Slice(156), s_testStruct.UN0);
+                WriteUIntPtrLittleEndian(spanLE.Slice(160), s_testStruct.UN1);
+            }
 
             ReadOnlySpan<byte> readOnlySpanLE = new ReadOnlySpan<byte>(spanLE.ToArray());
 
@@ -410,8 +612,27 @@ namespace System.Buffers.Binary.Tests
                 F1 = ReadSingleLittleEndian(spanLE.Slice(68)),
                 D1 = ReadDoubleLittleEndian(spanLE.Slice(72)),
                 H0 = ReadHalfLittleEndian(spanLE.Slice(80)),
-                H1 = ReadHalfLittleEndian(spanLE.Slice(82))
+                H1 = ReadHalfLittleEndian(spanLE.Slice(82)),
+                I128_0 = ReadInt128LittleEndian(spanLE.Slice(84)),
+                I128_1 = ReadInt128LittleEndian(spanLE.Slice(100)),
+                U128_0 = ReadUInt128LittleEndian(spanLE.Slice(116)),
+                U128_1 = ReadUInt128LittleEndian(spanLE.Slice(132)),
             };
+
+            if (Environment.Is64BitProcess)
+            {
+                readStruct.N0 = ReadIntPtrLittleEndian(spanLE.Slice(148));
+                readStruct.N1 = ReadIntPtrLittleEndian(spanLE.Slice(156));
+                readStruct.UN0 = ReadUIntPtrLittleEndian(spanLE.Slice(164));
+                readStruct.UN1 = ReadUIntPtrLittleEndian(spanLE.Slice(172));
+            }
+            else
+            {
+                readStruct.N0 = ReadIntPtrLittleEndian(spanLE.Slice(148));
+                readStruct.N1 = ReadIntPtrLittleEndian(spanLE.Slice(152));
+                readStruct.UN0 = ReadUIntPtrLittleEndian(spanLE.Slice(156));
+                readStruct.UN1 = ReadUIntPtrLittleEndian(spanLE.Slice(160));
+            }
 
             var readStructFromReadOnlySpan = new TestStruct
             {
@@ -432,8 +653,27 @@ namespace System.Buffers.Binary.Tests
                 F1 = ReadSingleLittleEndian(readOnlySpanLE.Slice(68)),
                 D1 = ReadDoubleLittleEndian(readOnlySpanLE.Slice(72)),
                 H0 = ReadHalfLittleEndian(readOnlySpanLE.Slice(80)),
-                H1 = ReadHalfLittleEndian(readOnlySpanLE.Slice(82))
+                H1 = ReadHalfLittleEndian(readOnlySpanLE.Slice(82)),
+                I128_0 = ReadInt128LittleEndian(readOnlySpanLE.Slice(84)),
+                I128_1 = ReadInt128LittleEndian(readOnlySpanLE.Slice(100)),
+                U128_0 = ReadUInt128LittleEndian(readOnlySpanLE.Slice(116)),
+                U128_1 = ReadUInt128LittleEndian(readOnlySpanLE.Slice(132)),
             };
+
+            if (Environment.Is64BitProcess)
+            {
+                readStructFromReadOnlySpan.N0 = ReadIntPtrLittleEndian(readOnlySpanLE.Slice(148));
+                readStructFromReadOnlySpan.N1 = ReadIntPtrLittleEndian(readOnlySpanLE.Slice(156));
+                readStructFromReadOnlySpan.UN0 = ReadUIntPtrLittleEndian(readOnlySpanLE.Slice(164));
+                readStructFromReadOnlySpan.UN1 = ReadUIntPtrLittleEndian(readOnlySpanLE.Slice(172));
+            }
+            else
+            {
+                readStructFromReadOnlySpan.N0 = ReadIntPtrLittleEndian(readOnlySpanLE.Slice(148));
+                readStructFromReadOnlySpan.N1 = ReadIntPtrLittleEndian(readOnlySpanLE.Slice(152));
+                readStructFromReadOnlySpan.UN0 = ReadUIntPtrLittleEndian(readOnlySpanLE.Slice(156));
+                readStructFromReadOnlySpan.UN1 = ReadUIntPtrLittleEndian(readOnlySpanLE.Slice(160));
+            }
 
             Assert.Equal(s_testStruct, readStruct);
             Assert.Equal(s_testStruct, readStructFromReadOnlySpan);
@@ -570,6 +810,14 @@ namespace System.Buffers.Binary.Tests
             D1 = double.MinValue,
             H0 = Half.MaxValue,
             H1 = Half.MinValue,
+            I128_0 = Int128.MaxValue,
+            I128_1 = Int128.MinValue,
+            U128_1 = UInt128.MinValue,
+            U128_0 = UIntPtr.MaxValue,
+            N0 = nint.MaxValue,
+            N1 = nint.MinValue,
+            UN1 = nuint.MinValue,
+            UN0 = nuint.MaxValue,
         };
 
         [StructLayout(LayoutKind.Sequential)]
@@ -593,6 +841,14 @@ namespace System.Buffers.Binary.Tests
             public double D1;
             public Half H0;
             public Half H1;
+            public Int128 I128_0;
+            public Int128 I128_1;
+            public UInt128 U128_1;
+            public UInt128 U128_0;
+            public nint N0;
+            public nint N1;
+            public nuint UN1;
+            public nuint UN0;
         }
     }
 }

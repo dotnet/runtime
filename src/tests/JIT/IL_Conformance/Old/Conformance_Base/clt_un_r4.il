@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 #define NEG_INF    "float32(0xFF800000)"
 #define MIN        "float32(0xFF7FFFFF)"
@@ -13,6 +14,8 @@
 #define POS_INF    "float32(0x7F800000)"
 #define NAN        "float32(0x7FC00000)"
 
+.namespace clt_un_r4
+{
 .class public clt_un {
 
 .field public static	float32 neg_inf
@@ -27,431 +30,434 @@
 .method public static void initialize() {
 .maxstack		10
 	ldc.r4		NEG_INF
-	stsfld	float32 clt_un::neg_inf
+	stsfld	float32 clt_un_r4.clt_un::neg_inf
 	ldc.r4		MIN
-	stsfld	float32 clt_un::min
+	stsfld	float32 clt_un_r4.clt_un::min
 	ldc.r4		MINUS_ONE
-	stsfld	float32 clt_un::minus_one
+	stsfld	float32 clt_un_r4.clt_un::minus_one
 	ldc.r4		MINUS_ZERO
-	stsfld	float32 clt_un::minus_zero
+	stsfld	float32 clt_un_r4.clt_un::minus_zero
 	ldc.r4		ZERO
-	stsfld	float32 clt_un::zero
+	stsfld	float32 clt_un_r4.clt_un::zero
 	ldc.r4		ONE
-	stsfld	float32 clt_un::one
+	stsfld	float32 clt_un_r4.clt_un::one
 	ldc.r4		MAX
-	stsfld	float32 clt_un::max
+	stsfld	float32 clt_un_r4.clt_un::max
 	ldc.r4		POS_INF
-	stsfld	float32 clt_un::pos_inf
+	stsfld	float32 clt_un_r4.clt_un::pos_inf
 	ldc.r4		NAN
-	stsfld	float32 clt_un::NaN
+	stsfld	float32 clt_un_r4.clt_un::NaN
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
-	call	void clt_un::initialize()
-	ldsfld	float32 clt_un::neg_inf
-	ldsfld	float32 clt_un::neg_inf
+	call	void clt_un_r4.clt_un::initialize()
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::neg_inf
-	ldsfld	float32 clt_un::min
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
+	ldsfld	float32 clt_un_r4.clt_un::min
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::neg_inf
-	ldsfld	float32 clt_un::minus_one
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::neg_inf
-	ldsfld	float32 clt_un::minus_zero
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::neg_inf
-	ldsfld	float32 clt_un::zero
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
+	ldsfld	float32 clt_un_r4.clt_un::zero
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::neg_inf
-	ldsfld	float32 clt_un::one
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
+	ldsfld	float32 clt_un_r4.clt_un::one
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::neg_inf
-	ldsfld	float32 clt_un::max
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
+	ldsfld	float32 clt_un_r4.clt_un::max
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::neg_inf
-	ldsfld	float32 clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::neg_inf
-	ldsfld	float32 clt_un::NaN
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
+	ldsfld	float32 clt_un_r4.clt_un::NaN
 	clt.un
 	brfalse		FAIL
-	ldsfld	float32 clt_un::min
-	ldsfld	float32 clt_un::neg_inf
+	ldsfld	float32 clt_un_r4.clt_un::min
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::min
-	ldsfld	float32 clt_un::min
+	ldsfld	float32 clt_un_r4.clt_un::min
+	ldsfld	float32 clt_un_r4.clt_un::min
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::min
-	ldsfld	float32 clt_un::minus_one
+	ldsfld	float32 clt_un_r4.clt_un::min
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::min
-	ldsfld	float32 clt_un::minus_zero
+	ldsfld	float32 clt_un_r4.clt_un::min
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::min
-	ldsfld	float32 clt_un::zero
+	ldsfld	float32 clt_un_r4.clt_un::min
+	ldsfld	float32 clt_un_r4.clt_un::zero
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::min
-	ldsfld	float32 clt_un::one
+	ldsfld	float32 clt_un_r4.clt_un::min
+	ldsfld	float32 clt_un_r4.clt_un::one
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::min
-	ldsfld	float32 clt_un::max
+	ldsfld	float32 clt_un_r4.clt_un::min
+	ldsfld	float32 clt_un_r4.clt_un::max
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::min
-	ldsfld	float32 clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::min
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::min
-	ldsfld	float32 clt_un::NaN
+	ldsfld	float32 clt_un_r4.clt_un::min
+	ldsfld	float32 clt_un_r4.clt_un::NaN
 	clt.un
 	brfalse		FAIL
 
 
-	ldsfld	float32 clt_un::minus_one
-	ldsfld	float32 clt_un::neg_inf
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::minus_one
-	ldsfld	float32 clt_un::min
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
+	ldsfld	float32 clt_un_r4.clt_un::min
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::minus_one
-	ldsfld	float32 clt_un::minus_one
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::minus_one
-	ldsfld	float32 clt_un::minus_zero
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::minus_one
-	ldsfld	float32 clt_un::zero
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
+	ldsfld	float32 clt_un_r4.clt_un::zero
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::minus_one
-	ldsfld	float32 clt_un::one
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
+	ldsfld	float32 clt_un_r4.clt_un::one
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::minus_one
-	ldsfld	float32 clt_un::max
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
+	ldsfld	float32 clt_un_r4.clt_un::max
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::minus_one
-	ldsfld	float32 clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::minus_one
-	ldsfld	float32 clt_un::NaN
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
+	ldsfld	float32 clt_un_r4.clt_un::NaN
 	clt.un
 	brfalse		FAIL
-	ldsfld	float32 clt_un::minus_zero
-	ldsfld	float32 clt_un::neg_inf
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::minus_zero
-	ldsfld	float32 clt_un::min
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
+	ldsfld	float32 clt_un_r4.clt_un::min
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::minus_zero
-	ldsfld	float32 clt_un::minus_one
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::minus_zero
-	ldsfld	float32 clt_un::minus_zero
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::minus_zero
-	ldsfld	float32 clt_un::zero
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
+	ldsfld	float32 clt_un_r4.clt_un::zero
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::minus_zero
-	ldsfld	float32 clt_un::one
-	clt.un
-	brfalse		FAIL
-
-	ldsfld	float32 clt_un::minus_zero
-	ldsfld	float32 clt_un::max
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
+	ldsfld	float32 clt_un_r4.clt_un::one
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::minus_zero
-	ldsfld	float32 clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
+	ldsfld	float32 clt_un_r4.clt_un::max
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::minus_zero
-	ldsfld	float32 clt_un::NaN
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::zero
-	ldsfld	float32 clt_un::neg_inf
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::zero
-	ldsfld	float32 clt_un::min
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::zero
-	ldsfld	float32 clt_un::minus_one
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::zero
-	ldsfld	float32 clt_un::minus_zero
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::zero
-	ldsfld	float32 clt_un::zero
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::zero
-	ldsfld	float32 clt_un::one
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
+	ldsfld	float32 clt_un_r4.clt_un::NaN
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::zero
-	ldsfld	float32 clt_un::max
+	ldsfld	float32 clt_un_r4.clt_un::zero
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::zero
+	ldsfld	float32 clt_un_r4.clt_un::min
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::zero
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::zero
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::zero
+	ldsfld	float32 clt_un_r4.clt_un::zero
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::zero
+	ldsfld	float32 clt_un_r4.clt_un::one
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::zero
-	ldsfld	float32 clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::zero
+	ldsfld	float32 clt_un_r4.clt_un::max
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::zero
-	ldsfld	float32 clt_un::NaN
+	ldsfld	float32 clt_un_r4.clt_un::zero
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::one
-	ldsfld	float32 clt_un::neg_inf
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::one
-	ldsfld	float32 clt_un::min
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::one
-	ldsfld	float32 clt_un::minus_one
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::one
-	ldsfld	float32 clt_un::minus_zero
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::one
-	ldsfld	float32 clt_un::zero
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::one
-	ldsfld	float32 clt_un::one
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::one
-	ldsfld	float32 clt_un::max
+	ldsfld	float32 clt_un_r4.clt_un::zero
+	ldsfld	float32 clt_un_r4.clt_un::NaN
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::one
-	ldsfld	float32 clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::one
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::one
+	ldsfld	float32 clt_un_r4.clt_un::min
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::one
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::one
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::one
+	ldsfld	float32 clt_un_r4.clt_un::zero
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::one
+	ldsfld	float32 clt_un_r4.clt_un::one
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::one
+	ldsfld	float32 clt_un_r4.clt_un::max
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::one
-	ldsfld	float32 clt_un::NaN
+	ldsfld	float32 clt_un_r4.clt_un::one
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::max
-	ldsfld	float32 clt_un::neg_inf
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::max
-	ldsfld	float32 clt_un::min
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::max
-	ldsfld	float32 clt_un::minus_one
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::max
-	ldsfld	float32 clt_un::minus_zero
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::max
-	ldsfld	float32 clt_un::zero
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::max
-	ldsfld	float32 clt_un::one
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::max
-	ldsfld	float32 clt_un::max
-	clt.un
-	brtrue		FAIL
-
-	ldsfld	float32 clt_un::max
-	ldsfld	float32 clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::one
+	ldsfld	float32 clt_un_r4.clt_un::NaN
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::max
-	ldsfld	float32 clt_un::NaN
-	clt.un
-	brfalse		FAIL
-
-	ldsfld	float32 clt_un::pos_inf
-	ldsfld	float32 clt_un::neg_inf
+	ldsfld	float32 clt_un_r4.clt_un::max
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::pos_inf
-	ldsfld	float32 clt_un::min
+	ldsfld	float32 clt_un_r4.clt_un::max
+	ldsfld	float32 clt_un_r4.clt_un::min
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::pos_inf
-	ldsfld	float32 clt_un::minus_one
+	ldsfld	float32 clt_un_r4.clt_un::max
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::pos_inf
-	ldsfld	float32 clt_un::minus_zero
+	ldsfld	float32 clt_un_r4.clt_un::max
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::pos_inf
-	ldsfld	float32 clt_un::zero
+	ldsfld	float32 clt_un_r4.clt_un::max
+	ldsfld	float32 clt_un_r4.clt_un::zero
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::pos_inf
-	ldsfld	float32 clt_un::one
+	ldsfld	float32 clt_un_r4.clt_un::max
+	ldsfld	float32 clt_un_r4.clt_un::one
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::pos_inf
-	ldsfld	float32 clt_un::max
+	ldsfld	float32 clt_un_r4.clt_un::max
+	ldsfld	float32 clt_un_r4.clt_un::max
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::pos_inf
-	ldsfld	float32 clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::max
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
+	clt.un
+	brfalse		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::max
+	ldsfld	float32 clt_un_r4.clt_un::NaN
+	clt.un
+	brfalse		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
 	clt.un
 	brtrue		FAIL
 
-	ldsfld	float32 clt_un::pos_inf
-	ldsfld	float32 clt_un::NaN
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::min
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::zero
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::one
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::max
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
+	clt.un
+	brtrue		FAIL
+
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::NaN
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::NaN
-	ldsfld	float32 clt_un::neg_inf
+	ldsfld	float32 clt_un_r4.clt_un::NaN
+	ldsfld	float32 clt_un_r4.clt_un::neg_inf
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::NaN
-	ldsfld	float32 clt_un::min
+	ldsfld	float32 clt_un_r4.clt_un::NaN
+	ldsfld	float32 clt_un_r4.clt_un::min
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::NaN
-	ldsfld	float32 clt_un::minus_one
+	ldsfld	float32 clt_un_r4.clt_un::NaN
+	ldsfld	float32 clt_un_r4.clt_un::minus_one
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::NaN
-	ldsfld	float32 clt_un::minus_zero
+	ldsfld	float32 clt_un_r4.clt_un::NaN
+	ldsfld	float32 clt_un_r4.clt_un::minus_zero
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::NaN
-	ldsfld	float32 clt_un::zero
+	ldsfld	float32 clt_un_r4.clt_un::NaN
+	ldsfld	float32 clt_un_r4.clt_un::zero
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::NaN
-	ldsfld	float32 clt_un::one
+	ldsfld	float32 clt_un_r4.clt_un::NaN
+	ldsfld	float32 clt_un_r4.clt_un::one
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::NaN
-	ldsfld	float32 clt_un::max
+	ldsfld	float32 clt_un_r4.clt_un::NaN
+	ldsfld	float32 clt_un_r4.clt_un::max
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::NaN
-	ldsfld	float32 clt_un::pos_inf
+	ldsfld	float32 clt_un_r4.clt_un::NaN
+	ldsfld	float32 clt_un_r4.clt_un::pos_inf
 	clt.un
 	brfalse		FAIL
 
-	ldsfld	float32 clt_un::NaN
-	ldsfld	float32 clt_un::NaN
+	ldsfld	float32 clt_un_r4.clt_un::NaN
+	ldsfld	float32 clt_un_r4.clt_un::NaN
 	clt.un
 	brfalse		FAIL
 
@@ -869,3 +875,4 @@ FAIL:
 }
 }
 .assembly clt_un_r4{}
+}

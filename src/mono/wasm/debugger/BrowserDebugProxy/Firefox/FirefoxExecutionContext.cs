@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Threading;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -12,7 +13,7 @@ internal sealed class FirefoxExecutionContext : ExecutionContext
     public string? ActorName { get; set; }
     public string? ThreadName { get; set; }
     public string? GlobalName { get; set; }
-    public Result LastDebuggerAgentBufferReceived { get; set; }
+    public Task<Result>? LastDebuggerAgentBufferReceived { get; set; }
 
     public FirefoxExecutionContext(MonoSDBHelper sdbAgent, int id, string actorName) : base(sdbAgent, id, actorName, PauseOnExceptionsKind.Unset)
     {

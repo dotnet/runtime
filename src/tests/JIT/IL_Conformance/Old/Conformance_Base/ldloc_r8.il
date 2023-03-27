@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
+.namespace ldloc_r8
+{
 .class public _ldloc {
 .field public static	float64 onlyhigh
 .field public static	float64 none
@@ -11,19 +14,22 @@
 .method public static	void initialize() {
 .maxstack	10
 	ldc.r8		float64(0x8000000000000000)
-	stsfld	float64 _ldloc::onlyhigh
+	stsfld	float64 ldloc_r8._ldloc::onlyhigh
 	ldc.r8		float64(0x0000000000000000)
-	stsfld	float64 _ldloc::none
+	stsfld	float64 ldloc_r8._ldloc::none
 	ldc.r8		float64(0x0000000000000001)
-	stsfld	float64 _ldloc::onlylow
+	stsfld	float64 ldloc_r8._ldloc::onlylow
 	ret
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack		10
 .locals	(float64,float64,float64)
-	call	void _ldloc::initialize()
+	call	void ldloc_r8._ldloc::initialize()
 
 	ldc.r8		float64(0x8000000000000000)
 	ldc.r8		float64(0x0000000000000000)
@@ -32,19 +38,19 @@
 	stloc	1
 	stloc	0
 
-	ldsfld	float64 _ldloc::onlyhigh
+	ldsfld	float64 ldloc_r8._ldloc::onlyhigh
 	ldloc	0
 	ceq
 	brfalse		FAIL
 
 
-	ldsfld	float64 _ldloc::none
+	ldsfld	float64 ldloc_r8._ldloc::none
 	ldloc	1
 	ceq
 	brfalse		FAIL
 
 
-	ldsfld	float64 _ldloc::onlylow
+	ldsfld	float64 ldloc_r8._ldloc::onlylow
 	ldloc	2
 	ceq
 	brfalse		FAIL
@@ -57,3 +63,4 @@ FAIL:
 }
 }
 .assembly ldloc_r8{}
+}

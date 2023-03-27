@@ -11,10 +11,10 @@ namespace System.Threading.RateLimiting
     public abstract class RateLimiter : IAsyncDisposable, IDisposable
     {
         /// <summary>
-        /// An estimated count of available permits.
+        /// Gets a snapshot of the <see cref="RateLimiter"/> statistics if available.
         /// </summary>
-        /// <returns></returns>
-        public abstract int GetAvailablePermits();
+        /// <returns>An instance of <see cref="RateLimiterStatistics"/> containing a snapshot of the <see cref="RateLimiter"/> statistics.</returns>
+        public abstract RateLimiterStatistics? GetStatistics();
 
         /// <summary>
         /// Specifies how long the <see cref="RateLimiter"/> has had all permits available. Used by RateLimiter managers that may want to

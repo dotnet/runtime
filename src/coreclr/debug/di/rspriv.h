@@ -142,7 +142,7 @@ class CordbSafeHashTable;
 //
 // This is an encapsulation of the information necessary to connect to the debugger proxy on a remote machine.
 // It includes the IP address and the port number.  The IP address can be set via the env var
-// COMPlus_DbgTransportProxyAddress, and the port number is fixed when Mac debugging is configured.
+// DOTNET_DbgTransportProxyAddress, and the port number is fixed when Mac debugging is configured.
 //
 
 struct MachineInfo
@@ -3279,6 +3279,10 @@ public:
         return false;
 #endif
     }
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    void HandleSetThreadContextNeeded(DWORD dwThreadId);
+#endif
 
     //
     // Shim  callbacks to simulate fake attach events.
@@ -9718,8 +9722,8 @@ public:
     COM_METHOD GetRank(ULONG32 * pnRank);
     COM_METHOD GetCount(ULONG32 * pnCount);
     COM_METHOD GetDimensions(ULONG32 cdim, ULONG32 dims[]);
-    COM_METHOD HasBaseIndices(BOOL * pbHasBaseIndices);
-    COM_METHOD GetBaseIndices(ULONG32 cdim, ULONG32 indices[]);
+    COM_METHOD HasBaseIndicies(BOOL * pbHasBaseIndicies);
+    COM_METHOD GetBaseIndicies(ULONG32 cdim, ULONG32 indices[]);
     COM_METHOD GetElement(ULONG32 cdim, ULONG32 indices[], ICorDebugValue ** ppValue);
     COM_METHOD GetElementAtPosition(ULONG32 nIndex, ICorDebugValue ** ppValue);
 

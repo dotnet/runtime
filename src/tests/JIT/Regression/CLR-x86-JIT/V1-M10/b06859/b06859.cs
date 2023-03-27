@@ -7,7 +7,7 @@ namespace DefaultNamespace
     using System;
     using System.Collections;
 
-    internal class test
+    public class test
     {
 
         public static void ccc(byte[] bytes)
@@ -39,7 +39,7 @@ namespace DefaultNamespace
             }
         }
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             byte[] ub = new byte[0];
             ccc(ub);

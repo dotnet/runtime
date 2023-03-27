@@ -109,39 +109,12 @@ namespace System.Runtime
             return RawCalliHelper.Call<object>(entry.Result, arg, entry.AuxResult);
         }
 
-        public static IntPtr UpdateTypeFloatingDictionary(IntPtr eetypePtr, IntPtr dictionaryPtr)
-        {
-            // No caching needed. Update is in-place, and happens once per dictionary
-            return RuntimeAugments.TypeLoaderCallbacks.UpdateFloatingDictionary(eetypePtr, dictionaryPtr);
-        }
-
-        public static IntPtr UpdateMethodFloatingDictionary(IntPtr dictionaryPtr)
-        {
-            // No caching needed. Update is in-place, and happens once per dictionary
-            return RuntimeAugments.TypeLoaderCallbacks.UpdateFloatingDictionary(dictionaryPtr, dictionaryPtr);
-        }
-
-#if FEATURE_UNIVERSAL_GENERICS
-        public static unsafe IntPtr GetDelegateThunk(object delegateObj, int whichThunk)
-        {
-            Entry entry = LookupInCache(s_cache, (IntPtr)delegateObj.GetMethodTable(), new IntPtr(whichThunk));
-            if (entry == null)
-            {
-                entry = CacheMiss((IntPtr)delegateObj.GetMethodTable(), new IntPtr(whichThunk),
-                    (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
-                        => RuntimeAugments.TypeLoaderCallbacks.GetDelegateThunk((Delegate)contextObject, (int)signature),
-                    delegateObj);
-            }
-            return entry.Result;
-        }
-#endif
-
         public static unsafe IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
         {
             Entry entry = LookupInCache(s_cache, (IntPtr)obj.GetMethodTable(), *(IntPtr*)&slot);
             entry ??= CacheMiss((IntPtr)obj.GetMethodTable(), *(IntPtr*)&slot,
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
-                        => Internal.Runtime.CompilerServices.GenericVirtualMethodSupport.GVMLookupForSlot(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature));
+                        => RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature));
             return entry.Result;
         }
 

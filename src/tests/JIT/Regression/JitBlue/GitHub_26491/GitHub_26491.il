@@ -37,7 +37,7 @@
 }
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit GitHub_26491 extends [System.Runtime]System.Object
+.class public auto ansi beforefieldinit GitHub_26491 extends [System.Runtime]System.Object
 {
   .class sequential ansi sealed nested private beforefieldinit ReturnType
          extends [System.Runtime]System.ValueType

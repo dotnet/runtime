@@ -4,9 +4,12 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly 'castclass'{}
 
 
+.namespace castclass_
+{
 .class public Super {
 
 .method public void .ctor() {
@@ -18,13 +21,13 @@
 
 
 }
-.class public Sub extends Super {
+.class public Sub extends castclass_.Super {
 
 .method public void .ctor() {
 
 .maxstack	10
 	ldarg.0
-	call instance void Super::.ctor() 
+	call instance void castclass_.Super::.ctor() 
 	ret
 }
 
@@ -36,8 +39,8 @@
 .maxstack	10
 
 try_start:
-	newobj	instance	void Sub::.ctor() 
-	castclass	Super
+	newobj	instance	void castclass_.Sub::.ctor() 
+	castclass	castclass_.Super
 	pop
 	leave		try_end
 try_end:
@@ -56,8 +59,8 @@ done:
 .maxstack	10
 
 try_start:
-	newobj	instance	void Sub::.ctor() 
-	castclass	_castclass
+	newobj	instance	void castclass_.Sub::.ctor() 
+	castclass	castclass_._castclass
 	pop
 	leave		try_end
 try_end:
@@ -73,13 +76,16 @@ done:
 .try try_start to try_end catch [mscorlib]System.InvalidCastException handler handler_start to handler_end
 }
 
-.method public static	int32 main(class [mscorlib]System.String[]) {
+.method public static	int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	10
 
-	call		int32 _castclass::positivetest()
+	call		int32 castclass_._castclass::positivetest()
 	brfalse		FAIL
-	call		int32 _castclass::negativetest()
+	call		int32 castclass_._castclass::negativetest()
 	brfalse		FAIL
 
 PASS:
@@ -88,5 +94,6 @@ PASS:
 FAIL:
 	ldc.i4		0x0
 	ret
+}
 }
 }

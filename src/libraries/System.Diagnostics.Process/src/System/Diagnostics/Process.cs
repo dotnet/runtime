@@ -480,7 +480,7 @@ namespace System.Diagnostics
             }
             set
             {
-                if (!Enum.IsDefined(typeof(ProcessPriorityClass), value))
+                if (!Enum.IsDefined(value))
                 {
                     throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(ProcessPriorityClass));
                 }
@@ -1454,10 +1454,10 @@ namespace System.Diagnostics
         private static int ToTimeoutMilliseconds(TimeSpan timeout)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
+
             return (int)totalMilliseconds;
         }
 

@@ -107,7 +107,7 @@ namespace System
             {
                 return new TimeZoneInfo(id, TimeSpan.FromSeconds(0), id, name, name, null, disableDaylightSavingTime:true);
             }
-            if (name.StartsWith("GMT", StringComparison.Ordinal))
+            if (name.Length >= 3 && name[0] == 'G' && name[1] == 'M' && name[2] == 'T')
             {
                 return new TimeZoneInfo(id, TimeSpan.FromSeconds(ParseGMTNumericZone(name)), id, name, name, null, disableDaylightSavingTime:true);
             }
@@ -428,14 +428,7 @@ namespace System
 
             public string[] GetTimeZoneIds()
             {
-                int numTimeZoneIDs = 0;
-                for (int i = 0; i < _ids.Length; i++)
-                {
-                    if (!_isBackwards[i])
-                    {
-                        numTimeZoneIDs++;
-                    }
-                }
+                int numTimeZoneIDs = _isBackwards.AsSpan(0, _ids.Length).Count(false);
                 string[] nonBackwardsTZIDs = new string[numTimeZoneIDs];
                 var index = 0;
                 for (int i = 0; i < _ids.Length; i++)

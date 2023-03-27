@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlSchemaValidatorApiTests
 {
     // CalledResolveUri Event Args
     public sealed class CalledResolveUriEventArgs : XmlTestResolverEventArgs
@@ -84,12 +84,6 @@ namespace System.Xml.Tests
             : base()
         {
             _resolver = new XmlUrlResolver();
-        }
-
-        public CXmlTestResolver(string securityUri)
-            : base()
-        {
-            _resolver = new XmlSecureResolver(new XmlUrlResolver(), securityUri);
         }
 
         // -----------------

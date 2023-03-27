@@ -19,9 +19,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
     public class CompilationHelper
     {
         private static readonly CSharpParseOptions s_parseOptions =
-            new CSharpParseOptions(kind: SourceCodeKind.Regular, documentationMode: DocumentationMode.Parse)
-            // workaround https://github.com/dotnet/roslyn/pull/55866. We can remove "LangVersion=Preview" when we get a Roslyn build with that change.
-            .WithLanguageVersion(LanguageVersion.Preview);
+            new CSharpParseOptions(kind: SourceCodeKind.Regular, documentationMode: DocumentationMode.Parse);
 
 #if NETCOREAPP
         private static readonly Assembly systemRuntimeAssembly = Assembly.Load(new AssemblyName("System.Runtime"));
@@ -356,6 +354,34 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
                     public int Value { get; init; }
                     public string Orphaned { get; init; }
+                }
+
+                [JsonSerializable(typeof(MyClass))]
+                public partial class MyJsonContext : JsonSerializerContext
+                {
+                }
+            }";
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateCompilationWithRequiredProperties()
+        {
+            string source = @"
+            using System;
+            using System.Text.Json.Serialization;
+
+            namespace HelloWorld
+            {
+                public class MyClass
+                {
+                    public required string Required1 { get; set; }
+                    public required string Required2 { get; set; }
+
+                    public MyClass(string required1)
+                    {
+                        Required1 = required1;
+                    }
                 }
 
                 [JsonSerializable(typeof(MyClass))]

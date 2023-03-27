@@ -83,6 +83,7 @@ namespace Internal.TypeSystem
         public LayoutInt ByteCountAlignment;
         public bool LayoutAbiStable; // Is the layout stable such that it can safely be used in function calling conventions
         public bool IsAutoLayoutOrHasAutoLayoutFields;
+        public bool IsInt128OrHasInt128Fields;
 
         /// <summary>
         /// If Offsets is non-null, then all field based layout is complete.

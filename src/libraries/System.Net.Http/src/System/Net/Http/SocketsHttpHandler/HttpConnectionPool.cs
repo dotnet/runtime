@@ -43,6 +43,9 @@ namespace System.Net.Http
         /// <summary>If true, the <see cref="_http3Authority"/> will persist across a network change. If false, it will be reset to <see cref="_originAuthority"/>.</summary>
         private bool _persistAuthority;
 
+        /// <summary>The User-Agent header to use when creating a CONNECT tunnel.</summary>
+        private string? _connectTunnelUserAgent;
+
         /// <summary>
         /// When an Alt-Svc authority fails due to 421 Misdirected Request, it is placed in the blocklist to be ignored
         /// for <see cref="AltSvcBlocklistTimeoutInMilliseconds"/> milliseconds. Initialized on first use.
@@ -95,8 +98,17 @@ namespace System.Net.Http
         private SemaphoreSlim? _http3ConnectionCreateLock;
         internal readonly byte[]? _http3EncodedAuthorityHostHeader;
 
+        // These settings are advertised by the server via SETTINGS_MAX_HEADER_LIST_SIZE and SETTINGS_MAX_FIELD_SECTION_SIZE.
+        // If we had previous connections to the same host in this pool, memorize the last value seen.
+        // This value is used as an initial value for new connections before they have a chance to observe the SETTINGS frame.
+        // Doing so avoids immediately exceeding the server limit on the first request, potentially causing the connection to be torn down.
+        // 0 means there were no previous connections, or they hadn't advertised this limit.
+        // There is no need to lock when updating these values - we're only interested in saving _a_ value, not necessarily the min/max/last.
+        internal uint _lastSeenHttp2MaxHeaderListSize;
+        internal uint _lastSeenHttp3MaxHeaderListSize;
+
         /// <summary>For non-proxy connection pools, this is the host name in bytes; for proxies, null.</summary>
-        private readonly byte[]? _hostHeaderValueBytes;
+        private readonly byte[]? _hostHeaderLineBytes;
         /// <summary>Options specialized and cached for this pool and its key.</summary>
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp11;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2;
@@ -230,8 +242,15 @@ namespace System.Net.Http
                     _originAuthority.HostValue;
 
                 // Note the IDN hostname should always be ASCII, since it's already been IDNA encoded.
-                _hostHeaderValueBytes = Encoding.ASCII.GetBytes(hostHeader);
-                Debug.Assert(Encoding.ASCII.GetString(_hostHeaderValueBytes) == hostHeader);
+                byte[] hostHeaderLine = new byte[6 + hostHeader.Length + 2]; // Host: foo\r\n
+                "Host: "u8.CopyTo(hostHeaderLine);
+                Encoding.ASCII.GetBytes(hostHeader, hostHeaderLine.AsSpan(6));
+                hostHeaderLine[^2] = (byte)'\r';
+                hostHeaderLine[^1] = (byte)'\n';
+                _hostHeaderLineBytes = hostHeaderLine;
+
+                Debug.Assert(Encoding.ASCII.GetString(_hostHeaderLineBytes) == $"Host: {hostHeader}\r\n");
+
                 if (sslHostName == null)
                 {
                     _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
@@ -336,7 +355,7 @@ namespace System.Net.Http
         public bool IsSecure => _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.SslSocksTunnel;
         public Uri? ProxyUri => _proxyUri;
         public ICredentials? ProxyCredentials => _poolManager.ProxyCredentials;
-        public byte[]? HostHeaderValueBytes => _hostHeaderValueBytes;
+        public byte[]? HostHeaderLineBytes => _hostHeaderLineBytes;
         public CredentialCache? PreAuthCredentials { get; }
 
         /// <summary>
@@ -423,7 +442,13 @@ namespace System.Net.Http
         {
             Debug.Assert(desiredVersion == 2 || desiredVersion == 3);
 
-            throw new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion), inner);
+            HttpRequestException ex = new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion), inner);
+            if (request.IsExtendedConnectRequest && desiredVersion == 2)
+            {
+                ex.Data["HTTP2_ENABLED"] = false;
+            }
+
+            throw ex;
         }
 
         private bool CheckExpirationOnGet(HttpConnectionBase connection)
@@ -612,7 +637,7 @@ namespace System.Net.Http
                 // We are done with the HTTP2 connection attempt, no point to cancel it.
                 Volatile.Write(ref waiter.ConnectionCancellationTokenSource, null);
 
-                // We don't care if this fails; that means the request was previously canceled or handeled by a different connection.
+                // We don't care if this fails; that means the request was previously canceled or handled by a different connection.
                 waiter.TrySetResult(null);
 
                 lock (SyncObj)
@@ -766,7 +791,7 @@ namespace System.Net.Http
             }
         }
 
-        private bool TryGetPooledHttp2Connection(HttpRequestMessage request, bool async, [NotNullWhen(true)] out Http2Connection? connection, out HttpConnectionWaiter<Http2Connection?>? waiter)
+        private bool TryGetPooledHttp2Connection(HttpRequestMessage request, [NotNullWhen(true)] out Http2Connection? connection, out HttpConnectionWaiter<Http2Connection?>? waiter)
         {
             Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http || _kind == HttpConnectionKind.SocksTunnel || _kind == HttpConnectionKind.SslSocksTunnel);
 
@@ -1018,8 +1043,8 @@ namespace System.Net.Http
                     // Use HTTP/3 if possible.
                     if (IsHttp3Supported() && // guard to enable trimming HTTP/3 support
                         _http3Enabled &&
-                        !request.IsWebSocketH2Request() &&
-                        (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
+                        (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
+                        !request.IsExtendedConnectRequest)
                     {
                         Debug.Assert(async);
                         response = await TrySendUsingHttp3Async(request, cancellationToken).ConfigureAwait(false);
@@ -1038,7 +1063,7 @@ namespace System.Net.Http
                             (request.Version.Major >= 2 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
                             (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure)) // prefer HTTP/1.1 if connection is not secured and downgrade is possible
                         {
-                            if (!TryGetPooledHttp2Connection(request, async, out Http2Connection? connection, out http2ConnectionWaiter) &&
+                            if (!TryGetPooledHttp2Connection(request, out Http2Connection? connection, out http2ConnectionWaiter) &&
                                 http2ConnectionWaiter != null)
                             {
                                 connection = await http2ConnectionWaiter.WaitForConnectionAsync(async, cancellationToken).ConfigureAwait(false);
@@ -1047,7 +1072,7 @@ namespace System.Net.Http
                             Debug.Assert(connection is not null || !_http2Enabled);
                             if (connection is not null)
                             {
-                                if (request.IsWebSocketH2Request())
+                                if (request.IsExtendedConnectRequest)
                                 {
                                     await connection.InitialSettingsReceived.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
                                     if (!connection.IsConnectEnabled)
@@ -1119,12 +1144,7 @@ namespace System.Net.Http
                     // Throw if fallback is not allowed by the version policy.
                     if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                     {
-                        HttpRequestException exception = new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy), e);
-                        if (request.IsWebSocketH2Request())
-                        {
-                            exception.Data["HTTP2_ENABLED"] = false;
-                        }
-                        throw exception;
+                        throw new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy), e);
                     }
 
                     if (NetEventSource.Log.IsEnabled())
@@ -1271,15 +1291,8 @@ namespace System.Net.Http
                     {
                         var thisRef = new WeakReference<HttpConnectionPool>(this);
 
-                        bool restoreFlow = false;
-                        try
+                        using (ExecutionContext.SuppressFlow())
                         {
-                            if (!ExecutionContext.IsFlowSuppressed())
-                            {
-                                ExecutionContext.SuppressFlow();
-                                restoreFlow = true;
-                            }
-
                             _authorityExpireTimer = new Timer(static o =>
                             {
                                 var wr = (WeakReference<HttpConnectionPool>)o!;
@@ -1288,10 +1301,6 @@ namespace System.Net.Http
                                     @this.ExpireAltSvcAuthority();
                                 }
                             }, thisRef, nextAuthorityMaxAge, Timeout.InfiniteTimeSpan);
-                        }
-                        finally
-                        {
-                            if (restoreFlow) ExecutionContext.RestoreFlow();
                         }
                     }
                     else
@@ -1482,6 +1491,15 @@ namespace System.Net.Http
 
         public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
+            // We need the User-Agent header when we send a CONNECT request to the proxy.
+            // We must read the header early, before we return the ownership of the request back to the user.
+            if ((Kind is HttpConnectionKind.ProxyTunnel or HttpConnectionKind.SslProxyTunnel) &&
+                request.HasHeaders &&
+                request.Headers.NonValidated.TryGetValues(HttpKnownHeaderNames.UserAgent, out HeaderStringValues userAgent))
+            {
+                _connectTunnelUserAgent = userAgent.ToString();
+            }
+
             if (doRequestAuth && Settings._credentials != null)
             {
                 return AuthenticationHelper.SendWithRequestAuthAsync(request, async, Settings._credentials, Settings._preAuthenticate, this, cancellationToken);
@@ -1510,7 +1528,7 @@ namespace System.Net.Http
 
                 case HttpConnectionKind.ProxyTunnel:
                 case HttpConnectionKind.SslProxyTunnel:
-                    stream = await EstablishProxyTunnelAsync(async, request.HasHeaders ? request.Headers : null, cancellationToken).ConfigureAwait(false);
+                    stream = await EstablishProxyTunnelAsync(async, cancellationToken).ConfigureAwait(false);
                     break;
 
                 case HttpConnectionKind.SocksTunnel:
@@ -1700,7 +1718,7 @@ namespace System.Net.Http
             return http2Connection;
         }
 
-        private async ValueTask<Stream> EstablishProxyTunnelAsync(bool async, HttpRequestHeaders? headers, CancellationToken cancellationToken)
+        private async ValueTask<Stream> EstablishProxyTunnelAsync(bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(_originAuthority != null);
 
@@ -1708,9 +1726,9 @@ namespace System.Net.Http
             HttpRequestMessage tunnelRequest = new HttpRequestMessage(HttpMethod.Connect, _proxyUri);
             tunnelRequest.Headers.Host = $"{_originAuthority.IdnHost}:{_originAuthority.Port}";    // This specifies destination host/port to connect to
 
-            if (headers != null && headers.TryGetValues(HttpKnownHeaderNames.UserAgent, out IEnumerable<string>? values))
+            if (_connectTunnelUserAgent is not null)
             {
-                tunnelRequest.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.UserAgent, values);
+                tunnelRequest.Headers.TryAddWithoutValidation(KnownHeaders.UserAgent.Descriptor, _connectTunnelUserAgent);
             }
 
             HttpResponseMessage tunnelResponse = await _poolManager.SendProxyConnectAsync(tunnelRequest, _proxyUri!, async, cancellationToken).ConfigureAwait(false);

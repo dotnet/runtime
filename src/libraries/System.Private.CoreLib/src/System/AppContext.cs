@@ -68,13 +68,13 @@ namespace System
 
 #pragma warning disable CS0067 // events raised by the VM
         [field: DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(UnhandledExceptionEventArgs))]
-        public static event UnhandledExceptionEventHandler? UnhandledException;
+        internal static event UnhandledExceptionEventHandler? UnhandledException;
 
         [field: DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(FirstChanceExceptionEventArgs))]
-        public static event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
+        internal static event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
 #pragma warning restore CS0067
 
-        public static event EventHandler? ProcessExit;
+        internal static event EventHandler? ProcessExit;
 
         internal static void OnProcessExit()
         {

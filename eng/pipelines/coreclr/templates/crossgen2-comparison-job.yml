@@ -7,9 +7,7 @@ parameters:
   helixQueues: ''
   runtimeVariant: ''
   crossBuild: false
-  crossrootfsDir: ''
   dependOnEvaluatePaths: false
-  stagedBuild: false
   variables: {}
   pool: ''
   targetarch: ''
@@ -34,7 +32,6 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     helixType: 'test/crossgen-comparison/'
@@ -48,7 +45,6 @@ jobs:
     displayName: ${{ format('Test crossgen2-comparison {0}{1} {2} {3} to {4} {5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.targetarch, parameters.targetos) }}
 
     crossBuild: ${{ parameters.crossBuild }}
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     variables:
     - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -76,10 +72,10 @@ jobs:
     - ${{ if eq(parameters.targetos, 'windows') }}:
       - name: target_crossgen2_os
         value: windows
-    - ${{ if eq(parameters.targetos, 'Linux') }}:
+    - ${{ if eq(parameters.targetos, 'linux') }}:
       - name: target_crossgen2_os
         value: linux
-    - ${{ if eq(parameters.targetos, 'OSX') }}:
+    - ${{ if eq(parameters.targetos, 'osx') }}:
       - name: target_crossgen2_os
         value: osx
 
@@ -126,7 +122,7 @@ jobs:
       inputs:
         artifact: '$(crossgencompare_build_artifact)'
         path: '$(workItemDirectory)$(dir)prebuiltWork'
-    
+
     # Send payload to Helix where the native output is generated and compared to the baseline
     - template: /eng/common/templates/steps/send-to-helix.yml
       parameters:

@@ -27,11 +27,31 @@ namespace System.Reflection.TypeLoading
             return copy;
         }
 
+        [return: NotNullIfNotNull(nameof(original))]
+        // Converts an array of modified types to unmodified types when unmodified are requested.
+        // This prevents inconsistencies such as allowing modifiers to be returned.
+        // This doesn't affect performance since we need to clone arrays anyway before returning to the caller.
+        public static Type[]? CloneArrayToUnmodifiedTypes(this Type[]? original)
+        {
+            if (original == null)
+                return null;
+
+            if (original.Length == 0)
+                return Type.EmptyTypes;
+
+            Type[] copy = new Type[original.Length];
+            for (int i = 0; i < original.Length; i++)
+            {
+                copy[i] = original[i].UnderlyingSystemType;
+            }
+
+            return copy;
+        }
+
         public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> enumeration)
         {
-            // todo: use IEnumerable<T> extension: return new ReadOnlyCollection<T>(enumeration.ToArray());
             List<T> list = new List<T>(enumeration);
-            return new ReadOnlyCollection<T>(list.ToArray());
+            return Array.AsReadOnly(list.ToArray());
         }
 
         public static int GetTokenRowNumber(this int token) => token & 0x00ffffff;
@@ -294,35 +314,6 @@ namespace System.Reflection.TypeLoading
                 };
 
             return (RoType?)Type.GetType(name, assemblyResolver: assemblyResolver, typeResolver: typeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase);
-        }
-
-        public static Type[] ExtractCustomModifiers(this RoType type, bool isRequired)
-        {
-            int count = 0;
-            RoType walk = type;
-            while (walk is RoModifiedType roModifiedType)
-            {
-                if (roModifiedType.IsRequired == isRequired)
-                {
-                    count++;
-                }
-                walk = roModifiedType.UnmodifiedType;
-            }
-
-            Type[] modifiers = new Type[count];
-            walk = type;
-            int index = count;
-            while (walk is RoModifiedType roModifiedType)
-            {
-                if (roModifiedType.IsRequired == isRequired)
-                {
-                    modifiers[--index] = roModifiedType.Modifier;
-                }
-                walk = roModifiedType.UnmodifiedType;
-            }
-            Debug.Assert(index == 0);
-
-            return modifiers;
         }
 
         public static RoType SkipTypeWrappers(this RoType type)

@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
+#pragma warning disable 8500 // sizeof of managed types
+
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -27,7 +29,7 @@ namespace System.Runtime.InteropServices
         /// Thrown if the Length property of the new Span would exceed int.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<byte> AsBytes<T>(Span<T> span)
+        public static unsafe Span<byte> AsBytes<T>(Span<T> span)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
@@ -35,7 +37,7 @@ namespace System.Runtime.InteropServices
 
             return new Span<byte>(
                 ref Unsafe.As<T, byte>(ref GetReference(span)),
-                checked(span.Length * Unsafe.SizeOf<T>()));
+                checked(span.Length * sizeof(T)));
         }
 
         /// <summary>
@@ -50,7 +52,7 @@ namespace System.Runtime.InteropServices
         /// Thrown if the Length property of the new Span would exceed int.MaxValue.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> AsBytes<T>(ReadOnlySpan<T> span)
+        public static unsafe ReadOnlySpan<byte> AsBytes<T>(ReadOnlySpan<T> span)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
@@ -58,7 +60,7 @@ namespace System.Runtime.InteropServices
 
             return new ReadOnlySpan<byte>(
                 ref Unsafe.As<T, byte>(ref GetReference(span)),
-                checked(span.Length * Unsafe.SizeOf<T>()));
+                checked(span.Length * sizeof(T)));
         }
 
         /// <summary>Creates a <see cref="Memory{T}"/> from a <see cref="ReadOnlyMemory{T}"/>.</summary>
@@ -85,6 +87,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static ref T GetReference<T>(ReadOnlySpan<T> span) => ref span._reference;
 
+#pragma warning disable IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
         /// <summary>
         /// Returns a reference to the 0th element of the Span. If the Span is empty, returns a reference to fake non-null pointer. Such a reference can be used
         /// for pinning but must never be dereferenced. This is useful for interop with methods that do not accept null pointers for zero-sized buffers.
@@ -98,6 +101,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe ref T GetNonNullPinnableReference<T>(ReadOnlySpan<T> span) => ref (span.Length != 0) ? ref Unsafe.AsRef<T>(in span._reference) : ref Unsafe.AsRef<T>((void*)1);
+#pragma warning restore IDE0060 // https://github.com/dotnet/roslyn-analyzers/issues/6228
 
         /// <summary>
         /// Casts a Span of one primitive type <typeparamref name="TFrom"/> to another primitive type <typeparamref name="TTo"/>.
@@ -412,14 +416,14 @@ namespace System.Runtime.InteropServices
         /// Reads a structure of type T out of a read-only span of bytes.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Read<T>(ReadOnlySpan<byte> source)
+        public static unsafe T Read<T>(ReadOnlySpan<byte> source)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
             }
-            if (Unsafe.SizeOf<T>() > source.Length)
+            if (sizeof(T) > source.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
@@ -428,17 +432,17 @@ namespace System.Runtime.InteropServices
 
         /// <summary>
         /// Reads a structure of type T out of a span of bytes.
-        /// <returns>If the span is too small to contain the type T, return false.</returns>
         /// </summary>
+        /// <returns>If the span is too small to contain the type T, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryRead<T>(ReadOnlySpan<byte> source, out T value)
+        public static unsafe bool TryRead<T>(ReadOnlySpan<byte> source, out T value)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
             }
-            if (Unsafe.SizeOf<T>() > (uint)source.Length)
+            if (sizeof(T) > (uint)source.Length)
             {
                 value = default;
                 return false;
@@ -451,14 +455,14 @@ namespace System.Runtime.InteropServices
         /// Writes a structure of type T into a span of bytes.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Write<T>(Span<byte> destination, ref T value)
+        public static unsafe void Write<T>(Span<byte> destination, ref T value)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
             }
-            if ((uint)Unsafe.SizeOf<T>() > (uint)destination.Length)
+            if ((uint)sizeof(T) > (uint)destination.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
@@ -467,17 +471,17 @@ namespace System.Runtime.InteropServices
 
         /// <summary>
         /// Writes a structure of type T into a span of bytes.
-        /// <returns>If the span is too small to contain the type T, return false.</returns>
         /// </summary>
+        /// <returns>If the span is too small to contain the type T, return false.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryWrite<T>(Span<byte> destination, ref T value)
+        public static unsafe bool TryWrite<T>(Span<byte> destination, ref T value)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
             }
-            if (Unsafe.SizeOf<T>() > (uint)destination.Length)
+            if (sizeof(T) > (uint)destination.Length)
             {
                 return false;
             }
@@ -493,14 +497,14 @@ namespace System.Runtime.InteropServices
         /// Supported only for platforms that support misaligned memory access or when the memory block is aligned by other means.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref T AsRef<T>(Span<byte> span)
+        public static unsafe ref T AsRef<T>(Span<byte> span)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
             }
-            if (Unsafe.SizeOf<T>() > (uint)span.Length)
+            if (sizeof(T) > (uint)span.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }
@@ -515,14 +519,14 @@ namespace System.Runtime.InteropServices
         /// Supported only for platforms that support misaligned memory access or when the memory block is aligned by other means.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ref readonly T AsRef<T>(ReadOnlySpan<byte> span)
+        public static unsafe ref readonly T AsRef<T>(ReadOnlySpan<byte> span)
             where T : struct
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
             }
-            if (Unsafe.SizeOf<T>() > (uint)span.Length)
+            if (sizeof(T) > (uint)span.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
             }

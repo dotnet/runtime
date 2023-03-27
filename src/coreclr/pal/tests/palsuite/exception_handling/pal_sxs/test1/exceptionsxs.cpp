@@ -30,9 +30,8 @@ extern "C" int InitializeDllTest2();
 extern "C" int DllTest1();
 extern "C" int DllTest2();
 
-bool bSignal = false;
-bool bCatch = false;
-bool bHandler = false;
+volatile bool bSignal = false;
+volatile bool bHandler = false;
 
 void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
 {

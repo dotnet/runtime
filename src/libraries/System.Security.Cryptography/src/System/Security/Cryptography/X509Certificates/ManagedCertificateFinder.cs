@@ -235,7 +235,7 @@ namespace System.Security.Cryptography.X509Certificates
                         return false;
                     }
 
-                    ISet<string> policyOids = CertificatePolicyChain.ReadCertPolicyExtension(ext.RawData);
+                    HashSet<string> policyOids = CertificatePolicyChain.ReadCertPolicyExtension(ext.RawData);
                     return policyOids.Contains(oidValue);
                 });
         }

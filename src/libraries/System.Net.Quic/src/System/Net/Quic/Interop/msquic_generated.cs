@@ -40,6 +40,27 @@ namespace Microsoft.Quic
     {
         DISABLED,
         SERVER_ID_IP,
+        SERVER_ID_FIXED,
+        COUNT,
+    }
+
+    internal enum QUIC_TLS_ALERT_CODES
+    {
+        SUCCESS = 0xFFFF,
+        UNEXPECTED_MESSAGE = 10,
+        BAD_CERTIFICATE = 42,
+        UNSUPPORTED_CERTIFICATE = 43,
+        CERTIFICATE_REVOKED = 44,
+        CERTIFICATE_EXPIRED = 45,
+        CERTIFICATE_UNKNOWN = 46,
+        ILLEGAL_PARAMETER = 47,
+        UNKNOWN_CA = 48,
+        ACCESS_DENIED = 49,
+        INSUFFICIENT_SECURITY = 71,
+        INTERNAL_ERROR = 80,
+        USER_CANCELED = 90,
+        CERTIFICATE_REQUIRED = 116,
+        MAX = 255,
     }
 
     internal enum QUIC_CREDENTIAL_TYPE
@@ -76,6 +97,8 @@ namespace Microsoft.Quic
         USE_SYSTEM_MAPPER = 0x00010000,
         CACHE_ONLY_URL_RETRIEVAL = 0x00020000,
         REVOCATION_CHECK_CACHE_ONLY = 0x00040000,
+        INPROC_PEER_CERTIFICATE = 0x00080000,
+        SET_CA_CERTIFICATE_FILE = 0x00100000,
     }
 
     [System.Flags]
@@ -182,6 +205,27 @@ namespace Microsoft.Quic
         CANCELED,
     }
 
+    [System.Flags]
+    internal enum QUIC_EXECUTION_CONFIG_FLAGS
+    {
+        NONE = 0x0000,
+        QTIP = 0x0001,
+    }
+
+    internal unsafe partial struct QUIC_EXECUTION_CONFIG
+    {
+        internal QUIC_EXECUTION_CONFIG_FLAGS Flags;
+
+        [NativeTypeName("uint32_t")]
+        internal uint PollingIdleTimeoutUs;
+
+        [NativeTypeName("uint32_t")]
+        internal uint ProcessorCount;
+
+        [NativeTypeName("uint16_t [1]")]
+        internal fixed ushort ProcessorList[1];
+    }
+
     internal unsafe partial struct QUIC_REGISTRATION_CONFIG
     {
         [NativeTypeName("const char *")]
@@ -258,6 +302,9 @@ namespace Microsoft.Quic
         internal delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void*, int, void> AsyncHandler;
 
         internal QUIC_ALLOWED_CIPHER_SUITE_FLAGS AllowedCipherSuites;
+
+        [NativeTypeName("const char *")]
+        internal sbyte* CaCertificateFile;
 
         internal ref QUIC_CERTIFICATE_HASH* CertificateHash
         {
@@ -424,6 +471,7 @@ namespace Microsoft.Quic
     internal enum QUIC_CONGESTION_CONTROL_ALGORITHM
     {
         CUBIC,
+        BBR,
         MAX,
     }
 
@@ -687,6 +735,48 @@ namespace Microsoft.Quic
             }
         }
 
+        [NativeTypeName("uint32_t : 1")]
+        internal uint GreaseBitNegotiated
+        {
+            get
+            {
+                return (_bitfield >> 4) & 0x1u;
+            }
+
+            set
+            {
+                _bitfield = (_bitfield & ~(0x1u << 4)) | ((value & 0x1u) << 4);
+            }
+        }
+
+        [NativeTypeName("uint32_t : 1")]
+        internal uint EcnCapable
+        {
+            get
+            {
+                return (_bitfield >> 5) & 0x1u;
+            }
+
+            set
+            {
+                _bitfield = (_bitfield & ~(0x1u << 5)) | ((value & 0x1u) << 5);
+            }
+        }
+
+        [NativeTypeName("uint32_t : 26")]
+        internal uint RESERVED
+        {
+            get
+            {
+                return (_bitfield >> 6) & 0x3FFFFFFu;
+            }
+
+            set
+            {
+                _bitfield = (_bitfield & ~(0x3FFFFFFu << 6)) | ((value & 0x3FFFFFFu) << 6);
+            }
+        }
+
         [NativeTypeName("uint32_t")]
         internal uint Rtt;
 
@@ -770,6 +860,12 @@ namespace Microsoft.Quic
 
         [NativeTypeName("uint32_t")]
         internal uint SendCongestionWindow;
+
+        [NativeTypeName("uint32_t")]
+        internal uint DestCidUpdateCount;
+
+        [NativeTypeName("uint32_t")]
+        internal uint SendEcnCongestionCount;
     }
 
     internal partial struct QUIC_LISTENER_STATISTICS
@@ -852,6 +948,9 @@ namespace Microsoft.Quic
         [NativeTypeName("uint16_t")]
         internal ushort LoadBalancingMode;
 
+        [NativeTypeName("uint32_t")]
+        internal uint FixedServerID;
+
         internal ref ulong IsSetFlags
         {
             get
@@ -911,17 +1010,31 @@ namespace Microsoft.Quic
                     }
                 }
 
-                [NativeTypeName("uint64_t : 62")]
-                internal ulong RESERVED
+                [NativeTypeName("uint64_t : 1")]
+                internal ulong FixedServerID
                 {
                     get
                     {
-                        return (_bitfield >> 2) & 0x3FFFFFFFUL;
+                        return (_bitfield >> 2) & 0x1UL;
                     }
 
                     set
                     {
-                        _bitfield = (_bitfield & ~(0x3FFFFFFFUL << 2)) | ((value & 0x3FFFFFFFUL) << 2);
+                        _bitfield = (_bitfield & ~(0x1UL << 2)) | ((value & 0x1UL) << 2);
+                    }
+                }
+
+                [NativeTypeName("uint64_t : 61")]
+                internal ulong RESERVED
+                {
+                    get
+                    {
+                        return (_bitfield >> 3) & 0x1FFFFFFFUL;
+                    }
+
+                    set
+                    {
+                        _bitfield = (_bitfield & ~(0x1FFFFFFFUL << 3)) | ((value & 0x1FFFFFFFUL) << 3);
                     }
                 }
             }
@@ -931,7 +1044,7 @@ namespace Microsoft.Quic
     internal partial struct QUIC_SETTINGS
     {
         [NativeTypeName("QUIC_SETTINGS::(anonymous union)")]
-        internal _Anonymous_e__Union Anonymous;
+        internal _Anonymous1_e__Union Anonymous1;
 
         [NativeTypeName("uint64_t")]
         internal ulong MaxBytesPerKey;
@@ -1077,17 +1190,31 @@ namespace Microsoft.Quic
             }
         }
 
-        [NativeTypeName("uint8_t : 2")]
-        internal byte RESERVED
+        [NativeTypeName("uint8_t : 1")]
+        internal byte GreaseQuicBitEnabled
         {
             get
             {
-                return (byte)((_bitfield >> 6) & 0x3u);
+                return (byte)((_bitfield >> 6) & 0x1u);
             }
 
             set
             {
-                _bitfield = (byte)((_bitfield & ~(0x3u << 6)) | ((value & 0x3u) << 6));
+                _bitfield = (byte)((_bitfield & ~(0x1u << 6)) | ((value & 0x1u) << 6));
+            }
+        }
+
+        [NativeTypeName("uint8_t : 1")]
+        internal byte EcnEnabled
+        {
+            get
+            {
+                return (byte)((_bitfield >> 7) & 0x1u);
+            }
+
+            set
+            {
+                _bitfield = (byte)((_bitfield & ~(0x1u << 7)) | ((value & 0x1u) << 7));
             }
         }
 
@@ -1097,24 +1224,64 @@ namespace Microsoft.Quic
         [NativeTypeName("uint8_t")]
         internal byte MtuDiscoveryMissingProbeCount;
 
+        [NativeTypeName("uint32_t")]
+        internal uint DestCidUpdateIdleTimeoutMs;
+
+        [NativeTypeName("QUIC_SETTINGS::(anonymous union)")]
+        internal _Anonymous2_e__Union Anonymous2;
+
         internal ref ulong IsSetFlags
         {
             get
             {
-                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.IsSetFlags, 1));
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous1.IsSetFlags, 1));
             }
         }
 
-        internal ref _Anonymous_e__Union._IsSet_e__Struct IsSet
+        internal ref _Anonymous1_e__Union._IsSet_e__Struct IsSet
         {
             get
             {
-                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.IsSet, 1));
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous1.IsSet, 1));
+            }
+        }
+
+        internal ref ulong Flags
+        {
+            get
+            {
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous2.Flags, 1));
+            }
+        }
+
+        internal ulong HyStartEnabled
+        {
+            get
+            {
+                return Anonymous2.Anonymous.HyStartEnabled;
+            }
+
+            set
+            {
+                Anonymous2.Anonymous.HyStartEnabled = value;
+            }
+        }
+
+        internal ulong ReservedFlags
+        {
+            get
+            {
+                return Anonymous2.Anonymous.ReservedFlags;
+            }
+
+            set
+            {
+                Anonymous2.Anonymous.ReservedFlags = value;
             }
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        internal partial struct _Anonymous_e__Union
+        internal partial struct _Anonymous1_e__Union
         {
             [FieldOffset(0)]
             [NativeTypeName("uint64_t")]
@@ -1562,8 +1729,8 @@ namespace Microsoft.Quic
                     }
                 }
 
-                [NativeTypeName("uint64_t : 33")]
-                internal ulong RESERVED
+                [NativeTypeName("uint64_t : 1")]
+                internal ulong DestCidUpdateIdleTimeoutMs
                 {
                     get
                     {
@@ -1573,6 +1740,107 @@ namespace Microsoft.Quic
                     set
                     {
                         _bitfield = (_bitfield & ~(0x1UL << 31)) | ((value & 0x1UL) << 31);
+                    }
+                }
+
+                [NativeTypeName("uint64_t : 1")]
+                internal ulong GreaseQuicBitEnabled
+                {
+                    get
+                    {
+                        return (_bitfield >> 32) & 0x1UL;
+                    }
+
+                    set
+                    {
+                        _bitfield = (_bitfield & ~(0x1UL << 32)) | ((value & 0x1UL) << 32);
+                    }
+                }
+
+                [NativeTypeName("uint64_t : 1")]
+                internal ulong EcnEnabled
+                {
+                    get
+                    {
+                        return (_bitfield >> 33) & 0x1UL;
+                    }
+
+                    set
+                    {
+                        _bitfield = (_bitfield & ~(0x1UL << 33)) | ((value & 0x1UL) << 33);
+                    }
+                }
+
+                [NativeTypeName("uint64_t : 1")]
+                internal ulong HyStartEnabled
+                {
+                    get
+                    {
+                        return (_bitfield >> 34) & 0x1UL;
+                    }
+
+                    set
+                    {
+                        _bitfield = (_bitfield & ~(0x1UL << 34)) | ((value & 0x1UL) << 34);
+                    }
+                }
+
+                [NativeTypeName("uint64_t : 29")]
+                internal ulong RESERVED
+                {
+                    get
+                    {
+                        return (_bitfield >> 35) & 0x1FFFFFFFUL;
+                    }
+
+                    set
+                    {
+                        _bitfield = (_bitfield & ~(0x1FFFFFFFUL << 35)) | ((value & 0x1FFFFFFFUL) << 35);
+                    }
+                }
+            }
+        }
+
+        [StructLayout(LayoutKind.Explicit)]
+        internal partial struct _Anonymous2_e__Union
+        {
+            [FieldOffset(0)]
+            [NativeTypeName("uint64_t")]
+            internal ulong Flags;
+
+            [FieldOffset(0)]
+            [NativeTypeName("QUIC_SETTINGS::(anonymous struct)")]
+            internal _Anonymous_e__Struct Anonymous;
+
+            internal partial struct _Anonymous_e__Struct
+            {
+                internal ulong _bitfield;
+
+                [NativeTypeName("uint64_t : 1")]
+                internal ulong HyStartEnabled
+                {
+                    get
+                    {
+                        return _bitfield & 0x1UL;
+                    }
+
+                    set
+                    {
+                        _bitfield = (_bitfield & ~0x1UL) | (value & 0x1UL);
+                    }
+                }
+
+                [NativeTypeName("uint64_t : 63")]
+                internal ulong ReservedFlags
+                {
+                    get
+                    {
+                        return (_bitfield >> 1) & 0x7FFFFFFFUL;
+                    }
+
+                    set
+                    {
+                        _bitfield = (_bitfield & ~(0x7FFFFFFFUL << 1)) | ((value & 0x7FFFFFFFUL) << 1);
                     }
                 }
             }
@@ -1927,6 +2195,14 @@ namespace Microsoft.Quic
             }
         }
 
+        internal ref _Anonymous_e__Union._PEER_NEEDS_STREAMS_e__Struct PEER_NEEDS_STREAMS
+        {
+            get
+            {
+                return ref MemoryMarshal.GetReference(MemoryMarshal.CreateSpan(ref Anonymous.PEER_NEEDS_STREAMS, 1));
+            }
+        }
+
         internal ref _Anonymous_e__Union._IDEAL_PROCESSOR_CHANGED_e__Struct IDEAL_PROCESSOR_CHANGED
         {
             get
@@ -2017,6 +2293,10 @@ namespace Microsoft.Quic
             [FieldOffset(0)]
             [NativeTypeName("struct (anonymous struct)")]
             internal _STREAMS_AVAILABLE_e__Struct STREAMS_AVAILABLE;
+
+            [FieldOffset(0)]
+            [NativeTypeName("struct (anonymous struct)")]
+            internal _PEER_NEEDS_STREAMS_e__Struct PEER_NEEDS_STREAMS;
 
             [FieldOffset(0)]
             [NativeTypeName("struct (anonymous struct)")]
@@ -2147,6 +2427,12 @@ namespace Microsoft.Quic
 
                 [NativeTypeName("uint16_t")]
                 internal ushort UnidirectionalCount;
+            }
+
+            internal partial struct _PEER_NEEDS_STREAMS_e__Struct
+            {
+                [NativeTypeName("BOOLEAN")]
+                internal byte Bidirectional;
             }
 
             internal partial struct _IDEAL_PROCESSOR_CHANGED_e__Struct
@@ -2481,6 +2767,9 @@ namespace Microsoft.Quic
 
                 [NativeTypeName("QUIC_UINT62")]
                 internal ulong ConnectionErrorCode;
+
+                [NativeTypeName("HRESULT")]
+                internal int ConnectionCloseStatus;
             }
 
             internal partial struct _IDEAL_SEND_BUFFER_SIZE_e__Struct
@@ -2579,6 +2868,12 @@ namespace Microsoft.Quic
 
         [NativeTypeName("QUIC_DATAGRAM_SEND_FN")]
         internal delegate* unmanaged[Cdecl]<QUIC_HANDLE*, QUIC_BUFFER*, uint, QUIC_SEND_FLAGS, void*, int> DatagramSend;
+
+        [NativeTypeName("QUIC_CONNECTION_COMP_RESUMPTION_FN")]
+        internal delegate* unmanaged[Cdecl]<QUIC_HANDLE*, byte, int> ConnectionResumptionTicketValidationComplete;
+
+        [NativeTypeName("QUIC_CONNECTION_COMP_CERT_FN")]
+        internal delegate* unmanaged[Cdecl]<QUIC_HANDLE*, byte, QUIC_TLS_ALERT_CODES, int> ConnectionCertificateValidationComplete;
     }
 
     internal static unsafe partial class MsQuic
@@ -2598,6 +2893,9 @@ namespace Microsoft.Quic
 
         [NativeTypeName("#define QUIC_MAX_RESUMPTION_APP_DATA_LENGTH 1000")]
         internal const uint QUIC_MAX_RESUMPTION_APP_DATA_LENGTH = 1000;
+
+        [NativeTypeName("#define QUIC_EXECUTION_CONFIG_MIN_SIZE (uint32_t)FIELD_OFFSET(QUIC_EXECUTION_CONFIG, ProcessorList)")]
+        internal static readonly uint QUIC_EXECUTION_CONFIG_MIN_SIZE = unchecked((uint)((int)(Marshal.OffsetOf<QUIC_EXECUTION_CONFIG>("ProcessorList"))));
 
         [NativeTypeName("#define QUIC_MAX_TICKET_KEY_COUNT 16")]
         internal const uint QUIC_MAX_TICKET_KEY_COUNT = 16;
@@ -2656,8 +2954,8 @@ namespace Microsoft.Quic
         [NativeTypeName("#define QUIC_PARAM_GLOBAL_LIBRARY_GIT_HASH 0x01000008")]
         internal const uint QUIC_PARAM_GLOBAL_LIBRARY_GIT_HASH = 0x01000008;
 
-        [NativeTypeName("#define QUIC_PARAM_GLOBAL_DATAPATH_PROCESSORS 0x01000009")]
-        internal const uint QUIC_PARAM_GLOBAL_DATAPATH_PROCESSORS = 0x01000009;
+        [NativeTypeName("#define QUIC_PARAM_GLOBAL_EXECUTION_CONFIG 0x01000009")]
+        internal const uint QUIC_PARAM_GLOBAL_EXECUTION_CONFIG = 0x01000009;
 
         [NativeTypeName("#define QUIC_PARAM_GLOBAL_TLS_PROVIDER 0x0100000A")]
         internal const uint QUIC_PARAM_GLOBAL_TLS_PROVIDER = 0x0100000A;
@@ -2781,6 +3079,9 @@ namespace Microsoft.Quic
 
         [NativeTypeName("#define QUIC_PARAM_STREAM_PRIORITY 0x08000003")]
         internal const uint QUIC_PARAM_STREAM_PRIORITY = 0x08000003;
+
+        [NativeTypeName("#define QUIC_PARAM_STREAM_STATISTICS 0X08000004")]
+        internal const uint QUIC_PARAM_STREAM_STATISTICS = 0X08000004;
 
         [NativeTypeName("#define QUIC_API_VERSION_2 2")]
         internal const uint QUIC_API_VERSION_2 = 2;

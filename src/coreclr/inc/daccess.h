@@ -97,7 +97,7 @@
 //             pRS=pRS->pright;
 //         else
 //         {
-//             return pRS->pjit;
+//             return pRS->_pjit;
 //         }
 //     }
 //
@@ -108,7 +108,7 @@
 // In the assignment statement the compiler will automatically use
 // the implicit conversion from PTR_RangeSection to RangeSection*,
 // causing a host instance to be created.  Finally, if an appropriate
-// section is found the use of pRS->pjit will cause an implicit
+// section is found the use of pRS->_pjit will cause an implicit
 // conversion from PTR_IJitManager to IJitManager.  The VPTR code
 // will look at target memory to determine the actual derived class
 // for the JitManager and instantiate the right class in the host so
@@ -710,12 +710,15 @@ HRESULT DacWriteHostInstance(PVOID host, bool throwEx);
 // gathering cancelation for details see
 // code:ClrDataAccess.EnumMemoryRegionsWrapper
 
+extern void DacLogMessage(LPCSTR format, ...);
+
 // This is usable in EX_TRY exactly how RethrowTerminalExceptions et cetera
 #define RethrowCancelExceptions                                         \
     if (GET_EXCEPTION()->GetHR() == COR_E_OPERATIONCANCELED)            \
     {                                                                   \
         EX_RETHROW;                                                     \
-    }
+    }                                                                   \
+    DacLogMessage("DAC exception caught at %s:%d\n", __FILE__, __LINE__);
 
 // Occasionally it's necessary to allocate some host memory for
 // instance data that's created on the fly and so doesn't directly
@@ -1024,6 +1027,12 @@ public:
     {
         return DPtrType(DacTAddrOffset(m_addr, val, sizeof(type)));
     }
+#if defined(HOST_UNIX) && defined(HOST_64BIT)
+    DPtrType operator+(unsigned long long val)
+    {
+        return DPtrType(DacTAddrOffset(m_addr, val, sizeof(type)));
+    }
+#endif // HOST_UNIX && HOST_BIT64
     DPtrType operator+(short val)
     {
         return DPtrType(m_addr + val * sizeof(type));
@@ -2463,7 +2472,7 @@ typedef DPTR(PTR_PCODE) PTR_PTR_PCODE;
 
 // Helper macro for tracking EnumMemoryRegions progress.
 #if 0
-#define EMEM_OUT(args) DacWarning args
+#define EMEM_OUT(args) DacLogMessage args
 #else
 #define EMEM_OUT(args)
 #endif

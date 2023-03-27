@@ -423,7 +423,17 @@ namespace System.Net.WebSockets
                 // the task, and we're done.
                 if (writeTask.IsCompleted)
                 {
-                    return writeTask;
+                    writeTask.GetAwaiter().GetResult();
+                    ValueTask flushTask = new ValueTask(_stream.FlushAsync());
+                    if (flushTask.IsCompleted)
+                    {
+                        return flushTask;
+                    }
+                    else
+                    {
+                        releaseSendBufferAndSemaphore = false;
+                        return WaitForWriteTaskAsync(flushTask, shouldFlush: false);
+                    }
                 }
 
                 // Up until this point, if an exception occurred (such as when accessing _stream or when
@@ -447,14 +457,18 @@ namespace System.Net.WebSockets
                 }
             }
 
-            return WaitForWriteTaskAsync(writeTask);
+            return WaitForWriteTaskAsync(writeTask, shouldFlush: true);
         }
 
-        private async ValueTask WaitForWriteTaskAsync(ValueTask writeTask)
+        private async ValueTask WaitForWriteTaskAsync(ValueTask writeTask, bool shouldFlush)
         {
             try
             {
                 await writeTask.ConfigureAwait(false);
+                if (shouldFlush)
+                {
+                    await _stream.FlushAsync().ConfigureAwait(false);
+                }
             }
             catch (Exception exc) when (!(exc is OperationCanceledException))
             {
@@ -478,6 +492,7 @@ namespace System.Net.WebSockets
                 using (cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this))
                 {
                     await _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes), cancellationToken).ConfigureAwait(false);
+                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception exc) when (!(exc is OperationCanceledException))
@@ -1381,11 +1396,7 @@ namespace System.Net.WebSockets
             // The connection closed before we were able to read everything we needed.
             // If it was due to us being disposed, fail with the correct exception.
             // Otherwise, it was due to the connection being closed and it wasn't expected.
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(WebSocket));
-            }
-
+            ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
             throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
         }
 
@@ -1524,7 +1535,7 @@ namespace System.Net.WebSockets
         private static void ThrowOperationInProgress(string? methodName) => throw new InvalidOperationException(SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, methodName));
 
         /// <summary>Creates an OperationCanceledException instance, using a default message and the specified inner exception and token.</summary>
-        private static Exception CreateOperationCanceledException(Exception innerException, CancellationToken cancellationToken = default(CancellationToken))
+        private static OperationCanceledException CreateOperationCanceledException(Exception innerException, CancellationToken cancellationToken = default(CancellationToken))
         {
             return new OperationCanceledException(
                 new OperationCanceledException().Message,

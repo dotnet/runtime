@@ -9,7 +9,7 @@ using System.Text;
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
-    /// The <see cref="SpanMarshaller{T, TUnmanagedElement}"/> type supports marshalling a <see cref="Span{T}"/> from managed value
+    /// Supports marshalling a <see cref="Span{T}"/> from managed value
     /// to a contiguous native array of the unmanaged values of the elements.
     /// </summary>
     /// <typeparam name="T">The managed element type of the span.</typeparam>
@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.Marshalling
         where TUnmanagedElement : unmanaged
     {
         /// <summary>
-        /// Allocate the space to store the unmanaged elements.
+        /// Allocates the space to store the unmanaged elements.
         /// </summary>
         /// <param name="managed">The managed span.</param>
         /// <param name="numElements">The number of elements in the span.</param>
@@ -49,7 +49,7 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 
         /// <summary>
-        /// Get a span of the managed collection elements.
+        /// Gets a span of the managed collection elements.
         /// </summary>
         /// <param name="managed">The managed collection.</param>
         /// <returns>A span of the managed collection elements.</returns>
@@ -57,7 +57,7 @@ namespace System.Runtime.InteropServices.Marshalling
             => managed;
 
         /// <summary>
-        /// Get a span of the space where the unmanaged collection elements should be stored.
+        /// Gets a span of the space where the unmanaged collection elements should be stored.
         /// </summary>
         /// <param name="unmanaged">The pointer to the block of memory for the unmanaged elements.</param>
         /// <param name="numElements">The number of elements that will be copied into the memory block.</param>
@@ -66,7 +66,7 @@ namespace System.Runtime.InteropServices.Marshalling
             => new Span<TUnmanagedElement>(unmanaged, numElements);
 
         /// <summary>
-        /// Allocate the space to store the managed elements.
+        /// Allocates space to store the managed elements.
         /// </summary>
         /// <param name="unmanaged">The unmanaged value.</param>
         /// <param name="numElements">The number of elements in the unmanaged collection.</param>
@@ -80,15 +80,15 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 
         /// <summary>
-        /// Get a span of the space where the managed collection elements should be stored.
+        /// Gets a span of the space where the managed collection elements should be stored.
         /// </summary>
-        /// <param name="managed">A span over the space to store the managed elements</param>
+        /// <param name="managed">A span over the space to store the managed elements.</param>
         /// <returns>A span over the managed memory that can contain the specified number of elements.</returns>
         public static Span<T> GetManagedValuesDestination(Span<T> managed)
             => managed;
 
         /// <summary>
-        /// Get a span of the native collection elements.
+        /// Gets a span of the native collection elements.
         /// </summary>
         /// <param name="unmanaged">The unmanaged value.</param>
         /// <param name="numElements">The number of elements in the unmanaged collection.</param>
@@ -97,14 +97,14 @@ namespace System.Runtime.InteropServices.Marshalling
             => new ReadOnlySpan<TUnmanagedElement>(unmanaged, numElements);
 
         /// <summary>
-        /// Free the allocated unmanaged memory.
+        /// Frees the allocated unmanaged memory.
         /// </summary>
-        /// <param name="unmanaged">Allocated unmanaged memory</param>
+        /// <param name="unmanaged">A pointer to the allocated unmanaged memory.</param>
         public static void Free(TUnmanagedElement* unmanaged)
             => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 
         /// <summary>
-        /// The marshaller type that supports marshalling from managed into unmanaged in a call from managed code to unmanaged code.
+        /// Supports marshalling from managed into unmanaged in a call from managed code to unmanaged code.
         /// </summary>
         public ref struct ManagedToUnmanagedIn
         {
@@ -118,8 +118,8 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <summary>
             /// Initializes the <see cref="SpanMarshaller{T, TUnmanagedElement}.ManagedToUnmanagedIn"/> marshaller.
             /// </summary>
-            /// <param name="managed">Span to be marshalled.</param>
-            /// <param name="buffer">Buffer that may be used for marshalling.</param>
+            /// <param name="managed">The span to be marshalled.</param>
+            /// <param name="buffer">The buffer that may be used for marshalling.</param>
             /// <remarks>
             /// The <paramref name="buffer"/> must not be movable - that is, it should not be
             /// on the managed heap or it should be pinned.
@@ -153,13 +153,13 @@ namespace System.Runtime.InteropServices.Marshalling
             /// <summary>
             /// Gets a span that points to the memory where the managed values of the array are stored.
             /// </summary>
-            /// <returns>Span over managed values of the array.</returns>
+            /// <returns>A span over the managed values of the array.</returns>
             public ReadOnlySpan<T> GetManagedValuesSource() => _managedArray;
 
             /// <summary>
             /// Returns a span that points to the memory where the unmanaged values of the array should be stored.
             /// </summary>
-            /// <returns>Span where unmanaged values of the array should be stored.</returns>
+            /// <returns>A span where unmanaged values of the array should be stored.</returns>
             public Span<TUnmanagedElement> GetUnmanagedValuesDestination() => _span;
 
             /// <summary>

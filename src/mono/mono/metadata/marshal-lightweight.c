@@ -8,14 +8,13 @@
 #include <alloca.h>
 #endif
 
-#include "metadata/method-builder-ilgen.h"
-#include "metadata/method-builder-ilgen-internals.h"
+#include "mono/metadata/method-builder-ilgen.h"
+#include "mono/metadata/method-builder-ilgen-internals.h"
 #include <mono/metadata/object.h>
 #include <mono/metadata/loader.h>
 #include "cil-coff.h"
 #include "metadata/marshal.h"
 #include "metadata/marshal-internals.h"
-#include "metadata/marshal-ilgen.h"
 #include "metadata/marshal-lightweight.h"
 #include "metadata/marshal-shared.h"
 #include "metadata/tabledefs.h"
@@ -24,6 +23,7 @@
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/class-abi-details.h"
 #include "mono/metadata/class-init.h"
+#include "mono/metadata/components.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/threads.h"
 #include "mono/metadata/monitor.h"
@@ -289,7 +289,6 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 				  gboolean virtual_, gboolean need_direct_wrapper)
 {
 	int i;
-	int *tmp_nullable_locals;
 	gboolean void_ret = FALSE;
 	gboolean string_ctor = method && method->string_ctor;
 
@@ -308,8 +307,6 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 		}
 	}
 
-	tmp_nullable_locals = g_new0 (int, sig->param_count);
-
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *t = sig->params [i];
 		int type;
@@ -322,16 +319,6 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 
 		if (m_type_is_byref (t)) {
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
-			/* A Nullable<T> type don't have a boxed form, it's either null or a boxed T.
-			 * So to make this work we unbox it to a local variablee and push a reference to that.
-			 */
-			if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
-				tmp_nullable_locals [i] = mono_mb_add_local (mb, m_class_get_byval_arg (mono_class_from_mono_type_internal (t)));
-
-				mono_mb_emit_op (mb, CEE_UNBOX_ANY, mono_class_from_mono_type_internal (t));
-				mono_mb_emit_stloc (mb, tmp_nullable_locals [i]);
-				mono_mb_emit_ldloc_addr (mb, tmp_nullable_locals [i]);
-			}
 			continue;
 		}
 
@@ -384,13 +371,7 @@ handle_enum:
 			}
 			mono_mb_emit_no_nullcheck (mb);
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
-			if (mono_class_is_nullable (mono_class_from_mono_type_internal (sig->params [i]))) {
-				/* Need to convert a boxed vtype to an mp to a Nullable struct */
-				mono_mb_emit_op (mb, CEE_UNBOX, mono_class_from_mono_type_internal (sig->params [i]));
-				mono_mb_emit_op (mb, CEE_LDOBJ, mono_class_from_mono_type_internal (sig->params [i]));
-			} else {
-				mono_mb_emit_op (mb, CEE_LDOBJ, mono_class_from_mono_type_internal (sig->params [i]));
-			}
+			mono_mb_emit_op (mb, CEE_LDOBJ, mono_class_from_mono_type_internal (sig->params [i]));
 			break;
 		default:
 			g_assert_not_reached ();
@@ -408,16 +389,9 @@ handle_enum:
 
 	if (m_type_is_byref (sig->ret)) {
 		/* perform indirect load and return by value */
-		int pos;
-		mono_mb_emit_byte (mb, CEE_DUP);
-		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
-		mono_mb_emit_exception_full (mb, "Mono", "NullByRefReturnException", NULL);
-		mono_mb_patch_branch (mb, pos);
-
 		guint8 ldind_op;
 		MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
 		g_assert (!m_type_is_byref (ret_byval));
-		// TODO: Handle null references
 		ldind_op = mono_type_to_ldind (ret_byval);
 		/* taken from similar code in mini-generic-sharing.c
 		 * we need to use mono_mb_emit_op to add method data when loading
@@ -470,28 +444,6 @@ handle_enum:
 
 	if (!void_ret)
 		mono_mb_emit_stloc (mb, loc_res);
-
-	/* Convert back nullable-byref arguments */
-	for (i = 0; i < sig->param_count; i++) {
-		MonoType *t = sig->params [i];
-
-		/*
-		 * Box the result and put it back into the array, the caller will have
-		 * to obtain it from there.
-		 */
-		if (m_type_is_byref (t) && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
-			mono_mb_emit_ldarg (mb, 1);
-			mono_mb_emit_icon (mb, TARGET_SIZEOF_VOID_P * i);
-			mono_mb_emit_byte (mb, CEE_ADD);
-
-			mono_mb_emit_ldloc (mb, tmp_nullable_locals [i]);
-			mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type_internal (t));
-
-			mono_mb_emit_byte (mb, CEE_STIND_REF);
-		}
-	}
-
-	g_free (tmp_nullable_locals);
 }
 
 static void
@@ -742,6 +694,87 @@ gc_safe_transition_builder_cleanup (GCSafeTransitionBuilder *builder)
 #ifndef DISABLE_COM
 	builder->coop_cominterop_fnptr = -1;
 #endif
+}
+
+typedef struct EmitGCUnsafeTransitionBuilder {
+	MonoMethodBuilder *mb;
+	int orig_domain_var;
+	int attach_cookie_var;
+} GCUnsafeTransitionBuilder;
+
+static void
+gc_unsafe_transition_builder_init (GCUnsafeTransitionBuilder *builder, MonoMethodBuilder *mb, gboolean use_attach)
+{
+	g_assert_checked (use_attach);
+	// Right now we always set use_attach and use mono_threads_coop_attach to enter into gc
+	// unsafe regions.  If !use_attach is needed (ie adding transitions, using
+	// mono_threads_enter_gc_unsafe_region_unbalanced) that needs to be implemented.
+	builder->mb = mb;
+	builder->orig_domain_var = -1;
+	builder->attach_cookie_var = -1;
+}
+
+static void
+gc_unsafe_transition_builder_add_vars (GCUnsafeTransitionBuilder *builder)
+{
+	MonoType *int_type = mono_get_int_type ();
+	builder->orig_domain_var = mono_mb_add_local (builder->mb, int_type);
+	builder->attach_cookie_var = mono_mb_add_local (builder->mb, int_type);
+}
+
+static void
+gc_unsafe_transition_builder_emit_enter (GCUnsafeTransitionBuilder *builder)
+{
+	MonoMethodBuilder *mb = builder->mb;
+	int attach_cookie = builder->attach_cookie_var;
+	int orig_domain = builder->orig_domain_var;
+	/*
+	 * // does (STARTING|RUNNING|BLOCKING) -> RUNNING + set/switch domain
+	 * intptr_t attach_cookie;
+	 * intptr_t orig_domain = mono_threads_attach_coop (domain, &attach_cookie);
+	 * <interrupt check>
+	 */
+	/* orig_domain = mono_threads_attach_coop (domain, &attach_cookie); */
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	mono_mb_emit_byte (mb, CEE_MONO_LDDOMAIN);
+	mono_mb_emit_ldloc_addr (mb, attach_cookie);
+	/*
+	 * This icall is special cased in the JIT so it works in native-to-managed wrappers in unattached threads.
+	 * Keep this in sync with the CEE_JIT_ICALL code in the JIT.
+	 *
+	 * Special cased in interpreter, keep in sync.
+	 */
+	mono_mb_emit_icall (mb, mono_threads_attach_coop);
+	mono_mb_emit_stloc (mb, orig_domain);
+
+	/* <interrupt check> */
+	emit_thread_interrupt_checkpoint (mb);
+}
+
+static void
+gc_unsafe_transition_builder_emit_exit (GCUnsafeTransitionBuilder *builder)
+{
+	MonoMethodBuilder *mb = builder->mb;
+	int orig_domain = builder->orig_domain_var;
+	int attach_cookie = builder->attach_cookie_var;
+	/*
+	 * // does RUNNING -> (RUNNING|BLOCKING) + unset/switch domain
+	 * mono_threads_detach_coop (orig_domain, &attach_cookie);
+	 */
+
+	/* mono_threads_detach_coop (orig_domain, &attach_cookie); */
+	mono_mb_emit_ldloc (mb, orig_domain);
+	mono_mb_emit_ldloc_addr (mb, attach_cookie);
+	/* Special cased in interpreter, keep in sync */
+	mono_mb_emit_icall (mb, mono_threads_detach_coop);
+}
+
+static void
+gc_unsafe_transition_builder_cleanup (GCUnsafeTransitionBuilder *builder)
+{
+	builder->mb = NULL;
+	builder->orig_domain_var = -1;
+	builder->attach_cookie_var = -1;
 }
 
 static gboolean
@@ -997,6 +1030,7 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 		klass = mono_class_from_mono_type_internal (sig->ret);
 		mono_class_init_internal (klass);
 		if (!(mono_class_is_explicit_layout (klass) || m_class_is_blittable (klass))) {
+			/* TODO: marshal-lightweight: can this move to marshal-ilgen? */
 			/* This is used by emit_marshal_vtype (), but it needs to go right before the call */
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
@@ -2300,7 +2334,7 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	MonoImage *image = get_method_image (method);
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	int param_count = sig->param_count + sig->hasthis + 1;
-	int pos_leave, coop_gc_var = 0;
+	int pos_leave;
 	MonoExceptionClause *clause;
 	MonoType *object_type = mono_get_object_type ();
 #if defined (TARGET_WASM)
@@ -2313,6 +2347,10 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 #else
 	const gboolean do_blocking_transition = TRUE;
 #endif
+	GCUnsafeTransitionBuilder gc_unsafe_builder = {0,};
+
+	if (do_blocking_transition)
+		gc_unsafe_transition_builder_init (&gc_unsafe_builder, mb, TRUE);
 
 	/* local 0 (temp for exception object) */
 	mono_mb_add_local (mb, object_type);
@@ -2322,8 +2360,7 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 		mono_mb_add_local (mb, sig->ret);
 
 	if (do_blocking_transition) {
-		/* local 4, the local to be used when calling the suspend funcs */
-		coop_gc_var = mono_mb_add_local (mb, mono_get_int_type ());
+		gc_unsafe_transition_builder_add_vars (&gc_unsafe_builder);
 	}
 
 	/* clear exception arg */
@@ -2332,10 +2369,7 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	mono_mb_emit_byte (mb, CEE_STIND_REF);
 
 	if (do_blocking_transition) {
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_GET_SP);
-		mono_mb_emit_icall (mb, mono_threads_enter_gc_unsafe_region_unbalanced);
-		mono_mb_emit_stloc (mb, coop_gc_var);
+		gc_unsafe_transition_builder_emit_enter (&gc_unsafe_builder);
 	}
 
 	/* try */
@@ -2408,10 +2442,9 @@ emit_thunk_invoke_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	}
 
 	if (do_blocking_transition) {
-		mono_mb_emit_ldloc (mb, coop_gc_var);
-		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-		mono_mb_emit_byte (mb, CEE_MONO_GET_SP);
-		mono_mb_emit_icall (mb, mono_threads_exit_gc_unsafe_region_unbalanced);
+		gc_unsafe_transition_builder_emit_exit (&gc_unsafe_builder);
+
+		gc_unsafe_transition_builder_cleanup (&gc_unsafe_builder);
 	}
 
 	mono_mb_emit_byte (mb, CEE_RET);
@@ -2458,11 +2491,12 @@ emit_managed_wrapper_validate_signature (MonoMethodSignature* sig, MonoMarshalSp
 }
 
 static void
-emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, MonoError *error)
+emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_sig, MonoMarshalSpec **mspecs, EmitMarshalContext* m, MonoMethod *method, MonoGCHandle target_handle, gboolean runtime_init_callback, MonoError *error)
 {
 	MonoMethodSignature *sig, *csig;
-	int i, *tmp_locals, orig_domain, attach_cookie;
+	int i, *tmp_locals;
 	gboolean closed = FALSE;
+	GCUnsafeTransitionBuilder gc_unsafe_builder = {0,};
 
 	sig = m->sig;
 	csig = m->csig;
@@ -2500,8 +2534,8 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	if (MONO_TYPE_ISSTRUCT (sig->ret))
 		m->vtaddr_var = mono_mb_add_local (mb, int_type);
 
-	orig_domain = mono_mb_add_local (mb, int_type);
-	attach_cookie = mono_mb_add_local (mb, int_type);
+	gc_unsafe_transition_builder_init (&gc_unsafe_builder, mb, TRUE);
+	gc_unsafe_transition_builder_add_vars (&gc_unsafe_builder);
 
 	/*
 	 * // does (STARTING|RUNNING|BLOCKING) -> RUNNING + set/switch domain
@@ -2516,24 +2550,19 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	 * return ret;
 	 */
 
+	/* delete_old = FALSE */
 	mono_mb_emit_icon (mb, 0);
 	mono_mb_emit_stloc (mb, 2);
 
-	/* orig_domain = mono_threads_attach_coop (domain, &attach_cookie); */
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_LDDOMAIN);
-	mono_mb_emit_ldloc_addr (mb, attach_cookie);
 	/*
-	 * This icall is special cased in the JIT so it works in native-to-managed wrappers in unattached threads.
-	 * Keep this in sync with the CEE_JIT_ICALL code in the JIT.
-	 *
-	 * Special cased in interpreter, keep in sync.
-	 */
-	mono_mb_emit_icall (mb, mono_threads_attach_coop);
-	mono_mb_emit_stloc (mb, orig_domain);
+	* Transformed into a direct icall when runtime init callback is enabled for a native-to-managed wrapper.
+	* This icall is special cased in the JIT so it can be called in native-to-managed wrapper before
+	* runtime has been initialized. On return, runtime must be fully initialized.
+	*/
+	if (runtime_init_callback)
+		mono_mb_emit_icall (mb, mono_dummy_runtime_init_callback);
 
-	/* <interrupt check> */
-	emit_thread_interrupt_checkpoint (mb);
+	gc_unsafe_transition_builder_emit_enter(&gc_unsafe_builder);
 
 	/* we first do all conversions */
 	tmp_locals = g_newa (int, sig->param_count);
@@ -2596,6 +2625,7 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
 		mono_class_init_internal (klass);
 		if (!(mono_class_is_explicit_layout (klass) || m_class_is_blittable (klass))) {
+			/* TODO: marshal-lightweight: can this move to marshal-ilgen? */
 			/* This is used by get_marshal_cb ()->emit_marshal_vtype (), but it needs to go right before the call */
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_byte (mb, CEE_MONO_VTADDR);
@@ -2675,6 +2705,8 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 			case MONO_TYPE_SZARRAY:
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_VALUETYPE:
+			case MONO_TYPE_PTR:
+			case MONO_TYPE_I:
 				mono_emit_marshal (m, i, invoke_sig->params [i], mspecs [i + 1], tmp_locals [i], NULL, MARSHAL_ACTION_MANAGED_CONV_OUT);
 				break;
 			default:
@@ -2683,11 +2715,9 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		}
 	}
 
-	/* mono_threads_detach_coop (orig_domain, &attach_cookie); */
-	mono_mb_emit_ldloc (mb, orig_domain);
-	mono_mb_emit_ldloc_addr (mb, attach_cookie);
-	/* Special cased in interpreter, keep in sync */
-	mono_mb_emit_icall (mb, mono_threads_detach_coop);
+	gc_unsafe_transition_builder_emit_exit (&gc_unsafe_builder);
+
+	gc_unsafe_transition_builder_cleanup (&gc_unsafe_builder);
 
 	/* return ret; */
 	if (m->retobj_var) {
@@ -3136,8 +3166,5 @@ mono_marshal_lightweight_init (void)
 	cb.mb_emit_exception_for_error = mb_emit_exception_for_error_ilgen;
 	cb.mb_emit_byte = mb_emit_byte_ilgen;
 	cb.emit_marshal_directive_exception = emit_marshal_directive_exception_ilgen;
-#ifdef DISABLE_NONBLITTABLE
-	mono_marshal_noilgen_init_blittable (&cb);
-#endif
 	mono_install_marshal_callbacks (&cb);
 }

@@ -279,10 +279,12 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
-        public void MulticastLoopback_Roundtrips()
+        [Theory]
+        [InlineData(AddressFamily.InterNetwork)]
+        [InlineData(AddressFamily.InterNetworkV6)]
+        public void MulticastLoopback_Roundtrips(AddressFamily addressFamily)
         {
-            using (var udpClient = new UdpClient())
+            using (var udpClient = new UdpClient(addressFamily))
             {
                 Assert.True(udpClient.MulticastLoopback);
                 udpClient.MulticastLoopback = false;
@@ -628,10 +630,10 @@ namespace System.Net.Sockets.Tests
             using (var sender = new UdpClient(new IPEndPoint(address, 0)))
             {
                 await sender.SendAsync(new byte[1], 1, new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
-				await AssertReceiveAsync(receiver);
-				
-				await sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
-				await AssertReceiveAsync(receiver);
+                await AssertReceiveAsync(receiver);
+
+                await sender.SendAsync(new ReadOnlyMemory<byte>(new byte[1]), new IPEndPoint(address, ((IPEndPoint)receiver.Client.LocalEndPoint).Port));
+                await AssertReceiveAsync(receiver);
             }
         }
 
@@ -747,13 +749,13 @@ namespace System.Net.Sockets.Tests
                 AssertExtensions.Throws<ArgumentNullException>("multicastAddr", () => udpClient.JoinMulticastGroup(null));
                 AssertExtensions.Throws<ArgumentNullException>("multicastAddr", () => udpClient.JoinMulticastGroup(0, null));
                 AssertExtensions.Throws<ArgumentNullException>("multicastAddr", () => udpClient.JoinMulticastGroup(null, 0));
-                AssertExtensions.Throws<ArgumentException>("ifindex", () => udpClient.JoinMulticastGroup(-1, IPAddress.Any));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("ifindex", () => udpClient.JoinMulticastGroup(-1, IPAddress.Any));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("timeToLive", () => udpClient.JoinMulticastGroup(IPAddress.Loopback, -1));
 
                 AssertExtensions.Throws<ArgumentNullException>("multicastAddr", () => udpClient.DropMulticastGroup(null));
                 AssertExtensions.Throws<ArgumentNullException>("multicastAddr", () => udpClient.DropMulticastGroup(null, 0));
                 AssertExtensions.Throws<ArgumentException>("multicastAddr", () => udpClient.DropMulticastGroup(IPAddress.IPv6Loopback));
-                AssertExtensions.Throws<ArgumentException>("ifindex", () => udpClient.DropMulticastGroup(IPAddress.Loopback, -1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("ifindex", () => udpClient.DropMulticastGroup(IPAddress.Loopback, -1));
             }
         }
 

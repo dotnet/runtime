@@ -150,56 +150,68 @@ namespace BINDER_SPACE
         isNativeImage = false;
 
         HRESULT pathResult = S_OK;
-        IF_FAIL_GO(pathResult = GetNextPath(paths, startPos, outPath));
-        if (pathResult == S_FALSE)
+        while(true)
         {
-            return S_FALSE;
-        }
-
-        if (Path::IsRelative(outPath))
-        {
-            GO_WITH_HRESULT(E_INVALIDARG);
-        }
-
-        {
-            // Find the beginning of the simple name
-            SString::CIterator iSimpleNameStart = outPath.End();
-
-            if (!outPath.FindBack(iSimpleNameStart, DIRECTORY_SEPARATOR_CHAR_W))
+            IF_FAIL_GO(pathResult = GetNextPath(paths, startPos, outPath));
+            if (pathResult == S_FALSE)
             {
-                iSimpleNameStart = outPath.Begin();
-            }
-            else
-            {
-                // Advance past the directory separator to the first character of the file name
-                iSimpleNameStart++;
+                return S_FALSE;
             }
 
-            if (iSimpleNameStart == outPath.End())
+            if (Path::IsRelative(outPath))
             {
                 GO_WITH_HRESULT(E_INVALIDARG);
             }
 
-            const SString sNiDll(SString::Literal, W(".ni.dll"));
-            const SString sNiExe(SString::Literal, W(".ni.exe"));
-            const SString sDll(SString::Literal, W(".dll"));
-            const SString sExe(SString::Literal, W(".exe"));
+            {
+                // Find the beginning of the simple name
+                SString::CIterator iSimpleNameStart = outPath.End();
 
-            if (!dllOnly && (outPath.EndsWithCaseInsensitive(sNiDll) ||
-                outPath.EndsWithCaseInsensitive(sNiExe)))
-            {
-                simpleName.Set(outPath, iSimpleNameStart, outPath.End() - 7);
-                isNativeImage = true;
-            }
-            else if (outPath.EndsWithCaseInsensitive(sDll) ||
-                (!dllOnly && outPath.EndsWithCaseInsensitive(sExe)))
-            {
-                simpleName.Set(outPath, iSimpleNameStart, outPath.End() - 4);
-            }
-            else
-            {
-                // Invalid filename
-                GO_WITH_HRESULT(E_INVALIDARG);
+                if (!outPath.FindBack(iSimpleNameStart, DIRECTORY_SEPARATOR_CHAR_W))
+                {
+                    iSimpleNameStart = outPath.Begin();
+                }
+                else
+                {
+                    // Advance past the directory separator to the first character of the file name
+                    iSimpleNameStart++;
+                }
+
+                if (iSimpleNameStart == outPath.End())
+                {
+                    GO_WITH_HRESULT(E_INVALIDARG);
+                }
+
+                const SString sNiDll(SString::Literal, W(".ni.dll"));
+                const SString sNiExe(SString::Literal, W(".ni.exe"));
+                const SString sDll(SString::Literal, W(".dll"));
+                const SString sExe(SString::Literal, W(".exe"));
+
+                if (dllOnly && (outPath.EndsWithCaseInsensitive(sExe) ||
+                    outPath.EndsWithCaseInsensitive(sNiExe)))
+                {
+                    // Skip exe files when the caller requested only dlls
+                    continue;
+                }
+
+                if (outPath.EndsWithCaseInsensitive(sNiDll) ||
+                    outPath.EndsWithCaseInsensitive(sNiExe))
+                {
+                    simpleName.Set(outPath, iSimpleNameStart, outPath.End() - 7);
+                    isNativeImage = true;
+                }
+                else if (outPath.EndsWithCaseInsensitive(sDll) ||
+                    outPath.EndsWithCaseInsensitive(sExe))
+                {
+                    simpleName.Set(outPath, iSimpleNameStart, outPath.End() - 4);
+                }
+                else
+                {
+                    // Invalid filename
+                    GO_WITH_HRESULT(E_INVALIDARG);
+                }
+
+                break;
             }
         }
 

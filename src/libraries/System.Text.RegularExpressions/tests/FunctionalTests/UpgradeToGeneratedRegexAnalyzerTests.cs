@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions.Generator;
@@ -107,7 +108,7 @@ partial class Program
 
         public static IEnumerable<object[]> StaticInvocationWithTimeoutTestData()
         {
-            foreach(string method in new[] { "Count",  "EnumerateMatches", "IsMatch", "Match", "Matches", "Split"})
+            foreach (string method in new[] { "Count", "EnumerateMatches", "IsMatch", "Match", "Matches", "Split" })
             {
                 yield return new object[] { @"using System;
 using System.Text.RegularExpressions;
@@ -179,6 +180,58 @@ public class Program
                 FixedCode = test,
                 LanguageVersion = LanguageVersion.CSharp10,
             }.RunAsync();
+        }
+
+        [Fact]
+        public async Task CodeFixSupportsInvalidPatternFromWhichOptionsCanBeParsed()
+        {
+            string pattern = ".{99999999999}"; // throws during real parse
+            string test = $@"using System.Text;
+using System.Text.RegularExpressions;
+
+public class Program
+{{
+    public static void Main(string[] args)
+    {{
+        var isMatch = [|Regex.IsMatch("""", @""{pattern}"")|];
+    }}
+}}";
+
+            string fixedSource = @$"using System.Text;
+using System.Text.RegularExpressions;
+
+public partial class Program
+{{
+    public static void Main(string[] args)
+    {{
+        var isMatch = MyRegex().IsMatch("""");
+    }}
+
+    [GeneratedRegex(@""{pattern}"")]
+    private static partial Regex MyRegex();
+}}";
+            // We successfully offer the diagnostic and make the fix despite the pattern
+            // being invalid, because it was valid enough to parse out any options in the pattern.
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
+        public async Task CodeFixIsNotOfferedForInvalidPatternFromWhichOptionsCannotBeParsed()
+        {
+            string pattern = "\\g"; // throws during pre-parse for options
+            string test = $@"using System.Text;
+using System.Text.RegularExpressions;
+
+public class Program
+{{
+    public static void Main(string[] args)
+    {{
+        var isMatch = Regex.IsMatch("""", @""{pattern}""); // fixer not offered
+    }}
+}}";
+            // We need to be able to parse the pattern sufficiently that we can extract
+            // any inline options; in this case we can't, so we don't offer the fix.
+            await VerifyCS.VerifyCodeFixAsync(test, test);
         }
 
         public static IEnumerable<object[]> ConstantPatternTestData()
@@ -559,7 +612,7 @@ public partial class Program
 
             foreach (bool includeRegexOptions in new[] { true, false })
             {
-                foreach (string methodName in new[] { "Count", "EnumerateMatches" , "IsMatch", "Match", "Matches", "Split" })
+                foreach (string methodName in new[] { "Count", "EnumerateMatches", "IsMatch", "Match", "Matches", "Split" })
                 {
                     if (includeRegexOptions)
                     {
@@ -761,6 +814,37 @@ partial class Program
         }
 
         [Fact]
+        public async Task CodeFixerDoesNotSimplifyStyle()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+class Program
+{
+    static void Main()
+    {
+        int i = (4 - 4); // this shouldn't be changed by fixer
+        Regex r = [|new Regex(options: RegexOptions.None, pattern: ""a|b"")|];
+    }
+}";
+
+            string fixedSource = @"using System.Text.RegularExpressions;
+
+partial class Program
+{
+    static void Main()
+    {
+        int i = (4 - 4); // this shouldn't be changed by fixer
+        Regex r = MyRegex();
+    }
+
+    [GeneratedRegex(""a|b"", RegexOptions.None)]
+    private static partial Regex MyRegex();
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
+        }
+
+        [Fact]
         public async Task TopLevelStatements_MultipleSourceFiles()
         {
             await new VerifyCS.Test
@@ -791,7 +875,7 @@ partial class Program
 static class Class
 {
     public static string CollapseWhitespace(this string text) =>
-        [|Regex.Replace(text, @"" \s+"" , ""  "")|];
+        [|Regex.Replace(text, "" \\s+"" , ""  "")|];
 }";
 
             string expectedFixedCode = @"using System.Text.RegularExpressions;
@@ -801,6 +885,168 @@ static partial class Class
     public static string CollapseWhitespace(this string text) =>
         MyRegex().Replace(text, ""  "");
     [GeneratedRegex("" \\s+"")]
+    private static partial Regex MyRegex();
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
+        }
+
+        [Fact]
+        public async Task VerbatimStringLiteralSyntaxPreservedByFixer()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+static class Class
+{
+    public static string CollapseWhitespace(this string text) =>
+        [|Regex.Replace(text, @"" \s+"" , @""  "")|];
+}";
+
+            string expectedFixedCode = @"using System.Text.RegularExpressions;
+
+static partial class Class
+{
+    public static string CollapseWhitespace(this string text) =>
+        MyRegex().Replace(text, @""  "");
+    [GeneratedRegex(@"" \s+"")]
+    private static partial Regex MyRegex();
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
+        }
+
+        [Fact]
+        public async Task RawStringLiteralSyntaxPreservedByFixer()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+static class Class
+{
+    public static string CollapseWhitespace(this string text) =>
+        [|Regex.Replace(text, """"""
+                              \s+
+                              """""",
+                              """""""" hello """""" world """""""")|];
+}";
+
+            string expectedFixedCode = @"using System.Text.RegularExpressions;
+
+static partial class Class
+{
+    public static string CollapseWhitespace(this string text) =>
+        MyRegex().Replace(text, """""""" hello """""" world """""""");
+    [GeneratedRegex(""""""
+                              \s+
+                              """""")]
+    private static partial Regex MyRegex();
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
+        }
+
+        [Fact]
+        public async Task InterpolatedStringLiteralSyntaxPreservedByFixer()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+partial class Program
+{
+    static void Main(string[] args)
+    {
+        const string pattern = @""a|b\s\n"";
+        const string pattern2 = $""{pattern}2"";
+
+        Regex regex = [|new Regex(pattern2)|];
+    }
+}";
+
+            string expectedFixedCode = @"using System.Text.RegularExpressions;
+
+partial class Program
+{
+    static void Main(string[] args)
+    {
+        const string pattern = @""a|b\s\n"";
+        const string pattern2 = $""{pattern}2"";
+
+        Regex regex = MyRegex();
+    }
+
+    [GeneratedRegex(@""a|b\s\n2"")]
+    private static partial Regex MyRegex();
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
+        }
+
+        [Fact]
+        public async Task InterpolatedStringLiteralSyntaxFixedWhenStringLiteralIsConstantField()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+partial class Program
+{
+    const string pattern = @""a|b\s\n"";
+    const string pattern2 = $""{pattern}2"";
+
+    static void Main(string[] args)
+    {
+        Regex regex = [|new Regex(pattern2)|];
+    }
+}";
+
+            string expectedFixedCode = @"using System.Text.RegularExpressions;
+
+partial class Program
+{
+    const string pattern = @""a|b\s\n"";
+    const string pattern2 = $""{pattern}2"";
+
+    static void Main(string[] args)
+    {
+        Regex regex = MyRegex();
+    }
+
+    [GeneratedRegex(pattern2)]
+    private static partial Regex MyRegex();
+}";
+
+            await VerifyCS.VerifyCodeFixAsync(test, expectedFixedCode);
+        }
+
+        [Fact]
+        public async Task InterpolatedStringLiteralSyntaxFixedWhenStringLiteralIsExternalConstantField()
+        {
+            string test = @"using System.Text.RegularExpressions;
+
+internal class GlobalConstants
+{
+    const string pattern = @""a|b\s\n"";
+    internal const string pattern2 = $""{pattern}2"";
+}
+partial class Program
+{
+    static void Main(string[] args)
+    {
+        Regex regex = [|new Regex(GlobalConstants.pattern2)|];
+    }
+}";
+
+            string expectedFixedCode = @"using System.Text.RegularExpressions;
+
+internal class GlobalConstants
+{
+    const string pattern = @""a|b\s\n"";
+    internal const string pattern2 = $""{pattern}2"";
+}
+partial class Program
+{
+    static void Main(string[] args)
+    {
+        Regex regex = MyRegex();
+    }
+
+    [GeneratedRegex(GlobalConstants.pattern2)]
     private static partial Regex MyRegex();
 }";
 
@@ -853,7 +1099,7 @@ public partial class A
         Regex regex = MyRegex();
     }
 
-    [GeneratedRegex(""pattern"", (RegexOptions)2048)]
+    [GeneratedRegex(""pattern"", (RegexOptions)(2048))]
     private static partial Regex MyRegex();
 }
 ";
@@ -885,7 +1131,7 @@ public partial class A
         Regex regex = MyRegex();
     }
 
-    [GeneratedRegex(""pattern"", (RegexOptions)2048)]
+    [GeneratedRegex(""pattern"", (RegexOptions)(2048))]
     private static partial Regex MyRegex();
 }
 ";
@@ -921,6 +1167,101 @@ public partial class A
 ";
             await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
         }
+
+        public static IEnumerable<object[]> DetectsCurrentCultureTestData()
+        {
+            foreach (InvocationType invocationType in new[] { InvocationType.Constructor, InvocationType.StaticMethods })
+            {
+                string isMatchInvocation = invocationType == InvocationType.Constructor ? @".IsMatch("""")" : string.Empty;
+
+                foreach (bool useInlineIgnoreCase in new[] { true, false })
+                {
+                    string pattern = useInlineIgnoreCase ? "\"(?:(?>abc)(?:(?s)d|e)(?:(?:(?xi)ki)*))\"" : "\"abc\"";
+                    string options = useInlineIgnoreCase ? "RegexOptions.None" : "RegexOptions.IgnoreCase";
+
+                    // Test using current culture
+                    yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, pattern, options) + @"|]" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex().IsMatch("""");
+    }
+
+    [GeneratedRegex(" + $"{pattern}, {options}, \"{CultureInfo.CurrentCulture.Name}" + @""")]
+    private static partial Regex MyRegex();
+}" };
+
+                    // Test using CultureInvariant which should default to the 2 parameter constructor
+                    options = useInlineIgnoreCase ? "RegexOptions.CultureInvariant" : "RegexOptions.IgnoreCase | RegexOptions.CultureInvariant";
+                    yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, pattern, options) + @"|]" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex().IsMatch("""");
+    }
+
+    [GeneratedRegex(" + $"{pattern}, {options}" + @")]
+    private static partial Regex MyRegex();
+}" };
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> NoOptionsCultureTestData()
+        {
+            foreach (InvocationType invocationType in new[] { InvocationType.Constructor, InvocationType.StaticMethods })
+            {
+                string isMatchInvocation = invocationType == InvocationType.Constructor ? @".IsMatch("""")" : string.Empty;
+
+                // Test no options passed in
+                yield return new object[] { @"using System.Text.RegularExpressions;
+
+public class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = [|" + ConstructRegexInvocation(invocationType, "\"(?i)abc\"") + @"|]" + isMatchInvocation + @";
+    }
+}", @"using System.Text.RegularExpressions;
+
+public partial class Program
+{
+    public static void Main(string[] args)
+    {
+        var isMatch = MyRegex().IsMatch("""");
+    }
+
+    [GeneratedRegex(" + $"\"(?i)abc\", RegexOptions.None, \"{CultureInfo.CurrentCulture.Name}" + @""")]
+    private static partial Regex MyRegex();
+}" };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(DetectsCurrentCultureTestData))]
+        [MemberData(nameof(NoOptionsCultureTestData))]
+        public async Task DetectsCurrentCulture(string test, string fixedSource)
+            => await VerifyCS.VerifyCodeFixAsync(test, fixedSource);
 
         #region Test helpers
 

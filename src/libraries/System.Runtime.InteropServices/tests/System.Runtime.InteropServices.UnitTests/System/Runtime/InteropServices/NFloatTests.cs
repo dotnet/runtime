@@ -232,7 +232,6 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(0.0f, 3.14f)]
         [InlineData(4567.0f, -3.14f)]
         [InlineData(4567.89101f, -3.14569f)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65557", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.Is32BitProcess))]
         public static void op_Addition(float left, float right)
         {
             NFloat result = new NFloat(left) + new NFloat(right);
@@ -253,7 +252,6 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(0.0f, 3.14f)]
         [InlineData(4567.0f, -3.14f)]
         [InlineData(4567.89101f, -3.14569f)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65557", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.Is32BitProcess))]
         public static void op_Subtraction(float left, float right)
         {
             NFloat result = new NFloat(left) - new NFloat(right);
@@ -274,7 +272,6 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(0.0f, 3.14f)]
         [InlineData(4567.0f, -3.14f)]
         [InlineData(4567.89101f, -3.14569f)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65557", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.Is32BitProcess))]
         public static void op_Multiply(float left, float right)
         {
             NFloat result = new NFloat(left) * new NFloat(right);
@@ -295,7 +292,6 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(0.0f, 3.14f)]
         [InlineData(4567.0f, -3.14f)]
         [InlineData(4567.89101f, -3.14569f)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65557", typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.Is32BitProcess))]
         public static void op_Division(float left, float right)
         {
             NFloat result = new NFloat(left) / new NFloat(right);
@@ -2472,6 +2468,82 @@ namespace System.Runtime.InteropServices.Tests
         {
             AssertExtensions.Equal(-expectedResult, NFloat.TanPi((NFloat)(-value)), allowedVariance);
             AssertExtensions.Equal(+expectedResult, NFloat.TanPi((NFloat)(+value)), allowedVariance);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is32BitProcess))]
+        [InlineData(float.NegativeInfinity,    float.NegativeInfinity,    0.5f,    float.NegativeInfinity)]
+        [InlineData(float.NegativeInfinity,    float.NaN,                 0.5f,    float.NaN)]
+        [InlineData(float.NegativeInfinity,    float.PositiveInfinity,    0.5f,    float.NaN)]
+        [InlineData(float.NegativeInfinity,    0.0f,                      0.5f,    float.NegativeInfinity)]
+        [InlineData(float.NegativeInfinity,    1.0f,                      0.5f,    float.NegativeInfinity)]
+        [InlineData(float.NaN,                 float.NegativeInfinity,    0.5f,    float.NaN)]
+        [InlineData(float.NaN,                 float.NaN,                 0.5f,    float.NaN)]
+        [InlineData(float.NaN,                 float.PositiveInfinity,    0.5f,    float.NaN)]
+        [InlineData(float.NaN,                 0.0f,                      0.5f,    float.NaN)]
+        [InlineData(float.NaN,                 1.0f,                      0.5f,    float.NaN)]
+        [InlineData(float.PositiveInfinity,    float.NegativeInfinity,    0.5f,    float.NaN)]
+        [InlineData(float.PositiveInfinity,    float.NaN,                 0.5f,    float.NaN)]
+        [InlineData(float.PositiveInfinity,    float.PositiveInfinity,    0.5f,    float.PositiveInfinity)]
+        [InlineData(float.PositiveInfinity,    0.0f,                      0.5f,    float.PositiveInfinity)]
+        [InlineData(float.PositiveInfinity,    1.0f,                      0.5f,    float.PositiveInfinity)]
+        [InlineData(1.0f,                      3.0f,                      0.0f,    1.0f)]
+        [InlineData(1.0f,                      3.0f,                      0.5f,    2.0f)]
+        [InlineData(1.0f,                      3.0f,                      1.0f,    3.0f)]
+        [InlineData(1.0f,                      3.0f,                      2.0f,    5.0f)]
+        [InlineData(2.0f,                      4.0f,                      0.0f,    2.0f)]
+        [InlineData(2.0f,                      4.0f,                      0.5f,    3.0f)]
+        [InlineData(2.0f,                      4.0f,                      1.0f,    4.0f)]
+        [InlineData(2.0f,                      4.0f,                      2.0f,    6.0f)]
+        [InlineData(3.0f,                      1.0f,                      0.0f,    3.0f)]
+        [InlineData(3.0f,                      1.0f,                      0.5f,    2.0f)]
+        [InlineData(3.0f,                      1.0f,                      1.0f,    1.0f)]
+        [InlineData(3.0f,                      1.0f,                      2.0f,   -1.0f)]
+        [InlineData(4.0f,                      2.0f,                      0.0f,    4.0f)]
+        [InlineData(4.0f,                      2.0f,                      0.5f,    3.0f)]
+        [InlineData(4.0f,                      2.0f,                      1.0f,    2.0f)]
+        [InlineData(4.0f,                      2.0f,                      2.0f,    0.0f)]
+        public static void LerpTest32(float value1, float value2, float amount, float expectedResult)
+        {
+            AssertExtensions.Equal(+expectedResult, (float)NFloat.Lerp(+value1, +value2, amount), 0);
+            AssertExtensions.Equal((expectedResult == 0.0f) ? expectedResult : -expectedResult, (float)NFloat.Lerp(-value1, -value2, amount), 0);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [InlineData(double.NegativeInfinity,    double.NegativeInfinity,    0.5,    double.NegativeInfinity)]
+        [InlineData(double.NegativeInfinity,    double.NaN,                 0.5,    double.NaN)]
+        [InlineData(double.NegativeInfinity,    double.PositiveInfinity,    0.5,    double.NaN)]
+        [InlineData(double.NegativeInfinity,    0.0,                        0.5,    double.NegativeInfinity)]
+        [InlineData(double.NegativeInfinity,    1.0,                        0.5,    double.NegativeInfinity)]
+        [InlineData(double.NaN,                 double.NegativeInfinity,    0.5,    double.NaN)]
+        [InlineData(double.NaN,                 double.NaN,                 0.5,    double.NaN)]
+        [InlineData(double.NaN,                 double.PositiveInfinity,    0.5,    double.NaN)]
+        [InlineData(double.NaN,                 0.0,                        0.5,    double.NaN)]
+        [InlineData(double.NaN,                 1.0,                        0.5,    double.NaN)]
+        [InlineData(double.PositiveInfinity,    double.NegativeInfinity,    0.5,    double.NaN)]
+        [InlineData(double.PositiveInfinity,    double.NaN,                 0.5,    double.NaN)]
+        [InlineData(double.PositiveInfinity,    double.PositiveInfinity,    0.5,    double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity,    0.0,                        0.5,    double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity,    1.0,                        0.5,    double.PositiveInfinity)]
+        [InlineData(1.0,                        3.0,                        0.0,    1.0)]
+        [InlineData(1.0,                        3.0,                        0.5,    2.0)]
+        [InlineData(1.0,                        3.0,                        1.0,    3.0)]
+        [InlineData(1.0,                        3.0,                        2.0,    5.0)]
+        [InlineData(2.0,                        4.0,                        0.0,    2.0)]
+        [InlineData(2.0,                        4.0,                        0.5,    3.0)]
+        [InlineData(2.0,                        4.0,                        1.0,    4.0)]
+        [InlineData(2.0,                        4.0,                        2.0,    6.0)]
+        [InlineData(3.0,                        1.0,                        0.0,    3.0)]
+        [InlineData(3.0,                        1.0,                        0.5,    2.0)]
+        [InlineData(3.0,                        1.0,                        1.0,    1.0)]
+        [InlineData(3.0,                        1.0,                        2.0,   -1.0)]
+        [InlineData(4.0,                        2.0,                        0.0,    4.0)]
+        [InlineData(4.0,                        2.0,                        0.5,    3.0)]
+        [InlineData(4.0,                        2.0,                        1.0,    2.0)]
+        [InlineData(4.0,                        2.0,                        2.0,    0.0)]
+        public static void LerpTest64(double value1, double value2, double amount, double expectedResult)
+        {
+            AssertExtensions.Equal(+expectedResult, NFloat.Lerp((NFloat)(+value1), (NFloat)(+value2), (NFloat)(amount)), 0);
+            AssertExtensions.Equal((expectedResult == 0.0) ? expectedResult : -expectedResult, NFloat.Lerp((NFloat)(-value1), (NFloat)(-value2), (NFloat)(amount)), 0);
         }
     }
 }

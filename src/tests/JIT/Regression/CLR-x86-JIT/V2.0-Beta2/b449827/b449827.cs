@@ -3,9 +3,9 @@
 
 using System;
 
-internal class MainApp
+public class MainApp
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         int a, prev;
 

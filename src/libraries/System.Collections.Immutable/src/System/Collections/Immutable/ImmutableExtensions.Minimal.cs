@@ -70,7 +70,7 @@ namespace System.Collections.Immutable
                 // We cannot predict the length of the sequence. We must walk the entire sequence
                 // to find the count. But avoid our caller also having to enumerate by capturing
                 // the enumeration in a snapshot and passing that back to the caller.
-                var list = sequence.ToList();
+                List<T> list = sequence.ToList();
                 count = list.Count;
                 sequence = list;
             }
@@ -158,7 +158,7 @@ namespace System.Collections.Immutable
             if (!sequence.TryCopyTo(array, 0))
             {
                 int i = 0;
-                foreach (var item in sequence)
+                foreach (T item in sequence)
                 {
                     Requires.Argument(i < count);
                     array[i++] = item;

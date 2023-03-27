@@ -1,16 +1,17 @@
-import Configuration from "consts:configuration";
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, ENVIRONMENT_IS_WORKER, INTERNAL, Module, runtimeHelpers } from "./imports";
-import { afterUpdateGlobalBufferAndViews } from "./memory";
-import { afterLoadWasmModuleToWorker } from "./pthreads/browser";
-import { afterThreadInitTLS } from "./pthreads/worker";
+import { replaceEmscriptenPThreadLibrary } from "./pthreads/shared/emscripten-replacements";
 import { DotnetModuleConfigImports, EarlyReplacements } from "./types";
+import { TypedArray } from "./types/emscripten";
 
 let node_fs: any | undefined = undefined;
 let node_url: any | undefined = undefined;
 
 export function init_polyfills(replacements: EarlyReplacements): void {
-    const anyModule = Module as any;
 
     // performance.now() is used by emscripten and doesn't work in JSC
     if (typeof globalThis.performance === "undefined") {
@@ -120,7 +121,7 @@ export function init_polyfills(replacements: EarlyReplacements): void {
     }
 
     // require replacement
-    const imports = anyModule.imports = (Module.imports || {}) as DotnetModuleConfigImports;
+    const imports = Module.imports = (Module.imports || {}) as DotnetModuleConfigImports;
     const requireWrapper = (wrappedRequire: Function) => (name: string) => {
         const resolved = (<any>Module.imports)[name];
         if (resolved) {
@@ -143,29 +144,24 @@ export function init_polyfills(replacements: EarlyReplacements): void {
 
     // script location
     runtimeHelpers.scriptDirectory = replacements.scriptDirectory = detectScriptDirectory(replacements);
-    anyModule.mainScriptUrlOrBlob = replacements.scriptUrl;// this is needed by worker threads
-    if (Configuration === "Debug") {
+    Module.mainScriptUrlOrBlob = replacements.scriptUrl;// this is needed by worker threads
+    if (BuildConfiguration === "Debug") {
         console.debug(`MONO_WASM: starting script ${replacements.scriptUrl}`);
         console.debug(`MONO_WASM: starting in ${runtimeHelpers.scriptDirectory}`);
     }
-    if (anyModule.__locateFile === anyModule.locateFile) {
+    if (Module.__locateFile === Module.locateFile) {
         // above it's our early version from dotnet.es6.pre.js, we could replace it with better
-        anyModule.locateFile = runtimeHelpers.locateFile = (path) => {
+        Module.locateFile = runtimeHelpers.locateFile = (path) => {
             if (isPathAbsolute(path)) return path;
             return runtimeHelpers.scriptDirectory + path;
         };
     } else {
         // we use what was given to us
-        runtimeHelpers.locateFile = anyModule.locateFile;
+        runtimeHelpers.locateFile = Module.locateFile!;
     }
 
-    // fetch poly
-    if (imports.fetch) {
-        replacements.fetch = runtimeHelpers.fetch_like = imports.fetch;
-    }
-    else {
-        replacements.fetch = runtimeHelpers.fetch_like = fetch_like;
-    }
+    // prefer fetch_like over global fetch for assets
+    replacements.fetch = runtimeHelpers.fetch_like = imports.fetch || fetch_like;
 
     // misc
     replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
@@ -173,24 +169,14 @@ export function init_polyfills(replacements: EarlyReplacements): void {
     // threads
     if (MonoWasmThreads) {
         if (replacements.pthreadReplacements) {
-            const originalLoadWasmModuleToWorker = replacements.pthreadReplacements.loadWasmModuleToWorker;
-            replacements.pthreadReplacements.loadWasmModuleToWorker = (worker: Worker, onFinishedLoading: Function): void => {
-                originalLoadWasmModuleToWorker(worker, onFinishedLoading);
-                afterLoadWasmModuleToWorker(worker);
-            };
-            const originalThreadInitTLS = replacements.pthreadReplacements.threadInitTLS;
-            replacements.pthreadReplacements.threadInitTLS = (): void => {
-                originalThreadInitTLS();
-                afterThreadInitTLS();
-            };
+            replaceEmscriptenPThreadLibrary(replacements.pthreadReplacements);
         }
     }
 
     // memory
-    const originalUpdateGlobalBufferAndViews = replacements.updateGlobalBufferAndViews;
-    replacements.updateGlobalBufferAndViews = (buffer: ArrayBufferLike) => {
-        originalUpdateGlobalBufferAndViews(buffer);
-        afterUpdateGlobalBufferAndViews(buffer);
+    const originalUpdateMemoryViews = replacements.updateMemoryViews;
+    runtimeHelpers.updateMemoryViews = replacements.updateMemoryViews = () => {
+        originalUpdateMemoryViews();
     };
 }
 
@@ -202,7 +188,34 @@ export async function init_polyfills_async(): Promise<void> {
             const { performance } = INTERNAL.require("perf_hooks");
             globalThis.performance = performance;
         }
+
+        if (!globalThis.crypto) {
+            globalThis.crypto = <any>{};
+        }
+        if (!globalThis.crypto.getRandomValues) {
+            let nodeCrypto: any = undefined;
+            try {
+                nodeCrypto = INTERNAL.require("node:crypto");
+            } catch (err: any) {
+                // Noop, error throwing polyfill provided bellow
+            }
+
+            if (!nodeCrypto) {
+                globalThis.crypto.getRandomValues = () => {
+                    throw new Error("Using node without crypto support. To enable current operation, either provide polyfill for 'globalThis.crypto.getRandomValues' or enable 'node:crypto' module.");
+                };
+            } else if (nodeCrypto.webcrypto) {
+                globalThis.crypto = nodeCrypto.webcrypto;
+            } else if (nodeCrypto.randomBytes) {
+                globalThis.crypto.getRandomValues = (buffer: TypedArray) => {
+                    if (buffer) {
+                        buffer.set(nodeCrypto.randomBytes(buffer.length));
+                    }
+                };
+            }
+        }
     }
+    runtimeHelpers.subtle = globalThis.crypto?.subtle;
 }
 
 const dummyPerformance = {
@@ -212,26 +225,36 @@ const dummyPerformance = {
 };
 
 export async function fetch_like(url: string, init?: RequestInit): Promise<Response> {
+    const imports = Module.imports as DotnetModuleConfigImports;
+    const hasFetch = typeof (globalThis.fetch) === "function";
     try {
-        if (ENVIRONMENT_IS_NODE) {
+        if (typeof (imports.fetch) === "function") {
+            return imports.fetch(url, init || { credentials: "same-origin" });
+        }
+        else if (ENVIRONMENT_IS_NODE) {
+            const isFileUrl = url.startsWith("file://");
+            if (!isFileUrl && hasFetch) {
+                return globalThis.fetch(url, init || { credentials: "same-origin" });
+            }
             if (!node_fs) {
                 const node_require = await runtimeHelpers.requirePromise;
                 node_url = node_require("url");
                 node_fs = node_require("fs");
             }
-            if (url.startsWith("file://")) {
+            if (isFileUrl) {
                 url = node_url.fileURLToPath(url);
             }
 
             const arrayBuffer = await node_fs.promises.readFile(url);
             return <Response><any>{
                 ok: true,
+                headers: [],
                 url,
                 arrayBuffer: () => arrayBuffer,
                 json: () => JSON.parse(arrayBuffer)
             };
         }
-        else if (typeof (globalThis.fetch) === "function") {
+        else if (hasFetch) {
             return globalThis.fetch(url, init || { credentials: "same-origin" });
         }
         else if (typeof (read) === "function") {

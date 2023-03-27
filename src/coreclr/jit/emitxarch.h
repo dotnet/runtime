@@ -23,6 +23,11 @@ inline static bool isDoubleReg(regNumber reg)
     return isFloatReg(reg);
 }
 
+inline static bool isMaskReg(regNumber reg)
+{
+    return (reg >= REG_MASK_FIRST && reg <= REG_MASK_LAST);
+}
+
 /************************************************************************/
 /*         Routines that compute the size of / encode instructions      */
 /************************************************************************/
@@ -38,13 +43,13 @@ struct CnsVal
     bool    cnsReloc;
 };
 
-UNATIVE_OFFSET emitInsSize(code_t code, bool includeRexPrefixSize);
-UNATIVE_OFFSET emitInsSizeSV(code_t code, int var, int dsp);
+UNATIVE_OFFSET emitInsSize(instrDesc* id, code_t code, bool includeRexPrefixSize);
+UNATIVE_OFFSET emitInsSizeSVCalcDisp(instrDesc* id, code_t code, int var, int dsp);
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp);
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp, int val);
 UNATIVE_OFFSET emitInsSizeRR(instrDesc* id, code_t code);
 UNATIVE_OFFSET emitInsSizeRR(instrDesc* id, code_t code, int val);
-UNATIVE_OFFSET emitInsSizeRR(instruction ins, regNumber reg1, regNumber reg2, emitAttr attr);
+UNATIVE_OFFSET emitInsSizeRR(instrDesc* id);
 UNATIVE_OFFSET emitInsSizeAM(instrDesc* id, code_t code);
 UNATIVE_OFFSET emitInsSizeAM(instrDesc* id, code_t code, int val);
 UNATIVE_OFFSET emitInsSizeCV(instrDesc* id, code_t code);
@@ -65,45 +70,58 @@ BYTE* emitOutputRRR(BYTE* dst, instrDesc* id);
 
 BYTE* emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* id);
 
-unsigned emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code);
+unsigned emitOutputRexOrSimdPrefixIfNeeded(instruction ins, BYTE* dst, code_t& code);
 unsigned emitGetRexPrefixSize(instruction ins);
-unsigned emitGetVexPrefixSize(instruction ins, emitAttr attr);
-unsigned emitGetPrefixSize(code_t code, bool includeRexPrefixSize);
-unsigned emitGetAdjustedSize(instruction ins, emitAttr attr, code_t code);
+unsigned emitGetVexPrefixSize(instrDesc* id) const;
+unsigned emitGetEvexPrefixSize(instrDesc* id) const;
+unsigned emitGetPrefixSize(instrDesc* id, code_t code, bool includeRexPrefixSize);
+unsigned emitGetAdjustedSize(instrDesc* id, code_t code) const;
 
-unsigned insEncodeReg012(instruction ins, regNumber reg, emitAttr size, code_t* code);
-unsigned insEncodeReg345(instruction ins, regNumber reg, emitAttr size, code_t* code);
-code_t insEncodeReg3456(instruction ins, regNumber reg, emitAttr size, code_t code);
-unsigned insEncodeRegSIB(instruction ins, regNumber reg, code_t* code);
+code_t emitExtractVexPrefix(instruction ins, code_t& code) const;
+code_t emitExtractEvexPrefix(instruction ins, code_t& code) const;
 
-code_t insEncodeMRreg(instruction ins, code_t code);
-code_t insEncodeRMreg(instruction ins, code_t code);
-code_t insEncodeMRreg(instruction ins, regNumber reg, emitAttr size, code_t code);
-code_t insEncodeRRIb(instruction ins, regNumber reg, emitAttr size);
-code_t insEncodeOpreg(instruction ins, regNumber reg, emitAttr size);
+unsigned insEncodeReg012(const instrDesc* id, regNumber reg, emitAttr size, code_t* code);
+unsigned insEncodeReg345(const instrDesc* id, regNumber reg, emitAttr size, code_t* code);
+code_t insEncodeReg3456(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
+unsigned insEncodeRegSIB(const instrDesc* id, regNumber reg, code_t* code);
+
+code_t insEncodeMRreg(const instrDesc* id, code_t code);
+code_t insEncodeRMreg(const instrDesc* id, code_t code);
+code_t insEncodeMRreg(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
+code_t insEncodeRRIb(const instrDesc* id, regNumber reg, emitAttr size);
+code_t insEncodeOpreg(const instrDesc* id, regNumber reg, emitAttr size);
 
 unsigned insSSval(unsigned scale);
 
 static bool IsSSEInstruction(instruction ins);
 static bool IsSSEOrAVXInstruction(instruction ins);
+static bool IsAvx512OrPriorInstruction(instruction ins);
 static bool IsAVXOnlyInstruction(instruction ins);
+static bool IsAvx512OnlyInstruction(instruction ins);
 static bool IsFMAInstruction(instruction ins);
 static bool IsAVXVNNIInstruction(instruction ins);
 static bool IsBMIInstruction(instruction ins);
+static bool IsKInstruction(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
-bool IsAVXInstruction(instruction ins) const;
-code_t insEncodeMIreg(instruction ins, regNumber reg, emitAttr size, code_t code);
+bool IsVexEncodedInstruction(instruction ins) const;
+bool IsEvexEncodedInstruction(instruction ins) const;
+bool IsVexOrEvexEncodedInstruction(instruction ins) const;
 
-code_t AddRexWPrefix(instruction ins, code_t code);
-code_t AddRexRPrefix(instruction ins, code_t code);
-code_t AddRexXPrefix(instruction ins, code_t code);
-code_t AddRexBPrefix(instruction ins, code_t code);
+code_t insEncodeMIreg(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
+
+code_t AddRexWPrefix(const instrDesc* id, code_t code);
+code_t AddRexRPrefix(const instrDesc* id, code_t code);
+code_t AddRexXPrefix(const instrDesc* id, code_t code);
+code_t AddRexBPrefix(const instrDesc* id, code_t code);
 code_t AddRexPrefix(instruction ins, code_t code);
 
-bool EncodedBySSE38orSSE3A(instruction ins);
-bool Is4ByteSSEInstruction(instruction ins);
+bool EncodedBySSE38orSSE3A(instruction ins) const;
+bool Is4ByteSSEInstruction(instruction ins) const;
+code_t AddEvexVPrimePrefix(code_t code);
+code_t AddEvexRPrimePrefix(code_t code);
+
 static bool IsMovInstruction(instruction ins);
 bool HasSideEffect(instruction ins, emitAttr size);
 bool IsRedundantMov(
@@ -115,10 +133,13 @@ bool IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumbe
 static bool IsJccInstruction(instruction ins);
 static bool IsJmpInstruction(instruction ins);
 
+#ifdef TARGET_64BIT
 bool AreUpper32BitsZero(regNumber reg);
+bool AreUpper32BitsSignExtended(regNumber reg);
+#endif // TARGET_64BIT
 
-bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, genTreeOps treeOps);
-bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenTree* tree);
+bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition cond);
+bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondition cond);
 
 bool hasRexPrefix(code_t code)
 {
@@ -135,7 +156,7 @@ bool hasRexPrefix(code_t code)
 #define VEX_PREFIX_CODE_3BYTE 0xC4000000000000ULL
 
 bool TakesVexPrefix(instruction ins) const;
-static bool TakesRexWPrefix(instruction ins, emitAttr attr);
+bool TakesRexWPrefix(const instrDesc* id) const;
 
 // Returns true if the instruction encoding already contains VEX prefix
 bool hasVexPrefix(code_t code)
@@ -160,6 +181,55 @@ code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr 
     return code;
 }
 
+//------------------------------------------------------------------------
+// HasKMaskRegisterDest: Temporary check to identify instructions that can
+// be Evex encoded but require Opmask(KMask) register support.
+// These are cases where for comparison instructions, result is written
+//  to KMask when Evex encoded.
+// TODO-XArch-AVX512: Refactor once KMask is added.
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if Evex encoding requires KMAsk support.
+//
+bool HasKMaskRegisterDest(instruction ins) const
+{
+    assert(UseEvexEncoding() == true);
+    switch (ins)
+    {
+        // Requires KMask.
+        case INS_pcmpgtb:
+        case INS_pcmpgtd:
+        case INS_pcmpgtw:
+        case INS_pcmpgtq:
+        case INS_pcmpeqb:
+        case INS_pcmpeqd:
+        case INS_pcmpeqq:
+        case INS_pcmpeqw:
+        case INS_cmpps:
+        case INS_cmpss:
+        case INS_cmppd:
+        case INS_cmpsd:
+        case INS_vpgatherdd:
+        case INS_vpgatherqd:
+        case INS_vpgatherdq:
+        case INS_vpgatherqq:
+        case INS_vgatherdps:
+        case INS_vgatherqps:
+        case INS_vgatherdpd:
+        case INS_vgatherqpd:
+        {
+            return true;
+        }
+        default:
+        {
+            return false;
+        }
+    }
+}
+
 bool useVEXEncodings;
 bool UseVEXEncoding() const
 {
@@ -169,6 +239,145 @@ void SetUseVEXEncoding(bool value)
 {
     useVEXEncodings = value;
 }
+
+// Is Evex encoding supported.
+bool useEvexEncodings;
+bool UseEvexEncoding() const
+{
+    return useEvexEncodings;
+}
+void SetUseEvexEncoding(bool value)
+{
+    // We expect UseVEXEncoding to be true if UseEvexEncoding is true
+    assert(!value || UseVEXEncoding());
+    useEvexEncodings = value;
+}
+
+//------------------------------------------------------------------------
+// UseSimdEncoding: Returns true if either VEX or EVEX encoding is supported
+// contains Evex prefix.
+//
+// Returns:
+//    `true` if target supports either.
+//
+bool UseSimdEncoding() const
+{
+    return UseVEXEncoding() || UseEvexEncoding();
+}
+
+// 4-byte EVEX prefix starts with byte 0x62
+#define EVEX_PREFIX_MASK 0xFF00000000000000ULL
+#define EVEX_PREFIX_CODE 0x6200000000000000ULL
+
+bool TakesEvexPrefix(const instrDesc* id) const;
+
+//------------------------------------------------------------------------
+// hasEvexPrefix: Returns true if the instruction encoding already
+// contains Evex prefix.
+//
+// Arguments:
+//    code - opcode + prefixes bits at some stage of encoding.
+//
+// Returns:
+//    `true` if code has an Evex prefix.
+//
+bool hasEvexPrefix(code_t code)
+{
+    return (code & EVEX_PREFIX_MASK) == EVEX_PREFIX_CODE;
+}
+code_t AddEvexPrefix(instruction ins, code_t code, emitAttr attr);
+
+//------------------------------------------------------------------------
+// AddSimdPrefixIfNeeded: Add the correct SIMD prefix if required.
+//
+// Arguments:
+//    ins - the instruction being encoded.
+//    code - opcode + prefixes bits at some stage of encoding.
+//    size - operand size
+//
+// Returns:
+//    code with prefix added.
+// TODO-XARCH-AVX512 come back and check whether we can id `id` directly (no need)
+// to pass emitAttr size
+code_t AddSimdPrefixIfNeeded(const instrDesc* id, code_t code, emitAttr size)
+{
+    instruction ins = id->idIns();
+
+    if (TakesEvexPrefix(id))
+    {
+        code = AddEvexPrefix(ins, code, size);
+    }
+    else if (TakesVexPrefix(ins))
+    {
+        code = AddVexPrefix(ins, code, size);
+    }
+    return code;
+}
+
+//------------------------------------------------------------------------
+// AddSimdPrefixIfNeeded: Add the correct SIMD prefix.
+// Check if the prefix already exists befpre adding.
+//
+// Arguments:
+//    ins - the instruction being encoded.
+//    code - opcode + prefixes bits at some stage of encoding.
+//    size - operand size
+//
+// Returns:
+//    TRUE if code has an Evex prefix.
+// TODO-XARCH-AVX512 come back and check whether we can id `id` directly (no need)
+// to pass emitAttr size
+code_t AddSimdPrefixIfNeededAndNotPresent(const instrDesc* id, code_t code, emitAttr size)
+{
+    instruction ins = id->idIns();
+
+    if (TakesEvexPrefix(id))
+    {
+        code = !hasEvexPrefix(code) ? AddEvexPrefix(ins, code, size) : code;
+    }
+    else if (TakesVexPrefix(ins))
+    {
+        code = !hasVexPrefix(code) ? AddVexPrefix(ins, code, size) : code;
+    }
+    return code;
+}
+
+bool TakesSimdPrefix(const instrDesc* id) const;
+
+//------------------------------------------------------------------------
+// hasVexOrEvexPrefix: Returns true if the instruction encoding already
+// contains a Vex or Evex prefix.
+//
+// Arguments:
+//    code - opcode + prefixes bits at some stage of encoding.
+//
+// Returns:
+//    `true` if code has a SIMD prefix.
+//
+bool hasVexOrEvexPrefix(code_t code)
+{
+    return (hasVexPrefix(code) || hasEvexPrefix(code));
+}
+
+ssize_t TryEvexCompressDisp8Byte(instrDesc* id, ssize_t dsp, bool* dspInByte);
+
+//------------------------------------------------------------------------
+// codeEvexMigrationCheck: Temporary check to use when adding EVEX codepaths
+// TODO-XArch-AVX512: Remove implementation and uses once all Evex paths are
+// completed.
+//
+// Arguments:
+//    code - opcode + prefixes bits at some stage of encoding.
+//
+// Returns:
+//    `true` if code has an Evex prefix.
+//
+bool codeEvexMigrationCheck(code_t code)
+{
+    return hasEvexPrefix(code);
+}
+
+ssize_t GetInputSizeInBytes(instrDesc* id);
 
 bool containsAVXInstruction = false;
 bool ContainsAVX()
@@ -180,29 +389,34 @@ void SetContainsAVX(bool value)
     containsAVXInstruction = value;
 }
 
-bool contains256bitAVXInstruction = false;
-bool Contains256bitAVX()
+bool contains256bitOrMoreAVXInstruction = false;
+bool Contains256bitOrMoreAVX() const
 {
-    return contains256bitAVXInstruction;
+    return contains256bitOrMoreAVXInstruction;
 }
-void SetContains256bitAVX(bool value)
+void SetContains256bitOrMoreAVX(bool value)
 {
-    contains256bitAVXInstruction = value;
+    contains256bitOrMoreAVXInstruction = value;
 }
 
-bool IsDstDstSrcAVXInstruction(instruction ins);
-bool IsDstSrcSrcAVXInstruction(instruction ins);
-bool HasRegularWideForm(instruction ins);
-bool HasRegularWideImmediateForm(instruction ins);
+bool IsDstDstSrcAVXInstruction(instruction ins) const;
+bool IsDstSrcSrcAVXInstruction(instruction ins) const;
+static bool HasRegularWideForm(instruction ins);
+static bool HasRegularWideImmediateForm(instruction ins);
 static bool DoesWriteZeroFlag(instruction ins);
-bool DoesWriteSignFlag(instruction ins);
-bool DoesResetOverflowAndCarryFlags(instruction ins);
+static bool DoesWriteSignFlag(instruction ins);
+static bool DoesResetOverflowAndCarryFlags(instruction ins);
 bool IsFlagsAlwaysModified(instrDesc* id);
+static bool IsRexW0Instruction(instruction ins);
+static bool IsRexW1Instruction(instruction ins);
+static bool IsRexWXInstruction(instruction ins);
+static bool IsRexW1EvexInstruction(instruction ins);
 
 bool IsThreeOperandAVXInstruction(instruction ins)
 {
     return (IsDstDstSrcAVXInstruction(ins) || IsDstSrcSrcAVXInstruction(ins));
 }
+
 bool isAvxBlendv(instruction ins)
 {
     return ins == INS_vblendvps || ins == INS_vblendvpd || ins == INS_vpblendvb;
@@ -220,16 +434,13 @@ bool isPrefetch(instruction ins)
 /*             Debug-only routines to display instructions              */
 /************************************************************************/
 
-#ifdef DEBUG
-
 void emitDispReloc(ssize_t value);
 void emitDispAddrMode(instrDesc* id, bool noDetail = false);
 void emitDispShift(instruction ins, int cnt = 0);
 
 const char* emitXMMregName(unsigned reg);
 const char* emitYMMregName(unsigned reg);
-
-#endif
+const char* emitZMMregName(unsigned reg);
 
 /************************************************************************/
 /*  Private members that deal with target-dependent instr. descriptors  */
@@ -290,14 +501,12 @@ void emitAdjustStackDepth(instruction ins, ssize_t val);
 inline emitter::opSize emitEncodeScale(size_t scale)
 {
     assert(scale == 1 || scale == 2 || scale == 4 || scale == 8);
-
-    return emitSizeEncode[scale - 1];
+    return static_cast<emitter::opSize>(genLog2(static_cast<unsigned>(scale)));
 }
 
 inline emitAttr emitDecodeScale(unsigned ensz)
 {
     assert(ensz < 4);
-
     return emitter::emitSizeDecode[ensz];
 }
 
@@ -379,8 +588,9 @@ void emitIns_R_R_A_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, GenTreeIndir* indir, int ival, insFormat fmt);
 void emitIns_R_R_AR_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber base, int offs, int ival);
-void emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs, regNumber reg, int ival);
 
+void emitIns_C_R_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, regNumber reg, int ival);
+void emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs, regNumber reg, int ival);
 void emitIns_A_R_I(instruction ins, emitAttr attr, GenTreeIndir* indir, regNumber reg, int imm);
 
 void emitIns_R_R_C_I(
@@ -591,5 +801,23 @@ inline bool emitIsUncondJump(instrDesc* jmp)
 
     return (ins == INS_jmp);
 }
+
+//------------------------------------------------------------------------
+// HasEmbeddedBroadcast: Do we consider embedded broadcast while encoding.
+// TODO-XArch-AVX512: Add eventual check on the instrDesc
+//
+// Arguments:
+//    id - Instruction descriptor.
+//
+// Returns:
+//    `true` if the instruction does embedded broadcast.
+//
+inline bool HasEmbeddedBroadcast(instrDesc* id)
+{
+    return false;
+}
+
+inline bool HasHighSIMDReg(const instrDesc* id) const;
+inline bool IsHighSIMDReg(regNumber) const;
 
 #endif // TARGET_XARCH

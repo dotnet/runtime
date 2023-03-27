@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Xunit;
 
@@ -65,6 +66,7 @@ namespace System.Reflection.Context.Tests
         }
 
         [Fact]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ICloneable))]
         [ActiveIssue("https://github.com/mono/mono/issues/15191", TestRuntimes.Mono)]
         public void MapType_Interface_Throws()
         {

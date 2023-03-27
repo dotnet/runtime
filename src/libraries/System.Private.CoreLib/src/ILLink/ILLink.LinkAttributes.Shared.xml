@@ -219,7 +219,7 @@
     <type fullname="System.Runtime.Versioning.UnsupportedOSPlatformAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
-    <type fullname="System.Runtime.Versioning.ObsoletedInOSPlatformAttribute">
+    <type fullname="System.Runtime.Versioning.ObsoletedOSPlatformAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.Runtime.Versioning.RequiresPreviewFeaturesAttribute">

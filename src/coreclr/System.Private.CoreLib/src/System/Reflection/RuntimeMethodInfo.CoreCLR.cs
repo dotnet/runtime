@@ -16,17 +16,17 @@ namespace System.Reflection
     internal sealed partial class RuntimeMethodInfo : MethodInfo, IRuntimeMethodInfo
     {
         #region Private Data Members
-        private IntPtr m_handle;
-        private RuntimeTypeCache m_reflectedTypeCache;
+        private readonly IntPtr m_handle;
+        private readonly RuntimeTypeCache m_reflectedTypeCache;
         private string? m_name;
         private string? m_toString;
         private ParameterInfo[]? m_parameters;
         private ParameterInfo? m_returnParameter;
-        private BindingFlags m_bindingFlags;
-        private MethodAttributes m_methodAttributes;
+        private readonly BindingFlags m_bindingFlags;
+        private readonly MethodAttributes m_methodAttributes;
         private Signature? m_signature;
-        private RuntimeType m_declaringType;
-        private object? m_keepalive;
+        private readonly RuntimeType m_declaringType;
+        private readonly object? m_keepalive;
         private MethodInvoker? m_invoker;
 
         internal InvocationFlags InvocationFlags
@@ -157,56 +157,18 @@ namespace System.Reflection
             return m_toString;
         }
 
-        public override int GetHashCode()
-        {
-            // See RuntimeMethodInfo.Equals() below.
-            if (IsGenericMethod)
-                return RuntimeHelpers.GetHashCodeOfPtr(m_handle);
-            else
-                return base.GetHashCode();
-        }
+        // We cannot do simple object identity comparisons due to generic methods.
+        // Equals and GetHashCode will be called in CerHashTable when RuntimeType+RuntimeTypeCache.GetGenericMethodInfo()
+        // retrieve items from and insert items into s_methodInstantiations.
 
-        public override bool Equals(object? obj)
-        {
-            if (!IsGenericMethod)
-                return obj == (object)this;
+        public override int GetHashCode() =>
+            HashCode.Combine(m_handle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
 
-            // We cannot do simple object identity comparisons for generic methods.
-            // Equals will be called in CerHashTable when RuntimeType+RuntimeTypeCache.GetGenericMethodInfo()
-            // retrieve items from and insert items into s_methodInstantiations which is a CerHashtable.
+        public override bool Equals(object? obj) =>
+            obj is RuntimeMethodInfo m && m_handle == m.m_handle &&
+            ReferenceEquals(m_declaringType, m.m_declaringType) &&
+            ReferenceEquals(m_reflectedTypeCache.GetRuntimeType(), m.m_reflectedTypeCache.GetRuntimeType());
 
-            RuntimeMethodInfo? mi = obj as RuntimeMethodInfo;
-
-            if (mi == null || !mi.IsGenericMethod)
-                return false;
-
-            // now we know that both operands are generic methods
-
-            IRuntimeMethodInfo handle1 = RuntimeMethodHandle.StripMethodInstantiation(this);
-            IRuntimeMethodInfo handle2 = RuntimeMethodHandle.StripMethodInstantiation(mi);
-            if (handle1.Value.Value != handle2.Value.Value)
-                return false;
-
-            Type[] lhs = GetGenericArguments();
-            Type[] rhs = mi.GetGenericArguments();
-
-            if (lhs.Length != rhs.Length)
-                return false;
-
-            for (int i = 0; i < lhs.Length; i++)
-            {
-                if (lhs[i] != rhs[i])
-                    return false;
-            }
-
-            if (DeclaringType != mi.DeclaringType)
-                return false;
-
-            if (ReflectedType != mi.ReflectedType)
-                return false;
-
-            return true;
-        }
         #endregion
 
         #region ICustomAttributeProvider
@@ -349,12 +311,14 @@ namespace System.Reflection
             unsafe
             {
                 StackAllocedArguments argStorage = default;
-                Span<object?> copyOfParameters = new(ref argStorage._arg0, 1);
+                Span<object?> copyOfParameters = argStorage._args.AsSpan(1);
                 ReadOnlySpan<object?> parameters = new(in parameter);
-                Span<ParameterCopyBackAction> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
+                Span<ParameterCopyBackAction> shouldCopyBackParameters = argStorage._copyBacks.AsSpan(1);
 
                 StackAllocatedByRefs byrefStorage = default;
+#pragma warning disable 8500
                 IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
+#pragma warning restore 8500
 
                 CheckArguments(
                     copyOfParameters,

@@ -1,5 +1,12 @@
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
 
+# reset platform variables (e.g. cmake 3.25 sets LINUX=1)
+unset(LINUX)
+unset(FREEBSD)
+unset(ILLUMOS)
+unset(ANDROID)
+unset(TIZEN)
+
 set(TARGET_ARCH_NAME $ENV{TARGET_BUILD_ARCH})
 if(EXISTS ${CROSS_ROOTFS}/bin/freebsd-version)
   set(CMAKE_SYSTEM_NAME FreeBSD)
@@ -7,6 +14,8 @@ if(EXISTS ${CROSS_ROOTFS}/bin/freebsd-version)
 elseif(EXISTS ${CROSS_ROOTFS}/usr/platform/i86pc)
   set(CMAKE_SYSTEM_NAME SunOS)
   set(ILLUMOS 1)
+elseif(EXISTS ${CROSS_ROOTFS}/boot/system/develop/headers/config/HaikuConfig.h)
+  set(CMAKE_SYSTEM_NAME Haiku)
 else()
   set(CMAKE_SYSTEM_NAME Linux)
   set(LINUX 1)
@@ -76,6 +85,8 @@ elseif(TARGET_ARCH_NAME STREQUAL "x64")
     set(triple "x86_64-unknown-freebsd12")
   elseif(ILLUMOS)
     set(TOOLCHAIN "x86_64-illumos")
+  elseif(HAIKU)
+    set(TOOLCHAIN "x64_64-unknown-haiku")
   endif()
 elseif(TARGET_ARCH_NAME STREQUAL "x86")
   set(CMAKE_SYSTEM_PROCESSOR i686)
@@ -108,6 +119,10 @@ if(TIZEN)
   if(TARGET_ARCH_NAME STREQUAL "x86")
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN}/include/c++/)
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN}/include/c++/i586-tizen-linux-gnu)
+  endif()
+  if(TARGET_ARCH_NAME STREQUAL "x64")
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/lib64/gcc/${TIZEN_TOOLCHAIN}/include/c++/)
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/lib64/gcc/${TIZEN_TOOLCHAIN}/include/c++/x86_64-tizen-linux-gnu)
   endif()
 endif()
 
@@ -170,6 +185,41 @@ elseif(ILLUMOS)
 
     set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -lssp")
     set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -lssp")
+elseif(HAIKU)
+    set(CMAKE_SYSROOT "${CROSS_ROOTFS}")
+
+    set(TOOLSET_PREFIX ${TOOLCHAIN}-)
+    function(locate_toolchain_exec exec var)
+        string(TOUPPER ${exec} EXEC_UPPERCASE)
+        if(NOT "$ENV{CLR_${EXEC_UPPERCASE}}" STREQUAL "")
+            set(${var} "$ENV{CLR_${EXEC_UPPERCASE}}" PARENT_SCOPE)
+            return()
+        endif()
+
+        set(SEARCH_PATH "${CROSS_ROOTFS}/generated/cross-tools-x86_64/bin")
+
+        find_program(EXEC_LOCATION_${exec}
+            PATHS ${SEARCH_PATH}
+            NAMES
+            "${TOOLSET_PREFIX}${exec}${CLR_CMAKE_COMPILER_FILE_NAME_VERSION}"
+            "${TOOLSET_PREFIX}${exec}")
+
+        if (EXEC_LOCATION_${exec} STREQUAL "EXEC_LOCATION_${exec}-NOTFOUND")
+            message(FATAL_ERROR "Unable to find toolchain executable. Name: ${exec}, Prefix: ${TOOLSET_PREFIX}.")
+        endif()
+        set(${var} ${EXEC_LOCATION_${exec}} PARENT_SCOPE)
+    endfunction()
+
+    set(CMAKE_SYSTEM_PREFIX_PATH "${CROSS_ROOTFS}")
+
+    locate_toolchain_exec(gcc CMAKE_C_COMPILER)
+    locate_toolchain_exec(g++ CMAKE_CXX_COMPILER)
+
+    set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -lssp")
+    set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -lssp")
+
+    # let CMake set up the correct search paths
+    include(Platform/Haiku)
 else()
     set(CMAKE_SYSROOT "${CROSS_ROOTFS}")
 
@@ -202,7 +252,7 @@ if(TARGET_ARCH_NAME MATCHES "^(arm|armel)$")
     add_toolchain_linker_flag("-L${CROSS_ROOTFS}/usr/lib")
     add_toolchain_linker_flag("-L${CROSS_ROOTFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN}")
   endif()
-elseif(TARGET_ARCH_NAME STREQUAL "arm64")
+elseif(TARGET_ARCH_NAME MATCHES "^(arm64|x64)$")
   if(TIZEN)
     add_toolchain_linker_flag("-B${CROSS_ROOTFS}/usr/lib64/gcc/${TIZEN_TOOLCHAIN}")
     add_toolchain_linker_flag("-L${CROSS_ROOTFS}/lib64")
@@ -229,7 +279,7 @@ endif()
 
 # Specify compile options
 
-if((TARGET_ARCH_NAME MATCHES "^(arm|arm64|armel|armv6|ppc64le|riscv64|s390x)$" AND NOT ANDROID AND NOT FREEBSD) OR ILLUMOS)
+if((TARGET_ARCH_NAME MATCHES "^(arm|arm64|armel|armv6|ppc64le|riscv64|s390x)$" AND NOT ANDROID AND NOT FREEBSD) OR ILLUMOS OR HAIKU)
   set(CMAKE_C_COMPILER_TARGET ${TOOLCHAIN})
   set(CMAKE_CXX_COMPILER_TARGET ${TOOLCHAIN})
   set(CMAKE_ASM_COMPILER_TARGET ${TOOLCHAIN})

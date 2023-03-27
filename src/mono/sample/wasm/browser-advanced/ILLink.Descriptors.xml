@@ -1,0 +1,8 @@
+<linker>
+  <!-- this is here to show how to configure the trimming -->
+  <assembly fullname="System.Private.Uri">
+    <type fullname="System.Uri">
+        <method signature="System.Void .ctor(System.String)" />
+    </type>
+  </assembly>
+</linker>

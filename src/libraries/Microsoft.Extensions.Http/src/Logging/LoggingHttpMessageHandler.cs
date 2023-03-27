@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Http.Logging
     /// </summary>
     public class LoggingHttpMessageHandler : DelegatingHandler
     {
-        private ILogger _logger;
+        private readonly ILogger _logger;
         private readonly HttpClientFactoryOptions? _options;
 
         private static readonly Func<string, bool> _shouldNotRedactHeaderValue = (header) => false;

@@ -177,6 +177,8 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(namedFields);
             ArgumentNullException.ThrowIfNull(fieldValues);
 
+            AssemblyBuilder.EnsureDynamicCodeSupported();
+
             if (con.GetParametersCount() != constructorArgs.Length)
                 throw new ArgumentException(SR.Argument_BadParameterCountsForConstructor);
             if (namedProperties.Length != propertyValues.Length)

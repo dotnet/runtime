@@ -3,13 +3,16 @@
 
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
 //---- CLASS ----------------
-.class          _ret {
+.namespace ldc_c_ret
+{
+.class public          _ret {
 
 //---- GLOBAL DATA ----------
 
@@ -58,18 +61,21 @@
 }
 
 //---- MAIN -----------------
-.method public static  int32 main(class [mscorlib]System.String[]) {
+.method public static  int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack               5
 //====== begin testing ======
         ldc.i4  0xFEFE
-        call    void _ret::ret_test_0()
-        call    void _ret::ret_test_1()
-        call    void _ret::ret_test_2()
-        call    void _ret::ret_test_3()
-        call    void _ret::ret_test_4()
-        call    void _ret::ret_test_5()
-        call    void _ret::ret_test_6()
+        call    void ldc_c_ret._ret::ret_test_0()
+        call    void ldc_c_ret._ret::ret_test_1()
+        call    void ldc_c_ret._ret::ret_test_2()
+        call    void ldc_c_ret._ret::ret_test_3()
+        call    void ldc_c_ret._ret::ret_test_4()
+        call    void ldc_c_ret._ret::ret_test_5()
+        call    void ldc_c_ret._ret::ret_test_6()
         ldc.i4  0xFEFE
         ceq
         brfalse FAIL
@@ -96,3 +102,4 @@ END:
 .assembly ldc_c_ret {}
 
 
+}

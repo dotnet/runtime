@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Xml;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.DataContracts;
 using System.Runtime.Serialization.Json;
 
 namespace System.Runtime.Serialization

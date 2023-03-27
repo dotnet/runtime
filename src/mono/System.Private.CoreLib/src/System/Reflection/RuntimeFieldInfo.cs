@@ -38,8 +38,6 @@ namespace System.Reflection
         internal abstract object UnsafeGetValue(object obj);
         internal abstract void UnsafeSetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture);
         internal abstract void CheckConsistency(object target);
-        internal abstract object? GetValueNonEmit(object? obj);
-        internal abstract void SetValueNonEmit(object? obj, object? value);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -51,18 +49,7 @@ namespace System.Reflection
         private string? name;
         private Type? type;
         private FieldAttributes attrs;
-        private FieldAccessor? invoker;
 #pragma warning restore 649
-
-        private FieldAccessor Invoker
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                invoker ??= new FieldAccessor(this);
-                return invoker;
-            }
-        }
 
         public override Module Module
         {
@@ -124,15 +111,10 @@ namespace System.Reflection
             unsafe
             {
                 // Passing TypedReference by reference is easier to make correct in native code
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('TypedReference')
                 RuntimeFieldHandle.SetValueDirect(this, (RuntimeType)FieldType, &obj, value, (RuntimeType?)DeclaringType);
+#pragma warning restore CS8500
             }
-        }
-
-        [DebuggerStepThrough]
-        [DebuggerHidden]
-        internal override void SetValueNonEmit(object? obj, object? value)
-        {
-            SetValueInternal(this, obj, value);
         }
 
         [DebuggerStepThrough]
@@ -145,15 +127,10 @@ namespace System.Reflection
             unsafe
             {
                 // Passing TypedReference by reference is easier to make correct in native code
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('TypedReference')
                 return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType?)DeclaringType);
+#pragma warning restore CS8500
             }
-        }
-
-        [DebuggerStepThrough]
-        [DebuggerHidden]
-        internal override object? GetValueNonEmit(object? obj)
-        {
-            return GetValueInternal(obj);
         }
 
         public override FieldAttributes Attributes
@@ -228,23 +205,20 @@ namespace System.Reflection
             if (!IsStatic)
             {
                 if (obj == null)
-                    throw new TargetException("Non-static field requires a target");
+                    throw new TargetException(SR.RFLCT_Targ_StatFldReqTarg);
                 if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
-                    throw new ArgumentException(string.Format(
-                        "Field {0} defined on type {1} is not a field on the target object which is of type {2}.",
-                         Name, DeclaringType, obj.GetType()),
-                         nameof(obj));
+                    throw new ArgumentException(SR.Format(SR.Arg_FieldDeclTarget, Name, DeclaringType, obj.GetType()), nameof(obj));
             }
 
             if (!IsLiteral)
                 CheckGeneric();
 
-            return Invoker.GetValue(obj);
+            return GetValueInternal(obj);
         }
 
         public override string ToString()
         {
-            return string.Format("{0} {1}", FieldType, name);
+            return $"{FieldType} {name}";
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -255,15 +229,12 @@ namespace System.Reflection
             if (!IsStatic)
             {
                 if (obj == null)
-                    throw new TargetException("Non-static field requires a target");
+                    throw new TargetException(SR.RFLCT_Targ_StatFldReqTarg);
                 if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
-                    throw new ArgumentException(string.Format(
-                        "Field {0} defined on type {1} is not a field on the target object which is of type {2}.",
-                         Name, DeclaringType, obj.GetType()),
-                         nameof(obj));
+                    throw new ArgumentException(SR.Format(SR.Arg_FieldDeclTarget, Name, DeclaringType, obj.GetType()), nameof(obj));
             }
             if (IsLiteral)
-                throw new FieldAccessException("Cannot set a constant field");
+                throw new FieldAccessException(SR.Acc_ReadOnly);
 
             binder ??= Type.DefaultBinder;
             CheckGeneric();
@@ -278,7 +249,7 @@ namespace System.Reflection
                 }
             }
 
-            Invoker.SetValue(obj, val);
+            SetValueInternal(this, obj, val);
         }
 
         internal RuntimeFieldInfo Clone(string newName)

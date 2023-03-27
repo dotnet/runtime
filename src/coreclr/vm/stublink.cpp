@@ -1143,21 +1143,21 @@ bool StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap
 
 // See RtlVirtualUnwind in base\ntos\rtl\amd64\exdsptch.c
 
-static_assert_no_msg(kRAX == (FIELD_OFFSET(CONTEXT, Rax) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRCX == (FIELD_OFFSET(CONTEXT, Rcx) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRDX == (FIELD_OFFSET(CONTEXT, Rdx) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRBX == (FIELD_OFFSET(CONTEXT, Rbx) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRBP == (FIELD_OFFSET(CONTEXT, Rbp) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRSI == (FIELD_OFFSET(CONTEXT, Rsi) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kRDI == (FIELD_OFFSET(CONTEXT, Rdi) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR8  == (FIELD_OFFSET(CONTEXT, R8 ) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR9  == (FIELD_OFFSET(CONTEXT, R9 ) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR10 == (FIELD_OFFSET(CONTEXT, R10) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR11 == (FIELD_OFFSET(CONTEXT, R11) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR12 == (FIELD_OFFSET(CONTEXT, R12) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR13 == (FIELD_OFFSET(CONTEXT, R13) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR14 == (FIELD_OFFSET(CONTEXT, R14) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
-static_assert_no_msg(kR15 == (FIELD_OFFSET(CONTEXT, R15) - FIELD_OFFSET(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kRAX == (offsetof(CONTEXT, Rax) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kRCX == (offsetof(CONTEXT, Rcx) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kRDX == (offsetof(CONTEXT, Rdx) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kRBX == (offsetof(CONTEXT, Rbx) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kRBP == (offsetof(CONTEXT, Rbp) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kRSI == (offsetof(CONTEXT, Rsi) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kRDI == (offsetof(CONTEXT, Rdi) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kR8  == (offsetof(CONTEXT, R8 ) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kR9  == (offsetof(CONTEXT, R9 ) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kR10 == (offsetof(CONTEXT, R10) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kR11 == (offsetof(CONTEXT, R11) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kR12 == (offsetof(CONTEXT, R12) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kR13 == (offsetof(CONTEXT, R13) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kR14 == (offsetof(CONTEXT, R14) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
+static_assert_no_msg(kR15 == (offsetof(CONTEXT, R15) - offsetof(CONTEXT, Rax)) / sizeof(ULONG64));
 
 VOID StubLinker::UnwindSavedReg (UCHAR reg, ULONG SPRelativeOffset)
 {
@@ -1367,7 +1367,7 @@ bool StubLinker::EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, Lo
     // so that the StubUnwindInfoHeader struct is aligned.  UNWIND_INFO
     // includes one UNWIND_CODE.
     _ASSERTE(IS_ALIGNED(pStubRX, sizeof(void*)));
-    _ASSERTE(0 == (FIELD_OFFSET(StubUnwindInfoHeader, FunctionEntry) % sizeof(void*)));
+    _ASSERTE(0 == (offsetof(StubUnwindInfoHeader, FunctionEntry) % sizeof(void*)));
 
     StubUnwindInfoHeader * pUnwindInfoHeader = pStubRW->GetUnwindInfoHeader();
 
@@ -2465,15 +2465,15 @@ VOID ArgBasedStubCache::Dump()
     CONTRACTL_END;
 
     printf("--------------------------------------------------------------\n");
-    printf("ArgBasedStubCache dump (%lu fixed entries):\n", m_numFixedSlots);
+    printf("ArgBasedStubCache dump (%u fixed entries):\n", m_numFixedSlots);
     for (UINT32 i = 0; i < m_numFixedSlots; i++) {
 
-        printf("  Fixed slot %lu: ", (ULONG)i);
+        printf("  Fixed slot %u: ", (ULONG)i);
         Stub *pStub = m_aStub[i];
         if (!pStub) {
             printf("empty\n");
         } else {
-            printf("%zxh   - refcount is %lu\n",
+            printf("%zxh   - refcount is %u\n",
                    (size_t)(pStub->GetEntryPoint()),
                    (ULONG)( *( ( ((ULONG*)(pStub->GetEntryPoint())) - 1))));
         }
@@ -2483,9 +2483,9 @@ VOID ArgBasedStubCache::Dump()
          pSlotEntry != NULL;
          pSlotEntry = pSlotEntry->m_pNext) {
 
-        printf("  Dyna. slot %lu: ", (ULONG)(pSlotEntry->m_key));
+        printf("  Dyna. slot %u: ", (ULONG)(pSlotEntry->m_key));
         Stub *pStub = pSlotEntry->m_pStub;
-        printf("%zxh   - refcount is %lu\n",
+        printf("%zxh   - refcount is %u\n",
                (size_t)(pStub->GetEntryPoint()),
                (ULONG)( *( ( ((ULONG*)(pStub->GetEntryPoint())) - 1))));
 

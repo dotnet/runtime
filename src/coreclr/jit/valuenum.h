@@ -304,9 +304,6 @@ private:
     // (Requires InitValueNumStoreStatics to have been run.)
     static bool VNFuncIsCommutative(VNFunc vnf);
 
-    // Returns "true" iff "vnf" is a comparison (and thus binary) operator.
-    static bool VNFuncIsComparison(VNFunc vnf);
-
     bool VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNum arg0VN, ValueNum arg1VN);
 
     bool VNEvalCanFoldUnaryFunc(var_types type, VNFunc func, ValueNum arg0VN);
@@ -344,6 +341,7 @@ private:
     template <typename T>
     static bool IsIntZero(T v);
 
+public:
     // Given an constant value number return its value.
     int GetConstantInt32(ValueNum argVN);
     INT64 GetConstantInt64(ValueNum argVN);
@@ -354,9 +352,13 @@ private:
     simd8_t GetConstantSimd8(ValueNum argVN);
     simd12_t GetConstantSimd12(ValueNum argVN);
     simd16_t GetConstantSimd16(ValueNum argVN);
+#if defined(TARGET_XARCH)
     simd32_t GetConstantSimd32(ValueNum argVN);
+    simd64_t GetConstantSimd64(ValueNum argVN);
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
+private:
     // Assumes that all the ValueNum arguments of each of these functions have been shown to represent constants.
     // Assumes that "vnf" is a operator of the appropriate arity (unary for the first, binary for the second).
     // Assume that "CanEvalForConstantArgs(vnf)" is true.
@@ -435,7 +437,10 @@ public:
     ValueNum VNForSimd8Con(simd8_t cnsVal);
     ValueNum VNForSimd12Con(simd12_t cnsVal);
     ValueNum VNForSimd16Con(simd16_t cnsVal);
+#if defined(TARGET_XARCH)
     ValueNum VNForSimd32Con(simd32_t cnsVal);
+    ValueNum VNForSimd64Con(simd64_t cnsVal);
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
 #ifdef TARGET_64BIT
@@ -464,6 +469,21 @@ public:
     void AddToEmbeddedHandleMap(ssize_t embeddedHandle, ssize_t compileTimeHandle)
     {
         m_embeddedToCompileTimeHandleMap.AddOrUpdate(embeddedHandle, compileTimeHandle);
+    }
+
+    void AddToFieldAddressToFieldSeqMap(ValueNum fldAddr, FieldSeq* fldSeq)
+    {
+        m_fieldAddressToFieldSeqMap.AddOrUpdate(fldAddr, fldSeq);
+    }
+
+    FieldSeq* GetFieldSeqFromAddress(ValueNum fldAddr)
+    {
+        FieldSeq* fldSeq;
+        if (m_fieldAddressToFieldSeqMap.TryGetValue(fldAddr, &fldSeq))
+        {
+            return fldSeq;
+        }
+        return nullptr;
     }
 
     // And the single constant for an object reference type.
@@ -500,13 +520,20 @@ public:
     ValueNum VNZeroForType(var_types typ);
 
     // Returns the value number for a zero-initialized struct.
-    ValueNum VNForZeroObj(CORINFO_CLASS_HANDLE structHnd);
+    ValueNum VNForZeroObj(ClassLayout* layout);
 
     // Returns the value number for one of the given "typ".
     // It returns NoVN for a "typ" that has no one value, such as TYP_REF.
     ValueNum VNOneForType(var_types typ);
 
+    // Returns the value number for AllBitsSet of the given "typ".
+    // It has an unreached() for a "typ" that has no all bits set value, such as TYP_VOID.
+    ValueNum VNAllBitsForType(var_types typ);
+
 #ifdef FEATURE_SIMD
+    // Returns the value number for one of the given "simdType" and "simdBaseType".
+    ValueNum VNOneForSimdType(var_types simdType, var_types simdBaseType);
+
     // A helper function for constructing VNF_SimdType VNs.
     ValueNum VNForSimdType(unsigned simdSize, CorInfoType simdBaseJitType);
 #endif // FEATURE_SIMD
@@ -633,6 +660,9 @@ public:
     ValueNum VNForFunc(
         var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx, ValueNum op3VNwx, ValueNum op4VNwx);
 
+    // Skip all folding checks.
+    ValueNum VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx);
+
     ValueNum VNForMapSelect(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
 
     ValueNum VNForMapPhysicalSelect(ValueNumKind vnk, var_types type, ValueNum map, unsigned offset, unsigned size);
@@ -702,6 +732,22 @@ public:
 
         return ValueNumPair(liberalFuncVN, conservativeFuncVN);
     }
+    ValueNumPair VNPairForFuncNoFolding(var_types typ, VNFunc func, ValueNumPair op1VN, ValueNumPair op2VN)
+    {
+        ValueNum liberalFuncVN = VNForFuncNoFolding(typ, func, op1VN.GetLiberal(), op2VN.GetLiberal());
+        ValueNum conservativeFuncVN;
+
+        if (op1VN.BothEqual() && op2VN.BothEqual())
+        {
+            conservativeFuncVN = liberalFuncVN;
+        }
+        else
+        {
+            conservativeFuncVN = VNForFuncNoFolding(typ, func, op1VN.GetConservative(), op2VN.GetConservative());
+        }
+
+        return ValueNumPair(liberalFuncVN, conservativeFuncVN);
+    }
     ValueNumPair VNPairForFunc(var_types typ, VNFunc func, ValueNumPair op1VN, ValueNumPair op2VN, ValueNumPair op3VN)
     {
         ValueNum liberalFuncVN = VNForFunc(typ, func, op1VN.GetLiberal(), op2VN.GetLiberal(), op3VN.GetLiberal());
@@ -761,7 +807,7 @@ public:
     ValueNumPair VNPairForStore(
         ValueNumPair locationValue, unsigned locationSize, ssize_t offset, unsigned storeSize, ValueNumPair value);
 
-    bool LoadStoreIsEntire(unsigned locationSize, ssize_t offset, unsigned indSize) const
+    static bool LoadStoreIsEntire(unsigned locationSize, ssize_t offset, unsigned indSize)
     {
         return (offset == 0) && (locationSize == indSize);
     }
@@ -784,8 +830,13 @@ public:
                                bool         srcIsUnsigned    = false,
                                bool         hasOverflowCheck = false);
 
-    ValueNum VNForBitCast(ValueNum srcVN, var_types castToType);
-    ValueNumPair VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType);
+    ValueNum EncodeBitCastType(var_types castToType, unsigned size);
+
+    var_types DecodeBitCastType(ValueNum castToTypeVN, unsigned* pSize);
+
+    ValueNum VNForBitCast(ValueNum srcVN, var_types castToType, unsigned size);
+
+    ValueNumPair VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType, unsigned size);
 
     ValueNum VNForFieldSeq(FieldSeq* fieldSeq);
 
@@ -939,12 +990,9 @@ public:
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
 
-    // Given VN(x > y), return VN(y > x), VN(x <= y) or VN(y >= x)
-    //
-    // If vn is not a relop, return NoVN.
-    //
     enum class VN_RELATION_KIND
     {
+        VRK_Inferred,   // (x ?  y)
         VRK_Same,       // (x >  y)
         VRK_Swap,       // (y >  x)
         VRK_Reverse,    // (x <= y)
@@ -955,7 +1003,18 @@ public:
     static const char* VNRelationString(VN_RELATION_KIND vrk);
 #endif
 
+    // Given VN(x > y), return VN(y > x), VN(x <= y) or VN(y >= x)
+    //
+    // If vn is not a relop, return NoVN.
+    //
     ValueNum GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk);
+
+    // Return VNFunc for swapped relop, or VNF_MemOpaque if the function
+    // is not a relop.
+    static VNFunc SwapRelop(VNFunc vnf);
+
+    // Returns "true" iff "vnf" is a comparison (and thus binary) operator.
+    static bool VNFuncIsComparison(VNFunc vnf);
 
     // Convert a vartype_t to the value number's storage type for that vartype_t.
     // For example, ValueNum of type TYP_LONG are stored in a map of INT64 variables.
@@ -1078,6 +1137,23 @@ public:
         return ValueNumPair(EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetLiberal(), arg1VNP.GetLiberal()),
                             EvalMathFuncBinary(typ, mthFunc, arg0VNP.GetConservative(), arg1VNP.GetConservative()));
     }
+
+    ValueNum EvalHWIntrinsicFunUnary(var_types      type,
+                                     var_types      baseType,
+                                     NamedIntrinsic ni,
+                                     VNFunc         func,
+                                     ValueNum       arg0VN,
+                                     bool           encodeResultType,
+                                     ValueNum       resultTypeVN);
+
+    ValueNum EvalHWIntrinsicFunBinary(var_types      type,
+                                      var_types      baseType,
+                                      NamedIntrinsic ni,
+                                      VNFunc         func,
+                                      ValueNum       arg0VN,
+                                      ValueNum       arg1VN,
+                                      bool           encodeResultType,
+                                      ValueNum       resultTypeVN);
 
     // Returns "true" iff "vn" represents a function application.
     bool IsVNFunc(ValueNum vn);
@@ -1391,6 +1467,9 @@ private:
     typedef SmallHashTable<ssize_t, ssize_t> EmbeddedToCompileTimeHandleMap;
     EmbeddedToCompileTimeHandleMap m_embeddedToCompileTimeHandleMap;
 
+    typedef SmallHashTable<ValueNum, FieldSeq*> FieldAddressToFieldSeqMap;
+    FieldAddressToFieldSeqMap m_fieldAddressToFieldSeqMap;
+
     struct LargePrimitiveKeyFuncsFloat : public JitLargePrimitiveKeyFuncs<float>
     {
         static bool Equals(float x, float y)
@@ -1532,6 +1611,7 @@ private:
         return m_simd16CnsMap;
     }
 
+#if defined(TARGET_XARCH)
     struct Simd32PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd32_t>
     {
         static bool Equals(simd32_t x, simd32_t y)
@@ -1566,6 +1646,50 @@ private:
         }
         return m_simd32CnsMap;
     }
+
+    struct Simd64PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd64_t>
+    {
+        static bool Equals(simd64_t x, simd64_t y)
+        {
+            return x == y;
+        }
+
+        static unsigned GetHashCode(const simd64_t val)
+        {
+            unsigned hash = 0;
+
+            hash = static_cast<unsigned>(hash ^ val.u32[0]);
+            hash = static_cast<unsigned>(hash ^ val.u32[1]);
+            hash = static_cast<unsigned>(hash ^ val.u32[2]);
+            hash = static_cast<unsigned>(hash ^ val.u32[3]);
+            hash = static_cast<unsigned>(hash ^ val.u32[4]);
+            hash = static_cast<unsigned>(hash ^ val.u32[5]);
+            hash = static_cast<unsigned>(hash ^ val.u32[6]);
+            hash = static_cast<unsigned>(hash ^ val.u32[7]);
+            hash = static_cast<unsigned>(hash ^ val.u32[8]);
+            hash = static_cast<unsigned>(hash ^ val.u32[9]);
+            hash = static_cast<unsigned>(hash ^ val.u32[10]);
+            hash = static_cast<unsigned>(hash ^ val.u32[11]);
+            hash = static_cast<unsigned>(hash ^ val.u32[12]);
+            hash = static_cast<unsigned>(hash ^ val.u32[13]);
+            hash = static_cast<unsigned>(hash ^ val.u32[14]);
+            hash = static_cast<unsigned>(hash ^ val.u32[15]);
+
+            return hash;
+        }
+    };
+
+    typedef VNMap<simd64_t, Simd64PrimitiveKeyFuncs> Simd64ToValueNumMap;
+    Simd64ToValueNumMap* m_simd64CnsMap;
+    Simd64ToValueNumMap* GetSimd64CnsMap()
+    {
+        if (m_simd64CnsMap == nullptr)
+        {
+            m_simd64CnsMap = new (m_alloc) Simd64ToValueNumMap(m_alloc);
+        }
+        return m_simd64CnsMap;
+    }
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
     template <size_t NumArgs>
@@ -1657,7 +1781,7 @@ private:
 #ifdef DEBUG
     // This helps test some performance pathologies related to "evaluation" of VNF_MapSelect terms,
     // especially relating to GcHeap/ByrefExposed.  We count the number of applications of such terms we consider,
-    // and if this exceeds a limit, indicated by a COMPlus_ variable, we assert.
+    // and if this exceeds a limit, indicated by a DOTNET_ variable, we assert.
     unsigned m_numMapSels;
 #endif
 };
@@ -1706,12 +1830,21 @@ struct ValueNumStore::VarTypConv<TYP_SIMD16>
     typedef simd16_t Type;
     typedef simd16_t Lang;
 };
+#if defined(TARGET_XARCH)
 template <>
 struct ValueNumStore::VarTypConv<TYP_SIMD32>
 {
     typedef simd32_t Type;
     typedef simd32_t Lang;
 };
+
+template <>
+struct ValueNumStore::VarTypConv<TYP_SIMD64>
+{
+    typedef simd64_t Type;
+    typedef simd64_t Lang;
+};
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
 template <>
@@ -1773,12 +1906,21 @@ FORCEINLINE simd16_t ValueNumStore::SafeGetConstantValue<simd16_t>(Chunk* c, uns
     return reinterpret_cast<VarTypConv<TYP_SIMD16>::Lang*>(c->m_defs)[offset];
 }
 
+#if defined(TARGET_XARCH)
 template <>
 FORCEINLINE simd32_t ValueNumStore::SafeGetConstantValue<simd32_t>(Chunk* c, unsigned offset)
 {
     assert(c->m_typ == TYP_SIMD32);
     return reinterpret_cast<VarTypConv<TYP_SIMD32>::Lang*>(c->m_defs)[offset];
 }
+
+template <>
+FORCEINLINE simd64_t ValueNumStore::SafeGetConstantValue<simd64_t>(Chunk* c, unsigned offset)
+{
+    assert(c->m_typ == TYP_SIMD64);
+    return reinterpret_cast<VarTypConv<TYP_SIMD64>::Lang*>(c->m_defs)[offset];
+}
+#endif // TARGET_XARCH
 
 template <>
 FORCEINLINE simd8_t ValueNumStore::ConstantValueInternal<simd8_t>(ValueNum vn DEBUGARG(bool coerce))
@@ -1822,6 +1964,7 @@ FORCEINLINE simd16_t ValueNumStore::ConstantValueInternal<simd16_t>(ValueNum vn 
     return SafeGetConstantValue<simd16_t>(c, offset);
 }
 
+#if defined(TARGET_XARCH)
 template <>
 FORCEINLINE simd32_t ValueNumStore::ConstantValueInternal<simd32_t>(ValueNum vn DEBUGARG(bool coerce))
 {
@@ -1835,6 +1978,21 @@ FORCEINLINE simd32_t ValueNumStore::ConstantValueInternal<simd32_t>(ValueNum vn 
 
     return SafeGetConstantValue<simd32_t>(c, offset);
 }
+
+template <>
+FORCEINLINE simd64_t ValueNumStore::ConstantValueInternal<simd64_t>(ValueNum vn DEBUGARG(bool coerce))
+{
+    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+    assert(c->m_attribs == CEA_Const);
+
+    unsigned offset = ChunkOffset(vn);
+
+    assert(c->m_typ == TYP_SIMD64);
+    assert(!coerce);
+
+    return SafeGetConstantValue<simd64_t>(c, offset);
+}
+#endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
 // Inline functions.

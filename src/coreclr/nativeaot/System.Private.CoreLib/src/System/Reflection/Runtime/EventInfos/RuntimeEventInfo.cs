@@ -115,7 +115,7 @@ namespace System.Reflection.Runtime.EventInfos
             if (parameters.Length == 0)
                 throw new InvalidOperationException(); // Legacy: Why is a ToString() intentionally throwing an exception?
             RuntimeParameterInfo runtimeParameterInfo = (RuntimeParameterInfo)(parameters[0]);
-            return runtimeParameterInfo.ParameterTypeString + " " + this.Name;
+            return runtimeParameterInfo.ParameterType.FormatTypeNameForReflection() + " " + this.Name;
         }
 
         protected RuntimeEventInfo WithDebugName()

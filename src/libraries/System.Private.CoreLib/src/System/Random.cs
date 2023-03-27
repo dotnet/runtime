@@ -69,10 +69,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxValue"/> is less than 0.</exception>
         public virtual int Next(int maxValue)
         {
-            if (maxValue < 0)
-            {
-                ThrowMaxValueMustBeNonNegative();
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(maxValue);
 
             int result = _impl.Next(maxValue);
             AssertInRange(result, 0, maxValue);
@@ -117,10 +114,7 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxValue"/> is less than 0.</exception>
         public virtual long NextInt64(long maxValue)
         {
-            if (maxValue < 0)
-            {
-                ThrowMaxValueMustBeNonNegative();
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(maxValue);
 
             long result = _impl.NextInt64(maxValue);
             AssertInRange(result, 0, maxValue);
@@ -182,6 +176,118 @@ namespace System
         /// <param name="buffer">The array to be filled with random numbers.</param>
         public virtual void NextBytes(Span<byte> buffer) => _impl.NextBytes(buffer);
 
+        /// <summary>
+        ///   Fills the elements of a specified span with items chosen at random from the provided set of choices.
+        /// </summary>
+        /// <param name="choices">The items to use to populate the span.</param>
+        /// <param name="destination">The span to be filled with items.</param>
+        /// <typeparam name="T">The type of span.</typeparam>
+        /// <exception cref="ArgumentException"><paramref name="choices" /> is empty.</exception>
+        /// <remarks>
+        ///   The method uses <see cref="Next(int)" /> to select items randomly from <paramref name="choices" />
+        ///   by index and populate <paramref name="destination" />.
+        /// </remarks>
+        public void GetItems<T>(ReadOnlySpan<T> choices, Span<T> destination)
+        {
+            if (choices.IsEmpty)
+            {
+                throw new ArgumentException(SR.Arg_EmptySpan, nameof(choices));
+            }
+
+            for (int i = 0; i < destination.Length; i++)
+            {
+                destination[i] = choices[Next(choices.Length)];
+            }
+        }
+
+        /// <summary>
+        ///   Creates an array populated with items chosen at random from the provided set of choices.
+        /// </summary>
+        /// <param name="choices">The items to use to populate the array.</param>
+        /// <param name="length">The length of array to return.</param>
+        /// <typeparam name="T">The type of array.</typeparam>
+        /// <returns>An array populated with random items.</returns>
+        /// <exception cref="ArgumentException"><paramref name="choices" /> is empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="choices" /> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="length" /> is not zero or a positive number.
+        /// </exception>
+        /// <remarks>
+        ///   The method uses <see cref="Next(int)" /> to select items randomly from <paramref name="choices" />
+        ///   by index. This is used to populate a newly-created array.
+        /// </remarks>
+        public T[] GetItems<T>(T[] choices, int length)
+        {
+            ArgumentNullException.ThrowIfNull(choices);
+            return GetItems(new ReadOnlySpan<T>(choices), length);
+        }
+
+        /// <summary>
+        ///   Creates an array populated with items chosen at random from the provided set of choices.
+        /// </summary>
+        /// <param name="choices">The items to use to populate the array.</param>
+        /// <param name="length">The length of array to return.</param>
+        /// <typeparam name="T">The type of array.</typeparam>
+        /// <returns>An array populated with random items.</returns>
+        /// <exception cref="ArgumentException"><paramref name="choices" /> is empty.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="length" /> is not zero or a positive number.
+        /// </exception>
+        /// <remarks>
+        ///   The method uses <see cref="Next(int)" /> to select items randomly from <paramref name="choices" />
+        ///   by index. This is used to populate a newly-created array.
+        /// </remarks>
+        public T[] GetItems<T>(ReadOnlySpan<T> choices, int length)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+
+            T[] items = new T[length];
+            GetItems(choices, items.AsSpan());
+            return items;
+        }
+
+        /// <summary>
+        ///   Performs an in-place shuffle of an array.
+        /// </summary>
+        /// <param name="values">The array to shuffle.</param>
+        /// <typeparam name="T">The type of array.</typeparam>
+        /// <exception cref="ArgumentNullException"><paramref name="values" /> is <see langword="null" />.</exception>
+        /// <remarks>
+        ///   This method uses <see cref="Next(int, int)" /> to choose values for shuffling.
+        ///   This method is an O(n) operation.
+        /// </remarks>
+        public void Shuffle<T>(T[] values)
+        {
+            ArgumentNullException.ThrowIfNull(values);
+            Shuffle(values.AsSpan());
+        }
+
+        /// <summary>
+        ///   Performs an in-place shuffle of a span.
+        /// </summary>
+        /// <param name="values">The span to shuffle.</param>
+        /// <typeparam name="T">The type of span.</typeparam>
+        /// <remarks>
+        ///   This method uses <see cref="Next(int, int)" /> to choose values for shuffling.
+        ///   This method is an O(n) operation.
+        /// </remarks>
+        public void Shuffle<T>(Span<T> values)
+        {
+            int n = values.Length;
+
+            for (int i = 0; i < n - 1; i++)
+            {
+                int j = Next(i, n);
+
+                if (j != i)
+                {
+                    T temp = values[i];
+                    values[i] = values[j];
+                    values[j] = temp;
+                }
+            }
+        }
+
         /// <summary>Returns a random floating-point number between 0.0 and 1.0.</summary>
         /// <returns>A double-precision floating point number that is greater than or equal to 0.0, and less than 1.0.</returns>
         protected virtual double Sample()
@@ -190,9 +296,6 @@ namespace System
             AssertInRange(result);
             return result;
         }
-
-        private static void ThrowMaxValueMustBeNonNegative() =>
-            throw new ArgumentOutOfRangeException("maxValue", SR.ArgumentOutOfRange_NeedNonNegNum);
 
         private static void ThrowMinMaxValueSwapped() =>
             throw new ArgumentOutOfRangeException("minValue", SR.Format(SR.Argument_MinMaxValue, "minValue", "maxValue"));
@@ -251,10 +354,7 @@ namespace System
 
             public override int Next(int maxValue)
             {
-                if (maxValue < 0)
-                {
-                    ThrowMaxValueMustBeNonNegative();
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(maxValue);
 
                 int result = LocalRandom.Next(maxValue);
                 AssertInRange(result, 0, maxValue);
@@ -282,10 +382,7 @@ namespace System
 
             public override long NextInt64(long maxValue)
             {
-                if (maxValue < 0)
-                {
-                    ThrowMaxValueMustBeNonNegative();
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(maxValue);
 
                 long result = LocalRandom.NextInt64(maxValue);
                 AssertInRange(result, 0, maxValue);

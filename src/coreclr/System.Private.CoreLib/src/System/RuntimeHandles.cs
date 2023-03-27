@@ -124,7 +124,7 @@ namespace System
                     corElemType == CorElementType.ELEMENT_TYPE_OBJECT))
                 return false;
 
-            if (HasInstantiation(type) && !IsGenericTypeDefinition(type))
+            if (type.IsConstructedGenericType)
                 return false;
 
             return true;
@@ -139,19 +139,6 @@ namespace System
         {
             CorElementType corElemType = GetCorElementType(type);
             return corElemType == CorElementType.ELEMENT_TYPE_BYREF;
-        }
-
-        internal static bool TryGetByRefElementType(RuntimeType type, [NotNullWhen(true)] out RuntimeType? elementType)
-        {
-            CorElementType corElemType = GetCorElementType(type);
-            if (corElemType == CorElementType.ELEMENT_TYPE_BYREF)
-            {
-                elementType = GetElementType(type);
-                return true;
-            }
-
-            elementType = null;
-            return false;
         }
 
         internal static bool IsPointer(RuntimeType type)
@@ -170,6 +157,12 @@ namespace System
         {
             CorElementType corElemType = GetCorElementType(type);
             return corElemType == CorElementType.ELEMENT_TYPE_SZARRAY;
+        }
+
+        internal static bool IsFunctionPointer(RuntimeType type)
+        {
+            CorElementType corElemType = GetCorElementType(type);
+            return corElemType == CorElementType.ELEMENT_TYPE_FNPTR;
         }
 
         internal static bool HasElementType(RuntimeType type)
@@ -372,6 +365,12 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeMethodHandleInternal GetMethodAt(RuntimeType type, int slot);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern Type[] GetArgumentTypesFromFunctionPointer(RuntimeType type);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern bool IsUnmanagedFunctionPointer(RuntimeType type);
 
         // This is managed wrapper for MethodTable::IntroducedMethodIterator
         internal struct IntroducedMethodEnumerator
@@ -681,27 +680,8 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_IsCollectible")]
         internal static partial Interop.BOOL IsCollectible(QCallTypeHandle handle);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool HasInstantiation(RuntimeType type);
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetGenericTypeDefinition")]
-        private static partial void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
-
-        internal static RuntimeType GetGenericTypeDefinition(RuntimeType type)
-        {
-            RuntimeType retType = type;
-
-            if (HasInstantiation(retType) && !IsGenericTypeDefinition(retType))
-            {
-                RuntimeTypeHandle nativeHandle = retType.TypeHandle;
-                GetGenericTypeDefinition(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref retType));
-            }
-
-            return retType;
-        }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsGenericTypeDefinition(RuntimeType type);
+        internal static partial void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsGenericVariable(RuntimeType type);
@@ -810,7 +790,7 @@ namespace System
         private readonly object m_keepalive;
 
         // These unused variables are used to ensure that this class has the same layout as RuntimeMethodInfo
-#pragma warning disable CA1823, 414, 169
+#pragma warning disable CA1823, 414, 169, IDE0044
         private object? m_a;
         private object? m_b;
         private object? m_c;
@@ -819,7 +799,7 @@ namespace System
         private object? m_f;
         private object? m_g;
         private object? m_h;
-#pragma warning restore CA1823, 414, 169
+#pragma warning restore CA1823, 414, 169, IDE0044
 
         public RuntimeMethodHandleInternal m_value;
 
@@ -873,7 +853,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return RuntimeHelpers.GetHashCodeOfPtr(Value);
+            return HashCode.Combine(Value);
         }
 
         public override bool Equals(object? obj)
@@ -1013,9 +993,6 @@ namespace System
         {
             return new MdUtf8String(_GetUtf8Name(method));
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool MatchesNameHash(RuntimeMethodHandleInternal method, uint hash);
 
         [DebuggerStepThrough]
         [DebuggerHidden]
@@ -1180,14 +1157,13 @@ namespace System
         private readonly object m_keepalive;
 
         // These unused variables are used to ensure that this class has the same layout as RuntimeFieldInfo
-#pragma warning disable 414, 169
+#pragma warning disable 414, 169, IDE0044
         private object? m_c;
         private object? m_d;
         private int m_b;
         private object? m_e;
-        private object? m_f;
         private RuntimeFieldHandleInternal m_fieldHandle;
-#pragma warning restore 414, 169
+#pragma warning restore 414, 169, IDE0044
 
         RuntimeFieldHandleInternal IRuntimeFieldInfo.Value => m_fieldHandle;
     }
@@ -1226,7 +1202,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return RuntimeHelpers.GetHashCodeOfPtr(Value);
+            return HashCode.Combine(Value);
         }
 
         public override bool Equals(object? obj)
@@ -1274,9 +1250,6 @@ namespace System
         private static extern void* _GetUtf8Name(RuntimeFieldHandleInternal field);
 
         internal static MdUtf8String GetUtf8Name(RuntimeFieldHandleInternal field) { return new MdUtf8String(_GetUtf8Name(field)); }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool MatchesNameHash(RuntimeFieldHandleInternal handle, uint hash);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern FieldAttributes GetAttributes(RuntimeFieldHandleInternal field);
@@ -1590,28 +1563,6 @@ namespace System
 
     internal sealed unsafe class Signature
     {
-        #region Definitions
-        internal enum MdSigCallingConvention : byte
-        {
-            Generics = 0x10,
-            HasThis = 0x20,
-            ExplicitThis = 0x40,
-            CallConvMask = 0x0F,
-            Default = 0x00,
-            C = 0x01,
-            StdCall = 0x02,
-            ThisCall = 0x03,
-            FastCall = 0x04,
-            Vararg = 0x05,
-            Field = 0x06,
-            LocalSig = 0x07,
-            Property = 0x08,
-            Unmanaged = 0x09,
-            GenericInst = 0x0A,
-            Max = 0x0B,
-        }
-        #endregion
-
         #region FCalls
         [MemberNotNull(nameof(m_arguments))]
         [MemberNotNull(nameof(m_returnTypeORfieldType))]
@@ -1619,7 +1570,6 @@ namespace System
         private extern void GetSignature(
             void* pCorSig, int cCorSig,
             RuntimeFieldHandleInternal fieldHandle, IRuntimeMethodInfo? methodHandle, RuntimeType? declaringType);
-
         #endregion
 
         #region Private Data Members
@@ -1678,8 +1628,20 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool CompareSig(Signature sig1, Signature sig2);
 
+        internal Type[] GetCustomModifiers(int parameterIndex, bool required) =>
+            GetCustomModifiersAtOffset(GetParameterOffset(parameterIndex), required);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern Type[] GetCustomModifiers(int position, bool required);
+        internal extern int GetParameterOffset(int parameterIndex);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern int GetTypeParameterOffset(int offset, int index);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern SignatureCallingConvention GetCallingConventionFromFunctionPointerAtOffset(int offset);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal extern Type[] GetCustomModifiersAtOffset(int offset, bool required);
         #endregion
     }
 

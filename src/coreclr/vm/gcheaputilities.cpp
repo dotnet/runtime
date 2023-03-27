@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
+#include "configuration.h"
 #include "gcheaputilities.h"
 #include "gcenv.ee.h"
 #include "appdomain.hpp"
@@ -17,6 +18,9 @@ GPTR_IMPL_INIT(uint8_t,  g_highest_address, nullptr);
 GVAL_IMPL_INIT(GCHeapType, g_heap_type,     GC_HEAP_INVALID);
 uint8_t* g_ephemeral_low  = (uint8_t*)1;
 uint8_t* g_ephemeral_high = (uint8_t*)~0;
+uint8_t* g_region_to_generation_table = nullptr;
+uint8_t  g_region_shr = 0;
+bool g_region_use_bitwise_write_barrier = false;
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 uint32_t* g_card_bundle_table = nullptr;
@@ -62,8 +66,8 @@ bool GCHeapUtilities::s_useThreadAllocationContexts;
 
 // GC entrypoints for the linked-in GC. These symbols are invoked
 // directly if we are not using a standalone GC.
-extern "C" void GC_VersionInfo(/* Out */ VersionInfo* info);
-extern "C" HRESULT GC_Initialize(
+extern "C" void LOCALGC_CALLCONV GC_VersionInfo(/* Out */ VersionInfo* info);
+extern "C" HRESULT LOCALGC_CALLCONV GC_Initialize(
     /* In  */ IGCToCLR* clrToGC,
     /* Out */ IGCHeap** gcHeap,
     /* Out */ IGCHandleManager** gcHandleManager,
@@ -164,8 +168,9 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName)
     PathString libPath = GetInternalSystemDirectory();
     libPath.Append(libFileName);
 
+    LOG((LF_GC, LL_INFO100, "Loading standalone GC from path %s\n", libPath.GetUTF8()));
+
     LPCWSTR libraryName = libPath.GetUnicode();
-    LOG((LF_GC, LL_INFO100, "Loading standalone GC from path %S\n", libraryName));
     return CLRLoadLibrary(libraryName);
 }
 #endif // FEATURE_STANDALONE_GC
@@ -188,7 +193,10 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGcLocation)
     if (!hMod)
     {
         HRESULT err = GetLastError();
-        LOG((LF_GC, LL_FATALERROR, "Load of %S failed\n", standaloneGcLocation));
+#ifdef LOGGING
+        MAKE_UTF8PTR_FROMWIDE(standaloneGcLocationUtf8, standaloneGcLocation);
+        LOG((LF_GC, LL_FATALERROR, "Load of %s failed\n", standaloneGcLocationUtf8));
+#endif // LOGGING
         return __HRESULT_FROM_WIN32(err);
     }
 
@@ -210,17 +218,21 @@ HRESULT LoadAndInitializeGC(LPCWSTR standaloneGcLocation)
     }
 
     g_gc_load_status = GC_LOAD_STATUS_GET_VERSIONINFO;
+    g_gc_version_info.MajorVersion = EE_INTERFACE_MAJOR_VERSION;
+    g_gc_version_info.MinorVersion = 0;
+    g_gc_version_info.BuildVersion = 0;
     versionInfo(&g_gc_version_info);
     g_gc_load_status = GC_LOAD_STATUS_CALL_VERSIONINFO;
 
-    if (g_gc_version_info.MajorVersion != GC_INTERFACE_MAJOR_VERSION)
+    if (g_gc_version_info.MajorVersion < GC_INTERFACE_MAJOR_VERSION)
     {
-        LOG((LF_GC, LL_FATALERROR, "Loaded GC has incompatible major version number (expected %d, got %d)\n",
+        LOG((LF_GC, LL_FATALERROR, "Loaded GC has incompatible major version number (expected at least %d, got %d)\n",
             GC_INTERFACE_MAJOR_VERSION, g_gc_version_info.MajorVersion));
         return E_FAIL;
     }
 
-    if (g_gc_version_info.MinorVersion < GC_INTERFACE_MINOR_VERSION)
+    if ((g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
+        (g_gc_version_info.MinorVersion < GC_INTERFACE_MINOR_VERSION))
     {
         LOG((LF_GC, LL_INFO100, "Loaded GC has lower minor version number (%d) than EE was compiled against (%d)\n",
             g_gc_version_info.MinorVersion, GC_INTERFACE_MINOR_VERSION));
@@ -340,8 +352,8 @@ HRESULT GCHeapUtilities::LoadAndInitialize()
     assert(g_gc_load_status == GC_LOAD_STATUS_BEFORE_START);
     g_gc_load_status = GC_LOAD_STATUS_START;
 
-    LPWSTR standaloneGcLocation = nullptr;
-    CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCName, &standaloneGcLocation);
+    LPCWSTR standaloneGcLocation = Configuration::GetKnobStringValue(W("System.GC.Name"), CLRConfig::EXTERNAL_GCName);
+
 #ifdef FEATURE_UNITY_GCNAME_API
     if (!g_gc_unity_location.IsEmpty())
     {

@@ -31,5 +31,9 @@ namespace Internal.Win32.SafeHandles
         {
             SetHandle(preexistingHandle);
         }
+
+        /// <inheritdoc/>
+        protected override bool ReleaseHandle() =>
+            Interop.Advapi32.RegCloseKey(handle) == Interop.Errors.ERROR_SUCCESS;
     }
 }

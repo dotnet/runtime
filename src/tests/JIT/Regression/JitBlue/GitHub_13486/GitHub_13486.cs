@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Program
+public class Program
 {
     enum LongEnum : long
     {
@@ -25,7 +25,7 @@ class Program
         return s;
     }
 
-    static int Main()
+    public static int Main()
     {
         return (Test(LongEnum.Option0) == "Option0") ? 100 : 1;
     }

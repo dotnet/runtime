@@ -123,7 +123,7 @@ namespace System.Composition.Convention
             return partBuilder;
         }
 
-        private IEnumerable<Tuple<object, List<Attribute>>> EvaluateThisTypeInfoAgainstTheConvention(TypeInfo typeInfo)
+        private List<Tuple<object, List<Attribute>>> EvaluateThisTypeInfoAgainstTheConvention(TypeInfo typeInfo)
         {
             List<Attribute> attributes = new List<Attribute>();
             var configuredMembers = new List<Tuple<object, List<Attribute>>>();

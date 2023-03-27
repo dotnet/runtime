@@ -66,7 +66,7 @@ namespace System.Xml.Serialization
             {
                 try
                 {
-                    _assembly = GenerateRefEmitAssembly(xmlMappings, types, defaultNamespace);
+                    _assembly = GenerateRefEmitAssembly(xmlMappings, types);
                 }
                 // Only catch and handle known failures with RefEmit
                 catch (CodeGeneratorConversionException)
@@ -413,7 +413,7 @@ namespace System.Xml.Serialization
                 readMethodNames[i] = readerCodeGen.GenerateElement(xmlMappings[i])!;
             }
 
-            readerCodeGen.GenerateEnd(readMethodNames, xmlMappings, types);
+            readerCodeGen.GenerateEnd();
 
             string baseSerializer = readerCodeGen.GenerateBaseSerializer("XmlSerializer1", readerClass, writerClass, classes);
             var serializers = new Hashtable();
@@ -425,7 +425,7 @@ namespace System.Xml.Serialization
                 }
             }
 
-            readerCodeGen.GenerateSerializerContract("XmlSerializerContract", xmlMappings, types!, readerClass, readMethodNames, writerClass, writeMethodNames, serializers);
+            readerCodeGen.GenerateSerializerContract(xmlMappings, types!, readerClass, readMethodNames, writerClass, writeMethodNames, serializers);
             writer.Indent--;
             writer.WriteLine("}");
 
@@ -437,7 +437,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GenerateElement")]
-        internal static Assembly GenerateRefEmitAssembly(XmlMapping[] xmlMappings, Type?[] types, string? defaultNamespace)
+        internal static Assembly GenerateRefEmitAssembly(XmlMapping[] xmlMappings, Type?[] types)
         {
             var mainType = (types.Length > 0) ? types[0] : null;
             Assembly? mainAssembly = mainType?.Assembly;
@@ -509,7 +509,7 @@ namespace System.Xml.Serialization
                 {
                     readMethodNames[i] = readerCodeGen.GenerateElement(xmlMappings[i])!;
                 }
-                readerCodeGen.GenerateEnd(readMethodNames, xmlMappings, types!);
+                readerCodeGen.GenerateEnd();
 
                 string baseSerializer = readerCodeGen.GenerateBaseSerializer("XmlSerializer1", readerClass, writerClass, classes);
                 var serializers = new Dictionary<string, string>();
@@ -520,7 +520,7 @@ namespace System.Xml.Serialization
                         serializers[xmlMappings[i].Key!] = readerCodeGen.GenerateTypedSerializer(readMethodNames[i], writeMethodNames[i], xmlMappings[i], classes, baseSerializer, readerClass, writerClass);
                     }
                 }
-                readerCodeGen.GenerateSerializerContract("XmlSerializerContract", xmlMappings, types!, readerClass, readMethodNames, writerClass, writeMethodNames, serializers);
+                readerCodeGen.GenerateSerializerContract(xmlMappings, types!, readerClass, readMethodNames, writerClass, writeMethodNames, serializers);
 
                 return writerType.Assembly;
             }
@@ -613,7 +613,7 @@ namespace System.Xml.Serialization
             {
                 encodingStyle = ValidateEncodingStyle(encodingStyle, mapping.Key!);
                 reader = Contract.Reader;
-                reader.Init(xmlReader, events, encodingStyle, this);
+                reader.Init(xmlReader, events, encodingStyle);
                 if (_methods![mapping.Key!].readMethod == null)
                 {
                     _readerMethods ??= Contract.ReadMethods;
@@ -640,7 +640,7 @@ namespace System.Xml.Serialization
             {
                 encodingStyle = ValidateEncodingStyle(encodingStyle, mapping.Key!);
                 writer = Contract.Writer;
-                writer.Init(xmlWriter, namespaces, encodingStyle, id, this);
+                writer.Init(xmlWriter, namespaces, encodingStyle, id);
                 if (_methods![mapping.Key!].writeMethod == null)
                 {
                     _writerMethods ??= Contract.WriteMethods;
@@ -691,8 +691,8 @@ namespace System.Xml.Serialization
 
     internal sealed class TempAssemblyCache
     {
+        private readonly ConditionalWeakTable<Assembly, Dictionary<TempAssemblyCacheKey, TempAssembly>> _collectibleCaches = new ConditionalWeakTable<Assembly, Dictionary<TempAssemblyCacheKey, TempAssembly>>();
         private Dictionary<TempAssemblyCacheKey, TempAssembly> _fastCache = new Dictionary<TempAssemblyCacheKey, TempAssembly>();
-        private ConditionalWeakTable<Assembly, Dictionary<TempAssemblyCacheKey, TempAssembly>> _collectibleCaches = new ConditionalWeakTable<Assembly, Dictionary<TempAssemblyCacheKey, TempAssembly>>();
 
         internal TempAssembly? this[string? ns, Type t]
         {

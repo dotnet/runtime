@@ -39,10 +39,9 @@ namespace System.Xml
             return writer;
         }
 
-        private static readonly Encoding s_UTF8Encoding = new UTF8Encoding(false);
         public static XmlDictionaryWriter CreateTextWriter(Stream stream)
         {
-            return CreateTextWriter(stream, s_UTF8Encoding, true);
+            return CreateTextWriter(stream, DataContractSerializer.UTF8NoBom, true);
         }
 
         public static XmlDictionaryWriter CreateTextWriter(Stream stream, Encoding encoding)
@@ -195,7 +194,7 @@ namespace System.Xml
 
             Stream stream = value.GetStream();
             if (stream == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.XmlInvalidStream));
+                throw new XmlException(SR.XmlInvalidStream);
             int blockSize = 256;
             int bytesRead;
             byte[] block = new byte[blockSize];
@@ -231,12 +230,12 @@ namespace System.Xml
 
         public virtual void StartCanonicalization(Stream stream, bool includeComments, string[]? inclusivePrefixes)
         {
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException());
+            throw new NotSupportedException();
         }
 
         public virtual void EndCanonicalization()
         {
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException());
+            throw new NotSupportedException();
         }
 
         private void WriteElementNode(XmlDictionaryReader reader, bool defattr)
@@ -251,7 +250,7 @@ namespace System.Xml
             {
                 WriteStartElement(reader.Prefix, reader.LocalName, reader.NamespaceURI);
             }
-            if (defattr || !reader.IsDefault)
+            if (defattr || (!reader.IsDefault && (reader.SchemaInfo == null || !reader.SchemaInfo.IsDefault)))
             {
                 if (reader.MoveToFirstAttribute())
                 {
@@ -375,8 +374,7 @@ namespace System.Xml
 
         public override void WriteNode(XmlReader reader, bool defattr)
         {
-            XmlDictionaryReader? dictionaryReader = reader as XmlDictionaryReader;
-            if (dictionaryReader != null)
+            if (reader is XmlDictionaryReader dictionaryReader)
                 WriteNode(dictionaryReader, defattr);
             else
                 base.WriteNode(reader, defattr);
@@ -439,14 +437,12 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(array);
 
-            if (offset < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
             if (offset > array.Length)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, array.Length)));
-            if (count < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, array.Length));
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
             if (count > array.Length - offset)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, array.Length - offset)));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, array.Length - offset));
         }
 
         // bool

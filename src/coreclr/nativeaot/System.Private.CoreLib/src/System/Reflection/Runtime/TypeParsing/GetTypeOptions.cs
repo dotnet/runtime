@@ -15,7 +15,7 @@ namespace System.Reflection.Runtime.TypeParsing
 
     /// <summary>
     /// Look for a type matching the name inside the provided assembly. If "containingAssemblyIfAny" is null, look in a set of default assemblies. For example, if
-    /// this resolver is for the Type.GetType() api, the default assemblies are the assembly that invoked Type.GetType() and mscorlib in that order.
+    /// this resolver is for the Type.GetType() api, the default assemblies are the assembly that invoked Type.GetType() and SPCL in that order.
     /// If this resolver is for Assembly.GetType(), the default is that assembly. Third-party resolvers can do whatever they want. If no type exists for that name,
     /// return null. Throw for all other errors. The name will be for a top-level named type only. No nested types. No constructed types.
     /// </summary>

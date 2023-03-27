@@ -24,6 +24,8 @@ namespace System.Text.Json.Serialization.Converters
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:MakeGenericType",
+            Justification = "The ctor is marked RequiresUnreferencedCode.")]
         public override JsonConverter? CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Assert(CanConvert(typeToConvert));
@@ -64,7 +66,7 @@ namespace System.Text.Json.Serialization.Converters
                     Debug.Assert(objectFactory.CanConvert(typeToConvert));
                     return objectFactory.CreateConverter(typeToConvert, options);
                 case FSharpKind.Union:
-                    throw new NotSupportedException(SR.FSharpDiscriminatedUnionsNotSupported);
+                    return UnsupportedTypeConverterFactory.CreateUnsupportedConverterForType(typeToConvert, SR.FSharpDiscriminatedUnionsNotSupported);
                 default:
                     Debug.Fail("Unrecognized F# type.");
                     throw new Exception();

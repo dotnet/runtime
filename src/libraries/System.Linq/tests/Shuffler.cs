@@ -11,12 +11,7 @@ namespace System.Linq.Tests
         public static T[] Shuffle<T>(T[] array)
         {
             var r = new Random(42);
-            int i = array.Length;
-            while (i > 1)
-            {
-                int j = r.Next(i--);
-                (array[i], array[j]) = (array[j], array[i]);
-            }
+            r.Shuffle(array);
             return array;
         }
 

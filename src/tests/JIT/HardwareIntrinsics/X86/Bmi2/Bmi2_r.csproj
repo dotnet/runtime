@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <AssemblyName>X86_Bmi2_r</AssemblyName>
+    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
@@ -8,11 +9,6 @@
     <Optimize />
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ParallelBitDeposit.UInt32.cs" />
-    <Compile Include="ParallelBitExtract.UInt32.cs" />
-    <Compile Include="ZeroHighBits.UInt32.cs" />
-    <Compile Include="MultiplyNoFlags.UInt32.cs" />
-    <Compile Include="MultiplyNoFlags.UInt32.BinRes.cs" />
     <Compile Include="Program.Bmi2.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>

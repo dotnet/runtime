@@ -3,9 +3,9 @@
 ## Summary
 This document describes current (2.0) and proposed (2.1) behavior for "light-up" scenarios regarding additional-deps functionality. The proposed behavior resolves the following issues:
 
-https://github.com/dotnet/core-setup/issues/3889
+https://github.com/dotnet/runtime/issues/3093
 
-https://github.com/dotnet/core-setup/issues/3884
+https://github.com/dotnet/runtime/issues/3091
 
 The `deps.json` file format specifies assets including managed assemblies, resource assemblies and native libraries to load.
 
@@ -102,7 +102,7 @@ The proposed ordering change for 2.1 is:
 
 In addition, the additional-deps will always look for assembly and file version information present in the deps files in order to support "upgrade" scenarios where the additional-deps brings a newer version of a given assembly. Note that these version checks only occur for managed assemblies, not native files nor resource assemblies.
 
-## 2.1 proposal (add runtimeconfig knob to to disable `%DOTNET_ADDITIONAL_DEPS%`)
+## 2.1 proposal (add runtimeconfig knob to disable `%DOTNET_ADDITIONAL_DEPS%`)
 <strike>
 Add an `additionalDepsLookup` option to the runtimeconfig with these values:
 

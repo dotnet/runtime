@@ -13,6 +13,7 @@ VPTR_CLASS(EECodeManager)
 
 VPTR_CLASS(RangeList)
 VPTR_CLASS(LockedRangeList)
+VPTR_CLASS(CodeRangeMapRangeList)
 
 #ifdef EnC_SUPPORTED
 VPTR_CLASS(EditAndContinueModule)

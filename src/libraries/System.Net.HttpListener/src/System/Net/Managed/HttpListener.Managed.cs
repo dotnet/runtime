@@ -12,10 +12,10 @@ namespace System.Net
     {
         public static bool IsSupported => true;
 
-        private Dictionary<HttpListenerContext, HttpListenerContext> _listenerContexts = new Dictionary<HttpListenerContext, HttpListenerContext>();
-        private List<HttpListenerContext> _contextQueue = new List<HttpListenerContext>();
-        private List<ListenerAsyncResult> _asyncWaitQueue = new List<ListenerAsyncResult>();
-        private Dictionary<HttpConnection, HttpConnection> _connections = new Dictionary<HttpConnection, HttpConnection>();
+        private readonly Dictionary<HttpListenerContext, HttpListenerContext> _listenerContexts = new Dictionary<HttpListenerContext, HttpListenerContext>();
+        private readonly List<HttpListenerContext> _contextQueue = new List<HttpListenerContext>();
+        private readonly List<ListenerAsyncResult> _asyncWaitQueue = new List<ListenerAsyncResult>();
+        private readonly Dictionary<HttpConnection, HttpConnection> _connections = new Dictionary<HttpConnection, HttpConnection>();
         private bool _unsafeConnectionNtlmAuthentication;
 
         public HttpListenerTimeoutManager TimeoutManager
@@ -217,7 +217,7 @@ namespace System.Net
                 if (close_existing)
                 {
                     // Need to copy this since closing will call UnregisterContext
-                    ICollection keys = _listenerContexts.Keys;
+                    Dictionary<HttpListenerContext, HttpListenerContext>.KeyCollection keys = _listenerContexts.Keys;
                     var all = new HttpListenerContext[keys.Count];
                     keys.CopyTo(all, 0);
                     _listenerContexts.Clear();
@@ -227,7 +227,7 @@ namespace System.Net
 
                 lock ((_connections as ICollection).SyncRoot)
                 {
-                    ICollection keys = _connections.Keys;
+                    Dictionary<HttpConnection, HttpConnection>.KeyCollection keys = _connections.Keys;
                     var conns = new HttpConnection[keys.Count];
                     keys.CopyTo(conns, 0);
                     _connections.Clear();

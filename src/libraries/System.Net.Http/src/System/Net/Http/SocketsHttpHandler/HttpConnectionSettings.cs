@@ -122,6 +122,8 @@ namespace System.Net.Http
             return settings;
         }
 
+        public int MaxResponseHeadersByteLength => (int)Math.Min(int.MaxValue, _maxResponseHeadersLength * 1024L);
+
         public bool EnableMultipleHttp2Connections => _enableMultipleHttp2Connections;
 
         private byte[]? _http3SettingsFrame;

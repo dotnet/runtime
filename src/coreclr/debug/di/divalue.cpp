@@ -3707,17 +3707,17 @@ HRESULT CordbArrayValue::GetDimensions(ULONG32 cdim, ULONG32 dims[])
 //
 // indicates whether the array has base indices
 // Arguments:
-//     output: pbHasBaseIndices - true iff the array has more than one dimension and pbHasBaseIndices is not null
-// Return Value: S_OK on success or E_INVALIDARG if pbHasBaseIndices is null
-HRESULT CordbArrayValue::HasBaseIndices(BOOL *pbHasBaseIndices)
+//     output: pbHasBaseIndicies - true iff the array has more than one dimension and pbHasBaseIndicies is not null
+// Return Value: S_OK on success or E_INVALIDARG if pbHasBaseIndicies is null
+HRESULT CordbArrayValue::HasBaseIndicies(BOOL *pbHasBaseIndicies)
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
-    VALIDATE_POINTER_TO_OBJECT(pbHasBaseIndices, BOOL *);
+    VALIDATE_POINTER_TO_OBJECT(pbHasBaseIndicies, BOOL *);
 
-    *pbHasBaseIndices = m_info.arrayInfo.offsetToLowerBounds != 0;
+    *pbHasBaseIndicies = m_info.arrayInfo.offsetToLowerBounds != 0;
     return S_OK;
-} // CordbArrayValue::HasBaseIndices
+} // CordbArrayValue::HasBaseIndicies
 
 // gets the base indices for a multidimensional array
 // Arguments:
@@ -3725,7 +3725,7 @@ HRESULT CordbArrayValue::HasBaseIndices(BOOL *pbHasBaseIndices)
 //            indices - an array to hold the base indices for the array dimensions (allocated and managed
 //                      by the caller, it must have space for cdim elements)
 // Return Value: S_OK on success or E_INVALIDARG if cdim is not equal to the array rank or indices is null
-HRESULT CordbArrayValue::GetBaseIndices(ULONG32 cdim, ULONG32 indices[])
+HRESULT CordbArrayValue::GetBaseIndicies(ULONG32 cdim, ULONG32 indices[])
 {
     PUBLIC_REENTRANT_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
@@ -3743,7 +3743,7 @@ HRESULT CordbArrayValue::GetBaseIndices(ULONG32 cdim, ULONG32 indices[])
         indices[i] = m_arrayLowerBase[i];
 
     return S_OK;
-} // CordbArrayValue::GetBaseIndices
+} // CordbArrayValue::GetBaseIndicies
 
 // Get an element at the position indicated by the values in indices (one index for each dimension)
 // Arguments:

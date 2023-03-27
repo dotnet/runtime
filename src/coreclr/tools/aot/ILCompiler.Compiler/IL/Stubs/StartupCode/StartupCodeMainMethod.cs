@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
-
-using AssemblyName = System.Reflection.AssemblyName;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs.StartupCode
@@ -21,12 +19,14 @@ namespace Internal.IL.Stubs.StartupCode
         private MainMethodWrapper _mainMethod;
         private MethodSignature _signature;
         private IReadOnlyCollection<MethodDesc> _libraryInitializers;
+        private bool _generateLibraryAndModuleInitializers;
 
-        public StartupCodeMainMethod(TypeDesc owningType, MethodDesc mainMethod, IReadOnlyCollection<MethodDesc> libraryInitializers)
+        public StartupCodeMainMethod(TypeDesc owningType, MethodDesc mainMethod, IReadOnlyCollection<MethodDesc> libraryInitializers, bool generateLibraryAndModuleInitializers)
         {
             _owningType = owningType;
             _mainMethod = new MainMethodWrapper(owningType, mainMethod);
             _libraryInitializers = libraryInitializers;
+            _generateLibraryAndModuleInitializers = generateLibraryAndModuleInitializers;
         }
 
         public override TypeSystemContext Context
@@ -70,14 +70,14 @@ namespace Internal.IL.Stubs.StartupCode
                 codeStream.MarkDebuggerStepThroughPoint();
 
             // Allow the class library to run explicitly ordered class constructors first thing in start-up.
-            if (_libraryInitializers != null)
+            if (_generateLibraryAndModuleInitializers && _libraryInitializers != null)
             {
                 foreach (MethodDesc method in _libraryInitializers)
                 {
                     codeStream.Emit(ILOpcode.call, emitter.NewToken(method));
                 }
             }
-            
+
             MetadataType startup = Context.GetOptionalHelperType("StartupCodeHelpers");
 
             // Initialize command line args if the class library supports this
@@ -110,8 +110,9 @@ namespace Internal.IL.Stubs.StartupCode
                     codeStream.EmitLdc((int)System.Threading.ApartmentState.STA);
                     codeStream.Emit(ILOpcode.call, emitter.NewToken(initApartmentState));
                 }
-                if (_mainMethod.WrappedMethod.HasCustomAttribute("System", "MTAThreadAttribute"))
+                else
                 {
+                    // Initialize to MTA by default
                     codeStream.EmitLdc((int)System.Threading.ApartmentState.MTA);
                     codeStream.Emit(ILOpcode.call, emitter.NewToken(initApartmentState));
                 }
@@ -119,7 +120,7 @@ namespace Internal.IL.Stubs.StartupCode
 
             // Run module initializers
             MethodDesc runModuleInitializers = startup?.GetMethod("RunModuleInitializers", null);
-            if (runModuleInitializers != null)
+            if (_generateLibraryAndModuleInitializers && runModuleInitializers != null)
             {
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(runModuleInitializers));
             }
@@ -174,14 +175,11 @@ namespace Internal.IL.Stubs.StartupCode
         {
             get
             {
-                if (_signature == null)
-                {
-                    _signature = new MethodSignature(MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConvention, 0,
+                _signature ??= new MethodSignature(MethodSignatureFlags.Static | MethodSignatureFlags.UnmanagedCallingConvention, 0,
                             Context.GetWellKnownType(WellKnownType.Int32),
                             new TypeDesc[2] {
                                 Context.GetWellKnownType(WellKnownType.Int32),
                                 Context.GetWellKnownType(WellKnownType.IntPtr) });
-                }
 
                 return _signature;
             }
@@ -203,7 +201,7 @@ namespace Internal.IL.Stubs.StartupCode
         /// environment without it being fully initialized. (In particular, the unhandled exception experience
         /// won't be initialized, making this difficult to diagnose.)
         /// </summary>
-        private partial class MainMethodWrapper : ILStubMethod
+        private sealed partial class MainMethodWrapper : ILStubMethod
         {
             public MainMethodWrapper(TypeDesc owningType, MethodDesc mainMethod)
             {

@@ -59,7 +59,7 @@ namespace System.Security.Cryptography.X509Certificates
             return new AppleCertLoader(certs, null);
         }
 
-        private static ILoaderPal ImportPkcs12(
+        private static ApplePkcs12CertLoader ImportPkcs12(
             ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
             bool exportable,
@@ -135,7 +135,7 @@ namespace System.Security.Cryptography.X509Certificates
             throw new CryptographicException(message, new PlatformNotSupportedException(message));
         }
 
-        private static IStorePal FromCustomKeychainStore(string storeName, OpenFlags openFlags)
+        private static AppleKeychainStore FromCustomKeychainStore(string storeName, OpenFlags openFlags)
         {
             string storePath;
 

@@ -121,9 +121,6 @@ HRESULT STDMETHODCALLTYPE MDClassFactory::CreateInstance(
 {
     HRESULT     hr;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-
     // Avoid confusion.
     *ppvObject = NULL;
     _ASSERTE(m_pCoClass);
@@ -136,8 +133,6 @@ HRESULT STDMETHODCALLTYPE MDClassFactory::CreateInstance(
     hr = (*m_pCoClass->pfnCreateObject)(riid, ppvObject);
 
 ErrExit:
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }
 

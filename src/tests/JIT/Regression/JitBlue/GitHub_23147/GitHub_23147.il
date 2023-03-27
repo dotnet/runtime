@@ -56,7 +56,7 @@
   .field public float64 d4
 } // end of class Test.HFA_d4
 
-.class private auto ansi beforefieldinit Test_GitHub_23147.X
+.class public auto ansi beforefieldinit Test_GitHub_23147.X
        extends [System.Runtime]System.Object
 {
   .field public static float32 fx1

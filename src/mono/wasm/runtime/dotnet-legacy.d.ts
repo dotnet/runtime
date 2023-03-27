@@ -27,8 +27,8 @@ interface MonoArray extends MonoObject {
 interface MonoObjectRef extends ManagedPointer {
     __brandMonoObjectRef: "MonoObjectRef";
 }
-declare type MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
-declare type NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
+type MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
+type NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
 interface WasmRoot<T extends MonoObject> {
     get_address(): MonoObjectRef;
     get_address_32(): number;
@@ -60,7 +60,7 @@ interface WasmRootBuffer {
 /**
  * @deprecated Please use methods in top level API object instead
  */
-declare type BINDINGType = {
+type BINDINGType = {
     /**
      * @deprecated Please use [JSExportAttribute] instead
      */
@@ -137,7 +137,7 @@ declare type BINDINGType = {
 /**
  * @deprecated Please use methods in top level API object instead
  */
-declare type MONOType = {
+type MONOType = {
     /**
      * @deprecated Please use setEnvironmentVariable() instead
      */
@@ -163,10 +163,6 @@ declare type MONOType = {
      */
     mono_wasm_load_config: (configFilePath: string) => Promise<void>;
     /**
-     * @deprecated Please use runMain instead
-     */
-    mono_load_runtime_and_bcl_args: Function;
-    /**
      * @deprecated Please use [JSImportAttribute] or [JSExportAttribute] for interop instead.
      */
     mono_wasm_new_root_buffer: (capacity: number, name?: string) => WasmRootBuffer;
@@ -189,7 +185,7 @@ declare type MONOType = {
     /**
      * @deprecated Please use runMainAndExit instead
      */
-    mono_run_main_and_exit: (main_assembly_name: string, args: string[]) => Promise<void>;
+    mono_run_main_and_exit: (main_assembly_name: string, args: string[]) => Promise<number>;
     /**
      * @deprecated Please use config.assets instead
      */
@@ -304,4 +300,4 @@ declare type MONOType = {
     getF64: (offset: MemOffset) => number;
 };
 
-export { BINDINGType, MONOType };
+export { BINDINGType, MONOType, MonoArray, MonoObject, MonoString };

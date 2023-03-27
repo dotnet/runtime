@@ -170,26 +170,9 @@ namespace System.Reflection.Runtime.TypeInfos
 
         public sealed override string ToString()
         {
-            // Get the FullName of the generic type definition in a pay-for-play safe way.
-            RuntimeTypeInfo genericTypeDefinition = GenericTypeDefinitionTypeInfo;
-            string? genericTypeDefinitionString = null;
-            if (genericTypeDefinition.InternalNameIfAvailable != null)   // Want to avoid "cry-wolf" exceptions: if we can't even get the simple name, don't bother getting the FullName.
-            {
-                // Given our current pay for play policy, it should now be safe to attempt getting the FullName. (But guard with a try-catch in case this assumption is wrong.)
-                try
-                {
-                    genericTypeDefinitionString = genericTypeDefinition.FullName;
-                }
-                catch (Exception)
-                {
-                }
-            }
-            // If all else fails, use the ToString() - it won't match the legacy CLR but with no metadata, we can't match it anyway.
-            genericTypeDefinitionString ??= genericTypeDefinition.ToString();
-
             // Now, append the generic type arguments.
             StringBuilder sb = new StringBuilder();
-            sb.Append(genericTypeDefinitionString);
+            sb.Append(GenericTypeDefinitionTypeInfo.FullName);
             sb.Append('[');
             RuntimeTypeInfo[] genericTypeArguments = _key.GenericTypeArguments;
             for (int i = 0; i < genericTypeArguments.Length; i++)
@@ -237,8 +220,6 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override bool CanBrowseWithoutMissingMetadataExceptions => GenericTypeDefinitionTypeInfo.CanBrowseWithoutMissingMetadataExceptions;
-
         internal sealed override Type InternalDeclaringType
         {
             get
@@ -258,9 +239,12 @@ namespace System.Reflection.Runtime.TypeInfos
             }
         }
 
-        internal sealed override string? InternalGetNameIfAvailable(ref Type? rootCauseForFailure)
+        public sealed override string Name
         {
-            return GenericTypeDefinitionTypeInfo.InternalGetNameIfAvailable(ref rootCauseForFailure);
+            get
+            {
+                return GenericTypeDefinitionTypeInfo.Name;
+            }
         }
 
         internal sealed override RuntimeTypeInfo[] InternalRuntimeGenericTypeArguments

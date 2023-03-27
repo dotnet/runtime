@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
@@ -25,7 +23,7 @@ namespace ILCompiler
             FullyBlocked,
         }
 
-        private class ModuleBlockingState
+        private sealed class ModuleBlockingState
         {
             public ModuleDesc Module { get; }
             public ModuleBlockingMode BlockingMode { get; }
@@ -36,12 +34,12 @@ namespace ILCompiler
             }
         }
 
-        private class BlockedModulesHashtable : LockFreeReaderHashtable<ModuleDesc, ModuleBlockingState>
+        private sealed class BlockedModulesHashtable : LockFreeReaderHashtable<ModuleDesc, ModuleBlockingState>
         {
             protected override int GetKeyHashCode(ModuleDesc key) => key.GetHashCode();
             protected override int GetValueHashCode(ModuleBlockingState value) => value.Module.GetHashCode();
-            protected override bool CompareKeyToValue(ModuleDesc key, ModuleBlockingState value) => Object.ReferenceEquals(key, value.Module);
-            protected override bool CompareValueToValue(ModuleBlockingState value1, ModuleBlockingState value2) => Object.ReferenceEquals(value1.Module, value2.Module);
+            protected override bool CompareKeyToValue(ModuleDesc key, ModuleBlockingState value) => ReferenceEquals(key, value.Module);
+            protected override bool CompareValueToValue(ModuleBlockingState value1, ModuleBlockingState value2) => ReferenceEquals(value1.Module, value2.Module);
             protected override ModuleBlockingState CreateValueFromKey(ModuleDesc module)
             {
                 ModuleBlockingMode blockingMode = ModuleBlockingMode.None;
@@ -60,7 +58,7 @@ namespace ILCompiler
         }
         private BlockedModulesHashtable _blockedModules = new BlockedModulesHashtable();
 
-        private class BlockingState
+        private sealed class BlockingState
         {
             public EcmaType Type { get; }
             public bool IsBlocked { get; }
@@ -71,7 +69,7 @@ namespace ILCompiler
             }
         }
 
-        private class BlockedTypeHashtable : LockFreeReaderHashtable<EcmaType, BlockingState>
+        private sealed class BlockedTypeHashtable : LockFreeReaderHashtable<EcmaType, BlockingState>
         {
             private readonly BlockedModulesHashtable _blockedModules;
 
@@ -82,8 +80,8 @@ namespace ILCompiler
 
             protected override int GetKeyHashCode(EcmaType key) => key.GetHashCode();
             protected override int GetValueHashCode(BlockingState value) => value.Type.GetHashCode();
-            protected override bool CompareKeyToValue(EcmaType key, BlockingState value) => Object.ReferenceEquals(key, value.Type);
-            protected override bool CompareValueToValue(BlockingState value1, BlockingState value2) => Object.ReferenceEquals(value1.Type, value2.Type);
+            protected override bool CompareKeyToValue(EcmaType key, BlockingState value) => ReferenceEquals(key, value.Type);
+            protected override bool CompareValueToValue(BlockingState value1, BlockingState value2) => ReferenceEquals(value1.Type, value2.Type);
             protected override BlockingState CreateValueFromKey(EcmaType type)
             {
                 ModuleBlockingMode moduleBlockingMode = _blockedModules.GetOrCreateValue(type.EcmaModule).BlockingMode;
@@ -120,7 +118,7 @@ namespace ILCompiler
 
                 DefType containingType = type.ContainingType;
                 var typeDefinition = type.MetadataReader.GetTypeDefinition(type.Handle);
-                
+
                 if (containingType == null)
                 {
                     if ((typeDefinition.Attributes & TypeAttributes.Public) == 0)

@@ -13,6 +13,7 @@ namespace System.Numerics
 {
     [Serializable]
     [TypeForwardedFrom("System.Numerics, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public readonly struct BigInteger
         : ISpanFormattable,
           IComparable,
@@ -684,7 +685,7 @@ namespace System.Numerics
 
         public static bool TryParse([NotNullWhen(true)] string? value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return BigNumber.TryParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider), out result);
+            return BigNumber.TryParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider), out result) == BigNumber.ParsingStatus.OK;
         }
 
         public static BigInteger Parse(ReadOnlySpan<char> value, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
@@ -699,7 +700,7 @@ namespace System.Numerics
 
         public static bool TryParse(ReadOnlySpan<char> value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
         {
-            return BigNumber.TryParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider), out result);
+            return BigNumber.TryParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider), out result) == BigNumber.ParsingStatus.OK;
         }
 
         public static int Compare(BigInteger left, BigInteger right)
@@ -964,8 +965,7 @@ namespace System.Numerics
 
         public static BigInteger ModPow(BigInteger value, BigInteger exponent, BigInteger modulus)
         {
-            if (exponent.Sign < 0)
-                throw new ArgumentOutOfRangeException(nameof(exponent), SR.ArgumentOutOfRange_MustBeNonNeg);
+            ArgumentOutOfRangeException.ThrowIfNegative(exponent.Sign, nameof(exponent));
 
             value.AssertValid();
             exponent.AssertValid();
@@ -1025,8 +1025,7 @@ namespace System.Numerics
 
         public static BigInteger Pow(BigInteger value, int exponent)
         {
-            if (exponent < 0)
-                throw new ArgumentOutOfRangeException(nameof(exponent), SR.ArgumentOutOfRange_MustBeNonNeg);
+            ArgumentOutOfRangeException.ThrowIfNegative(exponent);
 
             value.AssertValid();
 
@@ -1314,9 +1313,6 @@ namespace System.Numerics
         /// <summary>Mode used to enable sharing <see cref="TryGetBytes(GetBytesMode, Span{byte}, bool, bool, ref int)"/> for multiple purposes.</summary>
         private enum GetBytesMode { AllocateArray, Count, Span }
 
-        /// <summary>Dummy array returned from TryGetBytes to indicate success when in span mode.</summary>
-        private static readonly byte[] s_success = Array.Empty<byte>();
-
         /// <summary>Shared logic for <see cref="ToByteArray(bool, bool)"/>, <see cref="TryWriteBytes(Span{byte}, out int, bool, bool)"/>, and <see cref="GetByteCount"/>.</summary>
         /// <param name="mode">Which entry point is being used.</param>
         /// <param name="destination">The destination span, if mode is <see cref="GetBytesMode.Span"/>.</param>
@@ -1353,7 +1349,7 @@ namespace System.Numerics
                         if (destination.Length != 0)
                         {
                             destination[0] = 0;
-                            return s_success;
+                            return Array.Empty<byte>();
                         }
                         return null;
                 }
@@ -1451,7 +1447,7 @@ namespace System.Numerics
                     {
                         return null;
                     }
-                    array = s_success;
+                    array = Array.Empty<byte>();
                     break;
             }
 
@@ -1589,6 +1585,61 @@ namespace System.Numerics
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return BigNumber.FormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider));
+        }
+
+        private string DebuggerDisplay
+        {
+            get
+            {
+                // For very big numbers, ToString can be too long or even timeout for Visual Studio to display
+                // Display a fast estimated value instead
+
+                // Use ToString for small values
+
+                if ((_bits is null) || (_bits.Length <= 4))
+                {
+                    return ToString();
+                }
+
+                // Estimate the value x as `L * 2^n`, while L is the value of high bits, and n is the length of low bits
+                // Represent L as `k * 10^i`, then `x = L * 2^n = k * 10^(i + (n * log10(2)))`
+                // Let `m = n * log10(2)`, the final result would be `x = (k * 10^(m - [m])) * 10^(i+[m])`
+
+                const double log10Of2 = 0.3010299956639812; // Log10(2)
+                ulong highBits = ((ulong)_bits[^1] << kcbitUint) + _bits[^2];
+                double lowBitsCount32 = _bits.Length - 2; // if Length > int.MaxValue/32, counting in bits can cause overflow
+                double exponentLow = lowBitsCount32 * kcbitUint * log10Of2;
+
+                // Max possible length of _bits is int.MaxValue of bytes,
+                // thus max possible value of BigInteger is 2^(8*Array.MaxLength)-1 which is larger than 10^(2^33)
+                // Use long to avoid potential overflow
+                long exponent = (long)exponentLow;
+                double significand = (double)highBits * Math.Pow(10, exponentLow - exponent);
+
+                // scale significand to [1, 10)
+                double log10 = Math.Log10(significand);
+                if (log10 >= 1)
+                {
+                    exponent += (long)log10;
+                    significand /= Math.Pow(10, Math.Floor(log10));
+                }
+
+                // The digits can be incorrect because of floating point errors and estimation in Log and Exp
+                // Keep some digits in the significand. 8 is arbitrarily chosen, about half of the precision of double
+                significand = Math.Round(significand, 8);
+
+                if (significand >= 10.0)
+                {
+                    // 9.9999999999999 can be rounded to 10, make the display to be more natural
+                    significand /= 10.0;
+                    exponent++;
+                }
+
+                string signStr = _sign < 0 ? NumberFormatInfo.CurrentInfo.NegativeSign : "";
+
+                // Use about a half of the precision of double
+                return $"{signStr}{significand:F8}e+{exponent}";
+            }
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
@@ -3481,41 +3532,18 @@ namespace System.Numerics
 
             ulong result = 0;
 
-            if (value._sign >= 0)
+            // Both positive values and their two's-complement negative representation will share the same TrailingZeroCount,
+            // so the sign of value does not matter and both cases can be handled in the same way
+
+            uint part = value._bits[0];
+
+            for (int i = 1; (part == 0) && (i < value._bits.Length); i++)
             {
-                // When the value is positive, we simply need to do a tzcnt for all bits until we find one set
-
-                uint part = value._bits[0];
-
-                for (int i = 1; (part == 0) && (i < value._bits.Length); i++)
-                {
-                    part = value._bits[i];
-                    result += (sizeof(uint) * 8);
-
-                    i++;
-                }
-
-                result += uint.TrailingZeroCount(part);
+                part = value._bits[i];
+                result += (sizeof(uint) * 8);
             }
-            else
-            {
-                // When the value is negative, we need to tzcnt the two's complement representation
-                // We'll do this "inline" to avoid needing to unnecessarily allocate.
 
-                uint part = ~value._bits[0] + 1;
-
-                for (int i = 1; (part == 0) && (i < value._bits.Length); i++)
-                {
-                    // Simply process bits, adding the carry while the previous value is zero
-
-                    part = ~value._bits[i] + 1;
-                    result += (sizeof(uint) * 8);
-
-                    i++;
-                }
-
-                result += uint.TrailingZeroCount(part);
-            }
+            result += uint.TrailingZeroCount(part);
 
             return result;
         }
@@ -4489,7 +4517,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<BigInteger>.TryConvertToChecked<TOther>(BigInteger value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<BigInteger>.TryConvertToChecked<TOther>(BigInteger value, [MaybeNullWhen(false)] out TOther result)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -4601,14 +4629,14 @@ namespace System.Numerics
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<BigInteger>.TryConvertToSaturating<TOther>(BigInteger value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<BigInteger>.TryConvertToSaturating<TOther>(BigInteger value, [MaybeNullWhen(false)] out TOther result)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -4794,14 +4822,14 @@ namespace System.Numerics
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<BigInteger>.TryConvertToTruncating<TOther>(BigInteger value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<BigInteger>.TryConvertToTruncating<TOther>(BigInteger value, [MaybeNullWhen(false)] out TOther result)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -5190,7 +5218,7 @@ namespace System.Numerics
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
@@ -5199,6 +5227,7 @@ namespace System.Numerics
         // IParsable
         //
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out BigInteger result) => TryParse(s, NumberStyles.Integer, provider, out result);
 
         //

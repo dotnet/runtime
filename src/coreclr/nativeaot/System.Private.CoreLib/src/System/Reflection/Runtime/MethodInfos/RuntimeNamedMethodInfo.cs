@@ -123,8 +123,7 @@ namespace System.Reflection.Runtime.MethodInfos
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public sealed override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
-            if (typeArguments == null)
-                throw new ArgumentNullException(nameof(typeArguments));
+            ArgumentNullException.ThrowIfNull(typeArguments);
             if (GenericTypeParameters.Length == 0)
                 throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericMethodDefinition, this));
             RuntimeTypeInfo[] genericTypeArguments = new RuntimeTypeInfo[typeArguments.Length];
@@ -145,7 +144,7 @@ namespace System.Reflection.Runtime.MethodInfos
             if (typeArguments.Length != GenericTypeParameters.Length)
                 throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, typeArguments.Length, GenericTypeParameters.Length));
             RuntimeMethodInfo methodInfo = (RuntimeMethodInfo)RuntimeConstructedGenericMethodInfo.GetRuntimeConstructedGenericMethodInfo(this, genericTypeArguments);
-            MethodInvoker _ = methodInfo.MethodInvoker; // For compatibility with other Make* apis, trigger any MissingMetadataExceptions now rather than later.
+            MethodInvoker _ = methodInfo.MethodInvoker; // For compatibility with other Make* apis, trigger any missing metadata exceptions now rather than later.
             return methodInfo;
         }
 
@@ -196,8 +195,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(other);
 
             // Do not rewrite as a call to IsConstructedGenericMethod - we haven't yet established that "other" is a runtime-implemented member yet!
             if (other is RuntimeConstructedGenericMethodInfo otherConstructedGenericMethod)

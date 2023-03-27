@@ -29,7 +29,7 @@ struct V4
     public float w;
 }
 
-class Runtime_31615
+public class Runtime_31615
 {
     static int s_checks;
     static int s_errors;

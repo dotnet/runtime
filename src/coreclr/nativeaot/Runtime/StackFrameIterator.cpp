@@ -16,7 +16,6 @@
 #include "thread.h"
 #include "holder.h"
 #include "Crst.h"
-#include "RWLock.h"
 #include "event.h"
 #include "threadstore.h"
 #include "threadstore.inl"
@@ -95,7 +94,7 @@ GVAL_IMPL_INIT(PTR_VOID, g_RhpRethrow2Addr, PointerToRhpRethrow2);
 StackFrameIterator::StackFrameIterator(Thread * pThreadToWalk, PInvokeTransitionFrame* pInitialTransitionFrame)
 {
     STRESS_LOG0(LF_STACKWALK, LL_INFO10000, "----Init---- [ GC ]\n");
-    ASSERT(!pThreadToWalk->DangerousCrossThreadIsHijacked());
+    ASSERT(!pThreadToWalk->IsHijacked());
 
     if (pInitialTransitionFrame == INTERRUPTED_THREAD_MARKER)
     {
@@ -141,6 +140,7 @@ void StackFrameIterator::EnterInitialInvalidState(Thread * pThreadToWalk)
     m_ShouldSkipRegularGcReporting = false;
     m_pendingFuncletFramePointer = NULL;
     m_pNextExInfo = pThreadToWalk->GetCurExInfo();
+    m_pPreviousTransitionFrame = NULL;
     SetControlPC(0);
 }
 
@@ -172,6 +172,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PInvokeTransitionF
     }
 
     m_dwFlags = dwFlags;
+    m_pPreviousTransitionFrame = pFrame;
 
     // We need to walk the ExInfo chain in parallel with the stackwalk so that we know when we cross over
     // exception throw points.  So we must find our initial point in the ExInfo chain here so that we can
@@ -1105,13 +1106,13 @@ public:
     // Conservative GC reporting must be applied to everything between the base of the
     // ReturnBlock and the top of the StackPassedArgs.
 private:
-    uintptr_t m_pushedFP;                  // ChildSP+000     CallerSP-0C0 (0x08 bytes)    (fp)
-    uintptr_t m_pushedLR;                  // ChildSP+008     CallerSP-0B8 (0x08 bytes)    (lr)
-    uint64_t m_fpArgRegs[8];                  // ChildSP+010     CallerSP-0B0 (0x40 bytes)    (d0-d7)
-    uintptr_t m_returnBlock[4];            // ChildSP+050     CallerSP-070 (0x40 bytes)
-    uintptr_t m_intArgRegs[9];             // ChildSP+070     CallerSP-050 (0x48 bytes)    (x0-x8)
-    uintptr_t m_alignmentPad;              // ChildSP+0B8     CallerSP-008 (0x08 bytes)
-    uintptr_t m_stackPassedArgs[1];        // ChildSP+0C0     CallerSP+000 (unknown size)
+    uintptr_t m_pushedFP;                  // ChildSP+000     CallerSP-100 (0x08 bytes)    (fp)
+    uintptr_t m_pushedLR;                  // ChildSP+008     CallerSP-0F8 (0x08 bytes)    (lr)
+    Fp128   m_fpArgRegs[8];                // ChildSP+010     CallerSP-0F0 (0x80 bytes)    (q0-q7)
+    uintptr_t m_returnBlock[4];            // ChildSP+090     CallerSP-070 (0x40 bytes)
+    uintptr_t m_intArgRegs[9];             // ChildSP+0B0     CallerSP-050 (0x48 bytes)    (x0-x8)
+    uintptr_t m_alignmentPad;              // ChildSP+0F8     CallerSP-008 (0x08 bytes)
+    uintptr_t m_stackPassedArgs[1];        // ChildSP+100     CallerSP+000 (unknown size)
 
 public:
     PTR_UIntNative get_CallerSP() { return GET_POINTER_TO_FIELD(m_stackPassedArgs[0]); }
@@ -1413,6 +1414,8 @@ void StackFrameIterator::NextInternal()
 {
 UnwindOutOfCurrentManagedFrame:
     ASSERT(m_dwFlags & MethodStateCalculated);
+    // Due to the lack of an ICodeManager for native code, we can't unwind from a native frame.
+    ASSERT((m_dwFlags & (SkipNativeFrames|UnwoundReversePInvoke)) != UnwoundReversePInvoke);
     m_dwFlags &= ~(ExCollide|MethodStateCalculated|UnwoundReversePInvoke|ActiveStackFrame);
     ASSERT(IsValid());
 
@@ -1432,38 +1435,46 @@ UnwindOutOfCurrentManagedFrame:
     uintptr_t DEBUG_preUnwindSP = m_RegDisplay.GetSP();
 #endif
 
-    PInvokeTransitionFrame* pPreviousTransitionFrame;
-    FAILFAST_OR_DAC_FAIL(GetCodeManager()->UnwindStackFrame(&m_methodInfo, &m_RegDisplay, &pPreviousTransitionFrame));
+    uint32_t unwindFlags = USFF_None;
+    if ((m_dwFlags & SkipNativeFrames) != 0)
+    {
+        unwindFlags |= USFF_StopUnwindOnTransitionFrame;
+    }
+
+    FAILFAST_OR_DAC_FAIL(GetCodeManager()->UnwindStackFrame(&m_methodInfo, unwindFlags, &m_RegDisplay,
+                                                            &m_pPreviousTransitionFrame));
+
+    if (m_pPreviousTransitionFrame != NULL)
+    {
+        m_dwFlags |= UnwoundReversePInvoke;
+    }
 
     bool doingFuncletUnwind = GetCodeManager()->IsFunclet(&m_methodInfo);
 
-    if (pPreviousTransitionFrame != NULL)
+    if (m_pPreviousTransitionFrame != NULL && (m_dwFlags & SkipNativeFrames) != 0)
     {
         ASSERT(!doingFuncletUnwind);
 
-        if (pPreviousTransitionFrame == TOP_OF_STACK_MARKER)
+        if (m_pPreviousTransitionFrame == TOP_OF_STACK_MARKER)
         {
             SetControlPC(0);
         }
         else
         {
-            // NOTE: If this is an EH stack walk, then reinitializing the iterator using the GC stack
-            // walk flags is incorrect.  That said, this is OK because the exception dispatcher will
-            // immediately trigger a failfast when it sees the UnwoundReversePInvoke flag.
             // NOTE: This can generate a conservative stack range if the recovered PInvoke callsite
             // resides in an assembly thunk and not in normal managed code.  In this case InternalInit
             // will unwind through the thunk and back to the nearest managed frame, and therefore may
             // see a conservative range reported by one of the thunks encountered during this "nested"
             // unwind.
-            InternalInit(m_pThread, pPreviousTransitionFrame, GcStackWalkFlags);
+            InternalInit(m_pThread, m_pPreviousTransitionFrame, GcStackWalkFlags);
+            m_dwFlags |= UnwoundReversePInvoke;
             ASSERT(m_pInstance->IsManaged(m_ControlPC));
         }
-        m_dwFlags |= UnwoundReversePInvoke;
     }
     else
     {
         // if the thread is safe to walk, it better not have a hijack in place.
-        ASSERT((ThreadStore::GetCurrentThread() == m_pThread) || !m_pThread->DangerousCrossThreadIsHijacked());
+        ASSERT(!m_pThread->IsHijacked());
 
         SetControlPC(dac_cast<PTR_VOID>(*(m_RegDisplay.GetAddrOfIP())));
 
@@ -1579,11 +1590,12 @@ UnwindOutOfCurrentManagedFrame:
         }
 
         // Now that all assembly thunks and ExInfo collisions have been processed, it is guaranteed
-        // that the next managed frame has been located.  The located frame must now be yielded
+        // that the next managed frame has been located. Or the next native frame
+        // if we are not skipping them. The located frame must now be yielded
         // from the iterator with the one and only exception being cases where a managed frame must
         // be skipped due to funclet collapsing.
 
-        ASSERT(m_pInstance->IsManaged(m_ControlPC));
+        ASSERT(m_pInstance->IsManaged(m_ControlPC) || (m_pPreviousTransitionFrame != NULL && (m_dwFlags & SkipNativeFrames) == 0));
 
         if (collapsingTargetFrame != NULL)
         {
@@ -1692,7 +1704,8 @@ void StackFrameIterator::PrepareToYieldFrame()
     if (!IsValid())
         return;
 
-    ASSERT(m_pInstance->IsManaged(m_ControlPC));
+    ASSERT(m_pInstance->IsManaged(m_ControlPC) ||
+         ((m_dwFlags & SkipNativeFrames) == 0 && (m_dwFlags & UnwoundReversePInvoke) != 0));
 
     if (m_dwFlags & ApplyReturnAddressAdjustment)
     {
@@ -1748,6 +1761,7 @@ REGDISPLAY * StackFrameIterator::GetRegisterSet()
 PTR_VOID StackFrameIterator::GetEffectiveSafePointAddress()
 {
     ASSERT(IsValid());
+    ASSERT(m_effectiveSafePointAddress);
     return m_effectiveSafePointAddress;
 }
 
@@ -1779,6 +1793,17 @@ void StackFrameIterator::CalculateCurrentMethodState()
 {
     if (m_dwFlags & MethodStateCalculated)
         return;
+
+    // Check if we are on a native frame.
+    if ((m_dwFlags & (SkipNativeFrames|UnwoundReversePInvoke)) == UnwoundReversePInvoke)
+    {
+        // There is no implementation of ICodeManager for native code.
+        m_pCodeManager = nullptr;
+        m_effectiveSafePointAddress = nullptr;
+        m_FramePointer = nullptr;
+        m_dwFlags |= MethodStateCalculated;
+        return;
+    }
 
     // Assume that the caller is likely to be in the same module
     if (m_pCodeManager == NULL || !m_pCodeManager->FindMethodInfo(m_ControlPC, &m_methodInfo))

@@ -102,15 +102,14 @@ namespace System.Threading
         {
             Thread currentThread = Thread.CurrentThread;
             ExecutionContext? executionContext = currentThread._executionContext ?? Default;
-            if (executionContext.m_isFlowSuppressed)
+
+            AsyncFlowControl asyncFlowControl = default;
+            if (!executionContext.m_isFlowSuppressed)
             {
-                throw new InvalidOperationException(SR.InvalidOperation_CannotSuppressFlowMultipleTimes);
+                currentThread._executionContext = executionContext.ShallowClone(isFlowSuppressed: true);
+                asyncFlowControl.Initialize(currentThread);
             }
 
-            executionContext = executionContext.ShallowClone(isFlowSuppressed: true);
-            AsyncFlowControl asyncFlowControl = default;
-            currentThread._executionContext = executionContext;
-            asyncFlowControl.Initialize(currentThread);
             return asyncFlowControl;
         }
 
@@ -212,7 +211,7 @@ namespace System.Threading
         /// </summary>
         /// <remarks>
         /// To revert to the current execution context; capture it before Restore, and Restore it again.
-        /// It will not automatically be reverted unlike <seealso cref="ExecutionContext.Run"/>.
+        /// It will not automatically be reverted unlike <see cref="ExecutionContext.Run"/>.
         /// </remarks>
         /// <param name="executionContext">The ExecutionContext to set.</param>
         /// <exception cref="InvalidOperationException"><paramref name="executionContext"/> is null.</exception>
@@ -563,10 +562,11 @@ namespace System.Threading
 
         public void Undo()
         {
-            if (_thread == null)
+            if (_thread is null)
             {
-                throw new InvalidOperationException(SR.InvalidOperation_CannotUseAFCMultiple);
+                return;
             }
+
             if (Thread.CurrentThread != _thread)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_CannotUseAFCOtherThread);

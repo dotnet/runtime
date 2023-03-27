@@ -57,7 +57,7 @@ namespace DefaultNamespace
         internal static V2[] V2Array = new V2[Length];
         //	static V3[] V3Array = new V3[Length];
 
-        public static int Main(String[] args)
+        public static int Main()
         {
             for (int i = 0; i < Length; i++)
             {

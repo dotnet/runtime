@@ -28,7 +28,7 @@ namespace Internal.Runtime
                 }
                 else if (elementType.IsDefType)
                 {
-                    var defType = (DefType)elementType;
+                    var defType = (MetadataType)elementType;
                     if (defType.ContainsGCPointers)
                     {
                         GCPointerMap pointerMap = GCPointerMap.FromInstanceLayout(defType);
@@ -48,7 +48,7 @@ namespace Internal.Runtime
             }
             else
             {
-                var defType = (DefType)type;
+                var defType = (MetadataType)type;
                 if (defType.ContainsGCPointers)
                 {
                     int numSeries = GCPointerMap.FromInstanceLayout(defType).NumSeries;
@@ -84,7 +84,7 @@ namespace Internal.Runtime
                 }
                 else if (elementType.IsDefType)
                 {
-                    var elementDefType = (DefType)elementType;
+                    var elementDefType = (MetadataType)elementType;
                     if (elementDefType.ContainsGCPointers)
                     {
                         GCPointerMap pointerMap = GCPointerMap.FromInstanceLayout(elementDefType);
@@ -101,7 +101,7 @@ namespace Internal.Runtime
             }
             else
             {
-                var defType = (DefType)type;
+                var defType = (MetadataType)type;
                 if (defType.ContainsGCPointers)
                 {
                     // Computing the layout for the boxed version if this is a value type.
@@ -154,7 +154,7 @@ namespace Internal.Runtime
             where T : struct, ITargetBinaryWriter
         {
             // Construct the gc info as if this array contains exactly one pointer
-            // - the encoding trick where the size of the series is measured as a difference from 
+            // - the encoding trick where the size of the series is measured as a difference from
             // total object size will make this work for arbitrary array lengths
 
             // Series size

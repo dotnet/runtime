@@ -222,18 +222,39 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact]
-        public static void InvalidRootOnRead()
+        [Theory]
+        [InlineData(typeof(UIntPtr))]
+        [InlineData(typeof(IntPtr))]
+        [InlineData(typeof(Type))]
+        [InlineData(typeof(int[,]))]
+        [InlineData(typeof(System.Delegate))]
+        public static void InvalidRootOnRead(Type type)
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int[,]>("null"));
-
-            var options = new JsonSerializerOptions
+            if (type.IsValueType)
             {
-                IgnoreNullValues = true
-            };
+                // Unsupported struct types throw
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize("null", type));
 
-            // We still throw when we have an unsupported root.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int[,]>("null", options));
+                var options = new JsonSerializerOptions
+                {
+                    IgnoreNullValues = true
+                };
+
+                // We still throw when we have an unsupported root.
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize("null", type, options));
+            }
+            else
+            {
+                // Unsupported reference types handle null values.
+                Assert.Null(JsonSerializer.Deserialize("null", type));
+
+                var options = new JsonSerializerOptions
+                {
+                    IgnoreNullValues = true
+                };
+
+                Assert.Null(JsonSerializer.Deserialize("null", type, options));
+            }
         }
     }
 }

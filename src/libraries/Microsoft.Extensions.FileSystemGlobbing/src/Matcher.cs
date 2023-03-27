@@ -96,8 +96,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing
     /// </remarks>
     public class Matcher
     {
-        private readonly IList<IPattern> _includePatterns = new List<IPattern>();
-        private readonly IList<IPattern> _excludePatterns = new List<IPattern>();
+        private readonly List<IPattern> _includePatterns = new List<IPattern>();
+        private readonly List<IPattern> _excludePatterns = new List<IPattern>();
         private readonly PatternBuilder _builder;
         private readonly StringComparison _comparison;
 

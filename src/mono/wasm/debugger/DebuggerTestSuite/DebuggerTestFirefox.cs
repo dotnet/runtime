@@ -14,8 +14,10 @@ namespace DebuggerTests;
 
 public class DebuggerTestFirefox : DebuggerTestBase
 {
+    private new TimeSpan TestTimeout => base.TestTimeout * 5;
     internal FirefoxInspectorClient _client;
-    public DebuggerTestFirefox(ITestOutputHelper testOutput, string driver = "debugger-driver.html"):base(testOutput, driver)
+    public DebuggerTestFirefox(ITestOutputHelper testOutput, string driver = "debugger-driver.html", string locale = "en-US")
+        : base(testOutput, driver, locale)
     {
         if (insp.Client is not FirefoxInspectorClient)
             throw new Exception($"Bug: client should be {nameof(FirefoxInspectorClient)} for use with {nameof(DebuggerTestFirefox)}");
@@ -65,7 +67,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
                 dicScriptsIdToUrl[script_id] = arrStr[arrStr.Length - 1];
                 dicFileToUrl[new Uri(url).AbsolutePath] = url;
             }
-            await Task.FromResult(0);
+            return await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
         });
         insp.On("resource-available-form", async (args, c) =>
         {
@@ -86,7 +88,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
                 dicScriptsIdToUrl[script_id] = arrStr[arrStr.Length - 1];
                 dicFileToUrl[new Uri(url).AbsolutePath] = url;
             }
-            await Task.FromResult(0);
+            return await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
         });
         return dicScriptsIdToUrl;
     }
@@ -118,7 +120,6 @@ public class DebuggerTestFirefox : DebuggerTestBase
                     locals_fn: locals_fn);
     }
 
-
     internal override void CheckLocation(string script_loc, int line, int column, Dictionary<string, string> scripts, JToken location)
     {
         if (location == null) //probably trying to check startLocation endLocation or functionLocation which are not available on Firefox
@@ -133,6 +134,13 @@ public class DebuggerTestFirefox : DebuggerTestBase
 
         var expected_loc_str = $"{script_loc}#{line+1}#{column}";
         Assert.Equal(expected_loc_str, loc_str);
+    }
+
+    internal override void CheckLocationLine(JToken location, int line)
+    {
+        if (location == null) //probably trying to check startLocation endLocation or functionLocation which are not available on Firefox
+            return;
+        Assert.Equal(location["lineNumber"].Value<int>(), line+1);
     }
 
     private JObject ConvertFirefoxToDefaultFormat(JArray frames, JObject wait_res)

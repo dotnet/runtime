@@ -13,7 +13,7 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
-        <FeatureXplatEventSource Condition="'$(TargetOS)' == 'Linux'">true</FeatureXplatEventSource>
+        <FeatureXplatEventSource Condition="'$(TargetOS)' == 'linux'">true</FeatureXplatEventSource>
 
         <FeatureArrayStubAsIL>true</FeatureArrayStubAsIL>
         <FeatureMulticastStubAsIL>true</FeatureMulticastStubAsIL>

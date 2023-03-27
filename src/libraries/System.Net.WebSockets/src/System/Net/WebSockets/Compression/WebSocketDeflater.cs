@@ -204,7 +204,7 @@ namespace System.Net.WebSockets.Compression
 
             string message = errorCode == ErrorCode.StreamError
                 ? SR.ZLibErrorInconsistentStream
-                : string.Format(SR.ZLibErrorUnexpected, (int)errorCode);
+                : SR.Format(SR.ZLibErrorUnexpected, (int)errorCode);
             throw new WebSocketException(message);
         }
 
@@ -235,7 +235,7 @@ namespace System.Net.WebSockets.Compression
 
             string message = errorCode == ErrorCode.MemError
                 ? SR.ZLibErrorNotEnoughMemory
-                : string.Format(SR.ZLibErrorUnexpected, (int)errorCode);
+                : SR.Format(SR.ZLibErrorUnexpected, (int)errorCode);
             throw new WebSocketException(message);
         }
     }

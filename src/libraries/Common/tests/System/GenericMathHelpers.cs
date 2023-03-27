@@ -33,13 +33,13 @@ namespace System
 
         public static TSelf ReadBigEndian(byte[] source, int startIndex, bool isUnsigned) => TSelf.ReadBigEndian(source, startIndex, isUnsigned);
 
-        public static TSelf ReadBigEndian(Span<byte> source, bool isUnsigned) => TSelf.ReadBigEndian(source, isUnsigned);
+        public static TSelf ReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned) => TSelf.ReadBigEndian(source, isUnsigned);
 
         public static TSelf ReadLittleEndian(byte[] source, bool isUnsigned) => TSelf.ReadLittleEndian(source, isUnsigned);
 
         public static TSelf ReadLittleEndian(byte[] source, int startIndex, bool isUnsigned) => TSelf.ReadLittleEndian(source, startIndex, isUnsigned);
 
-        public static TSelf ReadLittleEndian(Span<byte> source, bool isUnsigned) => TSelf.ReadLittleEndian(source, isUnsigned);
+        public static TSelf ReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned) => TSelf.ReadLittleEndian(source, isUnsigned);
 
         public static TSelf RotateLeft(TSelf value, int rotateAmount) => TSelf.RotateLeft(value, rotateAmount);
 

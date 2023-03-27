@@ -64,9 +64,9 @@ class CrstTypeTool
         {
             // Calculate the filenames of the input and output files.
             string inputFile = "CrstTypes.def";
-            string outputFile = "crsttypes.h";
+            string outputFile = "crsttypes_generated.h";
 
-            // A common error is to forget to check out the CrstTypes.h file first. Handle this case specially
+            // A common error is to forget to check out the crsttypes_generated.h file first. Handle this case specially
             // so we can give a good error message.
             if (File.Exists(outputFile) && (File.GetAttributes(outputFile) & FileAttributes.ReadOnly) != 0)
             {
@@ -113,7 +113,7 @@ class CrstTypeTool
         }
     }
 
-    // Emit the CrstTypes.h output file.
+    // Emit the crsttypes_generated.h output file.
     void WriteHeaderFile(string fileName)
     {
         FileStream stream = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);

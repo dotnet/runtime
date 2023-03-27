@@ -92,8 +92,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 bindingFlags |= BindingFlags.SetProperty;
 
             #region Name
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             if (name.Length == 0 || name.Equals(@"[DISPID=0]"))
             {
@@ -123,8 +122,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 {
                     Debug.Assert(IsSetField);
 
-                    if (providedArgs == null)
-                        throw new ArgumentNullException(nameof(providedArgs));
+                    ArgumentNullException.ThrowIfNull(providedArgs);
 
                     if ((bindingFlags & BindingFlags.GetProperty) != 0)
                         // "Can not specify both SetField and GetProperty."

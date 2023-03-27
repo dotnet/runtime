@@ -42,7 +42,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        private object CastExportsToCollectionImportType(Export[] exports)
+        private Array CastExportsToCollectionImportType(Export[] exports)
         {
             ArgumentNullException.ThrowIfNull(exports);
 

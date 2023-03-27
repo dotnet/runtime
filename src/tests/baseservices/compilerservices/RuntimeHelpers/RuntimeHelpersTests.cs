@@ -5,7 +5,7 @@ using System;
 
 class RuntimeHelpersTests
 {
-    static int Main(string[] args)
+    static int Main()
     {
         try
         {

@@ -152,7 +152,7 @@ namespace System.Collections.Immutable
 
                     if (value != _comparer)
                     {
-                        var newRoot = Node.EmptyNode;
+                        ImmutableSortedSet<T>.Node newRoot = Node.EmptyNode;
                         foreach (T item in this)
                         {
                             bool mutated;
@@ -238,7 +238,7 @@ namespace System.Collections.Immutable
             {
                 Requires.NotNull(other, nameof(other));
 
-                var result = ImmutableSortedSet<T>.Node.EmptyNode;
+                ImmutableSortedSet<T>.Node result = ImmutableSortedSet<T>.Node.EmptyNode;
                 foreach (T item in other)
                 {
                     if (this.Contains(item))

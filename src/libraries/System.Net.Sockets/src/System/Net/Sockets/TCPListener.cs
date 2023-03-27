@@ -134,10 +134,7 @@ namespace System.Net.Sockets
 
         public void Start(int backlog)
         {
-            if (backlog < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(backlog));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(backlog);
 
             // Already listening.
             if (_active)
@@ -204,13 +201,13 @@ namespace System.Net.Sockets
         }
 
         public IAsyncResult BeginAcceptSocket(AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(AcceptSocketAsync(), callback, state);
+            TaskToAsyncResult.Begin(AcceptSocketAsync(), callback, state);
 
         public Socket EndAcceptSocket(IAsyncResult asyncResult) =>
             EndAcceptCore<Socket>(asyncResult);
 
         public IAsyncResult BeginAcceptTcpClient(AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(AcceptTcpClientAsync(), callback, state);
+            TaskToAsyncResult.Begin(AcceptTcpClientAsync(), callback, state);
 
         public TcpClient EndAcceptTcpClient(IAsyncResult asyncResult) =>
             EndAcceptCore<TcpClient>(asyncResult);
@@ -286,7 +283,7 @@ namespace System.Net.Sockets
         {
             try
             {
-                return TaskToApm.End<TResult>(asyncResult);
+                return TaskToAsyncResult.End<TResult>(asyncResult);
             }
             catch (SocketException) when (!_active)
             {

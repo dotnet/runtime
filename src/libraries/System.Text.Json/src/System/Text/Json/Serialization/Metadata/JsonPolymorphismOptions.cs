@@ -18,6 +18,13 @@ namespace System.Text.Json.Serialization.Metadata
         private string? _typeDiscriminatorPropertyName;
 
         /// <summary>
+        /// Creates an empty <see cref="JsonPolymorphismOptions"/> instance.
+        /// </summary>
+        public JsonPolymorphismOptions()
+        {
+        }
+
+        /// <summary>
         /// Gets the list of derived types supported in the current polymorphic type configuration.
         /// </summary>
         public IList<JsonDerivedType> DerivedTypes => _derivedTypes ??= new(this);
@@ -87,8 +94,8 @@ namespace System.Text.Json.Serialization.Metadata
                 _parent = parent;
             }
 
-            protected override bool IsImmutable => _parent.DeclaringTypeInfo?.IsConfigured == true;
-            protected override void VerifyMutable() => _parent.DeclaringTypeInfo?.VerifyMutable();
+            public override bool IsReadOnly => _parent.DeclaringTypeInfo?.IsReadOnly == true;
+            protected override void OnCollectionModifying() => _parent.DeclaringTypeInfo?.VerifyMutable();
         }
 
         internal static JsonPolymorphismOptions? CreateFromAttributeDeclarations(Type baseType)

@@ -21,7 +21,7 @@ using Debug = System.Diagnostics.Debug;
 namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/inc/pedecoder.h">src/inc/pedecoder.h</a> IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/pedecoder.h">src/inc/pedecoder.h</a> IMAGE_FILE_MACHINE_NATIVE_OS_OVERRIDE
     /// </summary>
     public enum OperatingSystem
     {
@@ -102,6 +102,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         private bool _composite;
         private ulong _imageBase;
         private int _readyToRunHeaderRVA;
+        private string _ownerCompositeExecutable;
         private ReadyToRunHeader _readyToRunHeader;
         private List<ReadyToRunCoreHeader> _readyToRunAssemblyHeaders;
         private List<ReadyToRunAssembly> _readyToRunAssemblies;
@@ -228,6 +229,21 @@ namespace ILCompiler.Reflection.ReadyToRun
         }
 
         /// <summary>
+        /// Starting with R2R version 6.3, component assemblies start at index 2 in manifest metadata
+        /// (rowid = 1 represents the manifest metadata itself).
+        /// </summary>
+        public bool ComponentAssemblyIndicesStartAtTwo
+        {
+            get
+            {
+                EnsureHeader();
+                return _readyToRunHeader.MajorVersion > 6 || (_readyToRunHeader.MajorVersion == 6 && _readyToRunHeader.MinorVersion >= 3);
+            }
+        }
+
+        public int ComponentAssemblyIndexOffset => (ComponentAssemblyIndicesStartAtTwo ? 2 : 1);
+
+        /// <summary>
         /// The preferred address of the first byte of image when loaded into memory;
         /// must be a multiple of 64K.
         /// </summary>
@@ -267,6 +283,15 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 EnsureHeader();
                 return _readyToRunAssemblies;
+            }
+        }
+
+        public string OwnerCompositeExecutable
+        {
+            get
+            {
+                EnsureHeader();
+                return _ownerCompositeExecutable;
             }
         }
 
@@ -318,6 +343,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
 
         }
+
+        public bool ValidateDebugInfo;
 
         internal Dictionary<int, int> RuntimeFunctionToDebugInfo
         {
@@ -492,13 +519,34 @@ namespace ILCompiler.Reflection.ReadyToRun
             if (ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.RuntimeFunctions, out ReadyToRunSection runtimeFunctionSection))
             {
                 int runtimeFunctionSize = CalculateRuntimeFunctionSize();
-                uint nRuntimeFunctions = (uint)(runtimeFunctionSection.Size / runtimeFunctionSize);
+                int nRuntimeFunctions = runtimeFunctionSection.Size / runtimeFunctionSize;
                 bool[] isEntryPoint = new bool[nRuntimeFunctions];
+                IDictionary<int, int[]> dHotColdMap = new Dictionary<int, int[]>();
+                int firstColdRuntimeFunction = nRuntimeFunctions;
 
-                // initialize R2RMethods
+                if (ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.HotColdMap, out ReadyToRunSection hotColdMapSection))
+                {
+                    int count = hotColdMapSection.Size / 8;
+                    int hotColdMapOffset = GetOffset(hotColdMapSection.RelativeVirtualAddress);
+                    List<List<int>> mHotColdMap = new List<List<int>>();
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        mHotColdMap.Add(new List<int> { NativeReader.ReadInt32(Image, ref hotColdMapOffset), NativeReader.ReadInt32(Image, ref hotColdMapOffset) });
+                    }
+
+                    for (int i = 0; i < count - 1; i++)
+                    {
+                        dHotColdMap.Add(mHotColdMap[i][1], Enumerable.Range(mHotColdMap[i][0], (mHotColdMap[i + 1][0] - mHotColdMap[i][0])).ToArray());
+                    }
+                    dHotColdMap.Add(mHotColdMap[count - 1][1], Enumerable.Range(mHotColdMap[count - 1][0], (nRuntimeFunctions - mHotColdMap[count - 1][0])).ToArray());
+
+                    firstColdRuntimeFunction = mHotColdMap[0][0];
+                }
+                //initialize R2RMethods
                 ParseMethodDefEntrypoints((section, reader) => ParseMethodDefEntrypointsSection(section, reader, isEntryPoint));
                 ParseInstanceMethodEntrypoints(isEntryPoint);
-                CountRuntimeFunctions(isEntryPoint);
+                CountRuntimeFunctions(isEntryPoint, dHotColdMap, firstColdRuntimeFunction);
             }
         }
 
@@ -610,8 +658,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                     _pointerSize = 8;
                     break;
 
-                case (Machine) 0x6264: /* LoongArch64 */
-                    _architecture = (Architecture) 6; /* LoongArch64 */
+                case (Machine)0x6264: /* LoongArch64 */
+                    _architecture = (Architecture)6; /* LoongArch64 */
                     _pointerSize = 8;
                     break;
 
@@ -626,6 +674,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             Debug.Assert(_readyToRunHeaderRVA != 0);
             int r2rHeaderOffset = GetOffset(_readyToRunHeaderRVA);
             _readyToRunHeader = new ReadyToRunHeader(Image, _readyToRunHeaderRVA, r2rHeaderOffset);
+
+            FindOwnerCompositeExecutable();
 
             _readyToRunAssemblies = new List<ReadyToRunAssembly>();
             if (_composite)
@@ -756,7 +806,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     if (ReadyToRunAssemblyHeaders[assemblyIndex].Sections.TryGetValue(ReadyToRunSectionType.MethodDefEntryPoints, out methodEntryPointSection))
                     {
-                        methodDefSectionReader(methodEntryPointSection, OpenReferenceAssembly(assemblyIndex + 1));
+                        methodDefSectionReader(methodEntryPointSection, OpenReferenceAssembly(assemblyIndex + ComponentAssemblyIndexOffset));
                     }
                 }
             }
@@ -1101,22 +1151,84 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
-        private void CountRuntimeFunctions(bool[] isEntryPoint)
+        private void CountRuntimeFunctions(bool[] isEntryPoint, IDictionary<int, int[]> dHotColdMap, int firstColdRuntimeFunction)
         {
             foreach (ReadyToRunMethod method in Methods)
             {
                 int runtimeFunctionId = method.EntryPointRuntimeFunctionId;
                 if (runtimeFunctionId == -1)
+                {
                     continue;
-
+                }
                 int count = 0;
                 int i = runtimeFunctionId;
                 do
                 {
                     count++;
                     i++;
-                } while (i < isEntryPoint.Length && !isEntryPoint[i]);
-                method.RuntimeFunctionCount = count;
+                } while (i < isEntryPoint.Length && !isEntryPoint[i] && i < firstColdRuntimeFunction);
+                
+                if (dHotColdMap.ContainsKey(runtimeFunctionId))
+                {
+                    int coldSize = dHotColdMap[runtimeFunctionId].Length;
+                    method.ColdRuntimeFunctionId = dHotColdMap[runtimeFunctionId][0];
+                    method.RuntimeFunctionCount = count + coldSize;
+                    method.ColdRuntimeFunctionCount = coldSize;
+                }
+                else
+                {
+                    Debug.Assert(runtimeFunctionId < firstColdRuntimeFunction);
+                    method.RuntimeFunctionCount = count;
+                }
+            }
+        }
+
+        public void ValidateRuntimeFunctions(List<RuntimeFunction> runtimeFunctionList)
+        {
+            List<RuntimeFunction> runtimeFunctions = (List<RuntimeFunction>)runtimeFunctionList;
+            RuntimeFunction firstRuntimeFunction = runtimeFunctions[0];
+            BaseUnwindInfo firstUnwindInfo = firstRuntimeFunction.UnwindInfo;
+            var x64UnwindInfo = firstUnwindInfo as Amd64.UnwindInfo;
+            System.Collections.Generic.HashSet<uint> hashPersonalityRoutines = new System.Collections.Generic.HashSet<uint>();
+            if (x64UnwindInfo != null)
+            {
+                hashPersonalityRoutines.Add(x64UnwindInfo.PersonalityRoutineRVA);
+            }
+            if (ValidateDebugInfo)
+            {
+                CheckNonEmptyDebugInfo(firstRuntimeFunction);
+            }
+
+            for (int i = 1; i < runtimeFunctions.Count; i++)
+            {
+                Debug.Assert(runtimeFunctions[i - 1].StartAddress.CompareTo(runtimeFunctions[i].StartAddress) < 0, "RuntimeFunctions are not sorted");
+                Debug.Assert(runtimeFunctions[i - 1].EndAddress <= runtimeFunctions[i].StartAddress, "RuntimeFunctions intervals overlap");
+                if (ValidateDebugInfo)
+                {
+                    CheckNonEmptyDebugInfo(runtimeFunctions[i - 1]);
+                }
+                if (x64UnwindInfo != null && ((x64UnwindInfo.Flags & (int)ILCompiler.Reflection.ReadyToRun.Amd64.UnwindFlags.UNW_FLAG_CHAININFO) == 0))
+                {
+                    Amd64.UnwindInfo x64UnwindInfoCurr = (Amd64.UnwindInfo)runtimeFunctions[i].UnwindInfo;
+
+                    if ((x64UnwindInfoCurr.Flags & (int)ILCompiler.Reflection.ReadyToRun.Amd64.UnwindFlags.UNW_FLAG_CHAININFO) == 0)
+                    {
+                        uint currPersonalityRoutineRVA = x64UnwindInfoCurr.PersonalityRoutineRVA;
+                        hashPersonalityRoutines.Add(currPersonalityRoutineRVA);
+                        Debug.Assert(hashPersonalityRoutines.Count < 3, "There are more than two different runtimefunctions PersonalityRVAs");
+                    }
+                }
+            }
+        }
+
+        public void CheckNonEmptyDebugInfo(RuntimeFunction function)
+        {
+            if (function.DebugInfo != null)
+            {
+                foreach (NativeVarInfo varInfo in function.DebugInfo.VariablesList)
+                {
+                    Debug.Assert(varInfo.StartOffset < varInfo.EndOffset, "Empty debug info for Variable " + varInfo.VariableNumber + " in " + function.Method.Signature);
+                }
             }
         }
 
@@ -1188,7 +1300,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     if (_readyToRunAssemblyHeaders[assemblyIndex].Sections.TryGetValue(
                         ReadyToRunSectionType.AvailableTypes, out availableTypesSection))
                     {
-                        ParseAvailableTypesSection(assemblyIndex, availableTypesSection, OpenReferenceAssembly(assemblyIndex + 1));
+                        ParseAvailableTypesSection(assemblyIndex, availableTypesSection, OpenReferenceAssembly(assemblyIndex + ComponentAssemblyIndexOffset));
                     }
                 }
             }
@@ -1276,6 +1388,21 @@ namespace ILCompiler.Reflection.ReadyToRun
                 ReadyToRunCoreHeader assemblyHeader = new ReadyToRunCoreHeader(Image, ref headerOffset);
                 _readyToRunAssemblyHeaders.Add(assemblyHeader);
                 _readyToRunAssemblies.Add(new ReadyToRunAssembly(this));
+            }
+        }
+
+        private void FindOwnerCompositeExecutable()
+        {
+            _ownerCompositeExecutable = null;
+            foreach (ReadyToRunSection section in ReadyToRunHeader.Sections.Values)
+            {
+                if (section.Type == ReadyToRunSectionType.OwnerCompositeExecutable)
+                {
+                    int oceOffset = GetOffset(section.RelativeVirtualAddress);
+                    string ownerCompositeExecutable = Encoding.UTF8.GetString(Image, oceOffset, section.Size - 1); // exclude the zero terminator
+                    _ownerCompositeExecutable = ownerCompositeExecutable.ToEscapedString();
+                    break;
+                }
             }
         }
 
@@ -1388,7 +1515,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         /// <summary>
         /// Reads the method entrypoint from the offset. Used for non-generic methods
-        /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/debug/daccess/nidump.cpp">NativeImageDumper::DumpReadyToRunMethods</a>
+        /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/debug/daccess/nidump.cpp">NativeImageDumper::DumpReadyToRunMethods</a>
         /// </summary>
         private void GetRuntimeFunctionIndexFromOffset(int offset, out int runtimeFunctionIndex, out int? fixupOffset)
         {
@@ -1433,7 +1560,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             else
             {
                 int index = refAsmIndex - assemblyRefCount;
-                if (ReadyToRunHeader.MajorVersion > 6 || (ReadyToRunHeader.MajorVersion == 6 && ReadyToRunHeader.MinorVersion >= 3))
+                if (ComponentAssemblyIndicesStartAtTwo)
                 {
                     if (index == 1)
                     {
@@ -1447,7 +1574,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                     metadataReader = ManifestReader;
                     assemblyReferenceHandle = ManifestReferences[index - 1];
                 }
-             }
+            }
 
             return assemblyReferenceHandle;
         }
