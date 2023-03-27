@@ -263,7 +263,7 @@
       <_MonoCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=&quot;$(MonoObjDir.Replace('\','/'))out&quot;"/>
       <_MonoCMakeArgs Include="-DCMAKE_INSTALL_LIBDIR=lib"/>
       <_MonoCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
-      <_MonoCMakeArgs Include="-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true" Condition="'$(KeepNativeSymbols)' != 'true' or '$(BuildMonoAOTCrossCompilerOnly)' == 'true'" />
+      <_MonoCMakeArgs Include="-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true" Condition="'$(KeepNativeSymbols)' == 'true' or '$(BuildMonoAOTCrossCompilerOnly)' == 'true'" />
       <_MonoCMakeArgs Condition="'$(CMakeArgs)' != ''" Include="$(CMakeArgs)"/>
       <_MonoCMakeArgs Condition="'$(MonoEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)" />
       <_MonoCMakeArgs Condition="'$(BuildDarwinFrameworks)' == 'true'" Include="-DBUILD_DARWIN_FRAMEWORKS=1" />
