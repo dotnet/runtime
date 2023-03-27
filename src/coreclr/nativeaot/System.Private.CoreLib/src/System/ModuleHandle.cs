@@ -62,7 +62,7 @@ namespace System
         {
             get
             {
-                return -1;
+                throw new PlatformNotSupportedException();
             }
         }
 
