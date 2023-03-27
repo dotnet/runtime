@@ -567,7 +567,8 @@ NOHANDLES(ICALL(ILOCK_21, "Increment(long&)", ves_icall_System_Threading_Interlo
 NOHANDLES(ICALL(ILOCK_22, "MemoryBarrierProcessWide", ves_icall_System_Threading_Interlocked_MemoryBarrierProcessWide))
 NOHANDLES(ICALL(ILOCK_23, "Read(long&)", ves_icall_System_Threading_Interlocked_Read_Long))
 
-#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+/* include these icalls if we're in the threaded wasm runtime, or if we're building a wasm-targeting cross compiler and we need to support --print-icall-table */
+#if (defined(HOST_BROWSER) && !defined(DISABLE_THREADS)) || (defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP))
 ICALL_TYPE(JSSEM, "System.Threading.LowLevelJSSemaphore", JSSEM_1)
 NOHANDLES(ICALL(JSSEM_1, "DeleteInternal", ves_icall_System_Threading_LowLevelJSSemaphore_DeleteInternal))
 NOHANDLES(ICALL(JSSEM_2, "InitInternal", ves_icall_System_Threading_LowLevelJSSemaphore_InitInternal))
@@ -605,7 +606,8 @@ HANDLES(THREAD_10, "SetState", ves_icall_System_Threading_Thread_SetState, void,
 HANDLES(THREAD_13, "StartInternal", ves_icall_System_Threading_Thread_StartInternal, void, 2, (MonoThreadObject, gint32))
 NOHANDLES(ICALL(THREAD_14, "YieldInternal", ves_icall_System_Threading_Thread_YieldInternal))
 
-#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+/* include these icalls if we're in the threaded wasm runtime, or if we're building a wasm-targeting cross compiler and we need to support --print-icall-table */
+#if (defined(HOST_BROWSER) && !defined(DISABLE_THREADS)) || (defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP))
 ICALL_TYPE(WEBWORKERLOOP, "System.Threading.WebWorkerEventLoop", WEBWORKERLOOP_1)
 NOHANDLES(ICALL(WEBWORKERLOOP_1, "KeepalivePopInternal", ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal))
 NOHANDLES(ICALL(WEBWORKERLOOP_2, "KeepalivePushInternal", ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal))

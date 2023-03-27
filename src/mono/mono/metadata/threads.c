@@ -5087,3 +5087,45 @@ ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
 }
 
 #endif /* HOST_BROWSER && !DISABLE_THREADS */
+
+/* for the AOT cross compiler with --print-icall-table these don't need to be callable, they just
+ * need to be defined */
+#if defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP)
+gpointer
+ves_icall_System_Threading_LowLevelJSSemaphore_InitInternal (void)
+{
+	g_assert_not_reached();
+}
+
+void
+ves_icall_System_Threading_LowLevelJSSemaphore_DeleteInternal (gpointer sem_ptr)
+{
+	g_assert_not_reached();
+}
+
+void
+ves_icall_System_Threading_LowLevelJSSemaphore_PrepareWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, gpointer gchandle, gpointer user_data)
+{
+	g_assert_not_reached();
+}
+
+void
+ves_icall_System_Threading_LowLevelJSSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count)
+{
+	g_assert_not_reached();
+
+}
+
+void
+ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void)
+{
+	g_assert_not_reached();
+}
+
+void
+ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
+{
+	g_assert_not_reached();
+}
+
+#endif /* defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP) */
