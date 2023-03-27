@@ -3710,29 +3710,36 @@ bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, u
 }
 
 void MethodContext::recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field,
-                                                  bool                 isSpeculative,
+                                                  bool*                pIsSpeculative,
                                                   CORINFO_CLASS_HANDLE result)
 {
     if (GetStaticFieldCurrentClass == nullptr)
-        GetStaticFieldCurrentClass = new LightWeightMap<DWORDLONG, Agnostic_GetStaticFieldCurrentClass>();
+        GetStaticFieldCurrentClass = new LightWeightMap<DLD, Agnostic_GetStaticFieldCurrentClass>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(field);
+    key.B = pIsSpeculative != nullptr ? 1 : 0;
 
     Agnostic_GetStaticFieldCurrentClass value;
-
     value.classHandle   = CastHandle(result);
-    value.isSpeculative = isSpeculative;
+    value.isSpeculative = pIsSpeculative != nullptr ? *pIsSpeculative : false;
 
-    DWORDLONG key = CastHandle(field);
     GetStaticFieldCurrentClass->Add(key, value);
     DEBUG_REC(dmpGetStaticFieldCurrentClass(key, value));
 }
-void MethodContext::dmpGetStaticFieldCurrentClass(DWORDLONG key, const Agnostic_GetStaticFieldCurrentClass& value)
+void MethodContext::dmpGetStaticFieldCurrentClass(DLD key, const Agnostic_GetStaticFieldCurrentClass& value)
 {
-    printf("GetStaticFieldCurrentClass key fld-%016" PRIX64 ", value clsHnd-%016" PRIX64 " isSpeculative-%u", key, value.classHandle,
+    printf("GetStaticFieldCurrentClass key fld-%016" PRIX64 ", value clsHnd-%016" PRIX64 " isSpeculative-%u", key.A, value.classHandle,
            value.isSpeculative);
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative)
 {
-    DWORDLONG key = CastHandle(field);
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(field);
+    key.B = pIsSpeculative != nullptr ? 1 : 0;
+
     Agnostic_GetStaticFieldCurrentClass value = LookupByKeyOrMiss(GetStaticFieldCurrentClass, key, ": key %016" PRIX64 "", key);
 
     DEBUG_REP(dmpGetStaticFieldCurrentClass(key, value));

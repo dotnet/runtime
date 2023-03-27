@@ -5200,7 +5200,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     unsigned   lclNum    = tree->GetLclNum();
     LclVarDsc* varDsc    = compiler->lvaGetDesc(lclNum);
 
-    assert(varTypeUsesFloatReg(targetType) == varTypeUsesFloatReg(op1));
+    assert(varTypeUsesSameRegType(targetType, op1));
     assert(genTypeSize(genActualType(targetType)) == genTypeSize(genActualType(op1->TypeGet())));
 
     genConsumeRegs(op1);
@@ -5265,8 +5265,8 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             LclVarDsc*     op1VarDsc = compiler->lvaGetDesc(op1lclNum);
             op1Type                  = op1VarDsc->GetRegisterType(op1LclVar);
         }
-        assert(varTypeUsesFloatReg(targetType) == varTypeUsesFloatReg(op1Type));
-        assert(!varTypeUsesFloatReg(targetType) || (emitTypeSize(targetType) == emitTypeSize(op1Type)));
+        assert(varTypeUsesSameRegType(targetType, op1Type));
+        assert(varTypeUsesIntReg(targetType) || (emitTypeSize(targetType) == emitTypeSize(op1Type)));
 #endif
 
 #if !defined(TARGET_64BIT)
@@ -5736,10 +5736,10 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
     var_types            type2   = varDsc2->TypeGet();
 
     // We must have both int or both fp regs
-    assert(!varTypeUsesFloatReg(type1) || varTypeUsesFloatReg(type2));
+    assert(varTypeUsesSameRegType(type1, type2));
 
     // FP swap is not yet implemented (and should have NYI'd in LSRA)
-    assert(!varTypeUsesFloatReg(type1));
+    assert(varTypeUsesIntReg(type1));
 
     regNumber oldOp1Reg     = lcl1->GetRegNum();
     regMaskTP oldOp1RegMask = genRegMask(oldOp1Reg);
@@ -8818,7 +8818,7 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
 #endif // TARGET_X86
         {
             assert((varTypeUsesFloatReg(type) && genIsValidFloatReg(srcReg)) ||
-                   (varTypeIsIntegralOrI(type) && genIsValidIntReg(srcReg)));
+                   (varTypeUsesIntReg(type) && genIsValidIntReg(srcReg)));
             ins = ins_Store(type);
         }
         attr = emitTypeSize(type);

@@ -3332,7 +3332,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         {
                             argVarDsc = lvaGetDesc(argLclNum);
                             if ((genTypeSize(argVarDsc) != originalSize) ||
-                                (varTypeUsesFloatReg(argVarDsc) != varTypeUsesFloatReg(structBaseType)))
+                                !varTypeUsesSameRegType(argVarDsc, structBaseType))
                             {
                                 argLclNum = BAD_VAR_NUM;
                             }
@@ -3795,7 +3795,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
                 var_types fieldType = lvaGetDesc(fieldLclNum)->TypeGet();
                 var_types regType   = genActualType(elems[inx].Type);
-                if (varTypeUsesFloatReg(fieldType) != varTypeUsesFloatReg(regType))
+
+                if (!varTypeUsesSameRegType(fieldType, regType))
                 {
                     // TODO-LSRA - It currently doesn't support the passing of floating point LCL_VARS in the
                     // integer registers. So for now we will use GT_LCLFLD's to pass this struct.

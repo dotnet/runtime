@@ -994,13 +994,14 @@ public:
         regMaskTP regMask = RBM_NONE;
         if (GetRegNum() != REG_STK)
         {
-            if (varTypeUsesFloatReg(TypeGet()))
+            if (varTypeUsesIntReg(this))
             {
-                regMask = genRegMaskFloat(GetRegNum(), TypeGet());
+                regMask = genRegMask(GetRegNum());
             }
             else
             {
-                regMask = genRegMask(GetRegNum());
+                assert(varTypeUsesFloatReg(this));
+                regMask = genRegMaskFloat(GetRegNum() ARM_ARG(TypeGet()));
             }
         }
         return regMask;
