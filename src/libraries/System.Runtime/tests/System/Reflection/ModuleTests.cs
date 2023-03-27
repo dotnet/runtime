@@ -58,7 +58,7 @@ namespace System.Reflection.Tests
             Assert.NotEqual(typeof(PointerTests).Module.ModuleHandle, System.ModuleHandle.EmptyHandle);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         public void EmptyHandleVersionIsMinus1()
         {
             Assert.Equal(-1, System.ModuleHandle.EmptyHandle.MDStreamVersion);
