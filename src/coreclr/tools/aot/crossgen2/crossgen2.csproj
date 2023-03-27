@@ -41,7 +41,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
-    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
+    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
   </ItemGroup>
 
   <Import Project="$(R2ROverridePath)" Condition="'$(R2ROverridePath)' != ''" />

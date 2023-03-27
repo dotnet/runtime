@@ -57,10 +57,9 @@
   </Target>
 
   <ItemGroup Condition="'$(NativeAotSupported)' == 'true'">
-    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
+    <CustomLinkerArg Condition="'$(CrossBuild)' == 'true' and '$(IlcHostArch)' == '$(TargetArchitecture)' and '$(_hostOS)' != 'windows'" Include="--gcc-toolchain=$(ROOTFS_DIR)/usr" />
   </ItemGroup>
 
-  <ItemGroup>
   <Target Name="PublishCompiler"
           Condition="'$(BuildingInsideVisualStudio)' != 'true'"
           AfterTargets="Build"
