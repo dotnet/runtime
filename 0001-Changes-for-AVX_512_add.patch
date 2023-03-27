@@ -1,0 +1,100 @@
+From eddb970e96f0550f53fa3573da550a2d4899834d Mon Sep 17 00:00:00 2001
+From: Jyothi Krishna V S <jyothi.krishna.viswakaran.sreelatha@intel.com>
+Date: Thu, 16 Mar 2023 14:30:51 -0700
+Subject: [PATCH] Changes for AVX_512_add
+
+---
+ src/coreclr/jit/gentree.cpp            | 13 +++++++++++++
+ src/coreclr/jit/hwintrinsiclistxarch.h |  7 +++++--
+ src/coreclr/jit/hwintrinsicxarch.cpp   | 12 ++++++++++++
+ 3 files changed, 30 insertions(+), 2 deletions(-)
+
+diff --git a/src/coreclr/jit/gentree.cpp b/src/coreclr/jit/gentree.cpp
+index 64d0a7281b5..af630c8c348 100644
+--- a/src/coreclr/jit/gentree.cpp
++++ b/src/coreclr/jit/gentree.cpp
+@@ -19576,6 +19576,19 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
+                     intrinsic = NI_AVX2_Add;
+                 }
+             }
++            else if (simdSize == 64)
++            {
++                if (varTypeIsByte(simdBaseType) || varTypeIsShort(simdBaseType))
++                {
++                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
++                    intrinsic = NI_AVX512BW_Add;
++                }
++                else
++                {
++                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
++                    intrinsic = NI_AVX512F_Add;
++                }
++            }
+             else if (simdBaseType == TYP_FLOAT)
+             {
+                 intrinsic = NI_SSE_Add;
+diff --git a/src/coreclr/jit/hwintrinsiclistxarch.h b/src/coreclr/jit/hwintrinsiclistxarch.h
+index 042f57891a4..e2f1ebf6271 100644
+--- a/src/coreclr/jit/hwintrinsiclistxarch.h
++++ b/src/coreclr/jit/hwintrinsiclistxarch.h
+@@ -236,6 +236,7 @@ HARDWARE_INTRINSIC(Vector256,       Xor,
+ //                                                                                                      {TYP_BYTE,              TYP_UBYTE,              TYP_SHORT,              TYP_USHORT,             TYP_INT,                TYP_UINT,               TYP_LONG,               TYP_ULONG,              TYP_FLOAT,              TYP_DOUBLE}
+ // ***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+ //  Vector512 Intrinsics
++HARDWARE_INTRINSIC(Vector512,       Add,                                        64,             2,      {INS_invalid,           INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid},           HW_Category_Helper,                 HW_Flag_SpecialImport|HW_Flag_BaseTypeFromFirstArg|HW_Flag_NoCodeGen)
+ HARDWARE_INTRINSIC(Vector512,       Create,                                     64,            -1,      {INS_invalid,           INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid},           HW_Category_Helper,                 HW_Flag_SpecialImport|HW_Flag_NoCodeGen)
+ HARDWARE_INTRINSIC(Vector512,       get_Zero,                                   64,             0,      {INS_xorps,             INS_xorps,              INS_xorps,              INS_xorps,              INS_xorps,              INS_xorps,              INS_xorps,              INS_xorps,              INS_xorps,              INS_xorps},             HW_Category_Helper,                 HW_Flag_SpecialImport|HW_Flag_NoCodeGen|HW_Flag_ReturnsPerElementMask)
+ HARDWARE_INTRINSIC(Vector512,       Load,                                       64,             1,      {INS_invalid,           INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid},           HW_Category_Helper,                 HW_Flag_SpecialImport|HW_Flag_NoCodeGen)
+@@ -669,7 +670,7 @@ HARDWARE_INTRINSIC(AVX,             Xor,
+ HARDWARE_INTRINSIC(AVX2,            Abs,                                        32,              1,     {INS_pabsb,             INS_invalid,            INS_pabsw,              INS_invalid,            INS_pabsd,              INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid},           HW_Category_SimpleSIMD,             HW_Flag_NoRMWSemantics|HW_Flag_BaseTypeFromFirstArg)
+ HARDWARE_INTRINSIC(AVX2,            Add,                                        32,              2,     {INS_paddb,             INS_paddb,              INS_paddw,              INS_paddw,              INS_paddd,              INS_paddd,              INS_paddq,              INS_paddq,              INS_invalid,            INS_invalid},           HW_Category_SimpleSIMD,             HW_Flag_Commutative)
+ HARDWARE_INTRINSIC(AVX2,            AddSaturate,                                32,              2,     {INS_paddsb,            INS_paddusb,            INS_paddsw,             INS_paddusw,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid},           HW_Category_SimpleSIMD,             HW_Flag_Commutative)
+-HARDWARE_INTRINSIC(AVX2,            AlignRight,                                32,              3,     {INS_palignr,           INS_palignr,            INS_palignr,            INS_palignr,            INS_palignr,            INS_palignr,            INS_palignr,            INS_palignr,            INS_invalid,            INS_invalid},           HW_Category_IMM,                    HW_Flag_FullRangeIMM)
++HARDWARE_INTRINSIC(AVX2,            AlignRight,                                 32,              3,     {INS_palignr,           INS_palignr,            INS_palignr,            INS_palignr,            INS_palignr,            INS_palignr,            INS_palignr,            INS_palignr,            INS_invalid,            INS_invalid},           HW_Category_IMM,                    HW_Flag_FullRangeIMM)
+ HARDWARE_INTRINSIC(AVX2,            And,                                        32,              2,     {INS_pand,              INS_pand,               INS_pand,               INS_pand,               INS_pand,               INS_pand,               INS_pand,               INS_pand,               INS_invalid,            INS_invalid},           HW_Category_SimpleSIMD,             HW_Flag_Commutative)
+ HARDWARE_INTRINSIC(AVX2,            AndNot,                                     32,              2,     {INS_pandn,             INS_pandn,              INS_pandn,              INS_pandn,              INS_pandn,              INS_pandn,              INS_pandn,              INS_pandn,              INS_invalid,            INS_invalid},           HW_Category_SimpleSIMD,             HW_Flag_NoFlag)
+ HARDWARE_INTRINSIC(AVX2,            Average,                                    32,              2,     {INS_invalid,           INS_pavgb,              INS_invalid,            INS_pavgw,              INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid},           HW_Category_SimpleSIMD,             HW_Flag_Commutative)
+@@ -737,6 +738,7 @@ HARDWARE_INTRINSIC(AVX2,            Xor,
+ //                                                                                                      {TYP_BYTE,              TYP_UBYTE,              TYP_SHORT,              TYP_USHORT,             TYP_INT,                TYP_UINT,               TYP_LONG,               TYP_ULONG,              TYP_FLOAT,              TYP_DOUBLE}
+ // ***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+ //  AVX512F Intrinsics
++HARDWARE_INTRINSIC(AVX512F,         Add,                                        64,              2,     {INS_invalid,           INS_invalid,            INS_invalid,            INS_invalid,            INS_paddd,              INS_paddd,              INS_paddq,              INS_paddq,              INS_addps,              INS_addpd},            HW_Category_SIMDScalar,             HW_Flag_MaybeMemoryLoad)
+ HARDWARE_INTRINSIC(AVX512F,         BroadcastScalarToVector512,                 64,              1,     {INS_invalid,           INS_invalid,            INS_invalid,            INS_invalid,            INS_vpbroadcastd,       INS_vpbroadcastd,       INS_vpbroadcastq,       INS_vpbroadcastq,       INS_vbroadcastss,       INS_vbroadcastsd},      HW_Category_SIMDScalar,             HW_Flag_MaybeMemoryLoad)
+ HARDWARE_INTRINSIC(AVX512F,         InsertVector256,                            64,              3,     {INS_vinserti64x4,      INS_vinserti64x4,       INS_vinserti64x4,       INS_vinserti64x4,       INS_vinserti64x4,       INS_vinserti64x4,       INS_vinserti64x4,       INS_vinserti64x4,       INS_vinsertf64x4,       INS_vinsertf64x4},      HW_Category_IMM,                    HW_Flag_FullRangeIMM)
+ HARDWARE_INTRINSIC(AVX512F,         LoadAlignedVector512,                       64,              1,     {INS_movdqa32,          INS_movdqa32,           INS_movdqa32,           INS_movdqa32,           INS_movdqa32,           INS_movdqa32,           INS_movdqa64,           INS_movdqa64,           INS_movaps,             INS_movapd},            HW_Category_MemoryLoad,             HW_Flag_NoRMWSemantics)
+@@ -749,7 +751,8 @@ HARDWARE_INTRINSIC(AVX512F,         StoreAlignedNonTemporal,
+ //                 ISA              Function name                               SIMD size       NumArg                                                                                                         Instructions                                                                                                                             Category                            Flags
+ //                                                                                                      {TYP_BYTE,              TYP_UBYTE,              TYP_SHORT,              TYP_USHORT,             TYP_INT,                TYP_UINT,               TYP_LONG,               TYP_ULONG,              TYP_FLOAT,              TYP_DOUBLE}
+ // ***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+-//  AVX512F Intrinsics
++//  AVX512BW Intrinsics
++HARDWARE_INTRINSIC(AVX512BW,         Add,                                        64,              2,     {INS_paddb,            INS_paddb,              INS_paddsw,             INS_paddsw,             INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid},           HW_Category_SIMDScalar,             HW_Flag_MaybeMemoryLoad)
+ HARDWARE_INTRINSIC(AVX512BW,         BroadcastScalarToVector512,                 64,              1,     {INS_vpbroadcastb,     INS_vpbroadcastb,       INS_vpbroadcastw,       INS_vpbroadcastw,       INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid,            INS_invalid},           HW_Category_SIMDScalar,             HW_Flag_MaybeMemoryLoad)
+ 
+ // ***************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+diff --git a/src/coreclr/jit/hwintrinsicxarch.cpp b/src/coreclr/jit/hwintrinsicxarch.cpp
+index 7feb5336ca0..7aa1bad575e 100644
+--- a/src/coreclr/jit/hwintrinsicxarch.cpp
++++ b/src/coreclr/jit/hwintrinsicxarch.cpp
+@@ -533,6 +533,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
+             break;
+         }
+ 
++
++        case NI_Vector512_Add:
++        {
++            assert(sig->numArgs == 2);
++            if (IsBaselineVector512IsaSupported())
++            {
++                op2 = impSIMDPopStack(retType);
++                op1 = impSIMDPopStack(retType);
++                retNode = gtNewSimdBinOpNode(GT_ADD, retType, op1, op2, simdBaseJitType, simdSize,
++                                             /* isSimdAsHWIntrinsic */ false);
++            }
++        }
+         case NI_Vector128_Add:
+         case NI_Vector256_Add:
+         case NI_Vector128_op_Addition:
+-- 
+2.39.2.windows.1
+

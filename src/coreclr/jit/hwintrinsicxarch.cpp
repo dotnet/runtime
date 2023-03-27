@@ -1360,6 +1360,25 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector512_Equals:
+        {
+            assert(sig->numArgs == 2);
+
+            if (compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
+                compOpportunisticallyDependsOn(InstructionSet_AVX512BW) &&
+                compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+            {
+                var_types simdType = getSIMDTypeForSize(simdSize);
+
+                op2 = impSIMDPopStack(simdType);
+                op1 = impSIMDPopStack(simdType);
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1,op2,  NI_AVX512F_CompareEqualSpecial, simdBaseJitType, simdSize,
+                                                   /* isSimdAsHWIntrinsic */ false);
+            }
+            break;
+        }
+
         case NI_Vector128_EqualsAll:
         case NI_Vector256_EqualsAll:
         case NI_Vector128_op_Equality:

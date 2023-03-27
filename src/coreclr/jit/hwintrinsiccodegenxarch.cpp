@@ -1746,6 +1746,24 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_AVX512F_CompareEqualSpecial:
+        {
+            GenTree* op2      = node->Op(2);
+            op1Reg            = op1->GetRegNum();
+            regNumber op2Reg  = op2->GetRegNum();
+            regNumber maskReg = node->ExtractTempReg(RBM_ALLMASK);
+
+            instruction maskIns = genMask2VectorIns(baseType);
+            instruction compareIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_CompareEqualSpecial, baseType);
+
+            assert(maskIns != INS_invalid && compareIns != INS_invalid);
+            assert(emitter::isMaskReg(maskReg));
+
+            emit->emitIns_R_R_R_I(compareIns, attr, maskReg, op1Reg, op2Reg, 0);
+            emit->emitIns_R_R(maskIns, attr, targetReg, maskReg);
+            break;
+        }
+
         default:
             unreached();
             break;
@@ -2112,6 +2130,41 @@ void CodeGen::genX86SerializeIntrinsic(GenTreeHWIntrinsic* node)
     }
 
     genProduceReg(node);
+}
+
+//------------------------------------------------------------------------
+// genX86SerializeIntrinsic: Generate an "vpmovm2t" instruction, where t
+// represents a byte, word, dword, or qword, from a JIT base type.
+// 
+// Operation takes a AVX512 mask register and populates a SIMD register
+// elementwise with 0s or 1s based on the associated bit in the mask register.
+//
+// Arguments:
+//    node - base JIT type
+//
+instruction CodeGen::genMask2VectorIns(var_types baseType)
+{
+    switch (baseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+            return INS_vpmovm2b;
+        case TYP_SHORT:
+        case TYP_USHORT:
+            return INS_vpmovm2w;
+        case TYP_INT:
+        case TYP_UINT:
+        case TYP_FLOAT:
+            return INS_vpmovm2d;
+        case TYP_LONG:
+        case TYP_ULONG:
+        case TYP_DOUBLE:
+            return INS_vpmovm2q;
+        default:
+            unreached();
+    }
+
+    return INS_invalid;
 }
 
 #endif // FEATURE_HW_INTRINSICS

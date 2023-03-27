@@ -644,6 +644,22 @@ INST3(vinserti32x8,      "inserti32x8",     IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(vpmovd2m,          "pmovd2m",         IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x39),           INS_TT_NONE,                         Input_32Bit    | REX_W0_EVEX                  | Encoding_EVEX)
 INST3(vpmovq2m,          "pmovq2m",         IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x39),           INS_TT_NONE,                         Input_64Bit    | REX_W1_EVEX                  | Encoding_EVEX)
 
+INST3(vpmovm2b,         "vpmovm2b",          IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x28),          INS_TT_NONE,    Input_8Bit) // W0
+INST3(vpmovm2w,         "vpmovm2w",          IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x28),          INS_TT_NONE,    Input_16Bit) // W1
+INST3(vpmovm2d,         "vpmovm2d",          IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x38),          INS_TT_NONE,    Input_32Bit) // W0
+INST3(vpmovm2q,         "vpmovm2q",          IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x38),          INS_TT_NONE,    Input_64Bit) // W1
+
+
+INST3(vpcmpb,           "vpcmpb",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x3F),          INS_TT_FULL,    Input_8Bit) // W0
+INST3(vpcmpw,           "vpcmpw",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x3F),          INS_TT_FULL,    Input_16Bit) // W1
+INST3(vpcmpd,           "vpcmpd",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x1F),          INS_TT_FULL,    Input_32Bit) // W0
+INST3(vpcmpq,           "vpcmpq",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x1F),          INS_TT_FULL,    Input_64Bit) // W1
+
+INST3(vpcmpub,          "vpcmpub",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x3E),          INS_TT_FULL,    Input_8Bit) // W0
+INST3(vpcmpuw,          "vpcmpuw",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x3E),          INS_TT_FULL,    Input_16Bit) // W1
+INST3(vpcmpud,          "vpcmpud",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x1E),          INS_TT_FULL,    Input_32Bit) // W0
+INST3(vpcmpuq,          "vpcmpuq",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x1F),          INS_TT_FULL,    Input_64Bit) // W1
+
 INST3(LAST_AVX512_INSTRUCTION, "LAST_AVX512_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
 
 // Scalar instructions in SSE4.2

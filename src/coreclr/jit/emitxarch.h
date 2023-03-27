@@ -197,6 +197,7 @@ code_t AddVexPrefixIfNeededAndNotPresent(instruction ins, code_t code, emitAttr 
 bool HasKMaskRegisterDest(instruction ins) const
 {
     assert(UseEvexEncoding() == true);
+
     switch (ins)
     {
         // Requires KMask.
@@ -414,7 +415,9 @@ static bool IsRexW1EvexInstruction(instruction ins);
 
 bool IsThreeOperandAVXInstruction(instruction ins)
 {
-    return (IsDstDstSrcAVXInstruction(ins) || IsDstSrcSrcAVXInstruction(ins));
+    return (IsDstDstSrcAVXInstruction(ins) || IsDstSrcSrcAVXInstruction(ins) || 
+        (ins == INS_vpcmpb || ins == INS_vpcmpw || ins == INS_vpcmpd || ins == INS_vpcmpq || 
+         ins == INS_vpcmpub || ins == INS_vpcmpuw || ins == INS_vpcmpud || ins == INS_vpcmpuq));
 }
 
 bool isAvxBlendv(instruction ins)
@@ -818,6 +821,7 @@ inline bool HasEmbeddedBroadcast(const instrDesc* id) const
 }
 
 inline bool HasHighSIMDReg(const instrDesc* id) const;
+inline bool HasMaskReg(const instrDesc* id) const;
 inline bool IsHighSIMDReg(regNumber) const;
 
 inline bool HasMaskReg(const instrDesc* id) const;
