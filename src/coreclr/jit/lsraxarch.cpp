@@ -68,7 +68,7 @@ int LinearScan::BuildNode(GenTree* tree)
     }
 
     // floating type generates AVX instruction (vmovss etc.), set the flag
-    if (varTypeUsesFloatReg(tree->TypeGet()))
+    if (!varTypeUsesIntReg(tree->TypeGet()))
     {
         SetContainsAVXFlags();
     }
@@ -1218,13 +1218,18 @@ int LinearScan::BuildCall(GenTreeCall* call)
         dstCandidates                     = RBM_FLOATRET;
 #endif // !TARGET_X86
     }
-    else if (registerType == TYP_LONG)
-    {
-        dstCandidates = RBM_LNGRET;
-    }
     else
     {
-        dstCandidates = RBM_INTRET;
+        assert(varTypeUsesIntReg(registerType));
+
+        if (registerType == TYP_LONG)
+        {
+            dstCandidates = RBM_LNGRET;
+        }
+        else
+        {
+            dstCandidates = RBM_INTRET;
+        }
     }
 
     // number of args to a call =
