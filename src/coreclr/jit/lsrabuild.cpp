@@ -1900,14 +1900,15 @@ void LinearScan::buildPhysRegRecords()
         curr->regOrder  = (unsigned char)i;
     }
 #if defined(TARGET_AMD64)
-    if (compiler->DoJitStressEvexEncoding())
+    if (compiler->canUseEvexEncoding())
     {
-        for (unsigned int i = 0; i < lsraRegOrderFltSize; i++)
+        const regNumber lsraRegOrderFltUpper[]   = {REG_VAR_ORDER_FLT_UPPER};
+        const unsigned  lsraRegOrderUpperFltSize = ArrLen(lsraRegOrderFltUpper);
+        for (unsigned int i = 0; i < lsraRegOrderUpperFltSize; i++)
         {
-            const regNumber lsraRegOrderFltUpper[] = {REG_VAR_ORDER_FLT_UPPER};
-            regNumber       reg                    = lsraRegOrderFltUpper[i];
-            RegRecord*      curr                   = &physRegs[reg];
-            curr->regOrder                         = (unsigned char)(i + lsraRegOrderFltSize);
+            regNumber  reg  = lsraRegOrderFltUpper[i];
+            RegRecord* curr = &physRegs[reg];
+            curr->regOrder  = (unsigned char)(i + lsraRegOrderUpperFltSize);
         }
     }
 #endif //  TARGET_AMD64
