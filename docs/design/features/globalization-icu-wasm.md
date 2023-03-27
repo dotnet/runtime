@@ -48,7 +48,7 @@ Removing specific feature data might result in an exception that starts with `[C
   ./build.sh /p:TargetOS=Android /p:TargetArchitecture=x64 /p:IcuTracing=true
   ```
 
-Output from both builds will be located in subdirectories of `artifacts/bin`. Copy the generated `.dat` files to a suitable location and provide the  path to it in the `.csproj`, e.g.:
+Output from both builds will be located in subdirectories of `artifacts/bin`. Copy the generated `.dat` files to your project location and provide the path to it in the `.csproj`, e.g.:
 
 ```xml
 <!-- relative path -->
