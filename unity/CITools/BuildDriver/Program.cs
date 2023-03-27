@@ -1,4 +1,7 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
+using System.Runtime.InteropServices;
 using NiceIO;
 
 namespace BuildDriver;
@@ -6,105 +9,155 @@ namespace BuildDriver;
 public class Program
 {
     public static bool RunningOnYamato() => Environment.GetEnvironmentVariable("YAMATO_PROJECT_ID") != null;
-    public static async Task<int> Main(string[] args)
+    public static int Main(string[] args)
     {
-        string architecture = GetArchitectures()[0]; // Get default arch for current system
-        string configuration = "Release";
-        bool silent = false;
-        bool skipBuild = false;
-        TestTargets testTargets = TestTargets.None;
-        bool zip = RunningOnYamato();
-        Task<NPath>? zipTask = null;
-        foreach (string arg in args)
+        var buildOption = new Option<BuildTargets>("--build", "--b")
         {
-            if ((arg.StartsWith("--arch") || arg.StartsWith("--architecture="))
-                && !TryParseArgument(GetArchitectures(true), arg, out architecture))
-                return 1;
-            else if ((arg.StartsWith("--config=") || arg.StartsWith("--configuration="))
-                     && !TryParseArgument(new[] {"Release", "Debug"}, arg, out configuration))
-                return 1;
-            else if (arg.Equals("--silent") || arg.Equals("--s"))
-                silent = true;
-            else if (arg.Equals("--zip") || arg.Equals("--z"))
-                zip = true;
-            else if (arg.Equals("--skip-build"))
-                skipBuild = true;
-            else if (arg.Equals("--test"))
+            AllowMultipleArgumentsPerToken = true,
+            Arity = ArgumentArity.ZeroOrMore,
+            CustomParser = result =>
             {
-                skipBuild = true; // Assume we've already built
-                testTargets = TestTargets.All;
+                if (result.Tokens.Count == 0)
+                    return BuildTargets.All; //For when --build is provided without any arguments.
+                BuildTargets retVal = BuildTargets.None;
+                foreach (Token token in result.Tokens)
+                {
+                    if (Enum.TryParse(token.Value, out BuildTargets val))
+                        retVal |= val;
+                    else
+                        result.AddError($"'{token.Value}' is not a valid build target");
+                }
+                return retVal;
             }
-            else if (arg.StartsWith("--test="))
-            {
-                if (!TryParseTestTargets(arg, out var testTarget))
-                    return 1;
-                skipBuild = true; // Assume we've already built
-                testTargets = Enum.Parse<TestTargets>(testTarget, ignoreCase: true);
-            }
-        }
-
-        // This gives a way to test and build in the same command
-        if (args.Any(a => a == "--build"))
-            skipBuild = false;
-
-        if (RunningOnYamato())
-        {
-            zipTask = SevenZip.DownloadAndUnzip7Zip();
-        }
-
-        Console.WriteLine("*****************************");
-        Console.WriteLine("Unity: Starting CoreCLR build");
-        Console.WriteLine($"\tPlatform:\t\t{RuntimeInformation.OSDescription}");
-        Console.WriteLine($"\tArchitecture:\t\t{architecture}");
-        Console.WriteLine($"\tConfiguration:\t\t{configuration}");
-        Console.WriteLine("*****************************");
-
-        GlobalConfig gConfig = new ()
-        {
-            Architecture = architecture,
-            Configuration = configuration,
-            Silent = silent,
-            DotNetVerbosity = "quiet"
         };
-
-        // We need to build even when `skipBuild` is false because on CI we have the build and tests split into separate jobs.  And the way we have artifacts setup,
-        // we don't retain anything built under `unity`.  And therefore we need to rebuild it so that tests that depend on something in managed.sln can find what they need
-        EmbeddingHost.Build(gConfig);
-
-        if (!skipBuild)
+        var testOption = new Option<TestTargets>("--test")
         {
-            NullGC.Build(gConfig);
-            CoreCLR.Build(gConfig);
-
-            // TODO: Switch to using Embedding Host build to perform the copy instead of this once that lands.
-            NPath artifacts = ConsolidateArtifacts(gConfig);
-
-            NPath zipExe = new("7z");
-            if (zipTask != null)
+            AllowMultipleArgumentsPerToken = true,
+            Arity = ArgumentArity.ZeroOrMore,
+            CustomParser = result =>
             {
-                zipExe = await zipTask;
-                if (zipTask.Exception != null)
-                    throw zipTask.Exception;
+                if (result.Tokens.Count == 0)
+                    return TestTargets.All; // For when --test is provided without any arguments
+                TestTargets retVal = TestTargets.None;
+                foreach (Token token in result.Tokens)
+                {
+                    if (Enum.TryParse(token.Value, out TestTargets val))
+                        retVal |= val;
+                    else
+                        result.AddError($"'{token.Value}' is not a valid test target");
+                }
+                return retVal;
+            }
+        };
+        var architectureOption = new Option<string>("--architecture", "--a", "--arch")
+        {
+            Description = "Set the target architecture",
+            DefaultValueFactory = (_) => GetArchitectures()[0]
+        };
+        architectureOption.Validators.Add(result =>
+        {
+            string? val = result.GetValue(architectureOption);
+            string[] validArgs = GetArchitectures(true);
+            if (val != null && !validArgs.Contains(val))
+                result.AddError($"The value of {architectureOption.Name} must be one of the following: {validArgs.AggregateWithSpace()}");
+        });
+        var configurationOption = new Option<string>("--configuration", "--c", "--config")
+        {
+            Description = "Set the build type",
+            DefaultValueFactory = (_) => "Release"
+        };
+        configurationOption.Validators.Add(result =>
+        {
+            string? val = result.GetValue(configurationOption);
+            if (val == null || !(val.Equals("Release") || val.Equals("Debug")))
+                result.AddError($"The value of {configurationOption.Name} must be either Release or Debug");
+        });
+
+        var silentOption = new Option<bool>("--silent", "--s");
+        var zipOption = new Option<bool>("--zip", "--z") { DefaultValueFactory = (_) => RunningOnYamato()};
+
+        RootCommand rootCommand = new RootCommand("Unity CoreCLR Builder")
+        {
+            buildOption,
+            testOption,
+            architectureOption,
+            configurationOption,
+            silentOption,
+            zipOption
+        };
+        rootCommand.SetAction(Run);
+
+        return new CommandLineBuilder(rootCommand).UseParseErrorReporting().UseHelp().Build().Invoke(args);
+
+        void Run(InvocationContext context)
+        {
+            Task<NPath>? zipTask = null;
+            BuildTargets bTargets = context.ParseResult.GetValue(buildOption);
+            TestTargets tTargets = context.ParseResult.GetValue(testOption);
+            string? architecture = context.ParseResult.GetValue(architectureOption);
+            string? configuration = context.ParseResult.GetValue(configurationOption);
+            if (bTargets == BuildTargets.None && tTargets == TestTargets.None)
+                bTargets = BuildTargets.All;
+            if (RunningOnYamato() && bTargets != BuildTargets.None)
+            {
+                zipTask = SevenZip.DownloadAndUnzip7Zip();
             }
 
-            if (zip)
-                SevenZip.Zip(zipExe, artifacts, gConfig);
+            Console.WriteLine("*****************************");
+            Console.WriteLine("Unity: Starting CoreCLR build");
+            Console.WriteLine($"\tPlatform:\t\t{RuntimeInformation.OSDescription}");
+            Console.WriteLine($"\tArchitecture:\t\t{architecture}");
+            Console.WriteLine($"\tConfiguration:\t\t{configuration}");
+            Console.WriteLine("*****************************");
+
+            GlobalConfig gConfig = new()
+            {
+                Architecture = architecture ?? GetArchitectures()[0],
+                Configuration = configuration ?? "Release",
+                Silent = context.ParseResult.GetValue(silentOption),
+                DotNetVerbosity = "quiet"
+            };
+
+            // We always need to build the embedding host because on CI we have the build and tests split into separate jobs.  And the way we have artifacts setup,
+            // we don't retain anything built under `unity`.  And therefore we need to rebuild it so that tests that depend on something in managed.sln can find what they need
+            EmbeddingHost.Build(gConfig);
+
+            if (bTargets != BuildTargets.None)
+            {
+                if (bTargets.HasFlag(BuildTargets.NullGC))
+                    NullGC.Build(gConfig);
+                if (bTargets.HasFlag(BuildTargets.CoreCLR))
+                    CoreCLR.Build(gConfig);
+
+                // TODO: Switch to using Embedding Host build to perform the copy instead of this once that lands.
+                NPath artifacts = ConsolidateArtifacts(gConfig);
+
+                NPath zipExe = new("7z");
+                if (zipTask != null)
+                {
+                    zipTask.Wait();
+                    zipExe = zipTask.Result;
+                    if (zipTask.Exception != null)
+                        throw zipTask.Exception;
+                }
+
+                if (context.ParseResult.GetValue(zipOption))
+                    SevenZip.Zip(zipExe, artifacts, gConfig);
+            }
+
+            if (tTargets != TestTargets.None)
+            {
+                if (tTargets.HasFlag(TestTargets.Embedding))
+                    EmbeddingHost.Test(gConfig);
+
+                if (tTargets.HasFlag(TestTargets.CoreClr))
+                    CoreCLR.Test(gConfig);
+
+                Console.WriteLine("******************************");
+                Console.WriteLine("Unity: Tested CoreCLR successfully");
+                Console.WriteLine("******************************");
+            }
         }
-
-        if (testTargets != TestTargets.None)
-        {
-            if (testTargets.HasFlag(TestTargets.Embedding))
-                EmbeddingHost.Test(gConfig);
-
-            if (testTargets.HasFlag(TestTargets.CoreClr))
-                CoreCLR.Test(gConfig);
-
-            Console.WriteLine("******************************");
-            Console.WriteLine("Unity: Tested CoreCLR successfully");
-            Console.WriteLine("******************************");
-        }
-
-        return 0;
     }
 
     static NPath ConsolidateArtifacts(GlobalConfig gConfig)
@@ -133,31 +186,6 @@ public class Program
         Paths.RepoRoot.Combine("LICENSE.md").Copy(destDir);
 
         return destDir;
-    }
-
-    static bool TryParseTestTargets(string arg, out string value)
-    {
-        var values = Enum.GetValues(typeof(TestTargets));
-        var valid = new List<string>();
-        foreach(var v in values)
-            valid.Add(v.ToString().ToLower());
-
-        return TryParseArgument(valid.ToArray(), arg, out value);
-    }
-
-    static bool TryParseArgument(string[] validArgs, string arg, out string value)
-    {
-        string[] args = arg.Split('=');
-        if (string.IsNullOrEmpty(args[1]) || !validArgs.Contains(args[1]))
-        {
-            value = string.Empty;
-            Console.WriteLine($"Invalid option: {arg}  Example : `--{args[0]}={validArgs[0]}`");
-            return false;
-        }
-
-        value = args[1];
-
-        return true;
     }
 
     private static string[] GetArchitectures(bool allArchitectures = false)
