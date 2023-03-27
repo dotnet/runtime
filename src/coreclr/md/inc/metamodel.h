@@ -617,8 +617,8 @@ protected:
     HRESULT SetNewColumnDefinition(CMiniTableDef *pTable, CMiniColDef* pCols, DWORD ixTbl);
 
 private:
-    // DISABLE_ASAN tracked by https://github.com/dotnet/runtime/issues/73718
-    BOOL DISABLE_ASAN UsesAllocatedMemory(CMiniColDef* pCols);
+
+    BOOL UsesAllocatedMemory(CMiniColDef* pCols);
 };
 
 

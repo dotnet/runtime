@@ -1193,7 +1193,7 @@ CMiniMdBase::FindSharedColDefs(
 // Determines where the Table Def's Column Definitions used shared memory or
 // allocated memory
 //*****************************************************************************
-BOOL DISABLE_ASAN
+BOOL
 CMiniMdBase::UsesAllocatedMemory(
     CMiniColDef *pCols)
 {
