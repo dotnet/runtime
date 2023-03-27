@@ -7,8 +7,8 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetBootTimeTicks")]
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetBootTimeTicks")]
         [SuppressGCTransition]
-        internal static partial long GetBootTimeTicks();
+        internal static extern long GetBootTimeTicks();
     }
 }
