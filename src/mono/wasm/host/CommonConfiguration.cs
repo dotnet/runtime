@@ -22,7 +22,6 @@ internal sealed class CommonConfiguration
     public WasmHost Host { get; init; }
     public HostConfig HostConfig { get; init; }
     public WasmHostProperties HostProperties { get; init; }
-    public IEnumerable<string> HostArguments { get; init; }
 
     private string? hostArg;
     private string? _runtimeConfigPath;
@@ -31,13 +30,11 @@ internal sealed class CommonConfiguration
 
     private CommonConfiguration(string[] args)
     {
-        List<string> hostArgsList = new();
         var options = new OptionSet
         {
             { "debug|d", "Start debug server", _ => Debugging = true },
             { "host|h=", "Host config name", v => hostArg = v },
-            { "runtime-config|r=", "runtimeconfig.json path for the app", v => _runtimeConfigPath = v },
-            { "extra-host-arg=", "Extra argument to be passed to the host", hostArgsList.Add },
+            { "runtime-config|r=", "runtimeconfig.json path for the app", v => _runtimeConfigPath = v }
         };
 
         RemainingArgs = options.Parse(args);
@@ -98,9 +95,6 @@ internal sealed class CommonConfiguration
         if (!Enum.TryParse(HostConfig.HostString, ignoreCase: true, out WasmHost wasmHost))
             throw new CommandLineException($"Unknown host {HostConfig.HostString} in config named {HostConfig.Name}");
         Host = wasmHost;
-
-        hostArgsList.AddRange(HostConfig.HostArguments);
-        HostArguments = hostArgsList;
     }
 
     public ProxyOptions ToProxyOptions()
