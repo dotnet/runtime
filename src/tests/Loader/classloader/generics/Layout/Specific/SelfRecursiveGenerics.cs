@@ -4,76 +4,94 @@
 using System;
 using System.Runtime.InteropServices;
 
-
-Console.WriteLine(new SelfReferentialStructWithNoFieldsAuto());
-Console.WriteLine(new SelfReferentialStructWithNoFieldsSequential());
-Console.WriteLine(new SelfReferentialStructWithNoFieldsSequential());
-
-Console.WriteLine(new SelfReferentialGenericStructWithNoFieldsAuto<int>());
-Console.WriteLine(new SelfReferentialGenericStructWithNoFieldsSequential<int>());
-Console.WriteLine(new SelfReferentialGenericStructWithNoFieldsSequential<int>());
-
-Console.WriteLine(new SelfReferentialGenericStructWithNoFieldsAuto<string>());
-Console.WriteLine(new SelfReferentialGenericStructWithNoFieldsSequential<string>());
-Console.WriteLine(new SelfReferentialGenericStructWithNoFieldsSequential<string>());
-
-Console.WriteLine(typeof(MyNodeAuto).FullName);
-Console.WriteLine(typeof(MyNodeSequential).FullName);
-
-public class Container<T> {
-    public struct Nested { }
-}
-
-[StructLayout(LayoutKind.Auto)]
-public struct SelfReferentialStructWithNoFieldsAuto {
-    public Container<SelfReferentialStructWithNoFieldsAuto>.Nested Nested;
-}
-[StructLayout(LayoutKind.Sequential)]
-public struct SelfReferentialStructWithNoFieldsSequential {
-    public Container<SelfReferentialStructWithNoFieldsSequential>.Nested Nested;
-}
-[StructLayout(LayoutKind.Sequential)]
-public struct SelfReferentialStructWithStringFieldSequential {
-    public Container<SelfReferentialStructWithStringFieldSequential>.Nested Nested;
-    public string String;
-}
-
-[StructLayout(LayoutKind.Auto)]
-public struct SelfReferentialGenericStructWithNoFieldsAuto<T> {
-    public Container<SelfReferentialGenericStructWithNoFieldsAuto<T>>.Nested Nested;
-}
-[StructLayout(LayoutKind.Sequential)]
-public struct SelfReferentialGenericStructWithNoFieldsSequential<T> {
-    public Container<SelfReferentialGenericStructWithNoFieldsSequential<T>>.Nested Nested;
-}
-[StructLayout(LayoutKind.Sequential)]
-public struct SelfReferentialGenericStructWithStringFieldSequential<T> {
-    public Container<SelfReferentialGenericStructWithStringFieldSequential<T>>.Nested Nested;
-    public string String;
-}
-
-
-/// <summary>
-/// List of T expressed as a value type
-/// </summary>
-public struct ValueList<T>
+class SelfRecursiveGenerics
 {
-    private T[] _arr;
-    private int _count;
-}
+    static int Main()
+    {
+        Console.WriteLine(new SelfReferentialStructWithNoFieldsAuto());
+        Console.WriteLine(new SelfReferentialStructWithNoFieldsSequential());
+        Console.WriteLine(new SelfReferentialStructWithStringFieldSequential());
+        Console.WriteLine(new SelfReferentialStructWithExplicitLayout());
 
-[StructLayout(LayoutKind.Auto)]
-public struct MyNodeAuto
-{
-    public int NodeData;
+        Console.WriteLine(new SelfReferentialGenericStructWithNoFieldsAuto<int>());
+        Console.WriteLine(new SelfReferentialGenericStructWithNoFieldsSequential<int>());
+        Console.WriteLine(new SelfReferentialGenericStructWithStringFieldSequential<int>());
 
-    public ValueList<MyNodeAuto> Nodes;
-}
+        Console.WriteLine(new SelfReferentialGenericStructWithNoFieldsAuto<string>());
+        Console.WriteLine(new SelfReferentialGenericStructWithNoFieldsSequential<string>());
+        Console.WriteLine(new SelfReferentialGenericStructWithStringFieldSequential<string>());
 
-[StructLayout(LayoutKind.Sequential)]
-public struct MyNodeSequential
-{
-    public int NodeData;
+        Console.WriteLine(typeof(MyNodeAuto).FullName);
+        Console.WriteLine(typeof(MyNodeSequential).FullName);
 
-    public ValueList<MyNodeSequential> Nodes;
+        return 100;
+    }
+
+    public class Container<T> {
+        public struct Nested { }
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct SelfReferentialStructWithNoFieldsAuto {
+        public Container<SelfReferentialStructWithNoFieldsAuto>.Nested Nested;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SelfReferentialStructWithNoFieldsSequential {
+        public Container<SelfReferentialStructWithNoFieldsSequential>.Nested Nested;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SelfReferentialStructWithStringFieldSequential {
+        public Container<SelfReferentialStructWithStringFieldSequential>.Nested Nested;
+        public string String;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    public struct SelfReferentialStructWithExplicitLayout {
+        [FieldOffset(1)]
+        public Container<SelfReferentialStructWithExplicitLayout>.Nested Nested;
+        [FieldOffset(0)]
+        public int Fld1;
+        [FieldOffset(4)]
+        public int Fld2;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct SelfReferentialGenericStructWithNoFieldsAuto<T> {
+        public Container<SelfReferentialGenericStructWithNoFieldsAuto<T>>.Nested Nested;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SelfReferentialGenericStructWithNoFieldsSequential<T> {
+        public Container<SelfReferentialGenericStructWithNoFieldsSequential<T>>.Nested Nested;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct SelfReferentialGenericStructWithStringFieldSequential<T> {
+        public Container<SelfReferentialGenericStructWithStringFieldSequential<T>>.Nested Nested;
+        public string String;
+    }
+
+
+    /// <summary>
+    /// List of T expressed as a value type
+    /// </summary>
+    public struct ValueList<T>
+    {
+        private T[] _arr;
+        private int _count;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct MyNodeAuto
+    {
+        public int NodeData;
+
+        public ValueList<MyNodeAuto> Nodes;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MyNodeSequential
+    {
+        public int NodeData;
+
+        public ValueList<MyNodeSequential> Nodes;
+    }
 }
