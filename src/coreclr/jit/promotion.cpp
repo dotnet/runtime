@@ -128,12 +128,11 @@ static size_t BinarySearch(const jitstd::vector<T>& vec, unsigned offset)
 
 struct Replacement
 {
-    unsigned     Offset;
-    var_types    AccessType;
-    unsigned     LclNum;
-    bool         NeedsWriteBack = true;
-    bool         NeedsReadBack  = false;
-    Replacement* Next           = nullptr;
+    unsigned  Offset;
+    var_types AccessType;
+    unsigned  LclNum;
+    bool      NeedsWriteBack = true;
+    bool      NeedsReadBack  = false;
 
     Replacement(unsigned offset, var_types accessType, unsigned lclNum)
         : Offset(offset), AccessType(accessType), LclNum(lclNum)
@@ -305,12 +304,6 @@ public:
             return;
         }
 
-        // We may be relying on zero-init as part of the prolog for the struct
-        // local. We need to propagate this to all replacement locals too to
-        // allow downstream phases to properly know that the local may need to
-        // be zeroed.
-
-        bool suppressedInit = comp->lvaGetDesc(lclNum)->lvSuppressedZeroInit;
         assert(replacements.size() == 0);
         for (size_t i = 0; i < m_accesses.size(); i++)
         {
@@ -334,10 +327,10 @@ public:
             char*  bufp = new (comp, CMK_DebugOnly) char[len];
             strcpy_s(bufp, len, buf);
 #endif
-            unsigned   newLcl         = comp->lvaGrabTemp(false DEBUGARG(bufp));
-            LclVarDsc* dsc            = comp->lvaGetDesc(newLcl);
-            dsc->lvType               = access.AccessType;
-            dsc->lvSuppressedZeroInit = suppressedInit;
+            unsigned   newLcl = comp->lvaGrabTemp(false DEBUGARG(bufp));
+            LclVarDsc* dsc    = comp->lvaGetDesc(newLcl);
+            dsc->lvType       = access.AccessType;
+
             replacements.push_back(Replacement(access.Offset, access.AccessType, newLcl));
         }
     }
@@ -1030,20 +1023,22 @@ PhaseStatus Promotion::Run()
         }
     }
 
-    Statement* prevInitialReadBackStmt = nullptr;
-    for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
+    Statement* prevStmt = nullptr;
+    for (unsigned lclNum = 0; lclNum < numLocals; lclNum++)
     {
-        InsertInitialReadBack(lclNum, replacements[lclNum], &prevInitialReadBackStmt);
-    }
-
-    if (m_compiler->opts.IsOSR())
-    {
-        for (unsigned lclNum = m_compiler->info.compArgsCount; lclNum < m_compiler->lvaCount; lclNum++)
+        LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
+        if (dsc->lvIsParam || dsc->lvIsOSRLocal)
         {
-            if (m_compiler->lvaGetDesc(lclNum)->lvIsOSRLocal)
-            {
-                InsertInitialReadBack(lclNum, replacements[lclNum], &prevInitialReadBackStmt);
-            }
+            InsertInitialReadBack(lclNum, replacements[lclNum], &prevStmt);
+        }
+        else if (dsc->lvSuppressedZeroInit)
+        {
+            // We may have suppressed inserting an explicit zero init based on the
+            // assumption that the entire local will be zero inited in the prolog.
+            // Now that we are promoting some fields that assumption may be
+            // invalidated for those fields, and we may need to insert explicit
+            // zero inits again.
+            ExplicitlyZeroInitReplacementLocals(lclNum, replacements[lclNum], &prevStmt);
         }
     }
 
@@ -1058,21 +1053,48 @@ void Promotion::InsertInitialReadBack(unsigned                           lclNum,
     {
         const Replacement& rep = replacements[i];
 
-        m_compiler->fgEnsureFirstBBisScratch();
-
-        GenTree*   dst  = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
-        GenTree*   src  = m_compiler->gtNewLclFldNode(lclNum, rep.AccessType, rep.Offset);
-        GenTree*   asg  = m_compiler->gtNewAssignNode(dst, src);
-        Statement* stmt = m_compiler->fgNewStmtFromTree(asg);
-        if (*prevStmt != nullptr)
-        {
-            m_compiler->fgInsertStmtAfter(m_compiler->fgFirstBB, *prevStmt, stmt);
-        }
-        else
-        {
-            m_compiler->fgInsertStmtAtBeg(m_compiler->fgFirstBB, stmt);
-        }
-
-        *prevStmt = stmt;
+        GenTree* dst = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
+        GenTree* src = m_compiler->gtNewLclFldNode(lclNum, rep.AccessType, rep.Offset);
+        GenTree* asg = m_compiler->gtNewAssignNode(dst, src);
+        InsertInitStatement(prevStmt, asg);
     }
+}
+
+void Promotion::ExplicitlyZeroInitReplacementLocals(unsigned                           lclNum,
+                                                    const jitstd::vector<Replacement>& replacements,
+                                                    Statement**                        prevStmt)
+{
+    for (unsigned i = 0; i < replacements.size(); i++)
+    {
+        const Replacement& rep = replacements[i];
+
+        if (!m_compiler->fgVarNeedsExplicitZeroInit(rep.LclNum, false, false))
+        {
+            // Other downstream code (e.g. recursive tailcalls-to-loops) may
+            // still need to insert further explicit zero initing.
+            m_compiler->lvaGetDesc(rep.LclNum)->lvSuppressedZeroInit = true;
+            continue;
+        }
+
+        GenTree* dst = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
+        GenTree* src = m_compiler->gtNewZeroConNode(rep.AccessType);
+        GenTree* asg = m_compiler->gtNewAssignNode(dst, src);
+        InsertInitStatement(prevStmt, asg);
+    }
+}
+
+void Promotion::InsertInitStatement(Statement** prevStmt, GenTree* tree)
+{
+    m_compiler->fgEnsureFirstBBisScratch();
+    Statement* stmt = m_compiler->fgNewStmtFromTree(tree);
+    if (*prevStmt != nullptr)
+    {
+        m_compiler->fgInsertStmtAfter(m_compiler->fgFirstBB, *prevStmt, stmt);
+    }
+    else
+    {
+        m_compiler->fgInsertStmtAtBeg(m_compiler->fgFirstBB, stmt);
+    }
+
+    *prevStmt = stmt;
 }

@@ -15,6 +15,10 @@ class Promotion
     friend class ReplaceVisitor;
 
     void InsertInitialReadBack(unsigned lclNum, const jitstd::vector<Replacement>& replacements, Statement** prevStmt);
+    void ExplicitlyZeroInitReplacementLocals(unsigned                           lclNum,
+                                             const jitstd::vector<Replacement>& replacements,
+                                             Statement**                        prevStmt);
+    void InsertInitStatement(Statement** prevStmt, GenTree* tree);
 
 public:
     explicit Promotion(Compiler* compiler) : m_compiler(compiler)
