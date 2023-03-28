@@ -2004,9 +2004,9 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                     GenTree* zeroCns   = comp->gtNewIconNode(0, actualLoadType);
                     result             = comp->gtNewOperNode(GT_EQ, TYP_INT, resultOr, zeroCns);
 
-                    BlockRange().InsertAfter(rArgClone, l1Indir, r1Indir, lXor, l2Offs);
-                    BlockRange().InsertAfter(l2Offs, l2AddOffs, l2Indir, r2Offs, r2AddOffs);
-                    BlockRange().InsertAfter(r2AddOffs, r2Indir, rXor, resultOr, zeroCns);
+                    BlockRange().InsertAfter(rArgClone, l1Indir, r1Indir, l2Offs, l2AddOffs);
+                    BlockRange().InsertAfter(l2AddOffs, l2Indir, r2Offs, r2AddOffs, r2Indir);
+                    BlockRange().InsertAfter(r2Indir, lXor, rXor, resultOr, zeroCns);
                     BlockRange().InsertAfter(zeroCns, result);
                 }
 
