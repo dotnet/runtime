@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="UseReflectionDefaultFalse.cs">
+      <DisabledFeatureSwitches>System.Text.Json.Serialization.UseReflectionDefault</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+  </ItemGroup>
+
+</Project>
