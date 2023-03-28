@@ -402,6 +402,7 @@ void SetContains256bitOrMoreAVX(bool value)
 
 bool IsDstDstSrcAVXInstruction(instruction ins) const;
 bool IsDstSrcSrcAVXInstruction(instruction ins) const;
+bool IsThreeOperandInstructionMask(instruction ins) const;
 static bool HasRegularWideForm(instruction ins);
 static bool HasRegularWideImmediateForm(instruction ins);
 static bool DoesWriteZeroFlag(instruction ins);

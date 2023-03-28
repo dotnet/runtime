@@ -41,7 +41,7 @@ bool emitter::IsSSEOrAVXInstruction(instruction ins)
 //    ins - The instruction to check.
 //
 // Returns:
-//    `true` if this instruction require K register.
+//    `true` if this instruction requires K register.
 //
 bool emitter::IsKInstruction(instruction ins)
 {
@@ -251,6 +251,19 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins) const
 
     insFlags flags = CodeGenInterface::instInfo[ins];
     return (flags & INS_Flags_IsDstSrcSrcAVXInstruction) != 0;
+}
+
+// Returns true if the AVX instruction requires 3 operands and writes result
+// to mask register.
+bool emitter::IsThreeOperandInstructionMask(instruction ins) const
+{
+    if (!UseSimdEncoding())
+    {
+        return false;
+    }
+
+    insFlags flags = CodeGenInterface::instInfo[ins];
+    return (flags & INS_Flags_Is3OperandInstructionMask) != 0;
 }
 
 //------------------------------------------------------------------------
