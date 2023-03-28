@@ -2,8 +2,10 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <Optimize>True</Optimize>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
   </ItemGroup>
 </Project>
+

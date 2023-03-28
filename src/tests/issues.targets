@@ -66,6 +66,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Regressions/Github/Runtime_76219/Runtime_76219/*">
             <Issue>https://github.com/dotnet/runtime/issues/78899</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_82535/*">
+          <Issue>https://github.com/dotnet/runtime/pull/82663</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets on all runtimes -->
