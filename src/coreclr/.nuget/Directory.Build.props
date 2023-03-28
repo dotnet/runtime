@@ -89,7 +89,9 @@
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';osx;'))">
     <OfficialBuildRID Include="osx-x64" />
-    <OfficialBuildRID Include="osx-arm64" />
+    <OfficialBuildRID Include="osx-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';freebsd;'))">
     <OfficialBuildRID Include="freebsd-x64" />
