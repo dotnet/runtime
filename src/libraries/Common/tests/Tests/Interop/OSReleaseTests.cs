@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Common.Tests
 {
-    public class osReleaseTests
+    public class OSReleaseTests : FileCleanupTestBase
     {
         [Theory]
         // Double quotes:
@@ -26,23 +26,19 @@ namespace Common.Tests
         // No pretty name fields:
         [InlineData("ID=fedora\nVERSION_ID=37", null)]
         [InlineData("", null)]
-        public static void GetPrettyName_Success(
+        public void GetPrettyName_Success(
             string content,
             string expectedName)
         {
-            string path = Path.GetTempFileName();
-            try
-            {
-                File.WriteAllText(path, content);
+            string path = GetTestFilePath();
+            File.WriteAllText(path, content);
 
-                string? name = Interop.OSReleaseFile.GetPrettyName(path);
-                Assert.Equal(expectedName, name);
-            }
-            finally { File.Delete(path); }
+            string? name = Interop.OSReleaseFile.GetPrettyName(path);
+            Assert.Equal(expectedName, name);
         }
 
         [Fact]
-        public static void GetPrettyName_NoFile_ReturnsNull()
+        public void GetPrettyName_NoFile_ReturnsNull()
         {
             string path = Path.GetRandomFileName();
             Assert.False(File.Exists(path));
@@ -52,18 +48,14 @@ namespace Common.Tests
         }
 
         [Fact, PlatformSpecific(TestPlatforms.Linux)]
-        public static void GetPrettyName_CannotRead_ReturnsNull()
+        public void GetPrettyName_CannotRead_ReturnsNull()
         {
-            string path = Path.GetTempFileName();
-            try
-            {
-                File.SetUnixFileMode(path, UnixFileMode.None);
-                Assert.ThrowsAny<Exception>(() => File.ReadAllText(path));
+            string path = GetTestFilePath();
+            File.SetUnixFileMode(path, UnixFileMode.None);
+            Assert.ThrowsAny<Exception>(() => File.ReadAllText(path));
 
-                string? name = Interop.OSReleaseFile.GetPrettyName(path);
-                Assert.Null(name);
-            }
-            finally { File.Delete(path); }
+            string? name = Interop.OSReleaseFile.GetPrettyName(path);
+            Assert.Null(name);
         }
     }
 }

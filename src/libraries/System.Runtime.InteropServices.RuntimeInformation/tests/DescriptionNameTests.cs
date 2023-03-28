@@ -201,7 +201,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         [Fact, PlatformSpecific(TestPlatforms.Linux)]  // Checks Linux name in RuntimeInformation
         public void VerifyLinuxName()
         {
-            if (File.Exists("/etc/os/release"))
+            if (File.Exists("/etc/os-release"))
             {
                 Assert.Equal(Interop.OSReleaseFile.GetPrettyName("/etc/os-release"), RuntimeInformation.OSDescription);
             }
