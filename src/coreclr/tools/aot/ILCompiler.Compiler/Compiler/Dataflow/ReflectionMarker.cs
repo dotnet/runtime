@@ -83,7 +83,7 @@ namespace ILCompiler.Dataflow
             TypeDesc foundType = System.Reflection.TypeNameParser.ResolveType(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context, referencedModules);
             if (foundType == null)
             {
-                if (needsAssemblyName)
+                if (needsAssemblyName && !string.IsNullOrEmpty(typeName))
                     diagnosticContext.AddDiagnostic(DiagnosticId.TypeWasNotFoundInAssemblyNorBaseLibrary, typeName);
 
                 type = default;
