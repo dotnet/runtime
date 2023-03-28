@@ -611,15 +611,10 @@ INST3(kmovw_msk,         "kmovw",           IUM_WR, PCKFLT(0x91), BAD_CODE,     
 INST3(kmovd_msk,         "kmovd",           IUM_WR, PCKDBL(0x91), BAD_CODE,     PCKDBL(0x90),                            INS_TT_NONE,                                          REX_W1       | Encoding_VEX)
 INST3(kmovq_msk,         "kmovq",           IUM_WR, PCKFLT(0x91), BAD_CODE,     PCKFLT(0x90),                            INS_TT_NONE,                                          REX_W1       | Encoding_VEX)
 
-INST3(kmovb_gpr,         "kmovb",            IUM_WR, BAD_CODE, BAD_CODE,     PACK3(0x66, 0x0F, 0x92), INS_TT_NONE,    INS_FLAGS_None )
-INST3(kmovw_gpr,         "kmovw",            IUM_WR, BAD_CODE, BAD_CODE,     PACK2(0x0F, 0x92),       INS_TT_NONE,    INS_FLAGS_None )
-INST3(kmovd_gpr,         "kmovd",            IUM_WR, BAD_CODE, BAD_CODE,     PACK3(0xF2, 0x0F, 0x92), INS_TT_NONE,    INS_FLAGS_None )
-INST3(kmovq_gpr,         "kmovq",            IUM_WR, BAD_CODE, BAD_CODE,     PACK3(0xF2, 0x0F, 0x92), INS_TT_NONE,    INS_FLAGS_None )
-
-INST3(kortestb,      "kortestb",         IUM_WR, BAD_CODE,     BAD_CODE,     PACK3(0x66, 0x0F, 0x98),                  INS_TT_NONE,    Writes_ZF | Writes_CF ) // W0
-INST3(kortestw,      "kortestw",         IUM_WR, BAD_CODE,     BAD_CODE,     PACK2(0x0F, 0x98),                        INS_TT_NONE,    Writes_ZF | Writes_CF ) // W0
-INST3(kortestd,      "kortestd",         IUM_WR, BAD_CODE,     BAD_CODE,     PACK3(0x66, 0x0F, 0x98),                  INS_TT_NONE,    Writes_ZF | Writes_CF ) // W1 
-INST3(kortestq,      "kortestq",         IUM_WR, BAD_CODE,     BAD_CODE,     PACK2(0x0F, 0x98),                        INS_TT_NONE,    Writes_ZF | Writes_CF ) // W1
+INST3(kortestb,          "kortestb",        IUM_WR, BAD_CODE,     BAD_CODE,     PACK3(0x66, 0x0F, 0x98),                 INS_TT_NONE,                                          REX_W0       | Encoding_VEX | Writes_ZF | Writes_CF ) 
+INST3(kortestw,          "kortestw",        IUM_WR, BAD_CODE,     BAD_CODE,     PACK2(0x0F, 0x98),                       INS_TT_NONE,                                          REX_W0       | Encoding_VEX | Writes_ZF | Writes_CF ) 
+INST3(kortestd,          "kortestd",        IUM_WR, BAD_CODE,     BAD_CODE,     PACK3(0x66, 0x0F, 0x98),                 INS_TT_NONE,                                          REX_W1       | Encoding_VEX | Writes_ZF | Writes_CF ) 
+INST3(kortestq,          "kortestq",        IUM_WR, BAD_CODE,     BAD_CODE,     PACK2(0x0F, 0x98),                       INS_TT_NONE,                                          REX_W1       | Encoding_VEX | Writes_ZF | Writes_CF ) 
 
 INST3(LAST_K_INSTRUCTION, "LAST_K_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None )
 
@@ -654,21 +649,21 @@ INST3(vinserti32x8,      "inserti32x8",     IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(vpmovd2m,          "pmovd2m",         IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x39),           INS_TT_NONE,                         Input_32Bit    | REX_W0_EVEX                  | Encoding_EVEX)
 INST3(vpmovq2m,          "pmovq2m",         IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x39),           INS_TT_NONE,                         Input_64Bit    | REX_W1_EVEX                  | Encoding_EVEX)
 
-INST3(vpmovm2b,         "vpmovm2b",          IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x28),          INS_TT_NONE,    Input_8Bit) // W0
-INST3(vpmovm2w,         "vpmovm2w",          IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x28),          INS_TT_NONE,    Input_16Bit) // W1
-INST3(vpmovm2d,         "vpmovm2d",          IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x38),          INS_TT_NONE,    Input_32Bit) // W0
-INST3(vpmovm2q,         "vpmovm2q",          IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x38),          INS_TT_NONE,    Input_64Bit) // W1
+INST3(vpmovm2b,         "vpmovm2b",          IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x28),          INS_TT_NONE,                         Input_8Bit     | REX_W0_EVEX                  | Encoding_EVEX ) 
+INST3(vpmovm2w,         "vpmovm2w",          IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x28),          INS_TT_NONE,                         Input_16Bit    | REX_W1_EVEX                  | Encoding_EVEX ) 
+INST3(vpmovm2d,         "vpmovm2d",          IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x38),          INS_TT_NONE,                         Input_32Bit    | REX_W0_EVEX                  | Encoding_EVEX ) 
+INST3(vpmovm2q,         "vpmovm2q",          IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0x38),          INS_TT_NONE,                         Input_64Bit    | REX_W1_EVEX                  | Encoding_EVEX ) 
 
 
-INST3(vpcmpb,           "vpcmpb",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x3F),          INS_TT_FULL,    Input_8Bit) // W0
-INST3(vpcmpw,           "vpcmpw",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x3F),          INS_TT_FULL,    Input_16Bit) // W1
-INST3(vpcmpd,           "vpcmpd",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x1F),          INS_TT_FULL,    Input_32Bit) // W0
-INST3(vpcmpq,           "vpcmpq",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x1F),          INS_TT_FULL,    Input_64Bit) // W1
+INST3(vpcmpb,           "vpcmpb",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x3F),          INS_TT_FULL,                         Input_8Bit     | REX_W0_EVEX                  | Encoding_EVEX ) 
+INST3(vpcmpw,           "vpcmpw",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x3F),          INS_TT_FULL,                         Input_16Bit    | REX_W1_EVEX                  | Encoding_EVEX ) 
+INST3(vpcmpd,           "vpcmpd",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x1F),          INS_TT_FULL,                         Input_32Bit    | REX_W0_EVEX                  | Encoding_EVEX ) 
+INST3(vpcmpq,           "vpcmpq",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x1F),          INS_TT_FULL,                         Input_64Bit    | REX_W1_EVEX                  | Encoding_EVEX ) 
 
-INST3(vpcmpub,          "vpcmpub",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x3E),          INS_TT_FULL,    Input_8Bit) // W0
-INST3(vpcmpuw,          "vpcmpuw",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x3E),          INS_TT_FULL,    Input_16Bit) // W1
-INST3(vpcmpud,          "vpcmpud",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x1E),          INS_TT_FULL,    Input_32Bit) // W0
-INST3(vpcmpuq,          "vpcmpuq",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x1F),          INS_TT_FULL,    Input_64Bit) // W1
+INST3(vpcmpub,          "vpcmpub",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x3E),         INS_TT_FULL,                         Input_8Bit     | REX_W0_EVEX                  | Encoding_EVEX ) 
+INST3(vpcmpuw,          "vpcmpuw",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x3E),         INS_TT_FULL,                         Input_16Bit    | REX_W1_EVEX                  | Encoding_EVEX ) 
+INST3(vpcmpud,          "vpcmpud",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x1E),         INS_TT_FULL,                         Input_32Bit    | REX_W0_EVEX                  | Encoding_EVEX ) 
+INST3(vpcmpuq,          "vpcmpuq",            IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0x66, 0x0F, 0x3A, 0x1F),         INS_TT_FULL,                         Input_64Bit    | REX_W1_EVEX                  | Encoding_EVEX ) 
 
 INST3(LAST_AVX512_INSTRUCTION, "LAST_AVX512_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_TT_NONE, INS_FLAGS_None)
 

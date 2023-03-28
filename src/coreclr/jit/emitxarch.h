@@ -821,7 +821,6 @@ inline bool HasEmbeddedBroadcast(const instrDesc* id) const
 }
 
 inline bool HasHighSIMDReg(const instrDesc* id) const;
-inline bool HasMaskReg(const instrDesc* id) const;
 inline bool IsHighSIMDReg(regNumber) const;
 
 inline bool HasMaskReg(const instrDesc* id) const;
