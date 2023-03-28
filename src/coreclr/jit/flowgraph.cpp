@@ -4272,3 +4272,315 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
         lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
     }
 }
+
+//------------------------------------------------------------------------------
+// fgExpandThreadLocalAccess : Expand the CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED
+//                             that access fields marked with [ThreadLocal].
+//
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
+//
+// Notes:
+//    A cache is stored in thread local storage (TLS) of coreclr. It maps the typeIndex (embedded in
+//    the code at the JIT time) to the base of static blocks. This method generates code to
+//    extract the TLS, get the entry at which the cache is stored. Then it checks if the typeIndex of
+//    enclosing type of current field is present in the cache and if yes, extract out that can be directly
+//    accessed at the uses.
+//    If the entry is not present, the helper is called, which would make an entry of current static block
+//    in the cache.
+//
+PhaseStatus Compiler::fgExpandThreadLocalAccess()
+{
+    PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
+
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+    SCAN_BLOCK_AGAIN:
+        for (Statement* const stmt : block->Statements())
+        {
+            if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
+            {
+                // TP: Stmt has no calls - bail out
+                continue;
+            }
+
+            for (GenTree* const tree : stmt->TreeList())
+            {
+                // We only need calls with IsExpRuntimeLookup() flag
+                if (!tree->IsCall() || !tree->AsCall()->IsHelperCall())
+                {
+                    continue;
+                }
+                GenTreeCall* call = tree->AsCall();
+
+                if (!call->IsHelperCall())
+                {
+                    continue;
+                }
+                CorInfoHelpFunc func = eeGetHelperNum(call->gtCallMethHnd);
+                if (func != CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
+                {
+                    continue;
+                }
+
+                JITDUMP("Expanding thread static local access for [%06d] in " FMT_BB ":\n", dspTreeID(tree),
+                        block->bbNum);
+                DISPTREE(tree);
+                JITDUMP("\n");
+
+                assert(call->gtArgs.CountArgs() == 3);
+
+                // Split block right before the call tree
+                BasicBlock* prevBb       = block;
+                GenTree**   callUse      = nullptr;
+                Statement*  newFirstStmt = nullptr;
+                DebugInfo   debugInfo    = stmt->GetDebugInfo();
+                block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
+                assert(prevBb != nullptr && block != nullptr);
+
+                // Block ops inserted by the split need to be morphed here since we are after morph.
+                // We cannot morph stmt yet as we may modify it further below, and the morphing
+                // could invalidate callUse.
+                while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
+                {
+                    fgMorphStmtBlockOps(block, newFirstStmt);
+                    newFirstStmt = newFirstStmt->GetNextStmt();
+                }
+
+                GenTreeLclVar* threadStaticBlockLcl = nullptr;
+
+                // Mostly for Tier0: if the current statement is ASG(LCL, RuntimeLookup)
+                // we can drop it and use that LCL as the destination
+                if (stmt->GetRootNode()->OperIs(GT_ASG))
+                {
+                    GenTree* lhs = stmt->GetRootNode()->gtGetOp1();
+                    GenTree* rhs = stmt->GetRootNode()->gtGetOp2();
+                    if (lhs->OperIs(GT_LCL_VAR) && rhs == *callUse)
+                    {
+                        threadStaticBlockLcl = gtClone(lhs)->AsLclVar();
+                        fgRemoveStmt(block, stmt);
+                    }
+                }
+
+                // Grab a temp to store result (it's assigned from either fastPathBb or fallbackBb)
+                if (threadStaticBlockLcl == nullptr)
+                {
+                    // Define a local for the result
+                    unsigned threadStaticBlockLclNum         = lvaGrabTemp(true DEBUGARG("TLS field access"));
+                    lvaTable[threadStaticBlockLclNum].lvType = TYP_I_IMPL;
+                    threadStaticBlockLcl                     = gtNewLclvNode(threadStaticBlockLclNum, call->TypeGet());
+
+                    *callUse = gtClone(threadStaticBlockLcl);
+
+                    fgMorphStmtBlockOps(block, stmt);
+                    gtUpdateStmtSideEffects(stmt);
+                }
+
+                CORINFO_THREAD_LOCAL_FIELD_INFO threadLocalInfo;
+                info.compCompHnd->getThreadLocalFieldInfo(nullptr, &threadLocalInfo);
+
+                GenTree* arg0                            = call->gtArgs.GetArgByIndex(0)->GetNode();
+                GenTree* arg1                            = call->gtArgs.GetArgByIndex(1)->GetNode();
+                GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(2)->GetNode();
+
+                void**   pIdAddr = nullptr;
+                unsigned IdValue = threadLocalInfo.tlsIndex;
+                GenTree* dllRef  = nullptr;
+                if (IdValue != 0)
+                {
+#ifdef TARGET_64BIT
+                    dllRef = gtNewIconNode(IdValue * 8, TYP_I_IMPL);
+#else
+                    dllRef = gtNewIconNode(IdValue * 4, TYP_I_IMPL);
+#endif
+                }
+
+                // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
+                GenTree* tlsRef =
+                    gtNewIconHandleNode(threadLocalInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
+
+                tlsRef = gtNewIndir(TYP_I_IMPL, tlsRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+                // Add the dllRef to produce thread local storage reference for coreclr
+                tlsRef = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsRef, dllRef);
+
+                // Base of coreclr's thread local storage
+                GenTree* tlsValue = gtNewIndir(TYP_I_IMPL, tlsRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+                // Cache the tls value
+                unsigned tlsLclNum         = lvaGrabTemp(true DEBUGARG("TLS access"));
+                lvaTable[tlsLclNum].lvType = TYP_I_IMPL;
+                GenTree* defTlsLclValue    = gtNewLclvNode(tlsLclNum, TYP_I_IMPL);
+                GenTree* useTlsLclValue    = gtCloneExpr(defTlsLclValue); // Create a use for tlsLclValue
+                GenTree* asgTlsValue       = gtNewAssignNode(defTlsLclValue, tlsValue);
+
+                // Create tree for "maxThreadStaticBlocks = tls[offsetOfMaxThreadStaticBlocks]"
+                GenTree* offsetOfMaxThreadStaticBlocks =
+                    gtNewIconNode(threadLocalInfo.offsetOfMaxThreadStaticBlocks, TYP_I_IMPL);
+                GenTree* maxThreadStaticBlocksRef =
+                    gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(useTlsLclValue), offsetOfMaxThreadStaticBlocks);
+                GenTree* maxThreadStaticBlocksValue =
+                    gtNewIndir(TYP_INT, maxThreadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+                // Create tree for "if (maxThreadStaticBlocks < typeIndex)"
+                GenTree* maxThreadStaticBlocksCond = gtNewOperNode(GT_LT, TYP_UINT, maxThreadStaticBlocksValue,
+                                                                   gtCloneExpr(typeThreadStaticBlockIndexValue));
+                maxThreadStaticBlocksCond          = gtNewOperNode(GT_JTRUE, TYP_VOID, maxThreadStaticBlocksCond);
+
+                // Create tree for "threadStaticBlockBase = tls[offsetOfThreadStaticBlocks]"
+                GenTree* offsetOfThreadStaticBlocks =
+                    gtNewIconNode(threadLocalInfo.offsetOfThreadStaticBlocks, TYP_I_IMPL);
+                GenTree* threadStaticBlocksRef =
+                    gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(useTlsLclValue), offsetOfThreadStaticBlocks);
+                GenTree* threadStaticBlocksValue =
+                    gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+                // Create tree to "threadStaticBlockValue = threadStaticBlockBase[typeIndex]"
+                typeThreadStaticBlockIndexValue =
+                    gtNewOperNode(GT_MUL, TYP_I_IMPL, gtCloneExpr(typeThreadStaticBlockIndexValue),
+                                  gtNewIconNode(8, TYP_I_IMPL));
+                GenTree* typeThreadStaticBlockRef =
+                    gtNewOperNode(GT_ADD, TYP_I_IMPL, threadStaticBlocksValue, typeThreadStaticBlockIndexValue);
+                GenTree* typeThreadStaticBlockValue =
+                    gtNewIndir(TYP_I_IMPL, typeThreadStaticBlockRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+                // Cache the threadStaticBlock value
+                unsigned threadStaticBlockBaseLclNum = lvaGrabTemp(true DEBUGARG("ThreadStaticBlockBase access"));
+                lvaTable[threadStaticBlockBaseLclNum].lvType = TYP_I_IMPL;
+                GenTree* defThreadStaticBlockBaseLclValue    = gtNewLclvNode(threadStaticBlockBaseLclNum, TYP_I_IMPL);
+                GenTree* useThreadStaticBlockBaseLclValue =
+                    gtCloneExpr(defThreadStaticBlockBaseLclValue); // StaticBlockBaseLclValue that will be used
+                GenTree* asgThreadStaticBlockBase =
+                    gtNewAssignNode(defThreadStaticBlockBaseLclValue, typeThreadStaticBlockValue);
+
+                // Create tree for "if (threadStaticBlockValue == nullptr)"
+                GenTree* threadStaticBlockNullCond =
+                    gtNewOperNode(GT_NE, TYP_INT, useThreadStaticBlockBaseLclValue, gtNewIconNode(0, TYP_I_IMPL));
+                threadStaticBlockNullCond = gtNewOperNode(GT_JTRUE, TYP_VOID, threadStaticBlockNullCond);
+
+                // prevBb (BBJ_NONE):                                               [weight: 1.0]
+                //      ...
+                //
+                // maxThreadStaticBlocksCondBB (BBJ_COND):                          [weight: 0.99]
+                //      asgTlsValue = tls_access_code
+                //      if (maxThreadStaticBlocks < typeIndex)
+                //          goto fallbackBb;
+                //
+                // threadStaticBlockNullCondBB (BBJ_COND):                          [weight: 0.98]
+                //      fastPathValue = t_threadStaticBlocks[typeIndex]
+                //      if (fastPathValue != nullptr)
+                //          goto fastPathBb;
+                //
+                // fallbackBb (BBJ_ALWAYS):                                         [weight: 0]
+                //      threadStaticBlockBase = HelperCall();
+                //      goto block;
+                //
+                // fastPathBb(BBJ_ALWAYS):                                          [weight: 0.97]
+                //      threadStaticBlockBase = fastPathValue;
+                //
+                // block (...):                                                     [weight: 1.0]
+                //      use(threadStaticBlockBase);
+
+                // maxThreadStaticBlocksCondBB
+                BasicBlock* maxThreadStaticBlocksCondBB =
+                    CreateBlockFromTree(this, prevBb, BBJ_COND, asgTlsValue, debugInfo);
+
+                fgInsertStmtAfter(maxThreadStaticBlocksCondBB, maxThreadStaticBlocksCondBB->firstStmt(),
+                                  fgNewStmtFromTree(maxThreadStaticBlocksCond));
+
+                // threadStaticBlockNullCondBB
+                BasicBlock* threadStaticBlockNullCondBB =
+                    CreateBlockFromTree(this, maxThreadStaticBlocksCondBB, BBJ_COND, asgThreadStaticBlockBase,
+                                        debugInfo);
+                fgInsertStmtAfter(threadStaticBlockNullCondBB, threadStaticBlockNullCondBB->firstStmt(),
+                                  fgNewStmtFromTree(threadStaticBlockNullCond));
+
+                // fallbackBb
+                GenTree*    asgFallbackValue = gtNewAssignNode(gtClone(threadStaticBlockLcl), call);
+                BasicBlock* fallbackBb       = CreateBlockFromTree(this, threadStaticBlockNullCondBB, BBJ_ALWAYS,
+                                                                   asgFallbackValue, debugInfo, true);
+                // fastPathBb
+                GenTree* asgFastPathValue =
+                    gtNewAssignNode(gtClone(threadStaticBlockLcl), gtCloneExpr(useThreadStaticBlockBaseLclValue));
+                BasicBlock* fastPathBb =
+                    CreateBlockFromTree(this, fallbackBb, BBJ_ALWAYS, asgFastPathValue, debugInfo, true);
+
+                //
+                // Update preds in all new blocks
+                //
+                fgRemoveRefPred(block, prevBb);
+                fgAddRefPred(maxThreadStaticBlocksCondBB, prevBb);
+
+                fgAddRefPred(threadStaticBlockNullCondBB, maxThreadStaticBlocksCondBB);
+                fgAddRefPred(fallbackBb, maxThreadStaticBlocksCondBB);
+
+                fgAddRefPred(fastPathBb, threadStaticBlockNullCondBB);
+                fgAddRefPred(fallbackBb, threadStaticBlockNullCondBB);
+
+                fgAddRefPred(block, fastPathBb);
+                fgAddRefPred(block, fallbackBb);
+
+                maxThreadStaticBlocksCondBB->bbJumpDest = fallbackBb;
+                threadStaticBlockNullCondBB->bbJumpDest = fastPathBb;
+                fastPathBb->bbJumpDest                  = block;
+                fallbackBb->bbJumpDest                  = block;
+
+                // Inherit the weights
+                block->inheritWeight(prevBb);
+
+                // 99% chance we pass maxThreadStaticBlocks check
+                maxThreadStaticBlocksCondBB->inheritWeightPercentage(prevBb, 99);
+
+                // 98% (0.99 * 0.99) chance we pass threadStatic block null check
+                threadStaticBlockNullCondBB->inheritWeightPercentage(maxThreadStaticBlocksCondBB, 98);
+
+                // 97% (0.99 * 0.99 * 0.99) chance we get to fast path
+                fastPathBb->inheritWeightPercentage(threadStaticBlockNullCondBB, 97);
+
+                // fallback will just execute first time
+                fallbackBb->bbSetRunRarely();
+
+                //
+                // Update loop info if loop table is known to be valid
+                //
+                if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+                {
+                    maxThreadStaticBlocksCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
+                    threadStaticBlockNullCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
+                    fastPathBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
+                    fallbackBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
+
+                    // Update lpBottom after block split
+                    if (optLoopTable[prevBb->bbNatLoopNum].lpBottom == prevBb)
+                    {
+                        optLoopTable[prevBb->bbNatLoopNum].lpBottom = block;
+                    }
+                }
+
+                // All blocks are expected to be in the same EH region
+                assert(BasicBlock::sameEHRegion(prevBb, block));
+                assert(BasicBlock::sameEHRegion(prevBb, maxThreadStaticBlocksCondBB));
+                assert(BasicBlock::sameEHRegion(prevBb, threadStaticBlockNullCondBB));
+                assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
+
+                // Scan current block again, the current call will be ignored because of ClearExpRuntimeLookup.
+                // We don't try to re-use expansions for the same lookups in the current block here - CSE is responsible
+                // for that
+                result = PhaseStatus::MODIFIED_EVERYTHING;
+
+                // We've modified the graph and the current "block" might still have more runtime lookups
+                goto SCAN_BLOCK_AGAIN;
+            }
+        }
+    }
+
+    if (result == PhaseStatus::MODIFIED_EVERYTHING)
+    {
+        if (opts.OptimizationEnabled())
+        {
+            fgReorderBlocks(/* useProfileData */ false);
+            fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
+        }
+    }
+    return result;
+}
