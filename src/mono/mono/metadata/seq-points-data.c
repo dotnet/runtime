@@ -291,7 +291,7 @@ mono_seq_point_init_next (MonoSeqPointInfo* info, SeqPoint sp, SeqPoint* next)
 	for (i = 0; i < sp.next_len; i++) {
 		int next_index;
 		next_index = decode_var_int (ptr, &ptr);
-		g_assert (next_index < dn_vector_size (&seq_points));
+		g_assert (next_index < GUINT_TO_INT (dn_vector_size (&seq_points)));
 		memcpy (&next[i], dn_vector_index_t (&seq_points, SeqPoint, next_index), sizeof (SeqPoint));
 	}
 
