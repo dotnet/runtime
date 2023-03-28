@@ -417,6 +417,13 @@
       </_AotInputAssemblies>
     </ItemGroup>
 
+    <RemoveDuplicates
+        Inputs="@(_AotInputAssemblies)">
+        <Output
+            TaskParameter="Filtered"
+            ItemName="_AotInputAssemblies"/>
+    </RemoveDuplicates>
+
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
         CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
         OutputDir="$(_MobileIntermediateOutputPath)"
@@ -434,6 +441,13 @@
     <ItemGroup>
       <_AppleAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
     </ItemGroup>
+
+    <RemoveDuplicates
+        Inputs="@(_AppleAssembliesInternal)">
+        <Output
+            TaskParameter="Filtered"
+            ItemName="_AppleAssembliesInternal"/>
+    </RemoveDuplicates>
 
     <Message Importance = "High" Text="!!!naricc_debug!!! MsBuildProjectName: $(MsBuildProjectName)" />
     <Message Importance = "High" Text="!!!naricc_debug!!! AssemblyName: $(AssemblyName)" />
