@@ -268,6 +268,7 @@ emit_simd_ins_for_sig (MonoCompile *cfg, MonoClass *klass, int opcode, int instc
 
 static gboolean type_enum_is_unsigned (MonoTypeEnum type);
 static gboolean type_enum_is_float (MonoTypeEnum type);
+static int type_to_expand_op (MonoTypeEnum type);
 
 static MonoInst*
 handle_mul_div_by_scalar (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum arg_type, int scalar_reg, int vector_reg, int sub_op)
@@ -280,7 +281,7 @@ handle_mul_div_by_scalar (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum arg_t
 		ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, vector_reg, ins->dreg);
 		ins->inst_c0 = sub_op;
 	} else {
-		ins = emit_simd_ins (cfg, klass, OP_BROADCAST, scalar_reg, -1);
+		ins = emit_simd_ins (cfg, klass, type_to_expand_op (arg_type), scalar_reg, -1);
 		ins->inst_c1 = arg_type;
 		ins = emit_simd_ins (cfg, klass, OP_XBINOP, vector_reg, ins->dreg);
 		ins->inst_c0 = sub_op;
@@ -804,9 +805,9 @@ type_enum_is_float (MonoTypeEnum type)
 }
 
 static int
-type_to_expand_op (MonoType *type)
+type_to_expand_op (MonoTypeEnum type)
 {
-	switch (type->type) {
+	switch (type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 		return OP_EXPAND_I1;
@@ -1454,7 +1455,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
 		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype))
-			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
+			return emit_simd_ins (cfg, klass, type_to_expand_op (etype->type), args [0]->dreg, -1);
 		else if (is_create_from_half_vectors_overload (fsig))
 			return emit_simd_ins (cfg, klass, OP_XCONCAT, args [0]->dreg, args [1]->dreg);
 		else if (is_elementwise_create_overload (fsig, etype))
@@ -1946,8 +1947,8 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
 #ifdef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg)) {
-		return NULL;
-		/*if (size != 16)
+		// return NULL;
+		if (size != 16)
 			return NULL;
 		switch (id) {
 		case SN_get_One:
@@ -1967,7 +1968,7 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			break;
 		default:
 			return NULL;
-		}*/
+		}
 	}
 #endif
 
@@ -2175,7 +2176,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			gboolean indirect = FALSE;
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], &indirect);
 
-			int opcode = type_to_expand_op (etype);
+			int opcode = type_to_expand_op (etype->type);
 			ins = emit_simd_ins (cfg, klass, opcode, args [1]->dreg, -1);
 
 			for (int i = 1; i < fsig->param_count; ++i) {
@@ -2648,7 +2649,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype)) {
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
 
-			int opcode = type_to_expand_op (etype);
+			int opcode = type_to_expand_op (etype->type);
 			ins = emit_simd_ins (cfg, klass, opcode, args [1]->dreg, -1);
 			ins->dreg = dreg;
 			return ins;
@@ -3417,7 +3418,7 @@ emit_arm64_intrinsics (
 				break;
 			}
 			}
-			return emit_simd_ins (cfg, ret_klass, type_to_expand_op (rtype), scalar_src_reg, -1);
+			return emit_simd_ins (cfg, ret_klass, type_to_expand_op (rtype->type), scalar_src_reg, -1);
 		}
 		case SN_Extract: {
 			int extract_op = type_to_xextract_op (arg0_type);
@@ -3457,7 +3458,7 @@ emit_arm64_intrinsics (
 			MonoType *etype = get_vector_t_elem_type (fsig->ret);
 			gboolean is_unsigned = type_is_unsigned (fsig->ret);
 			gboolean scalar = id == SN_ShiftLeftLogicalSaturateScalar;
-			int s2v = scalar ? OP_CREATE_SCALAR_UNSAFE : type_to_expand_op (etype);
+			int s2v = scalar ? OP_CREATE_SCALAR_UNSAFE : type_to_expand_op (etype->type);
 			int xop = scalar ? OP_XOP_OVR_SCALAR_X_X_X : OP_XOP_OVR_X_X_X;
 			int iid = is_unsigned ? INTRINS_AARCH64_ADV_SIMD_UQSHL : INTRINS_AARCH64_ADV_SIMD_SQSHL;
 			MonoInst *shift_vector = emit_simd_ins (cfg, ret_klass, s2v, args [1]->dreg, -1);
@@ -4860,7 +4861,7 @@ emit_wasm_supported_intrinsics (
 			case SN_Splat: {
 				MonoType *etype = get_vector_t_elem_type (fsig->ret);
 				g_assert (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype));
-				return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
+				return emit_simd_ins (cfg, klass, type_to_expand_op (etype->type), args [0]->dreg, -1);
 			}
 			case SN_Dot:
 				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, INTRINS_WASM_DOT, -1, fsig, args);
