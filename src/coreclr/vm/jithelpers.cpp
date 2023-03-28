@@ -1819,20 +1819,27 @@ HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, DomainLocalModule *p
     // Get the relevant ThreadLocalModule
     ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
 
+    void* staticBlock = nullptr;
+
     // If the TLM has been allocated and the class has been marked as initialized,
     // get the pointer to the non-GC statics base and return
     if (pThreadLocalModule != NULL && pThreadLocalModule->IsPrecomputedClassInitialized(dwClassDomainID))
-        return (void*)pThreadLocalModule->GetPrecomputedNonGCStaticsBasePointer();
+    {
+        staticBlock = (void*)pThreadLocalModule->GetPrecomputedNonGCStaticsBasePointer();
+    }
+    else
+    {
 
-    // If the TLM was not allocated or if the class was not marked as initialized
-    // then we have to go through the slow path
+        // If the TLM was not allocated or if the class was not marked as initialized
+        // then we have to go through the slow path
 
-    // Obtain the MethodTable
-    MethodTable * pMT = pDomainLocalModule->GetMethodTableFromClassDomainID(dwClassDomainID);
-    _ASSERTE(!pMT->HasGenericsStaticsInfo());
+        // Obtain the MethodTable
+        MethodTable * pMT = pDomainLocalModule->GetMethodTableFromClassDomainID(dwClassDomainID);
+        _ASSERTE(!pMT->HasGenericsStaticsInfo());
 
-    ENDFORBIDGC();
-    void* staticBlock = HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
+        ENDFORBIDGC();
+        staticBlock = HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
+    }
 
 #ifdef TARGET_WINDOWS
         if (t_threadStaticBlocksSize <= staticBlockIndex)
