@@ -24,7 +24,7 @@ namespace System.Reflection.Emit
                 culture: (culture == null) ? default : metadata.GetOrAddString(value: culture),
                 publicKeyOrToken: (publicKey == null) ? default : metadata.GetOrAddBlob(publicKey),
                 flags: flags,
-                hashValue: default); // not sure where to find hashValue.
+                hashValue: default); // .file directive assemblies not supported, no need to handle this value.
         }
 
         internal static TypeDefinitionHandle AddTypeDefinition(MetadataBuilder metadata, TypeBuilderImpl typeBuilder, EntityHandle baseType, int methodToken, int fieldToken)
