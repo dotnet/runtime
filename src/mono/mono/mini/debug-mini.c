@@ -12,6 +12,7 @@
 #include "mini-runtime.h"
 #include <mono/jit/jit.h>
 #include "config.h"
+#include <dn-vector.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-debug.h>
@@ -30,7 +31,7 @@ typedef struct {
 typedef struct
 {
 	MonoDebugMethodJitInfo *jit;
-	GArray *line_numbers;
+	dn_vector_t *line_numbers;
 	guint32 has_line_numbers;
 	guint32 breakpoint_id;
 } MiniDebugMethodInfo;
@@ -43,7 +44,7 @@ record_line_number (MiniDebugMethodInfo *info, guint32 address, guint32 offset)
 	lne.native_offset = address;
 	lne.il_offset = offset;
 
-	g_array_append_val (info->line_numbers, lne);
+	dn_vector_push_back (info->line_numbers, lne);
 }
 
 
@@ -78,7 +79,7 @@ mono_debug_open_method (MonoCompile *cfg)
 	g_assert (header);
 
 	info->jit = jit = g_new0 (MonoDebugMethodJitInfo, 1);
-	info->line_numbers = g_array_new (FALSE, TRUE, sizeof (MonoDebugLineNumberEntry));
+	info->line_numbers = dn_vector_alloc_t (MonoDebugLineNumberEntry);
 	jit->num_locals = header->num_locals;
 	jit->locals = g_new0 (MonoDebugVarInfo, jit->num_locals);
 }
@@ -269,11 +270,11 @@ mono_debug_close_method (MonoCompile *cfg)
 		}
 	}
 
-	jit->num_line_numbers = info->line_numbers->len;
+	jit->num_line_numbers = dn_vector_size (info->line_numbers);
 	jit->line_numbers = g_new0 (MonoDebugLineNumberEntry, jit->num_line_numbers);
 
 	for (guint32 i = 0; i < jit->num_line_numbers; i++)
-		jit->line_numbers [i] = g_array_index (info->line_numbers, MonoDebugLineNumberEntry, i);
+		jit->line_numbers [i] = *dn_vector_index_t (info->line_numbers, MonoDebugLineNumberEntry, i);
 
 	mono_debug_add_method (cfg->method_to_register, jit, NULL);
 
@@ -291,7 +292,7 @@ mono_debug_free_method (MonoCompile *cfg)
 	info = (MiniDebugMethodInfo *) cfg->debug_info;
 	if (info) {
 		if (info->line_numbers)
-			g_array_free (info->line_numbers, TRUE);
+			dn_vector_free (info->line_numbers);
 		g_free (info);
 		cfg->debug_info = NULL;
 	}
