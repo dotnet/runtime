@@ -171,8 +171,10 @@ namespace System.Net.Sockets.Tests
                 listener.BindToAnonymousPort(listenAt);
                 listener.Listen(1);
 
-                Task<Socket> acceptTask = AcceptAsync(listener);
-                await client.ConnectAsync(listener.LocalEndPoint);
+                Task<Socket> acceptTask = AcceptAsync(listener)
+                    .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
+                await client.ConnectAsync(listener.LocalEndPoint)
+                    .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                 using (Socket server = await acceptTask)
                 {
                     var sentChecksum = new Fletcher32();
@@ -189,14 +191,15 @@ namespace System.Net.Sockets.Tests
                         buffers.Add(new ArraySegment<byte>(sendBuffer, i, sendBuffer.Length - i));
                     }
 
-                    Task<int> sendTask = SendAsync(client, buffers);
+                    Task<int> sendTask = SendAsync(client, buffers).WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
 
                     var receivedChecksum = new Fletcher32();
                     int bytesReceived = 0;
                     byte[] recvBuffer = new byte[1024];
                     while (bytesReceived < bytesToSend)
                     {
-                        int received = await ReceiveAsync(server, new ArraySegment<byte>(recvBuffer));
+                        int received = await ReceiveAsync(server, new ArraySegment<byte>(recvBuffer))
+                            .WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                         if (received <= 0)
                         {
                             break;
