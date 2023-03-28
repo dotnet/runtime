@@ -7797,12 +7797,8 @@ void Lowering::LowerIntrinsic(GenTreeIntrinsic* node)
         // IsKnownConstant is expected to be folded in Importer/Morph/VN+ConstantProp
         // This path is just in case if VN+ConstantProp didn't fold them for some reason (or e.g. they were disabled)
         node->gtGetOp1()->SetUnusedValue();
-        LIR::Use use;
-        if (BlockRange().TryGetUse(node, &use))
-        {
-            use.ReplaceWith(comp->gtNewFalse());
-        }
-        BlockRange().Remove(node);
+        node->BashToConst(0);
+        return;
     }
 #ifdef TARGET_XARCH
     ContainCheckIntrinsic(node->AsOp());
