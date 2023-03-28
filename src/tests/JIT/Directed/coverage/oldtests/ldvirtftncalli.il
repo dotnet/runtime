@@ -127,7 +127,7 @@
 
 } // end of class B
 
-.class private auto ansi beforefieldinit Test_ldvirtftncalli
+.class public auto ansi beforefieldinit Test_ldvirtftncalli
        extends [mscorlib]System.Object
 {
   .field public static class B b1

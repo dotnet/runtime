@@ -76,238 +76,6 @@ TypeName::~TypeName()
         m_genericArguments[i]->Release();
 }
 
-SAFEHANDLE TypeName::GetSafeHandle()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    SAFEHANDLE objSafeHandle = NULL;
-
-    GCPROTECT_BEGIN(objSafeHandle);
-
-    objSafeHandle = (SAFEHANDLE)AllocateObject(CoreLibBinder::GetClass(CLASS__SAFE_TYPENAMEPARSER_HANDLE));
-
-    MethodDescCallSite strCtor(METHOD__SAFE_TYPENAMEPARSER_HANDLE__CTOR);
-
-    ARG_SLOT args[1] =
-    {
-        ObjToArgSlot(objSafeHandle)
-    };
-
-    strCtor.Call(args);
-
-    this->AddRef();
-    objSafeHandle->SetHandle(this);
-
-    GCPROTECT_END();
-
-    return objSafeHandle;
-}
-
-/*static*/
-extern "C" void QCALLTYPE TypeName_CreateTypeNameParser(LPCWSTR wszTypeName, QCall::ObjectHandleOnStack pHandle, BOOL throwOnError)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    DWORD error = (DWORD)-1;
-    ReleaseHolder<TypeName> pTypeName = new TypeName(wszTypeName, &error);
-    pTypeName->AddRef();
-
-    if (error == (DWORD)-1)
-    {
-        GCX_COOP();
-        pHandle.Set(pTypeName->GetSafeHandle());
-    }
-    else
-    {
-        if (throwOnError)
-        {
-            StackSString buf;
-            StackSString msg(W("typeName@"));
-            COUNT_T size = buf.GetUnicodeAllocation();
-            _itow_s(error, buf.OpenUnicodeBuffer(size), size, /*radix*/10);
-            buf.CloseBuffer();
-            msg.Append(buf);
-            COMPlusThrowArgumentException(msg.GetUnicode(), NULL);
-        }
-    }
-
-    END_QCALL;
-}
-
-/*static*/
-extern "C" void QCALLTYPE TypeName_ReleaseTypeNameParser(TypeName * pTypeName)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK;
-        PRECONDITION(CheckPointer(pTypeName));
-    }
-    CONTRACTL_END;
-
-    BEGIN_QCALL;
-
-    pTypeName->Release();
-
-    END_QCALL;
-}
-
-/*static*/
-extern "C" void QCALLTYPE TypeName_GetNames(TypeName * pTypeName, QCall::ObjectHandleOnStack pNames)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK;
-        PRECONDITION(CheckPointer(pTypeName));
-    }
-    CONTRACTL_END;
-
-    BEGIN_QCALL;
-
-    SArray<SString*> names = pTypeName->GetNames();
-    COUNT_T count = names.GetCount();
-
-    GCX_COOP();
-
-    if (count > 0)
-    {
-        PTRARRAYREF pReturnNames = NULL;
-
-        GCPROTECT_BEGIN(pReturnNames);
-
-        pReturnNames = (PTRARRAYREF)AllocateObjectArray(count, g_pStringClass);
-
-        for (COUNT_T i = 0; i < count; i++)
-        {
-            STRINGREF str = StringObject::NewString(names[i]->GetUnicode());
-            pReturnNames->SetAt(i, str);
-        }
-
-        pNames.Set(pReturnNames);
-
-        GCPROTECT_END();
-    }
-    else
-    {
-        pNames.Set(NULL);
-    }
-
-    END_QCALL;
-}
-
-/*static*/
-extern "C" void QCALLTYPE TypeName_GetTypeArguments(TypeName * pTypeName, QCall::ObjectHandleOnStack pTypeArguments)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK;
-        PRECONDITION(CheckPointer(pTypeName));
-    }
-    CONTRACTL_END;
-
-    BEGIN_QCALL;
-
-    SArray<TypeName*> arguments = pTypeName->GetGenericArguments();
-    COUNT_T count = arguments.GetCount();
-
-    GCX_COOP();
-
-    if (count > 0)
-    {
-        PTRARRAYREF pReturnArguments = NULL;
-
-        GCPROTECT_BEGIN(pReturnArguments);
-
-        pReturnArguments = (PTRARRAYREF)AllocateObjectArray(count, CoreLibBinder::GetClass(CLASS__SAFE_TYPENAMEPARSER_HANDLE));
-
-        for (COUNT_T i = 0; i < count; i++)
-        {
-            SAFEHANDLE handle = arguments[i]->GetSafeHandle();
-            _ASSERTE(handle != NULL);
-
-            pReturnArguments->SetAt(i, handle);
-        }
-
-        pTypeArguments.Set(pReturnArguments);
-
-        GCPROTECT_END();
-    }
-    else
-    {
-        pTypeArguments.Set(NULL);
-    }
-
-    END_QCALL;
-}
-
-/*static*/
-extern "C" void QCALLTYPE TypeName_GetModifiers(TypeName * pTypeName, QCall::ObjectHandleOnStack pModifiers)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK;
-        PRECONDITION(CheckPointer(pTypeName));
-    }
-    CONTRACTL_END;
-
-    BEGIN_QCALL;
-
-    SArray<DWORD> modifiers = pTypeName->GetSignature();
-    COUNT_T count = modifiers.GetCount();
-
-    GCX_COOP();
-
-    if (count > 0)
-    {
-        I4ARRAYREF pReturnModifiers = NULL;
-
-        GCPROTECT_BEGIN(pReturnModifiers);
-
-        //TODO: how do we Get
-        pReturnModifiers = (I4ARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_I4, count);
-        INT32 *pToArray = pReturnModifiers->GetDirectPointerToNonObjectElements();
-
-        for (COUNT_T i = 0; i < count; i++)
-        {
-            pToArray[i] = modifiers[i];
-        }
-
-        pModifiers.Set(pReturnModifiers);
-
-        GCPROTECT_END();
-    }
-    else
-    {
-        pModifiers.Set(NULL);
-    }
-
-    END_QCALL;
-}
-
-/*static*/
-extern "C" void QCALLTYPE TypeName_GetAssemblyName(TypeName * pTypeName, QCall::StringHandleOnStack pAssemblyName)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK;
-        PRECONDITION(CheckPointer(pTypeName));
-    }
-    CONTRACTL_END;
-
-    BEGIN_QCALL;
-
-    pAssemblyName.Set(*(pTypeName->GetAssembly()));
-
-    END_QCALL;
-}
-
 //
 // TypeName::TypeNameParser
 //
@@ -1261,12 +1029,11 @@ Exit:
 //----------------------------------------------------------------------------------------------------------------
 /* private */
 TypeHandle
-TypeName::GetTypeHaveAssemblyHelper(
+TypeName::GetTypeHaveAssembly(
     Assembly *  pAssembly,
     BOOL        bThrowIfNotFound,
     BOOL        bIgnoreCase,
-    OBJECTREF * pKeepAlive,
-    BOOL        bRecurse)
+    OBJECTREF * pKeepAlive)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1308,65 +1075,16 @@ TypeName::GetTypeHaveAssemblyHelper(
             // it will be used in the next iteration to look up the nested type
             th = pClassLoader->LoadTypeHandleThrowing(&typeName, CLASS_LOADED, pLookOnlyInModule);
 
-            // DDB 117395: if we didn't find a type, don't bother looking for its nested type
+            // If we didn't find a type, don't bother looking for its nested type
             if (th.IsNull())
                 break;
 
             if (th.GetAssembly() != pAssembly)
-            {   // It is forwarded type
-
-                // Use the found assembly class loader for potential nested types search
+            {
+                // For forwarded type, use the found assembly class loader for potential nested types search
                 // The nested type has to be in the same module as the nesting type, so it doesn't make
                 // sense to follow the same chain of type forwarders again for the nested type
                 pClassLoader = th.GetAssembly()->GetLoader();
-            }
-
-            // Nested types must live in the module of the nesting type
-            if ((i == 0) && (names.GetCount() > 1) && (pLookOnlyInModule == NULL))
-            {
-                Module * pFoundModule = th.GetModule();
-
-                // Ensure that the bucket in the NameHandle is set to a valid bucket for all cases.
-
-                // If the type is in the manifest module, it will always be set correctly,
-                // or if the type is forwarded always lookup via the standard logic
-                if ((pFoundModule == pManifestModule) || (pFoundModule->GetAssembly() != pAssembly))
-                    continue;
-
-                pLookOnlyInModule = pFoundModule;
-
-                // If the type is not in the manifest module, and the nesting type is in the exported
-                // types table of the manifest module, but the nested type is not, then unless the bucket
-                // is from the actual defining module, then the LoadTypeHandleThrowing logic will fail.
-                // To fix this, we must force the loader to record the bucket that refers to the nesting type
-                // from within the defining module's available class table.
-
-                // Re-run the LoadTypeHandleThrowing, but force it to only look in the class table for the module which
-                // defines the type. This should cause typeName.m_pBucket to be set to the bucket
-                // which corresponds to the type in the defining module, instead of potentially in the manifest module.
-                i = -1;
-                typeName.SetBucket(HashedTypeEntry());
-            }
-        }
-
-        if (th.IsNull() && bRecurse)
-        {
-            IMDInternalImport * pManifestImport = pManifestModule->GetMDImport();
-            HENUMInternalHolder phEnum(pManifestImport);
-            phEnum.EnumInit(mdtFile, mdTokenNil);
-            mdToken mdFile;
-
-            while (pManifestImport->EnumNext(&phEnum, &mdFile))
-            {
-                if (pManifestModule->LookupFile(mdFile))
-                    continue;
-
-                pManifestModule->LoadModule(mdFile);
-
-                th = GetTypeHaveAssemblyHelper(pAssembly, bThrowIfNotFound, bIgnoreCase, NULL, FALSE);
-
-                if (!th.IsNull())
-                    break;
             }
         }
     }

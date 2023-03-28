@@ -3481,6 +3481,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			if (td->verbose_level > 1)
 				g_print("Disabling inlining because we have no target_method for call in %s\n", td->method->name);
 			return FALSE;
+		} else if (td->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
+			// This scenario causes https://github.com/dotnet/runtime/issues/83792
+			return FALSE;
 		} else if (has_doesnotreturn_attribute(target_method)) {
 			/*
 			 * Since the method does not return, it's probably a throw helper and will not be called.
