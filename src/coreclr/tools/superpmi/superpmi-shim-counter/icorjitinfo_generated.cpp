@@ -791,6 +791,13 @@ void interceptor_ICJI::getThreadLocalFieldInfo(
     original_ICorJitInfo->getThreadLocalFieldInfo(field, pInfo);
 }
 
+void interceptor_ICJI::getThreadLocalStaticBlocksInfo(
+          CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+{
+    mcs->AddCall("getThreadLocalStaticBlocksInfo");
+    original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo);
+}
+
 bool interceptor_ICJI::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {

@@ -408,6 +408,9 @@ void getThreadLocalFieldInfo(
           CORINFO_FIELD_HANDLE field,
           CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo) override;
 
+void getThreadLocalStaticBlocksInfo(
+          CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo) override;
+
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;
 

@@ -2746,6 +2746,9 @@ public:
                         CORINFO_FIELD_HANDLE  field,
                         CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo) = 0;
 
+    virtual void getThreadLocalStaticBlocksInfo (
+                        CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo) = 0;
+
     // Returns true iff "fldHnd" represents a static field.
     virtual bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) = 0;
 

@@ -256,6 +256,7 @@ FUNCTIONS
     unsigned getFieldOffset(CORINFO_FIELD_HANDLE field)
     void getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
     void getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+    void getThreadLocalStaticBlocksInfo (CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
     bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
     int getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
     void getBoundaries(CORINFO_METHOD_HANDLE ftn, unsigned int* cILOffsets, uint32_t** pILOffsets, ICorDebugInfo::BoundaryTypes* implicitBoundaries)

@@ -1792,6 +1792,24 @@ void CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field,
     
     EE_TO_JIT_TRANSITION();
 }
+
+void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION();
+
+    pInfo->tlsIndex = _tls_index;
+    pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
+    pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_threadStaticBlocks);
+    pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_maxThreadStaticBlocks);        
+    
+    EE_TO_JIT_TRANSITION();
+}
 #endif // HOST_WINDOWS
 
 //---------------------------------------------------------------------------------------

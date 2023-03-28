@@ -489,6 +489,10 @@ public:
     void dmpGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo);
     void repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo);
 
+    void recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo);
+    void dmpGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo);
+    void repGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo);
+
     void recEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection, CORINFO_METHOD_HANDLE result);
     void dmpEmbedMethodHandle(DWORDLONG key, DLDL value);
     CORINFO_METHOD_HANDLE repEmbedMethodHandle(CORINFO_METHOD_HANDLE handle, void** ppIndirection);
