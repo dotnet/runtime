@@ -1142,7 +1142,7 @@ namespace System.Text.RegularExpressions
             0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
         };
 
-         // Mask of Unicode categories that combine to form [\\w]
+         /// <summary>Mask of Unicode categories that combine to form [\\w]</summary>
          private const int WordCategoriesMask =
                1 << (int)UnicodeCategory.UppercaseLetter |
                1 << (int)UnicodeCategory.LowercaseLetter |
