@@ -30,49 +30,49 @@ internal static partial class Interop
 
                 // Parse the NAME, PRETTY_NAME, and VERSION fields.
                 // These fields are suitable for presentation to the user.
-                string? prettyName = null, name = null, version = null;
+                ReadOnlySpan<char> prettyName = default, name = default, version = default;
                 foreach (var line in lines)
                 {
-                    if (line.StartsWith("PRETTY_NAME=", StringComparison.Ordinal))
-                    {
-                        prettyName = line.Substring("PRETTY_NAME=".Length);
-                    }
-                    else if (line.StartsWith("NAME=", StringComparison.Ordinal))
-                    {
-                        name = line.Substring("NAME=".Length);
-                    }
-                    else if (line.StartsWith("VERSION=", StringComparison.Ordinal))
-                    {
-                        version = line.Substring("VERSION=".Length);
-                    }
+                    ReadOnlySpan<char> lineSpan = line.AsSpan();
+
+                    _ = TryGetFieldValue(lineSpan, "PRETTY_NAME=", ref prettyName) ||
+                        TryGetFieldValue(lineSpan, "NAME=", ref name) ||
+                        TryGetFieldValue(lineSpan, "VERSION=", ref version);
                 }
 
-                // Prefer PRETTY_NAME.
-                if (prettyName is not null)
+                // Prefer "PRETTY_NAME".
+                if (!prettyName.IsEmpty)
                 {
-                    return GetValue(prettyName);
+                    return new string(prettyName);
                 }
 
-                // Fall back to: NAME[ VERSION].
-                if (name is not null)
+                // Fall back to "NAME[ VERSION]".
+                if (!name.IsEmpty)
                 {
-                    if (version is not null)
+                    if (!version.IsEmpty)
                     {
-                        return $"{GetValue(name)} {GetValue(version)}";
+                        return string.Concat(name, " ", version);
                     }
-                    return GetValue(name);
+                    return new string(name);
                 }
 
-                static string GetValue(string fieldValue)
+                static bool TryGetFieldValue(ReadOnlySpan<char> line, ReadOnlySpan<char> prefix, ref ReadOnlySpan<char> value)
                 {
+                    if (!line.StartsWith(prefix))
+                    {
+                        return false;
+                    }
+                    ReadOnlySpan<char> fieldValue = line.Slice(prefix.Length);
+
                     // Remove enclosing quotes.
-                    if ((fieldValue.StartsWith('"') && fieldValue.EndsWith('"')) ||
-                        (fieldValue.StartsWith('\'') && fieldValue.EndsWith('\'')))
+                    if ((fieldValue.StartsWith("\"") && fieldValue.EndsWith("\"")) ||
+                        (fieldValue.StartsWith("'") && fieldValue.EndsWith("'")))
                     {
-                        fieldValue = fieldValue.Substring(1, fieldValue.Length - 2);
+                        fieldValue = fieldValue.Slice(1, fieldValue.Length - 2);
                     }
 
-                    return fieldValue;
+                    value = fieldValue;
+                    return true;
                 }
             }
 

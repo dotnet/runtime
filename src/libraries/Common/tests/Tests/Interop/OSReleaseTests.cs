@@ -50,7 +50,7 @@ namespace Common.Tests
         [Fact, PlatformSpecific(TestPlatforms.Linux)]
         public void GetPrettyName_CannotRead_ReturnsNull()
         {
-            string path = GetTestFilePath();
+            string path = CreateTestFile();
             File.SetUnixFileMode(path, UnixFileMode.None);
             Assert.ThrowsAny<Exception>(() => File.ReadAllText(path));
 
