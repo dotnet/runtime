@@ -682,11 +682,14 @@ namespace System.Globalization
             if (GlobalizationMode.UseNls)
             {
                 NlsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+                return;
             }
-            else
+            if (GlobalizationMode.Hybrid)
             {
-                IcuChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+                JsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
+                return;
             }
+            IcuChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
         }
 
         // Used in ToTitleCase():
