@@ -7792,7 +7792,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 //
 void Lowering::LowerIntrinsic(GenTreeIntrinsic* node)
 {
-    if (node->AsIntrinsic()->gtIntrinsicName == NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant)
+    if (node->gtIntrinsicName == NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant)
     {
         // IsKnownConstant is expected to be folded in Importer/Morph/VN+ConstantProp
         // This path is just in case if VN+ConstantProp didn't fold them for some reason (or e.g. they were disabled)
