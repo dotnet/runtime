@@ -2304,7 +2304,11 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return null!;
 
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type);
+#else
             return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+#endif
         }
 
         private string GetLocaleInfoCore(LocaleStringData type, string? uiCultureName = null)
@@ -2313,7 +2317,11 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return null!;
 
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type, uiCultureName);
+#else
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type, uiCultureName);
+#endif
         }
 
         private string GetLocaleInfoCore(string localeName, LocaleStringData type, string? uiCultureName = null)
@@ -2322,7 +2330,11 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return null!;
 
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+            return GlobalizationMode.Hybrid ? GetLocaleInfoNative(localeName, type) : IcuGetLocaleInfo(localeName, type, uiCultureName);
+#else
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(localeName, type) : IcuGetLocaleInfo(localeName, type, uiCultureName);
+#endif
         }
 
         private int[] GetLocaleInfoCoreUserOverride(LocaleGroupingData type)
