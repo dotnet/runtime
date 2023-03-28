@@ -106,6 +106,7 @@
     <NetFrameworkMinimum>net462</NetFrameworkMinimum>
     <NetFrameworkToolCurrent>net472</NetFrameworkToolCurrent>
     <!-- Don't build for NETFramework during source-build. -->
+    <NetFrameworkMinimum Condition="'$(DotNetBuildFromSource)' == 'true'" />
     <NetFrameworkToolCurrent Condition="'$(DotNetBuildFromSource)' == 'true'" />
 
     <TargetFrameworkForNETFrameworkTasks>$(NetFrameworkToolCurrent)</TargetFrameworkForNETFrameworkTasks>
@@ -450,7 +451,6 @@
 
   <PropertyGroup>
     <CustomBeforeNoTargets>$(RepositoryEngineeringDir)NoTargetsSdk.BeforeTargets.targets</CustomBeforeNoTargets>
-    <CustomAfterNoTargets>$(RepositoryEngineeringDir)NoTargetsSdk.AfterTargets.targets</CustomAfterNoTargets>
     <CustomAfterTraversalTargets>$(RepositoryEngineeringDir)TraversalSdk.AfterTargets.targets</CustomAfterTraversalTargets>
   </PropertyGroup>
 </Project>

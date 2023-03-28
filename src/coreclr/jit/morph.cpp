@@ -3055,6 +3055,26 @@ unsigned CallArgs::CountArgs()
 }
 
 //------------------------------------------------------------------------
+// CountArgs: Count the number of arguments ignoring non-user ones, e.g.
+//    r2r cell argument in a user function.
+//
+// Remarks:
+//   See IsUserArg's comments
+//
+unsigned CallArgs::CountUserArgs()
+{
+    unsigned numArgs = 0;
+    for (CallArg& arg : Args())
+    {
+        if (arg.IsUserArg())
+        {
+            numArgs++;
+        }
+    }
+    return numArgs;
+}
+
+//------------------------------------------------------------------------
 // fgMorphArgs: Walk and transform (morph) the arguments of a call
 //
 // Arguments:
@@ -3312,7 +3332,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         {
                             argVarDsc = lvaGetDesc(argLclNum);
                             if ((genTypeSize(argVarDsc) != originalSize) ||
-                                (varTypeUsesFloatReg(argVarDsc) != varTypeUsesFloatReg(structBaseType)))
+                                !varTypeUsesSameRegType(argVarDsc, structBaseType))
                             {
                                 argLclNum = BAD_VAR_NUM;
                             }
@@ -3775,7 +3795,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
                 var_types fieldType = lvaGetDesc(fieldLclNum)->TypeGet();
                 var_types regType   = genActualType(elems[inx].Type);
-                if (varTypeUsesFloatReg(fieldType) != varTypeUsesFloatReg(regType))
+
+                if (!varTypeUsesSameRegType(fieldType, regType))
                 {
                     // TODO-LSRA - It currently doesn't support the passing of floating point LCL_VARS in the
                     // integer registers. So for now we will use GT_LCLFLD's to pass this struct.
@@ -9827,12 +9848,10 @@ DONE_MORPHING_CHILDREN:
 
             // Only do this optimization when we are in the global optimizer. Doing this after value numbering
             // could result in an invalid value number for the newly generated GT_IND node.
-            if ((op1->OperGet() == GT_COMMA) && fgGlobalMorph)
+            // We skip INDs with GTF_DONT_CSE which is set if the IND is a location.
+            if (op1->OperIs(GT_COMMA) && fgGlobalMorph && ((tree->gtFlags & GTF_DONT_CSE) == 0))
             {
                 // Perform the transform IND(COMMA(x, ..., z)) -> COMMA(x, ..., IND(z)).
-                // TBD: this transformation is currently necessary for correctness -- it might
-                // be good to analyze the failures that result if we don't do this, and fix them
-                // in other ways.  Ideally, this should be optional.
                 GenTree*     commaNode = op1;
                 GenTreeFlags treeFlags = tree->gtFlags;
                 commaNode->gtType      = typ;
@@ -11503,6 +11522,13 @@ GenTree* Compiler::fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow,
     // Comma throw propagation does not preserve VNs, and deletes nodes.
     assert(fgGlobalMorph);
     assert(fgIsCommaThrow(commaThrow));
+
+    bool mightBeLocation = parent->OperIsIndir() && ((parent->gtFlags & GTF_DONT_CSE) != 0);
+
+    if (mightBeLocation)
+    {
+        return nullptr;
+    }
 
     if ((commaThrow->gtFlags & GTF_COLON_COND) == 0)
     {
@@ -13840,14 +13866,13 @@ void Compiler::fgMorphBlocks()
     //
     if (opts.IsOSR() && (fgEntryBB != nullptr))
     {
-        if (fgOSROriginalEntryBBProtected)
-        {
-            JITDUMP("OSR: un-protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
-            assert(fgEntryBB->bbRefs > 0);
-            fgEntryBB->bbRefs--;
-        }
+        JITDUMP("OSR: un-protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
+        assert(fgEntryBBExtraRefs == 1);
+        assert(fgEntryBB->bbRefs >= 1);
+        fgEntryBB->bbRefs--;
+        fgEntryBBExtraRefs = 0;
 
-        // And we don't need to remember this block anymore.
+        // We don't need to remember this block anymore.
         fgEntryBB = nullptr;
     }
 

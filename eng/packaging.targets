@@ -60,7 +60,7 @@
           Condition="'$(IncludeDesignerMarker)' != 'false'" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(AddNETFrameworkAssemblyReferenceToPackage)' == 'true'">
+  <ItemGroup Condition="'$(AddNETFrameworkAssemblyReferenceToPackage)' == 'true' and '$(NetFrameworkMinimum)' != ''">
     <_FrameworkAssemblyReferences Include="$(MSBuildProjectName)"
                                   TargetFramework="$(NetFrameworkMinimum)" />
   </ItemGroup>
@@ -80,7 +80,7 @@
         <None Include="$(PlaceholderFile)"
               Pack="true"
               PackagePath="$(BuildOutputTargetFolder)\$(NetFrameworkMinimum)\"
-              Condition="'$(AddNETFrameworkPlaceholderFileToPackage)' == 'true'" />
+              Condition="'$(AddNETFrameworkPlaceholderFileToPackage)' == 'true' and '$(NetFrameworkMinimum)' != ''" />
         <None Include="$(PlaceholderFile)"
               Pack="true"
               PackagePath="$(BuildOutputTargetFolder)\MonoAndroid10\;
@@ -104,7 +104,7 @@
                                        ($(TargetFrameworks.Contains('$(NetCoreAppMinimum)')) or $(TargetFrameworks.Contains('$(NetCoreAppPrevious)')) or $(TargetFrameworks.Contains('$(NetCoreAppCurrent)')))" />
     <NETStandardCompatError Include="net461"
                             Supported="$(NetFrameworkMinimum)"
-                            Condition="$(TargetFrameworks.Contains('netstandard2.0')) and
+                            Condition="'$(NetFrameworkMinimum)' != '' and $(TargetFrameworks.Contains('netstandard2.0')) and
                                        ($(TargetFrameworks.Contains('$(NetFrameworkMinimum)')) or $(TargetFrameworks.Contains('net47')) or $(TargetFrameworks.Contains('net48')))" />
   </ItemGroup>
 

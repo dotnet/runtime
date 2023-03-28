@@ -2888,11 +2888,12 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
             blockRefs += 1;
         }
 
-        // Under OSR, if we also are keeping the original method entry around,
-        // mark that as implicitly referenced as well.
-        if (opts.IsOSR() && (block == fgEntryBB) && fgOSROriginalEntryBBProtected)
+        // Under OSR, if we also are keeping the original method entry around
+        // via artifical ref counts, account for those.
+        //
+        if (opts.IsOSR() && (block == fgEntryBB))
         {
-            blockRefs += 1;
+            blockRefs += fgEntryBBExtraRefs;
         }
 
         /* Check the bbRefs */
