@@ -1152,7 +1152,7 @@ namespace System.Net.Sockets.Tests
                     int received;
                     do
                     {
-                        received = await ReceiveAsync(socket2, receiveBuffer);
+                        received = await ReceiveAsync(socket2, receiveBuffer).WaitAsync(TimeSpan.FromMilliseconds(TestSettings.PassingTestTimeout));
                         receivedTotal += received;
                     } while (received != 0);
 
