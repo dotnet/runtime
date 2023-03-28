@@ -583,11 +583,9 @@ GenTree* Lowering::LowerNode(GenTree* node)
             ContainCheckLclHeap(node->AsOp());
             break;
 
-#ifdef TARGET_XARCH
         case GT_INTRINSIC:
-            ContainCheckIntrinsic(node->AsOp());
+            LowerIntrinsic(node->AsIntrinsic());
             break;
-#endif // TARGET_XARCH
 
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
@@ -7784,6 +7782,31 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
         ind->ChangeOper(GT_IND);
         ind->SetUnusedValue();
     }
+}
+
+//------------------------------------------------------------------------
+// LowerIntrinsic: a common logic to lower INTRINSIC.
+//
+// Arguments:
+//    node - the INTRINSIC node we are lowering.
+//
+void Lowering::LowerIntrinsic(GenTreeIntrinsic* node)
+{
+    if (node->AsIntrinsic()->gtIntrinsicName == NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant)
+    {
+        // IsKnownConstant is expected to be folded in Importer/Morph/VN+ConstantProp
+        // This path is just in case if VN+ConstantProp didn't fold them for some reason (or e.g. they were disabled)
+        node->gtGetOp1()->SetUnusedValue();
+        LIR::Use use;
+        if (BlockRange().TryGetUse(node, &use))
+        {
+            use.ReplaceWith(comp->gtNewFalse());
+        }
+        BlockRange().Remove(node);
+    }
+#ifdef TARGET_XARCH
+    ContainCheckIntrinsic(node->AsOp());
+#endif
 }
 
 //------------------------------------------------------------------------

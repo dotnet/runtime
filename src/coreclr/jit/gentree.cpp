@@ -5145,6 +5145,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                             costSz = 12;
                             break;
 
+                        case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant:
+                            costEx = 1;
+                            costSz = 1;
+                            break;
+
                         case NI_System_Math_Abs:
                             costEx = 5;
                             costSz = 15;

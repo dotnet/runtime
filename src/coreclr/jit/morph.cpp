@@ -10010,8 +10010,8 @@ DONE_MORPHING_CHILDREN:
             if (tree->AsIntrinsic()->gtIntrinsicName ==
                 NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant)
             {
-                // Should be expanded by the time it reaches CSE phase
-                assert(!optValnumCSE_phase);
+                // Should be expanded in importer for MinOpts
+                assert(opts.OptimizationEnabled());
 
                 JITDUMP("\nExpanding RuntimeHelpers.IsKnownConstant to ");
                 if (op1->OperIsConst() || gtIsTypeof(op1))
@@ -10023,22 +10023,8 @@ DONE_MORPHING_CHILDREN:
                 }
                 else
                 {
-                    GenTree* op1SideEffects = nullptr;
-                    gtExtractSideEffList(op1, &op1SideEffects, GTF_ALL_EFFECT);
-                    if (op1SideEffects != nullptr)
-                    {
-                        DEBUG_DESTROY_NODE(tree);
-                        // Keep side-effects of op1
-                        tree = gtNewOperNode(GT_COMMA, TYP_INT, op1SideEffects, gtNewIconNode(0));
-                        JITDUMP("false with side effects:\n")
-                        DISPTREE(tree);
-                    }
-                    else
-                    {
-                        JITDUMP("false\n");
-                        DEBUG_DESTROY_NODE(tree, op1);
-                        tree = gtNewIconNode(0);
-                    }
+                    // Leave it for VN/ConstantProp (or Lowering)
+                    return tree;
                 }
                 INDEBUG(tree->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
                 return tree;

@@ -11047,6 +11047,12 @@ void Compiler::fgValueNumberIntrinsic(GenTree* tree)
             intrinsic->gtVNPair = vnStore->VNPWithExc(newVNP, excSet);
         }
     }
+    else if (intrinsic->gtIntrinsicName == NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant)
+    {
+        bool     isKnownConstant = arg0VNP.BothEqual() && vnStore->IsVNConstant(arg0VNP.GetLiberal());
+        ValueNum isCnsVN         = vnStore->VNForIntCon(isKnownConstant ? 1 : 0);
+        intrinsic->gtVNPair      = vnStore->VNPWithExc(ValueNumPair(isCnsVN, isCnsVN), arg0VNPx);
+    }
     else
     {
         assert(intrinsic->gtIntrinsicName == NI_System_Object_GetType);
