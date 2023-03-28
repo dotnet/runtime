@@ -338,7 +338,8 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(HybridGlobalization)' == 'true' and '$(WasmIcuDataFileName)' == ''">
-      <_WasmIcuDataFileName>$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt_wasm.dat</_WasmIcuDataFileName>
+      <!-- to be renamed to icudt_wasm.dat when the contents of the file get defined and it gets added to repo -->
+      <_WasmIcuDataFileName>$(MicrosoftNetCoreAppRuntimePackRidNativeDir)icudt.dat</_WasmIcuDataFileName>
     </PropertyGroup>
 
     <ItemGroup>
