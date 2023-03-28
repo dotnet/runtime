@@ -1737,9 +1737,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
                     unreached();
             }
 
-            // TODO-XARCH-AVX512 remove REG_K1 check when all K registers possible for
-            // allocation.
-            assert(emitter::isMaskReg(maskReg) && maskReg == REG_K1);
+            assert(emitter::isMaskReg(maskReg));
 
             emit->emitIns_R_R(maskIns, attr, maskReg, op1Reg);
             emit->emitIns_Mov(kmovIns, EA_8BYTE, targetReg, maskReg, INS_FLAGS_DONT_CARE);
@@ -1748,19 +1746,42 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
 
         case NI_AVX512F_CompareEqualSpecial:
         {
-            GenTree* op2      = node->Op(2);
-            op1Reg            = op1->GetRegNum();
-            regNumber op2Reg  = op2->GetRegNum();
-            regNumber maskReg = node->ExtractTempReg(RBM_ALLMASK);
+            GenTree* op2     = node->Op(2);
+            op1Reg           = op1->GetRegNum();
+            regNumber op2Reg = op2->GetRegNum();
 
-            instruction maskIns = genMask2VectorIns(baseType);
             instruction compareIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_CompareEqualSpecial, baseType);
 
-            assert(maskIns != INS_invalid && compareIns != INS_invalid);
-            assert(emitter::isMaskReg(maskReg));
+            assert(compareIns != INS_invalid);
+            assert(emitter::isMaskReg(targetReg));
 
-            emit->emitIns_R_R_R_I(compareIns, attr, maskReg, op1Reg, op2Reg, 0);
-            emit->emitIns_R_R(maskIns, attr, targetReg, maskReg);
+            emit->emitIns_R_R_R_I(compareIns, attr, targetReg, op1Reg, op2Reg, 0);
+            break;
+        }
+
+        case NI_AVX512F_MoveMaskToVectorSpecial:
+        {
+            op1Reg = op1->GetRegNum();
+
+            instruction maskMovIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_MoveMaskToVectorSpecial, baseType);
+
+            assert(maskMovIns != INS_invalid);
+            assert(emitter::isMaskReg(op1Reg));
+
+            emit->emitIns_R_R(maskMovIns, attr, targetReg, op1Reg);
+            break;
+        }
+
+        case NI_AVX512F_KORTEST:
+        {
+            op1Reg = op1->GetRegNum();
+
+            instruction testIns = HWIntrinsicInfo::lookupIns(NI_AVX512F_KORTEST, baseType);
+
+            assert(testIns != INS_invalid);
+            assert(emitter::isMaskReg(op1Reg));
+
+            emit->emitIns_R_R(testIns, attr, op1Reg, op1Reg);
             break;
         }
 
@@ -2135,7 +2156,7 @@ void CodeGen::genX86SerializeIntrinsic(GenTreeHWIntrinsic* node)
 //------------------------------------------------------------------------
 // genX86SerializeIntrinsic: Generate an "vpmovm2t" instruction, where t
 // represents a byte, word, dword, or qword, from a JIT base type.
-// 
+//
 // Operation takes a AVX512 mask register and populates a SIMD register
 // elementwise with 0s or 1s based on the associated bit in the mask register.
 //

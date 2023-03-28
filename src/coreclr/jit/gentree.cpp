@@ -20868,7 +20868,14 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(genTreeOps  op,
 #if defined(TARGET_XARCH)
         case GT_EQ:
         {
-            if (simdSize == 32)
+            if (simdSize == 64)
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ));
+                intrinsic = NI_Vector512_op_Equality;
+            }
+            else if (simdSize == 32)
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                 assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
@@ -21042,7 +21049,14 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(genTreeOps  op,
 
         case GT_NE:
         {
-            if (simdSize == 32)
+            if (simdSize == 64)
+            {
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+                assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ));
+                intrinsic = NI_Vector512_op_Inequality;
+            }
+            else if (simdSize == 32)
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                 assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));

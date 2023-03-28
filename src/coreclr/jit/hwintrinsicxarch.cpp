@@ -1360,22 +1360,44 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        // TODO-XARCH-AVX512 see how to merge this into below
         case NI_Vector512_Equals:
         {
             assert(sig->numArgs == 2);
 
-            if (compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
-                compOpportunisticallyDependsOn(InstructionSet_AVX512BW) &&
-                compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+            if (IsBaselineVector512IsaSupported())
             {
                 var_types simdType = getSIMDTypeForSize(simdSize);
 
                 op2 = impSIMDPopStack(simdType);
                 op1 = impSIMDPopStack(simdType);
 
-                retNode = gtNewSimdHWIntrinsicNode(retType, op1,op2,  NI_AVX512F_CompareEqualSpecial, simdBaseJitType, simdSize,
-                                                   /* isSimdAsHWIntrinsic */ false);
+                GenTree* compNode =
+                    gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, NI_AVX512F_CompareEqualSpecial, simdBaseJitType,
+                                             simdSize, /* isSimdAsHWIntrinsic */ false);
+
+                retNode = gtNewSimdHWIntrinsicNode(retType, compNode, NI_AVX512F_MoveMaskToVectorSpecial,
+                                                   simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             }
+            break;
+        }
+
+        case NI_Vector512_EqualsAll:
+        case NI_Vector512_op_Equality:
+        {
+            assert(sig->numArgs == 2);
+
+            if (IsBaselineVector512IsaSupported())
+            {
+                var_types simdType = getSIMDTypeForSize(simdSize);
+
+                op2 = impSIMDPopStack(simdType);
+                op1 = impSIMDPopStack(simdType);
+
+                retNode = gtNewSimdCmpOpAllNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize,
+                                                /* isSimdAsHWIntrinsic */ false);
+            }
+
             break;
         }
 
@@ -2060,6 +2082,24 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 retNode = gtNewSimdCmpOpAnyNode(GT_NE, retType, op1, op2, simdBaseJitType, simdSize,
                                                 /* isSimdAsHWIntrinsic */ false);
             }
+            break;
+        }
+
+        case NI_Vector512_op_Inequality:
+        {
+            assert(sig->numArgs == 2);
+
+            if (IsBaselineVector512IsaSupported())
+            {
+                var_types simdType = getSIMDTypeForSize(simdSize);
+
+                op2 = impSIMDPopStack(simdType);
+                op1 = impSIMDPopStack(simdType);
+
+                retNode = gtNewSimdCmpOpAnyNode(GT_NE, retType, op1, op2, simdBaseJitType, simdSize,
+                                                /* isSimdAsHWIntrinsic */ false);
+            }
+
             break;
         }
 

@@ -415,9 +415,9 @@ static bool IsRexW1EvexInstruction(instruction ins);
 
 bool IsThreeOperandAVXInstruction(instruction ins)
 {
-    return (IsDstDstSrcAVXInstruction(ins) || IsDstSrcSrcAVXInstruction(ins) || 
-        (ins == INS_vpcmpb || ins == INS_vpcmpw || ins == INS_vpcmpd || ins == INS_vpcmpq || 
-         ins == INS_vpcmpub || ins == INS_vpcmpuw || ins == INS_vpcmpud || ins == INS_vpcmpuq));
+    return (IsDstDstSrcAVXInstruction(ins) || IsDstSrcSrcAVXInstruction(ins) ||
+            (ins == INS_vpcmpb || ins == INS_vpcmpw || ins == INS_vpcmpd || ins == INS_vpcmpq || ins == INS_vpcmpub ||
+             ins == INS_vpcmpuw || ins == INS_vpcmpud || ins == INS_vpcmpuq));
 }
 
 bool isAvxBlendv(instruction ins)
