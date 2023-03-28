@@ -1893,7 +1893,7 @@ mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ig
 	guint32 cols [MONO_CUSTOM_ATTR_SIZE];
 	MonoTableInfo *ca;
 	MonoCustomAttrInfo *ainfo;
-	dn_vector_t *attr_array;
+	dn_vector_t attr_array = {0,};
 	const char *data;
 	MonoCustomAttrEntry* attr;
 
@@ -1908,8 +1908,7 @@ mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ig
 	// initial size chosen arbitrarily, but default is 16 which is rather small
 	dn_vector_custom_alloc_params_t vec_params = {0,};
 	vec_params.capacity = 128;
-	vec_params.attributes = DN_VECTOR_ATTRIBUTE_MEMORY_INIT;
-	attr_array = dn_vector_custom_alloc_t (&vec_params, uint32_t);
+	dn_vector_custom_init_t (&attr_array, &vec_params, uint32_t);
 	while (!mono_metadata_table_bounds_check (image, MONO_TABLE_CUSTOMATTRIBUTE, i + 1)) {
 		if (mono_metadata_decode_row_col (ca, i, MONO_CUSTOM_ATTR_PARENT) != idx) {
 			if (G_LIKELY (!image->has_updates)) {
@@ -1921,19 +1920,19 @@ mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ig
 				continue;
 			}
 		}
-		dn_vector_push_back (attr_array, i);
+		dn_vector_push_back (&attr_array, i);
 		++i;
 	}
-	len = dn_vector_size (attr_array);
+	len = dn_vector_size (&attr_array);
 	if (!len) {
-		dn_vector_free (attr_array);
+		dn_vector_dispose (&attr_array);
 		return NULL;
 	}
 	ainfo = (MonoCustomAttrInfo *)g_malloc0 (MONO_SIZEOF_CUSTOM_ATTR_INFO + sizeof (MonoCustomAttrEntry) * len);
 	ainfo->num_attrs = len;
 	ainfo->image = image;
 	for (i = 0; i < len; ++i) {
-		mono_metadata_decode_row (ca, *dn_vector_index_t (attr_array, uint32_t, i), cols, MONO_CUSTOM_ATTR_SIZE);
+		mono_metadata_decode_row (ca, *dn_vector_index_t (&attr_array, uint32_t, i), cols, MONO_CUSTOM_ATTR_SIZE);
 		mtoken = cols [MONO_CUSTOM_ATTR_TYPE] >> MONO_CUSTOM_ATTR_TYPE_BITS;
 		switch (cols [MONO_CUSTOM_ATTR_TYPE] & MONO_CUSTOM_ATTR_TYPE_MASK) {
 		case MONO_CUSTOM_ATTR_TYPE_METHODDEF:
@@ -1954,7 +1953,7 @@ mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ig
 				mono_error_cleanup (error);
 				error_init (error);
 			} else {
-				dn_vector_free (attr_array);
+				dn_vector_dispose (&attr_array);
 				g_free (ainfo);
 				return NULL;
 			}
@@ -1964,7 +1963,7 @@ mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ig
 		attr->data_size = mono_metadata_decode_value (data, &data);
 		attr->data = (guchar*)data;
 	}
-	dn_vector_free (attr_array);
+	dn_vector_dispose (&attr_array);
 
 	return ainfo;
 }
