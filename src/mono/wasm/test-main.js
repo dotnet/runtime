@@ -26,8 +26,8 @@ if (is_node && process.versions.node.split(".")[0] < 14) {
 if (is_node) {
     // the emscripten 3.1.34 stopped handling these when MODULARIZE is enabled
     process.on('uncaughtException', function(ex) {
-        // ignore ExitStatus exceptions
-        if (ex !== 'unwind' && !(ex instanceof ExitStatus) && !(ex.context instanceof ExitStatus)) {
+        // ignore UnhandledPromiseRejection exceptions with exit status
+        if (ex !== 'unwind' && (ex.name !== "UnhandledPromiseRejection" || !ex.message.includes('"#<ExitStatus>"'))) {
           throw ex;
         }
       });
