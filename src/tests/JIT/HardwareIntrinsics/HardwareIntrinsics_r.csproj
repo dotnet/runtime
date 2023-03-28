@@ -5,12 +5,7 @@
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm'">true</GCStressIncompatible>
   </PropertyGroup>
   <ItemGroup>
-    <!-- We have a lot of tests here so run them in outerloop on platforms where they aren't accelerated -->
-    <!-- For most of these, that just involves excluding the projects when the architecture is mismatched -->
-    <!-- For Vector512, we only have a very small pool of machines with acceleration support, so they are always outerloop -->
-
     <MergedWrapperProjectReference Include="*/**/*.csproj" Exclude="**/*_ro.csproj" />
-
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
