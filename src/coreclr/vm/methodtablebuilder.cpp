@@ -1841,7 +1841,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #ifdef FEATURE_HFA
 #error "Can't have FEATURE_HFA and UNIX_AMD64_ABI defined at the same time."
 #endif // FEATURE_HFA
-        SystemVAmd64CheckForPassStructInRegister();
+        SystemVAmd64CheckForPassStructInRegister(pByValueClassCache);
 #endif // UNIX_AMD64_ABI
     }
 
@@ -8450,7 +8450,7 @@ DWORD MethodTableBuilder::GetFieldSize(FieldDesc *pFD)
 
 #ifdef UNIX_AMD64_ABI
 // checks whether the struct is enregisterable.
-void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister(MethodTable* pValueClassCache)
+void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister(MethodTable** pValueClassCache)
 {
     STANDARD_VM_CONTRACT;
 
