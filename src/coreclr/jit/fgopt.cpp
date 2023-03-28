@@ -6917,7 +6917,12 @@ PhaseStatus Compiler::fgTailMerge()
                 //
                 bool useBlock = false;
 
-                if (isNoSplit && isFallThrough)
+                if (crossJumpVictim == nullptr)
+                {
+                    // Pick an initial candidate.
+                    useBlock = true;
+                }
+                else if (isNoSplit && isFallThrough)
                 {
                     // This is the ideal choice.
                     //
