@@ -1648,35 +1648,14 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 }
                 else
                 {
-                    // We're going to assign the argument value to the
-                    // temp we use for it in the inline body.
-                    const unsigned  tmpNum  = argInfo.argTmpNum;
-                    const var_types argType = lclVarInfo[argNum].lclTypeInfo;
+                    // We're going to assign the argument value to the temp we use for it in the inline body.
+                    GenTree* store = gtNewTempAssign(argInfo.argTmpNum, argNode);
 
-                    // Create the temp assignment for this argument
-                    CORINFO_CLASS_HANDLE structHnd = NO_CLASS_HANDLE;
+                    newStmt = gtNewStmt(store, callDI);
+                    fgInsertStmtAfter(block, afterStmt, newStmt);
+                    afterStmt = newStmt;
 
-                    if (varTypeIsStruct(argType))
-                    {
-                        structHnd = lclVarInfo[argNum].lclVerTypeInfo.GetClassHandleForValueClass();
-                        assert(structHnd != NO_CLASS_HANDLE);
-                    }
-
-                    // Unsafe value cls check is not needed for argTmpNum here since in-linee compiler instance
-                    // would have iterated over these and marked them accordingly.
-                    impAssignTempGen(tmpNum, argNode, structHnd, CHECK_SPILL_NONE, &afterStmt, callDI, block);
-
-                    // We used to refine the temp type here based on
-                    // the actual arg, but we now do this up front, when
-                    // creating the temp, over in impInlineFetchArg.
-                    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-                    if (verbose)
-                    {
-                        gtDispStmt(afterStmt);
-                    }
-#endif // DEBUG
+                    DISPSTMT(afterStmt);
                 }
             }
             else if (argInfo.argIsByRefToStructLocal)
@@ -1865,31 +1844,16 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     continue;
                 }
 
-                var_types lclTyp = lvaTable[tmpNum].lvType;
+                var_types lclTyp = tmpDsc->TypeGet();
                 noway_assert(lclTyp == lclVarInfo[lclNum + inlineInfo->argCnt].lclTypeInfo);
 
-                if (lclTyp != TYP_STRUCT)
-                {
-                    // Unsafe value cls check is not needed here since in-linee compiler instance would have
-                    // iterated over locals and marked accordingly.
-                    impAssignTempGen(tmpNum, gtNewZeroConNode(genActualType(lclTyp)), NO_CLASS_HANDLE, CHECK_SPILL_NONE,
-                                     &afterStmt, callDI, block);
-                }
-                else
-                {
-                    tree = gtNewBlkOpNode(gtNewLclvNode(tmpNum, lclTyp), gtNewIconNode(0));
+                tree = gtNewTempAssign(tmpNum, (lclTyp == TYP_STRUCT) ? gtNewIconNode(0) : gtNewZeroConNode(lclTyp));
 
-                    newStmt = gtNewStmt(tree, callDI);
-                    fgInsertStmtAfter(block, afterStmt, newStmt);
-                    afterStmt = newStmt;
-                }
+                newStmt = gtNewStmt(tree, callDI);
+                fgInsertStmtAfter(block, afterStmt, newStmt);
+                afterStmt = newStmt;
 
-#ifdef DEBUG
-                if (verbose)
-                {
-                    gtDispStmt(afterStmt);
-                }
-#endif // DEBUG
+                DISPSTMT(afterStmt);
             }
         }
     }

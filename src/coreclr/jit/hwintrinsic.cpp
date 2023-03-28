@@ -560,7 +560,7 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
 
     GenTree* immOpDup = nullptr;
 
-    immOp = impCloneExpr(immOp, &immOpDup, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+    immOp = impCloneExpr(immOp, &immOpDup, CHECK_SPILL_ALL,
                          nullptr DEBUGARG("Clone an immediate operand for immediate value bounds check"));
 
     if (immLowerBound != 0)

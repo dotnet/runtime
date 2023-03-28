@@ -2858,6 +2858,7 @@ public:
 
     GenTree* gtNewTempAssign(unsigned         tmp,
                              GenTree*         val,
+                             unsigned         curLevel   = CHECK_SPILL_NONE,
                              Statement**      pAfterStmt = nullptr,
                              const DebugInfo& di         = DebugInfo(),
                              BasicBlock*      block      = nullptr);
@@ -4016,25 +4017,15 @@ public:
     void impAppendStmt(Statement* stmt);
     void impInsertStmtBefore(Statement* stmt, Statement* stmtBefore);
     Statement* impAppendTree(GenTree* tree, unsigned chkLevel, const DebugInfo& di, bool checkConsumedDebugInfo = true);
-    void impInsertTreeBefore(GenTree* tree, const DebugInfo& di, Statement* stmtBefore);
-    void impAssignTempGen(unsigned         tmp,
+    void impAssignTempGen(unsigned         lclNum,
                           GenTree*         val,
                           unsigned         curLevel   = CHECK_SPILL_NONE,
                           Statement**      pAfterStmt = nullptr,
                           const DebugInfo& di         = DebugInfo(),
                           BasicBlock*      block      = nullptr);
-    void impAssignTempGen(unsigned             tmpNum,
-                          GenTree*             val,
-                          CORINFO_CLASS_HANDLE structHnd,
-                          unsigned             curLevel,
-                          Statement**          pAfterStmt = nullptr,
-                          const DebugInfo&     di         = DebugInfo(),
-                          BasicBlock*          block      = nullptr);
-
     Statement* impExtractLastStmt();
     GenTree* impCloneExpr(GenTree*             tree,
                           GenTree**            clone,
-                          CORINFO_CLASS_HANDLE structHnd,
                           unsigned             curLevel,
                           Statement** pAfterStmt DEBUGARG(const char* reason));
     GenTree* impAssignStruct(GenTree*         dest,
@@ -4043,19 +4034,13 @@ public:
                              Statement**      pAfterStmt = nullptr,
                              const DebugInfo& di         = DebugInfo(),
                              BasicBlock*      block      = nullptr);
-    GenTree* impAssignStructPtr(GenTree*             dest,
-                                GenTree*             src,
-                                CORINFO_CLASS_HANDLE structHnd,
-                                unsigned             curLevel,
-                                Statement**          pAfterStmt = nullptr,
-                                const DebugInfo&     di         = DebugInfo(),
-                                BasicBlock*          block      = nullptr);
+    GenTree* impAssignStructPtr(GenTree* dest, GenTree* src, unsigned curLevel);
 
-    GenTree* impGetStructAddr(GenTree* structVal, CORINFO_CLASS_HANDLE structHnd, unsigned curLevel, bool willDeref);
+    GenTree* impGetStructAddr(GenTree* structVal, unsigned curLevel, bool willDeref);
 
     var_types impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoType* simdBaseJitType = nullptr);
 
-    GenTree* impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE structHnd, unsigned curLevel);
+    GenTree* impNormStructVal(GenTree* structVal, unsigned curLevel);
 
     GenTree* impTokenToHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                               bool*                   pRuntimeLookup    = nullptr,

@@ -453,7 +453,7 @@ GenTree* Compiler::impSIMDPopStack()
     // Handle calls that may return the struct via a return buffer.
     if (tree->OperIs(GT_CALL, GT_RET_EXPR))
     {
-        tree = impNormStructVal(tree, se.seTypeInfo.GetClassHandle(), CHECK_SPILL_ALL);
+        tree = impNormStructVal(tree, CHECK_SPILL_ALL);
     }
 
     return tree;

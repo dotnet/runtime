@@ -15777,8 +15777,9 @@ GenTree* Compiler::gtFoldIndirConst(GenTreeIndir* indir)
 // Arguments:
 //    tmp         - local number for a compiler temp
 //    val         - value to assign to the temp
+//    curLevel    - stack level to spill at (importer-only)
 //    pAfterStmt  - statement to insert any additional statements after
-//    ilOffset    - il offset for new statements
+//    di          - debug info for new statements
 //    block       - block to insert any additional statements in
 //
 // Return Value:
@@ -15793,7 +15794,7 @@ GenTree* Compiler::gtFoldIndirConst(GenTreeIndir* indir)
 //    May set compFloatingPointUsed.
 
 GenTree* Compiler::gtNewTempAssign(
-    unsigned tmp, GenTree* val, Statement** pAfterStmt, const DebugInfo& di, BasicBlock* block)
+    unsigned tmp, GenTree* val, unsigned curLevel, Statement** pAfterStmt, const DebugInfo& di, BasicBlock* block)
 {
     // Self-assignment is a nop.
     if (val->OperGet() == GT_LCL_VAR && val->AsLclVarCommon()->GetLclNum() == tmp)
@@ -15889,7 +15890,7 @@ GenTree* Compiler::gtNewTempAssign(
     }
     else if (varTypeIsStruct(varDsc))
     {
-        asg = impAssignStruct(dest, val, CHECK_SPILL_NONE, pAfterStmt, di, block);
+        asg = impAssignStruct(dest, val, curLevel, pAfterStmt, di, block);
     }
     else
     {
@@ -15937,7 +15938,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
             // helper needs pointer to struct, not struct itself
             if (pFieldInfo->helper == CORINFO_HELP_SETFIELDSTRUCT)
             {
-                assg = impGetStructAddr(assg, structType, CHECK_SPILL_ALL, true);
+                assg = impGetStructAddr(assg, CHECK_SPILL_ALL, true);
             }
             else if (lclTyp == TYP_DOUBLE && assg->TypeGet() == TYP_FLOAT)
             {
@@ -16012,8 +16013,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
             {
                 if (!varTypeIsStruct(lclTyp))
                 {
-                    // get the result as primitive type
-                    result = impGetStructAddr(result, structType, CHECK_SPILL_ALL, true);
+                    result = impGetStructAddr(result, CHECK_SPILL_ALL, true);
                     result = gtNewIndir(lclTyp, result);
                 }
             }
@@ -16037,7 +16037,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
         {
             if (varTypeIsStruct(lclTyp))
             {
-                result = impAssignStructPtr(result, assg, structType, CHECK_SPILL_ALL);
+                result = impAssignStructPtr(result, assg, CHECK_SPILL_ALL);
             }
             else
             {
