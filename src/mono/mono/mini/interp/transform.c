@@ -9,6 +9,7 @@
 
 #include "config.h"
 #include <string.h>
+#include <dn-vector.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
@@ -3879,7 +3880,7 @@ get_basic_blocks (TransformData *td, MonoMethodHeader *header, gboolean make_lis
 }
 
 static void
-interp_save_debug_info (InterpMethod *rtm, MonoMethodHeader *header, TransformData *td, GArray *line_numbers)
+interp_save_debug_info (InterpMethod *rtm, MonoMethodHeader *header, TransformData *td, dn_vector_t *line_numbers)
 {
 	MonoDebugMethodJitInfo *dinfo;
 
@@ -3899,7 +3900,7 @@ interp_save_debug_info (InterpMethod *rtm, MonoMethodHeader *header, TransformDa
 	dinfo->code_size = GPTRDIFF_TO_UINT32 (td->new_code_end - td->new_code);
 	dinfo->epilogue_begin = 0;
 	dinfo->has_var_info = TRUE;
-	dinfo->num_line_numbers = line_numbers->len;
+	dinfo->num_line_numbers = dn_vector_size (line_numbers);
 	dinfo->line_numbers = g_new0 (MonoDebugLineNumberEntry, dinfo->num_line_numbers);
 
 	for (guint32 i = 0; i < dinfo->num_params; i++) {
@@ -3912,7 +3913,7 @@ interp_save_debug_info (InterpMethod *rtm, MonoMethodHeader *header, TransformDa
 	}
 
 	for (guint32 i = 0; i < dinfo->num_line_numbers; i++)
-		dinfo->line_numbers [i] = g_array_index (line_numbers, MonoDebugLineNumberEntry, i);
+		dinfo->line_numbers [i] = *dn_vector_index_t (line_numbers, MonoDebugLineNumberEntry, i);
 	mono_debug_add_method (rtm->method, dinfo, NULL);
 
 	mono_debug_free_method_jit_info (dinfo);
@@ -3939,7 +3940,8 @@ recursively_make_pred_seq_points (TransformData *td, InterpBasicBlock *bb)
 {
 	SeqPoint ** const MONO_SEQ_SEEN_LOOP = (SeqPoint**)GINT_TO_POINTER(-1);
 
-	GArray *predecessors = g_array_new (FALSE, TRUE, sizeof (gpointer));
+	dn_vector_t predecessors = {0,};
+	dn_vector_init_t (&predecessors, SeqPoint*);
 	GHashTable *seen = g_hash_table_new_full (g_direct_hash, NULL, NULL, NULL);
 
 	// Insert/remove sentinel into the memoize table to detect loops containing bb
@@ -3950,7 +3952,7 @@ recursively_make_pred_seq_points (TransformData *td, InterpBasicBlock *bb)
 
 		// This bb has the last seq point, append it and continue
 		if (in_bb->last_seq_point != NULL) {
-			predecessors = g_array_append_val (predecessors, in_bb->last_seq_point);
+			dn_vector_push_back (&predecessors, in_bb->last_seq_point);
 			continue;
 		}
 
@@ -3970,8 +3972,7 @@ recursively_make_pred_seq_points (TransformData *td, InterpBasicBlock *bb)
 		// Union sequence points with incoming bb's
 		for (guint j = 0; j < in_bb->num_pred_seq_points; j++) {
 			if (!g_hash_table_lookup (seen, in_bb->pred_seq_points [j])) {
-				g_array_append_val (predecessors, in_bb->pred_seq_points [j]);
-				g_hash_table_insert (seen, in_bb->pred_seq_points [j], (gpointer)&MONO_SEQ_SEEN_LOOP);
+				dn_vector_push_back (&predecessors, in_bb->pred_seq_points [j]);
 			}
 		}
 		// predecessors = g_array_append_vals (predecessors, in_bb->pred_seq_points, in_bb->num_pred_seq_points);
@@ -3979,16 +3980,17 @@ recursively_make_pred_seq_points (TransformData *td, InterpBasicBlock *bb)
 
 	g_hash_table_destroy (seen);
 
-	if (predecessors->len != 0) {
-		bb->pred_seq_points = (SeqPoint**)mono_mempool_alloc0 (td->mempool, sizeof (SeqPoint *) * predecessors->len);
-		bb->num_pred_seq_points = predecessors->len;
+	if (!dn_vector_empty (&predecessors)) {
+		uint32_t count = dn_vector_size (&predecessors);
+		bb->pred_seq_points = (SeqPoint**)mono_mempool_alloc0 (td->mempool, sizeof (SeqPoint *) * count);
+		bb->num_pred_seq_points = count;
 
 		for (guint newer = 0; newer < bb->num_pred_seq_points; newer++) {
-			bb->pred_seq_points [newer] = (SeqPoint*)g_array_index (predecessors, gpointer, newer);
+			bb->pred_seq_points [newer] = *dn_vector_index_t (&predecessors, SeqPoint*, newer);
 		}
 	}
 
-	g_array_free (predecessors, TRUE);
+	dn_vector_dispose (&predecessors);
 }
 
 static void
@@ -8181,7 +8183,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		MonoDebugLineNumberEntry lne;
 		lne.native_offset = GPTRDIFF_TO_UINT32 ((guint8*)start_ip - (guint8*)td->new_code);
 		lne.il_offset = ins->il_offset;
-		g_array_append_val (td->line_numbers, lne);
+		dn_vector_push_back (td->line_numbers, lne);
 	}
 
 	if (opcode == MINT_NOP || opcode == MINT_DEF || opcode == MINT_DUMMY_USE)
@@ -10815,7 +10817,7 @@ retry:
 	td->stack_capacity = header->max_stack + 1;
 	td->sp = td->stack;
 	td->max_stack_height = 0;
-	td->line_numbers = g_array_new (FALSE, TRUE, sizeof (MonoDebugLineNumberEntry));
+	td->line_numbers = dn_vector_alloc_t (MonoDebugLineNumberEntry);
 	td->current_il_offset = -1;
 
 	generate_code (td, method, header, generic_context, error);
@@ -10951,7 +10953,7 @@ exit:
 #endif
 	g_ptr_array_free (td->seq_points, TRUE);
 	if (td->line_numbers)
-		g_array_free (td->line_numbers, TRUE);
+		dn_vector_free (td->line_numbers);
 	g_slist_free (td->imethod_items);
 	mono_mempool_destroy (td->mempool);
 	if (retry_compilation)

@@ -296,7 +296,7 @@ endif()
 
 if(ENABLE_INTERP_LIB)
 add_library(mono-ee-interp STATIC "${interp_sources}")
-target_link_libraries(mono-ee-interp PRIVATE monoapi eglib_api)
+target_link_libraries(mono-ee-interp PRIVATE monoapi eglib_api shared_container_objects)
 target_include_directories(mono-ee-interp PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/..)

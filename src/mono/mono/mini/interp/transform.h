@@ -1,5 +1,6 @@
 #ifndef __MONO_MINI_INTERP_TRANSFORM_H__
 #define __MONO_MINI_INTERP_TRANSFORM_H__
+#include <dn-vector.h>
 #include <mono/mini/mini-runtime.h>
 #include <mono/metadata/seq-points-data.h>
 #include "interp-internals.h"
@@ -249,7 +250,7 @@ typedef struct
 	GList *basic_blocks;
 	GPtrArray *relocs;
 	gboolean verbose_level;
-	GArray *line_numbers;
+	dn_vector_t *line_numbers;
 	gboolean prof_coverage;
 	MonoProfilerCoverageInfo *coverage_info;
 	GList *dont_inline;
