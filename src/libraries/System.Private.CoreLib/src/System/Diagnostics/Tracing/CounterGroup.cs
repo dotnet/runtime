@@ -56,11 +56,16 @@ namespace System.Diagnostics.Tracing
                 {
                     Debug.Assert(e.Arguments != null);
 
-                    if (e.Arguments.TryGetValue("EventCounterIntervalSec", out string? valueStr)
-                        && float.TryParse(valueStr, out float value))
+                    string? valueStr = null;
+                    float value = 0.0f;
+                    if (!e.Arguments.TryGetValue("EventCounterIntervalSec", out valueStr)
+                        || !float.TryParse(valueStr, out value))
                     {
-                        intervalValue = value;
+                        // Command is Enable but no EventCounterIntervalSec arg so ignore
+                        return;
                     }
+
+                    intervalValue = value;
                 }
 
                 if ((e.Command == EventCommand.Disable && !_eventSource.IsEnabled()) || intervalValue <= 0)
@@ -74,6 +79,7 @@ namespace System.Diagnostics.Tracing
 
                 Debug.Assert((s_counterGroupEnabledList == null && !_eventSource.IsEnabled())
                                 || (_eventSource.IsEnabled() && s_counterGroupEnabledList!.Contains(this))
+                                || (intervalValue <= 0 && !s_counterGroupEnabledList!.Contains(this))
                                 || (!_eventSource.IsEnabled() && !s_counterGroupEnabledList!.Contains(this)));
             }
         }
