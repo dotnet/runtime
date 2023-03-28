@@ -28,7 +28,7 @@ namespace Common.Tests
         [InlineData("", null)]
         public void GetPrettyName_Success(
             string content,
-            string expectedName)
+            string? expectedName)
         {
             string path = GetTestFilePath();
             File.WriteAllText(path, content);
