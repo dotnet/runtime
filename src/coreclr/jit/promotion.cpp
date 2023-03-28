@@ -305,6 +305,12 @@ public:
             return;
         }
 
+        // We may be relying on zero-init as part of the prolog for the struct
+        // local. We need to propagate this to all replacement locals too to
+        // allow downstream phases to properly know that the local may need to
+        // be zeroed.
+
+        bool suppressedInit = comp->lvaGetDesc(lclNum)->lvSuppressedZeroInit;
         assert(replacements.size() == 0);
         for (size_t i = 0; i < m_accesses.size(); i++)
         {
@@ -329,7 +335,9 @@ public:
             strcpy_s(bufp, len, buf);
 #endif
             unsigned newLcl                  = comp->lvaGrabTemp(false DEBUGARG(bufp));
-            comp->lvaGetDesc(newLcl)->lvType = access.AccessType;
+            LclVarDsc* dsc = comp->lvaGetDesc(newLcl);
+            dsc->lvType = access.AccessType;
+            dsc->lvSuppressedZeroInit = suppressedInit;
             replacements.push_back(Replacement(access.Offset, access.AccessType, newLcl));
         }
     }
