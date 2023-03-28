@@ -30,7 +30,7 @@ protected:
 private:
     void     TryInitFieldByField();
     void     TryPrimitiveInit();
-    GenTree* EliminateCommas();
+    GenTree* EliminateCommas(GenTree** commaPool);
 
 protected:
     Compiler* m_comp;
@@ -125,7 +125,8 @@ GenTree* MorphInitBlockHelper::Morph()
 {
     JITDUMP("%s:\n", GetHelperName());
 
-    GenTree* sideEffects = EliminateCommas();
+    GenTree* commaPool;
+    GenTree* sideEffects = EliminateCommas(&commaPool);
 
     PrepareDst();
     PrepareSrc();
@@ -151,7 +152,22 @@ GenTree* MorphInitBlockHelper::Morph()
 
     while (sideEffects != nullptr)
     {
-        m_result = m_comp->gtNewOperNode(GT_COMMA, m_result->TypeGet(), sideEffects, m_result);
+        if (commaPool != nullptr)
+        {
+            GenTree* comma = commaPool;
+            commaPool      = commaPool->gtNext;
+
+            assert(comma->OperIs(GT_COMMA));
+            comma->AsOp()->gtOp1 = sideEffects;
+            comma->AsOp()->gtOp2 = m_result;
+            comma->gtFlags       = (sideEffects->gtFlags | m_result->gtFlags) & GTF_ALL_EFFECT;
+
+            m_result = comma;
+        }
+        else
+        {
+            m_result = m_comp->gtNewOperNode(GT_COMMA, m_result->TypeGet(), sideEffects, m_result);
+        }
         INDEBUG(m_result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
         sideEffects = sideEffects->gtNext;
@@ -552,84 +568,110 @@ void MorphInitBlockHelper::TryPrimitiveInit()
 
 //------------------------------------------------------------------------
 // EliminateCommas: Prepare for block morphing by removing commas from the
-// destination and source operands of the assignment.
+// source operand of the assignment.
+//
+// Parameters:
+//   commaPool - [out] Pool of GT_COMMA nodes linked by their gtNext nodes that
+//                     can be used by the caller to avoid unnecessarily creating
+//                     new commas.
 //
 // Returns:
 //   Extracted side effects, in reverse order, linked via the gtNext fields of
 //   the nodes.
 //
 // Notes:
-//   In the general case we have a tree like
-//
+//   We have a tree like the following (note that location-valued commas are
+//   illegal, so there cannot be a comma on the left):
 //
 //            ASG
 //          /     \.
-//       COMMA   COMMA
-//        /  \    /  \.
-//       A   IND C    D
-//            |
-//            B
+//        IND   COMMA
+//         |      /  \.
+//         B     C    D
 //
+//   We'd like downstream code to just see and be expand ASG(IND(B), D).
+//   We will produce:
 //
-//   and we'd like downstream code to just see and be expand ASG(IND(B), D).
-//   Dealing with A is simple enough. However, if we also need to deal with C,
-//   then we first need to extract side effects of B. The goal is to then
-//   produce a final result that looks like:
+//       COMMA
+//       /   \.
+//     ASG   COMMA
+//    /  \    /  \.
+//   tmp  B  C   ASG
+//              /  \.
+//            IND   D
+//             |
+//            tmp
 //
-//        COMMA
+//   If the ASG has GTF_REVERSE_OPS then we will produce:
+//
+//      COMMA
+//      /   \.
+//     C    ASG
 //         /  \.
-//        A   COMMA
-//             /   \.
-//           ASG   COMMA
-//          /  \    /  \.
-//         tmp  B  C   ASG
-//                    /  \.
-//                  IND   D
-//                   |
-//                  tmp
+//       IND   D
+//        |
+//        B
+//
+//   While keeping the GTF_REVERSE_OPS.
 //
 //   Note that the final resulting tree is created in the caller since it also
 //   needs to propagate side effect flags from the decomposed assignment to all
 //   the created commas. Therefore this function just returns a linked list of
 //   the side effects to be used for that purpose.
 //
-GenTree* MorphInitBlockHelper::EliminateCommas()
+GenTree* MorphInitBlockHelper::EliminateCommas(GenTree** commaPool)
 {
+    *commaPool = nullptr;
+
     GenTree* sideEffects = nullptr;
     auto addSideEffect   = [&sideEffects](GenTree* sideEff) {
         sideEff->gtNext = sideEffects;
         sideEffects     = sideEff;
     };
 
-    GenTree* lhs = m_asg->gtGetOp1();
-    while (lhs->OperIs(GT_COMMA))
-    {
-        addSideEffect(lhs->gtGetOp1());
-        lhs = lhs->gtGetOp2();
-    }
+    auto addComma = [commaPool, &addSideEffect](GenTree* comma) {
+        addSideEffect(comma->gtGetOp1());
+        comma->gtNext = *commaPool;
+        *commaPool    = comma;
+    };
 
-    assert(lhs->OperIsUnary() || lhs->OperIsLeaf());
+    GenTree* lhs = m_asg->gtGetOp1();
+    assert(lhs->OperIsIndir() || lhs->OperIsLocal());
 
     GenTree* rhs = m_asg->gtGetOp2();
-    if (lhs->OperIsUnary() && ((lhs->gtGetOp1()->gtFlags & GTF_ALL_EFFECT) != 0) && rhs->OperIs(GT_COMMA))
-    {
-        GenTree* addr          = lhs->gtGetOp1();
-        unsigned lhsAddrLclNum = m_comp->lvaGrabTemp(true DEBUGARG("Block morph LHS addr"));
 
-        addSideEffect(m_comp->gtNewTempAssign(lhsAddrLclNum, addr));
-        lhs->AsUnOp()->gtOp1 = m_comp->gtNewLclvNode(lhsAddrLclNum, genActualType(addr));
-        m_comp->gtUpdateNodeSideEffects(lhs);
+    if (m_asg->IsReverseOp())
+    {
+        while (rhs->OperIs(GT_COMMA))
+        {
+            addComma(rhs);
+            rhs = rhs->gtGetOp2();
+        }
     }
-
-    while (rhs->OperIs(GT_COMMA))
+    else
     {
-        addSideEffect(rhs->gtGetOp1());
-        rhs = rhs->gtGetOp2();
+        if (lhs->OperIsIndir() && rhs->OperIs(GT_COMMA))
+        {
+            GenTree* addr = lhs->gtGetOp1();
+            if (((addr->gtFlags & GTF_ALL_EFFECT) != 0) || (((rhs->gtFlags & GTF_ASG) != 0) && !addr->IsInvariant()))
+            {
+                unsigned lhsAddrLclNum = m_comp->lvaGrabTemp(true DEBUGARG("Block morph LHS addr"));
+
+                addSideEffect(m_comp->gtNewTempAssign(lhsAddrLclNum, addr));
+                lhs->AsUnOp()->gtOp1 = m_comp->gtNewLclvNode(lhsAddrLclNum, genActualType(addr));
+                m_comp->gtUpdateNodeSideEffects(lhs);
+            }
+        }
+
+        while (rhs->OperIs(GT_COMMA))
+        {
+            addComma(rhs);
+            rhs = rhs->gtGetOp2();
+        }
     }
 
     if (sideEffects != nullptr)
     {
-        m_asg->gtOp1 = lhs;
         m_asg->gtOp2 = rhs;
         m_comp->gtUpdateNodeSideEffects(m_asg);
     }

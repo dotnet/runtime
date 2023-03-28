@@ -68,7 +68,7 @@ int LinearScan::BuildNode(GenTree* tree)
     }
 
     // floating type generates AVX instruction (vmovss etc.), set the flag
-    if (varTypeUsesFloatReg(tree->TypeGet()))
+    if (!varTypeUsesIntReg(tree->TypeGet()))
     {
         SetContainsAVXFlags();
     }
@@ -1218,13 +1218,18 @@ int LinearScan::BuildCall(GenTreeCall* call)
         dstCandidates                     = RBM_FLOATRET;
 #endif // !TARGET_X86
     }
-    else if (registerType == TYP_LONG)
-    {
-        dstCandidates = RBM_LNGRET;
-    }
     else
     {
-        dstCandidates = RBM_INTRET;
+        assert(varTypeUsesIntReg(registerType));
+
+        if (registerType == TYP_LONG)
+        {
+            dstCandidates = RBM_LNGRET;
+        }
+        else
+        {
+            dstCandidates = RBM_INTRET;
+        }
     }
 
     // number of args to a call =
@@ -1512,8 +1517,8 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 case GenTreeBlk::BlkOpKindUnrollMemmove:
                 {
                     // Prepare SIMD/GPR registers needed to perform an unrolled memmove. The idea that
-                    // we can ignore the fact that dst and src might overlap if we save the whole dst
-                    // to temp regs in advance, e.g. for memmove(rax, rcx, 120):
+                    // we can ignore the fact that src and dst might overlap if we save the whole src
+                    // to temp regs in advance, e.g. for memmove(dst: rcx, src: rax, len: 120):
                     //
                     //       vmovdqu  ymm0, ymmword ptr[rax +  0]
                     //       vmovdqu  ymm1, ymmword ptr[rax + 32]
@@ -1554,19 +1559,16 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                         }
                         SetContainsAVXFlags();
                     }
+                    else if (isPow2(size))
+                    {
+                        // Single GPR for 1,2,4,8
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                    }
                     else
                     {
-                        if (isPow2(size))
-                        {
-                            // Single GPR for 1,2,4,8
-                            buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
-                        }
-                        else
-                        {
-                            // Any size from 3 to 15 can be handled via two GPRs
-                            buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
-                            buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
-                        }
+                        // Any size from 3 to 15 can be handled via two GPRs
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
                     }
                 }
                 break;

@@ -7003,26 +7003,7 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
     int loopVarCount;
     int varInOutCount;
 
-    if (varTypeUsesFloatReg(tree))
-    {
-        hoistedExprCount = pLoopDsc->lpHoistedFPExprCount;
-        loopVarCount     = pLoopDsc->lpLoopVarFPCount;
-        varInOutCount    = pLoopDsc->lpVarInOutFPCount;
-
-        availRegCount = CNT_CALLEE_SAVED_FLOAT;
-        if (!loopContainsCall)
-        {
-            availRegCount += CNT_CALLEE_TRASH_FLOAT - 1;
-        }
-#ifdef TARGET_ARM
-        // For ARM each double takes two FP registers
-        // For now on ARM we won't track singles/doubles
-        // and instead just assume that we always have doubles.
-        //
-        availRegCount /= 2;
-#endif
-    }
-    else
+    if (varTypeUsesIntReg(tree))
     {
         hoistedExprCount = pLoopDsc->lpHoistedExprCount;
         loopVarCount     = pLoopDsc->lpLoopVarCount;
@@ -7039,6 +7020,27 @@ bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
         {
             availRegCount = (availRegCount + 1) / 2;
         }
+#endif
+    }
+    else
+    {
+        assert(varTypeUsesFloatReg(tree));
+
+        hoistedExprCount = pLoopDsc->lpHoistedFPExprCount;
+        loopVarCount     = pLoopDsc->lpLoopVarFPCount;
+        varInOutCount    = pLoopDsc->lpVarInOutFPCount;
+
+        availRegCount = CNT_CALLEE_SAVED_FLOAT;
+        if (!loopContainsCall)
+        {
+            availRegCount += CNT_CALLEE_TRASH_FLOAT - 1;
+        }
+#ifdef TARGET_ARM
+        // For ARM each double takes two FP registers
+        // For now on ARM we won't track singles/doubles
+        // and instead just assume that we always have doubles.
+        //
+        availRegCount /= 2;
 #endif
     }
 
