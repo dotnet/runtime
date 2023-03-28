@@ -3746,7 +3746,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_XCAST:
 			break;
-
+		case OP_BROADCAST: {
+			const int t = get_type_size_macro (ins->inst_c1);
+			if (is_type_float_macro (ins->inst_c1))
+				arm_neon_fdup_e (code, VREG_FULL, t, ins->dreg, ins->sreg1, 0);
+			else
+				arm_neon_dup_g (code, VREG_FULL, t, ins->dreg, ins->sreg1);
+			break;
+		}
 		case OP_EXTRACT_I1:
 		case OP_EXTRACT_I2:
 		case OP_EXTRACT_I4:
