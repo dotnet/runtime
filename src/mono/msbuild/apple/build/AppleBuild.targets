@@ -249,6 +249,7 @@
       GenerateCMakeProject="$(GenerateCMakeProject)"
       GenerateXcodeProject="$(GenerateXcodeProject)"
       InvariantGlobalization="$(InvariantGlobalization)"
+      HybridGlobalization="$(HybridGlobalization)"
       MainLibraryFileName="$(MainLibraryFileName)"
       MonoRuntimeHeaders="$(_MonoHeaderPath)"
       NativeMainSource="$(NativeMainSource)"
