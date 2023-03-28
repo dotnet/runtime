@@ -55,7 +55,7 @@ typedef struct {
 	const char *name;
 	gboolean in_corlib;
 	gboolean has_value;
-	HasValueCallback has_value_callback;
+	MonoHasValueCallback has_value_callback;
 	/* output */
 	gboolean has_attr;
 	gpointer value;
@@ -305,7 +305,7 @@ mono_class_setup_fields (MonoClass *klass)
 	}
 
 	if (m_class_is_inlinearray (klass) && m_class_inlinearray_value (klass) <= 0)
-		mono_class_set_type_load_failure (klass, "Inline array lenght must be greater than 0.");
+		mono_class_set_type_load_failure (klass, "Inline array length property must be positive.");
 
 	/* Get the real size */
 	explicit_size = mono_metadata_packing_from_typedef (klass->image, klass->type_token, &packing_size, &real_size);
@@ -727,7 +727,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		attr = class_has_inlinearray_attribute (klass);
 		if (attr.has_attr) {
 			klass->is_inlinearray = 1;
-			klass->inlinearray_value = GPOINTER_TO_UINT32 (attr.value);
+			klass->inlinearray_value = GPOINTER_TO_INT32 (attr.value);
 		}
 	}
 
@@ -794,7 +794,7 @@ has_wellknown_attribute_func (MonoImage *image, guint32 typeref_scope_token, con
 }
 
 static void
-has_wellknown_attribute_value_func (MonoImage *image, uint32_t method_token, uint32_t *cols, gpointer user_data)
+has_inline_array_attribute_value_func (MonoImage *image, uint32_t method_token, uint32_t *cols, gpointer user_data)
 {
 	FoundAttrUD *attr = (FoundAttrUD *)user_data;
 	MonoError error;
@@ -813,7 +813,7 @@ has_wellknown_attribute_value_func (MonoImage *image, uint32_t method_token, uin
 }
 
 static FoundAttrUD
-class_has_wellknown_attribute (MonoClass *klass, const char *nspace, const char *name, gboolean in_corlib, gboolean has_value, HasValueCallback callback)
+class_has_wellknown_attribute (MonoClass *klass, const char *nspace, const char *name, gboolean in_corlib, gboolean has_value, MonoHasValueCallback callback)
 {
 	FoundAttrUD attr;
 	attr.nspace = nspace;
@@ -829,7 +829,7 @@ class_has_wellknown_attribute (MonoClass *klass, const char *nspace, const char 
 }
 
 static FoundAttrUD
-method_has_wellknown_attribute (MonoMethod *method, const char *nspace, const char *name, gboolean in_corlib, gboolean has_value, HasValueCallback callback)
+method_has_wellknown_attribute (MonoMethod *method, const char *nspace, const char *name, gboolean in_corlib, gboolean has_value, MonoHasValueCallback callback)
 {
 	FoundAttrUD attr;
 	attr.nspace = nspace;
@@ -854,7 +854,7 @@ class_has_isbyreflike_attribute (MonoClass *klass)
 static FoundAttrUD
 class_has_inlinearray_attribute (MonoClass *klass)
 {
-	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "InlineArrayAttribute", TRUE, TRUE, has_wellknown_attribute_value_func);
+	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "InlineArrayAttribute", TRUE, TRUE, has_inline_array_attribute_value_func);
 }
 
 
@@ -2272,12 +2272,13 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 
 				size = mono_type_size (field->type, &align);
 				if (m_class_is_inlinearray (klass)) {
-					// limit the max size of array instance to 1MiB
+					// Limit the max size of array instance to 1MiB
 					const guint32 struct_max_size = 1024 * 1024;
+					// If size overflows, it returns 0
 					size *= m_class_inlinearray_value (klass);
 					inlined_fields++;
-					if(size <= 0 || size > struct_max_size) {
-						mono_class_set_type_load_failure (klass, "Inline array struct size out of bounds.");
+					if(size == 0 || size > struct_max_size) {
+						mono_class_set_type_load_failure (klass, "Inline array struct size out of bounds, abnormally large.");
 						break;
 					}
 				}

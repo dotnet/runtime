@@ -933,7 +933,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 				break;
 			}
 
-			// If a struct has inline array attribute, consider it as an array
+			// A struct with the inline array attribute is handled in the same way as an array
 			if (m_class_is_inlinearray (klass)) {
 				g_assert ((m_field_get_offset (field) % wordsize) == 0);
 
