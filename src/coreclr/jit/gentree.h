@@ -4644,6 +4644,8 @@ public:
 
     bool IsArgAddedLate() const;
 
+    bool IsUserArg() const;
+
 #ifdef DEBUG
     void Dump(Compiler* comp);
     // Check that the value of 'AbiInfo.IsStruct' is consistent.
@@ -4704,6 +4706,7 @@ public:
     CallArg* GetThisArg();
     CallArg* GetRetBufferArg();
     CallArg* GetArgByIndex(unsigned index);
+    CallArg* GetUserArgByIndex(unsigned index);
     unsigned GetIndex(CallArg* arg);
 
     bool IsEmpty() const
@@ -4772,6 +4775,7 @@ public:
     unsigned OutgoingArgsStackSize() const;
 
     unsigned CountArgs();
+    unsigned CountUserArgs();
 
     template <CallArg* (CallArg::*Next)()>
     class CallArgIterator
@@ -7322,6 +7326,7 @@ public:
         BlkOpKindRepInstr,
 #endif
         BlkOpKindUnroll,
+        BlkOpKindUnrollMemmove,
     } gtBlkOpKind;
 
 #ifndef JIT32_GCENCODER

@@ -16183,7 +16183,7 @@ bool emitter::IsRedundantLdStr(
 //     ins      - The instruction code
 //     reg1Attr - The emit attribute for register 1
 //     reg1     - Register 1
-//     reg2     - Encoded register 2
+//     reg2     - Register 2
 //     imm      - Immediate offset, prior to scaling by operand size
 //     size     - Operand size
 //     fmt      - Instruction format
@@ -16194,9 +16194,6 @@ bool emitter::IsRedundantLdStr(
 bool emitter::ReplaceLdrStrWithPairInstr(
     instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
 {
-    // Register 2 needs conversion to unencoded value.
-    reg2 = encodingZRtoSP(reg2);
-
     RegisterOrder optimizationOrder = IsOptimizableLdrStrWithPair(ins, reg1, reg2, imm, size, fmt);
 
     if (optimizationOrder != eRO_none)
@@ -16367,4 +16364,82 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
     return optimisationOrder;
 }
 
+//-----------------------------------------------------------------------------------
+// IsOptimizableLdrToMov: Check if it is possible to optimize a second "ldr"
+//                        instruction into a cheaper "mov" instruction.
+//
+// Examples:            ldr     w1, [x20, #0x10]
+//                      ldr     w2, [x20, #0x10]    =>  mov     w2, w1
+//
+// Arguments:
+//     ins  - The instruction code
+//     reg1 - Register 1 number
+//     reg2 - Register 2 number
+//     imm  - Immediate offset, prior to scaling by operand size
+//     size - Operand size
+//     fmt  - Instruction format
+//
+// Return Value:
+//    true       - Optimization of the second instruction is possible
+//
+bool emitter::IsOptimizableLdrToMov(
+    instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt)
+{
+    if (ins != INS_ldr)
+    {
+        // This instruction is not an "ldr" instruction.
+        return false;
+    }
+
+    if (ins != emitLastIns->idIns())
+    {
+        // Not successive "ldr" instructions.
+        return false;
+    }
+
+    regNumber prevReg1   = emitLastIns->idReg1();
+    regNumber prevReg2   = encodingZRtoSP(emitLastIns->idReg2());
+    insFormat lastInsFmt = emitLastIns->idInsFmt();
+    emitAttr  prevSize   = emitLastIns->idOpSize();
+    ssize_t   prevImm    = emitGetInsSC(emitLastIns);
+
+    if ((reg2 != prevReg2) || !isGeneralRegisterOrSP(reg2))
+    {
+        // The "register 2" should be same as previous instruction and
+        // should either be a general register or stack pointer.
+        return false;
+    }
+
+    if (prevImm != imm)
+    {
+        // Then we are loading from a different immediate offset.
+        return false;
+    }
+
+    if (!isGeneralRegister(reg1) || !isGeneralRegister(prevReg1))
+    {
+        // We cannot optimise when register 1 or previous register 1 is a general register.
+        return false;
+    }
+
+    if (lastInsFmt != fmt)
+    {
+        // The formats of the two instructions differ.
+        return false;
+    }
+
+    if (prevReg1 == prevReg2)
+    {
+        // Then the previous load overwrote the register that we are indexing against.
+        return false;
+    }
+
+    if (prevSize != size)
+    {
+        // Operand sizes differ.
+        return false;
+    }
+
+    return true;
+}
 #endif // defined(TARGET_ARM64)
