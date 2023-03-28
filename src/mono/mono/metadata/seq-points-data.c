@@ -9,6 +9,7 @@
  */
 
 #include "seq-points-data.h"
+#include <dn-vector.h>
 
 typedef struct {
 	guint8 *data;
@@ -274,24 +275,27 @@ mono_seq_point_init_next (MonoSeqPointInfo* info, SeqPoint sp, SeqPoint* next)
 	int i;
 	guint8* ptr;
 	SeqPointIterator it;
-	GArray* seq_points = g_array_new (FALSE, TRUE, sizeof (SeqPoint));
+	dn_vector_t seq_points = {0,};
+
+	dn_vector_init_t (&seq_points, SeqPoint);
+
 	SeqPointInfoInflated info_inflated = seq_point_info_inflate (info);
 
 	g_assert (info_inflated.has_debug_data);
 
 	mono_seq_point_iterator_init (&it, info);
 	while (mono_seq_point_iterator_next (&it))
-		g_array_append_vals (seq_points, &it.seq_point, 1);
+		dn_vector_push_back (&seq_points, it.seq_point);
 
 	ptr = info_inflated.data + sp.next_offset;
 	for (i = 0; i < sp.next_len; i++) {
 		int next_index;
 		next_index = decode_var_int (ptr, &ptr);
-		g_assert (next_index < seq_points->len);
-		memcpy (&next[i], seq_points->data + next_index * sizeof (SeqPoint), sizeof (SeqPoint));
+		g_assert (next_index < dn_vector_size (&seq_points));
+		memcpy (&next[i], dn_vector_index_t (&seq_points, SeqPoint, next_index), sizeof (SeqPoint));
 	}
 
-	g_array_free (seq_points, TRUE);
+	dn_vector_dispose (&seq_points);
 }
 
 gboolean
