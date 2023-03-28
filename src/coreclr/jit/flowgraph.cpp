@@ -4293,6 +4293,9 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
 
+    CORINFO_THREAD_LOCAL_FIELD_INFO threadLocalInfo;
+    info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadLocalInfo);
+
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
     SCAN_BLOCK_AGAIN:
@@ -4375,9 +4378,6 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                     fgMorphStmtBlockOps(block, stmt);
                     gtUpdateStmtSideEffects(stmt);
                 }
-
-                CORINFO_THREAD_LOCAL_FIELD_INFO threadLocalInfo;
-                info.compCompHnd->getThreadLocalFieldInfo(nullptr, &threadLocalInfo);
 
                 GenTree* arg0                            = call->gtArgs.GetArgByIndex(0)->GetNode();
                 GenTree* arg1                            = call->gtArgs.GetArgByIndex(1)->GetNode();
