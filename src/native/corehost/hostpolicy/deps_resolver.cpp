@@ -608,7 +608,7 @@ void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal
     }
 }
 
-void deps_resolver_t::resolve_additional_deps(const pal::char_t* additional_deps_serialized, const deps_json_t::rid_fallback_graph_t* rid_fallback_graph)
+void deps_resolver_t::resolve_additional_deps(const pal::char_t* additional_deps_serialized, const deps_json_t::rid_resolution_options_t& rid_resolution_options)
 {
     if (!m_is_framework_dependent
         || m_host_mode == host_mode_t::libhost)
@@ -647,7 +647,7 @@ void deps_resolver_t::resolve_additional_deps(const pal::char_t* additional_deps
                     additional_deps_path.c_str());
 
                 m_additional_deps.push_back(std::unique_ptr<deps_json_t>(
-                    new deps_json_t(true, additional_deps_path, rid_fallback_graph)));
+                    new deps_json_t(true, additional_deps_path, rid_resolution_options)));
             }
             else
             {
@@ -708,7 +708,7 @@ void deps_resolver_t::resolve_additional_deps(const pal::char_t* additional_deps
                             json_full_path.c_str());
 
                         m_additional_deps.push_back(std::unique_ptr<deps_json_t>(
-                            new deps_json_t(true, json_full_path, rid_fallback_graph)));
+                            new deps_json_t(true, json_full_path, rid_resolution_options)));
                     }
                 }
             }

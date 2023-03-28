@@ -11,6 +11,7 @@
 #include "bundle/runner.h"
 #include "bundle/file_entry.h"
 #include "shared_store.h"
+#include <tfm_compat.h>
 
 namespace
 {
@@ -135,6 +136,18 @@ namespace
     }
 }
 
+bool hostpolicy_context_t::should_read_rid_fallback_graph(const hostpolicy_init_t &init)
+{
+    const auto &iter = std::find(init.cfg_keys.cbegin(), init.cfg_keys.cend(), _X("System.Host.Resolution.ReadRidGraph"));
+    if (iter != init.cfg_keys.cend())
+    {
+        size_t idx = iter - init.cfg_keys.cbegin();
+        return pal::strcasecmp(init.cfg_values[idx].data(), _X("true")) == 0;
+    }
+
+    return !tfm_compat::is_rid_fallback_graph_disabled(init.tfm);
+}
+
 int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs)
 {
     application = args.managed_application;
@@ -142,6 +155,11 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     host_path = hostpolicy_init.host_info.host_path;
     breadcrumbs_enabled = enable_breadcrumbs;
 
+    deps_json_t::rid_resolution_options_t rid_resolution_options
+    {
+        should_read_rid_fallback_graph(hostpolicy_init),
+        nullptr, /*rid_fallback_graph*/
+    };
     deps_resolver_t resolver
     {
         args,
@@ -149,7 +167,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
         hostpolicy_init.additional_deps_serialized.c_str(),
         shared_store::get_paths(hostpolicy_init.tfm, host_mode, host_path),
         hostpolicy_init.probe_paths,
-        /* root_framework_rid_fallback_graph */ nullptr, // This means that the fx_definitions contains the root framework
+        rid_resolution_options,
         hostpolicy_init.is_framework_dependent
     };
 

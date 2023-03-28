@@ -180,31 +180,148 @@ void deps_json_t::reconcile_libraries_with_targets(
     }
 }
 
-// Returns the RID determined (computed or fallback) for the platform the host is running on.
-pal::string_t deps_json_t::get_current_rid(const rid_fallback_graph_t& rid_fallback_graph)
+namespace
 {
-    pal::string_t currentRid = get_current_runtime_id(false /*use_fallback*/);
-
-    trace::info(_X("HostRID is %s"), currentRid.empty()? _X("not available"): currentRid.c_str());
-
-    // If the current RID is not present in the RID fallback graph, then the platform
-    // is unknown to us. At this point, we will fallback to using the base RIDs and attempt
-    // asset lookup using them.
-    //
-    // We do the same even when the RID is empty.
-    if (currentRid.empty() || (rid_fallback_graph.count(currentRid) == 0))
+    const pal::char_t* s_host_rids[] =
     {
-        currentRid = pal::get_current_os_fallback_rid() + pal::string_t(_X("-")) + get_current_arch_name();
+#if defined(TARGET_WINDOWS)
+        _X("win"),
+#elif defined(TARGET_OSX)
+        _X("osx"),
+        _X("unix"),
+#elif defined(TARGET_LINUX_MUSL)
+        _X("linux-musl"),
+        _X("linux"),
+        _X("unix"),
+#elif defined(TARGET_ANDROID)
+        _X("linux-bionic"),
+        _X("linux"),
+        _X("unix"),
+#else
+        _X("linux"),
+        _X("unix"),
+#endif
+    };
 
-        trace::info(_X("Falling back to base HostRID: %s"), currentRid.c_str());
+    // Returns the RID determined (computed or fallback) for the platform the host is running on.
+    pal::string_t get_current_rid(const deps_json_t::rid_fallback_graph_t* rid_fallback_graph)
+    {
+        pal::string_t currentRid = get_current_runtime_id(false /*use_fallback*/);
+
+        trace::info(_X("HostRID is %s"), currentRid.empty() ? _X("not available") : currentRid.c_str());
+
+        // If the current RID is not present in the RID fallback graph, then the platform
+        // is unknown to us. At this point, we will fallback to using the base RIDs and attempt
+        // asset lookup using them.
+        //
+        // We do the same even when the RID is empty.
+        if (currentRid.empty() || (rid_fallback_graph != nullptr && rid_fallback_graph->count(currentRid) == 0))
+        {
+            currentRid = pal::get_current_os_fallback_rid() + pal::string_t(_X("-")) + get_current_arch_name();
+
+            trace::info(_X("Falling back to base HostRID: %s"), currentRid.c_str());
+        }
+
+        return currentRid;
     }
 
-    return currentRid;
+    std::vector<pal::string_t> get_host_rid_list(const pal::string_t& host_rid)
+    {
+        std::vector<pal::string_t> rids;
+        rids.reserve((sizeof(s_host_rids) / sizeof(*s_host_rids)) * 2 + 3);
+
+        pal::string_t arch_suffix = _X("-");
+        arch_suffix.append(get_current_arch_name());
+
+        rids.push_back(host_rid);
+        if (ends_with(host_rid, arch_suffix, true))
+        {
+            // Host RID without architecture
+            rids.push_back(host_rid.substr(0, host_rid.size() - arch_suffix.size()));
+        }
+
+        // Use our list of known portable RIDs
+        for (const pal::char_t* rid : s_host_rids)
+        {
+            // Architecture-specific RID
+            rids.push_back(rid + arch_suffix);
+
+            // RID without architecture
+            rids.push_back(rid);
+        }
+
+        rids.push_back(_X("any"));
+
+        if (trace::is_enabled())
+        {
+            trace::verbose(_X("Host RID list = ["));
+            for (const pal::string_t& rid : rids)
+            {
+                trace::verbose(_X("  %s,"), rid.c_str());
+            }
+            trace::verbose(_X("]"));
+        }
+
+        return rids;
+    }
+
+    bool try_get_matching_rid(const std::unordered_map<pal::string_t, std::vector<deps_asset_t>>& rid_assets, const std::vector<pal::string_t>& rid_list, pal::string_t& out_rid)
+    {
+        for (const pal::string_t& rid : rid_list)
+        {
+            if (rid_assets.count(rid) != 0)
+            {
+                out_rid = rid;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool try_get_matching_rid_with_fallback_graph(const std::unordered_map<pal::string_t, std::vector<deps_asset_t>>& rid_assets, const pal::string_t& host_rid, const deps_json_t::rid_fallback_graph_t& rid_fallback_graph, pal::string_t& out_rid)
+    {
+        // Check for exact match with the host RID
+        if (rid_assets.count(host_rid) != 0)
+        {
+            out_rid = host_rid;
+            return true;
+        }
+
+        // Check if the RID exists in the fallback graph
+        auto rid_fallback_iter = rid_fallback_graph.find(host_rid);
+        if (rid_fallback_iter == rid_fallback_graph.end())
+        {
+            trace::warning(_X("The targeted framework does not support the runtime '%s'. Some libraries may fail to load on this platform."), host_rid.c_str());
+            return false;
+        }
+
+        // Find the first RID fallback that has assets
+        const auto& fallback_rids = rid_fallback_iter->second;
+        auto iter = std::find_if(fallback_rids.begin(), fallback_rids.end(), [&rid_assets](const pal::string_t& rid) {
+            return rid_assets.count(rid);
+            });
+        if (iter != fallback_rids.end())
+        {
+            out_rid.assign(*iter);
+            return true;
+        }
+
+        return false;
+    }
 }
 
-void deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, const rid_fallback_graph_t& rid_fallback_graph)
+void deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets)
 {
-    pal::string_t host_rid = get_current_rid(rid_fallback_graph);
+    const rid_fallback_graph_t* rid_fallback_graph = nullptr;
+    if (m_rid_resolution_options.use_fallback_graph)
+        rid_fallback_graph = m_rid_resolution_options.rid_fallback_graph == nullptr ? &m_rid_fallback_graph : m_rid_resolution_options.rid_fallback_graph;
+
+    const pal::string_t host_rid = get_current_rid(rid_fallback_graph);
+
+    std::vector<pal::string_t> host_rid_list;
+    if (!m_rid_resolution_options.use_fallback_graph)
+        host_rid_list = get_host_rid_list(host_rid);
 
     for (auto& package : portable_assets->libs)
     {
@@ -215,28 +332,11 @@ void deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, c
             if (rid_assets.empty())
                 continue;
 
-            pal::string_t matched_rid = rid_assets.count(host_rid) ? host_rid : _X("");
-            if (matched_rid.empty())
-            {
-                auto rid_fallback_iter = rid_fallback_graph.find(host_rid);
-                if (rid_fallback_iter == rid_fallback_graph.end())
-                {
-                    trace::warning(_X("The targeted framework does not support the runtime '%s'. Some native libraries from [%s] may fail to load on this platform."), host_rid.c_str(), package.first.c_str());
-                }
-                else
-                {
-                    const auto& fallback_rids = rid_fallback_iter->second;
-                    auto iter = std::find_if(fallback_rids.begin(), fallback_rids.end(), [&rid_assets](const pal::string_t& rid) {
-                        return rid_assets.count(rid);
-                        });
-                    if (iter != fallback_rids.end())
-                    {
-                        matched_rid = *iter;
-                    }
-                }
-            }
-
-            if (matched_rid.empty())
+            pal::string_t matched_rid;
+            bool found_match = m_rid_resolution_options.use_fallback_graph
+                ? try_get_matching_rid_with_fallback_graph(rid_assets, host_rid, *rid_fallback_graph, matched_rid)
+                : try_get_matching_rid(rid_assets, host_rid_list, matched_rid);
+            if (!found_match)
             {
                 trace::verbose(_X("  No matching %s assets for package %s"), deps_entry_t::s_known_asset_types[asset_type_index], package.first.c_str());
                 rid_assets.clear();
@@ -260,7 +360,7 @@ void deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, c
     }
 }
 
-void deps_json_t::process_runtime_targets(const json_parser_t::value_t& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph, rid_specific_assets_t* p_assets)
+void deps_json_t::process_runtime_targets(const json_parser_t::value_t& json, const pal::string_t& target_name, rid_specific_assets_t* p_assets)
 {
     rid_specific_assets_t& assets = *p_assets;
     for (const auto& package : json[_X("targets")][target_name.c_str()].GetObject())
@@ -318,7 +418,7 @@ void deps_json_t::process_runtime_targets(const json_parser_t::value_t& json, co
         }
     }
 
-    perform_rid_fallback(&assets, rid_fallback_graph);
+    perform_rid_fallback(&assets);
 }
 
 void deps_json_t::process_targets(const json_parser_t::value_t& json, const pal::string_t& target_name, deps_assets_t* p_assets)
@@ -374,9 +474,9 @@ void deps_json_t::process_targets(const json_parser_t::value_t& json, const pal:
     }
 }
 
-void deps_json_t::load_framework_dependent(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph)
+void deps_json_t::load_framework_dependent(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name)
 {
-    process_runtime_targets(json, target_name, rid_fallback_graph, &m_rid_assets);
+    process_runtime_targets(json, target_name, &m_rid_assets);
     process_targets(json, target_name, &m_assets);
 
     auto package_exists = [&](const pal::string_t& package) -> bool {
@@ -426,7 +526,9 @@ void deps_json_t::load_self_contained(const pal::string_t& deps_path, const json
     };
 
     reconcile_libraries_with_targets(deps_path, json, package_exists, get_relpaths);
-    populate_rid_fallback_graph(json, m_rid_fallback_graph);
+
+    if (m_rid_resolution_options.use_fallback_graph)
+        populate_rid_fallback_graph(json, m_rid_fallback_graph);
 }
 
 bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ver) const
@@ -456,7 +558,7 @@ bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ve
 // Load the deps file and parse its "entry" lines which contain the "fields" of
 // the entry. Populate an array of these entries.
 //
-void deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph)
+void deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_path)
 {
     m_deps_file = deps_path;
     m_file_exists = deps_file_exists(m_deps_file);
@@ -478,11 +580,11 @@ void deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_pa
         runtime_target.GetString() :
         runtime_target[_X("name")].GetString();
 
-    trace::verbose(_X("Loading deps file... %s as framework dependent=[%d]"), deps_path.c_str(), is_framework_dependent);
+    trace::verbose(_X("Loading deps file... [%s] as framework dependent=%d, use_fallback_graph=%d"), deps_path.c_str(), is_framework_dependent, m_rid_resolution_options.use_fallback_graph);
 
     if (is_framework_dependent)
     {
-        load_framework_dependent(deps_path, json.document(), name, rid_fallback_graph);
+        load_framework_dependent(deps_path, json.document(), name);
     }
     else
     {
