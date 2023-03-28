@@ -2172,7 +2172,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
         // GTF_ALL_EFFECT for the dest. This is currently emulating the previous behavior of
         // block ops.
 
-        GenTree* dest = gtNewStructVal(typGetBlkLayout(simdSize), copyBlkDst);
+        GenTree* dest = gtNewLoadValueNode(typGetBlkLayout(simdSize), copyBlkDst);
 
         dest->gtType = simdType;
         dest->gtFlags |= GTF_GLOB_REF;

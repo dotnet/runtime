@@ -7799,33 +7799,44 @@ GenTreeField* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HANDLE 
 }
 
 //------------------------------------------------------------------------
-// gtNewStructVal: Return a node that represents a struct or block value
+// gtNewLoadValueNode: Return a node that represents a loaded value.
 //
 // Arguments:
-//    layout     - The struct's layout
-//    addr       - The struct's address
+//    type       - Type to load
+//    layout     - Struct layout to load
+//    addr       - The address
 //    indirFlags - Indirection flags
 //
 // Return Value:
-//    A "BLK" node, or "LCL_VAR" node if "addr" points to a local with a
-//    layout compatible with "layout".
+//    A "BLK/IND" node, or "LCL_VAR" if "addr" points to a compatible local.
 //
-GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
+GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
 {
-    assert((indirFlags & ~GTF_IND_FLAGS) == 0);
+    assert(((indirFlags & ~GTF_IND_FLAGS) == 0) && ((type != TYP_STRUCT) || (layout != nullptr)));
 
     if (((indirFlags & GTF_IND_VOLATILE) == 0) && addr->IsLclVarAddr())
     {
         unsigned   lclNum = addr->AsLclFld()->GetLclNum();
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
-        if (!lvaIsImplicitByRefLocal(lclNum) && varTypeIsStruct(varDsc) &&
-            ClassLayout::AreCompatible(layout, varDsc->GetLayout()))
+        if (!lvaIsImplicitByRefLocal(lclNum) && (varDsc->TypeGet() == type) &&
+            ((type != TYP_STRUCT) || ClassLayout::AreCompatible(layout, varDsc->GetLayout())))
         {
-            return gtNewLclvNode(lclNum, varDsc->TypeGet());
+            return gtNewLclvNode(lclNum, type);
         }
     }
 
-    return gtNewBlkIndir(layout, addr, indirFlags);
+    GenTree* node;
+    if (type == TYP_STRUCT)
+    {
+        node = gtNewBlkIndir(layout, addr, indirFlags);
+    }
+    else
+    {
+        node = gtNewIndir(type, addr, indirFlags);
+        node->gtFlags |= GTF_GLOB_REF;
+    }
+
+    return node;
 }
 
 //------------------------------------------------------------------------
@@ -8154,7 +8165,7 @@ void GenTreeOp::CheckDivideByConstOptimized(Compiler* comp)
 //
 GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile)
 {
-    assert(varTypeIsStruct(dst) && (dst->OperIsBlk() || dst->OperIsLocal() || dst->OperIs(GT_FIELD)));
+    assert(varTypeIsStruct(dst) && (dst->OperIsIndir() || dst->OperIsLocal() || dst->OperIs(GT_FIELD)));
 
     bool isCopyBlock = srcOrFillVal->TypeGet() == dst->TypeGet();
     if (!isCopyBlock) // InitBlk
@@ -15818,9 +15829,7 @@ GenTree* Compiler::gtNewTempAssign(
         }
         else if ((dstTyp == TYP_STRUCT) && (valTyp == TYP_INT))
         {
-            // It could come from `ASG(struct, 0)` that was propagated to `RETURN struct(0)`,
-            // and now it is merging to a struct again.
-            assert(tmp == genReturnLocal);
+            assert(val->IsInitVal());
             ok = true;
         }
 
@@ -15853,7 +15862,7 @@ GenTree* Compiler::gtNewTempAssign(
     GenTree* asg;
     GenTree* dest = gtNewLclvNode(tmp, dstTyp);
 
-    if (val->IsConstInitVal())
+    if (val->IsInitVal())
     {
         asg = gtNewAssignNode(dest, val);
     }

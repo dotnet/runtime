@@ -2831,7 +2831,13 @@ public:
 
     GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
-    GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
+    GenTree* gtNewLoadValueNode(
+        var_types type, ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
+
+    GenTree* gtNewLoadValueNode(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY)
+    {
+        return gtNewLoadValueNode(layout->GetType(), layout, addr, indirFlags);
+    }
 
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
 

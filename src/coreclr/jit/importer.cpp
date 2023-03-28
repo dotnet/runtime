@@ -1173,8 +1173,12 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                                       BasicBlock*          block       /* = NULL */
                                       )
 {
-    GenTree* dst = gtNewStructVal(typGetObjLayout(structHnd), destAddr);
-    return impAssignStruct(dst, src, curLevel, pAfterStmt, di, block);
+    var_types    type   = src->TypeGet();
+    ClassLayout* layout = (type == TYP_STRUCT) ? src->GetLayout(this) : nullptr;
+    GenTree*     dst    = gtNewLoadValueNode(type, layout, destAddr);
+    GenTree*     store  = impAssignStruct(dst, src, curLevel, pAfterStmt, di, block);
+
+    return store;
 }
 
 //------------------------------------------------------------------------
@@ -10660,7 +10664,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 op1 = impPopStack().val;
-                op1 = gtNewStructVal(layout, op1);
+                op1 = gtNewLoadValueNode(layout, op1);
                 op2 = gtNewIconNode(0);
                 op1 = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0);
                 goto SPILL_APPEND;
@@ -10692,8 +10696,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
 
                     ClassLayout* layout = typGetBlkLayout(static_cast<unsigned>(op3->AsIntConCommon()->IconValue()));
-                    op1                 = gtNewStructVal(layout, op1, indirFlags);
-                    op2                 = opcode == CEE_INITBLK ? op2 : gtNewStructVal(layout, op2, indirFlags);
+                    op1                 = gtNewLoadValueNode(layout, op1, indirFlags);
+                    op2                 = opcode == CEE_INITBLK ? op2 : gtNewLoadValueNode(layout, op2, indirFlags);
                     op1                 = gtNewBlkOpNode(op1, op2, (indirFlags & GTF_IND_VOLATILE) != 0);
                 }
                 else
@@ -10746,8 +10750,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impPopStack().val; // Dest addr
 
                 ClassLayout* layout = typGetObjLayout(resolvedToken.hClass);
-                op1                 = gtNewStructVal(layout, op1);
-                op2                 = gtNewStructVal(layout, op2);
+                op1                 = gtNewLoadValueNode(layout, op1);
+                op2                 = gtNewLoadValueNode(layout, op2);
                 op1                 = gtNewBlkOpNode(op1, op2, ((prefixFlags & PREFIX_VOLATILE) != 0));
                 goto SPILL_APPEND;
             }
@@ -10772,7 +10776,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1                     = impPopStack().val; // Ptr
 
                 assertImp(varTypeIsStruct(op2));
-                op1 = gtNewStructVal(typGetObjLayout(resolvedToken.hClass), op1, indirFlags);
+                op1 = gtNewLoadValueNode(typGetObjLayout(resolvedToken.hClass), op1, indirFlags);
                 op1 = impAssignStruct(op1, op2, CHECK_SPILL_ALL);
                 goto SPILL_APPEND;
             }
