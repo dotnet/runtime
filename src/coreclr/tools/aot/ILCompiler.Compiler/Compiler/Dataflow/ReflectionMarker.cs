@@ -80,10 +80,11 @@ namespace ILCompiler.Dataflow
             ModuleDesc? callingModule = ((diagnosticContext.Origin.MemberDefinition as MethodDesc)?.OwningType as MetadataType)?.Module;
 
             List<ModuleDesc> referencedModules = new();
-            TypeDesc foundType = System.Reflection.TypeNameParser.ResolveType(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context, referencedModules);
+            TypeDesc foundType = System.Reflection.TypeNameParser.ResolveType(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context,
+                referencedModules, out bool typeWasNotFoundInAssemblyNorBaseLibrary);
             if (foundType == null)
             {
-                if (needsAssemblyName && !string.IsNullOrEmpty(typeName))
+                if (needsAssemblyName && typeWasNotFoundInAssemblyNorBaseLibrary)
                     diagnosticContext.AddDiagnostic(DiagnosticId.TypeWasNotFoundInAssemblyNorBaseLibrary, typeName);
 
                 type = default;

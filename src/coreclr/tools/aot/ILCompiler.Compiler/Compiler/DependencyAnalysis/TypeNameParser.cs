@@ -15,15 +15,22 @@ namespace System.Reflection
         private TypeSystemContext _context;
         private ModuleDesc _callingModule;
         private List<ModuleDesc> _referencedModules;
+        private bool _typeWasNotFoundInAssemblyNorBaseLibrary;
 
-        public static TypeDesc ResolveType(string name, ModuleDesc callingModule, TypeSystemContext context, List<ModuleDesc> referencedModules)
+        public static TypeDesc ResolveType(string name, ModuleDesc callingModule,
+            TypeSystemContext context, List<ModuleDesc> referencedModules, out bool typeWasNotFoundInAssemblyNorBaseLibrary)
         {
-            return new System.Reflection.TypeNameParser(name)
+            var parser = new System.Reflection.TypeNameParser(name)
             {
                 _context = context,
                 _callingModule = callingModule,
                 _referencedModules = referencedModules
-            }.Parse()?.Value;
+            };
+
+            TypeDesc result = parser.Parse()?.Value;
+
+            typeWasNotFoundInAssemblyNorBaseLibrary = parser._typeWasNotFoundInAssemblyNorBaseLibrary;
+            return result;
         }
 
         private sealed class Type
@@ -49,17 +56,18 @@ namespace System.Reflection
 
         private Type GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, string assemblyNameIfAny)
         {
-            ModuleDesc module = null;
+            ModuleDesc module;
 
             if (assemblyNameIfAny != null)
             {
-                AssemblyName an = TryParseAssemblyName(assemblyNameIfAny);
-                if (an != null)
-                    module = _context.ResolveAssembly(an, throwIfNotFound: false);
+                module = (TryParseAssemblyName(assemblyNameIfAny) is AssemblyName an) ?
+                    _context.ResolveAssembly(an, throwIfNotFound: false) : null;
             }
             else
             {
                 module = _callingModule;
+                if (module == null)
+                    _typeWasNotFoundInAssemblyNorBaseLibrary = true;
             }
 
             if (module == null)
@@ -81,6 +89,8 @@ namespace System.Reflection
                     _referencedModules?.Add(_context.SystemModule);
                     return type;
                 }
+
+                _typeWasNotFoundInAssemblyNorBaseLibrary = true;
             }
 
             return null;
