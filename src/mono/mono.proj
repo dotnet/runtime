@@ -263,7 +263,7 @@
       <_MonoCMakeArgs Include="-DCMAKE_INSTALL_PREFIX=&quot;$(MonoObjDir.Replace('\','/'))out&quot;"/>
       <_MonoCMakeArgs Include="-DCMAKE_INSTALL_LIBDIR=lib"/>
       <_MonoCMakeArgs Include="-DCMAKE_BUILD_TYPE=$(Configuration)"/>
-      <_MonoCMakeArgs Include="-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true" Condition="'$(KeepNativeSymbols)' == 'true' or '$(BuildMonoAOTCrossCompilerOnly)' == 'true'" />
+      <_MonoCMakeArgs Include="-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true" Condition="'$(KeepNativeSymbols)' == 'true'" />
       <_MonoCMakeArgs Condition="'$(CMakeArgs)' != ''" Include="$(CMakeArgs)"/>
       <_MonoCMakeArgs Condition="'$(MonoEnableLLVM)' == 'true'" Include="-DLLVM_PREFIX=$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)" />
       <_MonoCMakeArgs Condition="'$(BuildDarwinFrameworks)' == 'true'" Include="-DBUILD_DARWIN_FRAMEWORKS=1" />
@@ -581,8 +581,8 @@
     </ItemGroup>
     <ItemGroup>
       <_MonoCMakeArgs Include="-DMONO_COMPONENTS_RID=$(TargetOS)-$(TargetArchitecture)" />
-      <_MonoCMakeArgs Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetArchitecture)' == 'wasm32'" Include="-DCLR_CMAKE_HOST_ARCH=$(BuildArchitecture)" />
-      <_MonoCMakeArgs Condition="'$(TargetArchitecture)' != 'wasm' and '$(TargetArchitecture)' != 'wasm32'" Include="-DCLR_CMAKE_HOST_ARCH=$(TargetArchitecture)" />
+      <_MonoCMakeArgs Condition="'$(TargetArchitecture)' == 'wasm'" Include="-DCLR_CMAKE_HOST_ARCH=$(BuildArchitecture)" />
+      <_MonoCMakeArgs Condition="'$(TargetArchitecture)' != 'wasm'" Include="-DCLR_CMAKE_HOST_ARCH=$(TargetArchitecture)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -738,8 +738,8 @@
       <_MonoAOTCPPFLAGS Include="-DNVALGRIND" />
 
       <MonoAOTCMakeArgs Include="-DDISABLE_INTERPRETER=1" />
-      <MonoAOTCMakeArgs Condition="'$(TargetArchitecture)' == 'wasm' or '$(TargetArchitecture)' == 'wasm32'" Include="-DCLR_CMAKE_HOST_ARCH=$(BuildArchitecture)" />
-      <MonoAOTCMakeArgs Condition="'$(TargetArchitecture)' != 'wasm' and '$(TargetArchitecture)' != 'wasm32'" Include="-DCLR_CMAKE_HOST_ARCH=$(TargetArchitecture)" />
+      <MonoAOTCMakeArgs Condition="'$(TargetArchitecture)' == 'wasm'" Include="-DCLR_CMAKE_HOST_ARCH=$(BuildArchitecture)" />
+      <MonoAOTCMakeArgs Condition="'$(TargetArchitecture)' != 'wasm'" Include="-DCLR_CMAKE_HOST_ARCH=$(TargetArchitecture)" />
 
       <!-- Select generator platform for VS generator -->
       <MonoAOTCMakeArgs Condition="'$(_MonoUseNinja)' != 'true' and '$(Platform)' == 'x64'" Include="-A x64" />
