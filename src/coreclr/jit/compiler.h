@@ -4372,14 +4372,6 @@ private:
 
     methodPointerInfo* impAllocateMethodPointerInfo(const CORINFO_RESOLVED_TOKEN& token, mdToken tokenConstrained);
 
-    GenTree* impThreadLocalFieldRead(CORINFO_RESOLVED_TOKEN& token,
-                                       CORINFO_ACCESS_FLAGS    access,
-                                       CORINFO_FIELD_INFO*     pFieldInfo,
-                                       var_types               lclTyp);
-    GenTree* impThreadLocalFieldWrite(CORINFO_RESOLVED_TOKEN& token,
-                                     CORINFO_ACCESS_FLAGS    access,
-                                     CORINFO_FIELD_INFO*     pFieldInfo,
-                                     var_types               lclTyp);
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
