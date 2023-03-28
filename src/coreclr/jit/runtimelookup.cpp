@@ -465,6 +465,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
+        BasicBlock* fallbackBb = nullptr; 
     SCAN_BLOCK_AGAIN:
         for (Statement* const stmt : block->Statements())
         {
@@ -586,19 +587,19 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                 //
                 // threadStaticBlockNullCondBB (BBJ_COND):                          [weight: 1.0]
                 //      fastPathValue = t_threadStaticBlocks[typeIndex]
-                //      if (fastPathValue == nullptr)
-                //          goto fallbackBb;
+                //      if (fastPathValue != nullptr)
+                //          goto fastPathBb;
                 //
+                // fallbackBb (BBJ_ALWAYS):                                         [weight: 0.2]
+                //      threadStaticBlockBase = HelperCall();
+                //      goto block;
+                // 
                 // fastPathBb(BBJ_ALWAYS):
                 //      threadStaticBlockBase = fastPathValue;
                 //
                 // block (...):
                 //      use(threadStaticBlockBase);
-                //
-                //
-                // fallbackBb (BBJ_ALWAYS):                                         [weight: 0.2]
-                //      threadStaticBlockBase = HelperCall();
-                //      goto block;
+
 
                  // Cache the tls value
                 unsigned tlsLclNum              = lvaGrabTemp(true DEBUGARG("TLS access"));
@@ -649,8 +650,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                 unsigned threadStaticBlockBaseLclNum         = lvaGrabTemp(true DEBUGARG("ThreadStaticBlockBase access"));
                 lvaTable[threadStaticBlockBaseLclNum].lvType = TYP_I_IMPL;
                 GenTree*   defThreadStaticBlockBaseLclValue                    = gtNewLclvNode(threadStaticBlockBaseLclNum, TYP_I_IMPL);
-                GenTree* useThreadStaticBlockBaseLclValue =
-                    gtCloneExpr(defThreadStaticBlockBaseLclValue); // StaticBlockBaseLclValue that will be used
+                GenTree* useThreadStaticBlockBaseLclValue = gtCloneExpr(defThreadStaticBlockBaseLclValue); // StaticBlockBaseLclValue that will be used
                 GenTree*   asgThreadStaticBlockBase  = gtNewAssignNode(defThreadStaticBlockBaseLclValue, typeThreadStaticBlockValue);
 
                 BasicBlock* threadStaticBlockNullCondBB =
@@ -666,7 +666,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                                   fgNewStmtFromTree(threadStaticBlockNullCond));
 
                 // FastPath
-                GenTree*    asgFastPathValue = gtNewAssignNode(gtClone(rtLookupLcl), useThreadStaticBlockBaseLclValue);
+                GenTree*    asgFastPathValue = gtNewAssignNode(gtClone(rtLookupLcl), gtCloneExpr(useThreadStaticBlockBaseLclValue));
                 BasicBlock* fastPathBb = CreateBlockFromTree(this, threadStaticBlockNullCondBB, BBJ_ALWAYS,
                                                                    asgFastPathValue, debugInfo, true);
 
@@ -676,8 +676,8 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
                  // Fallback basic block
                 GenTree*    asgFallbackValue = gtNewAssignNode(gtClone(rtLookupLcl), call);
-                BasicBlock* fallbackBb =
-                    CreateBlockFromTree(this, block, BBJ_ALWAYS, asgFallbackValue, debugInfo, true);
+                fallbackBb = CreateBlockFromTree(this, threadStaticBlockNullCondBB, BBJ_ALWAYS, asgFallbackValue,
+                                                 debugInfo, true);
 
                 //
                 // Update preds in all new blocks
@@ -692,9 +692,10 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                 fgAddRefPred(fallbackBb, threadStaticBlockNullCondBB);                
 
                 fgAddRefPred(block, fastPathBb);
+                fgAddRefPred(block, fallbackBb);
 
                 maxThreadStaticBlocksCondBB->bbJumpDest = fallbackBb;
-                threadStaticBlockNullCondBB->bbJumpDest = fallbackBb;
+                threadStaticBlockNullCondBB->bbJumpDest = fastPathBb;
                 fastPathBb->bbJumpDest                  = block;
                 fallbackBb->bbJumpDest                  = block;
 
@@ -743,28 +744,21 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                 // for that
                 result = PhaseStatus::MODIFIED_EVERYTHING;
 
-                if (VERBOSE)
-                {
-                    printf("After fgExpandThreadLocalAccess\n:");
-                    fgDispBasicBlocks(true);
-                }
-
                 // We've modified the graph and the current "block" might still have more runtime lookups
                 goto SCAN_BLOCK_AGAIN;
             }
         }
+
+        //if (fallbackBb != nullptr)
+        //{
+        //    block = fallbackBb;
+        //}
     }
 
-    if (result == PhaseStatus::MODIFIED_EVERYTHING)
+        if (result == PhaseStatus::MODIFIED_EVERYTHING)
     {
         if (opts.OptimizationEnabled())
         {
-            if (VERBOSE)
-            {
-                printf("After fgExpandThreadLocalAccess\n:");
-                fgDispBasicBlocks(true);
-            }
-
             fgReorderBlocks(/* useProfileData */ false);
             fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
         }
