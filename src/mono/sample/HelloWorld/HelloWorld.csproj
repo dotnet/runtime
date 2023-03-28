@@ -7,6 +7,22 @@
   <UsingTask TaskName="MonoAOTCompiler"
              AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
+  <UsingTask TaskName="MarshalingPInvokeScanner"
+           AssemblyFile="/Users/jandupej/Dev/runtime/artifacts/bin/MarshalingPInvokeScanner/Debug/net8.0/publish/MarshalingPInvokeScanner.dll"  />
+
+  <Target Name="ScanAssembliesForMarshaling" AfterTargets="CopyFilesToPublishDirectory">
+    <ItemGroup>
+      <AssembliesToScan Include="$(PublishDir)\*.dll" />
+    </ItemGroup>
+
+    <MarshalingPInvokeScanner
+      Assemblies ="@(AssembliesToScan)">
+      <Output TaskParameter="IncompatibleAssemblies" ItemName="BadAssemblies" />
+    </MarshalingPInvokeScanner>
+
+    <Message Importance="High" Text="!!!naricc_debug!!! $(BadAssemblies)" />
+  </Target>
+
   <Target Name="AOTCompileApp" Condition="'$(RunAOTCompilation)' == 'true'" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
       <_AotOutputType>Library</_AotOutputType>
