@@ -1923,7 +1923,8 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                 }
                 else if ((loadWidth == 8) || (loadWidth == 16))
                 {
-                    loadType = TYP_LONG;
+                    loadWidth = 8;
+                    loadType  = TYP_LONG;
                 }
                 else
                 {
@@ -1949,9 +1950,6 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                     BlockRange().InsertAfter(lArg, lIndir);
                     BlockRange().InsertAfter(rArg, rIndir);
                     BlockRange().InsertBefore(call, result);
-
-                    LowerNode(lIndir);
-                    LowerNode(rIndir);
                 }
                 else
                 {
@@ -2004,18 +2002,12 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                     GenTree* rXor      = comp->gtNewOperNode(GT_XOR, actualLoadType, l2Indir, r2Indir);
                     GenTree* resultOr  = comp->gtNewOperNode(GT_OR, actualLoadType, lXor, rXor);
                     GenTree* zeroCns   = comp->gtNewIconNode(0, actualLoadType);
-                    result             = comp->gtNewOperNode(GT_EQ, actualLoadType, resultOr, zeroCns);
+                    result             = comp->gtNewOperNode(GT_EQ, TYP_INT, resultOr, zeroCns);
 
                     BlockRange().InsertAfter(rArgClone, l1Indir, r1Indir, lXor, l2Offs);
                     BlockRange().InsertAfter(l2Offs, l2AddOffs, l2Indir, r2Offs, r2AddOffs);
                     BlockRange().InsertAfter(r2AddOffs, r2Indir, rXor, resultOr, zeroCns);
                     BlockRange().InsertAfter(zeroCns, result);
-
-                    // Call LowerNode on these to create addressing modes if needed
-                    LowerNode(l2Indir);
-                    LowerNode(r2Indir);
-                    LowerNode(lXor);
-                    LowerNode(rXor);
                 }
 
                 JITDUMP("\nUnrolled to:\n");
@@ -2028,7 +2020,6 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                 }
                 BlockRange().Remove(lengthArg);
                 BlockRange().Remove(call);
-                LowerNode(result);
 
                 // Remove all non-user args (e.g. r2r cell)
                 for (CallArg& arg : call->gtArgs.Args())
@@ -2038,7 +2029,7 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                         arg.GetNode()->SetUnusedValue();
                     }
                 }
-                return result;
+                return lArg;
             }
         }
         else
