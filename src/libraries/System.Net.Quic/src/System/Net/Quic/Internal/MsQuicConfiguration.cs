@@ -118,6 +118,8 @@ internal static class MsQuicConfiguration
 #pragma warning restore SYSLIB0040
 
         QUIC_SETTINGS settings = default(QUIC_SETTINGS);
+        settings.IsSet.SendBufferingEnabled = 1;
+        settings.SendBufferingEnabled = 0;
         settings.IsSet.PeerUnidiStreamCount = 1;
         settings.PeerUnidiStreamCount = (ushort)options.MaxInboundUnidirectionalStreams;
         settings.IsSet.PeerBidiStreamCount = 1;

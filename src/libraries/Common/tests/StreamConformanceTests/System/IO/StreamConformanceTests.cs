@@ -502,14 +502,20 @@ namespace System.IO.Tests
 
             if (stream.CanRead)
             {
+                Console.WriteLine("1");
                 await AssertExtensions.CanceledAsync(cts.Token, stream.ReadAsync(new byte[1], 0, 1, cts.Token));
+                Console.WriteLine("2");
                 await AssertExtensions.CanceledAsync(cts.Token, async () => { await stream.ReadAsync(new Memory<byte>(new byte[1]), cts.Token); });
+                Console.WriteLine("3");
             }
 
             if (stream.CanWrite)
             {
+                Console.WriteLine("a");
                 await AssertExtensions.CanceledAsync(cts.Token, stream.WriteAsync(new byte[1], 0, 1, cts.Token));
+                Console.WriteLine("b");
                 await AssertExtensions.CanceledAsync(cts.Token, async () => { await stream.WriteAsync(new ReadOnlyMemory<byte>(new byte[1]), cts.Token); });
+                Console.WriteLine("c");
             }
 
             Exception e = await Record.ExceptionAsync(() => stream.FlushAsync(cts.Token));

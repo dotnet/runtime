@@ -108,8 +108,7 @@ public sealed partial class QuicStream
             }
         }
     };
-    private MsQuicBuffers _sendBuffers = new MsQuicBuffers();
-    private readonly object _sendBuffersLock = new object();
+    private SendBuffer _sendBuffer = new SendBuffer();
 
     private readonly long _defaultErrorCode;
 
@@ -334,7 +333,7 @@ public sealed partial class QuicStream
     /// <param name="buffer">The region of memory to write data from.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
     /// <param name="completeWrites">Notifies the peer about gracefully closing the write side, i.e.: sends FIN flag with the data.</param>
-    public ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool completeWrites, CancellationToken cancellationToken = default)
+    public async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool completeWrites, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
@@ -345,71 +344,65 @@ public sealed partial class QuicStream
 
         if (NetEventSource.Log.IsEnabled())
         {
-            NetEventSource.Info(this, $"{this} Stream writing memory of '{buffer.Length}' bytes while {(completeWrites ? "completing" : "not completing")} writes.");
+            NetEventSource.Info(this, $"{this} Stream writing memory of '{buffer.Length}' bytes while {(completeWrites ? "completing" : "not completing")} writes {_sendTcs}.");
         }
 
-        if (_sendTcs.IsCompleted && cancellationToken.IsCancellationRequested)
+        if (_sendTcs.IsCompleted)
         {
-            // Special case exception type for pre-canceled token while we've already transitioned to a final state and don't need to abort write.
+            // Special case exception type for pre-canceled token while we've already transitioned to a final state and don't need to abort read.
             // It must happen before we try to get the value task, since the task source is versioned and each instance must be awaited.
-            return ValueTask.FromCanceled(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
-        // Concurrent call, this one lost the race.
-        if (!_sendTcs.TryGetValueTask(out ValueTask valueTask, this, cancellationToken))
+        int remainingLength = buffer.Length;
+        do
         {
-            throw new InvalidOperationException(SR.Format(SR.net_io_invalidnestedcall, "write"));
-        }
-
-        // No need to call anything since we already have a result, most likely an exception.
-        if (valueTask.IsCompleted)
-        {
-            return valueTask;
-        }
-
-        // For an empty buffer complete immediately, close the writing side of the stream if necessary.
-        if (buffer.IsEmpty)
-        {
-            _sendTcs.TrySetResult();
-            if (completeWrites)
+            // Concurrent call, this one lost the race.
+            if (!_sendTcs.TryGetValueTask(out ValueTask valueTask, this, cancellationToken))
             {
-                CompleteWrites();
+                throw new InvalidOperationException("net_io_invalidnestedcall");
             }
-            return valueTask;
-        }
 
-        lock (_sendBuffersLock)
-        {
-            ObjectDisposedException.ThrowIf(_disposed == 1, this); // TODO: valueTask is left unobserved
+            // Copy data from user buffer, reduce target and increment total.
+            int copied = _sendBuffer.CopyFrom(buffer);
+            buffer = buffer.Slice(copied);
+            remainingLength -= copied;
+
             unsafe
             {
-                if (_sendBuffers.Count > 0 && _sendBuffers.Buffers[0].Buffer != null)
-                {
-                    // _sendBuffers are not reset, meaning SendComplete for the previous WriteAsync call didn't arrive yet.
-                    // In case of cancellation, the task from _sendTcs is finished before the aborting. It is technically possible for subsequent
-                    // WriteAsync to grab the next task from _sendTcs and start executing before SendComplete event occurs for the previous (canceled) write.
-                    // This is not an "invalid nested call", because the previous task has finished. Best guess is to mimic OperationAborted as it will be from Abort
-                    // that would execute soon enough, if not already. Not final, because Abort should be the one to set final exception.
-                    _sendTcs.TrySetException(ThrowHelper.GetOperationAbortedException(SR.net_quic_writing_aborted), final: false);
-                    return valueTask;
-                }
+                QUIC_BUFFER* buffers = _sendBuffer.GetQuicBuffers(out int count, out int _);
 
-                _sendBuffers.Initialize(buffer);
-                int status = MsQuicApi.Api.StreamSend(
-                    _handle,
-                    _sendBuffers.Buffers,
-                    (uint)_sendBuffers.Count,
-                    completeWrites ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
-                    null);
-                if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
+                // Send the data and indicate write completion if requested and the entirety of user buffer has been copied.
+                if (buffers is not null)
                 {
-                    _sendBuffers.Reset();
-                    _sendTcs.TrySetException(exception, final: true);
+                    int status = MsQuicApi.Api.StreamSend(
+                        _handle,
+                        buffers,
+                        (uint)count,
+                        completeWrites && remainingLength == 0 ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
+                        (void*)buffers);
+                    if (ThrowHelper.TryGetStreamExceptionForMsQuicStatus(status, out Exception? exception))
+                    {
+                        NativeMemory.Free(buffers);
+                        _sendTcs.TrySetException(exception, final: true);
+                    }
+                }
+                // No data to send, but writes completion needs to be indicated as user buffer must have been empty.
+                else if (completeWrites && remainingLength == 0)
+                {
+                    CompleteWrites();
                 }
             }
-        }
 
-        return valueTask;
+            // Unblock the next await to end immediately, i.e. all the data are copied to the buffer.
+            if (remainingLength == 0)
+            {
+                _sendTcs.TrySetResult();
+            }
+
+            // This will either wait for SEND_COMPLETE event (no enough capacity in buffer) or complete immediately and reset the task.
+            await valueTask.ConfigureAwait(false);
+        } while (remainingLength > 0);
     }
 
     /// <summary>
@@ -528,14 +521,9 @@ public sealed partial class QuicStream
     }
     private unsafe int HandleEventSendComplete(ref SEND_COMPLETE_DATA data)
     {
-        // In case of cancellation, the task from _sendTcs is finished before the aborting. It is technically possible for subsequent WriteAsync to grab the next task
-        // from _sendTcs and start executing before SendComplete event occurs for the previous (canceled) write
-        lock (_sendBuffersLock)
-        {
-            _sendBuffers.Reset();
-        }
         if (data.Canceled == 0)
         {
+            _sendBuffer.Discard((QUIC_BUFFER*)data.ClientContext);
             _sendTcs.TrySetResult();
         }
         // If Canceled != 0, we either aborted write, received PEER_RECEIVE_ABORTED or will receive SHUTDOWN_COMPLETE(ConnectionClose) later, all of which completes the _sendTcs.
@@ -700,11 +688,8 @@ public sealed partial class QuicStream
         Debug.Assert(_sendTcs.KeepAliveReleased);
         _handle.Dispose();
 
-        lock (_sendBuffersLock)
-        {
-            // TODO: memory leak if not disposed
-            _sendBuffers.Dispose();
-        }
+        // TODO: memory leak if not disposed
+        _sendBuffer.Dispose();
 
         unsafe void StreamShutdown(QUIC_STREAM_SHUTDOWN_FLAGS flags, long errorCode)
         {

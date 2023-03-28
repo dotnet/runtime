@@ -283,4 +283,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
             }
         }
     }
+
+    public override string ToString()
+        => $"State={_state}, KeepAlive={_keepAlive.IsAllocated}, Final={_finalTaskSource.Task.Status}, Version={_valueTaskSource.Version}";
 }
