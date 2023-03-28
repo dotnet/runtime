@@ -1959,8 +1959,8 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                     bool     lFoundUse = BlockRange().TryGetUse(lArg, &lArgUse);
                     bool     rFoundUse = BlockRange().TryGetUse(rArg, &rArgUse);
                     assert(lFoundUse && rFoundUse);
-                    GenTree* lArgClone = comp->gtNewLclLNode(lArgUse.ReplaceWithLclVar(comp), lArg->TypeGet());
-                    GenTree* rArgClone = comp->gtNewLclLNode(rArgUse.ReplaceWithLclVar(comp), rArg->TypeGet());
+                    GenTree* lArgClone = comp->gtNewLclvNode(lArgUse.ReplaceWithLclVar(comp), genActualType(lArg));
+                    GenTree* rArgClone = comp->gtNewLclvNode(rArgUse.ReplaceWithLclVar(comp), genActualType(rArg));
                     BlockRange().InsertBefore(call, lArgClone, rArgClone);
 
                     // We're going to emit something like the following:
