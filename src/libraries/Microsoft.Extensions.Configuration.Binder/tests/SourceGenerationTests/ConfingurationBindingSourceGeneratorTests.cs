@@ -118,10 +118,12 @@ public class Program
         public async Task LangVersionMustBeCharp11OrHigher()
         {
             var (d, r) = await RunGenerator(BindCallSampleCode, LanguageVersion.CSharp10);
-            Assert.Single(d);
             Assert.Empty(r);
-            Assert.True(d[0].Id == "SYSLIB1102");
-            Assert.Contains("C# 11", d[0].Descriptor.Title.ToString(CultureInfo.InvariantCulture));
+
+            Diagnostic diagnostic = Assert.Single(d);
+            Assert.True(diagnostic.Id == "SYSLIB1102");
+            Assert.Contains("C# 11", diagnostic.Descriptor.Title.ToString(CultureInfo.InvariantCulture));
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
         }
 
         private async Task VerifyAgainstBaselineUsingFile(

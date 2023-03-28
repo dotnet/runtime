@@ -69,9 +69,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         private sealed record CompilationData
         {
             public bool LanguageVersionIsSupported { get; }
-
             public KnownTypeData? TypeData { get; }
-
 
             public CompilationData(CSharpCompilation compilation)
             {
