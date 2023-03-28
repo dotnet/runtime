@@ -116,7 +116,7 @@ Represents a type variable, i.e. the `T` in `List<T>` or in `Array.Sort<T>` (see
 
 **`FnPtrTypeDesc`**
 
-Represents a function pointer, essentially a variable-length list of type handles referring to the return type and parameters. It's not that common to see this descriptor because function pointers are not supported by C#. However, managed C++ uses them.
+Represents a function pointer, essentially a variable-length list of type handles referring to the return type and parameters. It was originally only used by managed C++. C# supported it since C# 9.
 
 **`ParamTypeDesc`**
 
