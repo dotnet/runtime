@@ -9,8 +9,11 @@ public class Utils
 {
     public static string WinArchitecture(string arch) => arch.Equals("x86") ? "Win32" : "x64";
 
+    public static string DotNetVerbosity(Verbosity val) =>
+        val == Verbosity.Silent ? Verbosity.Quiet.ToString().ToLower() : val.ToString().ToLower();
+
     public static void RunProcess(ProcessStartInfo psi, GlobalConfig config)
-        => RunProcess(psi, config.Silent);
+        => RunProcess(psi, config.VerbosityLevel == Verbosity.Silent);
 
     public static void RunProcess(ProcessStartInfo psi, bool silent = false)
     {
