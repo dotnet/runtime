@@ -14,10 +14,10 @@ PhaseStatus Compiler::PromoteStructsNew()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    //if (!compStressCompile(STRESS_GENERALIZED_PROMOTION, 25))
-    //{
-    //    return PhaseStatus::MODIFIED_NOTHING;
-    //}
+// if (!compStressCompile(STRESS_GENERALIZED_PROMOTION, 25))
+//{
+//    return PhaseStatus::MODIFIED_NOTHING;
+//}
 
 #ifdef DEBUG
     static ConfigMethodRange s_range;
@@ -334,9 +334,9 @@ public:
             char*  bufp = new (comp, CMK_DebugOnly) char[len];
             strcpy_s(bufp, len, buf);
 #endif
-            unsigned newLcl                  = comp->lvaGrabTemp(false DEBUGARG(bufp));
-            LclVarDsc* dsc = comp->lvaGetDesc(newLcl);
-            dsc->lvType = access.AccessType;
+            unsigned   newLcl         = comp->lvaGrabTemp(false DEBUGARG(bufp));
+            LclVarDsc* dsc            = comp->lvaGetDesc(newLcl);
+            dsc->lvType               = access.AccessType;
             dsc->lvSuppressedZeroInit = suppressedInit;
             replacements.push_back(Replacement(access.Offset, access.AccessType, newLcl));
         }
@@ -1050,7 +1050,9 @@ PhaseStatus Promotion::Run()
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
-void Promotion::InsertInitialReadBack(unsigned lclNum, const jitstd::vector<Replacement>& replacements, Statement** prevStmt)
+void Promotion::InsertInitialReadBack(unsigned                           lclNum,
+                                      const jitstd::vector<Replacement>& replacements,
+                                      Statement**                        prevStmt)
 {
     for (unsigned i = 0; i < replacements.size(); i++)
     {
@@ -1058,9 +1060,9 @@ void Promotion::InsertInitialReadBack(unsigned lclNum, const jitstd::vector<Repl
 
         m_compiler->fgEnsureFirstBBisScratch();
 
-        GenTree* dst = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
-        GenTree* src = m_compiler->gtNewLclFldNode(lclNum, rep.AccessType, rep.Offset);
-        GenTree* asg = m_compiler->gtNewAssignNode(dst, src);
+        GenTree*   dst  = m_compiler->gtNewLclvNode(rep.LclNum, rep.AccessType);
+        GenTree*   src  = m_compiler->gtNewLclFldNode(lclNum, rep.AccessType, rep.Offset);
+        GenTree*   asg  = m_compiler->gtNewAssignNode(dst, src);
         Statement* stmt = m_compiler->fgNewStmtFromTree(asg);
         if (*prevStmt != nullptr)
         {
