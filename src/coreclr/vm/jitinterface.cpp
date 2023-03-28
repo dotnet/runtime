@@ -1763,8 +1763,7 @@ void CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field,
 
     JIT_TO_EE_TRANSITION();
 
-    FieldDesc* fieldDesc = (FieldDesc*)field;
-    _ASSERTE(fieldDesc->IsThreadStatic());
+
 
     pInfo->tlsIndex = _tls_index;
     pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
@@ -1782,9 +1781,14 @@ void CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field,
     //pInfo->offsetOfThreadStaticBlocks.accessType = IAT_VALUE;
     //pInfo->offsetOfThreadStaticBlocks.addr = PTR_VOID(dac_cast<PTR_BYTE>(CEEInfo::ThreadLocalOffset(&t_threadStaticBlocks)));
 
-    UINT32 typeIndex =  CEEInfo::GetTypeIndex(fieldDesc->GetEnclosingMethodTable());
-    assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
-    pInfo->threadStaticBlockIndex = typeIndex;
+    if (field != nullptr)
+    {
+        FieldDesc* fieldDesc = (FieldDesc*)field;
+        _ASSERTE(fieldDesc->IsThreadStatic());
+        UINT32 typeIndex =  CEEInfo::GetTypeIndex(fieldDesc->GetEnclosingMethodTable());
+        assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
+        pInfo->threadStaticBlockIndex = typeIndex;
+    } 
     
     EE_TO_JIT_TRANSITION();
 }

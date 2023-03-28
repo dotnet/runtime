@@ -790,7 +790,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         }
         else
         {
-            result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg, gtNewIconNode(typeIndex, TYP_I_IMPL));
+            result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg, gtNewIconNode(typeIndex, TYP_UINT));
         }
     }
     else

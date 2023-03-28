@@ -5276,6 +5276,7 @@ public:
     void SplitTreesRandomly();
     void SplitTreesRemoveCommas();
     PhaseStatus fgExpandRuntimeLookups();
+    PhaseStatus fgExpandThreadLocalAccess();
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
