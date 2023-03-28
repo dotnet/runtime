@@ -15069,7 +15069,8 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                     if (fieldVarDsc->lvIsOSRLocal)
                     {
                         assert(opts.IsOSR());
-                        fieldVarDsc->lvIsOSRLocal = false;
+                        fieldVarDsc->lvIsOSRLocal        = false;
+                        fieldVarDsc->lvIsOSRExposedLocal = false;
                     }
                 }
 
