@@ -414,7 +414,7 @@ public:
         costWith += countWriteBacksWtd * writeBackCost;
 
         JITDUMP("Evaluating access %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
-        JITDUMP("  Write-back cost: %d\n", writeBackCost);
+        JITDUMP("  Write-back cost: " FMT_WT "\n", writeBackCost);
         JITDUMP("  # write backs: " FMT_WT "\n", countWriteBacksWtd);
         JITDUMP("  # read backs: " FMT_WT "\n", countReadBacksWtd);
         JITDUMP("  Cost with: " FMT_WT "\n", costWith);
