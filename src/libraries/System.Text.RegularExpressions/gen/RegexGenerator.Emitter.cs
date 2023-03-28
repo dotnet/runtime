@@ -299,6 +299,17 @@ namespace System.Text.RegularExpressions.Generator
                     "[MethodImpl(MethodImplOptions.AggressiveInlining)]",
                     "internal static bool IsWordChar(char ch)",
                     "{",
+                    "    // Mask of Unicode categories that combine to form [\\w]",
+                    "    const int WordCategories =",
+                    "        1 << (int)UnicodeCategory.UppercaseLetter |",
+                    "        1 << (int)UnicodeCategory.LowercaseLetter |",
+                    "        1 << (int)UnicodeCategory.TitlecaseLetter |",
+                    "        1 << (int)UnicodeCategory.ModifierLetter |",
+                    "        1 << (int)UnicodeCategory.OtherLetter |",
+                    "        1 << (int)UnicodeCategory.NonSpacingMark |",
+                    "        1 << (int)UnicodeCategory.DecimalDigitNumber |",
+                    "        1 << (int)UnicodeCategory.ConnectorPunctuation;",
+                    "",
                     "    // Bitmap for whether each character 0 through 127 is in [\\w]",
                     "    ReadOnlySpan<byte> ascii = new byte[]",
                     "    {",
@@ -310,18 +321,7 @@ namespace System.Text.RegularExpressions.Generator
                     "    int chDiv8 = ch >> 3;",
                     "    return (uint)chDiv8 < (uint)ascii.Length ?",
                     "        (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :",
-                    "        CharUnicodeInfo.GetUnicodeCategory(ch) switch",
-                    "        {",
-                    "            UnicodeCategory.UppercaseLetter or",
-                    "            UnicodeCategory.LowercaseLetter or",
-                    "            UnicodeCategory.TitlecaseLetter or",
-                    "            UnicodeCategory.ModifierLetter or",
-                    "            UnicodeCategory.OtherLetter or",
-                    "            UnicodeCategory.NonSpacingMark or",
-                    "            UnicodeCategory.DecimalDigitNumber or",
-                    "            UnicodeCategory.ConnectorPunctuation => true,",
-                    "            _ => false,",
-                    "        };",
+                    "        (WordCategories & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;",
                     "}",
                 });
             }
@@ -4770,11 +4770,16 @@ namespace System.Text.RegularExpressions.Generator
             Span<UnicodeCategory> categories = stackalloc UnicodeCategory[30]; // number of UnicodeCategory values (though it's unheard of to have a set with all of them)
             if (RegexCharClass.TryGetOnlyCategories(charClass, categories, out int numCategories, out bool negated))
             {
-                // TODO https://github.com/dotnet/roslyn/issues/58246: Use pattern matching instead of switch once C# code gen quality improves.
+                int categoryMask = 0;
+                foreach (UnicodeCategory category in categories.Slice(0, numCategories))
+                {
+                    categoryMask |= 1 << (int)category;
+                }
+
                 negate ^= negated;
                 return numCategories == 1 ?
                     $"(char.GetUnicodeCategory({chExpr}) {(negate ? "!=" : "==")} UnicodeCategory.{categories[0]})" :
-                    $"(char.GetUnicodeCategory({chExpr}) switch {{ {string.Join(" or ", categories.Slice(0, numCategories).ToArray().Select(c => $"UnicodeCategory.{c}"))} => {(negate ? "false" : "true")}, _ => {(negate ? "true" : "false")} }})";
+                    $"((0x{categoryMask:X} & (1 << (int)char.GetUnicodeCategory({chExpr}))) {(negate ? "==" : "!=")} 0)";
             }
 
             // Next, if there's only 2 or 3 chars in the set (fairly common due to the sets we create for prefixes),
