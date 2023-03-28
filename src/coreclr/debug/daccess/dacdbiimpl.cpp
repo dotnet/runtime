@@ -7618,7 +7618,7 @@ HRESULT DacRefWalker::Next(ULONG celt, DacGcReference roots[], ULONG *pceltFetch
     {
         hr = mHandleWalker->Next(celt, roots, &total);
 
-        if (hr == S_FALSE || FAILED(hr))
+        if (total == 0 || FAILED(hr))
         {
             delete mHandleWalker;
             mHandleWalker = NULL;
