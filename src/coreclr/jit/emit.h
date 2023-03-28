@@ -2171,12 +2171,16 @@ private:
     instrDescAlign* emitAlignLastGroup;
 
     unsigned getLoopSize(insGroup* igLoopHeader,
-                         unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted)); // Get the smallest loop size
+                         unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted) DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
+                             DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum)); // Get the smallest loop size
     void emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
     bool emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
     void emitSetLoopBackEdge(BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
-    unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool isAlignAdjusted));
+    unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig,
+                                                  size_t offset DEBUG_ARG(bool isAlignAdjusted)
+                                                      DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
+                                                          DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum));
 
     void emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp));
     void emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp));

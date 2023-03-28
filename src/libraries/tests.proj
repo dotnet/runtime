@@ -451,6 +451,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Unit.Tests\System.Text.Json.SourceGeneration.Roslyn4.4.Unit.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices.JavaScript\tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Binder\tests\SourceGenerationTests\Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests.csproj" />
 
     <!-- Depends on DNNE. Not particularly interesting because it tests marshalling-less p/invoke only. Low priority -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\LibraryImportGenerator.Tests\LibraryImportGenerator.Tests.csproj" />
@@ -463,7 +464,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ServiceModel.Syndication\tests\System.ServiceModel.Syndication.Tests.csproj" />
 
     <!-- Not supported with trimming. Low priority -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Binder\tests\Microsoft.Extensions.Configuration.Binder.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Configuration.Binder\tests\UnitTests\Microsoft.Extensions.Configuration.Binder.Tests.csproj" />
 
     <!-- Built-in COM. Low priority -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Speech\tests\System.Speech.Tests.csproj" />

@@ -308,11 +308,6 @@
   <Target Name="_WasmSelectRuntimeComponentsForLinking" Condition="'$(WasmNativeWorkload)' == 'true'" DependsOnTargets="_MonoSelectRuntimeComponents" />
 
   <Target Name="_WasmCompileNativeFiles" DependsOnTargets="_CheckEmccIsExpectedVersion">
-    <PropertyGroup>
-      <_EmBuilder Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.bat</_EmBuilder>
-      <_EmBuilder Condition="!$([MSBuild]::IsOSPlatform('WINDOWS'))">embuilder.py</_EmBuilder>
-    </PropertyGroup>
-
     <ItemGroup>
       <_EmccCFlags Include="$(EmccExtraCFlags)" />
     </ItemGroup>
@@ -320,12 +315,7 @@
     <WriteLinesToFile Lines="@(_EmccCFlags)" File="$(_EmccCompileRsp)" Overwrite="true" WriteOnlyWhenDifferent="true" />
     <ItemGroup>
       <FileWrites Include="$(_EmccCompileRsp)" />
-      <_EmscriptenEnvVarsForBuildMinimal Include="@(EmscriptenEnvVars)" />
-      <_EmscriptenEnvVarsForBuildMinimal Include="FROZEN_CACHE=" />
     </ItemGroup>
-
-    <!-- warm up the cache -->
-    <Exec Command="$(_EmBuilder) build MINIMAL" EnvironmentVariables="@(_EmscriptenEnvVarsForBuildMinimal)" StandardOutputImportance="Low" StandardErrorImportance="Low" />
 
     <Message Text="Compiling native assets with emcc with $(EmccCompileOptimizationFlag). This may take a while ..." Importance="High" />
     <ItemGroup>

@@ -22,10 +22,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// We can skip the exposing the exception marshallers if we decide to not expose the VTable source generator.
     /// In that case, we'd hard-code the implementations of these marshallers into the COM source generator.
     /// </remarks>
-#pragma warning disable SYSLIB1055 // The managed type 'System.Exception' for entry-point marshaller type 'System.Runtime.InteropServices.Marshalling.ExceptionHResultMarshaller<T>' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.
-
     [CustomMarshaller(typeof(Exception), MarshalMode.UnmanagedToManagedOut, typeof(ExceptionHResultMarshaller<>))]
-#pragma warning restore SYSLIB1055
     public static class ExceptionHResultMarshaller<T>
         where T : unmanaged, INumber<T>
     {

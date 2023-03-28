@@ -1295,34 +1295,6 @@ DONE:
                 successor->bbFlags |= BBF_TAILCALL_SUCCESSOR;
                 optMethodFlags |= OMF_HAS_TAILCALL_SUCCESSOR;
             }
-
-            // If this call might eventually turn into a loop back to method entry, make sure we
-            // import the method entry.
-            //
-            assert(call->IsCall());
-            GenTreeCall* const actualCall           = call->AsCall();
-            const bool         mustImportEntryBlock = gtIsRecursiveCall(methHnd) || actualCall->IsInlineCandidate() ||
-                                              actualCall->IsGuardedDevirtualizationCandidate();
-
-            // Only schedule importation if we're not currently importing the entry BB.
-            //
-            if (opts.IsOSR() && mustImportEntryBlock && (compCurBB != fgEntryBB))
-            {
-                JITDUMP("\nOSR: inlineable or recursive tail call [%06u] in the method, so scheduling " FMT_BB
-                        " for importation\n",
-                        dspTreeID(call), fgEntryBB->bbNum);
-                impImportBlockPending(fgEntryBB);
-
-                if (!fgOSROriginalEntryBBProtected && (fgEntryBB != fgFirstBB))
-                {
-                    // Protect fgEntryBB from deletion, since it may not have any
-                    // explicit flow references until morph.
-                    //
-                    fgEntryBB->bbRefs += 1;
-                    fgOSROriginalEntryBBProtected = true;
-                    JITDUMP("   also protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
-                }
-            }
         }
     }
 
@@ -3807,6 +3779,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_GC_KeepAlive:
             {
                 retNode = impKeepAliveIntrinsic(impPopStack().val);
+                break;
+            }
+
+            case NI_System_Buffer_Memmove:
+            {
+                // We'll try to unroll this in lower for constant input.
+                isSpecial = true;
                 break;
             }
 
@@ -7901,6 +7880,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "UInt64BitsToDouble") == 0)
                         {
                             result = NI_System_BitConverter_Int64BitsToDouble;
+                        }
+                    }
+                    else if (strcmp(className, "Buffer") == 0)
+                    {
+                        if (strcmp(methodName, "Memmove") == 0)
+                        {
+                            result = NI_System_Buffer_Memmove;
                         }
                     }
                     break;

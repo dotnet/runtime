@@ -1648,8 +1648,8 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             // Find an existing function pointer or make a new one
             thRet = ClassLoader::LoadFnptrTypeThrowing((BYTE) uCallConv, cArgs, retAndArgTypes, fLoadTypes, level);                
 #else
-            DacNotImpl();
-            thRet = TypeHandle();
+            // Function pointers are interpreted as IntPtr to the debugger.
+            thRet = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_I));
 #endif
             break;
         }

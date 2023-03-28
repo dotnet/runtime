@@ -2555,6 +2555,152 @@ void CodeGen::genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta)
 }
 
 //------------------------------------------------------------------------
+// genCodeForMemmove: Perform an unrolled memmove. The idea that we can
+//    ignore the fact that src and dst might overlap if we save the whole
+//    src to temp regs in advance, e.g. for memmove(dst: rcx, src: rax, len: 120):
+//
+//       vmovdqu  ymm0, ymmword ptr[rax +  0]
+//       vmovdqu  ymm1, ymmword ptr[rax + 32]
+//       vmovdqu  ymm2, ymmword ptr[rax + 64]
+//       vmovdqu  ymm3, ymmword ptr[rax + 88]
+//       vmovdqu  ymmword ptr[rcx +  0], ymm0
+//       vmovdqu  ymmword ptr[rcx + 32], ymm1
+//       vmovdqu  ymmword ptr[rcx + 64], ymm2
+//       vmovdqu  ymmword ptr[rcx + 88], ymm3
+//
+// Arguments:
+//    tree - GenTreeBlk node
+//
+void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
+{
+    // Not yet finished for x86
+    assert(TARGET_POINTER_SIZE == 8);
+
+    // TODO-CQ: Support addressing modes, for now we don't use them
+    GenTreeIndir* srcIndir = tree->Data()->AsIndir();
+    assert(srcIndir->isContained() && !srcIndir->Addr()->isContained());
+
+    regNumber dst  = genConsumeReg(tree->Addr());
+    regNumber src  = genConsumeReg(srcIndir->Addr());
+    unsigned  size = tree->Size();
+
+    // TODO-XARCH-AVX512: Consider enabling it here
+    unsigned simdSize = (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
+                            ? YMM_REGSIZE_BYTES
+                            : XMM_REGSIZE_BYTES;
+
+    if (size >= simdSize)
+    {
+        // Number of SIMD regs needed to save the whole src to regs.
+        unsigned numberOfSimdRegs = tree->AvailableTempRegCount(RBM_ALLFLOAT);
+
+        // Lowering takes care to only introduce this node such that we will always have enough
+        // temporary SIMD registers to fully load the source and avoid any potential issues with overlap.
+        assert(numberOfSimdRegs * simdSize >= size);
+
+        // Pop all temp regs to a local array, currently, this impl is limited with LSRA's MaxInternalCount
+        regNumber tempRegs[LinearScan::MaxInternalCount] = {};
+        for (unsigned i = 0; i < numberOfSimdRegs; i++)
+        {
+            tempRegs[i] = tree->ExtractTempReg(RBM_ALLFLOAT);
+        }
+
+        auto emitSimdLoadStore = [&](bool load) {
+            unsigned    offset   = 0;
+            int         regIndex = 0;
+            instruction simdMov  = simdUnalignedMovIns();
+            do
+            {
+                if (load)
+                {
+                    // vmovdqu  ymm, ymmword ptr[src + offset]
+                    GetEmitter()->emitIns_R_AR(simdMov, EA_ATTR(simdSize), tempRegs[regIndex++], src, offset);
+                }
+                else
+                {
+                    // vmovdqu  ymmword ptr[dst + offset], ymm
+                    GetEmitter()->emitIns_AR_R(simdMov, EA_ATTR(simdSize), tempRegs[regIndex++], dst, offset);
+                }
+                offset += simdSize;
+                if (size == offset)
+                {
+                    break;
+                }
+
+                assert(size > offset);
+                if ((size - offset) < simdSize)
+                {
+                    // Overlap with the previously processed data. We'll always use SIMD for simplicity
+                    // TODO-CQ: Consider using smaller SIMD reg or GPR for the remainder.
+                    offset = size - simdSize;
+                }
+            } while (true);
+        };
+
+        // load everything from SRC to temp regs
+        emitSimdLoadStore(/* load */ true);
+        // store them to DST
+        emitSimdLoadStore(/* load */ false);
+    }
+    else
+    {
+        // Here we work with size 1..15 (x64)
+        assert((size > 0) && (size < XMM_REGSIZE_BYTES));
+
+        auto emitScalarLoadStore = [&](bool load, int size, regNumber tempReg, int offset) {
+            var_types memType;
+            switch (size)
+            {
+                case 1:
+                    memType = TYP_UBYTE;
+                    break;
+                case 2:
+                    memType = TYP_USHORT;
+                    break;
+                case 4:
+                    memType = TYP_INT;
+                    break;
+                case 8:
+                    memType = TYP_LONG;
+                    break;
+                default:
+                    unreached();
+            }
+
+            if (load)
+            {
+                // mov  reg, qword ptr [src + offset]
+                GetEmitter()->emitIns_R_AR(ins_Load(memType), emitTypeSize(memType), tempReg, src, offset);
+            }
+            else
+            {
+                // mov  qword ptr [dst + offset], reg
+                GetEmitter()->emitIns_AR_R(ins_Store(memType), emitTypeSize(memType), tempReg, dst, offset);
+            }
+        };
+
+        // Use overlapping loads/stores, e. g. for size == 9: "mov [dst], tmpReg1; mov [dst+1], tmpReg2".
+        unsigned loadStoreSize = 1 << BitOperations::Log2(size);
+        if (loadStoreSize == size)
+        {
+            regNumber tmpReg = tree->GetSingleTempReg(RBM_ALLINT);
+            emitScalarLoadStore(/* load */ true, loadStoreSize, tmpReg, 0);
+            emitScalarLoadStore(/* load */ false, loadStoreSize, tmpReg, 0);
+        }
+        else
+        {
+            assert(tree->AvailableTempRegCount() == 2);
+            regNumber tmpReg1 = tree->ExtractTempReg(RBM_ALLINT);
+            regNumber tmpReg2 = tree->ExtractTempReg(RBM_ALLINT);
+            emitScalarLoadStore(/* load */ true, loadStoreSize, tmpReg1, 0);
+            emitScalarLoadStore(/* load */ true, loadStoreSize, tmpReg2, size - loadStoreSize);
+            emitScalarLoadStore(/* load */ false, loadStoreSize, tmpReg1, 0);
+            emitScalarLoadStore(/* load */ false, loadStoreSize, tmpReg2, size - loadStoreSize);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // genLclHeap: Generate code for localloc.
 //
 // Arguments:
@@ -2921,6 +3067,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
                 genCodeForInitBlkRepStos(storeBlkNode);
             }
             break;
+        case GenTreeBlk::BlkOpKindUnrollMemmove:
         case GenTreeBlk::BlkOpKindUnroll:
             if (isCopyBlk)
             {
@@ -2930,7 +3077,15 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
                     GetEmitter()->emitDisableGC();
                 }
 #endif
-                genCodeForCpBlkUnroll(storeBlkNode);
+                if (storeBlkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll)
+                {
+                    genCodeForCpBlkUnroll(storeBlkNode);
+                }
+                else
+                {
+                    assert(storeBlkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnrollMemmove);
+                    genCodeForMemmove(storeBlkNode);
+                }
 #ifndef JIT32_GCENCODER
                 if (storeBlkNode->gtBlkOpGcUnsafe)
                 {
@@ -3130,7 +3285,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 
         size -= bytesWritten;
 
-        // Handle the remainder by overlapping with previosly processed data (only for zeroing)
+        // Handle the remainder by overlapping with previously processed data (only for zeroing)
         if (zeroing && (size > 0) && (size < regSize) && (regSize >= XMM_REGSIZE_BYTES))
         {
             if (isPow2(size) && (size <= REGSIZE_BYTES))
@@ -3395,7 +3550,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
 
         assert((size >= 0) && (size < regSize));
 
-        // Handle the remainder by overlapping with previosly processed data
+        // Handle the remainder by overlapping with previously processed data
         if ((size > 0) && (size < regSize))
         {
             assert(regSize >= XMM_REGSIZE_BYTES);
@@ -5045,7 +5200,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     unsigned   lclNum    = tree->GetLclNum();
     LclVarDsc* varDsc    = compiler->lvaGetDesc(lclNum);
 
-    assert(varTypeUsesFloatReg(targetType) == varTypeUsesFloatReg(op1));
+    assert(varTypeUsesSameRegType(targetType, op1));
     assert(genTypeSize(genActualType(targetType)) == genTypeSize(genActualType(op1->TypeGet())));
 
     genConsumeRegs(op1);
@@ -5110,8 +5265,8 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
             LclVarDsc*     op1VarDsc = compiler->lvaGetDesc(op1lclNum);
             op1Type                  = op1VarDsc->GetRegisterType(op1LclVar);
         }
-        assert(varTypeUsesFloatReg(targetType) == varTypeUsesFloatReg(op1Type));
-        assert(!varTypeUsesFloatReg(targetType) || (emitTypeSize(targetType) == emitTypeSize(op1Type)));
+        assert(varTypeUsesSameRegType(targetType, op1Type));
+        assert(varTypeUsesIntReg(targetType) || (emitTypeSize(targetType) == emitTypeSize(op1Type)));
 #endif
 
 #if !defined(TARGET_64BIT)
@@ -5581,10 +5736,10 @@ void CodeGen::genCodeForSwap(GenTreeOp* tree)
     var_types            type2   = varDsc2->TypeGet();
 
     // We must have both int or both fp regs
-    assert(!varTypeUsesFloatReg(type1) || varTypeUsesFloatReg(type2));
+    assert(varTypeUsesSameRegType(type1, type2));
 
     // FP swap is not yet implemented (and should have NYI'd in LSRA)
-    assert(!varTypeUsesFloatReg(type1));
+    assert(varTypeUsesIntReg(type1));
 
     regNumber oldOp1Reg     = lcl1->GetRegNum();
     regMaskTP oldOp1RegMask = genRegMask(oldOp1Reg);
@@ -8663,7 +8818,7 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
 #endif // TARGET_X86
         {
             assert((varTypeUsesFloatReg(type) && genIsValidFloatReg(srcReg)) ||
-                   (varTypeIsIntegralOrI(type) && genIsValidIntReg(srcReg)));
+                   (varTypeUsesIntReg(type) && genIsValidIntReg(srcReg)));
             ins = ins_Store(type);
         }
         attr = emitTypeSize(type);

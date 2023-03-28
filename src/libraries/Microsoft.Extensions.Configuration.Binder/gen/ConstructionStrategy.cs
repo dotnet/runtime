@@ -6,6 +6,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     internal enum ConstructionStrategy
     {
         NotApplicable = 0,
-        ParameterlessConstructor = 1,
+        NotSupported = 1,
+        ParameterlessConstructor = 2,
     }
 }

@@ -75,15 +75,6 @@ private:
 
     void genMarkLabelsForCodegen();
 
-    inline RegState* regStateForType(var_types t)
-    {
-        return varTypeUsesFloatReg(t) ? &floatRegState : &intRegState;
-    }
-    inline RegState* regStateForReg(regNumber reg)
-    {
-        return genIsValidFloatReg(reg) ? &floatRegState : &intRegState;
-    }
-
     regNumber genFramePointerReg()
     {
         if (isFramePointerUsed())
@@ -1270,6 +1261,7 @@ protected:
 #endif // !TARGET_XARCH
 
     void genLclHeap(GenTree* tree);
+    void genCodeForMemmove(GenTreeBlk* tree);
 
     bool genIsRegCandidateLocal(GenTree* tree)
     {
