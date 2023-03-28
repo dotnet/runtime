@@ -173,7 +173,7 @@ namespace Microsoft.Interop
                                                 IdentifierName("IID"),
                                                 MemberAccessExpression(
                                                     SyntaxKind.SimpleMemberAccessExpression,
-                                                    IdentifierName("details"),
+                                                    IdentifierName(detailsTempLocal),
                                                     IdentifierName("Iid"))),
                                             AssignmentExpression(
                                                 SyntaxKind.SimpleAssignmentExpression,
@@ -182,7 +182,7 @@ namespace Microsoft.Interop
                                                     IdentifierName("nint"),
                                                     MemberAccessExpression(
                                                         SyntaxKind.SimpleMemberAccessExpression,
-                                                        IdentifierName("details"),
+                                                        IdentifierName(detailsTempLocal),
                                                         IdentifierName("ManagedVirtualMethodTable"))))
                                         }))))));
             }

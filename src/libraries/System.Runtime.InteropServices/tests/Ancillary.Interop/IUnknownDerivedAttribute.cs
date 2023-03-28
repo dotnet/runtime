@@ -7,10 +7,10 @@
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
-    /// An attribute to mark this interface as a managed representation of an IUnkown-derived interface.
+    /// An attribute to mark this interface as a managed representation of an IUnknown-derived interface.
     /// </summary>
     /// <typeparam name="T">The type that provides type-level information about the interface.</typeparam>
-    /// <typeparam name="TImpl">The type to use for calling from managed callers to unmanaged implementation of the interface.</typeparam>
+    /// <typeparam name="TImpl">The type to use for calling from managed callers to unmanaged implementations of the interface.</typeparam>
     [AttributeUsage(AttributeTargets.Interface, Inherited = false)]
     public class IUnknownDerivedAttribute<T, TImpl> : Attribute, IIUnknownDerivedDetails
         where T : IIUnknownInterfaceType
