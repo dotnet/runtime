@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <summary>
         /// A pointer to the virtual method table to enable unmanaged callers to call a managed implementation of the interface.
         /// </summary>
-        public unsafe void* VirtualMethodTableManagedImplementation { get; }
+        public unsafe void** ManagedVirtualMethodTable { get; }
 
         internal static IUnknownDerivedDetails? GetFromAttribute(RuntimeTypeHandle handle)
         {

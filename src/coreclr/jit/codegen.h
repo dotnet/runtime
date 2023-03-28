@@ -75,15 +75,6 @@ private:
 
     void genMarkLabelsForCodegen();
 
-    inline RegState* regStateForType(var_types t)
-    {
-        return varTypeUsesFloatReg(t) ? &floatRegState : &intRegState;
-    }
-    inline RegState* regStateForReg(regNumber reg)
-    {
-        return genIsValidFloatReg(reg) ? &floatRegState : &intRegState;
-    }
-
     regNumber genFramePointerReg()
     {
         if (isFramePointerUsed())
@@ -946,7 +937,7 @@ protected:
     void genSSE2Intrinsic(GenTreeHWIntrinsic* node);
     void genSSE41Intrinsic(GenTreeHWIntrinsic* node);
     void genSSE42Intrinsic(GenTreeHWIntrinsic* node);
-    void genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node);
+    void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node);
     void genAESIntrinsic(GenTreeHWIntrinsic* node);
     void genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node);
     void genFMAIntrinsic(GenTreeHWIntrinsic* node);
@@ -1270,6 +1261,7 @@ protected:
 #endif // !TARGET_XARCH
 
     void genLclHeap(GenTree* tree);
+    void genCodeForMemmove(GenTreeBlk* tree);
 
     bool genIsRegCandidateLocal(GenTree* tree)
     {
@@ -1610,6 +1602,7 @@ public:
 
     void genCodeForJcc(GenTreeCC* tree);
     void genCodeForSetcc(GenTreeCC* setcc);
+    void genCodeForJTrue(GenTreeOp* jtrue);
 #endif // !TARGET_LOONGARCH64
 };
 

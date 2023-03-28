@@ -24,7 +24,7 @@ struct _EventPipeConfiguration {
 #else
 struct _EventPipeConfiguration_Internal {
 #endif
-	ep_rt_provider_list_t provider_list;
+	dn_list_t *provider_list;
 	EventPipeProvider *config_provider;
 	EventPipeEvent *metadata_event;
 	ep_char8_t *config_provider_name;

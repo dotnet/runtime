@@ -153,6 +153,7 @@
       <ActivateCmd>$(EMSDK_PATH)/emsdk$(EmsdkExt) activate $(EmscriptenVersion)</ActivateCmd>
       <InstallCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(InstallCmd); Exit $LastExitCode &quot;</InstallCmd>
       <ActivateCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(ActivateCmd); Exit $LastExitCode &quot;</ActivateCmd>
+      <PythonCmd Condition="'$(HostOS)' == 'windows'and '$(TargetsBrowser)' == 'true'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
     </PropertyGroup>
 
     <RemoveDir Directories="$(EMSDK_PATH)" />
@@ -160,6 +161,10 @@
           WorkingDirectory="$(WasmLocalPath)"
           IgnoreStandardErrorWarningFormat="true" />
     <Exec Command="git checkout $(EmscriptenVersion) &amp;&amp; $(InstallCmd) &amp;&amp; $(ActivateCmd)"
+          WorkingDirectory="$(EMSDK_PATH)"
+          IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="$(PythonCmd) -m pip install certifi &amp;&amp; $(PythonCmd) -m pip install pip-system-certs"
+          Condition="'$(HostOS)' == 'windows'"
           WorkingDirectory="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
   </Target>

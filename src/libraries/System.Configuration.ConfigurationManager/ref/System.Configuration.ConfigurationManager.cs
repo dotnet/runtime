@@ -1383,9 +1383,8 @@ namespace System.Configuration.Internal
         public virtual string GetConfigPathFromLocationSubPath(string configPath, string locationSubPath) { throw null; }
         public virtual System.Type GetConfigType(string typeName, bool throwOnError) { throw null; }
         public virtual string GetConfigTypeName(System.Type t) { throw null; }
-#pragma warning disable SYSLIB0003
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public virtual void GetRestrictedPermissions(System.Configuration.Internal.IInternalConfigRecord configRecord, out System.Security.PermissionSet permissionSet, out bool isHostReady) { throw null; }
-#pragma warning restore SYSLIB0003
         public virtual string GetStreamName(string configPath) { throw null; }
         public virtual string GetStreamNameForConfigSource(string streamName, string configSource) { throw null; }
         public virtual object GetStreamVersion(string streamName) { throw null; }
@@ -1473,9 +1472,8 @@ namespace System.Configuration.Internal
         string GetConfigPathFromLocationSubPath(string configPath, string locationSubPath);
         System.Type GetConfigType(string typeName, bool throwOnError);
         string GetConfigTypeName(System.Type t);
-#pragma warning disable SYSLIB0003
+        [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         void GetRestrictedPermissions(System.Configuration.Internal.IInternalConfigRecord configRecord, out System.Security.PermissionSet permissionSet, out bool isHostReady);
-#pragma warning restore SYSLIB0003
         string GetStreamName(string configPath);
         string GetStreamNameForConfigSource(string streamName, string configSource);
         object GetStreamVersion(string streamName);

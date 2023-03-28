@@ -197,7 +197,7 @@ namespace Internal.Runtime
         ETF_DynamicThreadStaticOffset,
     }
 
-    // Subset of the managed TypeFlags enum understood by Redhawk.
+    // Subset of the managed TypeFlags enum understood by the runtime.
     // This should match the values in the TypeFlags enum except for the special
     // entry that marks System.Array specifically.
     internal enum EETypeElementType

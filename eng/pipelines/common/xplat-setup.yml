@@ -107,9 +107,14 @@ jobs:
       - name: wasmDarcDependenciesChanged
         ${{ if eq(parameters.archType, 'wasm') }}:
           value: $[ or(
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-8_0_100-preview_3'], true),
+                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Current_Manifest-8_0_100_Transport'], true),
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_DotNet_Build_Tasks_Workloads'], true),
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.System_Runtime_TimeZoneData'], true),
+                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_Net_Compilers_Toolset'], true),
+                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis'], true),
+                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis_CSharp'], true),
+                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis_Analyzers'], true),
+                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_CodeAnalysis_NetAnalyzers'], true),
                       eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true)) ]
 
       - ${{ each variable in parameters.variables }}:

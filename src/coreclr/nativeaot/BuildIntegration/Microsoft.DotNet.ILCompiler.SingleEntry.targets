@@ -18,7 +18,7 @@
     <_targetArchitecture>$(RuntimeIdentifier.SubString($([MSBuild]::Add($(RuntimeIdentifier.LastIndexOf('-')), 1))))</_targetArchitecture>
 
     <_hostPackageName>runtime.$(_hostOS)-$(_hostArchitecture).Microsoft.DotNet.ILCompiler</_hostPackageName>
-    <_targetPackageName>runtime.$(_targetOSPkg)-$(_targetArchitecture).Microsoft.DotNet.ILCompiler</_targetPackageName>
+    <_targetPackageName>runtime.$(_targetOS)-$(_targetArchitecture).Microsoft.DotNet.ILCompiler</_targetPackageName>
 
     <!-- From this point onwards, we will treat linux-musl as linux -->
     <_targetOS Condition="$(_targetOS.StartsWith('linux'))">linux</_targetOS>

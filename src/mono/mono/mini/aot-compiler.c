@@ -403,6 +403,9 @@ typedef struct MonoAotCompile {
 	GHashTable *gshared_instances;
 	/* Hash of gshared methods where specific instances are preferred */
 	GHashTable *prefer_instances;
+	GPtrArray *exported_methods;
+	guint32 n_exported_methods;
+	guint32 exported_methods_offset;
 #ifdef EMIT_WIN32_UNWIND_INFO
 	GList *unwind_info_section_cache;
 #endif
@@ -5303,6 +5306,8 @@ MONO_RESTORE_WARNING
 						export_name = (char *)g_malloc (slen + 1);
 						sprintf (export_name, "%s%s", acfg->user_symbol_prefix, named);
 						export_name [slen] = 0;
+
+						g_ptr_array_add (acfg->exported_methods, method);
 					}
 				}
 				mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
@@ -7034,7 +7039,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_ADJUSTED_IID:
 		encode_klass_ref (acfg, patch_info->data.klass, p, &p);
 		break;
-	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+	case MONO_PATCH_INFO_DELEGATE_INFO:
 		encode_klass_ref (acfg, patch_info->data.del_tramp->klass, p, &p);
 		if (patch_info->data.del_tramp->method) {
 			encode_value (1, p, &p);
@@ -7137,7 +7142,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 				break;
 			case MONO_PATCH_INFO_FIELD:
 			case MONO_PATCH_INFO_METHOD:
-			case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+			case MONO_PATCH_INFO_DELEGATE_INFO:
 			case MONO_PATCH_INFO_VIRT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_CALL: {
@@ -8947,7 +8952,7 @@ can_encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info)
 			return FALSE;
 		}
 		break;
-	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE: {
+	case MONO_PATCH_INFO_DELEGATE_INFO: {
 		if (!can_encode_class (acfg, patch_info->data.del_tramp->klass)) {
 			//printf ("Skip: %s\n", mono_type_full_name (m_class_get_byval_arg (patch_info->data.klass)));
 			return FALSE;
@@ -9143,11 +9148,16 @@ add_referenced_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, int depth)
 		}
 		break;
 	}
+	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_VTABLE: {
 		MonoClass *klass = patch_info->data.klass;
 
 		if (mono_class_is_ginst (klass) && !mini_class_is_generic_sharable (klass))
 			add_generic_class_with_depth (acfg, klass, depth + 5, "vtable");
+
+		/* The .cctor needs to run at runtime. */
+		if (mono_class_is_ginst (klass) && !mono_generic_context_is_sharable_full (&mono_class_get_generic_class (klass)->context, FALSE, FALSE) && mono_class_get_cctor (klass))
+			add_extra_method_with_depth (acfg, mono_class_get_cctor (klass), depth + 1);
 		break;
 	}
 	case MONO_PATCH_INFO_SFLDA: {
@@ -9178,7 +9188,7 @@ add_referenced_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, int depth)
 				break;
 			case MONO_PATCH_INFO_FIELD:
 			case MONO_PATCH_INFO_METHOD:
-			case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+			case MONO_PATCH_INFO_DELEGATE_INFO:
 			case MONO_PATCH_INFO_VIRT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_CALL:
@@ -10874,6 +10884,24 @@ emit_method_info_table (MonoAotCompile *acfg)
 			method_flags [acfg->cfgs [i]->method_index] = GUINT32_TO_UINT8 (acfg->cfgs [i]->aot_method_flags);
 	}
 	emit_aot_data (acfg, MONO_AOT_TABLE_METHOD_FLAGS_TABLE, "method_flags_table", method_flags, acfg->nmethods);
+
+	/*
+	 * If there is a runtime init callback, emit a table of exported methods.
+	 * These methods can be called before the runtime is initialized, so they need to
+	 * be inited when their AOT image is loaded.
+	 */
+	 if (acfg->aot_opts.runtime_init_callback) {
+		 acfg->n_exported_methods = acfg->exported_methods->len;
+		 if (acfg->exported_methods->len) {
+			 guint32 *arr = g_new0 (guint32, acfg->exported_methods->len);
+			 for (i = 0; i < acfg->exported_methods->len; ++i) {
+				 MonoMethod *m = (MonoMethod*)g_ptr_array_index (acfg->exported_methods, i);
+				 arr [i] = mono_method_get_token (m);
+			 }
+			 acfg->exported_methods_offset = add_to_blob_aligned (acfg, (guint8*)arr, acfg->exported_methods->len * sizeof (guint32), 4);
+			 g_free (arr);
+		 }
+	 }
 }
 
 #endif /* #if !defined(DISABLE_AOT) && !defined(DISABLE_JIT) */
@@ -11389,7 +11417,26 @@ emit_class_info (MonoAotCompile *acfg)
 typedef struct ClassNameTableEntry {
 	guint32 token, index;
 	struct ClassNameTableEntry *next;
+#ifdef DEBUG_AOT_NAME_TABLE
+	char *full_name;
+	uint32_t hash;
+#endif
 } ClassNameTableEntry;
+
+static char*
+get_class_full_name_for_hash (MonoClass *klass)
+{
+	return mono_type_get_name_full (m_class_get_byval_arg (klass), MONO_TYPE_NAME_FORMAT_FULL_NAME);
+}
+
+static uint32_t
+hash_for_class (MonoClass *klass)
+{
+	char *full_name = get_class_full_name_for_hash (klass);
+	uint32_t hash = mono_metadata_str_hash (full_name);
+	g_free (full_name);
+	return hash;
+}
 
 static void
 emit_class_name_table (MonoAotCompile *acfg)
@@ -11398,9 +11445,12 @@ emit_class_name_table (MonoAotCompile *acfg)
 	guint32 token, hash;
 	MonoClass *klass;
 	GPtrArray *table;
-	char *full_name;
 	guint8 *buf, *p;
 	ClassNameTableEntry *entry, *new_entry;
+#ifdef DEBUG_AOT_NAME_TABLE
+	int name_buf_size = 0;
+	guint8 *name_buf, *name_p;
+#endif
 
 	/*
 	 * Construct a chained hash table for mapping class names to typedef tokens.
@@ -11418,13 +11468,17 @@ emit_class_name_table (MonoAotCompile *acfg)
 			mono_error_cleanup (error);
 			continue;
 		}
-		full_name = mono_type_get_name_full (m_class_get_byval_arg (klass), MONO_TYPE_NAME_FORMAT_FULL_NAME);
-		hash = mono_metadata_str_hash (full_name) % table_size;
-		g_free (full_name);
+		hash = hash_for_class (klass) % table_size;
 
 		/* FIXME: Allocate from the mempool */
 		new_entry = g_new0 (ClassNameTableEntry, 1);
 		new_entry->token = token;
+#ifdef DEBUG_AOT_NAME_TABLE
+		new_entry->full_name = get_class_full_name_for_hash (klass);
+		new_entry->hash = hash;
+		/* '%s'=%08x\n */
+		name_buf_size += strlen (new_entry->full_name) + strlen("''=\n") + 8;
+#endif
 
 		entry = (ClassNameTableEntry *)g_ptr_array_index (table, hash);
 		if (entry == NULL) {
@@ -11443,6 +11497,10 @@ emit_class_name_table (MonoAotCompile *acfg)
 	/* Emit the table */
 	buf_size = table->len * 4 + 4;
 	p = buf = (guint8 *)g_malloc0 (buf_size);
+#ifdef DEBUG_AOT_NAME_TABLE
+	name_buf_size ++;  /* one extra trailing nul */
+	name_p = name_buf = (guint8 *)g_malloc0 (name_buf_size);
+#endif
 
 	/* FIXME: Optimize memory usage */
 	g_assert (table_size < 65000);
@@ -11460,14 +11518,28 @@ emit_class_name_table (MonoAotCompile *acfg)
 			else
 				encode_int16 (0, p, &p);
 		}
+#ifdef DEBUG_AOT_NAME_TABLE
+		if (entry != NULL) {
+			name_p += sprintf ((char*)name_p, "'%s'=%08x\n", entry->full_name, entry->hash);
+			g_free (entry->full_name);
+		}
+#endif
 		g_free (entry);
 	}
+#ifdef DEBUG_AOT_NAME_TABLE
+	g_assert (name_p - name_buf <= name_buf_size);
+#endif
 	g_assert (p - buf <= buf_size);
 	g_ptr_array_free (table, TRUE);
 
 	emit_aot_data (acfg, MONO_AOT_TABLE_CLASS_NAME, "class_name_table", buf, GPTRDIFF_TO_INT (p - buf));
 
 	g_free (buf);
+
+#ifdef DEBUG_AOT_NAME_TABLE
+	emit_aot_data (acfg, MONO_AOT_TABLE_CLASS_NAME_DEBUG, "class_name_table_debug", name_buf, GPTRDIFF_TO_INT (name_p - name_buf));
+	g_free (name_buf);
+#endif
 }
 
 static void
@@ -11860,6 +11932,9 @@ init_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	info->simd_opts = acfg->simd_opts;
 	info->gc_name_index = acfg->gc_name_offset;
 	info->datafile_size = acfg->datafile_offset;
+	info->n_exported_methods = acfg->n_exported_methods;
+	info->exported_methods = acfg->exported_methods_offset;
+
 	for (i = 0; i < MONO_AOT_TABLE_NUM; ++i)
 		info->table_offsets [i] = acfg->table_offsets [i];
 	for (i = 0; i < MONO_AOT_TRAMP_NUM; ++i)
@@ -12029,6 +12104,8 @@ emit_aot_file_info (MonoAotCompile *acfg, MonoAotFileInfo *info)
 	emit_int32 (acfg, info->datafile_size);
 	emit_int32 (acfg, 0);
 	emit_int32 (acfg, 0);
+	emit_int32 (acfg, info->n_exported_methods);
+	emit_int32 (acfg, info->exported_methods);
 
 	for (i = 0; i < MONO_AOT_TABLE_NUM; ++i)
 		emit_int32 (acfg, info->table_offsets [i]);
@@ -13867,6 +13944,7 @@ acfg_create (MonoAssembly *ass, guint32 jit_opts)
 	acfg->profile_methods = g_hash_table_new (NULL, NULL);
 	acfg->gshared_instances = g_hash_table_new (NULL, NULL);
 	acfg->prefer_instances = g_hash_table_new (NULL, NULL);
+	acfg->exported_methods = g_ptr_array_new ();
 	mono_os_mutex_init_recursive (&acfg->mutex);
 
 	init_got_info (&acfg->got_info);
@@ -13947,6 +14025,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_ptr_array_free (acfg->image_table, TRUE);
 	g_ptr_array_free (acfg->globals, TRUE);
 	g_ptr_array_free (acfg->unwind_ops, TRUE);
+	g_ptr_array_free (acfg->exported_methods, TRUE);
 	g_hash_table_destroy (acfg->method_indexes);
 	g_hash_table_destroy (acfg->method_depth);
 	g_hash_table_destroy (acfg->plt_offset_to_entry);

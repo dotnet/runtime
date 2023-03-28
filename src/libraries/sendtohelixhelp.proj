@@ -13,8 +13,9 @@
 
     <HelixConfiguration>$(Configuration)</HelixConfiguration>
     <HelixArchitecture>$(TargetArchitecture)</HelixArchitecture>
-    <BuildHelixWorkItemsDependsOn>BuildHelixCommand</BuildHelixWorkItemsDependsOn>
+    <BuildHelixWorkItemsDependsOn>BuildHelixCommand;StageDependenciesForHelix</BuildHelixWorkItemsDependsOn>
     <EnableDefaultBuildHelixWorkItems>true</EnableDefaultBuildHelixWorkItems>
+    <HelixDependenciesStagingPath>$([MSBuild]::NormalizeDirectory($(ArtifactsObjDir), 'helix-staging'))</HelixDependenciesStagingPath>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)sendtohelix-wasi.targets" Condition="'$(TargetOS)' == 'wasi'" />
@@ -104,6 +105,11 @@
     <TestEnvFileName Condition=" '$(Scenario)' != '' and '$(TargetOS)' != 'windows' and '$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi'">SetStressModes_$(Scenario).sh</TestEnvFileName>
   </PropertyGroup>
 
+  <ItemGroup>
+    <__HelixDependenciesToStageThatDontExist Include="@(HelixDependenciesToStage)" />
+    <__HelixDependenciesToStageThatDontExist Remove="@(HelixDependenciesToStage->Exists())" />
+  </ItemGroup>
+
   <!-- HelixPreCommands is a set of commands run before the work item command. We use it here to inject
        setting up the per-scenario environment.
   -->
@@ -112,16 +118,16 @@
     <HelixPreCommand Include="set __TestEnv=%HELIX_CORRELATION_PAYLOAD%\$(TestEnvFileName)" />
     <HelixPreCommand Include="type %__TestEnv%" />
     <HelixPreCommand Include="call %__TestEnv%" />
-    <!-- Display the interesting COMPlus variables that are set in the environment -->
-    <HelixPreCommand Include="set COMPlus" />
+    <!-- Display the interesting DOTNET variables that are set in the environment -->
+    <HelixPreCommand Include="set DOTNET" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TestEnvFileName)' != '' and '$(TargetOS)' != 'windows' ">
     <HelixPreCommand Include="export __TestEnv=$HELIX_CORRELATION_PAYLOAD/$(TestEnvFileName)" />
     <HelixPreCommand Include="cat $__TestEnv" />
     <HelixPreCommand Include=". $__TestEnv" /> <!-- Use "." not "source"; some clients appear to run scripts with "sh" not "bash" -->
-    <!-- Display the interesting COMPlus variables that are set in the environment -->
-    <HelixPreCommand Include="printenv | grep COMPlus" />
+    <!-- Display the interesting DOTNET variables that are set in the environment -->
+    <HelixPreCommand Include="printenv | grep DOTNET" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(NeedsWorkload)' == 'true'">
@@ -297,5 +303,34 @@
 
   <Target Name="PrintBuildTargetFramework">
     <Message Importance="High" Text="Build TargetFramework: $(BuildTargetFramework)" />
+  </Target>
+
+  <!--
+      Helix tasks will attempt to write a .payload file to the payload directory. But if the
+      directory is not writable, for example when it is a system installed dependency like
+        `WASI_SDK_PATH=/usr/local/wasi-sdk`
+      .. then we need to stage that before passing the path to helix like under `artifacts/obj/helix-staging`
+  -->
+  <Target Name="StageDependenciesForHelix" Condition="@(__HelixDependenciesToStageThatDontExist->Count()) > 0">
+    <Error Condition="'%(__HelixDependenciesToStageThatDontExist.SourcePath)' == '' or !Exists(%(__HelixDependenciesToStageThatDontExist.SourcePath))"
+           Text="Could not find %(__HelixDependenciesToStageThatDontExist.Name) at %(__HelixDependenciesToStageThatDontExist.SourcePath), needed to provision for running tests on helix" />
+
+    <ItemGroup>
+      <__HelixDependenciesToStageThatDontExist Name="%(FileName)" />
+    </ItemGroup>
+
+    <Message Importance="High" Text="Using %(__HelixDependenciesToStageThatDontExist.Name): %(__HelixDependenciesToStageThatDontExist.SourcePath)" />
+    <MakeDir Directories="%(__HelixDependenciesToStageThatDontExist.Identity)" />
+
+    <ItemGroup>
+      <_FilesToStage Remove="@(_FilesToStage)" />
+      <_FilesToStage Include="%(__HelixDependenciesToStageThatDontExist.SourcePath)\**\*"
+                     Exclude="%(__HelixDependenciesToStageThatDontExist.SourcePath)\.git\**\*"
+                     DirName="@(__HelixDependenciesToStageThatDontExist->'%(Name)')" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_FilesToStage)"
+          DestinationFiles="@(_FilesToStage -> '$(HelixDependenciesStagingPath)\%(DirName)\%(RecursiveDir)%(FileName)%(Extension)')"
+          SkipUnchangedFiles="true" />
   </Target>
 </Project>

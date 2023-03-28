@@ -34,7 +34,8 @@ bool RecordVariable(const WCHAR* key)
         W("EnableExtraSuperPmiQueries"),
         W("JitDisasm"),
         W("JitDump"),
-        W("JitDasmWithAlignmentBoundaries"),
+        W("JitDasmWithAlignmentBoundaries"), // to be removed
+        W("JitDisasmWithAlignmentBoundaries"),
         W("JitDumpASCII"),
         W("JitHashBreak"),
         W("JitHashDump"),

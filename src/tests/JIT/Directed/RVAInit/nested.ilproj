@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for IlasmRoundTripIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <RestorePackages>true</RestorePackages>
     <CLRTestPriority>1</CLRTestPriority>
     <!-- ildasm cannot support field RVAs precisely -->

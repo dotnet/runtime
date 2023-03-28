@@ -28,7 +28,7 @@ PATCH_INFO(EXC_OVF, "exc_ovf")
 PATCH_INFO(GOT_OFFSET, "got_offset")
 PATCH_INFO(DECLSEC, "declsec")
 PATCH_INFO(RVA, "rva")
-PATCH_INFO(DELEGATE_TRAMPOLINE, "delegate_trampoline")
+PATCH_INFO(DELEGATE_INFO, "delegate_info")
 PATCH_INFO(ICALL_ADDR, "icall_addr")
 /* The address of a C function implementing a JIT icall */
 PATCH_INFO(JIT_ICALL_ADDR, "jit_icall_addr")

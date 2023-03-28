@@ -1749,7 +1749,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static async void CancellationTokenSource_CancelAsync_CallbacksInvokedAsynchronously()
+        public static async Task CancellationTokenSource_CancelAsync_CallbacksInvokedAsynchronously()
         {
             var cts = new CancellationTokenSource();
 

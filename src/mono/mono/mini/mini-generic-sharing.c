@@ -2616,14 +2616,9 @@ instantiate_info (MonoMemoryManager *mem_manager, MonoRuntimeGenericContextInfoT
 		return res;
 	}
 	case MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO: {
-		MonoDelegateClassMethodPair *dele_info = (MonoDelegateClassMethodPair*)data;
-		gpointer trampoline;
+		MonoDelegateClassMethodPair *del_info = (MonoDelegateClassMethodPair*)data;
 
-		if (dele_info->is_virtual)
-			trampoline = mono_create_delegate_virtual_trampoline (dele_info->klass, dele_info->method);
-		else
-			trampoline = mono_create_delegate_trampoline_info (dele_info->klass, dele_info->method);
-
+		gpointer trampoline = mono_create_delegate_trampoline_info (del_info->klass, del_info->method, del_info->is_virtual);
 		g_assert (trampoline);
 		return trampoline;
 	}
@@ -2950,7 +2945,7 @@ mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type)
 	case MONO_RGCTX_INFO_METHOD_DELEGATE_CODE:
 		return MONO_PATCH_INFO_METHOD;
 	case MONO_RGCTX_INFO_DELEGATE_TRAMP_INFO:
-		return MONO_PATCH_INFO_DELEGATE_TRAMPOLINE;
+		return MONO_PATCH_INFO_DELEGATE_INFO;
 	case MONO_RGCTX_INFO_VIRT_METHOD:
 	case MONO_RGCTX_INFO_VIRT_METHOD_CODE:
 	case MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE:
@@ -4505,7 +4500,7 @@ mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
 		entry_data = info;
 		break;
 	}
-	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE: {
+	case MONO_PATCH_INFO_DELEGATE_INFO: {
 		MonoDelegateClassMethodPair *info;
 		MonoDelegateClassMethodPair *oinfo = entry->data->data.del_tramp;
 
@@ -4532,7 +4527,7 @@ mini_get_rgctx_entry_slot (MonoJumpInfoRgctxEntry *entry)
 		switch (entry->data->type) {
 		case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		case MONO_PATCH_INFO_VIRT_METHOD:
-		case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
+		case MONO_PATCH_INFO_DELEGATE_INFO:
 			g_free (entry_data);
 			break;
 		case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
