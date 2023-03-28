@@ -1364,17 +1364,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_Equals:
         {
             assert(sig->numArgs == 2);
+            assert(IsBaselineVector512IsaSupportedDebugOnly());
 
-            if (IsBaselineVector512IsaSupported())
-            {
-                var_types simdType = getSIMDTypeForSize(simdSize);
-
-                op2 = impSIMDPopStack(simdType);
-                op1 = impSIMDPopStack(simdType);
-
-                retNode = gtNewSimdCmpOpNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize,
+            var_types simdType = getSIMDTypeForSize(simdSize);
+            op2 = impSIMDPopStack(simdType);
+            op1 = impSIMDPopStack(simdType);
+            retNode = gtNewSimdCmpOpNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize,
                                              /* isSimdAsHWIntrinsic */ false);
-            }
             break;
         }
 
@@ -1382,18 +1378,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector512_op_Equality:
         {
             assert(sig->numArgs == 2);
+            assert(IsBaselineVector512IsaSupportedDebugOnly());
 
-            if (IsBaselineVector512IsaSupported())
-            {
-                var_types simdType = getSIMDTypeForSize(simdSize);
+            var_types simdType = getSIMDTypeForSize(simdSize);
 
-                op2 = impSIMDPopStack(simdType);
-                op1 = impSIMDPopStack(simdType);
+            op2 = impSIMDPopStack(simdType);
+            op1 = impSIMDPopStack(simdType);
 
-                retNode = gtNewSimdCmpOpAllNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize,
-                                                /* isSimdAsHWIntrinsic */ false);
-            }
-
+            retNode = gtNewSimdCmpOpAllNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize,
+                                            /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
@@ -1421,17 +1414,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
             assert(simdSize == 64);
+            assert(IsBaselineVector512IsaSupportedDebugOnly());
 
-            if (IsBaselineVector512IsaSupported())
-            {
-                var_types simdType = getSIMDTypeForSize(simdSize);
+            var_types simdType = getSIMDTypeForSize(simdSize);
 
-                op2 = impSIMDPopStack(simdType);
-                op1 = impSIMDPopStack(simdType);
+            op2 = impSIMDPopStack(simdType);
+            op1 = impSIMDPopStack(simdType);
 
-                retNode = gtNewSimdCmpOpAnyNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize,
-                                                /* isSimdAsHWIntrinsic */ false);
-            }
+            retNode = gtNewSimdCmpOpAnyNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize,
+                                            /* isSimdAsHWIntrinsic */ false);
             break;
         }
 

@@ -171,6 +171,8 @@ enum insFlags : uint64_t
     Encoding_VEX   = 1ULL << 37,
     Encoding_EVEX  = 1ULL << 38,
 
+    KInstruction = 1ULL << 39,
+
     // Listed above so it is "inline" with the other Resets_* flags
     // Resets_ZF = 1ULL << 39,
 
