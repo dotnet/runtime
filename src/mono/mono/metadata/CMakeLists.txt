@@ -1,19 +1,5 @@
 project(metadata C)
 
-include (${SHARED_CONTAINERS_SOURCE_PATH}containers.cmake)
-
-set(shared_container_sources "")
-
-list(APPEND shared_container_sources
-  ${SHARED_CONTAINER_SOURCES}
-  ${SHARED_CONTAINER_HEADERS}
-)
-
-addprefix(shared_container_sources ${SHARED_CONTAINERS_SOURCE_PATH} "${shared_container_sources}")
-
-add_library(shared_container_objects OBJECT ${shared_container_sources})
-target_include_directories(shared_container_objects PUBLIC ${SHARED_CONTAINERS_SOURCE_PATH})
-
 #
 # This library contains the icall tables if the runtime was configured with DISABLE_ICALL_TABLES
 #

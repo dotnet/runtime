@@ -929,6 +929,25 @@ if(NOT DISABLE_LIBS)
 endif()
 add_subdirectory("${CLR_SRC_NATIVE_DIR}/public" public_apis)
 
+### Paths and Targets for Shared Containers
+set(SHARED_CONTAINERS_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/containers/")
+include (${SHARED_CONTAINERS_SOURCE_PATH}containers.cmake)
+
+set(shared_container_sources "")
+
+list(APPEND shared_container_sources
+  ${SHARED_CONTAINER_SOURCES}
+  ${SHARED_CONTAINER_HEADERS}
+)
+
+addprefix(shared_container_sources ${SHARED_CONTAINERS_SOURCE_PATH} "${shared_container_sources}")
+
+add_library(shared_container_objects OBJECT ${shared_container_sources})
+target_include_directories(shared_container_objects PUBLIC ${SHARED_CONTAINERS_SOURCE_PATH})
+
+
+### Mono runtime and components
+
 add_subdirectory(mono)
 if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT TARGET_WASI AND NOT HOST_MACCAT)
   add_subdirectory(dlls/mscordbi)

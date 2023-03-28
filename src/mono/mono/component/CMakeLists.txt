@@ -1,5 +1,4 @@
 set(MONO_COMPONENT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../component")
-set(SHARED_CONTAINERS_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/containers/")
 set(SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe/")
 set(MONO_EVENTPIPE_SHIM_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../eventpipe/")
 set(MONO_EVENTPIPE_GEN_INCLUDE_PATH "${CMAKE_CURRENT_BINARY_DIR}/eventpipe")
@@ -68,7 +67,6 @@ include_directories(
 )
 
 set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-sources
-  ${container_sources}
   ${eventpipe_sources}
   ${diagnostic_server_sources}
   ${MONO_COMPONENT_PATH}/event_pipe.c
@@ -85,6 +83,9 @@ set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-dependencies
   ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-headers
   ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-gen-sources
 )
+
+set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-link_libraries
+  shared_container_objects)
 
 # marshal-ilgen
 list(APPEND components
@@ -155,6 +156,9 @@ foreach(component IN LISTS components)
     add_library("${component}-objects" OBJECT "${${component}-sources}")
     target_link_libraries("${component}-objects" PRIVATE component_base)
     target_link_libraries("${component}-objects" PUBLIC eglib_api)
+    if(DEFINED "${component}-link_libraries")
+      target_link_libraries("${component}-objects" PRIVATE "${${component}-link_libraries}")
+    endif()
     foreach(dependency IN LISTS "${component}-dependencies")
       add_dependencies("${component}-objects" "${dependency}")
     endforeach()
@@ -170,9 +174,15 @@ if(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
     # NOTE: keep library naming pattern in sync with RuntimeComponentManifest.targets
     if(HOST_WIN32)
       add_library("mono-component-${component}" SHARED "${${component}-sources}")
+      if(DEFINED "${component}-link_libraries")
+        target_link_libraries("mono-component-${component}" PRIVATE "${${component}-link_libraries}")
+      endif()
       target_compile_definitions("mono-component-${component}" PRIVATE -DCOMPILING_COMPONENT_DYNAMIC;-DMONO_DLL_IMPORT)
     else()
       add_library("mono-component-${component}" SHARED $<TARGET_OBJECTS:${component}-objects>)
+      if(DEFINED "${component}-link_libraries")
+        target_link_libraries("mono-component-${component}" PRIVATE "${${component}-link_libraries}")
+      endif()
       target_compile_definitions("${component}-objects" PRIVATE -DCOMPILING_COMPONENT_DYNAMIC;-DMONO_DLL_IMPORT)
     endif()
     foreach(dependency IN LISTS "${component}-dependencies")
