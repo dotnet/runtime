@@ -406,11 +406,31 @@ namespace System.Text.RegularExpressions.Generator
 
             string fieldName = hexBitmap switch
             {
+                "FFFFFFFF000000000000000000000080" => "s_asciiControl",
+                "000000000000FF030000000000000000" => "s_asciiDigits",
                 "0000000000000000FEFFFF07FEFFFF07" => "s_asciiLetters",
                 "000000000000FF03FEFFFF07FEFFFF07" => "s_asciiLettersAndDigits",
                 "000000000000FF037E0000007E000000" => "s_asciiHexDigits",
                 "000000000000FF03000000007E000000" => "s_asciiHexDigitsLower",
                 "000000000000FF037E00000000000000" => "s_asciiHexDigitsUpper",
+                "00000000EEF7008C010000B800000028" => "s_asciiPunctuation",
+                "00000000010000000000000000000000" => "s_asciiSeparators",
+                "00000000100800700000004001000050" => "s_asciiSymbols",
+                "003E0000010000000000000000000000" => "s_asciiWhiteSpace",
+                "000000000000FF03FEFFFF87FEFFFF07" => "s_asciiWordChars",
+
+                "00000000FFFFFFFFFFFFFFFFFFFFFF7F" => "s_asciiExceptControl",
+                "FFFFFFFFFFFF00FCFFFFFFFFFFFFFFFF" => "s_asciiExceptDigits",
+                "FFFFFFFFFFFFFFFF010000F8010000F8" => "s_asciiExceptLetters",
+                "FFFFFFFFFFFF00FC010000F8010000F8" => "s_asciiExceptLettersAndDigits",
+                "FFFFFFFFFFFFFFFFFFFFFFFF010000F8" => "s_asciiExceptLower",
+                "FFFFFFFF1108FF73FEFFFF47FFFFFFD7" => "s_asciiExceptPunctuation",
+                "FFFFFFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptSeparators",
+                "FFFFFFFFEFF7FF8FFFFFFFBFFEFFFFAF" => "s_asciiExceptSymbols",
+                "FFFFFFFFFFFFFFFF010000F8FFFFFFFF" => "s_asciiExceptUpper",
+                "FFC1FFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptWhiteSpace",
+                "FFFFFFFFFFFF00FC01000078010000F8" => "s_asciiExceptWordChars",
+
                 _ => $"s_ascii_{hexBitmap.TrimStart('0')}"
             };
 
@@ -446,7 +466,6 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
-            string fieldName = EmitIndexOfAnyValues(asciiChars.ToArray(), requiredHelpers);
             string? helperName = set switch
             {
                 RegexCharClass.DigitClass => "IndexOfAnyDigit",
@@ -461,67 +480,81 @@ namespace System.Text.RegularExpressions.Generator
                 RegexCharClass.SymbolClass => "IndexOfAnySymbol",
                 RegexCharClass.UpperClass => "IndexOfAnyUpper",
                 RegexCharClass.WordClass => "IndexOfAnyWordChar",
+
+                RegexCharClass.NotDigitClass => "IndexOfAnyExceptDigit",
+                RegexCharClass.NotControlClass => "IndexOfAnyExceptControl",
+                RegexCharClass.NotLetterClass => "IndexOfAnyExceptLetter",
+                RegexCharClass.NotLetterOrDigitClass => "IndexOfAnyExceptLetterOrDigit",
+                RegexCharClass.NotLowerClass => "IndexOfAnyExceptLower",
+                RegexCharClass.NotNumberClass => "IndexOfAnyExceptNumber",
+                RegexCharClass.NotPunctuationClass => "IndexOfAnyExceptPunctuation",
+                RegexCharClass.NotSeparatorClass => "IndexOfAnyExceptSeparator",
+                RegexCharClass.NotSpaceClass => "IndexOfAnyExceptWhiteSpace",
+                RegexCharClass.NotSymbolClass => "IndexOfAnyExceptSymbol",
+                RegexCharClass.NotUpperClass => "IndexOfAnyExceptUpper",
+                RegexCharClass.NotWordClass => "IndexOfAnyExceptWordChar",
+
                 _ => null,
             };
             if (helperName is null)
             {
                 using (SHA256 sha = SHA256.Create())
                 {
+#pragma warning disable CA1850 // SHA256.HashData isn't available on netstandard2.0
                     helperName = $"IndexOfNonAsciiOrAny_{BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(set))).Replace("-", "")}";
+#pragma warning restore CA1850
                 }
             }
 
             if (!requiredHelpers.ContainsKey(helperName))
             {
                 var additionalDeclarations = new HashSet<string>();
+                string matchExpr = MatchCharacterClass("span[i]", set, negate: false, additionalDeclarations, requiredHelpers);
 
-                var lines = new List<string>()
-                {
-                    $"/// <summary>Finds the next index of any character that matches {EscapeXmlComment(DescribeSet(set))}.</summary>",
-                    $"[MethodImpl(MethodImplOptions.AggressiveInlining)]",
-                    $"internal static int {helperName}(this ReadOnlySpan<char> span)",
-                    $"{{",
-                    $"    int i = span.IndexOfAnyExcept({fieldName});",
-                    $"    if ((uint)i < (uint)span.Length)",
-                    $"    {{",
-                    $"        if (span[i] <= 0x7f)",
-                    $"        {{",
-                    $"            return i;",
-                    $"        }}",
-                    $"",
-                    $"        do",
-                    $"        {{",
-                    $"            if ({MatchCharacterClass("span[i]", set, negate: false, additionalDeclarations, requiredHelpers)})",
-                    $"            {{",
-                    $"                return i;",
-                    $"            }}",
-                    $"            i++;",
-                    $"        }}",
-                    $"        while ((uint)i < (uint)span.Length);",
-                    $"    }}",
-                    $"",
-                    $"    return -1;",
-                    $"}}",
-                };
-
-                // The below insert positions must be kept in sync with the lines above.
-
+                var lines = new List<string>();
+                lines.Add($"/// <summary>Finds the next index of any character that matches {EscapeXmlComment(DescribeSet(set))}.</summary>");
+                lines.Add($"[MethodImpl(MethodImplOptions.AggressiveInlining)]");
+                lines.Add($"internal static int {helperName}(this ReadOnlySpan<char> span)");
+                lines.Add($"{{");
+                int uncheckedStart = lines.Count;
+                lines.Add(asciiChars.Count == 128 ?
+                          $"    int i = span.IndexOfAnyExceptInRange('\0', '\u007f');" :
+                          $"    int i = span.IndexOfAnyExcept({EmitIndexOfAnyValues(asciiChars.ToArray(), requiredHelpers)});");
+                lines.Add($"    if ((uint)i < (uint)span.Length)");
+                lines.Add($"    {{");
+                lines.Add($"        if (span[i] <= 0x7f)");
+                lines.Add($"        {{");
+                lines.Add($"            return i;");
+                lines.Add($"        }}");
+                lines.Add($"");
                 if (additionalDeclarations.Count > 0)
                 {
-                    lines.InsertRange(12, additionalDeclarations.Select(s => $"        {s}"));
+                    lines.AddRange(additionalDeclarations.Select(s => $"        {s}"));
                 }
+                lines.Add($"        do");
+                lines.Add($"        {{");
+                lines.Add($"            if ({matchExpr})");
+                lines.Add($"            {{");
+                lines.Add($"                return i;");
+                lines.Add($"            }}");
+                lines.Add($"            i++;");
+                lines.Add($"        }}");
+                lines.Add($"        while ((uint)i < (uint)span.Length);");
+                lines.Add($"    }}");
+                lines.Add($"");
+                lines.Add($"    return -1;");
+                lines.Add($"}}");
 
                 if (checkOverflow)
                 {
-                    lines.Insert(4, "    unchecked");
-                    lines.Insert(5, "    {");
-                    for (int i = 6; i < lines.Count - 1; i++)
+                    lines.Insert(uncheckedStart, "    unchecked");
+                    lines.Insert(uncheckedStart + 1, "    {");
+                    for (int i = uncheckedStart + 2; i < lines.Count - 1; i++)
                     {
                         lines[i] = $"    {lines[i]}";
                     }
                     lines.Insert(lines.Count - 1, "    }");
                 }
-
 
                 requiredHelpers.Add(helperName, lines.ToArray());
             }

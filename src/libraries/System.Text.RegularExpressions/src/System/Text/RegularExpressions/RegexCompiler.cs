@@ -962,10 +962,21 @@ namespace System.Text.RegularExpressions
                             // ReadOnlySpan<char> span = inputSpan...;
                             Stloc(span);
 
-                            // int i = span.IndexOfAnyExcept(indexOfAnyValuesArray[...]);
+                            // int i = span.
                             Ldloc(span);
-                            LoadIndexOfAnyValues(CollectionsMarshal.AsSpan(asciiChars));
-                            Call(s_spanIndexOfAnyExceptIndexOfAnyValues);
+                            if (asciiChars.Count == 128)
+                            {
+                                // IndexOfAnyExceptInRange('\0', '\u007f');
+                                Ldc(0);
+                                Ldc(127);
+                                Call(s_spanIndexOfAnyExceptInRange);
+                            }
+                            else
+                            {
+                                // IndexOfAnyExcept(indexOfAnyValuesArray[...]);
+                                LoadIndexOfAnyValues(CollectionsMarshal.AsSpan(asciiChars));
+                                Call(s_spanIndexOfAnyExceptIndexOfAnyValues);
+                            }
                             Stloc(i);
 
                             // if ((uint)i >= span.Length) goto doneSearch;
