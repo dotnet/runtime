@@ -1,5 +1,19 @@
 project(metadata C)
 
+include (${SHARED_CONTAINERS_SOURCE_PATH}containers.cmake)
+
+set(shared_container_sources "")
+
+list(APPEND shared_container_sources
+  ${SHARED_CONTAINER_SOURCES}
+  ${SHARED_CONTAINER_HEADERS}
+)
+
+addprefix(shared_container_sources ${SHARED_CONTAINERS_SOURCE_PATH} "${shared_container_sources}")
+
+add_library(shared_container_objects OBJECT ${shared_container_sources})
+target_include_directories(shared_container_objects PUBLIC ${SHARED_CONTAINERS_SOURCE_PATH})
+
 #
 # This library contains the icall tables if the runtime was configured with DISABLE_ICALL_TABLES
 #
@@ -203,7 +217,7 @@ target_compile_definitions(metadata_objects PRIVATE ${metadata_compile_definitio
 target_link_libraries(metadata_objects PRIVATE monoapi eglib_api utils_objects)
 # note: metadata_objects is an object library, so this doesn't force linking with sgen,
 # it just adds the relevant include directories - which we need even with Boehm
-target_link_libraries(metadata_objects PRIVATE sgen_objects)
+target_link_libraries(metadata_objects PRIVATE sgen_objects shared_container_objects)
 target_compile_definitions(metadata_objects PRIVATE -DMONO_DLL_EXPORT)
 target_include_directories(metadata_objects PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..

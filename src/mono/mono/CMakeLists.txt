@@ -1,5 +1,7 @@
 project(mono)
 
+set(SHARED_CONTAINERS_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/containers/")
+
 set(subdirs
   eglib
   utils
