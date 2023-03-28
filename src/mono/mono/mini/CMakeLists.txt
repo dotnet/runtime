@@ -463,11 +463,11 @@ if(HOST_BROWSER)
   # This is the only source file which contains a c++ throw or catch
   add_library(mono-wasm-eh-js STATIC llvm-runtime.cpp)
   target_link_libraries (mono-wasm-eh-js PRIVATE monoapi eglib_api)
-  install_with_stripped_symbols(mono-wasm-eh-js TARGETS lib)
+  install(TARGETS mono-wasm-eh-js LIBRARY)
   add_library(mono-wasm-eh-wasm STATIC llvm-runtime.cpp)
   target_link_libraries (mono-wasm-eh-wasm PRIVATE monoapi eglib_api)
   set_target_properties(mono-wasm-eh-wasm PROPERTIES COMPILE_FLAGS "-fwasm-exceptions")
-  install_with_stripped_symbols(mono-wasm-eh-wasm TARGETS lib)
+  install(TARGETS mono-wasm-eh-wasm LIBRARY)
 endif()
 
 find_package(Python3 COMPONENTS Interpreter)
