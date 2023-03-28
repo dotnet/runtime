@@ -5,6 +5,7 @@ permissions:
 
 on:
   pull_request:
+    types: [opened, reopened, labeled, unlabeled, synchronize]
     branches:
       - 'release/**'
 
@@ -13,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Check servicing labels
-      run:
+      run: |
         if [ "${{ contains(github.event.pull_request.labels.*.name, 'Servicing-approved') }}" = "true" ]; then
           exit 0
         else
