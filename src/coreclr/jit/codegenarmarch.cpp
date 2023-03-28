@@ -363,19 +363,14 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_CINC:
-            genCodeForCinc(treeNode->AsConditional());
+        case GT_CINCCC:
+            genCodeForCinc(treeNode->AsOp());
             break;
 
         case GT_SELECTCC:
             genCodeForSelect(treeNode->AsOp());
             break;
 
-        case GT_CINCCC:
-            genCodeForCinc(treeNode->AsOp());
-            break;
-#endif
-
-#ifdef TARGET_ARM64
         case GT_JCMP:
             genCodeForJumpCompare(treeNode->AsOp());
             break;

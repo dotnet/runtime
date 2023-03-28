@@ -2498,14 +2498,11 @@ void Lowering::TryLowerCselToCinc(GenTreeOp* select, GenTree* cond)
                 if (op1Val + 1 == op2Val)
                 {
                     // Reverse the condition so that op2 will be selected
+                    select->gtOp2    = select->gtOp1;
                     GenTree* revCond = comp->gtReverseCond(cond);
                     assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
                 }
-                else
-                {
-                    std::swap(select->gtOp1, select->gtOp2);
-                }
-                BlockRange().Remove(select->gtOp2);
+                select->gtOp1 = cond->AsOp();
                 select->SetOper(GT_CINC);
                 DISPTREERANGE(BlockRange(), select);
             }

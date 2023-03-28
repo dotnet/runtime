@@ -4088,7 +4088,7 @@ void GenTree::VisitOperands(TVisitor visitor)
 #ifdef TARGET_ARM64
         case GT_CNEG_LT:
         case GT_CINCCC:
-#endif
+#endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         case GT_NOT:
@@ -4260,9 +4260,6 @@ void GenTree::VisitOperands(TVisitor visitor)
             return;
         }
 
-#ifdef TARGET_ARM64
-        case GT_CINC:
-#endif
         case GT_SELECT:
         {
             GenTreeConditional* const cond = this->AsConditional();
@@ -4274,10 +4271,7 @@ void GenTree::VisitOperands(TVisitor visitor)
             {
                 return;
             }
-            if (cond->gtOp2 != nullptr)
-            {
-                visitor(cond->gtOp2);
-            }
+            visitor(cond->gtOp2);
             return;
         }
 

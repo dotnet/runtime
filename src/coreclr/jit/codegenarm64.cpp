@@ -4691,15 +4691,16 @@ void CodeGen::genCodeForCinc(GenTreeOp* cinc)
     assert(cinc->OperIs(GT_CINC, GT_CINCCC));
 
     GenTree* opcond = nullptr;
+    GenTree* op     = cinc->gtOp1;
     if (cinc->OperIs(GT_CINC))
     {
-        opcond = cinc->AsConditional()->gtCond;
+        opcond = cinc->gtOp1;
+        op     = cinc->gtOp2;
         genConsumeRegs(opcond);
     }
 
     emitter* emit = GetEmitter();
 
-    GenTree*  op     = cinc->gtOp1;
     var_types opType = genActualType(op->TypeGet());
     emitAttr  attr   = emitActualTypeSize(cinc->TypeGet());
     assert(!op->isUsedFromMemory());
