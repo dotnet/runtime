@@ -651,11 +651,11 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                     CreateBlockFromTree(this, maxThreadStaticBlocksCondBB, BBJ_COND,
                                         gtNewOperNode(GT_JTRUE, TYP_VOID, threadStaticBlockNullCond), debugInfo);
 
-
                  // Fallback basic block
                 GenTree*    asgFallbackValue = gtNewAssignNode(gtClone(rtLookupLcl), call);
                 BasicBlock* fallbackBb =
                     CreateBlockFromTree(this, threadStaticBlockNullCondBB, BBJ_NONE, asgFallbackValue, debugInfo, true);
+                fallbackBb->bbSetRunRarely();
 
                 //
                 // Update preds in all new blocks
@@ -681,9 +681,6 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                 // 90% (0.9 * 0.9) chance we pass threadStatic block null check
                 threadStaticBlockNullCondBB->inheritWeightPercentage(maxThreadStaticBlocksCondBB, 95);
                 
-                // We will just fail
-                fallbackBb->inheritWeightPercentage(threadStaticBlockNullCondBB, 10);
-
                 //
                 // Update loop info if loop table is known to be valid
                 //
