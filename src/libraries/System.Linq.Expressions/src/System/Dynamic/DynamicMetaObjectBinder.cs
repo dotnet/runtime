@@ -50,8 +50,8 @@ namespace System.Dynamic
             ArgumentNullException.ThrowIfNull(args);
             ArgumentNullException.ThrowIfNull(parameters);
             ArgumentNullException.ThrowIfNull(returnLabel);
-            ArgumentOutOfRangeException.ThrowIfEqual(args.Length, 0);
-            ArgumentOutOfRangeException.ThrowIfEqual(parameters.Count, 0);
+            ArgumentOutOfRangeException.ThrowIfZero(args.Length);
+            ArgumentOutOfRangeException.ThrowIfZero(parameters.Count);
             ArgumentOutOfRangeException.ThrowIfNotEqual(args.Length, parameters.Count);
 
             // Ensure that the binder's ReturnType matches CallSite's return
