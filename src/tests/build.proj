@@ -566,7 +566,7 @@
 
     <!-- We need to build group #1 manually as it doesn't have a _GroupStartsWith item associated with it, see the comment in Common\dirs.proj -->
     <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=1;__SkipRestorePackages=1" Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator'" />
-    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=9;__SkipRestorePackages=9" Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator'" />
+    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=11;__SkipRestorePackages=11" Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator'" />
     <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=%(_GroupStartsWith.GroupNumber);__SkipRestorePackages=1" Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator'" />
   </Target>
 
