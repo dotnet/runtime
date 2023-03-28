@@ -4527,6 +4527,12 @@ public:
 
     void fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk);
     void fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk);
+    static BasicBlock* CreateBlockFromTree(Compiler*   comp,
+                                       BasicBlock* insertAfter,
+                                       BBjumpKinds blockKind,
+                                       GenTree*    tree,
+                                       DebugInfo&  debugInfo,
+                                       bool        updateSideEffects = false);
     void fgUnlinkBlock(BasicBlock* block);
 
 #ifdef FEATURE_JIT_METHOD_PERF

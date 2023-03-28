@@ -6938,6 +6938,28 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBjumpKinds jumpKind,
     return newBlk;
 }
 
+// Create block from the given tree
+/* static */ BasicBlock* Compiler::CreateBlockFromTree(Compiler*   comp,
+                                       BasicBlock* insertAfter,
+                                       BBjumpKinds blockKind,
+                                       GenTree*    tree,
+                                       DebugInfo&  debugInfo,
+                                       bool        updateSideEffects)
+{
+    // Fast-path basic block
+    BasicBlock* newBlock = comp->fgNewBBafter(blockKind, insertAfter, true);
+    newBlock->bbFlags |= BBF_INTERNAL;
+    Statement* stmt = comp->fgNewStmtFromTree(tree, debugInfo);
+    comp->fgInsertStmtAtEnd(newBlock, stmt);
+    newBlock->bbCodeOffs    = insertAfter->bbCodeOffsEnd;
+    newBlock->bbCodeOffsEnd = insertAfter->bbCodeOffsEnd;
+    if (updateSideEffects)
+    {
+        comp->gtUpdateStmtSideEffects(stmt);
+    }
+    return newBlock;
+}
+
 //------------------------------------------------------------------------
 // fgUseThrowHelperBlocks: Determinate does compiler use throw helper blocks.
 //
