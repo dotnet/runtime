@@ -7768,17 +7768,16 @@ HRESULT DacStackReferenceWalker::Next(ULONG count, DacGcReference stackRefs[], U
     {
         stackRefs[i].dwType = CorReferenceStack;
         stackRefs[i].vmDomain.SetDacTargetPtr(domain);
+        stackRefs[i].i64ExtraData = 0;
 
         const SOSStackRefData &sosStackRef = mList.Get(i);
         if (sosStackRef.Flags & GC_CALL_INTERIOR)
         {
-            stackRefs[i].i64ExtraData = GC_CALL_INTERIOR;
-            stackRefs[i].objHnd.SetDacTargetPtr(CLRDATA_ADDRESS_TO_TADDR(sosStackRef.Address));
+            stackRefs[i].pObject = CLRDATA_ADDRESS_TO_TADDR(sosStackRef.Object) | 1;
         }
         else
         {
-            stackRefs[i].i64ExtraData = 0;
-            stackRefs[i].pObject = CLRDATA_ADDRESS_TO_TADDR(sosStackRef.Object) | 1;
+            stackRefs[i].objHnd.SetDacTargetPtr(CLRDATA_ADDRESS_TO_TADDR(sosStackRef.Address));
         }
     }
 
