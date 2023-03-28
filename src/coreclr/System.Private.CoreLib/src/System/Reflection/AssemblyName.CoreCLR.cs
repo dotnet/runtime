@@ -106,41 +106,46 @@ namespace System.Reflection
         internal void SetProcArchIndex(PortableExecutableKinds pek, ImageFileMachine ifm)
         {
 #pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete
-            ProcessorArchitecture = CalculateProcArch(pek, ifm, _flags);
+            ProcessorArchitecture = CalculateProcArchIndex(pek, ifm, _flags);
 #pragma warning restore SYSLIB0037
         }
 
-        private static ProcessorArchitecture CalculateProcArch(PortableExecutableKinds pek, ImageFileMachine ifm, AssemblyNameFlags aFlags)
+        private static ProcessorArchitecture CalculateProcArchIndex(PortableExecutableKinds pek, ImageFileMachine ifm, AssemblyNameFlags flags)
         {
-            // 0x70 specifies "reference assembly".
-            // For these, CLR wants to return None as arch so they can be always loaded, regardless of process type.
-            if (((uint)aFlags & 0xF0) == 0x70)
+            if (((uint)flags & 0xF0) == 0x70)
                 return ProcessorArchitecture.None;
 
-            switch (ifm)
+            if ((pek & PortableExecutableKinds.PE32Plus) == PortableExecutableKinds.PE32Plus)
             {
-                case ImageFileMachine.IA64:
-                    return ProcessorArchitecture.IA64;
-                case ImageFileMachine.ARM:
-                    return ProcessorArchitecture.Arm;
-                case ImageFileMachine.AMD64:
-                    return ProcessorArchitecture.Amd64;
-                case ImageFileMachine.I386:
-                    {
-                        if ((pek & PortableExecutableKinds.ILOnly) != 0 &&
-                            (pek & PortableExecutableKinds.Required32Bit) == 0)
-                        {
-                            // platform neutral.
+                switch (ifm)
+                {
+                    case ImageFileMachine.IA64:
+                        return ProcessorArchitecture.IA64;
+                    case ImageFileMachine.AMD64:
+                        return ProcessorArchitecture.Amd64;
+                    case ImageFileMachine.I386:
+                        if ((pek & PortableExecutableKinds.ILOnly) == PortableExecutableKinds.ILOnly)
                             return ProcessorArchitecture.MSIL;
-                        }
-
-                        // requires x86
-                        return ProcessorArchitecture.X86;
-                    }
+                        break;
+                }
             }
+            else
+            {
+                if (ifm == ImageFileMachine.I386)
+                {
+                    if ((pek & PortableExecutableKinds.Required32Bit) == PortableExecutableKinds.Required32Bit)
+                        return ProcessorArchitecture.X86;
 
-            // ProcessorArchitecture is a legacy API and does not cover other Machine kinds.
-            // For example ARM64 is not expressible
+                    if ((pek & PortableExecutableKinds.ILOnly) == PortableExecutableKinds.ILOnly)
+                        return ProcessorArchitecture.MSIL;
+
+                    return ProcessorArchitecture.X86;
+                }
+                if (ifm == ImageFileMachine.ARM)
+                {
+                    return ProcessorArchitecture.Arm;
+                }
+            }
             return ProcessorArchitecture.None;
         }
 
