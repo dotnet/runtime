@@ -400,6 +400,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Nls.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.WebAssembly.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ThaiBuddhistCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanFormat.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanParse.cs" />
