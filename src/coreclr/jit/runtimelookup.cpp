@@ -224,7 +224,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 }
 
                 GenTree* ctxTree = call->gtArgs.GetArgByIndex(0)->GetNode();
-                GenTree* sigNode = call->gtArgs.GetArgByIndex(1)->GetNode();
 
                 // Prepare slotPtr tree (TODO: consider sharing this part with impRuntimeLookup)
                 GenTree* slotPtrTree   = gtCloneExpr(ctxTree);
@@ -272,15 +271,15 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 //     ...
                 //
                 // nullcheckBb(BBJ_COND):               [weight: 1.0]
-                //     if (*fastPathValue != null)
-                //         goto fastPathBb;
+                //     if (*fastPathValue == null)
+                //         goto fallbackBb;
                 //
-                // fallbackBb(BBJ_ALWAYS):              [weight: 0.2]
-                //     rtLookupLcl = HelperCall();
+                // fastPathBb(BBJ_ALWAYS):              [weight: 1.0]
+                //     rtLookupLcl = *fastPathValue;
                 //     goto block;
                 //
-                // fastPathBb(BBJ_NONE):                [weight: 0.8]
-                //     rtLookupLcl = *fastPathValue;
+                // fallbackBb(BBJ_NONE):                [weight: 0.0]
+                //     rtLookupLcl = HelperCall();
                 //
                 // block(...):                          [weight: 1.0]
                 //     use(rtLookupLcl);
@@ -292,20 +291,21 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 // Save dictionary slot to a local (to be used by fast path)
                 GenTree* fastPathValueClone =
                     opts.OptimizationEnabled() ? fgMakeMultiUse(&fastPathValue) : gtCloneExpr(fastPathValue);
-                GenTree* nullcheckOp = gtNewOperNode(GT_NE, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
+                GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
                 nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
                 BasicBlock* nullcheckBb =
                     CreateBlockFromTree(this, prevBb, BBJ_COND, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
                                         debugInfo);
 
-                // Fast-path basic block
-                GenTree*    asgFastpathValue = gtNewAssignNode(gtClone(rtLookupLcl), fastPathValueClone);
-                BasicBlock* fastPathBb = CreateBlockFromTree(this, nullcheckBb, BBJ_NONE, asgFastpathValue, debugInfo);
-
                 // Fallback basic block
                 GenTree*    asgFallbackValue = gtNewAssignNode(gtClone(rtLookupLcl), call);
                 BasicBlock* fallbackBb =
-                    CreateBlockFromTree(this, nullcheckBb, BBJ_ALWAYS, asgFallbackValue, debugInfo, true);
+                    CreateBlockFromTree(this, nullcheckBb, BBJ_NONE, asgFallbackValue, debugInfo, true);
+
+                // Fast-path basic block
+                GenTree*    asgFastpathValue = gtNewAssignNode(gtClone(rtLookupLcl), fastPathValueClone);
+                BasicBlock* fastPathBb =
+                    CreateBlockFromTree(this, nullcheckBb, BBJ_ALWAYS, asgFastpathValue, debugInfo);
 
                 BasicBlock* sizeCheckBb = nullptr;
                 if (needsSizeCheck)
@@ -319,16 +319,16 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     //         goto fallbackBb;
                     //     ...
                     //
-                    // nullcheckBb(BBJ_COND):               [weight: 0.8]
-                    //     if (*fastPathValue != null)
-                    //         goto fastPathBb;
+                    // nullcheckBb(BBJ_COND):               [weight: 1.0]
+                    //     if (*fastPathValue == null)
+                    //         goto fallbackBb;
                     //
-                    // fallbackBb(BBJ_ALWAYS):              [weight: 0.36]
-                    //     rtLookupLcl = HelperCall();
+                    // fastPathBb(BBJ_ALWAYS):              [weight: 1.0]
+                    //     rtLookupLcl = *fastPathValue;
                     //     goto block;
                     //
-                    // fastPathBb(BBJ_NONE):                [weight: 0.64]
-                    //     rtLookupLcl = *fastPathValue;
+                    // fallbackBb(BBJ_NONE):                [weight: 0.0]
+                    //     rtLookupLcl = HelperCall();
                     //
                     // block(...):                          [weight: 1.0]
                     //     use(rtLookupLcl);
@@ -357,8 +357,8 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 fgRemoveRefPred(block, prevBb);
                 fgAddRefPred(block, fastPathBb);
                 fgAddRefPred(block, fallbackBb);
-                nullcheckBb->bbJumpDest = fastPathBb;
-                fallbackBb->bbJumpDest  = block;
+                nullcheckBb->bbJumpDest = fallbackBb;
+                fastPathBb->bbJumpDest  = block;
 
                 if (needsSizeCheck)
                 {
@@ -386,27 +386,15 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 
                 //
                 // Re-distribute weights (see '[weight: X]' on the diagrams above)
-                // TODO: consider marking fallbackBb as rarely-taken
                 //
                 block->inheritWeight(prevBb);
                 if (needsSizeCheck)
                 {
                     sizeCheckBb->inheritWeight(prevBb);
-                    // 80% chance we pass nullcheck
-                    nullcheckBb->inheritWeightPercentage(sizeCheckBb, 80);
-                    // 64% (0.8 * 0.8) chance we pass both nullcheck and sizecheck
-                    fastPathBb->inheritWeightPercentage(nullcheckBb, 80);
-                    // 100-64=36% chance we fail either nullcheck or sizecheck
-                    fallbackBb->inheritWeightPercentage(sizeCheckBb, 36);
                 }
-                else
-                {
-                    nullcheckBb->inheritWeight(prevBb);
-                    // 80% chance we pass nullcheck
-                    fastPathBb->inheritWeightPercentage(nullcheckBb, 80);
-                    // 20% chance we fail nullcheck (TODO: Consider making it cold (0%))
-                    fallbackBb->inheritWeightPercentage(nullcheckBb, 20);
-                }
+                nullcheckBb->inheritWeight(prevBb);
+                fastPathBb->inheritWeight(prevBb);
+                fallbackBb->bbSetRunRarely();
 
                 //
                 // Update loop info if loop table is known to be valid
@@ -447,5 +435,12 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
         }
     }
 
+    if (result == PhaseStatus::MODIFIED_EVERYTHING)
+    {
+        if (opts.OptimizationEnabled())
+        {
+            fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
+        }
+    }
     return result;
 }
