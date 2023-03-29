@@ -163,11 +163,10 @@ namespace Microsoft.Interop.JavaScript
                         return new JSInvalidTypeInfo();
                     }
                     return new JSFunctionTypeInfo(false, signatureTypes);
-
-                // struct with inline array attribute
-                case { TypeKind: TypeKind.Struct } structType when structType.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == "System.Runtime.CompilerServices.InlineArrayAttribute"):
-                    return new JSInvalidTypeInfo();
                 default:
+                    // JS Interop generator does not support the marshalling of structs
+                    // In case structs were to be allowed for marshalling in the future,
+                    // disallow marshalling of structs with the InlineArrayAttribute
                     return new JSInvalidTypeInfo();
             }
         }

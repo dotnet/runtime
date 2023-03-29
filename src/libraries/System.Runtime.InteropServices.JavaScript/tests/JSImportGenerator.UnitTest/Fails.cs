@@ -49,9 +49,6 @@ namespace JSImportGenerator.Unit.Tests
                 "Parameters with 'in', 'out' and 'ref' modifiers are not supported by source-generated JavaScript interop. The generated source will not handle marshalling of parameter 'a2'.",
                 "Parameters with 'in', 'out' and 'ref' modifiers are not supported by source-generated JavaScript interop. The generated source will not handle marshalling of parameter 'a3'.",
             }, null };
-            yield return new object?[] { CodeSnippets.InlineArrayAttributeUnsupported, new string[] {
-                "The type 'Basic.MyArray' is not supported by source-generated JavaScript interop. The generated source will not handle marshalling of parameter 'array'.",
-            }, null };
         }
 
         [Theory]

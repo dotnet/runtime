@@ -86,7 +86,6 @@ namespace Microsoft.Interop.UnitTests
                 "CS0234", // Missing type or namespace - LibraryImportAttribute
                 "CS0246", // Missing type or namespace - LibraryImportAttribute
                 "CS8019", // Unnecessary using
-                "CS0169", // Field is never used
             };
 
             foreach (string diagnostic in additionalAllowedDiagnostics)
