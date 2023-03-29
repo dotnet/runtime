@@ -439,6 +439,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
     {
         if (opts.OptimizationEnabled())
         {
+            fgReorderBlocks(false);
             fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
         }
     }
