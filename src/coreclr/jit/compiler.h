@@ -6068,7 +6068,7 @@ private:
     PhaseStatus fgMarkAddressExposedLocals();
     void fgSequenceLocals(Statement* stmt);
 
-    PhaseStatus PromoteStructsNew();
+    PhaseStatus GeneralizedPromotion();
 
     PhaseStatus fgForwardSub();
     bool fgForwardSubBlock(BasicBlock* block);
