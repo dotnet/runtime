@@ -21,6 +21,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         private readonly TaskCompletionSource<object?> _serviceStopped = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly ManualResetEventSlim _delayStop = new ManualResetEventSlim();
         private readonly HostOptions _hostOptions;
+        private bool _isStopped;
 
         /// <summary>
         /// Initializes a new <see cref="WindowsServiceLifetime"/> instance.
@@ -98,8 +99,12 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            // Stop will cause the ServiceBase.Run method to complete and return, which completes _serviceStopped.
-            Task.Run(Stop, CancellationToken.None);
+            if (!_isStopped)
+            {
+                Task.Run(Stop, CancellationToken.None);
+            }
+
+            // When the underlying service is stopped this will cause the ServiceBase.Run method to complete and return, which completes _serviceStopped.
             return _serviceStopped.Task;
         }
 
@@ -117,6 +122,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         /// <remarks>This might be called multiple times by service Stop, ApplicationStopping, and StopAsync. That's okay because StopApplication uses a CancellationTokenSource and prevents any recursion.</remarks>
         protected override void OnStop()
         {
+            _isStopped = true;
             ApplicationLifetime.StopApplication();
             // Wait for the host to shutdown before marking service as stopped.
             _delayStop.Wait(_hostOptions.ShutdownTimeout);
@@ -128,6 +134,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         /// </summary>
         protected override void OnShutdown()
         {
+            _isStopped = true;
             ApplicationLifetime.StopApplication();
             // Wait for the host to shutdown before marking service as stopped.
             _delayStop.Wait(_hostOptions.ShutdownTimeout);
