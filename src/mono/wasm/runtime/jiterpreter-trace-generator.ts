@@ -145,7 +145,7 @@ export function generate_wasm_body (
     backwardBranchTable: Uint16Array | null
 ) : number {
     const abort = <MintOpcodePtr><any>0;
-    let isFirstInstruction = true, inBranchBlock = false,
+    let isFirstInstruction = true, isConditionallyExecuted = false,
         firstOpcodeInBlock = true;
     let result = 0,
         prologueOpcodeCounter = 0,
@@ -166,6 +166,8 @@ export function generate_wasm_body (
 
         if (ip >= endOfBody) {
             record_abort(traceIp, ip, traceName, "end-of-body");
+            if (instrumentedTraceId)
+                console.log(`instrumented trace ${traceName} exited at end of body @${(<any>ip).toString(16)}`);
             break;
         }
 
@@ -177,6 +179,8 @@ export function generate_wasm_body (
         if (builder.size >= spaceLeft) {
             // console.log(`trace too big, estimated size is ${builder.size + builder.bytesGeneratedSoFar}`);
             record_abort(traceIp, ip, traceName, "trace-too-big");
+            if (instrumentedTraceId)
+                console.log(`instrumented trace ${traceName} exited because of size limit at @${(<any>ip).toString(16)} (spaceLeft=${spaceLeft}b)`);
             break;
         }
 
@@ -212,7 +216,7 @@ export function generate_wasm_body (
         // We record the offset of each backward branch we encounter, so that later branch
         //  opcodes know that it's available by branching to the top of the dispatch loop
         if (isBackBranchTarget) {
-            if (traceBackBranches)
+            if (traceBackBranches > 1)
                 console.log(`${traceName} recording back branch target 0x${(<any>ip).toString(16)}`);
             builder.backBranchOffsets.push(ip);
         }
@@ -226,7 +230,7 @@ export function generate_wasm_body (
             //  otherwise loops will run forever and never terminate since after
             //  branching to the top of the loop we would blow away eip
             append_branch_target_block(builder, ip, isBackBranchTarget);
-            inBranchBlock = true;
+            isConditionallyExecuted = true;
             firstOpcodeInBlock = true;
             eraseInferredState();
             // Monitoring wants an opcode count that is a measurement of how many opcodes
@@ -326,12 +330,24 @@ export function generate_wasm_body (
             case MintOpcode.MINT_BRTRUE_I4_SP:
             case MintOpcode.MINT_BRFALSE_I8_S:
             case MintOpcode.MINT_BRTRUE_I8_S:
+                if (!emit_branch(builder, ip, frame, opcode))
+                    ip = abort;
+                else
+                    isConditionallyExecuted = true;
+                break;
+
             case MintOpcode.MINT_LEAVE_S:
             case MintOpcode.MINT_BR_S:
             case MintOpcode.MINT_CALL_HANDLER:
             case MintOpcode.MINT_CALL_HANDLER_S:
                 if (!emit_branch(builder, ip, frame, opcode))
                     ip = abort;
+                else
+                    // Technically incorrect, but the instructions following this one may not be executed
+                    //  since we might have skipped over them.
+                    // FIXME: Identify when we should actually set the conditionally executed flag, perhaps
+                    //  by doing a simple static flow analysis based on the displacements. Update heuristic too!
+                    isConditionallyExecuted = true;
                 break;
 
             case MintOpcode.MINT_CKNULL: {
@@ -390,7 +406,7 @@ export function generate_wasm_body (
                     // This is an unproductive heuristic if backward branches are on
                     !builder.options.noExitBackwardBranches
                 ) {
-                    if (!inBranchBlock || firstOpcodeInBlock) {
+                    if (!isConditionallyExecuted || firstOpcodeInBlock) {
                         // Use mono_jiterp_trace_transfer to call the target trace recursively
                         // Ideally we would import the trace function to do a direct call instead
                         //  of an indirect one, but right now the import section is generated
@@ -838,7 +854,7 @@ export function generate_wasm_body (
                     else
                         callTargetCounts[<any>targetMethod] = 1;
                 }
-                if (builder.branchTargets.size > 0) {
+                if (isConditionallyExecuted) {
                     // We generate a bailout instead of aborting, because we don't want calls
                     //  to abort the entire trace if we have branch support enabled - the call
                     //  might be infrequently hit and as a result it's worth it to keep going.
@@ -861,7 +877,7 @@ export function generate_wasm_body (
             case MintOpcode.MINT_CALLI_NAT_FAST:
             case MintOpcode.MINT_CALL_DELEGATE:
                 // See comments for MINT_CALL
-                if (builder.branchTargets.size > 0) {
+                if (isConditionallyExecuted) {
                     append_exit(builder, ip, exitOpcodeCounter,
                         opcode == MintOpcode.MINT_CALL_DELEGATE
                             ? BailoutReason.CallDelegate
@@ -881,7 +897,7 @@ export function generate_wasm_body (
             case MintOpcode.MINT_ICALL_PP_V:
             case MintOpcode.MINT_ICALL_PP_P:
                 // See comments for MINT_CALL
-                if (builder.branchTargets.size > 0) {
+                if (isConditionallyExecuted) {
                     append_bailout(builder, ip, BailoutReason.Icall);
                     isLowValueOpcode = true;
                 } else {
@@ -893,16 +909,10 @@ export function generate_wasm_body (
             //  MONO_RETHROW appears to show up in other places, so it's worth conditional bailout
             case MintOpcode.MINT_MONO_RETHROW:
             case MintOpcode.MINT_THROW:
-                // As above, only abort if this throw happens unconditionally.
-                // Otherwise, it may be in a branch that is unlikely to execute
-                if (builder.branchTargets.size > 0) {
-                    // Not an exit, because throws are by definition unlikely
-                    // We shouldn't make optimization decisions based on them.
-                    append_bailout(builder, ip, BailoutReason.Throw);
-                    isLowValueOpcode = true;
-                } else {
-                    ip = abort;
-                }
+                // Not an exit, because throws are by definition unlikely
+                // We shouldn't make optimization decisions based on them.
+                append_bailout(builder, ip, BailoutReason.Throw);
+                isLowValueOpcode = true;
                 break;
 
             case MintOpcode.MINT_ENDFINALLY:
@@ -1095,7 +1105,7 @@ export function generate_wasm_body (
                         (opcode <= MintOpcode.MINT_RET_I8_IMM)
                     )
                 ) {
-                    if ((builder.branchTargets.size > 0) || trapTraceErrors || builder.options.countBailouts) {
+                    if (isConditionallyExecuted || trapTraceErrors || builder.options.countBailouts) {
                         // Not an exit, because returns are normal and we don't want to make them more expensive.
                         // FIXME: Or do we want to record them? Early conditional returns might reduce the value of a trace,
                         //  but the main problem is more likely to be calls early in traces. Worth testing later.
@@ -1128,6 +1138,8 @@ export function generate_wasm_body (
                 } else if (relopbranchTable[opcode]) {
                     if (!emit_relop_branch(builder, ip, frame, opcode))
                         ip = abort;
+                    else
+                        isConditionallyExecuted = true;
                 } else if (
                     // instance ldfld/stfld
                     (opcode >= MintOpcode.MINT_LDFLD_I1) &&
@@ -1218,7 +1230,7 @@ export function generate_wasm_body (
             }
 
             if (!isLowValueOpcode) {
-                if (inBranchBlock)
+                if (isConditionallyExecuted)
                     conditionalOpcodeCounter++;
                 else
                     prologueOpcodeCounter++;
@@ -2424,7 +2436,7 @@ function emit_branch (
                     // We found a backward branch target we can branch to, so we branch out
                     //  to the top of the loop body
                     // append_safepoint(builder, ip);
-                    if (traceBackBranches)
+                    if (traceBackBranches > 1)
                         console.log(`performing backward branch to 0x${destination.toString(16)}`);
                     if (isCallHandler)
                         append_call_handler_store_ret_ip(builder, ip, frame, opcode);
@@ -2432,10 +2444,13 @@ function emit_branch (
                     counters.backBranchesEmitted++;
                     return true;
                 } else {
-                    if (traceBackBranches)
-                        console.log(`back branch target 0x${destination.toString(16)} not found`);
+                    if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
+                        console.log(`back branch target 0x${destination.toString(16)} not found in list ` +
+                            builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
+                        );
+                    cwraps.mono_jiterp_boost_back_branch_target(destination);
                     // FIXME: Should there be a safepoint here?
-                    append_bailout(builder, destination, displacement > 0 ? BailoutReason.Branch : BailoutReason.BackwardBranch);
+                    append_bailout(builder, destination, BailoutReason.BackwardBranch);
                     counters.backBranchesNotEmitted++;
                     return true;
                 }
@@ -2514,14 +2529,17 @@ function emit_branch (
         if (builder.backBranchOffsets.indexOf(destination) >= 0) {
             // We found a backwards branch target we can reach via our outer trace loop, so
             //  we update eip and branch out to the top of the loop block
-            if (traceBackBranches)
+            if (traceBackBranches > 1)
                 console.log(`performing conditional backward branch to 0x${destination.toString(16)}`);
             builder.cfg.branch(destination, true, true);
             counters.backBranchesEmitted++;
         } else {
-            if (traceBackBranches)
-                console.log(`back branch target 0x${destination.toString(16)} not found`);
+            if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
+                console.log(`back branch target 0x${destination.toString(16)} not found in list ` +
+                    builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
+                );
             // We didn't find a loop to branch to, so bail out
+            cwraps.mono_jiterp_boost_back_branch_target(destination);
             append_bailout(builder, destination, BailoutReason.BackwardBranch);
             counters.backBranchesNotEmitted++;
         }
