@@ -5104,9 +5104,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Now that lowering is completed we can proceed to perform register allocation
     //
-    // // LSRA block ordering depends on bbNum. Renumber the blocks, if necessary, before LSRA.
-    // fgDomsComputed = false;
-    // fgRenumberBlocks();
     auto linearScanPhase = [this]() { m_pLinearScan->doLinearScan(); };
     DoPhase(this, PHASE_LINEAR_SCAN, linearScanPhase);
 
