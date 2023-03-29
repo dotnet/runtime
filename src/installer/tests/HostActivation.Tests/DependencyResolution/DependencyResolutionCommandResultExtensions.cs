@@ -162,6 +162,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .And.HaveStdErrContaining($"probe type=lookup dir=[{path}]");
         }
 
+        public static AndConstraint<CommandResultAssertions> HaveReadRidGraph(this CommandResultAssertions assertion, bool readRidGraph)
+        {
+            string ridGraphMsg = "RID fallback graph =";
+            string hostRidsMsg = "Host RID list =";
+            return readRidGraph
+                ? assertion.HaveStdErrContaining(ridGraphMsg).And.NotHaveStdErrContaining(hostRidsMsg)
+                : assertion.HaveStdErrContaining(hostRidsMsg).And.NotHaveStdErrContaining(ridGraphMsg);
+        }
+
         public static AndConstraint<CommandResultAssertions> HaveUsedFallbackRid(this CommandResultAssertions assertion, bool usedFallbackRid)
         {
             string msg = "Falling back to base HostRID";
