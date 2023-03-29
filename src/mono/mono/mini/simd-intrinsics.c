@@ -3170,12 +3170,12 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_ShiftArithmeticScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SSHL},
 	{SN_ShiftLeftAndInsert, OP_ARM64_SLI},
 	{SN_ShiftLeftAndInsertScalar, OP_ARM64_SLI},
-	{SN_ShiftLeftLogical, OP_ARM64_SHL},
+	{SN_ShiftLeftLogical, OP_SHL},
 	{SN_ShiftLeftLogicalSaturate},
 	{SN_ShiftLeftLogicalSaturateScalar},
 	{SN_ShiftLeftLogicalSaturateUnsigned, OP_ARM64_SQSHLU},
 	{SN_ShiftLeftLogicalSaturateUnsignedScalar, OP_ARM64_SQSHLU_SCALAR},
-	{SN_ShiftLeftLogicalScalar, OP_ARM64_SHL},
+	{SN_ShiftLeftLogicalScalar, OP_SHL},
 	{SN_ShiftLeftLogicalWideningLower, OP_SSHLL, None, OP_USHLL},
 	{SN_ShiftLeftLogicalWideningUpper, OP_SSHLL2, None, OP_USHLL2},
 	{SN_ShiftLogical, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_USHL},
@@ -3188,9 +3188,9 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_ShiftLogicalScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_USHL},
 	{SN_ShiftRightAndInsert, OP_ARM64_SRI},
 	{SN_ShiftRightAndInsertScalar, OP_ARM64_SRI},
-	{SN_ShiftRightArithmetic, OP_ARM64_SSHR},
-	{SN_ShiftRightArithmeticAdd, OP_ARM64_SSRA},
-	{SN_ShiftRightArithmeticAddScalar, OP_ARM64_SSRA},
+	{SN_ShiftRightArithmetic, OP_SSHR},
+	{SN_ShiftRightArithmeticAdd, OP_SSRA},
+	{SN_ShiftRightArithmeticAddScalar, OP_SSRA},
 	{SN_ShiftRightArithmeticNarrowingSaturateLower, OP_ARM64_XNSHIFT, INTRINS_AARCH64_ADV_SIMD_SQSHRN},
 	{SN_ShiftRightArithmeticNarrowingSaturateScalar, OP_ARM64_XNSHIFT_SCALAR, INTRINS_AARCH64_ADV_SIMD_SQSHRN},
 	{SN_ShiftRightArithmeticNarrowingSaturateUnsignedLower, OP_ARM64_XNSHIFT, INTRINS_AARCH64_ADV_SIMD_SQSHRUN},
@@ -3207,10 +3207,10 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper, OP_ARM64_XNSHIFT2, INTRINS_AARCH64_ADV_SIMD_SQRSHRUN},
 	{SN_ShiftRightArithmeticRoundedNarrowingSaturateUpper, OP_ARM64_XNSHIFT2, INTRINS_AARCH64_ADV_SIMD_SQRSHRN},
 	{SN_ShiftRightArithmeticRoundedScalar, OP_ARM64_SRSHR},
-	{SN_ShiftRightArithmeticScalar, OP_ARM64_SSHR},
-	{SN_ShiftRightLogical, OP_ARM64_USHR},
-	{SN_ShiftRightLogicalAdd, OP_ARM64_USRA},
-	{SN_ShiftRightLogicalAddScalar, OP_ARM64_USRA},
+	{SN_ShiftRightArithmeticScalar, OP_SSHR},
+	{SN_ShiftRightLogical, OP_USHR},
+	{SN_ShiftRightLogicalAdd, OP_USRA},
+	{SN_ShiftRightLogicalAddScalar, OP_USRA},
 	{SN_ShiftRightLogicalNarrowingLower, OP_ARM64_SHRN},
 	{SN_ShiftRightLogicalNarrowingSaturateLower, OP_ARM64_XNSHIFT, INTRINS_AARCH64_ADV_SIMD_UQSHRN},
 	{SN_ShiftRightLogicalNarrowingSaturateScalar, OP_ARM64_XNSHIFT_SCALAR, INTRINS_AARCH64_ADV_SIMD_UQSHRN},
@@ -3225,7 +3225,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_ShiftRightLogicalRoundedNarrowingSaturateUpper, OP_ARM64_XNSHIFT2, INTRINS_AARCH64_ADV_SIMD_UQRSHRN},
 	{SN_ShiftRightLogicalRoundedNarrowingUpper, OP_ARM64_XNSHIFT2, INTRINS_AARCH64_ADV_SIMD_RSHRN},
 	{SN_ShiftRightLogicalRoundedScalar, OP_ARM64_URSHR},
-	{SN_ShiftRightLogicalScalar, OP_ARM64_USHR},
+	{SN_ShiftRightLogicalScalar, OP_USHR},
 	{SN_SignExtendWideningLower, OP_ARM64_SXTL},
 	{SN_SignExtendWideningUpper, OP_ARM64_SXTL2},
 	{SN_Sqrt, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT},
@@ -4708,6 +4708,9 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Multiply},
 	{SN_Negate},
 	{SN_ReplaceLane},
+	{SN_ShiftLeft},
+	{SN_ShiftRightArithmetic},
+	{SN_ShiftRightLogical},
 	{SN_Shuffle},
 	{SN_Splat},
 	{SN_Subtract},
@@ -4839,6 +4842,12 @@ emit_wasm_supported_intrinsics (
 				ins->inst_c1 = arg0_type;
 				return ins;
 			}
+			case SN_ShiftLeft:
+				return emit_simd_ins_for_sig (cfg, klass, OP_SHL, -1, -1, fsig, args);
+			case SN_ShiftRightArithmetic:
+				return emit_simd_ins_for_sig (cfg, klass, OP_SSHR, -1, -1, fsig, args);
+			case SN_ShiftRightLogical:
+				return emit_simd_ins_for_sig (cfg, klass, OP_USHR, -1, -1, fsig, args);
 			case SN_Splat: {
 				MonoType *etype = get_vector_t_elem_type (fsig->ret);
 				g_assert (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype));

@@ -128,6 +128,7 @@ private:
     // ------------------------------
     GenTree* LowerCall(GenTree* call);
     GenTree* LowerCallMemmove(GenTreeCall* call);
+    GenTree* LowerCallMemcmp(GenTreeCall* call);
     void LowerCFGCall(GenTreeCall* call);
     void MoveCFGCallArg(GenTreeCall* call, GenTree* node);
 #ifndef TARGET_64BIT

@@ -49,6 +49,18 @@ static gint32 inflated_classes_size;
 gint32 mono_inflated_methods_size;
 static gint32 class_def_count, class_gtd_count, class_ginst_count, class_gparam_count, class_array_count, class_pointer_count;
 
+typedef struct {
+	/* inputs */
+	const char *nspace;
+	const char *name;
+	gboolean in_corlib;
+	gboolean has_value;
+	MonoHasValueCallback has_value_callback;
+	/* output */
+	gboolean has_attr;
+	gpointer value;
+} FoundAttrUD;
+
 /* Low level lock which protects data structures in this module */
 static mono_mutex_t classes_mutex;
 
@@ -56,7 +68,8 @@ static gboolean class_kind_may_contain_generic_instances (MonoTypeKind kind);
 static void mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gtd);
 static int generic_array_methods (MonoClass *klass);
 static void setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **methods, int pos, GHashTable *cache);
-static gboolean class_has_isbyreflike_attribute (MonoClass *klass);
+static FoundAttrUD class_has_isbyreflike_attribute (MonoClass *klass);
+static FoundAttrUD class_has_inlinearray_attribute (MonoClass *klass);
 
 static
 GENERATE_TRY_GET_CLASS_WITH_CACHE(icollection, "System.Collections.Generic", "ICollection`1");
@@ -291,6 +304,9 @@ mono_class_setup_fields (MonoClass *klass)
 		instance_size = MONO_ABI_SIZEOF (MonoObject);
 	}
 
+	if (m_class_is_inlinearray (klass) && m_class_inlinearray_value (klass) <= 0)
+		mono_class_set_type_load_failure (klass, "Inline array length property must be positive.");
+
 	/* Get the real size */
 	explicit_size = mono_metadata_packing_from_typedef (klass->image, klass->type_token, &packing_size, &real_size);
 	if (explicit_size)
@@ -357,6 +373,10 @@ mono_class_setup_fields (MonoClass *klass)
 			}
 			if (mono_class_is_gtd (klass)) {
 				mono_class_set_type_load_failure (klass, "Generic class cannot have explicit layout.");
+				break;
+			}
+			if (m_class_is_inlinearray (klass)) {
+				mono_class_set_type_load_failure (klass, "Inline array struct must not have explicit layout.");
 				break;
 			}
 		}
@@ -699,9 +719,17 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		mono_get_runtime_callbacks ()->init_class (klass);
 
 	// compute is_byreflike
-	if (m_class_is_valuetype (klass))
-		if (class_has_isbyreflike_attribute (klass))
+	if (m_class_is_valuetype (klass)) {
+		FoundAttrUD attr;
+		attr = class_has_isbyreflike_attribute (klass);
+		if (attr.has_attr)
 			klass->is_byreflike = 1;
+		attr = class_has_inlinearray_attribute (klass);
+		if (attr.has_attr) {
+			klass->is_inlinearray = 1;
+			klass->inlinearray_value = GPOINTER_TO_INT32 (attr.value);
+		}
+	}
 
 	mono_loader_unlock ();
 
@@ -746,22 +774,15 @@ mono_generic_class_setup_parent (MonoClass *klass, MonoClass *gtd)
 	mono_loader_unlock ();
 }
 
-struct FoundAttrUD {
-	/* inputs */
-	const char *nspace;
-	const char *name;
-	gboolean in_corlib;
-	/* output */
-	gboolean has_attr;
-};
-
 static gboolean
-has_wellknown_attribute_func (MonoImage *image, guint32 typeref_scope_token, const char *nspace, const char *name, guint32 method_token, gpointer user_data)
+has_wellknown_attribute_func (MonoImage *image, guint32 typeref_scope_token, const char *nspace, const char *name, guint32 method_token, guint32 *cols, gpointer user_data)
 {
-	struct FoundAttrUD *has_attr = (struct FoundAttrUD *)user_data;
-	if (!strcmp (name, has_attr->name) && !strcmp (nspace, has_attr->nspace)) {
-		has_attr->has_attr = TRUE;
-		return TRUE;
+	FoundAttrUD *attr = (FoundAttrUD *)user_data;
+	if (!strcmp (name, attr->name) && !strcmp (nspace, attr->nspace)) {
+		if (attr->has_value_callback != NULL) {
+			attr->has_value_callback (image, method_token, cols, user_data);
+		}
+		attr->has_attr = TRUE;
 	}
 	/* TODO: use typeref_scope_token to check that attribute comes from
 	 * corlib if in_corlib is TRUE, without triggering an assembly load.
@@ -769,42 +790,71 @@ has_wellknown_attribute_func (MonoImage *image, guint32 typeref_scope_token, con
 	 * MONO_RESOLUTION_SCOPE_MODULE I think, if we're outside it'll be an
 	 * MONO_RESOLUTION_SCOPE_ASSEMBLYREF and we'll need to check the
 	 * name.*/
-	return FALSE;
+	return attr->has_attr;
 }
 
-static gboolean
-class_has_wellknown_attribute (MonoClass *klass, const char *nspace, const char *name, gboolean in_corlib)
+static void
+has_inline_array_attribute_value_func (MonoImage *image, uint32_t method_token, uint32_t *cols, gpointer user_data)
 {
-	struct FoundAttrUD has_attr;
-	has_attr.nspace = nspace;
-	has_attr.name = name;
-	has_attr.in_corlib = in_corlib;
-	has_attr.has_attr = FALSE;
-
-	mono_class_metadata_foreach_custom_attr (klass, has_wellknown_attribute_func, &has_attr);
-
-	return has_attr.has_attr;
+	FoundAttrUD *attr = (FoundAttrUD *)user_data;
+	MonoError error;
+	MonoMethod *ctor = mono_get_method_checked (image, method_token, NULL, NULL, &error);
+	if (ctor) {
+		const char *data = mono_metadata_blob_heap (image, cols [MONO_CUSTOM_ATTR_VALUE]);
+		uint32_t data_size = mono_metadata_decode_value (data, &data);
+		MonoDecodeCustomAttr *decoded_attr = mono_reflection_create_custom_attr_data_args_noalloc (image, ctor, (guchar*)data, data_size, &error);
+		mono_error_assert_ok (&error);
+		g_assert (decoded_attr->named_args_num == 0 && decoded_attr->typed_args_num == 1);
+		attr->value = *(gpointer*)decoded_attr->typed_args [0]->value.primitive;
+		g_free (decoded_attr);
+	} else {
+		g_warning ("Can't find custom attr constructor image: %s mtoken: 0x%08x due to: %s", image->name, method_token, mono_error_get_message (&error));
+	}
 }
 
-static gboolean
-method_has_wellknown_attribute (MonoMethod *method, const char *nspace, const char *name, gboolean in_corlib)
+static FoundAttrUD
+class_has_wellknown_attribute (MonoClass *klass, const char *nspace, const char *name, gboolean in_corlib, gboolean has_value, MonoHasValueCallback callback)
 {
-	struct FoundAttrUD has_attr;
-	has_attr.nspace = nspace;
-	has_attr.name = name;
-	has_attr.in_corlib = in_corlib;
-	has_attr.has_attr = FALSE;
+	FoundAttrUD attr;
+	attr.nspace = nspace;
+	attr.name = name;
+	attr.in_corlib = in_corlib;
+	attr.has_attr = FALSE;
+	attr.has_value = has_value;
+	attr.has_value_callback = callback;
 
-	mono_method_metadata_foreach_custom_attr (method, has_wellknown_attribute_func, &has_attr);
+	mono_class_metadata_foreach_custom_attr (klass, has_wellknown_attribute_func, &attr);
 
-	return has_attr.has_attr;
+	return attr;
+}
+
+static FoundAttrUD
+method_has_wellknown_attribute (MonoMethod *method, const char *nspace, const char *name, gboolean in_corlib, gboolean has_value, MonoHasValueCallback callback)
+{
+	FoundAttrUD attr;
+	attr.nspace = nspace;
+	attr.name = name;
+	attr.in_corlib = in_corlib;
+	attr.has_attr = FALSE;
+	attr.has_value = has_value;
+	attr.has_value_callback = callback;
+
+	mono_method_metadata_foreach_custom_attr (method, has_wellknown_attribute_func, &attr);
+
+	return attr;
 }
 
 
-static gboolean
+static FoundAttrUD
 class_has_isbyreflike_attribute (MonoClass *klass)
 {
-	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "IsByRefLikeAttribute", TRUE);
+	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "IsByRefLikeAttribute", TRUE, FALSE, NULL);
+}
+
+static FoundAttrUD
+class_has_inlinearray_attribute (MonoClass *klass)
+{
+	return class_has_wellknown_attribute (klass, "System.Runtime.CompilerServices", "InlineArrayAttribute", TRUE, TRUE, has_inline_array_attribute_value_func);
 }
 
 
@@ -815,7 +865,8 @@ mono_class_setup_method_has_preserve_base_overrides_attribute (MonoMethod *metho
 	/* FIXME: implement well known attribute check for dynamic images */
 	if (image_is_dynamic (image))
 		return FALSE;
-	return method_has_wellknown_attribute (method, "System.Runtime.CompilerServices", "PreserveBaseOverridesAttribute", TRUE);
+	FoundAttrUD attr = method_has_wellknown_attribute (method, "System.Runtime.CompilerServices", "PreserveBaseOverridesAttribute", TRUE, FALSE, NULL);
+	return attr.has_attr;
 }
 
 static gboolean
@@ -868,6 +919,8 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	klass->this_arg.type = m_class_get_byval_arg (klass)->type;
 	klass->this_arg.data.generic_class = klass->_byval_arg.data.generic_class = gclass;
 	klass->this_arg.byref__ = TRUE;
+	klass->is_inlinearray = gklass->is_inlinearray;
+	klass->inlinearray_value = gklass->inlinearray_value;
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 
@@ -2184,6 +2237,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			real_size = MONO_ABI_SIZEOF (MonoObject);
 		}
 
+		guint32 inlined_fields = 0;
 		for (pass = 0; pass < passes; ++pass) {
 			for (i = 0; i < top; i++){
 				gint32 align;
@@ -2217,6 +2271,17 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				}
 
 				size = mono_type_size (field->type, &align);
+				if (m_class_is_inlinearray (klass)) {
+					// Limit the max size of array instance to 1MiB
+					const guint32 struct_max_size = 1024 * 1024;
+					// If size overflows, it returns 0
+					size *= m_class_inlinearray_value (klass);
+					inlined_fields++;
+					if(size == 0 || size > struct_max_size) {
+						mono_class_set_type_load_failure (klass, "Inline array struct size out of bounds, abnormally large.");
+						break;
+					}
+				}
 
 				/* FIXME (LAMESPEC): should we also change the min alignment according to pack? */
 				align = packing_size ? MIN (packing_size, align): align;
@@ -2244,6 +2309,8 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 				instance_size &= ~(min_align - 1);
 			}
 		}
+		if (m_class_is_inlinearray (klass) && inlined_fields != 1)
+			mono_class_set_type_load_failure (klass, "Inline array struct must have a single field.");
 		break;
 	case TYPE_ATTRIBUTE_EXPLICIT_LAYOUT: {
 		real_size = 0;

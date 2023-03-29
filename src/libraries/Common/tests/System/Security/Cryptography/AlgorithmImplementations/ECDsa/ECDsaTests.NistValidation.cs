@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         // SigGen.txt
 #if NETCOREAPP
         [Fact]
-        public static void ValidateNistP256Sha256()
+        public void ValidateNistP256Sha256()
         {
             byte[] msg = (
                 "5905238877c77421f73e43ee3da6f2d9e2ccad5fc942dcec0cbd25482935faaf" +
@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [Fact]
-        public static void ValidateNistP256Sha384()
+        public void ValidateNistP256Sha384()
         {
             byte[] msg = (
                 "e0b8596b375f3306bbc6e77a0b42f7469d7e83635990e74aa6d713594a3a2449" +
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [Fact]
-        public static void ValidateNistP384Sha256()
+        public void ValidateNistP384Sha256()
         {
             byte[] msg = (
                 "663b12ebf44b7ed3872b385477381f4b11adeb0aec9e0e2478776313d536376d" +
@@ -126,7 +126,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [Fact]
-        public static void ValidateNistP384Sha512()
+        public void ValidateNistP384Sha512()
         {
             byte[] msg = (
                 "67d9eb88f289454d61def4764d1573db49b875cfb11e139d7eacc4b7a79d3db3" +
@@ -165,7 +165,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [Fact]
-        public static void ValidateNistP521Sha384()
+        public void ValidateNistP521Sha384()
         {
             byte[] msg = (
                 "dbc094402c5b559d53168c6f0c550d827499c6fb2186ae2db15b89b4e6f46220" +
@@ -206,7 +206,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         }
 
         [Fact]
-        public static void ValidateNistP521Sha512()
+        public void ValidateNistP521Sha512()
         {
             byte[] msg = (
                 "9ecd500c60e701404922e58ab20cc002651fdee7cbc9336adda33e4c1088fab1" +

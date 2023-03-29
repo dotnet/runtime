@@ -431,6 +431,22 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_AVX_X64:
         case InstructionSet_AVX2:
         case InstructionSet_AVX2_X64:
+        case InstructionSet_AVX512F:
+        case InstructionSet_AVX512F_VL:
+        case InstructionSet_AVX512F_VL_X64:
+        case InstructionSet_AVX512F_X64:
+        case InstructionSet_AVX512BW:
+        case InstructionSet_AVX512BW_VL:
+        case InstructionSet_AVX512BW_VL_X64:
+        case InstructionSet_AVX512BW_X64:
+        case InstructionSet_AVX512CD:
+        case InstructionSet_AVX512CD_VL:
+        case InstructionSet_AVX512CD_VL_X64:
+        case InstructionSet_AVX512CD_X64:
+        case InstructionSet_AVX512DQ:
+        case InstructionSet_AVX512DQ_VL:
+        case InstructionSet_AVX512DQ_VL_X64:
+        case InstructionSet_AVX512DQ_X64:
         case InstructionSet_AVXVNNI:
         case InstructionSet_AVXVNNI_X64:
         case InstructionSet_BMI1:
@@ -459,6 +475,7 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_SSE42_X64:
         case InstructionSet_Vector128:
         case InstructionSet_Vector256:
+        case InstructionSet_Vector512:
         case InstructionSet_X86Base:
         case InstructionSet_X86Base_X64:
         case InstructionSet_X86Serialize:
@@ -662,6 +679,19 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_AsUInt16:
         case NI_Vector256_AsUInt32:
         case NI_Vector256_AsUInt64:
+        case NI_Vector512_As:
+        case NI_Vector512_AsByte:
+        case NI_Vector512_AsDouble:
+        case NI_Vector512_AsInt16:
+        case NI_Vector512_AsInt32:
+        case NI_Vector512_AsInt64:
+        case NI_Vector512_AsNInt:
+        case NI_Vector512_AsNUInt:
+        case NI_Vector512_AsSByte:
+        case NI_Vector512_AsSingle:
+        case NI_Vector512_AsUInt16:
+        case NI_Vector512_AsUInt32:
+        case NI_Vector512_AsUInt64:
         {
             // We fold away the cast here, as it only exists to satisfy
             // the type system. It is safe to do this here since the retNode type
@@ -843,6 +873,52 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
             }
 
+            break;
+        }
+
+        case NI_Vector512_AsVector:
+        case NI_Vector512_AsVector512:
+        {
+            assert(sig->numArgs == 1);
+
+            if (getSIMDVectorRegisterByteLength() == YMM_REGSIZE_BYTES)
+            {
+                assert(IsBaselineVector512IsaSupported());
+                // We support Vector512 but Vector<T> is only 32-bytes, so we should
+                // treat this method as a call to Vector512.GetLower or Vector256.ToVector512
+
+                if (intrinsic == NI_Vector512_AsVector)
+                {
+                    return impSpecialIntrinsic(NI_Vector512_GetLower, clsHnd, method, sig, simdBaseJitType, retType,
+                                               simdSize);
+                }
+                else
+                {
+                    assert(intrinsic == NI_Vector512_AsVector512);
+                    return impSpecialIntrinsic(NI_Vector256_ToVector512, clsHnd, method, sig, simdBaseJitType, retType,
+                                               32);
+                }
+                break;
+            }
+
+            assert(getSIMDVectorRegisterByteLength() == XMM_REGSIZE_BYTES);
+            if (compExactlyDependsOn(InstructionSet_AVX512F))
+            {
+                // We support Vector512 but Vector<T> is only 16-bytes, so we should
+                // treat this method as a call to Vector512.GetLower128 or Vector128.ToVector512
+
+                if (intrinsic == NI_Vector512_AsVector)
+                {
+                    return impSpecialIntrinsic(NI_Vector512_GetLower128, clsHnd, method, sig, simdBaseJitType, retType,
+                                               simdSize);
+                }
+                else
+                {
+                    assert(intrinsic == NI_Vector512_AsVector512);
+                    return impSpecialIntrinsic(NI_Vector128_ToVector512, clsHnd, method, sig, simdBaseJitType, retType,
+                                               16);
+                }
+            }
             break;
         }
 
@@ -1324,6 +1400,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector512_ExtractMostSignificantBits:
         {
+#if defined(TARGET_X86)
+            // TODO-XARCH-CQ: It may be beneficial to decompose this operation
+            break;
+#endif // TARGET_X86
+
             if (IsBaselineVector512IsaSupported())
             {
                 var_types simdType = getSIMDTypeForSize(simdSize);
@@ -2336,7 +2417,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_ToVector256:
         case NI_Vector128_ToVector256Unsafe:
-        case NI_Vector256_ToVector512Unsafe:
         case NI_Vector256_GetLower:
         {
             assert(sig->numArgs == 1);
@@ -2346,6 +2426,20 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
             }
+            break;
+        }
+
+        case NI_Vector128_ToVector512:
+        case NI_Vector256_ToVector512:
+        case NI_Vector256_ToVector512Unsafe:
+        case NI_Vector512_GetLower:
+        case NI_Vector512_GetLower128:
+        {
+            assert(sig->numArgs == 1);
+            assert(IsBaselineVector512IsaSupportedDebugOnly());
+
+            op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
+            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 

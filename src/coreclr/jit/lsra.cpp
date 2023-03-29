@@ -644,7 +644,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
 #endif
 
-    if (!compiler->DoJitStressEvexEncoding())
+    if (!compiler->canUseEvexEncoding())
     {
         availableRegCount -= CNT_HIGHFLOAT;
         availableRegCount -= CNT_MASK_REGS;
@@ -711,17 +711,17 @@ LinearScan::LinearScan(Compiler* theCompiler)
     {
         // When the EnC option is set we have an exact set of registers that we always save
         // that are also available in future versions.
-        availableIntRegs &= ~RBM_CALLEE_SAVED | RBM_ENC_CALLEE_SAVED;
-        availableFloatRegs &= ~RBM_CALLEE_SAVED;
-        availableDoubleRegs &= ~RBM_CALLEE_SAVED;
+        availableIntRegs &= ~RBM_INT_CALLEE_SAVED | RBM_ENC_CALLEE_SAVED;
+        availableFloatRegs &= ~RBM_FLT_CALLEE_SAVED;
+        availableDoubleRegs &= ~RBM_FLT_CALLEE_SAVED;
+#if defined(TARGET_XARCH)
+        availableMaskRegs &= ~RBM_MSK_CALLEE_SAVED;
+#endif // TARGET_XARCH
     }
 #endif // TARGET_AMD64 || TARGET_ARM64
 
 #if defined(TARGET_AMD64)
-    // TODO-XARCH-AVX512 switch this to canUseEvexEncoding() once we independently
-    // allow EVEX use from the stress flag (currently, if EVEX stress is turned off,
-    // we cannot use EVEX at all)
-    if (compiler->DoJitStressEvexEncoding())
+    if (compiler->canUseEvexEncoding())
     {
         availableFloatRegs |= RBM_HIGHFLOAT;
         availableDoubleRegs |= RBM_HIGHFLOAT;
@@ -731,8 +731,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
     // Initialize the availableRegs to use for each TYP_*
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, lsra, tf)                                              \
-    availableRegs[static_cast<int>(TYP_##tn)] = &lsra;
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf)                                    \
+    availableRegs[static_cast<int>(TYP_##tn)] = &regFld;
 #include "typelist.h"
 #undef DEF_TP
 
@@ -1830,7 +1830,7 @@ void LinearScan::identifyCandidates()
         if (varDsc->lvLRACandidate)
         {
             var_types type = varDsc->GetStackSlotHomeType();
-            if (varTypeUsesFloatReg(type))
+            if (!varTypeUsesIntReg(type))
             {
                 compiler->compFloatingPointUsed = true;
             }
@@ -4770,7 +4770,7 @@ void LinearScan::allocateRegisters()
                     regMaskTP regMask = genRegMask(reg);
                     // If this isn't available or if it's still waiting to be freed (i.e. it was in
                     // delayRegsToFree and so now it's in regsToFree), then skip it.
-                    if ((regMask & (availableIntRegs | availableFloatRegs) & ~regsToFree) == RBM_NONE)
+                    if ((regMask & allAvailableRegs & ~regsToFree) == RBM_NONE)
                     {
                         continue;
                     }
@@ -8746,8 +8746,8 @@ const char* LinearScan::getStatName(unsigned stat)
 #include "lsra_stats.h"
 #undef LSRA_STAT_DEF
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId) #stat,
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
     };
 
     assert(stat < ArrLen(lsraStatNames));
@@ -8761,8 +8761,8 @@ LsraStat LinearScan::getLsraStatFromScore(RegisterScore registerScore)
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     case RegisterScore::stat:                                                                                          \
         return LsraStat::STAT_##stat;
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
         default:
             return LsraStat::STAT_FREE;
     }
@@ -9064,8 +9064,8 @@ const char* LinearScan::getScoreName(RegisterScore score)
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     case stat:                                                                                                         \
         return shortname;
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
         default:
             return "  -  ";
     }
@@ -11060,8 +11060,8 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     mappingTable->Set(stat, &LinearScan::RegisterSelection::try_##stat);
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
 
     LPCWSTR ordering = JitConfig.JitLsraOrdering();
     if (ordering == nullptr)
@@ -11080,8 +11080,8 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
     case orderSeqId:                                                                                                   \
         RegSelectionOrder[orderId] = enum_name;                                                                        \
         break;
+#define BUSY_REG_SEL_DEF(enum_name, value, shortname, orderSeqId) REG_SEL_DEF(enum_name, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
             default:
                 assert(!"Invalid lsraOrdering value.");
         }
@@ -12070,13 +12070,24 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         }
     }
 #else // RELEASE
-// In release, just invoke the default order
 
+    // In release, just invoke the default order
+    if (freeCandidates != RBM_NONE)
+    {
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     try_##stat();                                                                                                      \
     IF_FOUND_GOTO_DONE
+
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
+    }
+
+#define REG_SEL_DEF(stat, value, shortname, orderSeqId)
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                           \
+    try_##stat();                                                                                                      \
+    IF_FOUND_GOTO_DONE
+#include "lsra_score.h"
+
 #endif // DEBUG
 #undef IF_FOUND_GOTO_DONE
 
