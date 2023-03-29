@@ -314,7 +314,7 @@ namespace System
                 {
                     offset = lengthSubTwoVector128;
                 }
-            } 
+            }
             while (true);
 
             // Fall back to the scalar routine in case of invalid input.

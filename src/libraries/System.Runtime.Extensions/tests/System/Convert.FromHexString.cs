@@ -112,6 +112,12 @@ namespace System.Tests
                 string hex = Convert.ToHexString(data);
                 Assert.Equal(data, Convert.FromHexString(hex.ToLowerInvariant()));
                 Assert.Equal(data, Convert.FromHexString(hex.ToUpperInvariant()));
+                string mixedCase1 = hex.Substring(0, hex.Length / 2).ToUpperInvariant() +
+                                    hex.Substring(hex.Length / 2).ToLowerInvariant();
+                string mixedCase2 = hex.Substring(0, hex.Length / 2).ToLowerInvariant() +
+                                    hex.Substring(hex.Length / 2).ToUpperInvariant();
+                AssertEqual(data, Convert.FromHexString(mixedCase1));
+                AssertEqual(data, Convert.FromHexString(mixedCase2));
                 Assert.Throws<FormatException>(() => Convert.FromHexString(hex + "  "));
                 Assert.Throws<FormatException>(() => Convert.FromHexString("\uAAAA" + hex));
             }
