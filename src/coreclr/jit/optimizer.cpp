@@ -8029,7 +8029,7 @@ bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNSet* loopVnInv
 //    lnum  - loop index
 //
 // Returns:
-//    true if new preheader was created
+//    true if new pre-header was created
 //
 bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 {
@@ -8042,7 +8042,7 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
     LoopDsc& loop = optLoopTable[lnum];
 
-    // Have we already created a loop-preheader block?
+    // Have we already created a loop pre-header block?
 
     if (loop.lpFlags & LPFLG_HAS_PREHEAD)
     {
@@ -8050,6 +8050,9 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
         INDEBUG(loop.lpValidatePreHeader());
         return false;
     }
+
+    // Assert that we haven't created SSA. It is assumed that we create all loop pre-headers before building SSA.
+    assert(fgSsaPassesCompleted == 0);
 
     BasicBlock* head  = loop.lpHead;
     BasicBlock* top   = loop.lpTop;
@@ -8231,42 +8234,6 @@ bool Compiler::fgCreateLoopPreHeader(unsigned lnum)
 
     // Link in the preHead block
     fgInsertBBbefore(top, preHead);
-
-    // Ideally we would re-run SSA and VN if we optimized by doing loop hoisting.
-    // However, that is too expensive at this point. Instead, we update the phi
-    // node block references, if we created pre-header block due to hoisting.
-    // This is sufficient because any definition participating in SSA that flowed
-    // into the phi via the loop header block will now flow through the preheader
-    // block from the header block.
-    // TODO: if we always create and maintain pre-headers before SSA, can we delete this?
-
-    // Assert that we haven't created SSA. It is assumed that we create all loop pre-headers before
-    // building SSA.
-    assert(fgSsaPassesCompleted == 0);
-
-#if 0
-    for (Statement* const stmt : top->Statements())
-    {
-        GenTree* tree = stmt->GetRootNode();
-        if (tree->OperGet() != GT_ASG)
-        {
-            break;
-        }
-        GenTree* op2 = tree->gtGetOp2();
-        if (op2->OperGet() != GT_PHI)
-        {
-            break;
-        }
-        for (GenTreePhi::Use& use : op2->AsPhi()->Uses())
-        {
-            GenTreePhiArg* phiArg = use.GetNode()->AsPhiArg();
-            if (phiArg->gtPredBB == head)
-            {
-                phiArg->gtPredBB = preHead;
-            }
-        }
-    }
-#endif // 0
 
     // In which EH region should the pre-header live?
     //
