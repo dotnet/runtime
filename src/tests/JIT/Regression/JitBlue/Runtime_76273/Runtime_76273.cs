@@ -34,11 +34,14 @@ public class Program
         return 100;
     }
 
-    internal static void MainInner(IRuntime rt)
+// Allow reflection lookup on public method
+#pragma warning disable xUnit1013
+    public static void MainInner(IRuntime rt)
     {
         var vr2 = new C0();
         M11(vr2, 1);
     }
+#pragma warning restore xUnit1013
 
     internal static void M11(C0 argThis, short arg0)
     {
