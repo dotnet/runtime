@@ -314,7 +314,8 @@ namespace System
                 {
                     offset = lengthSubTwoVector128;
                 }
-            } while (true);
+            } 
+            while (true);
 
             // Fall back to the scalar routine in case of invalid input.
             return TryDecodeFromUtf16(chars.Slice((int)offset), bytes.Slice((int)(offset / 2)), out _);
