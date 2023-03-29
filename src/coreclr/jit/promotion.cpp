@@ -20,10 +20,10 @@ PhaseStatus Compiler::GeneralizedPromotion()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    if (!compStressCompile(STRESS_GENERALIZED_PROMOTION, 25))
-    {
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
+    //if (!compStressCompile(STRESS_GENERALIZED_PROMOTION, 25))
+    //{
+    //    return PhaseStatus::MODIFIED_NOTHING;
+    //}
 
 #ifdef DEBUG
     static ConfigMethodRange s_range;
@@ -701,6 +701,13 @@ public:
 
         if (tree->OperIs(GT_ASG))
         {
+            // If LHS of the ASG was a local then we skipped it as we don't
+            // want to see it until after the RHS.
+            if (tree->gtGetOp1()->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            {
+                ReplaceLocal(&tree->AsOp()->gtOp1, tree);
+            }
+
             // Assignments can be decomposed directly into accesses of the replacements.
             DecomposeAssignment((*use)->AsOp(), user);
             return fgWalkResult::WALK_CONTINUE;
@@ -722,7 +729,9 @@ public:
             return fgWalkResult::WALK_CONTINUE;
         }
 
-        if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+        // Skip the local on the LHS of ASGs when we see it in the normal tree
+        // visit; we handle it as part of the parent ASG instead.
+        if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && ((user == nullptr) || !user->OperIs(GT_ASG) || (user->gtGetOp1() != tree)))
         {
             ReplaceLocal(use, user);
             return fgWalkResult::WALK_CONTINUE;
@@ -869,7 +878,12 @@ public:
         }
 
         size_t index = BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
-        assert((ssize_t)index >= 0);
+        if ((ssize_t)index < 0)
+        {
+            // Access that we don't have a replacement for.
+            return;
+        }
+
         Replacement& rep = replacements[index];
         assert(accessType == rep.AccessType);
         JITDUMP("  ..replaced with promoted lcl V%02u\n", rep.LclNum);
