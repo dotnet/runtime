@@ -1120,6 +1120,23 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_Vector512_GetUpper:
+        {
+            assert(comp->IsBaselineVector512IsaSupportedDebugOnly());
+            var_types simdBaseType = node->GetSimdBaseType();
+
+            intrinsicId = NI_AVX512F_ExtractVector256;
+
+            GenTree* op1 = node->Op(1);
+
+            GenTree* op2 = comp->gtNewIconNode(1);
+            BlockRange().InsertBefore(node, op2);
+            LowerNode(op2);
+
+            node->ResetHWIntrinsicId(intrinsicId, comp, op1, op2);
+            break;
+        }
+
         case NI_Vector128_WithElement:
         case NI_Vector256_WithElement:
         {
@@ -1141,6 +1158,26 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 intrinsicId = NI_AVX2_InsertVector128;
             }
+
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            GenTree* op3 = comp->gtNewIconNode(index);
+            BlockRange().InsertBefore(node, op3);
+            LowerNode(op3);
+
+            node->ResetHWIntrinsicId(intrinsicId, comp, op1, op2, op3);
+            break;
+        }
+
+        case NI_Vector512_WithLower:
+        case NI_Vector512_WithUpper:
+        {
+            assert(comp->IsBaselineVector512IsaSupportedDebugOnly());
+            var_types simdBaseType = node->GetSimdBaseType();
+            int       index        = (intrinsicId == NI_Vector256_WithUpper) ? 1 : 0;
+
+            intrinsicId = NI_AVX512F_InsertVector256;
 
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
@@ -2657,11 +2694,8 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                                                      NI_Vector256_Create, simdBaseJitType, 32);
         BlockRange().InsertAfter(node->Op(argCnt), hi);
 
-        idx = comp->gtNewIconNode(0x01, TYP_INT);
-        BlockRange().InsertAfter(hi, idx);
-
         assert(argCnt >= 7);
-        node->ResetHWIntrinsicId(NI_AVX512F_InsertVector256, comp, lo, hi, idx);
+        node->ResetHWIntrinsicId(NI_Vector512_WithUpper, comp, lo, hi);
 
         LowerNode(lo);
         LowerNode(hi);
@@ -2679,17 +2713,15 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         //          /--*  ... T
         //          +--*  opN T
         //   hi   = *  HWINTRINSIC   simd16 T Create
-        //   idx  =    CNS_INT       int    1
         //          /--*  lo   simd32
         //          +--*  hi   simd16
-        //          +--*  idx  int
-        //   node = *  HWINTRINSIC   simd32 T InsertVector128
+        //   node = *  HWINTRINSIC   simd32 T WithUpper
 
         // This is roughly the following managed code:
         //   ...
         //   var lo   = Vector128.Create(op1, ...);
         //   var hi   = Vector128.Create(..., opN);
-        //   return Avx.InsertVector128(lo, hi, 0x01);
+        //   return lo.WithUpper(hi);
 
         // Each Vector128.Create call gets half the operands. That is:
         //   lo = Vector128.Create(op1, op2);
@@ -3246,14 +3278,12 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
 
         if (imm8 >= count / 2)
         {
-            //   idx =    CNS_INT       int    1
-            //         /--*  op1  simd32
-            //         +--*  idx  int
-            //   op1 = *  HWINTRINSIC   simd32 T ExtractVector128
+            //          /--*  op1  simd32
+            //   tmp1 = *  HWINTRINSIC   simd32 T GetUpper
 
             // This is roughly the following managed code:
             //   ...
-            //   op1 = Avx.ExtractVector128(op1, 0x01);
+            //   tmp1 = op1.GetUpper();
 
             imm8 -= count / 2;
 
@@ -3479,14 +3509,13 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
         {
             // We will be constructing the following parts:
             //   ...
-            //   idx  =    CNS_INT       int    1
+
             //          /--*  op1   simd32
-            //          +--*  idx   int
-            //   op1  = *  HWINTRINSIC   simd32 T ExtractVector128
+            //   tmp1 = *  HWINTRINSIC   simd32 T GetUpper
 
             // This is roughly the following managed code:
             //   ...
-            //   op1   = Avx.ExtractVector128(op1, 0x01);
+            //   tmp1  = op1.GetUpper();
 
             imm8 -= count / 2;
 
@@ -3798,10 +3827,8 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 //          /--*  tmp1 simd32
                 //   tmp1 = *  HWINTRINSIC   simd16 T GetLower
                 //   tmp2 =    LCL_VAR       simd32
-                //   idx  =    CNS_INT       int    0x01
                 //          /--*  tmp2 simd16
-                //          +--*  idx  int
-                //   tmp2 = *  HWINTRINSIC   simd16 T ExtractVector128
+                //   tmp2 = *  HWINTRINSIC   simd16 T GetUpper
                 //          /--*  tmp1 simd16
                 //          +--*  tmp2 simd16
                 //   tmp3 = *  HWINTRINSIC   simd16 T Add
@@ -3810,7 +3837,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                 // This is roughly the following managed code:
                 //   var tmp1 = Avx.DotProduct(op1, op2, 0xFF);
-                //   var tmp2 = Avx.ExtractVector128(tmp1, 0x01);
+                //   var tmp2 = tmp1.GetUpper();
                 //   var tmp3 = Sse.Add(tmp1, tmp2);
                 //   return tmp3.ToScalar();
 
@@ -4328,19 +4355,17 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         //          /--*  tmp1 simd32
         //   tmp1 = *  HWINTRINSIC   simd16 T GetLower
         //   tmp2 =    LCL_VAR       simd32
-        //   idx  =    CNS_INT       int    0x01
         //          /--*  tmp2 simd32
-        //          +--*  idx  int
-        //   tmp2 = *  HWINTRINSIC   simd16 T ExtractVector128
+        //   tmp3 = *  HWINTRINSIC   simd16 T GetUpper
         //          /--*  tmp1 simd16
-        //          +--*  tmp2 simd16
+        //          +--*  tmp3 simd16
         //   tmp1 = *  HWINTRINSIC   simd16 T Add
         //   ...
 
         // This is roughly the following managed code:
         //   ...
         //   var tmp2 = tmp1;
-        //       tmp2 = Avx.ExtractVector128(tmp2, 0x01);
+        //       tmp3 = tmp2.GetUpper();
         //   var tmp1 = Isa.Add(tmp1.GetLower(), tmp2);
         //   ...
 
@@ -5536,6 +5561,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                 case NI_SSE41_X64_Extract:
                 case NI_AVX_ExtractVector128:
                 case NI_AVX2_ExtractVector128:
+                case NI_AVX512F_ExtractVector256:
                 {
                     // These intrinsics are "ins reg/mem, xmm, imm8"
 
@@ -6632,6 +6658,20 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
                     break;
                 }
 
+                case NI_AVX512F_InsertVector256:
+                {
+                    // InsertVector256 is special in that it returns a TYP_SIMD64 but takes a TYP_SIMD32.
+                    assert(!supportsSIMDScalarLoads);
+
+                    const unsigned expectedSize = 32;
+                    const unsigned operandSize  = genTypeSize(childNode->TypeGet());
+
+                    supportsAlignedSIMDLoads   = !comp->canUseEvexEncoding() || !comp->opts.MinOpts();
+                    supportsUnalignedSIMDLoads = comp->canUseEvexEncoding();
+                    supportsGeneralLoads       = supportsUnalignedSIMDLoads && (operandSize >= expectedSize);
+                    break;
+                }
+
                 case NI_SSE2_Insert:
                 case NI_SSE41_Insert:
                 case NI_SSE41_X64_Insert:
@@ -6918,6 +6958,7 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_Vector128_GetElement:
         case NI_AVX_ExtractVector128:
         case NI_AVX2_ExtractVector128:
+        case NI_AVX512F_ExtractVector256:
         {
             // These are only containable as part of a store
             return false;
@@ -7209,6 +7250,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_SSE2_Extract:
                         case NI_AVX_ExtractVector128:
                         case NI_AVX2_ExtractVector128:
+                        case NI_AVX512F_ExtractVector256:
                         {
                             // These intrinsics are "ins reg/mem, xmm, imm8" and get
                             // contained by the relevant store operation instead.

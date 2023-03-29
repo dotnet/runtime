@@ -19234,6 +19234,7 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX2_ConvertToInt32:
         case NI_AVX2_ConvertToUInt32:
         case NI_AVX2_ExtractVector128:
+        case NI_AVX512F_ExtractVector256:
         {
             // These HWIntrinsic operations are contained as part of a store
             return true;
@@ -24048,6 +24049,8 @@ GenTree* Compiler::gtNewSimdWithUpperNode(var_types   type,
 {
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
+
+    NamedIntrinsic intrinsicId = NI_Illegal;
 
 #if defined(TARGET_XARCH)
     if (simdSize == 32)

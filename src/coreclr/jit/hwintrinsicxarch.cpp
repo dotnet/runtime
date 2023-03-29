@@ -2598,7 +2598,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector512_WithLower:
         {
-            assert(sig->numArgs == 2);assert(IsBaselineVector512IsaSupportedDebugOnly());
+            assert(sig->numArgs == 2);
+            assert(IsBaselineVector512IsaSupportedDebugOnly());
 
             op2     = impSIMDPopStack(TYP_SIMD32);
             op1     = impSIMDPopStack(TYP_SIMD64);
@@ -2609,7 +2610,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector512_WithUpper:
         {
-            assert(sig->numArgs == 2);assert(IsBaselineVector512IsaSupportedDebugOnly());
+            assert(sig->numArgs == 2);
+            assert(IsBaselineVector512IsaSupportedDebugOnly());
 
             op2     = impSIMDPopStack(TYP_SIMD32);
             op1     = impSIMDPopStack(TYP_SIMD64);
