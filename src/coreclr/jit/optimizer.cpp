@@ -6924,11 +6924,14 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     // Add the pre-headers of any child loops to the list of blocks to consider for hoisting.
     // Note that these are not definitely executed. However, it is a heuristic that they will
     // often provide good opportunities for further hoisting since we hoist from inside-out,
-    // and the inner loop may have already hoisted something loop-invariant to them. They may
-    // also be blocks which dominate the exit block and hence get added again, below.
+    // and the inner loop may have already hoisted something loop-invariant to them. If the child
+    // loop pre-header block would be added anyway (by dominating the loop exit block), we don't
+    // add it here, and let it be added naturally, below.
     //
     // Note that all pre-headers get added first, which means they get considered for hoisting last. It is
-    // assumed that the order does not matter.
+    // assumed that the order does not matter for correctness (since there is no execution order known).
+    // Note that the order does matter for the hoisting profitability heuristics, as we might
+    // run out of hoisting budget when processing the blocks.
 
     int childLoopPreHeaders = 0;
     for (BasicBlock::loopNumber childLoop = pLoopDsc->lpChild; //
@@ -6971,9 +6974,6 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
                 pLoopDsc->lpExit->bbNum);
 
         // Push dominators, until we reach "entry" or exit the loop.
-        // Also push the pre-headers for the nested loops, if any. The pre-headers are added first, meaning
-        // they are processed last (after the dominator tree).
-        // (TODO: is there a correctness reason for any particular ordering?)
 
         BasicBlock* cur = pLoopDsc->lpExit;
         while (cur != nullptr && pLoopDsc->lpContains(cur) && cur != pLoopDsc->lpEntry)
