@@ -490,7 +490,7 @@ namespace System.Threading
         {
         }
 
-        private static uint GetMilliseconds(TimeSpan time, [CallerArgumentExpression("time")] string? parameter = null)
+        private static uint GetMilliseconds(TimeSpan time, [CallerArgumentExpression(nameof(time))] string? parameter = null)
         {
             long tm = (long)time.TotalMilliseconds;
             ArgumentOutOfRangeException.ThrowIfLessThan(tm, -1, parameter);
