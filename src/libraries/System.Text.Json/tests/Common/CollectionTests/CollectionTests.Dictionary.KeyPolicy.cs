@@ -195,7 +195,7 @@ namespace System.Text.Json.Serialization.Tests
         }
       
         [Fact]
-        public static void EnumSerialization_DictionaryPolicy_Honored_CamelCase()
+        public void EnumSerialization_DictionaryPolicy_Honored_CamelCase()
         {
             var options = new JsonSerializerOptions
             {
@@ -216,7 +216,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void EnumSerializationAsDictKey_NoDictionaryKeyPolicy()
+        public void EnumSerializationAsDictKey_NoDictionaryKeyPolicy()
         {
             Dictionary<ETestEnum, ETestEnum> dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue1] = ETestEnum.TestValue1 };
             string value = JsonSerializer.Serialize(dict);
@@ -238,7 +238,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void EnumSerialization_DictionaryPolicy_NotApplied_WhenEnumsAreSerialized()
+        public void EnumSerialization_DictionaryPolicy_NotApplied_WhenEnumsAreSerialized()
         {
             var options = new JsonSerializerOptions
             {
@@ -268,8 +268,9 @@ namespace System.Text.Json.Serialization.Tests
             public override string ConvertName(string name) => null;
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/84053")]
         [Fact]
-        public static void EnumSerialization_DictionaryPolicy_ThrowsException_WhenNamingPolicyReturnsNull()
+        public void EnumSerialization_DictionaryPolicy_ThrowsException_WhenNamingPolicyReturnsNull()
         {
             var options = new JsonSerializerOptions
             {
