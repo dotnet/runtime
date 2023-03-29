@@ -18,7 +18,7 @@ namespace System.Reflection.Emit
             return fieldSignature;
         }
 
-        internal static BlobBuilder MethodSignatureEncoder(Type[]? parameters, Type? returnType, bool isInstance)
+        internal static BlobBuilder MethodSignatureEncoder(ModuleBuilderImpl _module, Type[]? parameters, Type? returnType, bool isInstance)
         {
             // Encoding return type and parameters.
             var methodSignature = new BlobBuilder();
@@ -30,7 +30,7 @@ namespace System.Reflection.Emit
                 MethodSignature(isInstanceMethod: isInstance).
                 Parameters((parameters == null) ? 0 : parameters.Length, out retEncoder, out parEncoder);
 
-            if (returnType != null && returnType.FullName != "System.Void")
+            if (returnType != null && returnType != _module.GetTypeFromCoreAssembly("System.Void"))
             {
                 WriteSignatureTypeForReflectionType(retEncoder.Type(), returnType);
             }
@@ -46,6 +46,7 @@ namespace System.Reflection.Emit
                     WriteSignatureTypeForReflectionType(parEncoder.AddParameter().Type(), parameter);
                 }
             }
+
             return methodSignature;
         }
 

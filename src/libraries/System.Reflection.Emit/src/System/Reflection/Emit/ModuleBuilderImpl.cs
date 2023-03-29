@@ -11,14 +11,15 @@ namespace System.Reflection.Emit
 {
     internal sealed class ModuleBuilderImpl : ModuleBuilder
     {
-        internal readonly Assembly _coreAssembly;
+        private readonly Assembly _coreAssembly;
         private readonly string _name;
+        private Dictionary<string, Type> _coreTypes = new();
 
         #region Internal Data Members
 
-        internal Dictionary<Assembly, AssemblyReferenceHandle> _assemblyRefStore = new Dictionary<Assembly, AssemblyReferenceHandle>();
-        internal Dictionary<Type, TypeReferenceHandle> _typeRefStore = new Dictionary<Type, TypeReferenceHandle>();
-        internal List<TypeBuilderImpl> _typeDefStore = new List<TypeBuilderImpl>();
+        internal Dictionary<Assembly, AssemblyReferenceHandle> _assemblyRefStore = new();
+        internal Dictionary<Type, TypeReferenceHandle> _typeRefStore = new();
+        internal List<TypeBuilderImpl> _typeDefStore = new();
         internal int _nextMethodDefRowId = 1;
         internal int _nextFieldDefRowId = 1;
 
@@ -30,9 +31,20 @@ namespace System.Reflection.Emit
             _name = name;
         }
 
+        internal Type GetTypeFromCoreAssembly(string name)
+        {
+            Type? type;
+
+            if (!_coreTypes.TryGetValue(name, out type))
+            {
 #pragma warning disable IL2026 // Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code
-        internal Type GetTypeFromCoreAssembly(string name) => _coreAssembly.GetType(name, throwOnError: true)!;
+                type = _coreAssembly.GetType(name, throwOnError: true)!;
 #pragma warning restore IL2026
+                _coreTypes.Add(name, type);
+            }
+
+            return type;
+        }
 
         internal void AppendMetadata(MetadataBuilder metadata)
         {

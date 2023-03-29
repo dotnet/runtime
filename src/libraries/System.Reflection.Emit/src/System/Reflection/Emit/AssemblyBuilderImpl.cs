@@ -13,7 +13,7 @@ namespace System.Reflection.Emit
     {
         private bool _previouslySaved;
         private readonly AssemblyName _assemblyName;
-        internal readonly Assembly _coreAssembly;
+        private readonly Assembly _coreAssembly;
         private ModuleBuilderImpl? _module;
 
         internal AssemblyBuilderImpl(AssemblyName name, Assembly coreAssembly, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
