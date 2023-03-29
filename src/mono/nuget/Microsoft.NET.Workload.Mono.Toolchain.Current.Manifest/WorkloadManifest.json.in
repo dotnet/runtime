@@ -34,6 +34,14 @@
       "extends": [ "microsoft-net-runtime-mono-tooling" ],
       "platforms": [ "win-x64", "win-arm64", "linux-x64", "osx-x64", "osx-arm64" ]
     },
+    "mobile-librarybuilder-experimental": {
+      "description": "Mobile SDK for building a self-contained .NET native library",
+      "packs": [
+        "Microsoft.NET.Runtime.LibraryBuilder.Sdk"
+      ],
+      "extends": [ "microsoft-net-runtime-android-aot", "microsoft-net-runtime-ios", "microsoft-net-runtime-maccatalyst", "microsoft-net-runtime-tvos" ],
+      "platforms": [ "osx-x64", "osx-arm64" ]
+    },
     "microsoft-net-runtime-android": {
       "abstract": true,
       "description": "Android Mono Runtime",
@@ -135,6 +143,7 @@
       "platforms": [ "win-x64", "win-arm64", "osx-arm64", "osx-x64" ]
     },
     "runtimes-windows": {
+      "abstract": true,
       "description": "Windows Runtime Packs",
       "packs": [
         "Microsoft.NETCore.App.Runtime.win-x64",
@@ -158,6 +167,10 @@
       "version": "${PackageVersion}"
     },
     "Microsoft.NET.Runtime.MonoTargets.Sdk": {
+      "kind": "Sdk",
+      "version": "${PackageVersion}"
+    },
+    "Microsoft.NET.Runtime.LibraryBuilder.Sdk": {
       "kind": "Sdk",
       "version": "${PackageVersion}"
     },

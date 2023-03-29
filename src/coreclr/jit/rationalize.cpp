@@ -69,8 +69,8 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
 // Arguments:
 //    use - A use of a GT_IND node of SIMD type
 //
-// TODO-ADDR: delete this once block morphing stops taking addresses of locals
-// under COMMAs.
+// TODO-ADDR: today this only exists because the xarch backend does not handle
+// IND<simd12>(LCL_VAR_ADDR/LCL_FLD_ADDR) when the address is contained correctly.
 //
 void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
 {

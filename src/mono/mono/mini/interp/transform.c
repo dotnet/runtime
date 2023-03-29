@@ -3481,6 +3481,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			if (td->verbose_level > 1)
 				g_print("Disabling inlining because we have no target_method for call in %s\n", td->method->name);
 			return FALSE;
+		} else if (td->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
+			// This scenario causes https://github.com/dotnet/runtime/issues/83792
+			return FALSE;
 		} else if (has_doesnotreturn_attribute(target_method)) {
 			/*
 			 * Since the method does not return, it's probably a throw helper and will not be called.
@@ -10622,6 +10625,16 @@ interp_alloc_offsets (TransformData *td)
 				if (!(td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL) && td->locals [var].live_end == ins_index) {
 					g_assert (!(td->locals [var].flags & INTERP_LOCAL_FLAG_CALL_ARGS));
 					end_active_var (td, &av, var);
+				}
+			}
+			if (opcode >= MINT_MOV_8_2 && opcode <= MINT_MOV_8_4) {
+				// These opcodes have multiple dvars, which overcomplicate things, so they are
+				// marked as having no svars/dvars, for now. Special case it.
+				int num_pairs = 2 + opcode - MINT_MOV_8_2;
+				for (int i = 0; i < num_pairs; i++) {
+					int var = ins->data [2 * i + 1];
+					if (!(td->locals [var].flags & INTERP_LOCAL_FLAG_GLOBAL) && td->locals [var].live_end == ins_index)
+						end_active_var (td, &av, var);
 				}
 			}
 

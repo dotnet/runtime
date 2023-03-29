@@ -7655,6 +7655,39 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
+		case OP_SHL:
+		case OP_SSHR:
+		case OP_SSRA:
+		case OP_USHR:
+		case OP_USRA: {
+			gboolean right = FALSE;
+			gboolean add = FALSE;
+			gboolean arith = FALSE;
+			switch (ins->opcode) {
+			case OP_USHR: right = TRUE; break;
+			case OP_USRA: right = TRUE; add = TRUE; break;
+			case OP_SSHR: arith = TRUE; break;
+			case OP_SSRA: arith = TRUE; add = TRUE; break;
+			}
+			LLVMValueRef shiftarg = lhs;
+			LLVMValueRef shift = rhs;
+			if (add) {
+				shiftarg = rhs;
+				shift = arg3;
+			}
+			shift = create_shift_vector (ctx, shiftarg, shift);
+			LLVMValueRef result = NULL;
+			if (right)
+				result = LLVMBuildLShr (builder, shiftarg, shift, "");
+			else if (arith)
+				result = LLVMBuildAShr (builder, shiftarg, shift, "");
+			else
+				result = LLVMBuildShl (builder, shiftarg, shift, "");
+			if (add)
+				result = LLVMBuildAdd (builder, lhs, result, "arm64_usra");
+			values [ins->dreg] = result;
+			break;
+		}
 		case OP_SSHLL:
 		case OP_SSHLL2:
 		case OP_USHLL:
@@ -10690,39 +10723,6 @@ MONO_RESTORE_WARNING
 			LLVMValueRef tmp = LLVMBuildBitCast (builder, lhs, tmp_t, "arm64_revn");
 			LLVMValueRef result = LLVMBuildShuffleVector (builder, tmp, LLVMGetUndef (tmp_t), create_const_vector_i32 (cycle, tmp_elements), "");
 			result = LLVMBuildBitCast (builder, result, t, "");
-			values [ins->dreg] = result;
-			break;
-		}
-		case OP_ARM64_SHL:
-		case OP_ARM64_SSHR:
-		case OP_ARM64_SSRA:
-		case OP_ARM64_USHR:
-		case OP_ARM64_USRA: {
-			gboolean right = FALSE;
-			gboolean add = FALSE;
-			gboolean arith = FALSE;
-			switch (ins->opcode) {
-			case OP_ARM64_USHR: right = TRUE; break;
-			case OP_ARM64_USRA: right = TRUE; add = TRUE; break;
-			case OP_ARM64_SSHR: arith = TRUE; break;
-			case OP_ARM64_SSRA: arith = TRUE; add = TRUE; break;
-			}
-			LLVMValueRef shiftarg = lhs;
-			LLVMValueRef shift = rhs;
-			if (add) {
-				shiftarg = rhs;
-				shift = arg3;
-			}
-			shift = create_shift_vector (ctx, shiftarg, shift);
-			LLVMValueRef result = NULL;
-			if (right)
-				result = LLVMBuildLShr (builder, shiftarg, shift, "");
-			else if (arith)
-				result = LLVMBuildAShr (builder, shiftarg, shift, "");
-			else
-				result = LLVMBuildShl (builder, shiftarg, shift, "");
-			if (add)
-				result = LLVMBuildAdd (builder, lhs, result, "arm64_usra");
 			values [ins->dreg] = result;
 			break;
 		}

@@ -94,6 +94,7 @@ const fn_signatures: SigLine[] = [
     [true, "mono_wasm_get_f64_unaligned", "number", ["number"]],
 
     // jiterpreter
+    [true, "mono_jiterp_trace_bailout", "void", ["number"]],
     [true, "mono_jiterp_get_trace_bailout_count", "number", ["number"]],
     [true, "mono_jiterp_value_copy", "void", ["number", "number", "number"]],
     [true, "mono_jiterp_get_member_offset", "number", ["number"]],
@@ -120,6 +121,8 @@ const fn_signatures: SigLine[] = [
     [true, "mono_jiterp_debug_count", "number", []],
     [true, "mono_jiterp_get_trace_hit_count", "number", ["number"]],
     [true, "mono_jiterp_get_polling_required_address", "number", []],
+    [true, "mono_jiterp_get_rejected_trace_count", "number", []],
+    [true, "mono_jiterp_boost_back_branch_target", "void", ["number"]],
     ...legacy_interop_cwraps
 ];
 
@@ -204,6 +207,7 @@ export interface t_Cwraps {
     mono_wasm_get_f32_unaligned(source: VoidPtr): number;
     mono_wasm_get_f64_unaligned(source: VoidPtr): number;
 
+    mono_jiterp_trace_bailout(reason: number): void;
     mono_jiterp_get_trace_bailout_count(reason: number): number;
     mono_jiterp_value_copy(destination: VoidPtr, source: VoidPtr, klass: MonoClass): void;
     mono_jiterp_get_member_offset(id: number): number;
@@ -236,6 +240,8 @@ export interface t_Cwraps {
     mono_jiterp_get_trace_hit_count(traceIndex: number): number;
     mono_jiterp_get_polling_required_address(): Int32Ptr;
     mono_jiterp_write_number_unaligned(destination: VoidPtr, value: number, mode: number): void;
+    mono_jiterp_get_rejected_trace_count(): number;
+    mono_jiterp_boost_back_branch_target(destination: number): void;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};
