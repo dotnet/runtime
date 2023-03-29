@@ -1142,6 +1142,7 @@ PhaseStatus Promotion::Run()
             if (replacer.MadeChanges())
             {
                 m_compiler->fgSequenceLocals(stmt);
+                m_compiler->gtUpdateStmtSideEffects(stmt);
                 JITDUMP("New statement:\n");
                 DISPSTMT(stmt);
             }
