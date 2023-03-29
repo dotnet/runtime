@@ -5232,7 +5232,7 @@ public:
     void vnPrint(ValueNum vn, unsigned level);
 #endif
 
-    bool fgDominate(BasicBlock* b1, BasicBlock* b2); // Return true if b1 dominates b2
+    bool fgDominate(const BasicBlock* b1, const BasicBlock* b2); // Return true if b1 dominates b2
 
     // Dominator computation member functions
     // Not exposed outside Compiler
@@ -6193,7 +6193,7 @@ protected:
     bool optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt);
 
     // Do hoisting for a particular loop ("lnum" is an index into the optLoopTable.)
-    bool optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, BasicBlockList* existingPreHeaders);
+    bool optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt);
 
     // Hoist all expressions in "blocks" that are invariant in loop "loopNum" (an index into the optLoopTable)
     // outside of that loop.
@@ -6337,8 +6337,6 @@ public:
                                   // hoisted
         int lpLoopVarFPCount;     // The register count for the FP LclVars that are read/written inside this loop
         int lpVarInOutFPCount;    // The register count for the FP LclVars that are alive inside or across this loop
-
-        bool lpHoistAddedPreheader; // The loop preheader was added during hoisting
 
         typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, FieldKindForVN>
                         FieldHandleSet;

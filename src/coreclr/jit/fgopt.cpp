@@ -26,7 +26,7 @@
 // Assumptions:
 //    -- Dominators have been calculated (`fgDomsComputed` is true).
 //
-bool Compiler::fgDominate(BasicBlock* b1, BasicBlock* b2)
+bool Compiler::fgDominate(const BasicBlock* b1, const BasicBlock* b2)
 {
     noway_assert(fgDomsComputed);
 

@@ -6644,7 +6644,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
 }
 
 //------------------------------------------------------------------------
-// optHoistLoopNest: run loop hoisting for indicated loop and all contained loops
+// optHoistLoopCode: run loop hoisting phase
 //
 // Returns:
 //    suitable phase status
@@ -6777,9 +6777,6 @@ bool Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
     m_loopsConsidered++;
 #endif // LOOP_HOIST_STATS
 
-    BasicBlockList*  firstPreHeader     = nullptr;
-    BasicBlockList** preHeaderAppendPtr = &firstPreHeader;
-
     bool modified = false;
 
     if (optLoopTable[lnum].lpChild != BasicBlock::NOT_IN_LOOP)
@@ -6788,30 +6785,10 @@ bool Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
              child          = optLoopTable[child].lpSibling)
         {
             modified |= optHoistLoopNest(child, hoistCtxt);
-
-            if (optLoopTable[child].lpFlags & LPFLG_HAS_PREHEAD)
-            {
-                // If a pre-header is found, add it to the tracking list. Most likely, the recursive call
-                // to hoist from the `child` loop nest found something to hoist and created a pre-header
-                // where the hoisted code was placed.
-
-                BasicBlock* preHeaderBlock = optLoopTable[child].lpHead;
-                JITDUMP(" PREHEADER: " FMT_BB "\n", preHeaderBlock->bbNum);
-
-                // Here, we are arranging the blocks in reverse lexical order, so when they are removed from the
-                // head of this list and pushed on the stack of hoisting blocks to process, they are in
-                // forward lexical order when popped. Note that for child loops `i` and `j`, in order `i`
-                // followed by `j` in the `lpSibling` list, that `j` is actually first in lexical order
-                // and that makes these blocks arranged in reverse lexical order in this list.
-                // That is, the sibling list is in reverse lexical order.
-                // Note: the sibling list order should not matter to any algorithm; this order is not guaranteed.
-                *preHeaderAppendPtr = new (this, CMK_LoopHoist) BasicBlockList(preHeaderBlock, nullptr);
-                preHeaderAppendPtr  = &((*preHeaderAppendPtr)->next);
-            }
         }
     }
 
-    modified |= optHoistThisLoop(lnum, hoistCtxt, firstPreHeader);
+    modified |= optHoistThisLoop(lnum, hoistCtxt);
 
     return modified;
 }
@@ -6822,12 +6799,11 @@ bool Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
 // Arguments:
 //    lnum - loop to process
 //    hoistCtxt - context for the hoisting
-//    existingPreHeaders - list of preheaders created for child loops
 //
 // Returns:
 //    true if any hoisting was done
 //
-bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, BasicBlockList* existingPreHeaders)
+bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
 {
     LoopDsc* pLoopDsc = &optLoopTable[lnum];
 
@@ -6854,10 +6830,9 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
 
     VARSET_TP loopVars(VarSetOps::Intersection(this, pLoopDsc->lpVarInOut, pLoopDsc->lpVarUseDef));
 
-    pLoopDsc->lpVarInOutCount       = VarSetOps::Count(this, pLoopDsc->lpVarInOut);
-    pLoopDsc->lpLoopVarCount        = VarSetOps::Count(this, loopVars);
-    pLoopDsc->lpHoistedExprCount    = 0;
-    pLoopDsc->lpHoistAddedPreheader = false;
+    pLoopDsc->lpVarInOutCount    = VarSetOps::Count(this, pLoopDsc->lpVarInOut);
+    pLoopDsc->lpLoopVarCount     = VarSetOps::Count(this, loopVars);
+    pLoopDsc->lpHoistedExprCount = 0;
 
 #ifndef TARGET_64BIT
 
@@ -6933,29 +6908,72 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
     // Until we have post-dominators, we'll special-case for single-exit blocks.
     //
     // Todo: it is not clear if this is a correctness requirement or a profitability heuristic.
-    // It seems like the latter. Ideally have enough safeguards to prevent hoisting exception
-    // or side-effect dependent things.
+    // It seems like the latter. Ideally there are enough safeguards to prevent hoisting exception
+    // or side-effect dependent things. Note that HoistVisitor uses `m_beforeSideEffect` to determine if it's
+    // ok to hoist a side-effect. It allows this only for the first block (the entry block), before any
+    // side-effect has been seen. After the first block, it assumes that there has been a side effect and
+    // no further side-effect can be hoisted. It is true that we don't analyze any program behavior in the
+    // flow graph between the entry block and the subsequent blocks, whether they be the next block dominating
+    // the exit block, or the pre-headers of nested loops.
     //
     // We really should consider hoisting from conditionally executed blocks, if they are frequently executed
     // and it is safe to evaluate the tree early.
     //
     ArrayStack<BasicBlock*> defExec(getAllocatorLoopHoist());
-    BasicBlockList*         preHeadersList = existingPreHeaders;
+
+    // Add the pre-headers of any child loops to the list of blocks to consider for hoisting.
+    // Note that these are not definitely executed. However, it is a heuristic that they will
+    // often provide good opportunities for further hoisting since we hoist from inside-out,
+    // and the inner loop may have already hoisted something loop-invariant to them. They may
+    // also be blocks which dominate the exit block and hence get added again, below.
+    //
+    // Note that all pre-headers get added first, which means they get considered for hoisting last. It is
+    // assumed that the order does not matter.
+
+    int childLoopPreHeaders = 0;
+    for (BasicBlock::loopNumber childLoop = pLoopDsc->lpChild; //
+         childLoop != BasicBlock::NOT_IN_LOOP;                 //
+         childLoop = optLoopTable[childLoop].lpSibling)
+    {
+        if (optLoopTable[childLoop].lpIsRemoved())
+        {
+            continue;
+        }
+        INDEBUG(optLoopTable[childLoop].lpValidatePreHeader());
+        BasicBlock* childPreHead = optLoopTable[childLoop].lpHead;
+        if (pLoopDsc->lpExitCnt == 1)
+        {
+            if (fgDominate(childPreHead, pLoopDsc->lpExit))
+            {
+                // If the child loop pre-header dominates the exit, it will get added in the dominator tree
+                // loop below.
+                continue;
+            }
+        }
+        else
+        {
+            // If the child loop pre-header is the loop entry for a multi-exit loop, it will get added below.
+            if (childPreHead == pLoopDsc->lpEntry)
+            {
+                continue;
+            }
+        }
+        JITDUMP("  --  " FMT_BB " (child loop pre-header)\n", childPreHead->bbNum);
+        defExec.Push(childPreHead);
+        ++childLoopPreHeaders;
+    }
 
     if (pLoopDsc->lpExitCnt == 1)
     {
         assert(pLoopDsc->lpExit != nullptr);
         JITDUMP("  Considering hoisting in blocks that either dominate exit block " FMT_BB
-                " or preheaders of nested loops, if any:\n",
+                ", or pre-headers of nested loops, if any:\n",
                 pLoopDsc->lpExit->bbNum);
 
         // Push dominators, until we reach "entry" or exit the loop.
-        // Also push the preheaders that were added for the nested loops,
-        // if any, along the way such that in the final list, the dominating
-        // blocks are visited before the dominated blocks.
-        //
-        // TODO-CQ: In future, we should create preheaders upfront before building
-        // dominators so we don't have to do this extra work here.
+        // Also push the pre-headers for the nested loops, if any. The pre-headers are added first, meaning
+        // they are processed last (after the dominator tree).
+        // (TODO: is there a correctness reason for any particular ordering?)
 
         BasicBlock* cur = pLoopDsc->lpExit;
         while (cur != nullptr && pLoopDsc->lpContains(cur) && cur != pLoopDsc->lpEntry)
@@ -6963,22 +6981,6 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
             JITDUMP("  --  " FMT_BB " (dominate exit block)\n", cur->bbNum);
             defExec.Push(cur);
             cur = cur->bbIDom;
-
-            for (; preHeadersList != nullptr; preHeadersList = preHeadersList->next)
-            {
-                BasicBlock* preHeaderBlock = preHeadersList->block;
-                BasicBlock* lpEntry        = optLoopEntry(preHeaderBlock);
-                if (cur->bbNum < lpEntry->bbNum)
-                {
-                    JITDUMP("  --  " FMT_BB " (preheader of " FMT_LP ")\n", preHeaderBlock->bbNum,
-                            lpEntry->bbNatLoopNum);
-                    defExec.Push(preHeaderBlock);
-                }
-                else
-                {
-                    break;
-                }
-            }
         }
 
         // If we didn't reach the entry block, give up and *just* push the entry block (and the pre-headers).
@@ -6987,8 +6989,8 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
             JITDUMP("  -- odd, we didn't reach entry from exit via dominators. Only considering hoisting in entry "
                     "block " FMT_BB "\n",
                     pLoopDsc->lpEntry->bbNum);
-            defExec.Reset();
-            preHeadersList = existingPreHeaders;
+            defExec.Pop(defExec.Height() - childLoopPreHeaders);
+            assert(defExec.Height() == childLoopPreHeaders);
         }
     }
     else // More than one exit
@@ -7000,22 +7002,13 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
                 pLoopDsc->lpEntry->bbNum, lnum);
     }
 
-    // Push the remaining preheaders, if any.
-    for (; preHeadersList != nullptr; preHeadersList = preHeadersList->next)
-    {
-        BasicBlock* preHeaderBlock = preHeadersList->block;
-        JITDUMP("  --  " FMT_BB " (preheader of " FMT_LP ")\n", preHeaderBlock->bbNum,
-                optLoopEntry(preHeaderBlock)->bbNatLoopNum);
-        defExec.Push(preHeaderBlock);
-    }
-
     JITDUMP("  --  " FMT_BB " (entry block)\n", pLoopDsc->lpEntry->bbNum);
     defExec.Push(pLoopDsc->lpEntry);
 
     optHoistLoopBlocks(lnum, &defExec, hoistCtxt);
 
     const unsigned numHoisted = pLoopDsc->lpHoistedFPExprCount + pLoopDsc->lpHoistedExprCount;
-    return pLoopDsc->lpHoistAddedPreheader || (numHoisted > 0);
+    return numHoisted > 0;
 }
 
 bool Compiler::optIsProfitableToHoistTree(GenTree* tree, unsigned lnum)
@@ -7878,9 +7871,8 @@ void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnu
         return;
     }
 
-    // Create a loop pre-header in which to put the hoisted code.
-    const bool newPreheader = fgCreateLoopPreHeader(lnum);
-    optLoopTable[lnum].lpHoistAddedPreheader |= newPreheader;
+    // We should already have a pre-header for the loop.
+    INDEBUG(optLoopTable[lnum].lpValidatePreHeader());
 
     // If the block we're hoisting from and the pre-header are in different EH regions, don't hoist.
     // TODO: we could probably hoist things that won't raise exceptions, such as constants.
