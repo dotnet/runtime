@@ -25,6 +25,8 @@
 #define INTERP_LOCAL_FLAG_LOCAL_ONLY 64
 // We use this flag to avoid addition of align field in InterpLocal, for now
 #define INTERP_LOCAL_FLAG_SIMD 128
+// This flag is set for all locals targeted by a LDLOCA opcode, used by jiterpreter
+#define INTERP_LOCAL_FLAG_ADDRESS_TAKEN 256
 
 typedef struct _InterpInst InterpInst;
 typedef struct _InterpBasicBlock InterpBasicBlock;

@@ -1033,6 +1033,30 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 		//  it's big enough we'll be able to insert another entry point right away.
 		instruction_count += bb->in_count;
 	}
+
+	if (imethod->contains_traces) {
+		// Fill the bitset that identifies ldloca targets for the jiterpreter null check optimization
+		// FIXME: Remove this once the null check optimization analysis is moved into the interpreter
+		guint32 bitset_size = td->total_locals_size / MINT_STACK_SLOT_SIZE;
+		for (unsigned int i = 0; i < td->locals_size; i++) {
+			InterpLocal *loc = &(td->locals [i]);
+			if ((loc->flags & INTERP_LOCAL_FLAG_ADDRESS_TAKEN) != INTERP_LOCAL_FLAG_ADDRESS_TAKEN)
+				continue;
+
+			// Allocate on demand so if a method contains no ldlocas we don't allocate the bitset
+			if (!imethod->global_variable_bits)
+				imethod->global_variable_bits = mono_bitset_new (bitset_size, 0);
+
+			// Ensure that every bit in the global variable set corresponding to space occupied
+			//  by this local is set, so that large locals (structs etc) being ldloca'd properly
+			//  sets the whole range covered by the struct as a no-go for optimization.
+			// FIXME: Do this per slot instead of per byte.
+			for (int j = 0; j < loc->size; j++) {
+				guint32 b = (loc->offset + j) / MINT_STACK_SLOT_SIZE;
+				mono_bitset_set (imethod->global_variable_bits, b);
+			}
+		}
+	}
 }
 
 EMSCRIPTEN_KEEPALIVE double
@@ -1444,6 +1468,16 @@ mono_jiterp_boost_back_branch_target (guint16 *ip) {
 	else
 		g_print ("Entry point #%d at %d was already maxed out\n", trace_index, ip, trace_info->hit_count);
 	*/
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_is_imethod_var_global (InterpMethod *imethod, int offset) {
+	g_assert (imethod);
+	g_assert (offset >= 0);
+	if (!imethod->global_variable_bits)
+		return FALSE;
+
+	return mono_bitset_test (imethod->global_variable_bits, offset / MINT_STACK_SLOT_SIZE);
 }
 
 // HACK: fix C4206
