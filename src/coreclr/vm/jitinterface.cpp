@@ -1750,6 +1750,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
 /*********************************************************************/
 
+#ifdef TARGET_WINDOWS
 TypeIDMap CEEInfo::g_threadStaticBlockTypeIDMap;
 
 uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
@@ -1772,8 +1773,6 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
     EE_TO_JIT_TRANSITION();
     return typeIndex;
 }
-
-#ifdef TARGET_WINDOWS
 
 void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
