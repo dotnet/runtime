@@ -451,12 +451,6 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 attr = EA_SET_FLG(attr, EA_BYREF_FLG);
             }
 
-            // This is 'null', so do not initially GC track the register.
-            if ((targetType == TYP_REF) && (cnsVal == 0))
-            {
-                attr = EA_REMOVE_FLG(attr, EA_GCREF_FLG);
-            }
-
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
                                    INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
             regSet.verifyRegUsed(targetReg);
@@ -1710,9 +1704,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     // setting the GTF_REUSE_REG_VAL flag.
     if (treeNode->IsReuseRegVal())
     {
-        // For now, this is only used for constant nodes.
-        assert((treeNode->OperIsConst()));
-        JITDUMP("  TreeNode is marked ReuseReg\n");
+        genCodeForReuseVal(treeNode);
         return;
     }
 
