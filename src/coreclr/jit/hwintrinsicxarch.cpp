@@ -2439,7 +2439,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_GetUpper:
         {
             assert(sig->numArgs == 1);
-            assert(IsBaselineVector512IsaSupportedDebugOnly());
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
 
             op1     = impSIMDPopStack(getSIMDTypeForSize(simdSize));
             retNode = gtNewSimdGetUpperNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
