@@ -1394,6 +1394,19 @@ namespace System.Text
             }
         }
 
+        /// <summary>
+        /// Stores to lower 64bits of <paramref name="byteVector"/> to memory destination of <paramref name="bytePtr"/>[<paramref name="elementOffset"/>]
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void StoreLower(Vector128<byte> byteVector, ref byte bytePtr, nuint elementOffset)
+        {
+            // GetLower().StoreUnsafe is quite inneficient on x86, below code make sure that the store is a single instruction instead of ~10 and stack spills
+            if (Sse2.IsSupported)
+                Sse2.StoreScalar((long*)((byte*)Unsafe.AsPointer(ref bytePtr) + elementOffset), byteVector.AsInt64());
+            else
+                byteVector.GetLower().StoreUnsafe(ref bytePtr, elementOffset);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
         {
@@ -1484,7 +1497,7 @@ namespace System.Text
 
             ref byte asciiBuffer = ref *pAsciiBuffer;
             Vector128<byte> asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
-            asciiVector.GetLower().StoreUnsafe(ref asciiBuffer);
+            StoreLower(asciiVector, ref asciiBuffer, 0);
             nuint currentOffsetInElements = SizeOfVector128 / 2; // we processed 8 elements so far
 
             // We're going to get the best performance when we have aligned writes, so we'll take the
@@ -1511,7 +1524,7 @@ namespace System.Text
 
                 // Turn the 8 ASCII chars we just read into 8 ASCII bytes, then copy it to the destination.
                 asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
-                asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
+                StoreLower(asciiVector, ref asciiBuffer, currentOffsetInElements);
             }
 
             // Calculate how many elements we wrote in order to get pAsciiBuffer to its next alignment
@@ -1564,7 +1577,7 @@ namespace System.Text
 
             Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % sizeof(ulong) == 0, "Destination should be ulong-aligned.");
             asciiVector = ExtractAsciiVector(utf16VectorFirst, utf16VectorFirst);
-            asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
+            StoreLower(asciiVector, ref asciiBuffer, currentOffsetInElements);
             currentOffsetInElements += SizeOfVector128 / 2;
 
             goto Finish;
