@@ -845,8 +845,6 @@ MINI_OP(OP_EXPAND_R4, "expand_r4", XREG, FREG, NONE)
 MINI_OP(OP_EXPAND_I8, "expand_i8", XREG, IREG, NONE)
 MINI_OP(OP_EXPAND_R8, "expand_r8", XREG, FREG, NONE)
 
-MINI_OP(OP_BROADCAST, "broadcast", XREG, FREG, NONE)
-
 #endif
 
 // wasm specific SIMD v128
