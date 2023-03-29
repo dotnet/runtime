@@ -14530,13 +14530,10 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         return;
     }
 
-    if (!(qmark->gtFlags & GTF_FLD_TLS_MANAGED))
+    if (qmark->gtFlags & GTF_QMARK_CAST_INSTOF)
     {
-        if (qmark->gtFlags & GTF_QMARK_CAST_INSTOF)
-        {
-            fgExpandQmarkForCastInstOf(block, stmt);
-            return;
-        }
+        fgExpandQmarkForCastInstOf(block, stmt);
+        return;
     }
 
 #ifdef DEBUG
@@ -14621,16 +14618,8 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         fgAddRefPred(thenBlock, condBlock);
         fgAddRefPred(remainderBlock, thenBlock);
 
-        if ((qmark->gtFlags & GTF_FLD_TLS_MANAGED) != 0)
-        {
-            thenBlock->bbSetRunRarely();
-            elseBlock->makeBlockHot();
-        }
-        else
-        {
-            thenBlock->inheritWeightPercentage(condBlock, 50);
-            elseBlock->inheritWeightPercentage(condBlock, 50);
-        }
+        thenBlock->inheritWeightPercentage(condBlock, 50);
+        elseBlock->inheritWeightPercentage(condBlock, 50);
     }
     else if (hasTrueExpr)
     {
