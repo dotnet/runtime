@@ -1042,10 +1042,10 @@ namespace System.Net.Http
                         {
                             if (_sslOptionsHttp3 == null)
                             {
-                                // deferred creation
+                                // deferred creation. We use atomic exchange to be sure all threads point to single object to mimic ctor behavior.
                                 SslClientAuthenticationOptions sslOptionsHttp3 = ConstructSslOptions(_poolManager, _sslOptionsHttp11!.TargetHost!);
                                 sslOptionsHttp3.ApplicationProtocols = s_http3ApplicationProtocols;
-                                _sslOptionsHttp3 = sslOptionsHttp3;
+                                Interlocked.CompareExchange(ref _sslOptionsHttp3, sslOptionsHttp3, null);
                             }
 
                             response = await TrySendUsingHttp3Async(request, cancellationToken).ConfigureAwait(false);
