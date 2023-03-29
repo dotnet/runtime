@@ -220,6 +220,7 @@ else ()
 endif ()
 
 if (CLR_CMAKE_TARGET_LINUX)
+   add_definitions(-DTARGET_LINUX)
    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_GNU_SOURCE")
 endif ()
 
