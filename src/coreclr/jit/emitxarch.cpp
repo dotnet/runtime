@@ -9669,14 +9669,14 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
             return emitXMMregName(reg);
 
         case EA_8BYTE:
-            if ((REG_XMM0 <= reg) && (reg <= REG_XMM15))
+            if (IsXMMReg(reg))
             {
                 return emitXMMregName(reg);
             }
             break;
 
         case EA_4BYTE:
-            if ((REG_XMM0 <= reg) && (reg <= REG_XMM15))
+            if (IsXMMReg(reg))
             {
                 return emitXMMregName(reg);
             }
@@ -9759,6 +9759,9 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
 
     switch (EA_SIZE(attr))
     {
+        case EA_64BYTE:
+            return emitZMMregName(reg);
+
         case EA_32BYTE:
             return emitYMMregName(reg);
 
@@ -9766,14 +9769,14 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
             return emitXMMregName(reg);
 
         case EA_8BYTE:
-            if ((REG_XMM0 <= reg) && (reg <= REG_XMM7))
+            if (IsXMMReg(reg))
             {
                 return emitXMMregName(reg);
             }
             break;
 
         case EA_4BYTE:
-            if ((REG_XMM0 <= reg) && (reg <= REG_XMM7))
+            if (IsXMMReg(reg))
             {
                 return emitXMMregName(reg);
             }
