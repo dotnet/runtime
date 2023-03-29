@@ -66,13 +66,13 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             DependencyList dependencies = null;
-            UsageBasedMetadataManager metadataManager = (UsageBasedMetadataManager)factory.MetadataManager;
 
             if (_typeDefinition.HasBaseType)
             {
                 if (_typeDefinition.BaseType.DoesTypeRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out var requiresAttribute) &&
                     !_typeDefinition.DoesTypeRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _))
                 {
+                    UsageBasedMetadataManager metadataManager = (UsageBasedMetadataManager)factory.MetadataManager;
                     string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresAttribute.Value));
                     string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresAttribute.Value));
                     metadataManager.Logger.LogWarning(new MessageOrigin(_typeDefinition), DiagnosticId.RequiresUnreferencedCodeOnBaseClass, _typeDefinition.GetDisplayName(), _typeDefinition.BaseType.GetDisplayName(), arg1, arg2);
