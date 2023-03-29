@@ -20,10 +20,10 @@ PhaseStatus Compiler::GeneralizedPromotion()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    //if (!compStressCompile(STRESS_GENERALIZED_PROMOTION, 25))
-    //{
-    //    return PhaseStatus::MODIFIED_NOTHING;
-    //}
+// if (!compStressCompile(STRESS_GENERALIZED_PROMOTION, 25))
+//{
+//    return PhaseStatus::MODIFIED_NOTHING;
+//}
 
 #ifdef DEBUG
     static ConfigMethodRange s_range;
@@ -731,7 +731,8 @@ public:
 
         // Skip the local on the LHS of ASGs when we see it in the normal tree
         // visit; we handle it as part of the parent ASG instead.
-        if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && ((user == nullptr) || !user->OperIs(GT_ASG) || (user->gtGetOp1() != tree)))
+        if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) &&
+            ((user == nullptr) || !user->OperIs(GT_ASG) || (user->gtGetOp1() != tree)))
         {
             ReplaceLocal(use, user);
             return fgWalkResult::WALK_CONTINUE;
