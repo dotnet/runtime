@@ -3366,16 +3366,19 @@ hot_reload_added_methods_iter (MonoClass *klass, gpointer *iter)
 	uint32_t idx = GPOINTER_TO_UINT (*iter);
 	g_assert (idx >= mono_class_get_method_count (klass));
 
-	GSList *members = hot_reload_get_added_members (klass);
+	GSList *members = NULL;
+	int class_kind = m_class_get_class_kind (klass);
+	if (class_kind == MONO_CLASS_GINST) {
+		MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
+		members = hot_reload_get_added_members (gklass);
+	} else {
+		members = hot_reload_get_added_members (klass);
+	}
+
 	if (!members)
 		return NULL;
-	// expect to only see class defs or GTDs here.  We don't expect to see arrays or pointers
-	// here since they don't own MONO_TABLE_METHOD entries.
-	//
-	// TODO: metadata-update: we might see generic instances, though.  Handle them by iterating
-	// over the GTD and inflating.
-	int class_kind = m_class_get_class_kind (klass);
-	g_assert (class_kind == MONO_CLASS_DEF || class_kind == MONO_CLASS_GTD);
+	// We don't expect to see arrays or pointers here since they don't own MONO_TABLE_METHOD entries.
+	g_assert (class_kind == MONO_CLASS_DEF || class_kind == MONO_CLASS_GTD || class_kind == MONO_CLASS_GINST);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Iterating added methods of 0x%08x idx = %u", m_class_get_type_token (klass), idx);
 
@@ -3389,9 +3392,18 @@ hot_reload_added_methods_iter (MonoClass *klass, gpointer *iter)
 		if (cur_count == idx) {
 			// found a method, advance iter and return the method.
 			*iter = GUINT_TO_POINTER (1+idx);
-			ERROR_DECL (local_error);
-			MonoMethod *method = mono_get_method_checked (m_class_get_image (klass), token, klass, NULL, local_error);
-			mono_error_cleanup (local_error);
+			MonoMethod *method = NULL;
+			if (class_kind == MONO_CLASS_GINST) {
+				MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
+				ERROR_DECL (local_error);
+				MonoMethod *gmethod = mono_get_method_checked (m_class_get_image (gklass), token, klass, NULL, local_error);
+				method = mono_class_inflate_generic_method_full_checked (gmethod, klass, mono_class_get_context (klass), local_error);
+				mono_error_cleanup (local_error);
+			} else {
+				ERROR_DECL (local_error);
+				method = mono_get_method_checked (m_class_get_image (klass), token, klass, NULL, local_error);
+				mono_error_cleanup (local_error);
+			}
 			return method;
 		}
 		cur_count++;
