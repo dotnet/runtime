@@ -43,8 +43,11 @@ namespace System.Security.Cryptography
         /// <value>
         /// <see langword="true" /> if the algorithm is supported; otherwise, <see langword="false" />.
         /// </value>
-        [SupportedOSPlatformGuard("windows")]
-        [SupportedOSPlatformGuard("linux")]
+        [UnsupportedOSPlatformGuard("android")]
+        [UnsupportedOSPlatformGuard("osx")]
+        [UnsupportedOSPlatformGuard("ios")]
+        [UnsupportedOSPlatformGuard("tvos")]
+        [UnsupportedOSPlatformGuard("browser")]
         public static bool IsSupported => HashProviderDispenser.HashSupported(HashAlgorithmNames.SHA3_256);
 
         /// <summary>
@@ -56,8 +59,11 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-256.
         /// </exception>
-        [SupportedOSPlatform("windows")]
-        [SupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static new SHA3_256 Create()
         {
             CheckSha3Support();
@@ -75,8 +81,11 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-256.
         /// </exception>
-        [SupportedOSPlatform("windows")]
-        [SupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static byte[] HashData(byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -92,8 +101,11 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-256.
         /// </exception>
-        [SupportedOSPlatform("windows")]
-        [SupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static byte[] HashData(ReadOnlySpan<byte> source)
         {
             byte[] buffer = new byte[HashSizeInBytes];
@@ -117,8 +129,11 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-256.
         /// </exception>
-        [SupportedOSPlatform("windows")]
-        [SupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
         {
             if (!TryHashData(source, destination, out int bytesWritten))
@@ -126,7 +141,6 @@ namespace System.Security.Cryptography
 
             return bytesWritten;
         }
-
 
         /// <summary>
         /// Attempts to compute the hash of data using the SHA3-256 algorithm.
@@ -143,8 +157,11 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-256.
         /// </exception>
-        [SupportedOSPlatform("windows")]
-        [SupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
             CheckSha3Support();
@@ -183,8 +200,11 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-256.
         /// </exception>
-        [SupportedOSPlatform("windows")]
-        [SupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static int HashData(Stream source, Span<byte> destination)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -213,8 +233,11 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-256.
         /// </exception>
-        [SupportedOSPlatform("windows")]
-        [SupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static byte[] HashData(Stream source)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -244,8 +267,11 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-256.
         /// </exception>
-        [SupportedOSPlatform("windows")]
-        [SupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -283,8 +309,11 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-256.
         /// </exception>
-        [SupportedOSPlatform("windows")]
-        [SupportedOSPlatform("linux")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static ValueTask<int> HashDataAsync(
             Stream source,
             Memory<byte> destination,
