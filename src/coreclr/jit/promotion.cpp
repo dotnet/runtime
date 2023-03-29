@@ -78,7 +78,6 @@ struct Access
     }
 
     bool Overlaps(unsigned otherStart, unsigned otherSize) const
-
     {
         unsigned end = Offset + GetAccessSize();
         if (end <= otherStart)
@@ -211,12 +210,12 @@ inline AccessKindFlags& operator&=(AccessKindFlags& a, AccessKindFlags b)
 }
 
 // Tracks all the accesses into one particular struct local.
-class LocalsUses
+class LocalUses
 {
     jitstd::vector<Access> m_accesses;
 
 public:
-    LocalsUses(Compiler* comp) : m_accesses(comp->getAllocator(CMK_Promotion))
+    LocalUses(Compiler* comp) : m_accesses(comp->getAllocator(CMK_Promotion))
     {
     }
 
@@ -319,16 +318,16 @@ public:
     // Parameters:
     //   comp   - Compiler instance
     //   lclNum - Local num for this struct local
-    //   replacements - [out] Vector to insert replacements into
+    //   replacements - [out] Pointer to vector to create and insert replacements into
     //
-    void PickPromotions(Compiler* comp, unsigned lclNum, jitstd::vector<Replacement>& replacements)
+    void PickPromotions(Compiler* comp, unsigned lclNum, jitstd::vector<Replacement>** replacements)
     {
         if (m_accesses.size() <= 0)
         {
             return;
         }
 
-        assert(replacements.size() == 0);
+        assert(*replacements == nullptr);
         for (size_t i = 0; i < m_accesses.size(); i++)
         {
             const Access& access = m_accesses[i];
@@ -355,7 +354,13 @@ public:
             LclVarDsc* dsc    = comp->lvaGetDesc(newLcl);
             dsc->lvType       = access.AccessType;
 
-            replacements.push_back(Replacement(access.Offset, access.AccessType, newLcl));
+            if (*replacements == nullptr)
+            {
+                *replacements =
+                    new (comp, CMK_Promotion) jitstd::vector<Replacement>(comp->getAllocator(CMK_Promotion));
+            }
+
+            (*replacements)->push_back(Replacement(access.Offset, access.AccessType, newLcl));
         }
     }
 
@@ -509,7 +514,7 @@ public:
 class LocalsUseVisitor : public GenTreeVisitor<LocalsUseVisitor>
 {
     Promotion*  m_prom;
-    LocalsUses* m_uses;
+    LocalUses** m_uses;
     BasicBlock* m_curBB = nullptr;
 
 public:
@@ -520,10 +525,7 @@ public:
 
     LocalsUseVisitor(Promotion* prom) : GenTreeVisitor(prom->m_compiler), m_prom(prom)
     {
-        m_uses = reinterpret_cast<LocalsUses*>(
-            new (prom->m_compiler, CMK_Promotion) char[prom->m_compiler->lvaCount * sizeof(LocalsUses)]);
-        for (size_t i = 0; i < prom->m_compiler->lvaCount; i++)
-            new (&m_uses[i], jitstd::placement_t()) LocalsUses(prom->m_compiler);
+        m_uses = new (prom->m_compiler, CMK_Promotion) LocalUses*[prom->m_compiler->lvaCount]{};
     }
 
     //------------------------------------------------------------------------
@@ -545,9 +547,13 @@ public:
     // Parameters:
     //   bb - The current basic block.
     //
-    LocalsUses* GetUsesByLocal(unsigned lcl)
+    // Returns:
+    //   Information about uses, or null if this local has no uses information
+    //   associated with it.
+    //
+    LocalUses* GetUsesByLocal(unsigned lcl)
     {
-        return &m_uses[lcl];
+        return m_uses[lcl];
     }
 
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
@@ -574,8 +580,8 @@ public:
                     var_types       accessType   = lcl->TypeGet();
                     ClassLayout*    accessLayout = accessType == TYP_STRUCT ? lcl->GetLayout(m_compiler) : nullptr;
                     AccessKindFlags accessFlags  = ClassifyLocalAccess(lcl, user);
-                    m_uses[lcl->GetLclNum()].RecordAccess(offs, accessType, accessLayout, accessFlags,
-                                                          m_curBB->getBBWeight(m_compiler));
+                    GetOrCreateUses(lcl->GetLclNum())
+                        ->RecordAccess(offs, accessType, accessLayout, accessFlags, m_curBB->getBBWeight(m_compiler));
                 }
             }
         }
@@ -584,6 +590,25 @@ public:
     }
 
 private:
+    //------------------------------------------------------------------------
+    // GetOrCreateUses:
+    //   Get the uses information for a local. Create it if it does not already exist.
+    //
+    // Parameters:
+    //   lclNum - The local
+    //
+    // Returns:
+    //   Uses information.
+    //
+    LocalUses* GetOrCreateUses(unsigned lclNum)
+    {
+        if (m_uses[lclNum] == nullptr)
+        {
+            m_uses[lclNum] = new (m_compiler, CMK_Promotion) LocalUses(m_compiler);
+        }
+
+        return m_uses[lclNum];
+    }
     //------------------------------------------------------------------------
     // ClassifyLocalAccess:
     //   Given a local use and its user, classify information about it.
@@ -669,9 +694,9 @@ private:
 
 class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
 {
-    Promotion*                   m_prom;
-    jitstd::vector<Replacement>* m_replacements;
-    bool                         m_madeChanges = false;
+    Promotion*                    m_prom;
+    jitstd::vector<Replacement>** m_replacements;
+    bool                          m_madeChanges = false;
 
 public:
     enum
@@ -680,7 +705,7 @@ public:
         UseExecutionOrder = true,
     };
 
-    ReplaceVisitor(Promotion* prom, jitstd::vector<Replacement>* replacements)
+    ReplaceVisitor(Promotion* prom, jitstd::vector<Replacement>** replacements)
         : GenTreeVisitor(prom->m_compiler), m_prom(prom), m_replacements(replacements)
     {
     }
@@ -840,14 +865,14 @@ public:
     //
     void ReplaceLocal(GenTree** use, GenTree* user)
     {
-        GenTreeLclVarCommon*         lcl          = (*use)->AsLclVarCommon();
-        unsigned                     lclNum       = lcl->GetLclNum();
-        jitstd::vector<Replacement>& replacements = m_replacements[lclNum];
-
-        if (replacements.size() <= 0)
+        GenTreeLclVarCommon* lcl    = (*use)->AsLclVarCommon();
+        unsigned             lclNum = lcl->GetLclNum();
+        if (m_replacements[lclNum] == nullptr)
         {
             return;
         }
+
+        jitstd::vector<Replacement>& replacements = *m_replacements[lclNum];
 
         unsigned  offs       = lcl->GetLclOffs();
         var_types accessType = lcl->TypeGet();
@@ -941,8 +966,13 @@ public:
     //
     void WriteBackBefore(GenTree** use, unsigned lcl, unsigned offs, unsigned size)
     {
-        jitstd::vector<Replacement> replacements = m_replacements[lcl];
-        size_t                      index        = BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
+        if (m_replacements[lcl] == nullptr)
+        {
+            return;
+        }
+
+        jitstd::vector<Replacement>& replacements = *m_replacements[lcl];
+        size_t                       index        = BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
 
         if ((ssize_t)index < 0)
         {
@@ -989,7 +1019,12 @@ public:
     //
     void MarkForReadBack(unsigned lcl, unsigned offs, unsigned size, bool conservative = false)
     {
-        jitstd::vector<Replacement>& replacements = m_replacements[lcl];
+        if (m_replacements[lcl] == nullptr)
+        {
+            return;
+        }
+
+        jitstd::vector<Replacement>& replacements = *m_replacements[lcl];
         size_t                       index        = BinarySearch<Replacement, &Replacement::Offset>(replacements, offs);
 
         if ((ssize_t)index < 0)
@@ -1052,29 +1087,36 @@ PhaseStatus Promotion::Run()
     {
         for (unsigned lcl = 0; lcl < m_compiler->lvaCount; lcl++)
         {
-            LocalsUses* uses = localsUse.GetUsesByLocal(lcl);
-            uses->Dump(lcl);
+            LocalUses* uses = localsUse.GetUsesByLocal(lcl);
+            if (uses != nullptr)
+            {
+                uses->Dump(lcl);
+            }
         }
     }
 #endif
 
     // Pick promotion based on the use information we just collected.
-    bool                         anyReplacements = false;
-    jitstd::vector<Replacement>* replacements    = reinterpret_cast<jitstd::vector<Replacement>*>(
-        new (m_compiler, CMK_Promotion) char[sizeof(jitstd::vector<Replacement>) * m_compiler->lvaCount]);
+    bool                          anyReplacements = false;
+    jitstd::vector<Replacement>** replacements =
+        new (m_compiler, CMK_Promotion) jitstd::vector<Replacement>*[m_compiler->lvaCount]{};
     for (unsigned i = 0; i < numLocals; i++)
     {
-        new (&replacements[i], jitstd::placement_t())
-            jitstd::vector<Replacement>(m_compiler->getAllocator(CMK_Promotion));
-
-        localsUse.GetUsesByLocal(i)->PickPromotions(m_compiler, i, replacements[i]);
-
-        if (replacements[i].size() > 0)
+        LocalUses* uses = localsUse.GetUsesByLocal(i);
+        if (uses == nullptr)
         {
+            continue;
+        }
+
+        uses->PickPromotions(m_compiler, i, &replacements[i]);
+
+        if (replacements[i] != nullptr)
+        {
+            assert(replacements[i]->size() > 0);
             anyReplacements = true;
 #ifdef DEBUG
-            JITDUMP("V%02u promoted with %d replacements\n", i, (int)replacements[i].size());
-            for (const Replacement& rep : replacements[i])
+            JITDUMP("V%02u promoted with %d replacements\n", i, (int)replacements[i]->size());
+            for (const Replacement& rep : *replacements[i])
             {
                 JITDUMP("  [%03u..%03u) promoted as %s V%02u\n", rep.Offset, rep.Offset + genTypeSize(rep.AccessType),
                         varTypeName(rep.AccessType), rep.LclNum);
@@ -1107,9 +1149,13 @@ PhaseStatus Promotion::Run()
 
         for (unsigned i = 0; i < numLocals; i++)
         {
-            for (unsigned j = 0; j < replacements[i].size(); j++)
+            if (replacements[i] == nullptr)
             {
-                Replacement& rep = replacements[i][j];
+                continue;
+            }
+
+            for (Replacement& rep : *replacements[i])
+            {
                 assert(!rep.NeedsReadBack || !rep.NeedsWriteBack);
                 if (rep.NeedsReadBack)
                 {
@@ -1131,10 +1177,15 @@ PhaseStatus Promotion::Run()
     Statement* prevStmt = nullptr;
     for (unsigned lclNum = 0; lclNum < numLocals; lclNum++)
     {
+        if (replacements[lclNum] == nullptr)
+        {
+            continue;
+        }
+
         LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
         if (dsc->lvIsParam || dsc->lvIsOSRLocal)
         {
-            InsertInitialReadBack(lclNum, replacements[lclNum], &prevStmt);
+            InsertInitialReadBack(lclNum, *replacements[lclNum], &prevStmt);
         }
         else if (dsc->lvSuppressedZeroInit)
         {
@@ -1143,7 +1194,7 @@ PhaseStatus Promotion::Run()
             // Now that we are promoting some fields that assumption may be
             // invalidated for those fields, and we may need to insert explicit
             // zero inits again.
-            ExplicitlyZeroInitReplacementLocals(lclNum, replacements[lclNum], &prevStmt);
+            ExplicitlyZeroInitReplacementLocals(lclNum, *replacements[lclNum], &prevStmt);
         }
     }
 
