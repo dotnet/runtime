@@ -324,7 +324,7 @@ namespace System
             } while (true);
 
             // Fall back to the scalar routine in case of invalid input.
-            return TryDecodeFromUtf16(chars.Slice((int)offset), bytes.Slice((int)offset / 2), out _);
+            return TryDecodeFromUtf16(chars.Slice((int)offset), bytes.Slice((int)(offset / 2)), out _);
 
             // Remove once these are exposed as cross-plat helpers
             static Vector128<byte> AddSaturate(Vector128<byte> a, Vector128<byte> b) =>
