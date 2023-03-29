@@ -58,7 +58,7 @@ namespace System.Text.Json
         private JsonCommentHandling _readCommentHandling;
         private ReferenceHandler? _referenceHandler;
         private JavaScriptEncoder? _encoder;
-        private readonly ConfigurationList<JsonConverter> _converters;
+        private ConverterList? _converters;
         private JsonIgnoreCondition _defaultIgnoreCondition;
         private JsonNumberHandling _numberHandling;
         private JsonUnknownTypeHandling _unknownTypeHandling;
@@ -81,7 +81,6 @@ namespace System.Text.Json
         /// </summary>
         public JsonSerializerOptions()
         {
-            _converters = new ConverterList(this);
             TrackOptionsInstance(this);
         }
 
@@ -99,11 +98,16 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(options));
             }
 
+            // The following fields are not copied intentionally:
+            // 1. _cachingContext can only be set in immutable options instances.
+            // 2. _typeInfoResolverChain can be created lazily as it relies on
+            //    _typeInfoResolver as its source of truth.
+
             _dictionaryKeyPolicy = options._dictionaryKeyPolicy;
             _jsonPropertyNamingPolicy = options._jsonPropertyNamingPolicy;
             _readCommentHandling = options._readCommentHandling;
             _referenceHandler = options._referenceHandler;
-            _converters = new ConverterList(this, options._converters);
+            _converters = options._converters is { } converters ? new(this, converters) : null;
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
             _numberHandling = options._numberHandling;
@@ -122,9 +126,6 @@ namespace System.Text.Json
             _typeInfoResolver = options._typeInfoResolver;
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
-
-            // _cachingContext is not copied as sharing the JsonTypeInfo and JsonPropertyInfo caches can result in
-            // unnecessary references to type metadata, potentially hindering garbage collection on the source options.
 
             TrackOptionsInstance(this);
         }
@@ -188,6 +189,9 @@ namespace System.Text.Json
         /// <remarks>
         /// A <see langword="null"/> setting is equivalent to using the reflection-based <see cref="DefaultJsonTypeInfoResolver" />.
         /// The property will be populated automatically once used with one of the <see cref="JsonSerializer"/> methods.
+        ///
+        /// This property is kept in sync with the <see cref="TypeInfoResolverChain"/> property.
+        /// Any change made to this property will be reflected by <see cref="TypeInfoResolverChain"/> and vice versa.
         /// </remarks>
         public IJsonTypeInfoResolver? TypeInfoResolver
         {
@@ -198,9 +202,31 @@ namespace System.Text.Json
             set
             {
                 VerifyMutable();
+
+                if (_typeInfoResolverChain is { } resolverChain && !ReferenceEquals(resolverChain, value))
+                {
+                    // User is setting a new resolver; invalidate the resolver chain if already created.
+                    resolverChain.Clear();
+                    resolverChain.AddFlattened(value);
+                }
+
                 _typeInfoResolver = value;
             }
         }
+
+        /// <summary>
+        /// Gets the list of chained <see cref="JsonTypeInfo"/> contract resolvers used by this instance.
+        /// </summary>
+        /// <remarks>
+        /// The ordering of the chain is significant: <see cref="JsonSerializerOptions "/> will query each
+        /// of the resolvers in their specified order, returning the first result that is non-null.
+        /// If all resolvers in the chain return null, then <see cref="JsonSerializerOptions"/> will also return null.
+        ///
+        /// This property is auxiliary to and is kept in sync with the <see cref="TypeInfoResolver"/> property.
+        /// Any change made to this property will be reflected by <see cref="TypeInfoResolver"/> and vice versa.
+        /// </remarks>
+        public IList<IJsonTypeInfoResolver> TypeInfoResolverChain => _typeInfoResolverChain ??= new(this);
+        private OptionsBoundJsonTypeInfoResolverChain? _typeInfoResolverChain;
 
         /// <summary>
         /// Defines whether an extra comma at the end of a list of JSON values in an object or array
@@ -625,10 +651,9 @@ namespace System.Text.Json
                                    defaultResolver.Modifiers.Count == 0;
                         case JsonSerializerContext ctx:
                             return ctx.IsCompatibleWithGeneratedOptions(this);
-                        case JsonTypeInfoResolver.CombiningJsonTypeInfoResolver combiningResolver:
-                            foreach (IJsonTypeInfoResolver component in combiningResolver.Resolvers)
+                        case JsonTypeInfoResolverChain resolverChain:
+                            foreach (IJsonTypeInfoResolver component in resolverChain)
                             {
-                                Debug.Assert(component is not JsonTypeInfoResolver.CombiningJsonTypeInfoResolver, "recurses at most once.");
                                 if (!CanUseFastPath(component))
                                 {
                                     return false;
@@ -788,8 +813,39 @@ namespace System.Text.Json
                 _options = options;
             }
 
-            protected override bool IsImmutable => _options.IsReadOnly;
-            protected override void VerifyMutable() => _options.VerifyMutable();
+            public override bool IsReadOnly => _options.IsReadOnly;
+            protected override void OnCollectionModifying() => _options.VerifyMutable();
+        }
+
+        private sealed class OptionsBoundJsonTypeInfoResolverChain : JsonTypeInfoResolverChain
+        {
+            private readonly JsonSerializerOptions _options;
+
+            public OptionsBoundJsonTypeInfoResolverChain(JsonSerializerOptions options)
+            {
+                _options = options;
+                AddFlattened(options._typeInfoResolver);
+            }
+
+            public override bool IsReadOnly => _options.IsReadOnly;
+
+            protected override void ValidateAddedValue(IJsonTypeInfoResolver item)
+            {
+                if (ReferenceEquals(item, this) || ReferenceEquals(item, _options._typeInfoResolver))
+                {
+                    // Cannot add the instances in TypeInfoResolver or TypeInfoResolverChain to the chain itself.
+                    ThrowHelper.ThrowInvalidOperationException_InvalidChainedResolver();
+                }
+            }
+
+            protected override void OnCollectionModifying()
+            {
+                _options.VerifyMutable();
+
+                // Collection modified by the user: replace the main
+                // resolver with the resolver chain as our source of truth.
+                _options._typeInfoResolver = this;
+            }
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
@@ -805,6 +861,6 @@ namespace System.Text.Json
             return Interlocked.CompareExchange(ref s_defaultOptions, options, null) ?? options;
         }
 
-        private string DebuggerDisplay => $"TypeInfoResolver = {TypeInfoResolver?.GetType()?.Name}, IsImmutable = {IsReadOnly}";
+        private string DebuggerDisplay => $"TypeInfoResolver = {(TypeInfoResolver is JsonTypeInfoResolverChain chain ? chain.DebuggerDisplay : TypeInfoResolver?.GetType().Name)}, IsReadOnly = {IsReadOnly}";
     }
 }

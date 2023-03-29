@@ -10,7 +10,7 @@ namespace ILLink.Shared
 {
 	public enum DiagnosticId
 	{
-		// Linker error ids.
+		// Trimming error ids.
 		XmlFeatureDoesNotSpecifyFeatureValue = 1001,
 		XmlUnsupportedNonBooleanValueForFeature = 1002,
 		XmlException = 1003,
@@ -59,7 +59,7 @@ namespace ILLink.Shared
 		InvalidMetadataOption = 1046,
 		InvalidDependenciesFileFormat = 1047,
 
-		// Linker diagnostic ids.
+		// Trimming diagnostic ids.
 		TypeHasNoFieldsToPreserve = 2001,
 		TypeHasNoMethodsToPreserve = 2002,
 		CouldNotResolveDependencyAssembly = 2003,

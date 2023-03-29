@@ -878,6 +878,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			pos += offset;
 
 			type = mono_type_get_underlying_type (field->type);
+
 			switch (type->type) {
 			case MONO_TYPE_U:
 			case MONO_TYPE_I:
@@ -930,6 +931,15 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			default:
 				g_error ("compute_class_bitmap: Invalid type %x for field %s:%s\n", type->type, mono_type_get_full_name (m_field_get_parent (field)), field->name);
 				break;
+			}
+
+			// A struct with the inline array attribute is handled in the same way as an array
+			if (m_class_is_inlinearray (klass)) {
+				g_assert ((m_field_get_offset (field) % wordsize) == 0);
+
+				g_assert (pos < GINT_TO_UINT32(size) || pos <= GINT_TO_UINT32(max_size));
+				bitmap [pos / BITMAP_EL_SIZE] |= ((gsize)1) << (pos % BITMAP_EL_SIZE);
+				*max_set = MAX (GINT_TO_UINT32(*max_set), pos);
 			}
 		}
 		if (static_fields)

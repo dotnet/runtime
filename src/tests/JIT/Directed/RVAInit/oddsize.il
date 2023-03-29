@@ -16,7 +16,7 @@
 .file alignment 512
 
 // Image base: 0x034f0000
-.class private sequential ansi sealed beforefieldinit Test_oddsize
+.class public sequential ansi sealed beforefieldinit Test_oddsize
        extends [mscorlib]System.ValueType
 {
   .field public static valuetype Test_oddsize test1 at bytearray2
@@ -32,7 +32,7 @@
     call void [System.Console]System.Console::WriteLine()
     ret
   }
-  .method private hidebysig static int32 Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

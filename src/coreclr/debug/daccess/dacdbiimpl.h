@@ -1176,7 +1176,7 @@ protected:
 class DacRefWalker
 {
 public:
-    DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, BOOL walkFQ, UINT32 handleMask);
+    DacRefWalker(ClrDataAccess *dac, BOOL walkStacks, BOOL walkFQ, UINT32 handleMask, BOOL resolvePointers);
     ~DacRefWalker();
 
     HRESULT Init();
@@ -1194,6 +1194,7 @@ private:
 
     // Stacks
     DacStackReferenceWalker *mStackWalker;
+    BOOL mResolvePointers;
 
     // Handles
     DacHandleWalker *mHandleWalker;

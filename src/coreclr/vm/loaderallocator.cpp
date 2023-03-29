@@ -17,7 +17,9 @@
 
 UINT64 LoaderAllocator::cLoaderAllocatorsCreated = 1;
 
-LoaderAllocator::LoaderAllocator()
+LoaderAllocator::LoaderAllocator(bool collectible) : 
+    m_stubPrecodeRangeList(STUB_CODE_BLOCK_STUBPRECODE, collectible),
+    m_fixupPrecodeRangeList(STUB_CODE_BLOCK_FIXUPPRECODE, collectible)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -66,7 +68,7 @@ LoaderAllocator::LoaderAllocator()
     m_pLastUsedCodeHeap = NULL;
     m_pLastUsedDynamicCodeHeap = NULL;
     m_pJumpStubCache = NULL;
-    m_IsCollectible = false;
+    m_IsCollectible = collectible;
 
     m_pMarshalingData = NULL;
 
@@ -1194,7 +1196,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 
     m_pNewStubPrecodeHeap = new (&m_NewStubPrecodeHeapInstance) LoaderHeap(2 * GetOsPageSize(),
                                                                            2 * GetOsPageSize(),
-                                                                           PrecodeStubManager::g_pManager->GetStubPrecodeRangeList(),
+                                                                           &m_stubPrecodeRangeList,
                                                                            UnlockedLoaderHeap::HeapKind::Interleaved,
                                                                            false /* fUnlocked */,
                                                                            StubPrecode::GenerateCodePage,
@@ -1202,7 +1204,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 
     m_pFixupPrecodeHeap = new (&m_FixupPrecodeHeapInstance) LoaderHeap(2 * GetOsPageSize(),
                                                                        2 * GetOsPageSize(),
-                                                                       PrecodeStubManager::g_pManager->GetFixupPrecodeRangeList(),
+                                                                       &m_fixupPrecodeRangeList,
                                                                        UnlockedLoaderHeap::HeapKind::Interleaved,
                                                                        false /* fUnlocked */,
                                                                        FixupPrecode::GenerateCodePage,
@@ -1685,17 +1687,6 @@ void DomainAssemblyIterator::operator++()
 {
     pCurrentAssembly = pNextAssembly;
     pNextAssembly = pCurrentAssembly ? pCurrentAssembly->GetNextDomainAssemblyInSameALC() : NULL;
-}
-
-void AssemblyLoaderAllocator::SetCollectible()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    m_IsCollectible = true;
 }
 
 #ifndef DACCESS_COMPILE

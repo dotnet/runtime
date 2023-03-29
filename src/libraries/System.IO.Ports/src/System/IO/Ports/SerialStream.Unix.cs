@@ -520,7 +520,7 @@ namespace System.IO.Ports
 
         public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback userCallback, object stateObject)
         {
-            return TaskToApm.Begin(ReadAsync(array, offset, numBytes), userCallback, stateObject);
+            return TaskToAsyncResult.Begin(ReadAsync(array, offset, numBytes), userCallback, stateObject);
         }
 
         // Will wait `timeout` miliseconds or until reading or writing is possible
@@ -576,7 +576,7 @@ namespace System.IO.Ports
 
         public override IAsyncResult BeginWrite(byte[] array, int offset, int count, AsyncCallback userCallback, object stateObject)
         {
-            return TaskToApm.Begin(WriteAsync(array, offset, count), userCallback, stateObject);
+            return TaskToAsyncResult.Begin(WriteAsync(array, offset, count), userCallback, stateObject);
         }
 
         public override void EndWrite(IAsyncResult asyncResult)
@@ -586,7 +586,7 @@ namespace System.IO.Ports
         {
             try
             {
-                return TaskToApm.End<int>(asyncResult);
+                return TaskToAsyncResult.End<int>(asyncResult);
             }
             catch (OperationCanceledException)
             {

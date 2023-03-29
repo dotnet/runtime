@@ -27,7 +27,7 @@ typedef struct {
 	/* Maps methods/klasses to the address of the given type of trampoline */
 	GHashTable *jump_trampoline_hash;
 	GHashTable *jit_trampoline_hash;
-	GHashTable *delegate_trampoline_hash;
+	GHashTable *delegate_info_hash;
 	/* Maps ClassMethodPair -> MonoDelegateTrampInfo */
 	GHashTable *static_rgctx_trampoline_hash;
 	/* maps MonoMethod -> MonoJitDynamicMethodInfo */
@@ -717,5 +717,13 @@ void mini_register_sigterm_handler (void);
 		MONO_PROFILER_RAISE (jit_code_buffer, ((buf), (size), (MonoProfilerCodeBufferType)(type), (arg))); \
 	MONO_RESTORE_WARNING \
 	} while (0)
+
+typedef void (*MonoRuntimeInitCallback) (void);
+
+MONO_COMPONENT_API void
+mono_set_runtime_init_callback (MonoRuntimeInitCallback callback);
+
+MONO_COMPONENT_API void
+mono_invoke_runtime_init_callback (void);
 
 #endif /* __MONO_MINI_RUNTIME_H__ */

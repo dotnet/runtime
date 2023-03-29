@@ -1003,7 +1003,8 @@ BOOL PrecodeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     }
     CONTRACTL_END;
 
-    return GetStubPrecodeRangeList()->IsInRange(stubStartAddress) || GetFixupPrecodeRangeList()->IsInRange(stubStartAddress);
+    auto stubKind = RangeSectionStubManager::GetStubKind(stubStartAddress);
+    return (stubKind == STUB_CODE_BLOCK_FIXUPPRECODE) || (stubKind == STUB_CODE_BLOCK_STUBPRECODE);
 }
 
 BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
@@ -1551,7 +1552,7 @@ RangeSectionStubManager::GetStubKind(PCODE stubStartAddress)
     if (pRS == NULL)
         return STUB_CODE_BLOCK_UNKNOWN;
 
-    return pRS->pjit->GetStubCodeBlockKind(pRS, stubStartAddress);
+    return pRS->_pjit->GetStubCodeBlockKind(pRS, stubStartAddress);
 }
 
 //
@@ -2382,8 +2383,6 @@ PrecodeStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p PrecodeStubManager\n", dac_cast<TADDR>(this)));
-    GetStubPrecodeRangeList()->EnumMemoryRegions(flags);
-    GetFixupPrecodeRangeList()->EnumMemoryRegions(flags);
 }
 
 void

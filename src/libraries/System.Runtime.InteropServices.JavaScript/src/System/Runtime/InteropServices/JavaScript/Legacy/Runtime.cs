@@ -39,7 +39,7 @@ namespace System.Runtime.InteropServices.JavaScript
             Interop.Runtime.InvokeJSWithArgsRef(self.JSHandle, method, args, out int exception, out object res);
             if (exception != 0)
                 throw new JSException((string)res);
-            JSHostImplementation.ReleaseInFlight(res);
+            LegacyHostImplementation.ReleaseInFlight(res);
             return res;
         }
 
@@ -74,7 +74,7 @@ namespace System.Runtime.InteropServices.JavaScript
             Interop.Runtime.GetObjectPropertyRef(self.JSHandle, name, out int exception, out object propertyValue);
             if (exception != 0)
                 throw new JSException((string)propertyValue);
-            JSHostImplementation.ReleaseInFlight(propertyValue);
+            LegacyHostImplementation.ReleaseInFlight(propertyValue);
             return propertyValue;
         }
 

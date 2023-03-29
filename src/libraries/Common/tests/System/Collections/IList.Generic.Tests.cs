@@ -614,7 +614,7 @@ namespace System.Collections.Tests
                     while (enumerator.MoveNext()) ; // Go to end of enumerator
 
                     T current = default(T);
-                    if (Enumerator_Current_UndefinedOperation_Throws)
+                    if (count == 0 ? Enumerator_Empty_Current_UndefinedOperation_Throws : Enumerator_Current_UndefinedOperation_Throws)
                     {
                         Assert.Throws<InvalidOperationException>(() => enumerator.Current); // enumerator.Current should fail
                     }
@@ -630,7 +630,7 @@ namespace System.Collections.Tests
                     {
                         collection.Add(CreateT(seed++));
 
-                        if (Enumerator_Current_UndefinedOperation_Throws)
+                        if (count == 0 ? Enumerator_Empty_Current_UndefinedOperation_Throws : Enumerator_Current_UndefinedOperation_Throws)
                         {
                             Assert.Throws<InvalidOperationException>(() => enumerator.Current); // enumerator.Current should fail
                         }

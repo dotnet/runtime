@@ -1291,15 +1291,8 @@ namespace System.Net.Http
                     {
                         var thisRef = new WeakReference<HttpConnectionPool>(this);
 
-                        bool restoreFlow = false;
-                        try
+                        using (ExecutionContext.SuppressFlow())
                         {
-                            if (!ExecutionContext.IsFlowSuppressed())
-                            {
-                                ExecutionContext.SuppressFlow();
-                                restoreFlow = true;
-                            }
-
                             _authorityExpireTimer = new Timer(static o =>
                             {
                                 var wr = (WeakReference<HttpConnectionPool>)o!;
@@ -1308,10 +1301,6 @@ namespace System.Net.Http
                                     @this.ExpireAltSvcAuthority();
                                 }
                             }, thisRef, nextAuthorityMaxAge, Timeout.InfiniteTimeSpan);
-                        }
-                        finally
-                        {
-                            if (restoreFlow) ExecutionContext.RestoreFlow();
                         }
                     }
                     else

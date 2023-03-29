@@ -44,14 +44,18 @@ namespace Tracing.Tests.SimpleProviderValidation
 
         private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()
         {
-            { "MyEventSource", 1 },
+            { "MyEventSource", 100_000 },
             { "Microsoft-DotNETCore-EventPipe", 1}
         };
 
         private static Action _eventGeneratingAction = () => 
         {
-            Logger.logger.Log($"Firing an event...");
-            MyEventSource.Log.MyEvent();
+            for (int i = 0; i < 100_000; i++)
+            {
+                if (i % 10_000 == 0)
+                    Logger.logger.Log($"Fired MyEvent {i:N0}/100,000 times...");
+                MyEventSource.Log.MyEvent();
+            }
         };
     }
 }

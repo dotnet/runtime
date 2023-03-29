@@ -27,7 +27,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 extern ICorJitHost* g_jitHost;
 
 #if defined(DEBUG)
-// Column settings for COMPlus_JitDumpIR.  We could(should) make these programmable.
+// Column settings for DOTNET_JitDumpIR.  We could(should) make these programmable.
 #define COLUMN_OPCODE 30
 #define COLUMN_OPERANDS (COLUMN_OPCODE + 25)
 #define COLUMN_KINDS 110
@@ -114,25 +114,25 @@ inline bool _our_GetThreadCycles(unsigned __int64* cycleOut)
 #endif // which host OS
 
 const BYTE genTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) sz,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) sz,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeAlignments[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) al,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) al,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genTypeStSzs[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) st,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) st,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const BYTE genActualTypes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) jitType,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) jitType,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -1776,6 +1776,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     // set this early so we can use it without relying on random memory values
     verbose = compIsForInlining() ? impInlineInfo->InlinerCompiler->verbose : false;
 
+    compNumStatementLinksTraversed = 0;
     compPoisoningAnyImplicitByrefs = false;
 #endif
 
@@ -1950,6 +1951,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     vnStore                    = nullptr;
     m_outlinedCompositeSsaNums = nullptr;
     m_nodeToLoopMemoryBlockMap = nullptr;
+    m_signatureToLookupInfoMap = nullptr;
     fgSsaPassesCompleted       = 0;
     fgSsaChecksEnabled         = false;
     fgVNPassesCompleted        = 0;
@@ -2039,7 +2041,7 @@ void Compiler::compDoComponentUnitTestsOnce()
 //
 // Return Value:
 //    An unsigned char value used to initizalize memory allocated by the JIT.
-//    The default value is taken from COMPLUS_JitDefaultFill,  if is not set
+//    The default value is taken from DOTNET_JitDefaultFill,  if is not set
 //    the value will be 0xdd.  When JitStress is active a random value based
 //    on the method hash is used.
 //
@@ -2238,11 +2240,8 @@ void Compiler::compSetProcessor()
         info.genCPU = CPU_X86_PENTIUM_4;
     else
         info.genCPU = CPU_X86;
-
 #elif defined(TARGET_LOONGARCH64)
-
-    info.genCPU = CPU_LOONGARCH64;
-
+    info.genCPU                   = CPU_LOONGARCH64;
 #endif
 
     //
@@ -2276,9 +2275,51 @@ void Compiler::compSetProcessor()
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
     }
+
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX))
     {
         instructionSetFlags.AddInstructionSet(InstructionSet_Vector256);
+    }
+
+    // x86-64-v4 feature level supports AVX512F, AVX512BW, AVX512CD, AVX512DQ, AVX512VL
+    // These have been shipped together historically and at the time of this writing
+    // there exists no hardware which doesn't support the entire feature set. To simplify
+    // the overall JIT implementation, we currently require the entire set of ISAs to be
+    // supported and disable AVX512 support otherwise.
+
+    if (instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW_VL) &&
+        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD_VL) &&
+        instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ_VL))
+    {
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512BW));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512CD));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512DQ));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F));
+        assert(instructionSetFlags.HasInstructionSet(InstructionSet_AVX512F_VL));
+
+        instructionSetFlags.AddInstructionSet(InstructionSet_Vector512);
+    }
+    else
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL);
+
+#ifdef TARGET_AMD64
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512F_VL_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512BW_VL_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512CD_VL_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_X64);
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_AVX512DQ_VL_X64);
+#endif // TARGET_AMD64
     }
 #elif defined(TARGET_ARM64)
     if (instructionSetFlags.HasInstructionSet(InstructionSet_AdvSimd))
@@ -2294,17 +2335,17 @@ void Compiler::compSetProcessor()
 #ifdef TARGET_XARCH
     if (!compIsForInlining())
     {
-        if (canUseEvexEncoding())
-        {
-            codeGen->GetEmitter()->SetUseEvexEncoding(true);
-            // TODO-XArch-AVX512: Revisit other flags to be set once avx512 instructions are added.
-        }
         if (canUseVexEncoding())
         {
             codeGen->GetEmitter()->SetUseVEXEncoding(true);
             // Assume each JITted method does not contain AVX instruction at first
             codeGen->GetEmitter()->SetContainsAVX(false);
-            codeGen->GetEmitter()->SetContains256bitAVX(false);
+            codeGen->GetEmitter()->SetContains256bitOrMoreAVX(false);
+        }
+        if (canUseEvexEncoding())
+        {
+            codeGen->GetEmitter()->SetUseEvexEncoding(true);
+            // TODO-XArch-AVX512 : Revisit other flags to be set once avx512 instructions are added.
         }
     }
 #endif // TARGET_XARCH
@@ -2319,7 +2360,7 @@ bool Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool suppor
 
 #ifdef PROFILING_SUPPORTED
 // A Dummy routine to receive Enter/Leave/Tailcall profiler callbacks.
-// These are used when complus_JitEltHookEnabled=1
+// These are used when DOTNET_JitEltHookEnabled=1
 #ifdef TARGET_AMD64
 void DummyProfilerELTStub(UINT_PTR ProfilerHandle, UINT_PTR callerSP)
 {
@@ -2585,7 +2626,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #endif // !DEBUG
 
-    // Take care of COMPlus_AltJitExcludeAssemblies.
+    // Take care of DOTNET_AltJitExcludeAssemblies.
     if (opts.altJit)
     {
         // First, initialize the AltJitExcludeAssemblies list, but only do it once.
@@ -2622,9 +2663,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     bool altJitConfig = !pfAltJit->isEmpty();
 
     //  If we have a non-empty AltJit config then we change all of these other
-    //  config values to refer only to the AltJit. Otherwise, a lot of COMPlus_* variables
+    //  config values to refer only to the AltJit. Otherwise, a lot of DOTNET_* variables
     //  would apply to both the altjit and the normal JIT, but we only care about
-    //  debugging the altjit if the COMPlus_AltJit configuration is set.
+    //  debugging the altjit if the DOTNET_AltJit configuration is set.
     //
     if (compIsForImportOnly() && (!altJitConfig || opts.altJit))
     {
@@ -2828,9 +2869,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compJitEarlyExpandMDArrays = (JitConfig.JitEarlyExpandMDArrays() != 0);
 
-    opts.disAsm      = false;
-    opts.disDiffable = false;
-    opts.dspDiffable = false;
+    opts.disAsm       = false;
+    opts.disDiffable  = false;
+    opts.dspDiffable  = false;
+    opts.disAlignment = false;
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -2838,7 +2880,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.dmpHex          = false;
     opts.disAsmSpilled   = false;
     opts.disAddr         = false;
-    opts.disAlignment    = false;
     opts.dspCode         = false;
     opts.dspEHTable      = false;
     opts.dspDebugInfo    = false;
@@ -2932,24 +2973,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             opts.doLateDisasm = true;
 #endif // LATE_DISASM
 
-        // This one applies to both Ngen/Jit Disasm output: COMPlus_JitDiffableDasm=1
-        if (JitConfig.DiffableDasm() != 0)
-        {
-            opts.disDiffable = true;
-            opts.dspDiffable = true;
-        }
-
-        // This one applies to both Ngen/Jit Disasm output: COMPlus_JitDasmWithAddress=1
+        // This one applies to both Ngen/Jit Disasm output: DOTNET_JitDasmWithAddress=1
         if (JitConfig.JitDasmWithAddress() != 0)
         {
             opts.disAddr = true;
         }
-
-        if (JitConfig.JitDasmWithAlignmentBoundaries() != 0)
-        {
-            opts.disAlignment = true;
-        }
-
         if (JitConfig.JitLongAddress() != 0)
         {
             opts.compLongAddress = true;
@@ -3044,6 +3072,34 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 #endif // !DEBUG
 
+#ifndef DEBUG
+    if (opts.disAsm)
+#endif
+    {
+        if (JitConfig.JitDisasmWithAlignmentBoundaries())
+        {
+            opts.disAlignment = true;
+        }
+        if (JitConfig.JitDisasmDiffable())
+        {
+            opts.disDiffable = true;
+            opts.dspDiffable = true;
+        }
+    }
+
+// These are left for backward compatibility, to be removed
+#ifdef DEBUG
+    if (JitConfig.JitDasmWithAlignmentBoundaries())
+    {
+        opts.disAlignment = true;
+    }
+    if (JitConfig.JitDiffableDasm())
+    {
+        opts.disDiffable = true;
+        opts.dspDiffable = true;
+    }
+#endif // DEBUG
+
 //-------------------------------------------------------------------------
 
 #ifdef DEBUG
@@ -3093,7 +3149,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         compProfilerMethHndIndirected = false;
     }
 
-    // Honour COMPlus_JitELTHookEnabled or STRESS_PROFILER_CALLBACKS stress mode
+    // Honour DOTNET_JitELTHookEnabled or STRESS_PROFILER_CALLBACKS stress mode
     // only if VM has not asked us to generate profiler hooks in the first place.
     // That is, override VM only if it hasn't asked for a profiler callback for this method.
     // Don't run this stress mode when pre-JITing, as we would need to emit a relocation
@@ -3265,7 +3321,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         // is nothing preventing that.
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
         {
-            printf("OPTIONS: Tier-0 compilation (set COMPlus_TieredCompilation=0 to disable)\n");
+            printf("OPTIONS: Tier-0 compilation (set DOTNET_TieredCompilation=0 to disable)\n");
         }
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1))
         {
@@ -3297,14 +3353,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         printf("OPTIONS: compProcedureSplitting   = %s\n", dspBool(opts.compProcedureSplitting));
         printf("OPTIONS: compProcedureSplittingEH = %s\n", dspBool(opts.compProcedureSplittingEH));
 
-        if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && fgHaveProfileData())
+        if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
         {
-            printf("OPTIONS: optimized using %s profile data\n", pgoSourceToString(fgPgoSource));
-        }
-
-        if (fgPgoFailReason != nullptr)
-        {
-            printf("OPTIONS: %s\n", fgPgoFailReason);
+            printf("OPTIONS: optimizer should use profile data\n");
         }
 
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
@@ -3335,7 +3386,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     rbmFltCalleeTrash   = RBM_FLT_CALLEE_TRASH_INIT;
     cntCalleeTrashFloat = CNT_CALLEE_TRASH_FLOAT_INIT;
 
-    if (DoJitStressEvexEncoding())
+    if (canUseEvexEncoding())
     {
         rbmAllFloat |= RBM_HIGHFLOAT;
         rbmFltCalleeTrash |= RBM_HIGHFLOAT;
@@ -3490,7 +3541,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
         }
     }
 
-    // 0:   No stress (Except when explicitly set in complus_JitStressModeNames)
+    // 0:   No stress (Except when explicitly set in DOTNET_JitStressModeNames)
     // !=2: Vary stress. Performance will be slightly/moderately degraded
     // 2:   Check-all stress. Performance will be REALLY horrible
     const int stressLevel = getJitStressLevel();
@@ -3925,7 +3976,7 @@ _SetMinOpts:
         }
 
 #if !defined(TARGET_AMD64)
-        // The VM sets JitFlags::JIT_FLAG_FRAMED for two reasons: (1) the COMPlus_JitFramed variable is set, or
+        // The VM sets JitFlags::JIT_FLAG_FRAMED for two reasons: (1) the DOTNET_JitFramed variable is set, or
         // (2) the function is marked "noinline". The reason for #2 is that people mark functions
         // noinline to ensure the show up on in a stack walk. But for AMD64, we don't need a frame
         // pointer for the frame to show up in stack walk.
@@ -4220,13 +4271,17 @@ const char* Compiler::compGetPgoSourceName() const
         case ICorJitInfo::PgoSource::Dynamic:
             return "Dynamic PGO";
         case ICorJitInfo::PgoSource::Blend:
-            return "Blend PGO";
+            return "Blended PGO";
         case ICorJitInfo::PgoSource::Text:
             return "Textual PGO";
         case ICorJitInfo::PgoSource::Sampling:
             return "Sample-based PGO";
+        case ICorJitInfo::PgoSource::IBC:
+            return "Classic IBC";
+        case ICorJitInfo::PgoSource::Synthesis:
+            return "Synthesized PGO";
         default:
-            return "";
+            return "Unknown PGO";
     }
 }
 
@@ -4781,14 +4836,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // However, ref counts are not kept incrementally up to date.
     assert(lvaLocalVarRefCounted());
 
-    if (opts.OptimizationEnabled())
-    {
-        // Introduce copies for some single-def locals to make them more
-        // amenable to optimization
-        //
-        DoPhase(this, PHASE_OPTIMIZE_ADD_COPIES, &Compiler::optAddCopies);
-    }
-
     // Figure out the order in which operators are to be evaluated
     //
     DoPhase(this, PHASE_FIND_OPER_ORDER, &Compiler::fgFindOperOrder);
@@ -4949,6 +4996,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // The loop table is no longer valid.
     fgDomsComputed    = false;
     optLoopTableValid = false;
+
+#ifdef DEBUG
+    DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
+#endif
+
+    // Expand runtime lookups (an optimization but we'd better run it in tier0 too)
+    DoPhase(this, PHASE_EXPAND_RTLOOKUPS, &Compiler::fgExpandRuntimeLookups);
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -5155,6 +5209,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 //
 PhaseStatus Compiler::placeLoopAlignInstructions()
 {
+    // Add align only if there were any loops that needed alignment
     if (loopAlignCandidates == 0)
     {
         return PhaseStatus::MODIFIED_NOTHING;
@@ -5162,7 +5217,6 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
 
     JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
 
-    // Add align only if there were any loops that needed alignment
     bool                   madeChanges           = false;
     weight_t               minBlockSoFar         = BB_MAX_WEIGHT;
     BasicBlock*            bbHavingAlign         = nullptr;
@@ -5290,6 +5344,163 @@ PhaseStatus Compiler::placeLoopAlignInstructions()
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 #endif
+
+//------------------------------------------------------------------------
+// StressSplitTree: A phase that stresses the gtSplitTree function.
+//
+// Returns:
+//    Suitable phase status
+//
+// Notes:
+//   Stress is applied on a function-by-function basis
+//
+PhaseStatus Compiler::StressSplitTree()
+{
+    if (compStressCompile(STRESS_SPLIT_TREES_RANDOMLY, 10))
+    {
+        SplitTreesRandomly();
+        return PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
+    if (compStressCompile(STRESS_SPLIT_TREES_REMOVE_COMMAS, 10))
+    {
+        SplitTreesRemoveCommas();
+        return PhaseStatus::MODIFIED_EVERYTHING;
+    }
+
+    return PhaseStatus::MODIFIED_NOTHING;
+}
+
+//------------------------------------------------------------------------
+// SplitTreesRandomly: Split all statements at a random location.
+//
+void Compiler::SplitTreesRandomly()
+{
+#ifdef DEBUG
+    CLRRandom rng;
+    rng.Init(info.compMethodHash() ^ 0x077cc4d4);
+
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* stmt : block->NonPhiStatements())
+        {
+            int numTrees = 0;
+            for (GenTree* tree : stmt->TreeList())
+            {
+                if (tree->OperIs(GT_JTRUE)) // Due to relop invariant
+                {
+                    continue;
+                }
+
+                numTrees++;
+            }
+
+            int splitTree = rng.Next(numTrees);
+            for (GenTree* tree : stmt->TreeList())
+            {
+                if (tree->OperIs(GT_JTRUE))
+                    continue;
+
+                if (splitTree == 0)
+                {
+                    JITDUMP("Splitting " FMT_STMT " at [%06u]\n", stmt->GetID(), dspTreeID(tree));
+                    Statement* newStmt;
+                    GenTree**  use;
+                    if (gtSplitTree(block, stmt, tree, &newStmt, &use))
+                    {
+                        while ((newStmt != nullptr) && (newStmt != stmt))
+                        {
+                            fgMorphStmtBlockOps(block, newStmt);
+                            newStmt = newStmt->GetNextStmt();
+                        }
+
+                        fgMorphStmtBlockOps(block, stmt);
+                        gtUpdateStmtSideEffects(stmt);
+                    }
+
+                    break;
+                }
+
+                splitTree--;
+            }
+        }
+    }
+#endif
+}
+
+//------------------------------------------------------------------------
+// SplitTreesRemoveCommas: Split trees to remove all commas.
+//
+void Compiler::SplitTreesRemoveCommas()
+{
+    for (BasicBlock* block : Blocks())
+    {
+        Statement* stmt = block->FirstNonPhiDef();
+        while (stmt != nullptr)
+        {
+            Statement* nextStmt = stmt->GetNextStmt();
+            for (GenTree* tree : stmt->TreeList())
+            {
+                if (!tree->OperIs(GT_COMMA))
+                {
+                    continue;
+                }
+
+                // Supporting this weird construct would require additional
+                // handling, we need to sort of move the comma into to the
+                // next node in execution order. We don't see this so just
+                // skip it.
+                assert(!tree->IsReverseOp());
+
+                JITDUMP("Removing COMMA [%06u]\n", dspTreeID(tree));
+                Statement* newStmt;
+                GenTree**  use;
+                gtSplitTree(block, stmt, tree, &newStmt, &use);
+                GenTree* op1SideEffects = nullptr;
+                gtExtractSideEffList(tree->gtGetOp1(), &op1SideEffects);
+
+                if (op1SideEffects != nullptr)
+                {
+                    Statement* op1Stmt = fgNewStmtFromTree(op1SideEffects);
+                    fgInsertStmtBefore(block, stmt, op1Stmt);
+                    if (newStmt == nullptr)
+                    {
+                        newStmt = op1Stmt;
+                    }
+                }
+
+                *use = tree->gtGetOp2();
+
+                for (Statement* cur = newStmt; (cur != nullptr) && (cur != stmt); cur = cur->GetNextStmt())
+                {
+                    fgMorphStmtBlockOps(block, cur);
+                }
+
+                fgMorphStmtBlockOps(block, stmt);
+                gtUpdateStmtSideEffects(stmt);
+
+                // Morphing block ops can introduce commas (and the original
+                // statement can also have more commas left). Proceed from the
+                // earliest newly introduced statement.
+                nextStmt = newStmt != nullptr ? newStmt : stmt;
+                break;
+            }
+
+            stmt = nextStmt;
+        }
+    }
+
+    for (BasicBlock* block : Blocks())
+    {
+        for (Statement* stmt : block->NonPhiStatements())
+        {
+            for (GenTree* tree : stmt->TreeList())
+            {
+                assert(!tree->OperIs(GT_COMMA));
+            }
+        }
+    }
+}
 
 //------------------------------------------------------------------------
 // generatePatchpointInfo: allocate and fill in patchpoint info data,
@@ -5803,6 +6014,46 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableAVXVNNI() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
+        }
+
+        if (JitConfig.EnableAVX512F() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512F);
+        }
+
+        if (JitConfig.EnableAVX512F_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512F_VL);
+        }
+
+        if (JitConfig.EnableAVX512BW() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512BW);
+        }
+
+        if (JitConfig.EnableAVX512BW_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512BW_VL);
+        }
+
+        if (JitConfig.EnableAVX512CD() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512CD);
+        }
+
+        if (JitConfig.EnableAVX512CD_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512CD_VL);
+        }
+
+        if (JitConfig.EnableAVX512DQ() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512DQ);
+        }
+
+        if (JitConfig.EnableAVX512DQ_VL() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX512DQ_VL);
         }
 #endif
 
@@ -6387,7 +6638,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
     if (!compIsForInlining() && !opts.altJit && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
-        // We're an altjit, but the COMPlus_AltJit configuration did not say to compile this method,
+        // We're an altjit, but the DOTNET_AltJit configuration did not say to compile this method,
         // so skip it.
         return CORJIT_SKIPPED;
     }
@@ -6402,7 +6653,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 
 #endif
 
-    // Check for COMPlus_AggressiveInlining
+    // Check for DOTNET_AggressiveInlining
     if (JitConfig.JitAggressiveInlining())
     {
         compDoAggressiveInlining = true;
@@ -10234,6 +10485,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                     m_stressPoisonImplicitByrefs++;
                     break;
 
+                case AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY:
+                    m_externallyVisibleImplicitly++;
+                    break;
+
                 default:
                     unreached();
                     break;
@@ -10330,5 +10585,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_stressLclFld, m_addrExposed);
     PRINT_STATS(m_dispatchRetBuf, m_addrExposed);
     PRINT_STATS(m_stressPoisonImplicitByrefs, m_addrExposed);
+    PRINT_STATS(m_externallyVisibleImplicitly, m_addrExposed);
 }
 #endif // TRACK_ENREG_STATS

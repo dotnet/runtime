@@ -709,6 +709,51 @@ namespace System.Tests.Types
             Assert.Equal(1, a1.GetOptionalCustomModifiers().Length);
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static void ParameterConstraints1()
+        {
+            MethodInfo mi = typeof(ModifiedTypeHolder).Project().GetMethod(nameof(ModifiedTypeHolder.M_GenericWithParameterConstraint1), Bindings);
+            Assert.True(mi.ContainsGenericParameters);
+            Assert.True(mi.IsGenericMethod);
+            Assert.True(mi.IsGenericMethodDefinition);
+
+            Type p = mi.GetParameters()[0].ParameterType;
+            Assert.False(IsModifiedType(p));
+            Assert.True(p.ContainsGenericParameters);
+            Assert.True(p.IsByRef);
+
+            Type e = p.GetElementType();
+            Assert.False(IsModifiedType(e));
+            Assert.True(e.IsValueType);
+            Assert.Equal(GenericParameterAttributes.DefaultConstructorConstraint | GenericParameterAttributes.NotNullableValueTypeConstraint, e.GenericParameterAttributes);
+            Assert.True(e.GetGenericParameterConstraints().Length == 1);
+            // The 'unmanaged' constraint is a modreq of type 'System.Runtime.InteropServices.' applied to 'ValueType'.
+            Assert.Equal(typeof(ValueType).Project(), e.GetGenericParameterConstraints()[0]);
+            // The 'UnmanagedType' modreq is not available for unmodified types.
+            Assert.Equal(0, e.GetGenericParameterConstraints()[0].GetRequiredCustomModifiers().Length);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71095", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        public static void ParameterConstraints2()
+        {
+            MethodInfo mi = typeof(ModifiedTypeHolder).Project().GetMethod(nameof(ModifiedTypeHolder.M_GenericWithParameterConstraint2), Bindings);
+            Assert.True(mi.ContainsGenericParameters);
+            Assert.True(mi.IsGenericMethod);
+            Assert.True(mi.IsGenericMethodDefinition);
+
+            Type p = mi.GetParameters()[0].ParameterType;
+            Assert.False(IsModifiedType(p));
+            Assert.True(p.ContainsGenericParameters);
+            Assert.False(p.IsValueType);
+            Assert.Equal(GenericParameterAttributes.DefaultConstructorConstraint, p.GenericParameterAttributes);
+            Assert.True(p.GetGenericParameterConstraints().Length == 1);
+            Assert.Equal(typeof(ModifiedTypeHolder.MyConstraint).Project(), p.GetGenericParameterConstraints()[0]);
+        }
+
         private static bool IsModifiedType(Type type)
         {
             return !ReferenceEquals(type, type.UnderlyingSystemType);
@@ -736,8 +781,13 @@ namespace System.Tests.Types
             public static void M_P0IntOut(out int i) { i = 42; }
             public static void M_P0FcnPtrOut(delegate*<out int, void> fp) { }
             public static void M_ArrayOpenGenericFcnPtr<T>(T t, delegate*<out bool, void>[] fp) { }
+            public static void M_GenericWithParameterConstraint1<T>(out T value) where T : unmanaged { value = default; }
+            public static void M_GenericWithParameterConstraint2<T>(T value) where T : MyConstraint, new() { value = default; }
 
             public int InitProperty_Int { get; init; }
+
+            public class MyConstraint { }
+
             public static delegate*<out int, void> Property_FcnPtr { get; set; }
 
             public static delegate*<out int, void> _fcnPtrP0Out;

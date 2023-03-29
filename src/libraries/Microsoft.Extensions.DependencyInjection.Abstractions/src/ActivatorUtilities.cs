@@ -242,7 +242,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return service;
         }
 
-        private static NewExpression BuildFactoryExpression(
+        private static BlockExpression BuildFactoryExpression(
             ConstructorInfo constructor,
             int?[] parameterMap,
             Expression serviceProvider,
@@ -281,7 +281,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 constructorArguments[i] = Expression.Convert(constructorArguments[i], parameterType);
             }
 
-            return Expression.New(constructor, constructorArguments);
+            return Expression.Block(Expression.IfThen(Expression.Equal(serviceProvider, Expression.Constant(null)), Expression.Throw(Expression.Constant(new ArgumentNullException(nameof(serviceProvider))))),
+                Expression.New(constructor, constructorArguments));
         }
 
 #if NETSTANDARD2_1_OR_GREATER || NETCOREAPP
@@ -467,7 +468,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return true;
         }
 
-        private struct ConstructorMatcher
+        private readonly struct ConstructorMatcher
         {
             private readonly ConstructorInfo _constructor;
             private readonly ParameterInfo[] _parameters;

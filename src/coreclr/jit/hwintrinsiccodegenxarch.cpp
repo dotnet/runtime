@@ -360,6 +360,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         case InstructionSet_Vector128:
         case InstructionSet_Vector256:
+        case InstructionSet_Vector512:
             genBaseIntrinsic(node);
             break;
         case InstructionSet_X86Base:
@@ -384,7 +385,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             break;
         case InstructionSet_AVX:
         case InstructionSet_AVX2:
-            genAvxOrAvx2Intrinsic(node);
+        case InstructionSet_AVX512F:
+            genAvxFamilyIntrinsic(node);
             break;
         case InstructionSet_AES:
             genAESIntrinsic(node);
@@ -474,6 +476,8 @@ void CodeGen::genHWIntrinsic_R_RM(
             else
             {
                 if (varTypeIsIntegral(rmOp) && ((node->GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector128) ||
+                                                (node->GetHWIntrinsicId() == NI_AVX512F_BroadcastScalarToVector512) ||
+                                                (node->GetHWIntrinsicId() == NI_AVX512BW_BroadcastScalarToVector512) ||
                                                 (node->GetHWIntrinsicId() == NI_AVX2_BroadcastScalarToVector256)))
                 {
                     // In lowering we had the special case of BroadcastScalarToVector(CreateScalarUnsafe(op1))
@@ -897,6 +901,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
     {
         case NI_Vector128_CreateScalarUnsafe:
         case NI_Vector256_CreateScalarUnsafe:
+        case NI_Vector512_CreateScalarUnsafe:
         {
             if (varTypeIsIntegral(baseType))
             {
@@ -1097,12 +1102,21 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
         }
 
         case NI_Vector128_ToVector256:
+        case NI_Vector128_ToVector512:
+        case NI_Vector256_ToVector512:
         {
             // ToVector256 has zero-extend semantics in order to ensure it is deterministic
             // We always emit a move to the target register, even when op1Reg == targetReg,
             // in order to ensure that Bits MAXVL-1:128 are zeroed.
 
-            attr = emitTypeSize(TYP_SIMD16);
+            if (intrinsicId == NI_Vector256_ToVector512)
+            {
+                attr = emitTypeSize(TYP_SIMD32);
+            }
+            else
+            {
+                attr = emitTypeSize(TYP_SIMD16);
+            }
 
             if (op1->isContained() || op1->isUsedFromSpillTemp())
             {
@@ -1117,7 +1131,10 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
         }
 
         case NI_Vector128_ToVector256Unsafe:
+        case NI_Vector256_ToVector512Unsafe:
         case NI_Vector256_GetLower:
+        case NI_Vector512_GetLower:
+        case NI_Vector512_GetLower128:
         {
             if (op1->isContained() || op1->isUsedFromSpillTemp())
             {
@@ -1125,8 +1142,15 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
                 //
                 // For ToVector256Unsafe the upper bits don't matter and for GetLower we
                 // only actually need the lower 16-bytes, so we can just be "more efficient"
-
-                genHWIntrinsic_R_RM(node, ins, EA_16BYTE, targetReg, op1);
+                if ((intrinsicId == NI_Vector512_GetLower) || (intrinsicId == NI_Vector256_ToVector512Unsafe))
+                {
+                    attr = emitTypeSize(TYP_SIMD32);
+                }
+                else
+                {
+                    attr = emitTypeSize(TYP_SIMD16);
+                }
+                genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1);
             }
             else
             {
@@ -1137,7 +1161,15 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
                 // so the upper bits aren't impactful either allowing the same.
 
                 // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
-                emit->emitIns_Mov(INS_movaps, EA_32BYTE, targetReg, op1Reg, /* canSkip */ true);
+                if ((intrinsicId == NI_Vector128_ToVector256Unsafe) || (intrinsicId == NI_Vector256_GetLower))
+                {
+                    attr = emitTypeSize(TYP_SIMD32);
+                }
+                else
+                {
+                    attr = emitTypeSize(TYP_SIMD64);
+                }
+                emit->emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
             }
             break;
         }
@@ -1519,12 +1551,12 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
 }
 
 //------------------------------------------------------------------------
-// genAvxOrAvx2Intrinsic: Generates the code for an AVX/AVX2 hardware intrinsic node
+// genAvxFamilyIntrinsic: Generates the code for an AVX/AVX2/AVX512 hardware intrinsic node
 //
 // Arguments:
 //    node - The hardware intrinsic node
 //
-void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
+void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
 {
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
     var_types      baseType    = node->GetSimdBaseType();
@@ -1663,6 +1695,54 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
             assert(maskReg != addrIndexReg);
             emit->emitIns_R_AR_R(ins, attr, targetReg, maskReg, addrBaseReg, addrIndexReg, (int8_t)ival, 0);
 
+            break;
+        }
+
+        case NI_AVX512F_MoveMaskSpecial:
+        {
+            op1Reg            = op1->GetRegNum();
+            regNumber maskReg = node->ExtractTempReg(RBM_ALLMASK);
+
+            instruction maskIns;
+            instruction kmovIns;
+
+            // TODO-XARCH-AVX512 note that this type/kmov combination assumes 512-bit vector types but would change
+            // if used for other vector lengths, i.e., TYPE_BYTE requires kmovq for for 512-bit vector, but kmovd
+            // for 256-bit vector.
+            switch (baseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                    maskIns = INS_vpmovb2m;
+                    kmovIns = INS_kmovq_gpr;
+                    break;
+                case TYP_SHORT:
+                case TYP_USHORT:
+                    maskIns = INS_vpmovw2m;
+                    kmovIns = INS_kmovd_gpr;
+                    break;
+                case TYP_INT:
+                case TYP_UINT:
+                case TYP_FLOAT:
+                    maskIns = INS_vpmovd2m;
+                    kmovIns = INS_kmovw_gpr;
+                    break;
+                case TYP_DOUBLE:
+                case TYP_LONG:
+                case TYP_ULONG:
+                    maskIns = INS_vpmovq2m;
+                    kmovIns = INS_kmovb_gpr;
+                    break;
+                default:
+                    unreached();
+            }
+
+            // TODO-XARCH-AVX512 remove REG_K1 check when all K registers possible for
+            // allocation.
+            assert(emitter::isMaskReg(maskReg) && maskReg == REG_K1);
+
+            emit->emitIns_R_R(maskIns, attr, maskReg, op1Reg);
+            emit->emitIns_Mov(kmovIns, EA_8BYTE, targetReg, maskReg, INS_FLAGS_DONT_CARE);
             break;
         }
 

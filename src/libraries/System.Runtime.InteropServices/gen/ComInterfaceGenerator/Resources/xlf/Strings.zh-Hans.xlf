@@ -54,7 +54,7 @@
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage">
         <source>Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </source>
-        <target state="new">Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </target>
+        <target state="translated">包含 VirtualMethodIndexAttribute 的方法类型没有 UnmanagedObjectUnwrapperAttribute。</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidAttributedMethodDescription">
@@ -92,6 +92,21 @@
         <target state="translated">提供的值不是 “ExceptionMarshalling” 枚举的已知标志。</target>
         <note />
       </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
+        <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
+        <target state="translated">通过 “GeneratedComInterfaceAttribute” 特性化的接口必须是部分的，并且必须使用 “System.Runtime.InteropServices.GuidAttribute” 指定 GUID。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">
+        <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</source>
+        <target state="translated">接口“{0}”会通过 “GeneratedComInterfaceAttribute” 特性化，但缺少“System.Runtime.InteropServices.GuidAttribute”。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageTitle">
+        <source>Invalid 'GeneratedComInterfaceAttribute' usage.</source>
+        <target state="translated">“GeneratedComInterfaceAttribute” 使用无效。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">
         <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</source>
         <target state="translated">“StringMarshalling” 和 “StringMarshallingCustomType” 的配置无效。</target>
@@ -119,17 +134,17 @@
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceDescription">
         <source>All methods must be declared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</source>
-        <target state="new">All methods must be declared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</target>
+        <target state="translated">所有方法都必须在 “GeneratedComInterface” 特性化接口类型的同一部分定义中声明，以确保对虚拟方法表偏移进行可靠的计算。</target>
         <note />
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceMessage">
         <source>The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</source>
-        <target state="new">The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</target>
+        <target state="translated">方法“{0}”是在接口“{1}”的不同部分定义上声明的，而不是在具有 “GeneratedComInterface” 属性的定义上声明的</target>
         <note />
       </trans-unit>
       <trans-unit id="MethodNotDeclaredInAttributedInterfaceTitle">
         <source>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</source>
-        <target state="new">Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</target>
+        <target state="translated">方法是在不同于 “GeneratedComInterface” 属性的部分声明中声明的。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">

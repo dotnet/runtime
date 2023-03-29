@@ -5,12 +5,13 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
-    <NoWarn>$(NoWarn),CA1050</NoWarn>
+    <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="PatchExclusionListInApks.cs" />
     <Compile Include="../AndroidAppBuilder/ApkBuilder.cs" />
+    <Compile Include="../Common/Builders/AndroidProject.cs" />
     <Compile Include="../Common/Utils.cs" />
   </ItemGroup>
   <ItemGroup>

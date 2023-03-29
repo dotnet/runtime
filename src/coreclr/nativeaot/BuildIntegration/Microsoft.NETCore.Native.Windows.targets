@@ -100,7 +100,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="/OPT:ICF" />
     </ItemGroup>
 
-    <Exec Condition="'$(IlcUseEnvironmentalTools)' != 'true'" Command="&quot;$(MSBuildThisFileDirectory)findvcvarsall.bat&quot; $(TargetArchitecture)"
+    <Exec Condition="'$(IlcUseEnvironmentalTools)' != 'true'" Command="&quot;$(MSBuildThisFileDirectory)findvcvarsall.bat&quot; $(_targetArchitecture)"
       IgnoreExitCode="true" ConsoleToMSBuild="true" StandardOutputImportance="Low">
       <Output TaskParameter="ConsoleOutput" PropertyName="_FindVCVarsallOutput" />
       <Output TaskParameter="ExitCode" PropertyName="_VCVarsAllFound" />

@@ -98,6 +98,14 @@ namespace Internal.Runtime
             return ((pThis->_uFlags | pOther->_uFlags) & (uint)EETypeFlags.ComplexCastingMask) == 0;
         }
 
+        internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2)
+        {
+            if (mt1 == mt2)
+                return true;
+
+            return mt1->IsEquivalentTo(mt2);
+        }
+
         internal bool IsEquivalentTo(MethodTable* pOtherEEType)
         {
             fixed (MethodTable* pThis = &this)

@@ -730,6 +730,50 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 }
                 break;
 
+                case GenTreeBlk::BlkOpKindUnrollMemmove:
+                {
+#ifdef TARGET_ARM64
+
+                    // Prepare SIMD/GPR registers needed to perform an unrolled memmove. The idea that
+                    // we can ignore the fact that src and dst might overlap if we save the whole src
+                    // to temp regs in advance.
+
+                    // Lowering was expected to get rid of memmove in case of zero
+                    assert(size > 0);
+
+                    const unsigned simdSize = FP_REGSIZE_BYTES;
+                    if (size >= simdSize)
+                    {
+                        unsigned simdRegs = size / simdSize;
+                        if ((size % simdSize) != 0)
+                        {
+                            // TODO-CQ: Consider using GPR load/store here if the reminder is 1,2,4 or 8
+                            simdRegs++;
+                        }
+                        for (unsigned i = 0; i < simdRegs; i++)
+                        {
+                            // It's too late to revert the unrolling so we hope we'll have enough SIMD regs
+                            // no more than MaxInternalCount. Currently, it's controlled by getUnrollThreshold(memmove)
+                            buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                        }
+                    }
+                    else if (isPow2(size))
+                    {
+                        // Single GPR for 1,2,4,8
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                    }
+                    else
+                    {
+                        // Any size from 3 to 15 can be handled via two GPRs
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                    }
+#else // TARGET_ARM64
+                    unreached();
+#endif
+                }
+                break;
+
                 case GenTreeBlk::BlkOpKindHelper:
                     dstAddrRegMask = RBM_ARG_0;
                     if (srcAddrOrFill != nullptr)
@@ -833,9 +877,14 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 //
 int LinearScan::BuildSelect(GenTreeOp* select)
 {
-    assert(select->OperIs(GT_SELECT));
+    assert(select->OperIs(GT_SELECT, GT_SELECTCC));
 
-    int srcCount = BuildOperandUses(select->AsConditional()->gtCond);
+    int srcCount = 0;
+    if (select->OperIs(GT_SELECT))
+    {
+        srcCount += BuildOperandUses(select->AsConditional()->gtCond);
+    }
+
     srcCount += BuildOperandUses(select->gtOp1);
     srcCount += BuildOperandUses(select->gtOp2);
     BuildDef(select);
