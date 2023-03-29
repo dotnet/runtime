@@ -848,7 +848,7 @@ size_t CEEInfo::findNameOfToken (Module* module,
     return strlen (szFQName);
 }
 
-#ifdef HOST_WINDOWS
+#ifdef TARGET_WINDOWS
 /* static */
 uint32_t CEEInfo::ThreadLocalOffset(void* p)
 {
@@ -857,7 +857,7 @@ uint32_t CEEInfo::ThreadLocalOffset(void* p)
     uint8_t* pOurTls = pTls[_tls_index];
     return (uint32_t)((uint8_t*)p - pOurTls);
 }
-#endif // HOST_WINDOWS
+#endif // TARGET_WINDOWS
 
 CorInfoHelpFunc CEEInfo::getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle)
 {
@@ -1749,7 +1749,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 }
 
 /*********************************************************************/
-#ifdef HOST_WINDOWS
+
 TypeIDMap CEEInfo::g_threadStaticBlockTypeIDMap;
 
 uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
@@ -1773,6 +1773,8 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
     return typeIndex;
 }
 
+#ifdef TARGET_WINDOWS
+
 void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     CONTRACTL {
@@ -1790,7 +1792,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     
     EE_TO_JIT_TRANSITION();
 }
-#endif // HOST_WINDOWS
+#endif // TARGET_WINDOWS
 
 //---------------------------------------------------------------------------------------
 //
