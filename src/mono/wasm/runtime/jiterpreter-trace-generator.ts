@@ -1075,6 +1075,28 @@ export function generate_wasm_body (
                 builder.callImport("cmpxchg_i64");
                 break;
 
+            case MintOpcode.MINT_LOG2_I4:
+            case MintOpcode.MINT_LOG2_I8: {
+                const isI64 = (opcode === MintOpcode.MINT_LOG2_I8);
+
+                builder.local("pLocals");
+
+                append_ldloc(builder, getArgU16(ip, 2), isI64 ? WasmOpcode.i64_load : WasmOpcode.i32_load);
+                if (isI64)
+                    builder.i52_const(1);
+                else
+                    builder.i32_const(1);
+                builder.appendU8(isI64 ? WasmOpcode.i64_or : WasmOpcode.i32_or);
+                builder.appendU8(isI64 ? WasmOpcode.i64_clz : WasmOpcode.i32_clz);
+                if (isI64)
+                    builder.appendU8(WasmOpcode.i32_wrap_i64);
+                builder.i32_const(isI64 ? 63 : 31);
+                builder.appendU8(WasmOpcode.i32_xor);
+
+                append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+                break;
+            }
+
             case MintOpcode.MINT_FMA:
             case MintOpcode.MINT_FMAF: {
                 const isF32 = (opcode === MintOpcode.MINT_FMAF),
