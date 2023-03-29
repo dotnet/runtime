@@ -959,13 +959,13 @@ void WrapICorJitInfo::getFieldInfo(
     API_LEAVE(getFieldInfo);
 }
 
-void WrapICorJitInfo::getThreadLocalFieldInfo(
-          CORINFO_FIELD_HANDLE field,
-          CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+uint32_t WrapICorJitInfo::getThreadLocalFieldInfo(
+          CORINFO_FIELD_HANDLE field)
 {
     API_ENTER(getThreadLocalFieldInfo);
-    wrapHnd->getThreadLocalFieldInfo(field, pInfo);
+    uint32_t temp = wrapHnd->getThreadLocalFieldInfo(field);
     API_LEAVE(getThreadLocalFieldInfo);
+    return temp;
 }
 
 void WrapICorJitInfo::getThreadLocalStaticBlocksInfo(

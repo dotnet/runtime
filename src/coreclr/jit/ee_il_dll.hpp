@@ -45,9 +45,9 @@ void Compiler::eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 }
 
 FORCEINLINE
-void Compiler::eeGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+uint32_t Compiler::eeGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
 {
-    info.compCompHnd->getThreadLocalFieldInfo(field, pInfo);
+    return info.compCompHnd->getThreadLocalFieldInfo(field);
 }
 
 /*****************************************************************************

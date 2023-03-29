@@ -1752,8 +1752,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 #ifdef HOST_WINDOWS
 TypeIDMap CEEInfo::g_threadStaticBlockTypeIDMap;
 
-void CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field,
-                                       CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
 {
     CONTRACTL {
         THROWS;
@@ -1761,36 +1760,17 @@ void CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field,
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
+    UINT32 typeIndex = 0;
+
     JIT_TO_EE_TRANSITION();
 
-
-
-    pInfo->tlsIndex = _tls_index;
-    pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
-    pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_threadStaticBlocks);
-    pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_maxThreadStaticBlocks);
-     
-    //pInfo->tlsIndex.accessType = IAT_VALUE;
-    //pInfo->tlsIndex.addr = PTR_VOID(dac_cast<PTR_BYTE>(_tls_index));
-
-    //pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
-
-    //pInfo->offsetOfMaxThreadStaticBlocks.accessType = IAT_VALUE;
-    //pInfo->offsetOfMaxThreadStaticBlocks.addr = PTR_VOID(dac_cast<PTR_BYTE>(CEEInfo::ThreadLocalOffset(&t_maxThreadStaticBlocks)));
-
-    //pInfo->offsetOfThreadStaticBlocks.accessType = IAT_VALUE;
-    //pInfo->offsetOfThreadStaticBlocks.addr = PTR_VOID(dac_cast<PTR_BYTE>(CEEInfo::ThreadLocalOffset(&t_threadStaticBlocks)));
-
-    if (field != nullptr)
-    {
-        FieldDesc* fieldDesc = (FieldDesc*)field;
-        _ASSERTE(fieldDesc->IsThreadStatic());
-        UINT32 typeIndex =  CEEInfo::GetTypeIndex(fieldDesc->GetEnclosingMethodTable());
-        assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
-        pInfo->threadStaticBlockIndex = typeIndex;
-    } 
+    FieldDesc* fieldDesc = (FieldDesc*)field;
+    _ASSERTE(fieldDesc->IsThreadStatic());
+    typeIndex = CEEInfo::GetTypeIndex(fieldDesc->GetEnclosingMethodTable());
+    assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
     
     EE_TO_JIT_TRANSITION();
+    return typeIndex;
 }
 
 void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)

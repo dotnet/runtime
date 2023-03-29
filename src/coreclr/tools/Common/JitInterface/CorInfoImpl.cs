@@ -2891,13 +2891,11 @@ namespace Internal.JitInterface
             return PrintFromUtf16(field.Name, buffer, bufferSize, requiredBufferSize);
         }
 
-        private void getThreadLocalFieldInfo(CORINFO_FIELD_STRUCT_* field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+        // TODO: Fix this
+        private uint getThreadLocalFieldInfo(CORINFO_FIELD_STRUCT_* fld)
         {
-            pInfo->tlsIndex = 5; // CreateConstLookupToSymbol(null);
-            pInfo->threadStaticBlockIndex = 0;
-            pInfo->offsetOfThreadLocalStoragePointer = 0x58;
-            pInfo->offsetOfMaxThreadStaticBlocks = 23; // CreateConstLookupToSymbol(null);
-            pInfo->offsetOfThreadStaticBlocks = 32; // CreateConstLookupToSymbol(null);
+            FieldDesc field = HandleToObject(fld);
+            return (uint)field.GetHashCode();
         }
 
         private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)

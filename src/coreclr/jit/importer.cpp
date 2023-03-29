@@ -4151,9 +4151,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
         case CORINFO_FIELD_STATIC_TLS_MANAGED:
 
-            CORINFO_THREAD_LOCAL_FIELD_INFO threadLocalInfo;
-            info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField, &threadLocalInfo);
-            typeIndex = threadLocalInfo.threadStaticBlockIndex;
+            typeIndex = info.compCompHnd->getThreadLocalFieldInfo(pResolvedToken->hField);
 
             FALLTHROUGH;
         case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:

@@ -255,7 +255,7 @@ FUNCTIONS
     CorInfoType getFieldType(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE* structType, CORINFO_CLASS_HANDLE memberParent)
     unsigned getFieldOffset(CORINFO_FIELD_HANDLE field)
     void getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_METHOD_HANDLE callerHandle, CORINFO_ACCESS_FLAGS flags, CORINFO_FIELD_INFO* pResult)
-    void getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+    uint32_t getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
     void getThreadLocalStaticBlocksInfo (CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
     bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
     int getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)

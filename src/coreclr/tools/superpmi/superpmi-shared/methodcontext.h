@@ -485,9 +485,9 @@ public:
                          CORINFO_ACCESS_FLAGS    flags,
                          CORINFO_FIELD_INFO*     pResult);
 
-    void recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo);
-    void dmpGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo);
-    void repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo);
+    void recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
+    void dmpGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
+    uint32_t repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
 
     void recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo);
     void dmpGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo);

@@ -3501,9 +3501,13 @@ void MethodContext::repGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 }
 
-void MethodContext::recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo) {}
-void MethodContext::dmpGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo) {}
-void MethodContext::repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo) {}
+//TODO: Fix these
+void MethodContext::recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field) {}
+void MethodContext::dmpGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field) {}
+uint32_t MethodContext::repGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
+{
+    return 0;
+}
 
 void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo) {}
 void MethodContext::dmpGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo) {}

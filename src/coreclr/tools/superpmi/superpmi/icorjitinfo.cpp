@@ -908,10 +908,10 @@ void MyICJI::getFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     jitInstance->mc->repGetFieldInfo(pResolvedToken, callerHandle, flags, pResult);
 }
 
-void MyICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+uint32_t MyICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
 {
     jitInstance->mc->cr->AddCall("getThreadLocalFieldInfo");
-    jitInstance->mc->repGetThreadLocalFieldInfo(field, pInfo);
+    return jitInstance->mc->repGetThreadLocalFieldInfo(field);
 }
 
 void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
