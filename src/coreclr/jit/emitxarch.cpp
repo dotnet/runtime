@@ -10748,6 +10748,11 @@ void emitter::emitDispIns(
                     sstr = codeGen->genSizeStr(EA_ATTR(32));
                     break;
                 }
+
+                default:
+                {
+                    break;
+                }
             }
 
             printf(sstr);
@@ -11336,6 +11341,11 @@ void emitter::emitDispIns(
                 {
                     // vextracti/f*x* extracts 256-bit data, so we fix sstr as "ymm ptr"
                     sstr = codeGen->genSizeStr(EA_ATTR(32));
+                    break;
+                }
+
+                default:
+                {
                     break;
                 }
             }

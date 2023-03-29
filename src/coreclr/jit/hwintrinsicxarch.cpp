@@ -2620,7 +2620,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-
         case NI_Vector128_Xor:
         case NI_Vector256_Xor:
         case NI_Vector512_Xor:
