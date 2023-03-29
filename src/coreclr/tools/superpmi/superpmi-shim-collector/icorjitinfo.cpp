@@ -1728,7 +1728,7 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(CORINFO_FIELD_
 {
     mc->cr->AddCall("getStaticFieldCurrentClass");
     CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getStaticFieldCurrentClass(field, pIsSpeculative);
-    mc->recGetStaticFieldCurrentClass(field, (pIsSpeculative == nullptr) ? false : *pIsSpeculative, result);
+    mc->recGetStaticFieldCurrentClass(field, pIsSpeculative, result);
     return result;
 }
 

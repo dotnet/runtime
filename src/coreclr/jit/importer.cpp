@@ -9496,21 +9496,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 int      aflags = CORINFO_ACCESS_SET;
                 GenTree* obj    = nullptr;
 
-                // Pull the value from the stack.
-                StackEntry se = impPopStack();
-                op2           = se.val;
-                clsHnd        = se.seTypeInfo.GetClassHandle();
-
-                if (opcode == CEE_STFLD)
-                {
-                    obj = impPopStack().val;
-
-                    if (impIsThis(obj))
-                    {
-                        aflags |= CORINFO_ACCESS_THIS;
-                    }
-                }
-
                 eeGetFieldInfo(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo);
 
                 // Figure out the type of the member.  We always call canAccessField, so you always need this
@@ -9548,6 +9533,35 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 impHandleAccessAllowed(fieldInfo.accessAllowed, &fieldInfo.accessCalloutHelper);
+
+                // Check if the class needs explicit initialization.
+                if (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
+                {
+                    GenTree* helperNode = impInitClass(&resolvedToken);
+                    if (compDonotInline())
+                    {
+                        return;
+                    }
+                    if (helperNode != nullptr)
+                    {
+                        impAppendTree(helperNode, CHECK_SPILL_ALL, impCurStmtDI);
+                    }
+                }
+
+                // Pull the value from the stack.
+                StackEntry se = impPopStack();
+                op2           = se.val;
+                clsHnd        = se.seTypeInfo.GetClassHandle();
+
+                if (opcode == CEE_STFLD)
+                {
+                    obj = impPopStack().val;
+
+                    if (impIsThis(obj))
+                    {
+                        aflags |= CORINFO_ACCESS_THIS;
+                    }
+                }
 
                 // Raise InvalidProgramException if static store accesses non-static field
                 if (isStoreStatic && ((fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC) == 0))
@@ -9651,7 +9665,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         assert(!"Unexpected fieldAccessor");
                 }
 
-                if (lclTyp != TYP_STRUCT)
+                if (lclTyp == TYP_STRUCT)
+                {
+                    op1 = impAssignStruct(op1, op2, CHECK_SPILL_ALL);
+                }
+                else
                 {
                     assert(op1->OperIs(GT_FIELD, GT_IND));
 
@@ -9712,24 +9730,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1 = gtNewAssignNode(op1, op2);
                 }
 
-                // Check if the class needs explicit initialization.
-                if (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
-                {
-                    GenTree* helperNode = impInitClass(&resolvedToken);
-                    if (compDonotInline())
-                    {
-                        return;
-                    }
-                    if (helperNode != nullptr)
-                    {
-                        impAppendTree(helperNode, CHECK_SPILL_ALL, impCurStmtDI);
-                    }
-                }
-
-                if (lclTyp == TYP_STRUCT)
-                {
-                    op1 = impAssignStruct(op1, op2, CHECK_SPILL_ALL);
-                }
                 goto SPILL_APPEND;
             }
 
@@ -12630,6 +12630,17 @@ void Compiler::impImport()
     // TODO: we also currently expect this block to be a join point,
     // which we should verify over when we find jump targets.
     impImportBlockPending(entryBlock);
+
+    if (opts.IsOSR())
+    {
+        // We now import all the IR and keep it around so we can
+        // analyze address exposure more robustly.
+        //
+        JITDUMP("OSR: protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
+        impImportBlockPending(fgEntryBB);
+        fgEntryBB->bbRefs++;
+        fgEntryBBExtraRefs++;
+    }
 
     /* Import blocks in the worker-list until there are no more */
 

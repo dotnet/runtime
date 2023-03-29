@@ -1,4 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/en-us/dotnet/fundamentals/package-validation/diagnostic-ids -->
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
@@ -8,13 +9,13 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>F:System.Net.Security.SslStreamCertificateContext.IntermediateCertificates</Target>
+    <Target>M:System.Net.Security.SslClientHelloInfo.#ctor(System.String,System.Security.Authentication.SslProtocols)</Target>
     <Left>ref/net8.0/System.Net.Security.dll</Left>
     <Right>runtimes/android/lib/net8.0/System.Net.Security.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Net.Security.SslClientHelloInfo.#ctor(System.String,System.Security.Authentication.SslProtocols)</Target>
+    <Target>M:System.Net.Security.SslStreamCertificateContext.get_IntermediateCertificates</Target>
     <Left>ref/net8.0/System.Net.Security.dll</Left>
     <Right>runtimes/android/lib/net8.0/System.Net.Security.dll</Right>
   </Suppression>
@@ -26,13 +27,13 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>F:System.Net.Security.SslStreamCertificateContext.IntermediateCertificates</Target>
+    <Target>M:System.Net.Security.SslClientHelloInfo.#ctor(System.String,System.Security.Authentication.SslProtocols)</Target>
     <Left>ref/net8.0/System.Net.Security.dll</Left>
     <Right>runtimes/freebsd/lib/net8.0/System.Net.Security.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Net.Security.SslClientHelloInfo.#ctor(System.String,System.Security.Authentication.SslProtocols)</Target>
+    <Target>M:System.Net.Security.SslStreamCertificateContext.get_IntermediateCertificates</Target>
     <Left>ref/net8.0/System.Net.Security.dll</Left>
     <Right>runtimes/freebsd/lib/net8.0/System.Net.Security.dll</Right>
   </Suppression>
@@ -44,13 +45,13 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>F:System.Net.Security.SslStreamCertificateContext.IntermediateCertificates</Target>
+    <Target>M:System.Net.Security.SslClientHelloInfo.#ctor(System.String,System.Security.Authentication.SslProtocols)</Target>
     <Left>ref/net8.0/System.Net.Security.dll</Left>
     <Right>runtimes/ios/lib/net8.0/System.Net.Security.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Net.Security.SslClientHelloInfo.#ctor(System.String,System.Security.Authentication.SslProtocols)</Target>
+    <Target>M:System.Net.Security.SslStreamCertificateContext.get_IntermediateCertificates</Target>
     <Left>ref/net8.0/System.Net.Security.dll</Left>
     <Right>runtimes/ios/lib/net8.0/System.Net.Security.dll</Right>
   </Suppression>
@@ -62,13 +63,13 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>F:System.Net.Security.SslStreamCertificateContext.IntermediateCertificates</Target>
+    <Target>M:System.Net.Security.SslClientHelloInfo.#ctor(System.String,System.Security.Authentication.SslProtocols)</Target>
     <Left>ref/net8.0/System.Net.Security.dll</Left>
     <Right>runtimes/linux/lib/net8.0/System.Net.Security.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Net.Security.SslClientHelloInfo.#ctor(System.String,System.Security.Authentication.SslProtocols)</Target>
+    <Target>M:System.Net.Security.SslStreamCertificateContext.get_IntermediateCertificates</Target>
     <Left>ref/net8.0/System.Net.Security.dll</Left>
     <Right>runtimes/linux/lib/net8.0/System.Net.Security.dll</Right>
   </Suppression>
@@ -80,13 +81,13 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>F:System.Net.Security.SslStreamCertificateContext.IntermediateCertificates</Target>
+    <Target>M:System.Net.Security.SslClientHelloInfo.#ctor(System.String,System.Security.Authentication.SslProtocols)</Target>
     <Left>ref/net8.0/System.Net.Security.dll</Left>
     <Right>runtimes/osx/lib/net8.0/System.Net.Security.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Net.Security.SslClientHelloInfo.#ctor(System.String,System.Security.Authentication.SslProtocols)</Target>
+    <Target>M:System.Net.Security.SslStreamCertificateContext.get_IntermediateCertificates</Target>
     <Left>ref/net8.0/System.Net.Security.dll</Left>
     <Right>runtimes/osx/lib/net8.0/System.Net.Security.dll</Right>
   </Suppression>
@@ -98,13 +99,13 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>F:System.Net.Security.SslStreamCertificateContext.IntermediateCertificates</Target>
+    <Target>M:System.Net.Security.SslClientHelloInfo.#ctor(System.String,System.Security.Authentication.SslProtocols)</Target>
     <Left>ref/net8.0/System.Net.Security.dll</Left>
     <Right>runtimes/tvos/lib/net8.0/System.Net.Security.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Net.Security.SslClientHelloInfo.#ctor(System.String,System.Security.Authentication.SslProtocols)</Target>
+    <Target>M:System.Net.Security.SslStreamCertificateContext.get_IntermediateCertificates</Target>
     <Left>ref/net8.0/System.Net.Security.dll</Left>
     <Right>runtimes/tvos/lib/net8.0/System.Net.Security.dll</Right>
   </Suppression>
@@ -116,13 +117,13 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>F:System.Net.Security.SslStreamCertificateContext.IntermediateCertificates</Target>
+    <Target>M:System.Net.Security.SslClientHelloInfo.#ctor(System.String,System.Security.Authentication.SslProtocols)</Target>
     <Left>ref/net8.0/System.Net.Security.dll</Left>
     <Right>runtimes/win/lib/net8.0/System.Net.Security.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Net.Security.SslClientHelloInfo.#ctor(System.String,System.Security.Authentication.SslProtocols)</Target>
+    <Target>M:System.Net.Security.SslStreamCertificateContext.get_IntermediateCertificates</Target>
     <Left>ref/net8.0/System.Net.Security.dll</Left>
     <Right>runtimes/win/lib/net8.0/System.Net.Security.dll</Right>
   </Suppression>

@@ -721,7 +721,10 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 					return mono_opt_jiterpreter_backward_branches_enabled ? TRACE_CONTINUE : TRACE_ABORT;
 			}
 
+			// NOTE: This is technically incorrect - we are not conditionally executing code. However
+			//  the instructions *following* this may not be executed since we might skip over them.
 			*inside_branch_block = TRUE;
+
 			return TRACE_CONTINUE;
 
 		case MINT_ICALL_V_P:
@@ -1413,6 +1416,30 @@ EMSCRIPTEN_KEEPALIVE gint32
 mono_jiterp_get_rejected_trace_count ()
 {
 	return traces_rejected;
+}
+
+EMSCRIPTEN_KEEPALIVE void
+mono_jiterp_boost_back_branch_target (guint16 *ip) {
+	if (*ip != MINT_TIER_PREPARE_JITERPRETER) {
+		// g_print ("Failed to boost back branch target %d because it was %s\n", ip,  mono_interp_opname(*ip));
+		return;
+	}
+
+	guint32 trace_index = READ32 (ip + 1);
+	if (!trace_index)
+		return;
+
+	TraceInfo *trace_info = trace_info_get (trace_index);
+	// We need to make sure we don't boost the hit count too high, because if we do
+	//  it will increment past the compile threshold and never compile
+	int limit = mono_opt_jiterpreter_minimum_trace_hit_count - 1;
+	trace_info->hit_count = MIN (limit, trace_info->hit_count + mono_opt_jiterpreter_back_branch_boost);
+	/*
+	if (trace_info->hit_count > old_hit_count)
+		g_print ("Boosted entry point #%d at %d to %d\n", trace_index, ip, trace_info->hit_count);
+	else
+		g_print ("Entry point #%d at %d was already maxed out\n", trace_index, ip, trace_info->hit_count);
+	*/
 }
 
 // HACK: fix C4206

@@ -9839,9 +9839,8 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
         }
     }
 
-    // We have to handle the case where the LHS is a comma.  In that case, we don't evaluate the comma,
-    // and we're really just interested in the effective value.
-    lhs = lhs->gtEffectiveVal();
+    // Locations are not allowed to be COMMAs.
+    assert(!lhs->OperIs(GT_COMMA));
 
     // Now, record the new VN for an assignment (performing the indicated "state update").
     // It's safe to use gtEffectiveVal here, because the non-last elements of a comma list on the
