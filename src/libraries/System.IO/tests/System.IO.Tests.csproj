@@ -27,6 +27,7 @@
     <Compile Include="MemoryStream\MemoryStream.ConstructorTests.cs" />
     <Compile Include="MemoryStream\MemoryStream.TryGetBufferTests.cs" />
     <Compile Include="MemoryStream\MemoryStreamTests.cs" />
+    <Compile Include="MemoryStream\MemoryStream.MemoryCtorTests.cs" />
     <Compile Include="StreamReader\StreamReader.CtorTests.cs" />
     <Compile Include="StreamReader\StreamReaderTests.cs" />
     <Compile Include="StreamReader\StreamReaderTests_Serial.cs" />
