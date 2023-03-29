@@ -2596,6 +2596,29 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector512_WithLower:
+        {
+            assert(sig->numArgs == 2);assert(IsBaselineVector512IsaSupportedDebugOnly());
+
+            op2     = impSIMDPopStack(TYP_SIMD32);
+            op1     = impSIMDPopStack(TYP_SIMD64);
+            retNode = gtNewSimdWithLowerNode(retType, op1, op2, simdBaseJitType, simdSize,
+                                             /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
+        case NI_Vector512_WithUpper:
+        {
+            assert(sig->numArgs == 2);assert(IsBaselineVector512IsaSupportedDebugOnly());
+
+            op2     = impSIMDPopStack(TYP_SIMD32);
+            op1     = impSIMDPopStack(TYP_SIMD64);
+            retNode = gtNewSimdWithUpperNode(retType, op1, op2, simdBaseJitType, simdSize,
+                                             /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
+
         case NI_Vector128_Xor:
         case NI_Vector256_Xor:
         case NI_Vector512_Xor:

@@ -24016,16 +24016,22 @@ GenTree* Compiler::gtNewSimdWithLowerNode(var_types   type,
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
 
+    NamedIntrinsic intrinsicId = NI_Illegal;
+
 #if defined(TARGET_XARCH)
-    assert(type == TYP_SIMD32);
-    assert(simdSize == 32);
-
-    NamedIntrinsic intrinsicId = NI_Vector256_WithLower;
+    if (simdSize == 32)
+    {
+        assert(type == TYP_SIMD32);
+        intrinsicId = NI_Vector256_WithLower;
+    }
+    else
+    {
+        assert((type == TYP_SIMD64) && (simdSize == 64));
+        intrinsicId = NI_Vector512_WithLower;
+    }
 #elif defined(TARGET_ARM64)
-    assert(type == TYP_SIMD16);
-    assert(simdSize == 16);
-
-    NamedIntrinsic intrinsicId = NI_Vector128_WithLower;
+    assert((type == TYP_SIMD16) && (simdSize == 16));
+    intrinsicId = NI_Vector128_WithLower;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -24044,15 +24050,19 @@ GenTree* Compiler::gtNewSimdWithUpperNode(var_types   type,
     assert(varTypeIsArithmetic(simdBaseType));
 
 #if defined(TARGET_XARCH)
-    assert(type == TYP_SIMD32);
-    assert(simdSize == 32);
-
-    NamedIntrinsic intrinsicId = NI_Vector256_WithUpper;
+    if (simdSize == 32)
+    {
+        assert(type == TYP_SIMD32);
+        intrinsicId = NI_Vector256_WithUpper;
+    }
+    else
+    {
+        assert((type == TYP_SIMD64) && (simdSize == 64));
+        intrinsicId = NI_Vector512_WithUpper;
+    }
 #elif defined(TARGET_ARM64)
-    assert(type == TYP_SIMD16);
-    assert(simdSize == 16);
-
-    NamedIntrinsic intrinsicId = NI_Vector128_WithUpper;
+    assert((type == TYP_SIMD16) && (simdSize == 16));
+    intrinsicId = NI_Vector128_WithUpper;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
