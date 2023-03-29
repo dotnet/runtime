@@ -3515,11 +3515,11 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
         // Now we will insert our "result" into our simd32 temporary.
         if (cachedImm8 >= count / 2)
         {
-            node->ChangeHWIntrinsicId(NI_Vector256_WithUpper, tmp32, result);
+            node->ResetHWIntrinsicId(NI_Vector256_WithUpper, comp, tmp32, result);
         }
         else
         {
-            node->ChangeHWIntrinsicId(NI_Vector256_WithLower, tmp32, result);
+            node->ResetHWIntrinsicId(NI_Vector256_WithLower, comp, tmp32, result);
         }
     }
 

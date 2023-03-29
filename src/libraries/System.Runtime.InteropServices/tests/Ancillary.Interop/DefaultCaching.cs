@@ -11,7 +11,7 @@ namespace System.Runtime.InteropServices.Marshalling
         // [TODO] Implement some smart/thread-safe caching
         private readonly Dictionary<RuntimeTypeHandle, IIUnknownCacheStrategy.TableInfo> _cache = new();
 
-        IIUnknownCacheStrategy.TableInfo IIUnknownCacheStrategy.ConstructTableInfo(RuntimeTypeHandle handle, IUnknownDerivedDetails details, void* ptr)
+        IIUnknownCacheStrategy.TableInfo IIUnknownCacheStrategy.ConstructTableInfo(RuntimeTypeHandle handle, IIUnknownDerivedDetails details, void* ptr)
         {
             var obj = (void***)ptr;
             return new IIUnknownCacheStrategy.TableInfo()

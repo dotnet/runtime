@@ -56,7 +56,8 @@ export const
     // Print diagnostic information to the console when performing null check optimizations
     traceNullCheckOptimizations = false,
     // Print diagnostic information when generating backward branches
-    traceBackBranches = false,
+    // 1 = failures only, 2 = full detail
+    traceBackBranches = 0,
     // If we encounter an enter opcode that looks like a loop body and it was already
     //  jitted, we should abort the current trace since it's not worth continuing
     // Unproductive if we have backward branches enabled because it can stop us from jitting

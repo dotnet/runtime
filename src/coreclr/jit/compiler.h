@@ -653,6 +653,8 @@ public:
     unsigned char lvIsOSRLocal : 1; // Root method local in an OSR method. Any stack home will be on the Tier0 frame.
                                     // Initial value will be defined by Tier0. Requires special handing in prolog.
 
+    unsigned char lvIsOSRExposedLocal : 1; // OSR local that was address exposed in Tier0
+
 private:
     unsigned char lvIsNeverNegative : 1; // The local is known to be never negative
 
@@ -1099,14 +1101,16 @@ public:
     {
         return varTypeIsSmall(TypeGet()) &&
                // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
-               (lvIsParam || m_addrExposed || lvIsStructField);
+               // OSR exposed locals were normalize on load in the Tier0 frame so must be so for OSR too.
+               (lvIsParam || m_addrExposed || lvIsStructField || lvIsOSRExposedLocal);
     }
 
     bool lvNormalizeOnStore() const
     {
         return varTypeIsSmall(TypeGet()) &&
                // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
-               !(lvIsParam || m_addrExposed || lvIsStructField);
+               // OSR exposed locals were normalize on load in the Tier0 frame so must be so for OSR too.
+               !(lvIsParam || m_addrExposed || lvIsStructField || lvIsOSRExposedLocal);
     }
 
     void incRefCnts(weight_t weight, Compiler* pComp, RefCountState state = RCS_NORMAL, bool propagate = true);

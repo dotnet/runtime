@@ -21821,20 +21821,27 @@ GenTree* Compiler::gtNewSimdGetLowerNode(
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
 
+    NamedIntrinsic intrinsicId = NI_Illegal;
+
 #if defined(TARGET_XARCH)
-    assert(type == TYP_SIMD16);
-    assert(simdSize == 32);
-
-    NamedIntrinsic intrinsicId = NI_Vector256_GetLower;
+    if (simdSize == 32)
+    {
+        assert(type == TYP_SIMD16);
+        intrinsicId = NI_Vector256_GetLower;
+    }
+    else
+    {
+        assert((type == TYP_SIMD32) && (simdSize == 64));
+        intrinsicId = NI_Vector512_GetLower;
+    }
 #elif defined(TARGET_ARM64)
-    assert(type == TYP_SIMD8);
-    assert(simdSize == 16);
-
-    NamedIntrinsic intrinsicId = NI_Vector128_GetLower;
+    assert((type == TYP_SIMD8) && (simdSize == 16));
+    intrinsicId = NI_Vector128_GetLower;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
+    assert(intrinsicId != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsicId, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 }
 
@@ -21844,20 +21851,27 @@ GenTree* Compiler::gtNewSimdGetUpperNode(
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
 
+    NamedIntrinsic intrinsicId = NI_Illegal;
+
 #if defined(TARGET_XARCH)
-    assert(type == TYP_SIMD16);
-    assert(simdSize == 32);
-
-    NamedIntrinsic intrinsicId = NI_Vector256_GetUpper;
+    if (simdSize == 32)
+    {
+        assert(type == TYP_SIMD16);
+        intrinsicId = NI_Vector256_GetUpper;
+    }
+    else
+    {
+        assert((type == TYP_SIMD32) && (simdSize == 64));
+        intrinsicId = NI_Vector512_GetUpper;
+    }
 #elif defined(TARGET_ARM64)
-    assert(type == TYP_SIMD8);
-    assert(simdSize == 16);
-
-    NamedIntrinsic intrinsicId = NI_Vector128_GetUpper;
+    assert((type == TYP_SIMD8) && (simdSize == 16));
+    intrinsicId = NI_Vector128_GetUpper;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
+    assert(intrinsicId != NI_Illegal);
     return gtNewSimdHWIntrinsicNode(type, op1, intrinsicId, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 }
 

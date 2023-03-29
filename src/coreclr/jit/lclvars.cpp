@@ -334,6 +334,12 @@ void Compiler::lvaInitTypeRef()
         {
             LclVarDsc* const varDsc = lvaGetDesc(lclNum);
             varDsc->lvIsOSRLocal    = true;
+
+            if (info.compPatchpointInfo->IsExposed(lclNum))
+            {
+                JITDUMP("-- V%02u is OSR exposed\n", lclNum);
+                varDsc->lvIsOSRExposedLocal = true;
+            }
         }
     }
 
@@ -2435,14 +2441,15 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         // refresh the cached varDsc for lclNum.
         varDsc = compiler->lvaGetDesc(lclNum);
 
-        LclVarDsc* fieldVarDsc       = compiler->lvaGetDesc(varNum);
-        fieldVarDsc->lvType          = pFieldInfo->fldType;
-        fieldVarDsc->lvIsStructField = true;
-        fieldVarDsc->lvFldOffset     = pFieldInfo->fldOffset;
-        fieldVarDsc->lvFldOrdinal    = pFieldInfo->fldOrdinal;
-        fieldVarDsc->lvParentLcl     = lclNum;
-        fieldVarDsc->lvIsParam       = varDsc->lvIsParam;
-        fieldVarDsc->lvIsOSRLocal    = varDsc->lvIsOSRLocal;
+        LclVarDsc* fieldVarDsc           = compiler->lvaGetDesc(varNum);
+        fieldVarDsc->lvType              = pFieldInfo->fldType;
+        fieldVarDsc->lvIsStructField     = true;
+        fieldVarDsc->lvFldOffset         = pFieldInfo->fldOffset;
+        fieldVarDsc->lvFldOrdinal        = pFieldInfo->fldOrdinal;
+        fieldVarDsc->lvParentLcl         = lclNum;
+        fieldVarDsc->lvIsParam           = varDsc->lvIsParam;
+        fieldVarDsc->lvIsOSRLocal        = varDsc->lvIsOSRLocal;
+        fieldVarDsc->lvIsOSRExposedLocal = varDsc->lvIsOSRExposedLocal;
 
         // This new local may be the first time we've seen a long typed local.
         if (fieldVarDsc->lvType == TYP_LONG)
