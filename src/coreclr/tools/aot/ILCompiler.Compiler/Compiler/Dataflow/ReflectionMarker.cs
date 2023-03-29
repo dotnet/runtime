@@ -198,6 +198,9 @@ namespace ILCompiler.Dataflow
             if (!_enabled)
                 return;
 
+            if (type.HasStaticConstructor)
+                CheckAndWarnOnReflectionAccess(origin, type.GetStaticConstructor());
+
             if (!type.IsGenericDefinition && !type.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true) && Factory.PreinitializationManager.HasLazyStaticConstructor(type))
             {
                 // Mark the GC static base - it contains a pointer to the class constructor, but also info

@@ -25,8 +25,12 @@ namespace ILCompiler.DependencyAnalysis
             _typeDefinition = typeDefinition;
         }
 
-        public static void GetDependencies(ref DependencyList dependencies, NodeFactory factory, FlowAnnotations flowAnnotations, TypeDesc type)
+        public static void GetDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
+            if (factory.MetadataManager is not UsageBasedMetadataManager usageBasedMetadataManager)
+                return;
+
+            FlowAnnotations flowAnnotations = usageBasedMetadataManager.FlowAnnotations;
             bool needsDataflowAnalysis = false;
 
             type = type.GetTypeDefinition();
@@ -49,6 +53,14 @@ namespace ILCompiler.DependencyAnalysis
                         needsDataflowAnalysis |= GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, interfaceType);
                     }
                 }
+
+                if (type.HasStaticConstructor)
+                {
+                    if (DiagnosticUtilities.TryGetRequiresAttribute(type.GetStaticConstructor(), DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
+                        DiagnosticUtilities.TryGetRequiresAttribute(type.GetStaticConstructor(), DiagnosticUtilities.RequiresDynamicCodeAttribute, out _) ||
+                        DiagnosticUtilities.TryGetRequiresAttribute(type.GetStaticConstructor(), DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _))
+                        needsDataflowAnalysis = true;
+                }
             }
             catch (TypeSystemException)
             {
@@ -66,13 +78,13 @@ namespace ILCompiler.DependencyAnalysis
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             DependencyList dependencies = null;
+            UsageBasedMetadataManager metadataManager = (UsageBasedMetadataManager)factory.MetadataManager;
 
             if (_typeDefinition.HasBaseType)
             {
                 if (_typeDefinition.BaseType.DoesTypeRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out var requiresAttribute) &&
                     !_typeDefinition.DoesTypeRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _))
                 {
-                    UsageBasedMetadataManager metadataManager = (UsageBasedMetadataManager)factory.MetadataManager;
                     string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresAttribute.Value));
                     string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresAttribute.Value));
                     metadataManager.Logger.LogWarning(new MessageOrigin(_typeDefinition), DiagnosticId.RequiresUnreferencedCodeOnBaseClass, _typeDefinition.GetDisplayName(), _typeDefinition.BaseType.GetDisplayName(), arg1, arg2);
@@ -87,6 +99,19 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_typeDefinition), interfaceType, _typeDefinition);
                 }
+            }
+
+            if (_typeDefinition.HasStaticConstructor)
+            {
+                MethodDesc staticConstructor = _typeDefinition.GetStaticConstructor();
+                if (DiagnosticUtilities.TryGetRequiresAttribute(staticConstructor, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _))
+                    metadataManager.Logger.LogWarning(new MessageOrigin(staticConstructor), DiagnosticId.RequiresUnreferencedCodeOnStaticConstructor, staticConstructor.GetDisplayName());
+
+                if (DiagnosticUtilities.TryGetRequiresAttribute(staticConstructor, DiagnosticUtilities.RequiresDynamicCodeAttribute, out _))
+                    metadataManager.Logger.LogWarning(new MessageOrigin(staticConstructor), DiagnosticId.RequiresDynamicCodeOnStaticConstructor, staticConstructor.GetDisplayName());
+
+                if (DiagnosticUtilities.TryGetRequiresAttribute(staticConstructor, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _))
+                    metadataManager.Logger.LogWarning(new MessageOrigin(staticConstructor), DiagnosticId.RequiresAssemblyFilesOnStaticConstructor, staticConstructor.GetDisplayName());
             }
 
             return dependencies;

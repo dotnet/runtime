@@ -384,7 +384,7 @@ namespace ILCompiler
         {
             base.GetDependenciesDueToEETypePresence(ref dependencies, factory, type);
 
-            DataflowAnalyzedTypeDefinitionNode.GetDependencies(ref dependencies, factory, FlowAnnotations, type);
+            DataflowAnalyzedTypeDefinitionNode.GetDependencies(ref dependencies, factory, type);
         }
 
         public override bool HasConditionalDependenciesDueToEETypePresence(TypeDesc type)
