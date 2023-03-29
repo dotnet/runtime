@@ -1006,6 +1006,7 @@ class Cfg {
     overheadBytes = 0;
     entryBlob!: CfgBlob;
     blockStack: Array<MintOpcodePtr> = [];
+    backDispatchOffsets: Array<MintOpcodePtr> = [];
     dispatchTable = new Map<MintOpcodePtr, number>();
     trace = 0;
 
@@ -1024,6 +1025,7 @@ class Cfg {
         this.overheadBytes = 10; // epilogue
         this.dispatchTable.clear();
         this.trace = trace;
+        this.backDispatchOffsets.length = 0;
     }
 
     // We have a header containing the table of locals and we need to preserve it
@@ -1134,40 +1136,63 @@ class Cfg {
 
         const dispatchIp = <MintOpcodePtr><any>0;
         if (this.backBranchTargets) {
-            // the loop needs to start with a br_table that performs dispatch based on the current value
-            //  of the dispatch index local
-            // br_table has to be surrounded by a block in order for a depth of 0 to be fallthrough
-            // We wrap it in an additional block so we can have a trap for unexpected disp values
-            this.builder.block(WasmValtype.void);
-            this.builder.block(WasmValtype.void);
-            this.builder.local("disp");
-            this.builder.appendU8(WasmOpcode.br_table);
-            // br_table <number of values starting from 0> <labels for values starting from 0> <default>
-            // we have to assign disp==0 to fallthrough so that we start at the top of the fn body, then
-            //  assign disp values starting from 1 to branch targets
-            // FIXME: Only include back branch targets that are *also* in the block stack. This is necessary
-            //  when starting a trace in the middle of a method to make the table smaller
-            this.builder.appendULeb(this.backBranchTargets.length + 1);
-            this.builder.appendULeb(1); // br depth of 1 = skip the unreachable and fall through to the start
+            this.backDispatchOffsets.length = 0;
+            // First scan the back branch target table and union it with the block stack
+            // This filters down to back branch targets that are reachable inside this trace
             for (let i = 0; i < this.backBranchTargets.length; i++) {
                 const offset = (this.backBranchTargets[i] * 2) + <any>this.startOfBody;
                 const breakDepth = this.blockStack.indexOf(offset);
                 if (breakDepth >= 0) {
-                    this.dispatchTable.set(offset, i + 1);
-                    this.builder.appendULeb(breakDepth + 2); // add 2 to the depth because of the double block around it
-                } else {
-                    // This means the back branch target is outside of the trace. It shouldn't be possible to reach this
-                    //  and we didn't add it to the dispatch table anyway
-                    this.builder.appendULeb(0);
+                    this.dispatchTable.set(offset, this.backDispatchOffsets.length + 1);
+                    this.backDispatchOffsets.push(offset);
                 }
             }
-            this.builder.appendULeb(0); // for unrecognized value we br 0, which causes us to trap
-            this.builder.endBlock();
-            this.builder.appendU8(WasmOpcode.unreachable);
-            this.builder.endBlock();
-            // We put a dummy IP at the end of the block stack to represent the dispatch loop
-            // We will use this dummy IP to find the appropriate br depth when restarting the loop later
-            this.blockStack.push(dispatchIp);
+
+            if (this.backDispatchOffsets.length === 0) {
+                if (this.trace > 0)
+                    console.log("No back branch targets were reachable after filtering");
+            } else if (this.backDispatchOffsets.length === 1) {
+                if (this.trace > 0) {
+                    if (this.backDispatchOffsets[0] === this.entryIp)
+                        console.log(`Exactly one back dispatch offset and it was the entry point 0x${(<any>this.entryIp).toString(16)}`);
+                    else
+                        console.log(`Exactly one back dispatch offset and it was 0x${(<any>this.backDispatchOffsets[0]).toString(16)}`);
+                }
+
+                // if (disp) goto back_branch_target else fallthrough
+                this.builder.local("disp");
+                this.builder.appendU8(WasmOpcode.br_if);
+                this.builder.appendULeb(this.blockStack.indexOf(this.backDispatchOffsets[0]));
+            } else {
+                // the loop needs to start with a br_table that performs dispatch based on the current value
+                //  of the dispatch index local
+                // br_table has to be surrounded by a block in order for a depth of 0 to be fallthrough
+                // We wrap it in an additional block so we can have a trap for unexpected disp values
+                this.builder.block(WasmValtype.void);
+                this.builder.block(WasmValtype.void);
+                this.builder.local("disp");
+                this.builder.appendU8(WasmOpcode.br_table);
+
+                // br_table <number of values starting from 0> <labels for values starting from 0> <default>
+                // we have to assign disp==0 to fallthrough so that we start at the top of the fn body, then
+                //  assign disp values starting from 1 to branch targets
+                this.builder.appendULeb(this.backDispatchOffsets.length + 1);
+                this.builder.appendULeb(1); // br depth of 1 = skip the unreachable and fall through to the start
+                for (let i = 0; i < this.backDispatchOffsets.length; i++) {
+                    // add 2 to the depth because of the double block around it
+                    this.builder.appendULeb(this.blockStack.indexOf(this.backDispatchOffsets[i]) + 2);
+                }
+                this.builder.appendULeb(0); // for unrecognized value we br 0, which causes us to trap
+                this.builder.endBlock();
+                this.builder.appendU8(WasmOpcode.unreachable);
+                this.builder.endBlock();
+            }
+
+            if (this.backDispatchOffsets.length > 0) {
+                // We put a dummy IP at the end of the block stack to represent the dispatch loop
+                // We will use this dummy IP to find the appropriate br depth when restarting the loop later
+                this.blockStack.push(dispatchIp);
+            }
         }
 
         if (this.trace > 1)
@@ -1250,8 +1275,11 @@ class Cfg {
 
         // Close the dispatch loop
         if (this.backBranchTargets) {
-            mono_assert(this.blockStack[0] === <any>0, "expected one zero entry on the block stack for the dispatch loop");
-            this.blockStack.shift();
+            // This is no longer true due to filtering
+            // mono_assert(this.blockStack[0] === <any>0, "expected one zero entry on the block stack for the dispatch loop");
+            mono_assert(this.blockStack.length <= 1, "expected one or zero entries in the block stack at the end");
+            if (this.blockStack.length)
+                this.blockStack.shift();
             this.builder.endBlock();
         }
 
