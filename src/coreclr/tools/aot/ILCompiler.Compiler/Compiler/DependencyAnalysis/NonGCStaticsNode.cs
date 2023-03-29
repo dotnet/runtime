@@ -146,8 +146,6 @@ namespace ILCompiler.DependencyAnalysis
 
             ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencyList, factory, _type.Module);
 
-            DataflowAnalyzedTypeDefinitionNode.GetDependencies(ref dependencyList, factory, _type);
-
             return dependencyList;
         }
 

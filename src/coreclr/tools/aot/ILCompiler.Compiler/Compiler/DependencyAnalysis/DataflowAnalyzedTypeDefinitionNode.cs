@@ -25,12 +25,8 @@ namespace ILCompiler.DependencyAnalysis
             _typeDefinition = typeDefinition;
         }
 
-        public static void GetDependencies(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public static void GetDependencies(ref DependencyList dependencies, NodeFactory factory, FlowAnnotations flowAnnotations, TypeDesc type)
         {
-            if (factory.MetadataManager is not UsageBasedMetadataManager usageBasedMetadataManager)
-                return;
-
-            FlowAnnotations flowAnnotations = usageBasedMetadataManager.FlowAnnotations;
             bool needsDataflowAnalysis = false;
 
             type = type.GetTypeDefinition();
@@ -52,14 +48,6 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         needsDataflowAnalysis |= GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(flowAnnotations, interfaceType);
                     }
-                }
-
-                if (type.HasStaticConstructor)
-                {
-                    if (DiagnosticUtilities.TryGetRequiresAttribute(type.GetStaticConstructor(), DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _) ||
-                        DiagnosticUtilities.TryGetRequiresAttribute(type.GetStaticConstructor(), DiagnosticUtilities.RequiresDynamicCodeAttribute, out _) ||
-                        DiagnosticUtilities.TryGetRequiresAttribute(type.GetStaticConstructor(), DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _))
-                        needsDataflowAnalysis = true;
                 }
             }
             catch (TypeSystemException)
@@ -99,19 +87,6 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_typeDefinition), interfaceType, _typeDefinition);
                 }
-            }
-
-            if (_typeDefinition.HasStaticConstructor)
-            {
-                MethodDesc staticConstructor = _typeDefinition.GetStaticConstructor();
-                if (DiagnosticUtilities.TryGetRequiresAttribute(staticConstructor, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _))
-                    metadataManager.Logger.LogWarning(new MessageOrigin(staticConstructor), DiagnosticId.RequiresUnreferencedCodeOnStaticConstructor, staticConstructor.GetDisplayName());
-
-                if (DiagnosticUtilities.TryGetRequiresAttribute(staticConstructor, DiagnosticUtilities.RequiresDynamicCodeAttribute, out _))
-                    metadataManager.Logger.LogWarning(new MessageOrigin(staticConstructor), DiagnosticId.RequiresDynamicCodeOnStaticConstructor, staticConstructor.GetDisplayName());
-
-                if (DiagnosticUtilities.TryGetRequiresAttribute(staticConstructor, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out _))
-                    metadataManager.Logger.LogWarning(new MessageOrigin(staticConstructor), DiagnosticId.RequiresAssemblyFilesOnStaticConstructor, staticConstructor.GetDisplayName());
             }
 
             return dependencies;

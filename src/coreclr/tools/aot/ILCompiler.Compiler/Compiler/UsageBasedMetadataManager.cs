@@ -384,7 +384,7 @@ namespace ILCompiler
         {
             base.GetDependenciesDueToEETypePresence(ref dependencies, factory, type);
 
-            DataflowAnalyzedTypeDefinitionNode.GetDependencies(ref dependencies, factory, type);
+            DataflowAnalyzedTypeDefinitionNode.GetDependencies(ref dependencies, factory, FlowAnnotations, type);
         }
 
         public override bool HasConditionalDependenciesDueToEETypePresence(TypeDesc type)
@@ -563,6 +563,8 @@ namespace ILCompiler
                 {
                     AddDataflowDependency(ref dependencies, factory, methodIL, "Method has annotated parameters");
                 }
+
+                StaticConstructorAnalysisNode.GetDependencies(ref dependencies, factory, method);
             }
 
             if (method.GetTypicalMethodDefinition() is Internal.TypeSystem.Ecma.EcmaMethod ecmaMethod)

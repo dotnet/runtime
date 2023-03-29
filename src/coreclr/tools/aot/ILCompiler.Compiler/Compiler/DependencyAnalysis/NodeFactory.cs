@@ -393,6 +393,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new DynamicDependencyAttributesOnEntityNode(entity);
             });
 
+            _staticConstructorAnalysisNodes = new NodeCache<MethodDesc, StaticConstructorAnalysisNode>((MethodDesc method) =>
+            {
+                return new StaticConstructorAnalysisNode(method);
+            });
+
             _embeddedTrimmingDescriptors = new NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode>((module) =>
             {
                 return new EmbeddedTrimmingDescriptorNode(module);
@@ -725,6 +730,13 @@ namespace ILCompiler.DependencyAnalysis
         public DynamicDependencyAttributesOnEntityNode DynamicDependencyAttributesOnEntity(TypeSystemEntity entity)
         {
             return _dynamicDependencyAttributesOnEntities.GetOrAdd(entity);
+        }
+
+        private NodeCache<MethodDesc, StaticConstructorAnalysisNode> _staticConstructorAnalysisNodes;
+
+        public StaticConstructorAnalysisNode StaticConstructorAnalysis(MethodDesc staticConstructor)
+        {
+            return _staticConstructorAnalysisNodes.GetOrAdd(staticConstructor);
         }
 
         private NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode> _embeddedTrimmingDescriptors;
