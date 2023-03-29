@@ -75,8 +75,7 @@ namespace Internal.Runtime
                 // typeTlsIndex could have a big range, we do not want to reallocate every time we see +1 index
                 // so we double up from previous size to guarantee a worst case linear complexity
                 int newSize = Math.Max(typeTlsIndex + 1, moduleStorage.Length * 2);
-
-                Array.Resize(ref moduleStorage, typeTlsIndex + 1);
+                Array.Resize(ref moduleStorage, newSize);
             }
 
             // Allocate an object that will represent a memory block for all thread static fields of the type
