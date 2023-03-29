@@ -60,17 +60,6 @@ bool Compiler::fgDominate(const BasicBlock* b1, const BasicBlock* b2)
 
     if (b1->bbNum > fgDomBBcount)
     {
-        // If b1 is a loop preheader (that was created after the dominators were calculated),
-        // then it has a single successor that is the loop entry, and it is the only non-loop
-        // predecessor of the loop entry. Thus, b1 dominates the loop entry and also dominates
-        // what the loop entry dominates.
-        if (b1->bbFlags & BBF_LOOP_PREHEADER)
-        {
-            BasicBlock* loopEntry = b1->GetUniqueSucc();
-            assert(loopEntry != nullptr);
-            return fgDominate(loopEntry, b2);
-        }
-
         // unknown dominators; err on the safe side and return false
         return false;
     }
