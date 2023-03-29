@@ -13,13 +13,13 @@ namespace System.Reflection.Emit
     {
         private readonly Assembly _coreAssembly;
         private readonly string _name;
-        private Dictionary<string, Type> _coreTypes = new();
+        private readonly Dictionary<string, Type> _coreTypes = new();
 
         #region Internal Data Members
 
-        internal Dictionary<Assembly, AssemblyReferenceHandle> _assemblyRefStore = new();
-        internal Dictionary<Type, TypeReferenceHandle> _typeRefStore = new();
-        internal List<TypeBuilderImpl> _typeDefStore = new();
+        internal readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyRefStore = new();
+        internal readonly Dictionary<Type, TypeReferenceHandle> _typeRefStore = new();
+        internal readonly List<TypeBuilderImpl> _typeDefStore = new();
         internal int _nextMethodDefRowId = 1;
         internal int _nextFieldDefRowId = 1;
 
