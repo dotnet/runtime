@@ -19,7 +19,7 @@
       </trans-unit>
       <trans-unit id="PropertyNotSupportedTitle">
         <source>Did not generate binding logic for a property on a type</source>
-        <target state="needs-review-translation">未在類型上產生屬性的繫結邏輯。</target>
+        <target state="new">Did not generate binding logic for a property on a type</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
@@ -29,7 +29,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate binding logic for a type</source>
-        <target state="needs-review-translation">未產生類型的繫結邏輯。</target>
+        <target state="new">Did not generate binding logic for a type</target>
         <note />
       </trans-unit>
     </body>

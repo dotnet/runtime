@@ -19,7 +19,7 @@
       </trans-unit>
       <trans-unit id="PropertyNotSupportedTitle">
         <source>Did not generate binding logic for a property on a type</source>
-        <target state="needs-review-translation">Не создана логика привязки для свойства типа.</target>
+        <target state="new">Did not generate binding logic for a property on a type</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
@@ -29,7 +29,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate binding logic for a type</source>
-        <target state="needs-review-translation">Не создана логика привязки для типа.</target>
+        <target state="new">Did not generate binding logic for a type</target>
         <note />
       </trans-unit>
     </body>
