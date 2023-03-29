@@ -914,7 +914,7 @@ uint32_t MyICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
     return jitInstance->mc->repGetThreadLocalFieldInfo(field);
 }
 
-void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+void MyICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     jitInstance->mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
     jitInstance->mc->repGetThreadLocalStaticBlocksInfo(pInfo);

@@ -1093,7 +1093,7 @@ uint32_t interceptor_ICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
     return result;
 }
 
-void interceptor_ICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+void interceptor_ICJI::getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     mc->cr->AddCall("getThreadLocalStaticBlocksInfo");
     original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo);

@@ -2898,10 +2898,9 @@ namespace Internal.JitInterface
             return (uint)field.GetHashCode();
         }
 
-        private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+        private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
         {
             pInfo->tlsIndex = 5; // CreateConstLookupToSymbol(null);
-            pInfo->threadStaticBlockIndex = 0;
             pInfo->offsetOfThreadLocalStoragePointer = 0x58;
             pInfo->offsetOfMaxThreadStaticBlocks = 23; // CreateConstLookupToSymbol(null);
             pInfo->offsetOfThreadStaticBlocks = 32; // CreateConstLookupToSymbol(null);

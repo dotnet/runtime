@@ -1773,7 +1773,7 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
     return typeIndex;
 }
 
-void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     CONTRACTL {
         THROWS;

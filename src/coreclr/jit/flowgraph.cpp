@@ -4293,8 +4293,8 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
 
-    CORINFO_THREAD_LOCAL_FIELD_INFO threadLocalInfo;
-    info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadLocalInfo);
+    CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
+    info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo);
 
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
@@ -4384,7 +4384,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                 GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(2)->GetNode();
 
                 void**   pIdAddr = nullptr;
-                unsigned IdValue = threadLocalInfo.tlsIndex;
+                unsigned IdValue = threadStaticBlocksInfo.tlsIndex;
                 GenTree* dllRef  = nullptr;
                 if (IdValue != 0)
                 {
@@ -4397,7 +4397,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
                 // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
                 GenTree* tlsRef =
-                    gtNewIconHandleNode(threadLocalInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
+                    gtNewIconHandleNode(threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
 
                 tlsRef = gtNewIndir(TYP_I_IMPL, tlsRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
@@ -4416,7 +4416,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
                 // Create tree for "maxThreadStaticBlocks = tls[offsetOfMaxThreadStaticBlocks]"
                 GenTree* offsetOfMaxThreadStaticBlocks =
-                    gtNewIconNode(threadLocalInfo.offsetOfMaxThreadStaticBlocks, TYP_I_IMPL);
+                    gtNewIconNode(threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks, TYP_I_IMPL);
                 GenTree* maxThreadStaticBlocksRef =
                     gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(useTlsLclValue), offsetOfMaxThreadStaticBlocks);
                 GenTree* maxThreadStaticBlocksValue =
@@ -4429,7 +4429,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
                 // Create tree for "threadStaticBlockBase = tls[offsetOfThreadStaticBlocks]"
                 GenTree* offsetOfThreadStaticBlocks =
-                    gtNewIconNode(threadLocalInfo.offsetOfThreadStaticBlocks, TYP_I_IMPL);
+                    gtNewIconNode(threadStaticBlocksInfo.offsetOfThreadStaticBlocks, TYP_I_IMPL);
                 GenTree* threadStaticBlocksRef =
                     gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(useTlsLclValue), offsetOfThreadStaticBlocks);
                 GenTree* threadStaticBlocksValue =

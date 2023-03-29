@@ -1725,15 +1725,14 @@ struct CORINFO_FIELD_INFO
 };
 
 //----------------------------------------------------------------------------
-// getThreadLocalFieldInfo and CORINFO_THREAD_LOCAL_FIELD_INFO: The EE instructs the JIT about how to access a thread local field
+// getThreadLocalStaticBlocksInfo and CORINFO_THREAD_STATIC_BLOCKS_INFO: The EE instructs the JIT about how to access a thread local field
 
-struct CORINFO_THREAD_LOCAL_FIELD_INFO
+struct CORINFO_THREAD_STATIC_BLOCKS_INFO
 {
     uint32_t tlsIndex;
     uint32_t offsetOfThreadLocalStoragePointer; // 0x58 on x64
     uint32_t offsetOfMaxThreadStaticBlocks;
     uint32_t offsetOfThreadStaticBlocks;
-    uint32_t threadStaticBlockIndex;
 };
 
 //----------------------------------------------------------------------------
@@ -2746,7 +2745,7 @@ public:
                         CORINFO_FIELD_HANDLE  field) = 0;
 
     virtual void getThreadLocalStaticBlocksInfo (
-                        CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo) = 0;
+                        CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo) = 0;
 
     // Returns true iff "fldHnd" represents a static field.
     virtual bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) = 0;

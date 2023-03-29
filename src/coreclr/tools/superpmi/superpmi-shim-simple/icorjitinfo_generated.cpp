@@ -693,7 +693,7 @@ uint32_t interceptor_ICJI::getThreadLocalFieldInfo(
 }
 
 void interceptor_ICJI::getThreadLocalStaticBlocksInfo(
-          CORINFO_THREAD_LOCAL_FIELD_INFO* pInfo)
+          CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     original_ICorJitInfo->getThreadLocalStaticBlocksInfo(pInfo);
 }
