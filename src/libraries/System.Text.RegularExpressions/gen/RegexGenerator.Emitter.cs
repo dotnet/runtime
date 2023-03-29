@@ -300,7 +300,7 @@ namespace System.Text.RegularExpressions.Generator
                     "internal static bool IsWordChar(char ch)",
                     "{",
                     "    // Mask of Unicode categories that combine to form [\\w]",
-                    "    const int WordCategories =",
+                    "    const int WordCategoriesMask =",
                     "        1 << (int)UnicodeCategory.UppercaseLetter |",
                     "        1 << (int)UnicodeCategory.LowercaseLetter |",
                     "        1 << (int)UnicodeCategory.TitlecaseLetter |",
@@ -321,7 +321,7 @@ namespace System.Text.RegularExpressions.Generator
                     "    int chDiv8 = ch >> 3;",
                     "    return (uint)chDiv8 < (uint)ascii.Length ?",
                     "        (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :",
-                    "        (WordCategories & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;",
+                    "        (WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;",
                     "}",
                 });
             }
