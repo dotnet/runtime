@@ -2437,15 +2437,65 @@ namespace System.Security.Cryptography
         public const int HashSizeInBits = 384;
         public const int HashSizeInBytes = 48;
         protected SHA3_384() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("tvos")]
         public static bool IsSupported { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static new System.Security.Cryptography.SHA3_384 Create() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static byte[] HashData(byte[] source) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static byte[] HashData(System.IO.Stream source) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static int HashData(System.IO.Stream source, System.Span<byte> destination) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public abstract partial class SHA3_512 : System.Security.Cryptography.HashAlgorithm
@@ -2453,15 +2503,65 @@ namespace System.Security.Cryptography
         public const int HashSizeInBits = 512;
         public const int HashSizeInBytes = 64;
         protected SHA3_512() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformGuardAttribute("tvos")]
         public static bool IsSupported { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static new System.Security.Cryptography.SHA3_512 Create() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static byte[] HashData(byte[] source) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static byte[] HashData(System.IO.Stream source) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static int HashData(System.IO.Stream source, System.Span<byte> destination) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static byte[] HashData(System.ReadOnlySpan<byte> source) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static int HashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Threading.Tasks.ValueTask<int> HashDataAsync(System.IO.Stream source, System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static System.Threading.Tasks.ValueTask<byte[]> HashDataAsync(System.IO.Stream source, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static bool TryHashData(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
     public abstract partial class SHA512 : System.Security.Cryptography.HashAlgorithm

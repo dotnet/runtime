@@ -5,6 +5,7 @@ using Internal.Cryptography;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -42,6 +43,11 @@ namespace System.Security.Cryptography
         /// <value>
         /// <see langword="true" /> if the algorithm is supported; otherwise, <see langword="false" />.
         /// </value>
+        [UnsupportedOSPlatformGuard("android")]
+        [UnsupportedOSPlatformGuard("osx")]
+        [UnsupportedOSPlatformGuard("ios")]
+        [UnsupportedOSPlatformGuard("tvos")]
+        [UnsupportedOSPlatformGuard("browser")]
         public static bool IsSupported => HashProviderDispenser.HashSupported(HashAlgorithmNames.SHA3_384);
 
         /// <summary>
@@ -53,6 +59,11 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-384.
         /// </exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static new SHA3_384 Create()
         {
             CheckSha3Support();
@@ -70,6 +81,11 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-384.
         /// </exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static byte[] HashData(byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -85,6 +101,11 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-384.
         /// </exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static byte[] HashData(ReadOnlySpan<byte> source)
         {
             byte[] buffer = new byte[HashSizeInBytes];
@@ -108,6 +129,11 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-384.
         /// </exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
         {
             if (!TryHashData(source, destination, out int bytesWritten))
@@ -132,6 +158,11 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-384.
         /// </exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
             CheckSha3Support();
@@ -158,18 +189,23 @@ namespace System.Security.Cryptography
         ///   <paramref name="source" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <p>
+        ///   <para>
         ///   The buffer in <paramref name="destination"/> is too small to hold the calculated hash
         ///   size. The SHA3-384 algorithm always produces a 384-bit hash, or 48 bytes.
-        ///   </p>
-        ///   <p>-or-</p>
-        ///   <p>
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
         ///   <paramref name="source" /> does not support reading.
-        ///   </p>
+        ///   </para>
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-384.
         /// </exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static int HashData(Stream source, Span<byte> destination)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -198,6 +234,11 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-384.
         /// </exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static byte[] HashData(Stream source)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -227,6 +268,11 @@ namespace System.Security.Cryptography
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-384.
         /// </exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static ValueTask<byte[]> HashDataAsync(Stream source, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -252,18 +298,23 @@ namespace System.Security.Cryptography
         ///   <paramref name="source" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <p>
+        ///   <para>
         ///   The buffer in <paramref name="destination"/> is too small to hold the calculated hash
         ///   size. The SHA3-384 algorithm always produces a 384-bit hash, or 48 bytes.
-        ///   </p>
-        ///   <p>-or-</p>
-        ///   <p>
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
         ///   <paramref name="source" /> does not support reading.
-        ///   </p>
+        ///   </para>
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         /// The platform does not support SHA3-384.
         /// </exception>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("browser")]
         public static ValueTask<int> HashDataAsync(
             Stream source,
             Memory<byte> destination,
