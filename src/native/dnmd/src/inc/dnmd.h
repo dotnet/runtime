@@ -167,10 +167,16 @@ typedef enum
     MDTABLE_COLUMN(TypeDef, MethodList, 5),
     MDTABLE_COLUMN_COUNT(TypeDef, 6),
 
+    MDTABLE_COLUMN(FieldPtr, Field, 0),
+    MDTABLE_COLUMN_COUNT(FieldPtr, 1),
+
     MDTABLE_COLUMN(Field, Flags, 0),
     MDTABLE_COLUMN(Field, Name, 1),
     MDTABLE_COLUMN(Field, Signature, 2),
     MDTABLE_COLUMN_COUNT(Field, 3),
+
+    MDTABLE_COLUMN(MethodPtr, Method, 0),
+    MDTABLE_COLUMN_COUNT(MethodPtr, 1),
 
     MDTABLE_COLUMN(MethodDef, Rva, 0),
     MDTABLE_COLUMN(MethodDef, ImplFlags, 1),
@@ -179,6 +185,9 @@ typedef enum
     MDTABLE_COLUMN(MethodDef, Signature, 4),
     MDTABLE_COLUMN(MethodDef, ParamList, 5),
     MDTABLE_COLUMN_COUNT(MethodDef, 6),
+
+    MDTABLE_COLUMN(ParamPtr, Param, 0),
+    MDTABLE_COLUMN_COUNT(ParamPtr, 1),
 
     MDTABLE_COLUMN(Param, Flags, 0),
     MDTABLE_COLUMN(Param, Sequence, 1),
@@ -229,6 +238,9 @@ typedef enum
     MDTABLE_COLUMN(EventMap, EventList, 1),
     MDTABLE_COLUMN_COUNT(EventMap, 2),
 
+    MDTABLE_COLUMN(EventPtr, Event, 0),
+    MDTABLE_COLUMN_COUNT(EventPtr, 1),
+
     MDTABLE_COLUMN(Event, EventFlags, 0),
     MDTABLE_COLUMN(Event, Name, 1),
     MDTABLE_COLUMN(Event, EventType, 2),
@@ -237,6 +249,9 @@ typedef enum
     MDTABLE_COLUMN(PropertyMap, Parent, 0),
     MDTABLE_COLUMN(PropertyMap, PropertyList, 1),
     MDTABLE_COLUMN_COUNT(PropertyMap, 2),
+
+    MDTABLE_COLUMN(PropertyPtr, Property, 0),
+    MDTABLE_COLUMN_COUNT(PropertyPtr, 1),
 
     MDTABLE_COLUMN(Property, Flags, 0),
     MDTABLE_COLUMN(Property, Name, 1),
@@ -394,7 +409,15 @@ int32_t md_get_column_value_as_guid(mdcursor_t c,col_index_t col_idx, uint32_t o
 // If the queried column contains a coded index value, the value will be validated and
 // transformed to its coded form for comparison.
 bool md_find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* cursor);
-bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* start, uint32_t* count);
+
+typedef enum _md_range_result_t
+{
+    MD_RANGE_FOUND = 0,
+    MD_RANGE_NOT_FOUND = 1,
+    MD_RANGE_NOT_SUPPORTED = 2,
+} md_range_result_t;
+
+md_range_result_t md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* start, uint32_t* count);
 
 // Given a value into a supported table, find the associated parent token.
 //  - mdtid_Field
@@ -412,6 +435,10 @@ bool md_is_field_sig(uint8_t const* sig, size_t sig_len);
 // ref_sig is a pointer to a MethodRefSig blob.
 // If the return value is true, def_sig will be a pointer to malloc-d memory containing the MethodDefSig for the MethodRefSig.
 bool md_create_methoddefsig_from_methodrefsig(uint8_t const* ref_sig, size_t ref_sig_len, uint8_t** def_sig, size_t* def_sig_len);
+
+// Given a cursor, resolve any indirections to the final cursor or return the original cursor if it does not point to an indirection table.
+// Returns true if the cursor was not an indirect cursor or if the indirection was resolved, or false if the cursor pointed to an invalid indirection table entry.
+bool md_resolve_indirect_cursor(mdcursor_t c, mdcursor_t* target);
 
 #ifdef __cplusplus
 }

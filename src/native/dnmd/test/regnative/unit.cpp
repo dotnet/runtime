@@ -12,6 +12,7 @@
 namespace
 {
     IMetaDataDispenser* g_baselineDisp;
+    IMetaDataDispenser* g_deltaImageBuilder;
     IMetaDataDispenser* g_currentDisp;
 
     HRESULT CreateImport(IMetaDataDispenser* disp, void const* data, uint32_t dataLen, IMetaDataImport2** import)
@@ -21,8 +22,19 @@ namespace
             data,
             dataLen,
             CorOpenFlags::ofReadOnly,
-            IID_IMetaDataImport,
+            IID_IMetaDataImport2,
             reinterpret_cast<IUnknown**>(import));
+    }
+
+    HRESULT CreateEmit(IMetaDataDispenser* disp, void const* data, uint32_t dataLen, IMetaDataEmit2** emit)
+    {
+        assert(disp != nullptr && data != nullptr && dataLen > 0 && emit != nullptr);
+        return disp->OpenScopeOnMemory(
+            data,
+            dataLen,
+            CorOpenFlags::ofWrite,
+            IID_IMetaDataEmit2,
+            reinterpret_cast<IUnknown**>(emit));
     }
 
     namespace Assert
@@ -153,16 +165,38 @@ namespace
 
 }
 
+#define END_DELEGATING_TEST()\
+    } \
+    catch (Assert::Violation const& v) \
+    { \
+        return ConvertViolation(v); \
+    }
+
 EXPORT
-HRESULT UnitInitialize(IMetaDataDispenser* baseline)
+HRESULT UnitInitialize(IMetaDataDispenser* baseline, IMetaDataDispenserEx* deltaBuilder)
 {
+    HRESULT hr;
     if (baseline == nullptr)
+        return E_INVALIDARG;
+    
+    if (deltaBuilder == nullptr)
         return E_INVALIDARG;
 
     (void)baseline->AddRef();
     g_baselineDisp = baseline;
 
-    HRESULT hr;
+    (void)deltaBuilder->AddRef();
+    
+    // We need to set the ENC mode on the delta builder to get it to apply EnC deltas
+    // and produce images with the indirection tables.
+    VARIANT vt;
+    V_VT(&vt) = VT_UI4;
+    V_UI4(&vt) = MDUpdateExtension;
+    if (FAILED(hr = deltaBuilder->SetOption(MetaDataSetENC, &vt)))
+        return hr;
+
+    g_deltaImageBuilder = deltaBuilder;
+
     if (FAILED(hr = GetDispenser(IID_IMetaDataDispenser, reinterpret_cast<void**>(&g_currentDisp))))
         return hr;
 
@@ -1570,7 +1604,7 @@ namespace
 
         if (hr == S_OK)
         {
-            values.push_back((size_t)publicKey);
+            values.push_back(HashByteArray(publicKey, publicKeyLength));
             values.push_back(publicKeyLength);
             values.push_back(hashAlgId);
             values.push_back(HashCharArray(name, nameLength));
@@ -1615,7 +1649,7 @@ namespace
 
         if (hr == S_OK)
         {
-            values.push_back(publicKeyOrTokenLength != 0 ? (size_t)publicKeyOrToken : 0);
+            values.push_back(HashByteArray(publicKeyOrToken, publicKeyOrTokenLength));
             values.push_back(publicKeyOrTokenLength);
             values.push_back(HashCharArray(name, nameLength));
             values.push_back((size_t)nameLength);
@@ -1627,7 +1661,7 @@ namespace
             values.push_back(metadata.cbLocale);
             values.push_back(metadata.ulProcessor);
             values.push_back(metadata.ulOS);
-            values.push_back(hashLength != 0 ? (size_t)hash : 0);
+            values.push_back(HashByteArray(hash, hashLength));
             values.push_back(hashLength);
             values.push_back(flags);
         }
@@ -2187,4 +2221,30 @@ TestResult UnitFindAPIs(void const* data, uint32_t dataLen)
         FindField(currentImport, tkB2, fieldName, sigBlob, sigBlobLength));
 
     END_TEST();
+}
+
+EXPORT
+TestResult UnitImportAPIsIndirectionTables(void const* data, uint32_t dataLen, void const** deltaImages, uint32_t* deltaImageLengths, uint32_t numDeltaImages)
+{
+    BEGIN_TEST();
+
+    dncp::com_ptr<IMetaDataEmit2> baseImageEmit;
+    ASSERT_EQUAL(S_OK, CreateEmit(g_deltaImageBuilder, data, dataLen, &baseImageEmit));
+
+    for (uint32_t i = 0; i < numDeltaImages; ++i)
+    {
+        dncp::com_ptr<IMetaDataImport2> deltaImport;
+        ASSERT_EQUAL(S_OK, CreateImport(g_deltaImageBuilder, deltaImages[i], deltaImageLengths[i], &deltaImport));
+        ASSERT_EQUAL(S_OK, baseImageEmit->ApplyEditAndContinue(deltaImport));
+    }
+
+    DWORD compositeImageSize;
+    ASSERT_EQUAL(S_OK, baseImageEmit->GetSaveSize(CorSaveSize::cssAccurate, &compositeImageSize));
+
+    std::unique_ptr<uint8_t[]> compositeImage = std::make_unique<uint8_t[]>(compositeImageSize);
+    ASSERT_EQUAL(S_OK, baseImageEmit->SaveToMemory(compositeImage.get(), compositeImageSize));
+
+    return UnitImportAPIs(compositeImage.get(), compositeImageSize);
+
+    END_DELEGATING_TEST();
 }

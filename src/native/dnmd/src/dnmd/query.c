@@ -173,6 +173,16 @@ static uint8_t col_to_index(col_index_t col_idx, mdtable_t* table)
     return (uint8_t)idx;
 }
 
+static col_index_t index_to_col(uint8_t idx, mdtable_id_t table_id)
+{
+#ifdef DEBUG_TABLE_COLUMN_LOOKUP
+    return (col_index_t)((table_id << 8) | idx);
+#else
+    (void)table_id;
+    return (col_index_t)idx;
+#endif
+}
+
 static bool create_query_context(mdcursor_t* cursor, col_index_t col_idx, uint32_t row_count, query_cxt_t* qcxt)
 {
     assert(qcxt != NULL);
@@ -687,17 +697,17 @@ bool md_find_row_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, 
     return find_row_from_cursor(begin, idx, &value, cursor);
 }
 
-bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* start, uint32_t* count)
+md_range_result_t md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value, mdcursor_t* start, uint32_t* count)
 {
     // If the table isn't sorted, then a range isn't possible.
     mdtable_t* table = CursorTable(&begin);
     if (!table->is_sorted)
-        return false;
+        return MD_RANGE_NOT_SUPPORTED;
 
     // Look for any instance of the value.
     mdcursor_t found;
     if (!find_row_from_cursor(begin, idx, &value, &found))
-        return false;
+        return MD_RANGE_NOT_FOUND;
 
     int32_t res;
     find_cxt_t fcxt;
@@ -736,7 +746,7 @@ bool md_find_range_from_cursor(mdcursor_t begin, col_index_t idx, uint32_t value
 
     // Compute the row delta
     *count = CursorRow(&end) - CursorRow(start);
-    return true;
+    return MD_RANGE_FOUND;
 }
 
 // Modeled after C11's bsearch_s. This API performs a binary search
@@ -860,6 +870,32 @@ static bool find_range_element(mdcursor_t element, mdcursor_t* tgt_cursor)
 
     mdtable_t* tgt_table = type_to_table(table->cxt, tgt_table_id);
 
+    uint8_t col_index = col_to_index(tgt_col, tgt_table);
+
+    assert((tgt_table->column_details[col_index] & mdtc_idx_table) == mdtc_idx_table);
+
+    // If the column in the target table is pointing not pointing to the starting table,
+    // then it is pointing to the corresponding indirection table.
+    // We need to find the element in the indirection table that points to the cursor
+    // and then find the element in the target table that points to the indirection table.
+    if (table_is_indirect_table(ExtractTable(tgt_table->column_details[col_index])))
+    {
+        mdtable_id_t indir_table_id = ExtractTable(tgt_table->column_details[col_index]);
+        col_index_t indir_col = index_to_col(0, indir_table_id);
+        mdcursor_t indir_table_cursor;
+        uint32_t indir_table_row_count;
+        if (!md_create_cursor(table->cxt, indir_table_id, &indir_table_cursor, &indir_table_row_count))
+            return false;
+
+        mdcursor_t indir_row;
+        if (!find_row_from_cursor(indir_table_cursor, indir_col, &row, &indir_row))
+            return false;
+        
+        // Now that we've found the indirection cell, we can look in the target table for the
+        // element that contains the indirection cell in its range.
+        row = CursorRow(&indir_row);
+    }
+
     find_cxt_t fcxt;
     if (!create_find_context(tgt_table, tgt_col, &fcxt))
         return false;
@@ -932,4 +968,21 @@ bool md_find_cursor_of_range_element(mdcursor_t element, mdcursor_t* cursor)
     if (cursor == NULL)
         return false;
     return find_range_element(element, cursor);
+}
+
+bool md_resolve_indirect_cursor(mdcursor_t c, mdcursor_t* target)
+{
+    mdtable_t* table = CursorTable(&c);
+    if (table == NULL)
+        return false;
+
+    if (!table_is_indirect_table(table->table_id))
+    {
+        // If the table isn't an indirect table,
+        // we don't need to resolve an indirection from the cursor.
+        // In this case, the original cursor is the target cursor.
+        *target = c;
+        return true;
+    }
+    return 1 == md_get_column_value_as_cursor(c, index_to_col(0, table->table_id), 1, target);
 }

@@ -26,6 +26,12 @@ namespace Common
         [SupportedOSPlatform("windows")]
         public static string NetFx40Dir { get; } = GetNetFx40Install();
 
+        /// <summary>
+        /// Get the IMetaDataDispenser implementation that can be used to build images
+        /// with deltas to fill the pointer tables.
+        /// </summary>
+        public static nint DeltaImageBuilder { get; } = GetBaselineRaw();
+
         private static unsafe nint GetBaselineRaw()
         {
 #if NETFX_20_BASELINE

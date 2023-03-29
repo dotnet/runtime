@@ -87,6 +87,18 @@ typedef enum
     mdtc_hblob      = 0x80000000, // #Blob
 } mdtcol_t;
 
+// Flags and masks for context details
+typedef enum
+{
+    mdc_none              = 0x0000,
+    mdc_large_string_heap = 0x0001,
+    mdc_large_guid_heap   = 0x0002,
+    mdc_large_blob_heap   = 0x0004,
+    mdc_extra_data        = 0x0040,
+    mdc_image_flags       = 0xffff,
+    mdc_minimal_delta     = 0x00010000,
+} mdcxt_flag_t;
+
 // Macros used to insert/extract the column offset.
 #define InsertOffset(o) ((o << 8) & mdtc_comask)
 #define ExtractOffset(o) ((o & mdtc_comask) >> 8)
@@ -120,6 +132,7 @@ typedef struct _mdcxt_t
 {
     uint32_t magic; // mdlib magic
     mdcdata_t data; // metadata raw bytes
+    mdcxt_flag_t context_flags;
 
     // Metadata root details - II.24.2.1
     uint16_t major_ver;
@@ -138,7 +151,6 @@ typedef struct _mdcxt_t
 #endif // DNMD_PORTABLE_PDB
 
     // Metadata tables - II.22
-    uint8_t heap_sizes; // 1 = "#Strings", 2 = "#GUID", 4 = "#Blob"
     mdtable_t* tables;
 } mdcxt_t;
 
@@ -229,13 +241,16 @@ uint8_t get_table_column_count(mdtable_id_t id);
 // Initialize the supplied table details
 bool initialize_table_details(
     uint32_t const* all_table_row_counts,
-    uint8_t heap_sizes,
+    mdcxt_flag_t context_flags,
     mdtable_id_t id,
     bool is_sorted,
     mdtable_t* table);
 
 // Given the current table, consume the data stream assuming it contains the rows
 bool consume_table_rows(mdtable_t* table, uint8_t const** data, size_t* data_len);
+
+// Get whether or not the column in the table points into an indirect table
+bool table_is_indirect_table(mdtable_id_t table_id);
 
 // Internal function used to create a cursor.
 // Limited validation is done for the arguments.

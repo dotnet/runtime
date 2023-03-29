@@ -148,11 +148,11 @@ static uint8_t const table_column_counts[] =
     mdtModule_ColCount,
     mdtTypeRef_ColCount,
     mdtTypeDef_ColCount,
-    1, // FieldPtr
+    mdtFieldPtr_ColCount,
     mdtField_ColCount,
-    1, // MethodPtr
+    mdtMethodPtr_ColCount,
     mdtMethodDef_ColCount,
-    1, // ParamPtr
+    mdtParamPtr_ColCount,
     mdtParam_ColCount,
     mdtInterfaceImpl_ColCount,
     mdtMemberRef_ColCount,
@@ -164,10 +164,10 @@ static uint8_t const table_column_counts[] =
     mdtFieldLayout_ColCount,
     mdtStandAloneSig_ColCount,
     mdtEventMap_ColCount,
-    1, // EventPtr
+    mdtEventPtr_ColCount,
     mdtEvent_ColCount,
     mdtPropertyMap_ColCount,
-    1, // PropertyPtr
+    mdtPropertyPtr_ColCount,
     mdtProperty_ColCount,
     mdtMethodSemantics_ColCount,
     mdtMethodImpl_ColCount,
@@ -228,7 +228,7 @@ static uint32_t compute_row_offsets_size(mdtcol_t* col, size_t col_len)
 }
 
 // II.24.2.6
-static mdtcol_t compute_coded_index(uint32_t const* row_counts, md_coded_idx_t coded_map_idx)
+static mdtcol_t compute_coded_index(bool is_minimal_delta, uint32_t const* row_counts, md_coded_idx_t coded_map_idx)
 {
     assert(coded_map_idx < ARRAY_SIZE(coded_index_map));
     assert(coded_map_idx <= ExtractCodedIndex(mdtc_cimask) && "Coded index map index bit encoding exceeded");
@@ -247,18 +247,26 @@ static mdtcol_t compute_coded_index(uint32_t const* row_counts, md_coded_idx_t c
         }
     }
     uint32_t max_rows_2b = (uint32_t)1 << (16 - entry->bit_encoding_size);
-    return InsertCodedIndex(coded_map_idx) | mdtc_idx_coded | (m < max_rows_2b ? mdtc_b2 : mdtc_b4);
+    return InsertCodedIndex(coded_map_idx) | mdtc_idx_coded | (m < max_rows_2b && !is_minimal_delta ? mdtc_b2 : mdtc_b4);
 }
 
-static mdtcol_t compute_table_index(uint32_t const* row_counts, mdtable_id_t id)
+static mdtcol_t compute_table_index(bool is_minimal_delta, uint32_t const* row_counts, mdtable_id_t id)
 {
     assert(row_counts != NULL && (mdtid_First <= id && id < mdtid_End));
-    return InsertTable(id) | (row_counts[id] < (1 << 16) ? mdtc_b2 : mdtc_b4) | mdtc_idx_table;
+    return InsertTable(id) | (row_counts[id] < (1 << 16) && !is_minimal_delta ? mdtc_b2 : mdtc_b4) | mdtc_idx_table;
+}
+
+static mdtable_id_t get_target_table(uint32_t const* all_table_row_counts, mdtable_id_t direct_table, mdtable_id_t indirect_table)
+{
+    assert(all_table_row_counts != NULL);
+    assert(mdtid_First <= direct_table && direct_table < mdtid_End);
+    assert(mdtid_First <= indirect_table && indirect_table < mdtid_End);
+    return all_table_row_counts[indirect_table] != 0 ? indirect_table : direct_table;
 }
 
 bool initialize_table_details(
     uint32_t const* all_table_row_counts,
-    uint8_t heap_sizes,
+    mdcxt_flag_t context_flags,
     mdtable_id_t id,
     bool is_sorted,
     mdtable_t* table)
@@ -268,16 +276,18 @@ bool initialize_table_details(
     if (all_table_row_counts[id] == 0)
         return false;
 
-    mdtcol_t const string_index = mdtc_idx_heap | mdtc_hstring | (heap_sizes & 0x1 ? mdtc_b4 : mdtc_b2);
-    mdtcol_t const guid_index = mdtc_idx_heap | mdtc_hguid | (heap_sizes & 0x2 ? mdtc_b4 : mdtc_b2);
-    mdtcol_t const blob_index = mdtc_idx_heap | mdtc_hblob | (heap_sizes & 0x4 ? mdtc_b4 : mdtc_b2);
+    mdtcol_t const string_index = mdtc_idx_heap | mdtc_hstring | (context_flags & mdc_large_string_heap ? mdtc_b4 : mdtc_b2);
+    mdtcol_t const guid_index = mdtc_idx_heap | mdtc_hguid | (context_flags & mdc_large_guid_heap ? mdtc_b4 : mdtc_b2);
+    mdtcol_t const blob_index = mdtc_idx_heap | mdtc_hblob | (context_flags & mdc_large_blob_heap ? mdtc_b4 : mdtc_b2);
+    
+    bool is_minimal_delta = (context_flags & mdc_minimal_delta) == mdc_minimal_delta;
 
     table->row_count = all_table_row_counts[id];
     table->is_sorted = is_sorted;
     table->table_id = (uint8_t)id;
 
-#define CODED_INDEX_ARGS(x) all_table_row_counts, x
-#define TABLE_INDEX_ARGS(x) all_table_row_counts, x
+#define CODED_INDEX_ARGS(x) is_minimal_delta, all_table_row_counts, (x)
+#define TABLE_INDEX_ARGS(x) is_minimal_delta, all_table_row_counts, (x)
     switch (id)
     {
     case mdtid_Module: // II.22.30
@@ -299,13 +309,13 @@ bool initialize_table_details(
         table->column_details[mdtTypeDef_TypeName] = string_index;
         table->column_details[mdtTypeDef_TypeNamespace] = string_index;
         table->column_details[mdtTypeDef_Extends] = compute_coded_index(CODED_INDEX_ARGS(mdci_TypeDefOrRef));
-        table->column_details[mdtTypeDef_FieldList] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Field));
-        table->column_details[mdtTypeDef_MethodList] = compute_table_index(TABLE_INDEX_ARGS(mdtid_MethodDef));
+        table->column_details[mdtTypeDef_FieldList] = compute_table_index(TABLE_INDEX_ARGS(get_target_table(all_table_row_counts, mdtid_Field, mdtid_FieldPtr)));
+        table->column_details[mdtTypeDef_MethodList] = compute_table_index(TABLE_INDEX_ARGS(get_target_table(all_table_row_counts, mdtid_MethodDef, mdtid_MethodPtr)));
         assert(mdtTypeDef_ColCount == get_table_column_count(id));
         break;
-    case mdtid_FieldPtr:
-        table->column_details[0] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Field));
-        assert(1 == get_table_column_count(id));
+    case mdtid_FieldPtr: // Not in ECMA
+        table->column_details[mdtFieldPtr_Field] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Field));
+        assert(mdtFieldPtr_ColCount == get_table_column_count(id));
         break;
     case mdtid_Field: // II.22.15
         table->column_details[mdtField_Flags] = mdtc_constant | mdtc_b2;
@@ -313,9 +323,9 @@ bool initialize_table_details(
         table->column_details[mdtField_Signature] = blob_index;
         assert(mdtField_ColCount == get_table_column_count(id));
         break;
-    case mdtid_MethodPtr:
-        table->column_details[0] = compute_table_index(TABLE_INDEX_ARGS(mdtid_MethodDef));
-        assert(1 == get_table_column_count(id));
+    case mdtid_MethodPtr: // Not in ECMA
+        table->column_details[mdtMethodPtr_Method] = compute_table_index(TABLE_INDEX_ARGS(mdtid_MethodDef));
+        assert(mdtMethodPtr_ColCount == get_table_column_count(id));
         break;
     case mdtid_MethodDef: // II.22.26
         table->column_details[mdtMethodDef_Rva] = mdtc_constant | mdtc_b4;
@@ -323,12 +333,12 @@ bool initialize_table_details(
         table->column_details[mdtMethodDef_Flags] = mdtc_constant | mdtc_b2;
         table->column_details[mdtMethodDef_Name] = string_index;
         table->column_details[mdtMethodDef_Signature] = blob_index;
-        table->column_details[mdtMethodDef_ParamList] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Param));
+        table->column_details[mdtMethodDef_ParamList] = compute_table_index(TABLE_INDEX_ARGS(get_target_table(all_table_row_counts, mdtid_Param, mdtid_ParamPtr)));
         assert(mdtMethodDef_ColCount == get_table_column_count(id));
         break;
-    case mdtid_ParamPtr:
-        table->column_details[0] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Param));
-        assert(1 == get_table_column_count(id));
+    case mdtid_ParamPtr: // Not in ECMA
+        table->column_details[mdtParamPtr_Param] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Param));
+        assert(mdtParamPtr_ColCount == get_table_column_count(id));
         break;
     case mdtid_Param: // II.22.33
         table->column_details[mdtParam_Flags] = mdtc_constant | mdtc_b2;
@@ -387,12 +397,12 @@ bool initialize_table_details(
         break;
     case mdtid_EventMap: // II.22.12
         table->column_details[mdtEventMap_Parent] = compute_table_index(TABLE_INDEX_ARGS(mdtid_TypeDef));
-        table->column_details[mdtEventMap_EventList] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Event));
+        table->column_details[mdtEventMap_EventList] = compute_table_index(TABLE_INDEX_ARGS(get_target_table(all_table_row_counts, mdtid_Event, mdtid_EventPtr)));
         assert(mdtEventMap_ColCount == get_table_column_count(id));
         break;
-    case mdtid_EventPtr:
-        table->column_details[0] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Event));
-        assert(1 == get_table_column_count(id));
+    case mdtid_EventPtr: // Not in ECMA
+        table->column_details[mdtEventPtr_Event] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Event));
+        assert(mdtEventPtr_ColCount == get_table_column_count(id));
         break;
     case mdtid_Event:// II.22.13
         table->column_details[mdtEvent_EventFlags] = mdtc_constant | mdtc_b2;
@@ -402,12 +412,12 @@ bool initialize_table_details(
         break;
     case mdtid_PropertyMap: // II.22.35
         table->column_details[mdtPropertyMap_Parent] = compute_table_index(TABLE_INDEX_ARGS(mdtid_TypeDef));
-        table->column_details[mdtPropertyMap_PropertyList] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Property));
+        table->column_details[mdtPropertyMap_PropertyList] = compute_table_index(TABLE_INDEX_ARGS(get_target_table(all_table_row_counts, mdtid_Property, mdtid_PropertyPtr)));
         assert(mdtPropertyMap_ColCount == get_table_column_count(id));
         break;
-    case mdtid_PropertyPtr:
-        table->column_details[0] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Property));
-        assert(1 == get_table_column_count(id));
+    case mdtid_PropertyPtr: // Not in ECMA
+        table->column_details[mdtPropertyPtr_Property] = compute_table_index(TABLE_INDEX_ARGS(mdtid_Property));
+        assert(mdtPropertyPtr_ColCount == get_table_column_count(id));
         break;
     case mdtid_Property: // II.22.34
         table->column_details[mdtProperty_Flags] = mdtc_constant | mdtc_b2;
@@ -629,4 +639,19 @@ bool consume_table_rows(mdtable_t* table, uint8_t const** data, size_t* data_len
     table->data.ptr = rows;
     table->data.size = rows_len;
     return true;
+}
+
+bool table_is_indirect_table(mdtable_id_t table_id)
+{
+    switch (table_id)
+    {
+        case mdtid_FieldPtr:
+        case mdtid_MethodPtr:
+        case mdtid_ParamPtr:
+        case mdtid_EventPtr:
+        case mdtid_PropertyPtr:
+            return true;
+        default:
+            return false;
+    }
 }

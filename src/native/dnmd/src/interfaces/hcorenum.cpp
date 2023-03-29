@@ -265,7 +265,11 @@ HRESULT HCORENUMImpl::ReadTableTokens(
             _curr = currData;
         }
 
-        if (!md_cursor_to_token(currData->Table.Current, &rTokens[count]))
+        mdcursor_t current;
+        if (!md_resolve_indirect_cursor(currData->Table.Current, &current))
+            return CLDB_E_FILE_CORRUPT;
+
+        if (!md_cursor_to_token(current, &rTokens[count]))
             break;
         count++;
 
