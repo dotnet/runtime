@@ -59,7 +59,7 @@ namespace
 
         if (trace::is_enabled())
         {
-            trace::verbose(_X("The rid fallback graph is: {"));
+            trace::verbose(_X("RID fallback graph = {"));
             for (const auto& rid : rid_fallback_graph)
             {
                 trace::verbose(_X("%s => ["), rid.first.c_str());
