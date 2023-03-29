@@ -9464,7 +9464,7 @@ void CodeGen::genCodeForReuseVal(GenTree* treeNode)
     assert(treeNode->OperIs(GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC));
     JITDUMP("  TreeNode is marked ReuseReg\n");
 
-    if (treeNode->IsIntegralConst(0))
+    if (treeNode->IsIntegralConst(0) && GetEmitter()->emitCurIGnonEmpty())
     {
         genDefineTempLabel(genCreateTempLabel());
     }
