@@ -4114,7 +4114,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
     }
 
     bool     isStaticReadOnlyInitedRef = false;
-    unsigned typeIndex = 0;
+    unsigned typeIndex                 = 0;
     GenTree* op1;
     switch (pFieldInfo->fieldAccessor)
     {

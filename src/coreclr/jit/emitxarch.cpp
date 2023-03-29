@@ -16331,7 +16331,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     code = insEncodeReg3456(id, id->idReg1(), size, code);
                 }
 
-                regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
+                regcode                   = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 CORINFO_FIELD_HANDLE fldh = id->idAddr()->iiaFieldHnd;
                 if (fldh == FLD_GLOBAL_GS)
                 {

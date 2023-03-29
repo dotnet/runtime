@@ -4391,7 +4391,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 #ifdef TARGET_64BIT
                     dllRef = gtNewIconNode(IdValue * 8, TYP_I_IMPL);
 #else
-                    dllRef = gtNewIconNode(IdValue * 4, TYP_I_IMPL);
+                    dllRef                     = gtNewIconNode(IdValue * 4, TYP_I_IMPL);
 #endif
                 }
 
@@ -4425,7 +4425,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                 // Create tree for "if (maxThreadStaticBlocks < typeIndex)"
                 GenTree* maxThreadStaticBlocksCond = gtNewOperNode(GT_LT, TYP_UINT, maxThreadStaticBlocksValue,
                                                                    gtCloneExpr(typeThreadStaticBlockIndexValue));
-                maxThreadStaticBlocksCond          = gtNewOperNode(GT_JTRUE, TYP_VOID, maxThreadStaticBlocksCond);
+                maxThreadStaticBlocksCond = gtNewOperNode(GT_JTRUE, TYP_VOID, maxThreadStaticBlocksCond);
 
                 // Create tree for "threadStaticBlockBase = tls[offsetOfThreadStaticBlocks]"
                 GenTree* offsetOfThreadStaticBlocks =
@@ -4498,7 +4498,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                 // fallbackBb
                 GenTree*    asgFallbackValue = gtNewAssignNode(gtClone(threadStaticBlockLcl), call);
                 BasicBlock* fallbackBb       = CreateBlockFromTree(this, threadStaticBlockNullCondBB, BBJ_ALWAYS,
-                                                                   asgFallbackValue, debugInfo, true);
+                                                             asgFallbackValue, debugInfo, true);
                 // fastPathBb
                 GenTree* asgFastPathValue =
                     gtNewAssignNode(gtClone(threadStaticBlockLcl), gtCloneExpr(useThreadStaticBlockBaseLclValue));

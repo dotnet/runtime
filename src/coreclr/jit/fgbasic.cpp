@@ -6940,11 +6940,11 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBjumpKinds jumpKind,
 
 // Create block from the given tree
 /* static */ BasicBlock* Compiler::CreateBlockFromTree(Compiler*   comp,
-                                       BasicBlock* insertAfter,
-                                       BBjumpKinds blockKind,
-                                       GenTree*    tree,
-                                       DebugInfo&  debugInfo,
-                                       bool        updateSideEffects)
+                                                       BasicBlock* insertAfter,
+                                                       BBjumpKinds blockKind,
+                                                       GenTree*    tree,
+                                                       DebugInfo&  debugInfo,
+                                                       bool        updateSideEffects)
 {
     // Fast-path basic block
     BasicBlock* newBlock = comp->fgNewBBafter(blockKind, insertAfter, true);

@@ -5025,7 +5025,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     if (TargetOS::IsWindows)
     {
         // Currently this is only applicable for Windows
-    DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
+        DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
     }
 
     // Insert GC Polls

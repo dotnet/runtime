@@ -5473,7 +5473,6 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
         emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_FS,
                           (int)addr->AsIntCon()->gtIconVal);
 #endif
-
     }
     else
     {
