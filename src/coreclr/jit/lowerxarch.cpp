@@ -1175,7 +1175,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             assert(comp->IsBaselineVector512IsaSupportedDebugOnly());
             var_types simdBaseType = node->GetSimdBaseType();
-            int       index        = (intrinsicId == NI_Vector256_WithUpper) ? 1 : 0;
+            int       index        = (intrinsicId == NI_Vector512_WithUpper) ? 1 : 0;
 
             intrinsicId = NI_AVX512F_InsertVector256;
 
@@ -2658,17 +2658,15 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
         //          /--*  ... T
         //          +--*  opN T
         //   hi   = *  HWINTRINSIC   simd32 T Create
-        //   idx  =    CNS_INT       int    1
         //          /--*  lo   simd64
         //          +--*  hi   simd32
-        //          +--*  idx  int
-        //   node = *  HWINTRINSIC   simd64 T InsertVector256
+        //   node = *  HWINTRINSIC   simd64 T WithUpper
 
         // This is roughly the following managed code:
         //   ...
         //   var lo   = Vector256.Create(op1, ...);
         //   var hi   = Vector256.Create(..., opN);
-        //   return Avx512F.InsertVector512(lo, hi, 0x01);
+        //   return lo.WithUpper(hi);
 
         // Each Vector256.Create call gets half the operands. That is:
         //   lo = Vector256.Create(op1, op2);
