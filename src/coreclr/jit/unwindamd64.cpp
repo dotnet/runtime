@@ -119,6 +119,78 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
         case REG_XMM15:
             dwarfReg = 32;
             break;
+        case REG_XMM16:
+            dwarfReg = 67;
+            break;
+        case REG_XMM17:
+            dwarfReg = 68;
+            break;
+        case REG_XMM18:
+            dwarfReg = 69;
+            break;
+        case REG_XMM19:
+            dwarfReg = 70;
+            break;
+        case REG_XMM20:
+            dwarfReg = 71;
+            break;
+        case REG_XMM21:
+            dwarfReg = 72;
+            break;
+        case REG_XMM22:
+            dwarfReg = 73;
+            break;
+        case REG_XMM23:
+            dwarfReg = 74;
+            break;
+        case REG_XMM24:
+            dwarfReg = 75;
+            break;
+        case REG_XMM25:
+            dwarfReg = 76;
+            break;
+        case REG_XMM26:
+            dwarfReg = 77;
+            break;
+        case REG_XMM27:
+            dwarfReg = 78;
+            break;
+        case REG_XMM28:
+            dwarfReg = 79;
+            break;
+        case REG_XMM29:
+            dwarfReg = 80;
+            break;
+        case REG_XMM30:
+            dwarfReg = 81;
+            break;
+        case REG_XMM31:
+            dwarfReg = 82;
+            break;
+        case REG_K0:
+            dwarfReg = 118;
+            break;
+        case REG_K1:
+            dwarfReg = 119;
+            break;
+        case REG_K2:
+            dwarfReg = 120;
+            break;
+        case REG_K3:
+            dwarfReg = 121;
+            break;
+        case REG_K4:
+            dwarfReg = 122;
+            break;
+        case REG_K5:
+            dwarfReg = 123;
+            break;
+        case REG_K6:
+            dwarfReg = 124;
+            break;
+        case REG_K7:
+            dwarfReg = 125;
+            break;
         default:
             noway_assert(!"unexpected REG_NUM");
     }
