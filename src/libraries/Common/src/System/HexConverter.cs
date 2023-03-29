@@ -225,8 +225,6 @@ namespace System
 
         public static bool TryDecodeFromUtf16(ReadOnlySpan<char> chars, Span<byte> bytes)
         {
-            Debug.Assert(chars.Length <= checked(bytes.Length * 2));
-
 #if SYSTEM_PRIVATE_CORELIB
             if (BitConverter.IsLittleEndian && (Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) &&
                 chars.Length >= Vector128<ushort>.Count * 2)
@@ -265,20 +263,20 @@ namespace System
                 Vector128<byte> t1 = vec + Vector128.Create((byte)(0xFF - '9'));
                 // And then correct the range to 0xf0..0xf9.
                 // All other bytes become less than 0xf0.
-                Vector128<byte> t2 = SubtractSaturate(t1, Vector128.Create((byte)6));
+                Vector128<byte> t2 = Vector128.SubtractSaturate(t1, Vector128.Create((byte)6));
                 // Convert into uppercase 'a'..'f' => 'A'..'F' and
                 // move hex letter 'A'..'F' into range 0..5.
                 Vector128<byte> t3 = (vec & Vector128.Create((byte)0xDF)) - Vector128.Create((byte)'A');
                 // And correct the range into 10..15.
                 // The non-hex letters bytes become greater than 0x0f.
-                Vector128<byte> t4 = AddSaturate(t3, Vector128.Create((byte)10));
+                Vector128<byte> t4 = Vector128.AddSaturate(t3, Vector128.Create((byte)10));
                 // Convert '0'..'9' into nibbles 0..9. Non-digit bytes become
                 // greater than 0x0f. Finally choose the result: either valid nibble (0..9/10..15)
                 // or some byte greater than 0x0f.
                 Vector128<byte> nibbles = Vector128.Min(t2 - Vector128.Create((byte)0xF0), t4);
                 // Any high bit is a sign that input is not a valid hex data
                 if (!Utf16Utility.AllCharsInVector128AreAscii(vec1 | vec2) ||
-                    AddSaturate(nibbles, Vector128.Create((byte)(127 - 15))).ExtractMostSignificantBits() != 0)
+                    Vector128.AddSaturate(nibbles, Vector128.Create((byte)(127 - 15))).ExtractMostSignificantBits() != 0)
                 {
                     // Input is either non-ASCII or invalid hex data
                     break;
@@ -320,12 +318,6 @@ namespace System
 
             // Fall back to the scalar routine in case of invalid input.
             return TryDecodeFromUtf16(chars.Slice((int)offset), bytes.Slice((int)(offset / 2)), out _);
-
-            // Remove once these are exposed as cross-plat helpers
-            static Vector128<byte> AddSaturate(Vector128<byte> a, Vector128<byte> b) =>
-                Sse2.IsSupported ? Sse2.AddSaturate(a, b) : AdvSimd.AddSaturate(a, b);
-            static Vector128<byte> SubtractSaturate(Vector128<byte> a, Vector128<byte> b) =>
-                Sse2.IsSupported ? Sse2.SubtractSaturate(a, b) : AdvSimd.SubtractSaturate(a, b);
         }
 #endif
 
