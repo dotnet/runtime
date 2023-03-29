@@ -795,6 +795,9 @@ REDHAWK_PALIMPORT int32_t __cdecl _stricmp(const char *string1, const char *stri
 #ifdef TARGET_UNIX
 // MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
 // We define matching signatures for use on Unix platforms.
+//
+// IMPORTANT: Unlike MSVC, Unix does not explicitly zero ECX for __cpuid
+
 REDHAWK_PALIMPORT void __cpuid(int cpuInfo[4], int function_id);
 REDHAWK_PALIMPORT void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
 #else

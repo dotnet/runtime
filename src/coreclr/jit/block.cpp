@@ -571,7 +571,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
     {
         // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
         // about the BlockSet epoch.
-        unsigned     bbNumMax = compiler->impInlineRoot()->fgBBNumMax;
+        unsigned     bbNumMax = compiler->fgBBNumMax;
         BitVecTraits bitVecTraits(bbNumMax + 1, compiler);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
         for (BasicBlock* const bTarget : SwitchTargets())
@@ -1151,6 +1151,13 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
 
         case BBJ_EHFINALLYRET:
         {
+            // We may call this method before we realize we have invalid IL. Tolerate.
+            //
+            if (!hasHndIndex())
+            {
+                return 0;
+            }
+
             // The first block of the handler is labelled with the catch type.
             BasicBlock* hndBeg = comp->fgFirstBlockOfHandler(this);
             if (hndBeg->bbCatchTyp == BBCT_FINALLY)
@@ -1431,16 +1438,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     /* Give the block a number, set the ancestor count and weight */
 
     ++fgBBcount;
-    ++fgBBNumMax;
-
-    if (compIsForInlining())
-    {
-        block->bbNum = ++impInlineInfo->InlinerCompiler->fgBBNumMax;
-    }
-    else
-    {
-        block->bbNum = fgBBNumMax;
-    }
+    block->bbNum = ++fgBBNumMax;
 
     if (compRationalIRForm)
     {

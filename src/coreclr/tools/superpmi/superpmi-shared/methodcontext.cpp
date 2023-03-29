@@ -1160,6 +1160,108 @@ void MethodContext::recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DW
     GetJitFlags->Add(0, value);
     DEBUG_REC(dmpGetJitFlags(0, value));
 }
+
+// TODO: we need a widely-available utility function that can print a CORJIT_FLAGS::CorJitFlag.
+// Maybe something in corjitflags.h itself.
+const char* CorJitFlagToString(CORJIT_FLAGS::CorJitFlag flag)
+{
+    switch (flag)
+    {
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SPEED_OPT:
+        return "CORJIT_FLAG_SPEED_OPT";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SIZE_OPT:
+        return "CORJIT_FLAG_SIZE_OPT";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_DEBUG_CODE:
+        return "CORJIT_FLAG_DEBUG_CODE";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_DEBUG_EnC:
+        return "CORJIT_FLAG_DEBUG_EnC";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_DEBUG_INFO:
+        return "CORJIT_FLAG_DEBUG_INFO";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_MIN_OPT:
+        return "CORJIT_FLAG_MIN_OPT";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_ENABLE_CFG:
+        return "CORJIT_FLAG_ENABLE_CFG";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_MCJIT_BACKGROUND:
+        return "CORJIT_FLAG_MCJIT_BACKGROUND";
+
+#if defined(TARGET_X86)
+
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PINVOKE_RESTORE_ESP:
+        return "CORJIT_FLAG_PINVOKE_RESTORE_ESP";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_TARGET_P4:
+        return "CORJIT_FLAG_TARGET_P4";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_USE_FCOMI:
+        return "CORJIT_FLAG_USE_FCOMI";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_USE_CMOV:
+        return "CORJIT_FLAG_USE_CMOV";
+
+#endif // defined(TARGET_X86)
+
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_OSR:
+        return "CORJIT_FLAG_OSR";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_ALT_JIT:
+        return "CORJIT_FLAG_ALT_JIT";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_MAKEFINALCODE:
+        return "CORJIT_FLAG_MAKEFINALCODE";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_READYTORUN:
+        return "CORJIT_FLAG_READYTORUN";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROF_ENTERLEAVE:
+        return "CORJIT_FLAG_PROF_ENTERLEAVE";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROF_NO_PINVOKE_INLINE:
+        return "CORJIT_FLAG_PROF_NO_PINVOKE_INLINE";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SKIP_VERIFICATION:
+        return "CORJIT_FLAG_SKIP_VERIFICATION";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PREJIT:
+        return "CORJIT_FLAG_PREJIT";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_RELOC:
+        return "CORJIT_FLAG_RELOC";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_IMPORT_ONLY:
+        return "CORJIT_FLAG_IMPORT_ONLY";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_IL_STUB:
+        return "CORJIT_FLAG_IL_STUB";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PROCSPLIT:
+        return "CORJIT_FLAG_PROCSPLIT";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_BBINSTR:
+        return "CORJIT_FLAG_BBINSTR";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_BBOPT:
+        return "CORJIT_FLAG_BBOPT";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_FRAMED:
+        return "CORJIT_FLAG_FRAMED";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_BBINSTR_IF_LOOPS:
+        return "CORJIT_FLAG_BBINSTR_IF_LOOPS";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_PUBLISH_SECRET_PARAM:
+        return "CORJIT_FLAG_PUBLISH_SECRET_PARAM";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SAMPLING_JIT_BACKGROUND:
+        return "CORJIT_FLAG_SAMPLING_JIT_BACKGROUND";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_USE_PINVOKE_HELPERS:
+        return "CORJIT_FLAG_USE_PINVOKE_HELPERS";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_REVERSE_PINVOKE:
+        return "CORJIT_FLAG_REVERSE_PINVOKE";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_TRACK_TRANSITIONS:
+        return "CORJIT_FLAG_TRACK_TRANSITIONS";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_TIER0:
+        return "CORJIT_FLAG_TIER0";
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_TIER1:
+        return "CORJIT_FLAG_TIER1";
+
+#if defined(TARGET_ARM)
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_RELATIVE_CODE_RELOCS:
+        return "CORJIT_FLAG_RELATIVE_CODE_RELOCS";
+#endif // defined(TARGET_ARM)
+
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_NO_INLINING:
+        return "CORJIT_FLAG_NO_INLINING";
+
+#if defined(TARGET_ARM)
+    case CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_SOFTFP_ABI:
+        return "CORJIT_FLAG_SOFTFP_ABI";
+#endif // defined(TARGET_ARM)
+
+    default:
+        return "<unknown>";
+    }
+}
+
 void MethodContext::dmpGetJitFlags(DWORD key, DD value)
 {
     CORJIT_FLAGS* jitflags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
@@ -1171,6 +1273,29 @@ void MethodContext::dmpGetJitFlags(DWORD key, DD value)
     {
         printf("%016" PRIX64 "", raw[i]);
     }
+
+    // Print text string for the flags
+    printf(" (");
+
+    unsigned maxCorJitFlag = sizeof(uint64_t) * 8; // There's no API to determine the largest possible `corJitFlags`.
+    for (CORJIT_FLAGS::CorJitFlag flag = (CORJIT_FLAGS::CorJitFlag)0; (unsigned)flag < maxCorJitFlag; flag = (CORJIT_FLAGS::CorJitFlag)((unsigned)flag + 1))
+    {
+        if (jitflags->IsSet(flag))
+        {
+            printf(" %s", CorJitFlagToString(flag));
+        }
+    }
+
+    unsigned maxInstructionSetFlagCount = sizeof(uint64_t) * 8 * flagsFieldCount;
+    for (CORINFO_InstructionSet isa = (CORINFO_InstructionSet)0; (unsigned)isa < maxInstructionSetFlagCount; isa = (CORINFO_InstructionSet)((unsigned)isa + 1))
+    {
+        if (jitflags->IsSet(isa))
+        {
+            printf(" %s", InstructionSetToString(isa));
+        }
+    }
+
+    printf(" )");
     GetJitFlags->Unlock();
 }
 DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
@@ -3585,29 +3710,36 @@ bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, u
 }
 
 void MethodContext::recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field,
-                                                  bool                 isSpeculative,
+                                                  bool*                pIsSpeculative,
                                                   CORINFO_CLASS_HANDLE result)
 {
     if (GetStaticFieldCurrentClass == nullptr)
-        GetStaticFieldCurrentClass = new LightWeightMap<DWORDLONG, Agnostic_GetStaticFieldCurrentClass>();
+        GetStaticFieldCurrentClass = new LightWeightMap<DLD, Agnostic_GetStaticFieldCurrentClass>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(field);
+    key.B = pIsSpeculative != nullptr ? 1 : 0;
 
     Agnostic_GetStaticFieldCurrentClass value;
-
     value.classHandle   = CastHandle(result);
-    value.isSpeculative = isSpeculative;
+    value.isSpeculative = pIsSpeculative != nullptr ? *pIsSpeculative : false;
 
-    DWORDLONG key = CastHandle(field);
     GetStaticFieldCurrentClass->Add(key, value);
     DEBUG_REC(dmpGetStaticFieldCurrentClass(key, value));
 }
-void MethodContext::dmpGetStaticFieldCurrentClass(DWORDLONG key, const Agnostic_GetStaticFieldCurrentClass& value)
+void MethodContext::dmpGetStaticFieldCurrentClass(DLD key, const Agnostic_GetStaticFieldCurrentClass& value)
 {
-    printf("GetStaticFieldCurrentClass key fld-%016" PRIX64 ", value clsHnd-%016" PRIX64 " isSpeculative-%u", key, value.classHandle,
+    printf("GetStaticFieldCurrentClass key fld-%016" PRIX64 ", value clsHnd-%016" PRIX64 " isSpeculative-%u", key.A, value.classHandle,
            value.isSpeculative);
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative)
 {
-    DWORDLONG key = CastHandle(field);
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(field);
+    key.B = pIsSpeculative != nullptr ? 1 : 0;
+
     Agnostic_GetStaticFieldCurrentClass value = LookupByKeyOrMiss(GetStaticFieldCurrentClass, key, ": key %016" PRIX64 "", key);
 
     DEBUG_REP(dmpGetStaticFieldCurrentClass(key, value));

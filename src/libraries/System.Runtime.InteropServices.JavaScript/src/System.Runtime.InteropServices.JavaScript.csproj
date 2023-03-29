@@ -2,8 +2,6 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <FeatureWasmThreads Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
-    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
     <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
   </PropertyGroup>
 
@@ -11,6 +9,13 @@
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'browser'">SR.SystemRuntimeInteropServicesJavaScript_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <FeatureWasmThreads Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(MonoWasmBuildVariant)' == 'multithread'">true</FeatureWasmThreads>
+    <WasmEnableLegacyJsInterop Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
+    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <DefineConstants Condition="'$(WasmEnableLegacyJsInterop)' == 'true'" >$(DefineConstants);ENABLE_LEGACY_JS_INTEROP</DefineConstants>
+    <ILLinkDescriptorsLibraryBuildXml
+      Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableLegacyJsInterop)' == 'true'"
+      >$(MonoProjectRoot)wasm\build\ILLink.Descriptors.LegacyJsInterop.xml</ILLinkDescriptorsLibraryBuildXml>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,15 +27,6 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptImports.Generated.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptExports.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\JavaScriptImports.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\LegacyExports.cs" />
-
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Runtime.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Array.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\ArrayBuffer.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\DataView.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Function.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Uint8Array.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\LegacyHostImplementation.cs" />
 
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSHost.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSMarshalerType.cs" />
@@ -67,6 +63,18 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.Exception.cs" />
 
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSSynchronizationContext.cs" />
+  </ItemGroup>
+
+  <!-- only include legacy interop when WasmEnableLegacyJsInterop is enabled -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(WasmEnableLegacyJsInterop)' == 'true'">
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Interop\LegacyExports.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Runtime.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Array.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\ArrayBuffer.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\DataView.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Function.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\Uint8Array.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\Legacy\LegacyHostImplementation.cs" />
   </ItemGroup>
 
   <ItemGroup>

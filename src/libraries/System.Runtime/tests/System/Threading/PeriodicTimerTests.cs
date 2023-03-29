@@ -12,15 +12,15 @@ namespace System.Threading.Tests
         [Fact]
         public void Ctor_InvalidArguments_Throws()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("period", () => new PeriodicTimer(TimeSpan.FromMilliseconds(-1)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("period", () => new PeriodicTimer(TimeSpan.Zero));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("period", () => new PeriodicTimer(TimeSpan.FromMilliseconds(uint.MaxValue)));
         }
 
         [Theory]
+        [InlineData(-1)]
         [InlineData(1)]
         [InlineData(uint.MaxValue - 1)]
-        public void Ctor_ValidArguments_Succeeds(uint milliseconds)
+        public void Ctor_ValidArguments_Succeeds(double milliseconds)
         {
             using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(milliseconds));
         }
@@ -29,7 +29,6 @@ namespace System.Threading.Tests
         public void Period_InvalidArguments_Throws()
         {
             PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => timer.Period = TimeSpan.FromMilliseconds(-1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => timer.Period = TimeSpan.Zero);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => timer.Period = TimeSpan.FromMilliseconds(uint.MaxValue));
 
@@ -43,6 +42,9 @@ namespace System.Threading.Tests
             using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromMilliseconds(1));
             Assert.Equal(TimeSpan.FromMilliseconds(1), timer.Period);
 
+            timer.Period = Timeout.InfiniteTimeSpan;
+            Assert.Equal(Timeout.InfiniteTimeSpan, timer.Period);
+
             timer.Period = TimeSpan.FromDays(1);
             Assert.Equal(TimeSpan.FromDays(1), timer.Period);
 
@@ -53,7 +55,7 @@ namespace System.Threading.Tests
         [Fact]
         public async Task Period_AffectsPendingWaits()
         {
-            using PeriodicTimer timer = new PeriodicTimer(TimeSpan.FromDays(40));
+            using PeriodicTimer timer = new PeriodicTimer(Timeout.InfiniteTimeSpan);
 
             ValueTask<bool> task = timer.WaitForNextTickAsync();
             Assert.False(task.IsCompleted);

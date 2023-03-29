@@ -5775,6 +5775,16 @@
     "any",
     "base"
   ],
+  "linux-musl-riscv64": [
+    "linux-musl-riscv64",
+    "linux-musl",
+    "linux-riscv64",
+    "linux",
+    "unix-riscv64",
+    "unix",
+    "any",
+    "base"
+  ],
   "linux-musl-s390x": [
     "linux-musl-s390x",
     "linux-musl",

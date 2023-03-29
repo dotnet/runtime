@@ -354,6 +354,7 @@
       InvariantGlobalization="$(InvariantGlobalization)"
       SatelliteAssemblies="@(_WasmSatelliteAssemblies)"
       IcuDataFileNames="@(WasmIcuDataFileNames)"
+      FilesToIncludeInFileSystem="@(WasmFilesToIncludeInFileSystem)"
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       NativeAssets="@(WasmNativeAsset)"
       DebugLevel="$(WasmDebugLevel)"
