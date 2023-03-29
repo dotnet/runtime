@@ -16382,6 +16382,34 @@ bool Compiler::gtSplitTree(
             return false;
         }
 
+        bool IsValue(const UseInfo& useInf)
+        {
+            GenTree* node = (*useInf.Use)->gtEffectiveVal();
+            if (!node->IsValue())
+            {
+                return false;
+            }
+
+            if (node->OperIs(GT_ASG))
+            {
+                return false;
+            }
+
+            GenTree* user = useInf.User;
+
+            if (user == nullptr)
+            {
+                return false;
+            }
+
+            if (user->OperIs(GT_COMMA) && (&user->AsOp()->gtOp1 == useInf.Use))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         void SplitOutUse(const UseInfo& useInf, bool userIsReturned)
         {
             GenTree** use  = useInf.Use;
@@ -16447,8 +16475,7 @@ bool Compiler::gtSplitTree(
             }
 
             Statement* stmt = nullptr;
-            if (!(*use)->IsValue() || (*use)->gtEffectiveVal()->OperIs(GT_ASG) || (user == nullptr) ||
-                (user->OperIs(GT_COMMA) && (user->gtGetOp1() == *use)))
+            if (!IsValue(useInf))
             {
                 GenTree* sideEffects = nullptr;
                 m_compiler->gtExtractSideEffList(*use, &sideEffects);
