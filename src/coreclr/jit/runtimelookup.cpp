@@ -424,6 +424,12 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     assert(BasicBlock::sameEHRegion(prevBb, sizeCheckBb));
                 }
 
+                // Merge prevBb with nullcheckBb (or sizeBb) if possible to simplify layout
+                if (fgCanCompactBlocks(prevBb, prevBb->GetUniqueSucc()))
+                {
+                    fgCompactBlocks(prevBb, prevBb->GetUniqueSucc());
+                }
+
                 // Scan current block again, the current call will be ignored because of ClearExpRuntimeLookup.
                 // We don't try to re-use expansions for the same lookups in the current block here - CSE is responsible
                 // for that
@@ -432,15 +438,6 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 // We've modified the graph and the current "block" might still have more runtime lookups
                 goto SCAN_BLOCK_AGAIN;
             }
-        }
-    }
-
-    if (result == PhaseStatus::MODIFIED_EVERYTHING)
-    {
-        if (opts.OptimizationEnabled())
-        {
-            fgReorderBlocks(false);
-            fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
         }
     }
     return result;
