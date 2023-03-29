@@ -638,32 +638,7 @@ namespace System.Text.Json
             {
                 Debug.Assert(IsReadOnly);
                 Debug.Assert(TypeInfoResolver != null);
-                return _canUseFastPathSerializationLogic ??= CanUseFastPath(TypeInfoResolver);
-
-                bool CanUseFastPath(IJsonTypeInfoResolver resolver)
-                {
-                    switch (resolver)
-                    {
-                        case DefaultJsonTypeInfoResolver defaultResolver:
-                            return defaultResolver.GetType() == typeof(DefaultJsonTypeInfoResolver) &&
-                                   defaultResolver.Modifiers.Count == 0;
-                        case JsonSerializerContext ctx:
-                            return ctx.IsCompatibleWithGeneratedOptions(this);
-                        case JsonTypeInfoResolverChain resolverChain:
-                            foreach (IJsonTypeInfoResolver component in resolverChain)
-                            {
-                                if (!CanUseFastPath(component))
-                                {
-                                    return false;
-                                }
-                            }
-
-                            return true;
-
-                        default:
-                            return false;
-                    }
-                }
+                return _canUseFastPathSerializationLogic ??= TypeInfoResolver.IsCompatibleWithOptions(this);
             }
         }
 
