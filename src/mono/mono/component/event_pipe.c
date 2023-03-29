@@ -187,7 +187,7 @@ event_pipe_enable (
 		session_type,
 		format,
 		rundown_requested,
-	    stacks_requested,
+		stacks_requested,
 		stream,
 		sync_callback,
 		NULL);

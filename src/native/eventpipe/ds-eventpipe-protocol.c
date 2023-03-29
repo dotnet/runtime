@@ -418,12 +418,10 @@ ds_eventpipe_collect_tracing3_command_payload_free (EventPipeCollectTracing3Comm
 	ep_return_void_if_nok (payload != NULL);
 	ep_rt_byte_array_free (payload->incoming_buffer);
 
-	EventPipeProviderConfiguration *config = ep_rt_provider_config_array_data (&payload->provider_configs);
-	size_t config_len = ep_rt_provider_config_array_size (&payload->provider_configs);
-	for (size_t i = 0; i < config_len; ++i) {
-		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (&config [i]));
-		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (&config [i]));
-	}
+	DN_VECTOR_FOREACH_BEGIN (EventPipeProviderConfiguration, config, payload->provider_configs) {
+		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (&config));
+		ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (&config));
+	} DN_VECTOR_FOREACH_END;
 
 	ep_rt_object_free (payload);
 }
@@ -627,8 +625,8 @@ eventpipe_protocol_helper_collect_tracing_3 (
 	session_id = ep_enable (
 		NULL,
 		payload->circular_buffer_size_in_mb,
-		ep_rt_provider_config_array_data (&payload->provider_configs),
-		(uint32_t)ep_rt_provider_config_array_size (&payload->provider_configs),
+		dn_vector_data_t (payload->provider_configs, EventPipeProviderConfiguration),
+		dn_vector_size (payload->provider_configs),
 		EP_SESSION_TYPE_IPCSTREAM,
 		payload->serialization_format,
 		payload->rundown_requested,
