@@ -263,22 +263,6 @@ namespace System.Xml
             }
         }
 
-        protected void WriteUTF8Chars(byte[] chars, int charOffset, int charCount)
-        {
-            if (charCount < bufferLength)
-            {
-                int offset;
-                byte[] buffer = GetBuffer(charCount, out offset);
-                Buffer.BlockCopy(chars, charOffset, buffer, offset, charCount);
-                Advance(charCount);
-            }
-            else
-            {
-                FlushBuffer();
-                OutputStream.Write(chars, charOffset, charCount);
-            }
-        }
-
         protected unsafe void WriteUTF8Chars(string value)
         {
             int count = value.Length;
@@ -288,6 +272,21 @@ namespace System.Xml
                 {
                     UnsafeWriteUTF8Chars(chars, count);
                 }
+            }
+        }
+
+        protected void WriteUTF8Bytes(ReadOnlySpan<byte> value)
+        {
+            if (value.Length < bufferLength)
+            {
+                byte[] buffer = GetBuffer(value.Length, out int offset);
+                value.CopyTo(buffer.AsSpan(offset));
+                Advance(value.Length);
+            }
+            else
+            {
+                FlushBuffer();
+                OutputStream.Write(value);
             }
         }
 
