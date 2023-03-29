@@ -426,6 +426,12 @@ typedef struct {
 	gboolean jit_used, llvm_used;
 } MonoPltEntry;
 
+typedef struct {
+	const char *module;
+	const char *entrypoint_1;
+	const char *entrypoint_2;
+} PInvokeImportData;
+
 #define mono_acfg_lock(acfg) mono_os_mutex_lock (&((acfg)->mutex))
 #define mono_acfg_unlock(acfg) mono_os_mutex_unlock (&((acfg)->mutex))
 
@@ -6161,59 +6167,54 @@ method_is_externally_callable (MonoAotCompile *acfg, MonoMethod *method)
 //
 // get_pinvoke_import:
 //
-// Returns whether or not module and entrypoint pinvoke information could be grabbed
-// from the MonoMethod. It populates module and entrypoint if they are not NULL. A
+// Returns whether or not pinvoke import information could be grabbed
+// from the MonoMethod. It populates import_data if not NULL. A
 // hash table is populated with key value pairs corresponding to the MonoMethod and
-// module entrypoint string array to serve as a fast path cache. The module and
-// entrypoint string data are owned by the hash table.
+// pinvoke import data struct to serve as a fast path cache. The import data struct
+// data is owned by the hash table.
 //
 // Arguments:
 //  * acfg - the MonoAotCompiler instance
 //  * method - the MonoMethod to grab pinvoke scope and import information from
-//  ** module - the pointer to the module name string (owned by the hashtable)
-//  ** entrypoint - the pointer to the entrypoint name string (owned by the hashtable)
+//  * import_data - the pointer to the pinvoke import data to return (owned by the hashtable)
 //
 // Return Value:
-//  gboolean corresponding to whether or not module and entrypoint pinvoke information
+//  gboolean corresponding to whether or not pinvoke import data
 //  could be grabbed from the provided MonoMethod.
 //
 
 static gboolean
-get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method, const char **module, const char **entrypoint)
+get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method, PInvokeImportData *import_data)
 {
 	MonoImage *image = m_class_get_image (method->klass);
 	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *) method;
 	MonoTableInfo *tables = image->tables;
 	MonoTableInfo *im = &tables [MONO_TABLE_IMPLMAP];
 	MonoTableInfo *mr = &tables [MONO_TABLE_MODULEREF];
-	guint32 im_cols [MONO_IMPLMAP_SIZE];
-	int module_idx;
-	char **scope_import;
-	guint32 scope_token;
-	char *module_ref_basename;
-	char *module_ref_basename_extension;
+	PInvokeImportData *scope_import_data = NULL;
 
-	if (g_hash_table_lookup_extended (acfg->method_to_pinvoke_import, method, NULL, (gpointer *)&scope_import) && scope_import) {
-		if (module)
-			*module = scope_import[0];
-		if (entrypoint)
-			*entrypoint = scope_import[1];
+	if (g_hash_table_lookup_extended (acfg->method_to_pinvoke_import, method, NULL, (gpointer *)&scope_import_data) && scope_import_data) {
+		if (import_data) {
+			import_data->module = scope_import_data->module;
+			import_data->entrypoint_1 = scope_import_data->entrypoint_1;
+			import_data->entrypoint_2 = scope_import_data->entrypoint_2;
+		}
 		return TRUE;
 	}
 
 	if (piinfo->implmap_idx == 0 || mono_metadata_table_bounds_check (image, MONO_TABLE_IMPLMAP, piinfo->implmap_idx))
 		return FALSE;
 
-	mono_metadata_decode_row (im, piinfo->implmap_idx - 1, im_cols, MONO_IMPLMAP_SIZE);
+	guint32 im_cols [MONO_IMPLMAP_SIZE];
+	mono_metadata_decode_row (im, GUINT32_TO_INT (piinfo->implmap_idx - 1), im_cols, MONO_IMPLMAP_SIZE);
 
-	module_idx = im_cols [MONO_IMPLMAP_SCOPE];
-	if (module_idx == 0 || mono_metadata_table_bounds_check (image, MONO_TABLE_MODULEREF, module_idx))
+	guint32 module_idx = im_cols [MONO_IMPLMAP_SCOPE];
+	if (module_idx == 0 || mono_metadata_table_bounds_check (image, MONO_TABLE_MODULEREF, GUINT32_TO_INT (module_idx)))
 		return FALSE;
 
-	scope_import = (char **) g_malloc0 (2 * sizeof (char *));
-	scope_token = mono_metadata_decode_row_col (mr, im_cols [MONO_IMPLMAP_SCOPE] - 1, MONO_MODULEREF_NAME);
-	module_ref_basename = g_path_get_basename (mono_metadata_string_heap (image, scope_token));
-	module_ref_basename_extension = strrchr (module_ref_basename, '.');
+	guint32 scope_token = mono_metadata_decode_row_col (mr, GUINT32_TO_INT (im_cols [MONO_IMPLMAP_SCOPE] - 1), MONO_MODULEREF_NAME);
+	char *module_ref_basename = g_path_get_basename (mono_metadata_string_heap (image, scope_token));
+	char *module_ref_basename_extension = strrchr (module_ref_basename, '.');
 	if (module_ref_basename_extension) {
 		const char **suffixes = mono_dl_get_so_suffixes ();
 		for (int i = 0; suffixes [i] && suffixes [i][0] != '\0'; i++) {
@@ -6224,25 +6225,97 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method, const char **modul
 		}
 	}
 
-	scope_import [0] = module_ref_basename;
-	scope_import [1] = g_strdup_printf ("%s", mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]));
+	scope_import_data = (PInvokeImportData *) g_new0 (PInvokeImportData, 1);
+	scope_import_data->module = module_ref_basename;
 
-	g_hash_table_insert (acfg->method_to_pinvoke_import, method, scope_import);
+#ifdef TARGET_WIN32
+	uint32_t flags = im_cols [MONO_IMPLMAP_FLAGS];
+	if (!(flags & PINVOKE_ATTRIBUTE_NO_MANGLE)) {
+		switch (flags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
+		case PINVOKE_ATTRIBUTE_CHAR_SET_NOT_SPEC :
+		case PINVOKE_ATTRIBUTE_CHAR_SET_ANSI :
+			scope_import_data->entrypoint_1 = g_strdup_printf ("%s", mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]));
+			scope_import_data->entrypoint_2 = g_strdup_printf ("%sA", mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]));
+			break;
+		case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE :
+		case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO :
+			scope_import_data->entrypoint_1 = g_strdup_printf ("%sW", mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]));
+			scope_import_data->entrypoint_2 = g_strdup_printf ("%s", mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]));
+			break;
+		}
+	}
+#endif
+	if (!scope_import_data->entrypoint_1) {
+		scope_import_data->entrypoint_1 = g_strdup_printf ("%s", mono_metadata_string_heap (image, im_cols [MONO_IMPLMAP_NAME]));
+		scope_import_data->entrypoint_2 = NULL;
+	}
 
-	if (module)
-		*module = scope_import [0];
-	if (entrypoint)
-		*entrypoint = scope_import [1];
+	g_hash_table_insert (acfg->method_to_pinvoke_import, method, scope_import_data);
+
+	if (import_data) {
+		import_data->module = scope_import_data->module;
+		import_data->entrypoint_1 = scope_import_data->entrypoint_1;
+		import_data->entrypoint_2 = scope_import_data->entrypoint_2;
+	}
 
 	return TRUE;
 }
 #else
 static gboolean
-get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method, const char **module, const char **entrypoint)
+get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method, PInvokeImportData *import_data)
 {
 	return FALSE;
 }
 #endif
+
+/*
+ * get_direct_pinvoke_entrypoint_for_method:
+ *
+ * Returns the direct pinvoke entrypoint to user for method based on
+ * the direct_pinvoke HashTable populated in process_specified_direct_pinvokes.
+ */
+static gboolean
+get_direct_pinvoke_entrypoint_for_method (MonoAotCompile *acfg, MonoMethod *method, const char **entrypoint)
+{
+	PInvokeImportData import_data = {0};
+
+	if (get_pinvoke_import (acfg, method, &import_data)) {
+		// If no direct pinvokes has been specified, use default entrypoint.
+		if (g_hash_table_size (acfg->direct_pinvokes) == 0) {
+			if (entrypoint)
+				*entrypoint = import_data.entrypoint_1;
+			return TRUE;
+		}
+
+		GHashTable *val = NULL;
+		if (g_hash_table_lookup_extended (acfg->direct_pinvokes, import_data.module, NULL, (gpointer *)&val)) {
+			if (!val) {
+				// Module specified, but no entrypoints, use default entrypoint.
+				if (entrypoint)
+					*entrypoint = import_data.entrypoint_1;
+				return TRUE;
+			}
+
+			// Module and entrypoint specified, check alternative entrypoints.
+			if (import_data.entrypoint_1 && g_hash_table_contains (val, import_data.entrypoint_1)) {
+				if (entrypoint)
+					*entrypoint = import_data.entrypoint_1;
+				return TRUE;
+			}
+
+			if (import_data.entrypoint_2 && g_hash_table_contains (val, import_data.entrypoint_2)) {
+				if (entrypoint)
+					*entrypoint = import_data.entrypoint_2;
+				return TRUE;
+			}
+		}
+	}
+
+	if (entrypoint)
+		*entrypoint = NULL;
+
+	return FALSE;
+}
 
 /*
  * is_direct_pinvoke_specified_for_method:
@@ -6253,23 +6326,22 @@ get_pinvoke_import (MonoAotCompile *acfg, MonoMethod *method, const char **modul
 static gboolean
 is_direct_pinvoke_specified_for_method (MonoAotCompile *acfg, MonoMethod *method)
 {
-	const char *module_name, *sym = NULL;
-	GHashTable *val;
-
 	if (acfg->aot_opts.direct_pinvoke)
 		return TRUE;
 
 	if (!acfg->aot_opts.direct_pinvokes && !acfg->aot_opts.direct_pinvoke_lists)
 		return FALSE;
 
-	if (get_pinvoke_import (acfg, method, &module_name, &sym) && g_hash_table_lookup_extended (acfg->direct_pinvokes, module_name, NULL, (gpointer *)&val)) {
-		if (!val)
-			return TRUE;
+	return get_direct_pinvoke_entrypoint_for_method (acfg, method, NULL);
+}
 
-		return g_hash_table_contains (val, sym);
-	}
-
-	return FALSE;
+static inline const char*
+lookup_direct_pinvoke_symbol_name_aot (MonoAotCompile *acfg, MonoMethod *method)
+{
+	const char *symbol_name = NULL;
+	if (!acfg->aot_opts.direct_pinvoke && !acfg->aot_opts.direct_pinvokes && !acfg->aot_opts.direct_pinvoke_lists)
+		return symbol_name;
+	return get_direct_pinvoke_entrypoint_for_method (acfg, method, &symbol_name) ? symbol_name : NULL;
 }
 
 /*
@@ -6620,7 +6692,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						if (!(patch_info->data.method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 							direct_pinvoke = lookup_icall_symbol_name_aot (patch_info->data.method);
 						else
-							get_pinvoke_import (acfg, patch_info->data.method, NULL, &direct_pinvoke);
+							get_direct_pinvoke_entrypoint_for_method (acfg, patch_info->data.method, &direct_pinvoke);
 						if (direct_pinvoke && !never_direct_pinvoke (direct_pinvoke)) {
 							direct_call = TRUE;
 							g_assert (strlen (direct_pinvoke) < 1000);
@@ -10339,8 +10411,8 @@ mono_aot_get_direct_call_symbol (MonoJumpInfoType type, gconstpointer data)
 		MonoMethod *method = (MonoMethod *)data;
 		if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 			sym = lookup_icall_symbol_name_aot (method);
-		else if (is_direct_pinvoke_specified_for_method (llvm_acfg, method))
-			get_pinvoke_import (llvm_acfg, method, NULL, &sym);
+		else
+			sym = lookup_direct_pinvoke_symbol_name_aot (llvm_acfg, method);
 	} else if (type == MONO_PATCH_INFO_JIT_ICALL_ID && (direct_calls || (MonoJitICallId)(gsize)data == MONO_JIT_ICALL_mono_dummy_runtime_init_callback)) {
 		MonoJitICallInfo const * const info = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
 		if (info->func == info->wrapper) {
@@ -13886,12 +13958,12 @@ add_mibc_profile_methods (MonoAotCompile *acfg, char *filename)
 static void
 free_method_pinvoke_import_value (gpointer data)
 {
-	gchar **value = (gchar **)data;
+	PInvokeImportData *value = (PInvokeImportData *)data;
 	if (!value)
 		return;
-	g_free (value[0]);
-	g_free (value[1]);
-	g_free (value);
+	g_free ((char *)(value->module));
+	g_free ((char *)(value->entrypoint_1));
+	g_free ((char *)(value->entrypoint_2));
 }
 
 static void
