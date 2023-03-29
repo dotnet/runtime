@@ -44,7 +44,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// are compatible with the run time specified <see cref="JsonSerializerOptions"/>.
         /// </summary>
         internal static bool IsCompatibleWithOptions(this IJsonTypeInfoResolver? resolver, JsonSerializerOptions options)
-            => (resolver as IBuiltInJsonTypeInfoResolver)?.IsCompatibleWithOptions(options) == true;
+            => resolver is IBuiltInJsonTypeInfoResolver bir && bir.IsCompatibleWithOptions(options);
     }
 
     /// <summary>
