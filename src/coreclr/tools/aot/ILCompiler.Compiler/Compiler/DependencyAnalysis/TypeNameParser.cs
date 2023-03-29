@@ -66,18 +66,18 @@ namespace System.Reflection
             else
             {
                 module = _callingModule;
-                if (module == null)
-                    _typeWasNotFoundInAssemblyNorBaseLibrary = true;
             }
 
-            if (module == null)
-                return null;
+            Type type;
 
-            Type type = GetTypeCore(module, typeName, nestedTypeNames);
-            if (type != null)
+            if (module != null)
             {
-                _referencedModules?.Add(module);
-                return type;
+                type = GetTypeCore(module, typeName, nestedTypeNames);
+                if (type != null)
+                {
+                    _referencedModules?.Add(module);
+                    return type;
+                }
             }
 
             // If it didn't resolve and wasn't assembly-qualified, we also try core library
