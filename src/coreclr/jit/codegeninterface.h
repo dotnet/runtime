@@ -59,6 +59,23 @@ public:
         return compiler;
     }
 
+#if defined(TARGET_AMD64)
+    regMaskTP rbmAllFloat;
+    regMaskTP rbmFltCalleeTrash;
+
+    // Call this function after the equivalent fields in Compiler have been initialized.
+    void CopyRegisterInfo();
+
+    regMaskTP get_RBM_ALLFLOAT() const
+    {
+        return this->rbmAllFloat;
+    }
+    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    {
+        return this->rbmFltCalleeTrash;
+    }
+#endif // TARGET_AMD64
+
     // genSpillVar is called by compUpdateLifeVar.
     // TODO-Cleanup: We should handle the spill directly in CodeGen, rather than
     // calling it from compUpdateLifeVar.  Then this can be non-virtual.

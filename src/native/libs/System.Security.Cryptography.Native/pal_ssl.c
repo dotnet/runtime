@@ -1051,7 +1051,7 @@ int32_t CryptoNative_SslSetAlpnProtos(SSL* ssl, const uint8_t* protos, uint32_t 
     }
     else
 #else
-    (void)ctx;
+    (void)ssl;
     (void)protos;
     (void)protos_len;
 #endif

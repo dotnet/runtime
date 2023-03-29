@@ -22,7 +22,7 @@ namespace System.Net.Http.Functional.Tests
         public TelemetryTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        public static void EventSource_ExistsWithCorrectId()
+        public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(HttpClient).Assembly.GetType("System.Net.Http.HttpTelemetry", throwOnError: true, ignoreCase: false);
             Assert.NotNull(esType);

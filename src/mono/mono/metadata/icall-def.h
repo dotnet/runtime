@@ -113,9 +113,6 @@ NOHANDLES(ICALL(RTCLASS_1, "GetTypeFromClass", ves_icall_Mono_RuntimeClassHandle
 ICALL_TYPE(RTPTRARRAY, "Mono.RuntimeGPtrArrayHandle", RTPTRARRAY_1)
 NOHANDLES(ICALL(RTPTRARRAY_1, "GPtrArrayFree", ves_icall_Mono_RuntimeGPtrArrayHandle_GPtrArrayFree))
 
-ICALL_TYPE(RTMARSHAL, "Mono.RuntimeMarshal", RTMARSHAL_1)
-NOHANDLES(ICALL(RTMARSHAL_1, "FreeAssemblyName", ves_icall_Mono_RuntimeMarshal_FreeAssemblyName))
-
 ICALL_TYPE(SAFESTRMARSHAL, "Mono.SafeStringMarshal", SAFESTRMARSHAL_1)
 NOHANDLES(ICALL(SAFESTRMARSHAL_1, "GFree", ves_icall_Mono_SafeStringMarshal_GFree))
 NOHANDLES(ICALL(SAFESTRMARSHAL_2, "StringToUtf8_icall", ves_icall_Mono_SafeStringMarshal_StringToUtf8))
@@ -206,7 +203,8 @@ NOHANDLES(ICALL(ENV_15, "get_TickCount", ves_icall_System_Environment_get_TickCo
 NOHANDLES(ICALL(ENV_15a, "get_TickCount64", ves_icall_System_Environment_get_TickCount64))
 NOHANDLES(ICALL(ENV_20, "set_ExitCode", mono_environment_exitcode_set))
 
-ICALL_TYPE(GC, "System.GC", GC_13)
+ICALL_TYPE(GC, "System.GC", GC_4a)
+NOHANDLES(ICALL(GC_4a, "AddPressure", ves_icall_System_GC_AddPressure))
 HANDLES(GC_13, "AllocPinnedArray", ves_icall_System_GC_AllocPinnedArray, MonoArray, 2, (MonoReflectionType, gint32))
 NOHANDLES(ICALL(GC_10, "GetAllocatedBytesForCurrentThread", ves_icall_System_GC_GetAllocatedBytesForCurrentThread))
 NOHANDLES(ICALL(GC_0, "GetCollectionCount", ves_icall_System_GC_GetCollectionCount))
@@ -215,7 +213,7 @@ NOHANDLES(ICALL(GC_0b, "GetMaxGeneration", ves_icall_System_GC_GetMaxGeneration)
 HANDLES(GC_11, "GetTotalAllocatedBytes", ves_icall_System_GC_GetTotalAllocatedBytes, guint64, 1, (MonoBoolean))
 NOHANDLES(ICALL(GC_1, "GetTotalMemory", ves_icall_System_GC_GetTotalMemory))
 NOHANDLES(ICALL(GC_2, "InternalCollect", ves_icall_System_GC_InternalCollect))
-NOHANDLES(ICALL(GC_4a, "RecordPressure", ves_icall_System_GC_RecordPressure))
+NOHANDLES(ICALL(GC_5, "RemovePressure", ves_icall_System_GC_RemovePressure))
 NOHANDLES(ICALL(GC_6, "WaitForPendingFinalizers", ves_icall_System_GC_WaitForPendingFinalizers))
 NOHANDLES(ICALL(GC_12, "_GetGCMemoryInfo", ves_icall_System_GC_GetGCMemoryInfo))
 HANDLES(GC_6b, "_ReRegisterForFinalize", ves_icall_System_GC_ReRegisterForFinalize, void, 1, (MonoObject))
@@ -292,8 +290,9 @@ HANDLES(ASSEM_4, "GetExecutingAssembly", ves_icall_System_Reflection_Assembly_Ge
 HANDLES(ASSEM_6, "InternalGetType", ves_icall_System_Reflection_Assembly_InternalGetType, MonoReflectionType, 5, (MonoReflectionAssembly, MonoReflectionModule, MonoString, MonoBoolean, MonoBoolean))
 HANDLES(ASSEM_7, "InternalLoad", ves_icall_System_Reflection_Assembly_InternalLoad, MonoReflectionAssembly, 3, (MonoString, MonoStackCrawlMark_ptr, gpointer))
 
-ICALL_TYPE(ASSEMN, "System.Reflection.AssemblyName", ASSEMN_0)
-NOHANDLES(ICALL(ASSEMN_0, "GetNativeName", ves_icall_System_Reflection_AssemblyName_GetNativeName))
+ICALL_TYPE(ASSEMN, "System.Reflection.AssemblyName", ASSEMN_1)
+NOHANDLES(ICALL(ASSEMN_1, "FreeAssemblyName", ves_icall_System_Reflection_AssemblyName_FreeAssemblyName))
+NOHANDLES(ICALL(ASSEMN_2, "GetNativeName", ves_icall_System_Reflection_AssemblyName_GetNativeName))
 
 ICALL_TYPE(MCATTR, "System.Reflection.CustomAttribute", MCATTR_1)
 HANDLES(MCATTR_1, "GetCustomAttributesDataInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal, MonoArray, 1, (MonoObject))
@@ -576,11 +575,9 @@ NOHANDLES(ICALL(LIFOSEM_4, "TimedWaitInternal", ves_icall_System_Threading_LowLe
 
 ICALL_TYPE(MONIT, "System.Threading.Monitor", MONIT_0)
 HANDLES(MONIT_0, "Enter", ves_icall_System_Threading_Monitor_Monitor_Enter, void, 1, (MonoObject))
-HANDLES(MONIT_1, "Exit", mono_monitor_exit_icall, void, 1, (MonoObject))
+HANDLES(MONIT_1, "InternalExit", mono_monitor_exit_icall, void, 1, (MonoObject))
 HANDLES(MONIT_2, "Monitor_pulse", ves_icall_System_Threading_Monitor_Monitor_pulse, void, 1, (MonoObject))
 HANDLES(MONIT_3, "Monitor_pulse_all", ves_icall_System_Threading_Monitor_Monitor_pulse_all, void, 1, (MonoObject))
-HANDLES(MONIT_4, "Monitor_test_owner", ves_icall_System_Threading_Monitor_Monitor_test_owner, MonoBoolean, 1, (MonoObject))
-HANDLES(MONIT_5, "Monitor_test_synchronised", ves_icall_System_Threading_Monitor_Monitor_test_synchronised, MonoBoolean, 1, (MonoObject))
 HANDLES(MONIT_7, "Monitor_wait", ves_icall_System_Threading_Monitor_Monitor_wait, MonoBoolean, 3, (MonoObject, guint32, MonoBoolean))
 NOHANDLES(ICALL(MONIT_8, "get_LockContentionCount", ves_icall_System_Threading_Monitor_Monitor_LockContentionCount))
 HANDLES(MONIT_9, "try_enter_with_atomic_var", ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var, void, 4, (MonoObject, guint32, MonoBoolean, MonoBoolean_ref))

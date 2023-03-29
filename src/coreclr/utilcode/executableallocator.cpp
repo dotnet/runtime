@@ -261,28 +261,36 @@ bool ExecutableAllocator::Initialize()
 
 #define ENABLE_CACHED_MAPPINGS
 
+void ExecutableAllocator::RemoveCachedMapping()
+{
+#ifdef ENABLE_CACHED_MAPPINGS
+    void* unmapAddress = NULL;
+    size_t unmapSize;
+
+    if (!RemoveRWBlock(m_cachedMapping->baseRW, &unmapAddress, &unmapSize))
+    {
+        g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("The RW block to unmap was not found"));
+    }
+    if (unmapAddress && !VMToOSInterface::ReleaseRWMapping(unmapAddress, unmapSize))
+    {
+        g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the RW mapping failed"));
+    }
+
+    m_cachedMapping = NULL;
+#endif // ENABLE_CACHED_MAPPINGS
+}
+
 void ExecutableAllocator::UpdateCachedMapping(BlockRW* pBlock)
 {
     LIMITED_METHOD_CONTRACT;
 #ifdef ENABLE_CACHED_MAPPINGS
-    if (m_cachedMapping == NULL)
+    if (m_cachedMapping != pBlock)
     {
-        m_cachedMapping = pBlock;
-        pBlock->refCount++;
-    }
-    else if (m_cachedMapping != pBlock)
-    {
-        void* unmapAddress = NULL;
-        size_t unmapSize;
+        if (m_cachedMapping != NULL)
+        {
+            RemoveCachedMapping();
+        }
 
-        if (!RemoveRWBlock(m_cachedMapping->baseRW, &unmapAddress, &unmapSize))
-        {
-            g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("The RW block to unmap was not found"));
-        }
-        if (unmapAddress && !VMToOSInterface::ReleaseRWMapping(unmapAddress, unmapSize))
-        {
-            g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the RW mapping failed"));
-        }
         m_cachedMapping = pBlock;
         pBlock->refCount++;
     }
@@ -453,6 +461,15 @@ void ExecutableAllocator::Release(void* pRX)
 
         if (pBlock != NULL)
         {
+            if (m_cachedMapping != NULL)
+            {
+                // In case the cached mapping maps the region being released, it needs to be removed
+                if ((pBlock->baseRX <= m_cachedMapping->baseRX) && (m_cachedMapping->baseRX < ((BYTE*)pBlock->baseRX + pBlock->size)))
+                {
+                    RemoveCachedMapping();
+                }
+            }
+
             if (!VMToOSInterface::ReleaseDoubleMappedMemory(m_doubleMemoryMapperHandle, pRX, pBlock->offset, pBlock->size))
             {
                 g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Releasing the double mapped memory failed"));
@@ -467,6 +484,8 @@ void ExecutableAllocator::Release(void* pRX)
             // The block was not found, which should never happen.
             g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("The RX block to release was not found"));
         }
+
+        _ASSERTE(FindRWBlock(pRX, 1) == NULL);
     }
     else
     {
@@ -779,22 +798,22 @@ void* ExecutableAllocator::MapRW(void* pRX, size_t size)
     {
         if (pRX >= pBlock->baseRX && ((size_t)pRX + size) <= ((size_t)pBlock->baseRX + pBlock->size))
         {
-        // Offset of the RX address in the originally allocated block
-        size_t offset = (size_t)pRX - (size_t)pBlock->baseRX;
-        // Offset of the RX address that will start the newly mapped block
-        size_t mapOffset = ALIGN_DOWN(offset, Granularity());
-        // Size of the block we will map
-        size_t mapSize = ALIGN_UP(offset - mapOffset + size, Granularity());
+            // Offset of the RX address in the originally allocated block
+            size_t offset = (size_t)pRX - (size_t)pBlock->baseRX;
+            // Offset of the RX address that will start the newly mapped block
+            size_t mapOffset = ALIGN_DOWN(offset, Granularity());
+            // Size of the block we will map
+            size_t mapSize = ALIGN_UP(offset - mapOffset + size, Granularity());
 
 #ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
-        StopWatch sw2(&g_mapCreateTimeSum);
+            StopWatch sw2(&g_mapCreateTimeSum);
 #endif
-        void* pRW = VMToOSInterface::GetRWMapping(m_doubleMemoryMapperHandle, (BYTE*)pBlock->baseRX + mapOffset, pBlock->offset + mapOffset, mapSize);
+            void* pRW = VMToOSInterface::GetRWMapping(m_doubleMemoryMapperHandle, (BYTE*)pBlock->baseRX + mapOffset, pBlock->offset + mapOffset, mapSize);
 
-        if (pRW == NULL)
-        {
-            g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Failed to create RW mapping for RX memory"));
-        }
+            if (pRW == NULL)
+            {
+                g_fatalErrorHandler(COR_E_EXECUTIONENGINE, W("Failed to create RW mapping for RX memory"));
+            }
 
             AddRWBlock(pRW, (BYTE*)pBlock->baseRX + mapOffset, mapSize);
 

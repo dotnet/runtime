@@ -1,0 +1,21 @@
+<!--
+  This file is intended to be included from all of the merged test runner projects.
+
+  Sets IsMergedTestRunnerAssembly.
+  Expects MergedWrapperProjectReference. Will set Aliases metadata and add into
+    ProjectReference.
+-->
+
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
+    <EmitCompilerGeneratedFiles Condition="'$(EmitCompilerGeneratedFiles)' == ''">true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- string.Concat("_", string.Copy("%(Filename)").Replace("-", "_").Replace(".", "_")) -->
+    <MergedWrapperProjectReference Update="**" Aliases="$([System.String]::Concat(&quot;_&quot;,$([System.String]::Copy(&quot;%(Filename)&quot;).Replace(&quot;-&quot;,&quot;_&quot;).Replace(&quot;.&quot;,&quot;_&quot;))))" />
+
+    <ProjectReference Include="@(MergedWrapperProjectReference)" />
+  </ItemGroup>
+</Project>

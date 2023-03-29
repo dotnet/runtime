@@ -72,7 +72,7 @@ namespace System.IO.Compression
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
-            TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+            TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
         public override int EndRead(IAsyncResult asyncResult) =>
             _deflateStream.EndRead(asyncResult);
@@ -100,7 +100,7 @@ namespace System.IO.Compression
         }
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
-            TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
         public override void EndWrite(IAsyncResult asyncResult) =>
             _deflateStream.EndWrite(asyncResult);
@@ -242,15 +242,7 @@ namespace System.IO.Compression
 
         private void CheckDeflateStream()
         {
-            if (_deflateStream == null)
-            {
-                ThrowStreamClosedException();
-            }
-        }
-
-        private static void ThrowStreamClosedException()
-        {
-            throw new ObjectDisposedException(nameof(GZipStream), SR.ObjectDisposed_StreamClosed);
+            ObjectDisposedException.ThrowIf(_deflateStream is null, this);
         }
     }
 }

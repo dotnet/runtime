@@ -102,6 +102,41 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<nint>   Negate(Vector128<nint>   value) { throw new PlatformNotSupportedException(); }
         public static Vector128<nuint>  Negate(Vector128<nuint>  value) { throw new PlatformNotSupportedException(); }
 
+        // Bit shifts
+
+        public static Vector128<sbyte>  ShiftLeft(Vector128<sbyte>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte>   ShiftLeft(Vector128<byte>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short>  ShiftLeft(Vector128<short>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShiftLeft(Vector128<ushort> value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    ShiftLeft(Vector128<int>    value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   ShiftLeft(Vector128<uint>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>   ShiftLeft(Vector128<long>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong>  ShiftLeft(Vector128<ulong>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<nint>   ShiftLeft(Vector128<nint>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<nuint>  ShiftLeft(Vector128<nuint>  value, int count) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<sbyte>  ShiftRightArithmetic(Vector128<sbyte>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte>   ShiftRightArithmetic(Vector128<byte>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short>  ShiftRightArithmetic(Vector128<short>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShiftRightArithmetic(Vector128<ushort> value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    ShiftRightArithmetic(Vector128<int>    value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   ShiftRightArithmetic(Vector128<uint>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>   ShiftRightArithmetic(Vector128<long>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong>  ShiftRightArithmetic(Vector128<ulong>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<nint>   ShiftRightArithmetic(Vector128<nint>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<nuint>  ShiftRightArithmetic(Vector128<nuint>  value, int count) { throw new PlatformNotSupportedException(); }
+
+        public static Vector128<sbyte>  ShiftRightLogical(Vector128<sbyte>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<byte>   ShiftRightLogical(Vector128<byte>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<short>  ShiftRightLogical(Vector128<short>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ushort> ShiftRightLogical(Vector128<ushort> value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<int>    ShiftRightLogical(Vector128<int>    value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<uint>   ShiftRightLogical(Vector128<uint>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<long>   ShiftRightLogical(Vector128<long>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<ulong>  ShiftRightLogical(Vector128<ulong>  value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<nint>   ShiftRightLogical(Vector128<nint>   value, int count) { throw new PlatformNotSupportedException(); }
+        public static Vector128<nuint>  ShiftRightLogical(Vector128<nuint>  value, int count) { throw new PlatformNotSupportedException(); }
+
         public static Vector128<sbyte>  And(Vector128<sbyte>  left, Vector128<sbyte>  right) { throw new PlatformNotSupportedException(); }
         public static Vector128<byte>   And(Vector128<byte>   left, Vector128<byte>   right) { throw new PlatformNotSupportedException(); }
         public static Vector128<short>  And(Vector128<short>  left, Vector128<short>  right) { throw new PlatformNotSupportedException(); }
@@ -151,5 +186,11 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<double> CompareNotEqual(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
         public static Vector128<nint>   CompareNotEqual(Vector128<nint>   left, Vector128<nint>   right) { throw new PlatformNotSupportedException(); }
         public static Vector128<nuint>  CompareNotEqual(Vector128<nuint>  left, Vector128<nuint>  right) { throw new PlatformNotSupportedException(); }
+
+        internal static Vector128<sbyte>  ConvertNarrowingSignedSaturate(Vector128<short>   lower, Vector128<short> upper) { throw new PlatformNotSupportedException(); }
+        internal static Vector128<short>  ConvertNarrowingSignedSaturate(Vector128<int>     lower, Vector128<int>   upper) { throw new PlatformNotSupportedException(); }
+
+        internal static Vector128<byte>   ConvertNarrowingUnsignedSaturate(Vector128<short> lower, Vector128<short> upper) { throw new PlatformNotSupportedException(); }
+        internal static Vector128<ushort> ConvertNarrowingUnsignedSaturate(Vector128<int>   lower, Vector128<int>   upper) { throw new PlatformNotSupportedException(); }
     }
 }

@@ -74,6 +74,8 @@ namespace System.Reflection
 
         public virtual object? GetRawConstantValue() { throw new NotSupportedException(SR.NotSupported_AbstractNonCLS); }
 
+        public virtual Type GetModifiedFieldType() => throw new NotSupportedException();
+
         public virtual Type[] GetOptionalCustomModifiers() { throw NotImplemented.ByDesign; }
         public virtual Type[] GetRequiredCustomModifiers() { throw NotImplemented.ByDesign; }
     }

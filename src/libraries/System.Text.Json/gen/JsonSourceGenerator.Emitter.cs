@@ -41,9 +41,9 @@ namespace System.Text.Json.SourceGeneration
             private const string ValueVarName = "value";
             private const string WriterVarName = "writer";
 
-            private static AssemblyName _assemblyName = typeof(Emitter).Assembly.GetName();
+            private static readonly AssemblyName s_assemblyName = typeof(Emitter).Assembly.GetName();
             private static readonly string s_generatedCodeAttributeSource = $@"
-[global::System.CodeDom.Compiler.GeneratedCodeAttribute(""{_assemblyName.Name}"", ""{_assemblyName.Version}"")]
+[global::System.CodeDom.Compiler.GeneratedCodeAttribute(""{s_assemblyName.Name}"", ""{s_assemblyName.Version}"")]
 ";
 
             // global::fully.qualified.name for referenced types
@@ -830,7 +830,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                         sb.Append(@$"
     {InfoVarName} = new()
     {{
-        Name = ""{spec.Property.JsonPropertyName ?? spec.Property.ClrName}"",
+        Name = ""{spec.Property.ClrName}"",
         ParameterType = typeof({spec.Property.TypeGenerationSpec.TypeRef}),
         Position = {spec.ParameterIndex},
         HasDefaultValue = false,

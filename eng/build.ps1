@@ -218,6 +218,9 @@ if ($vs) {
 
   # Put our local dotnet.exe on PATH first so Visual Studio knows which one to use
   $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
+  
+  # Disable .NET runtime signature validation errors which errors for local builds
+  $env:VSDebugger_ValidateDotnetDebugLibSignatures=0;
 
   if ($runtimeConfiguration)
   {

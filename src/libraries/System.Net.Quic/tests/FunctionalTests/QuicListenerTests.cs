@@ -1,9 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Sockets;
 using System.Net.Security;
+using System.Runtime.ExceptionServices;
+using System.Security.Authentication;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -85,6 +89,216 @@ namespace System.Net.Quic.Tests
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
             Exception exception = await Assert.ThrowsAsync<Exception>(async () => await listener.AcceptConnectionAsync());
             Assert.Equal(expectedMessage, exception.Message);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [OuterLoop("Exercises several seconds long timeout.")]
+        public async Task AcceptConnectionAsync_SlowOptionsCallback_TimesOut(bool useCancellationToken)
+        {
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            // Stall the options callback to force the timeout.
+            listenerOptions.ConnectionOptionsCallback = async (connection, hello, cancellationToken) =>
+            {
+                if (useCancellationToken)
+                {
+                    var oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Task.Delay(QuicDefaults.HandshakeTimeout + TimeSpan.FromSeconds(1), cancellationToken));
+                    Assert.True(cancellationToken.IsCancellationRequested);
+                    Assert.Equal(cancellationToken, oce.CancellationToken);
+                    ExceptionDispatchInfo.Throw(oce);
+                }
+                await Task.Delay(QuicDefaults.HandshakeTimeout + TimeSpan.FromSeconds(1));
+                return CreateQuicServerOptions();
+            };
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
+            Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.ConnectionTimeout, async () => await listener.AcceptConnectionAsync());
+            Assert.Equal(SR.Format(SR.net_quic_handshake_timeout, QuicDefaults.HandshakeTimeout), exception.Message);
+
+            // Connect attempt should be stopped with "UserCanceled".
+            var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await connectTask);
+            Assert.Contains(TlsAlertMessage.UserCanceled.ToString(), connectException.Message);
+        }
+
+        [Fact]
+        public async Task AcceptConnectionAsync_ListenerDisposed_Throws()
+        {
+            var serverDisposed = new TaskCompletionSource();
+            var connectAttempted = new TaskCompletionSource();
+
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            // Stall the options callback to force the timeout.
+            listenerOptions.ConnectionOptionsCallback = async (connection, hello, cancellationToken) =>
+            {
+                connectAttempted.SetResult();
+                await serverDisposed.Task;
+                Assert.True(cancellationToken.IsCancellationRequested);
+                return null;
+            };
+            QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            // One accept that will have an incoming connection from the client.
+            ValueTask<QuicConnection> acceptTask1 = listener.AcceptConnectionAsync();
+            // Another accept without any incoming connection.
+            ValueTask<QuicConnection> acceptTask2 = listener.AcceptConnectionAsync();
+
+            // Attempt to connect the first accept.
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
+
+            // First, wait for the connect attempt to reach the server; otherwise, the client exception might end up being HostUnreachable.
+            // Then, dispose the listener and un-block the waiting server options callback.
+            await connectAttempted.Task;
+            await listener.DisposeAsync();
+            serverDisposed.SetResult();
+
+            var accept1Exception = await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await acceptTask1);
+            var accept2Exception = await AssertThrowsQuicExceptionAsync(QuicError.OperationAborted, async () => await acceptTask2);
+
+            Assert.Equal(accept1Exception, accept2Exception);
+
+            // Connect attempt should be stopped with "UserCanceled".
+            var connectException = await Assert.ThrowsAsync<AuthenticationException>(async () => await connectTask);
+            Assert.Contains(TlsAlertMessage.UserCanceled.ToString(), connectException.Message);
+        }
+
+        [Fact]
+        public async Task Listener_BacklogLimitRefusesConnection_ClientThrows()
+        {
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ListenBacklog = 2;
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            // The third connection attempt fails with ConnectionRefused.
+            await using var clientConnection1 = await CreateQuicConnection(listener.LocalEndPoint);
+            await using var clientConnection2 = await CreateQuicConnection(listener.LocalEndPoint);
+            await AssertThrowsQuicExceptionAsync(QuicError.ConnectionRefused, async () => await CreateQuicConnection(listener.LocalEndPoint));
+
+            // Accept one connection and attempt another one.
+            await using var serverConnection = await listener.AcceptConnectionAsync();
+            await using var clientConnection3 = await CreateQuicConnection(listener.LocalEndPoint);
+            // Third one again, should fail.
+            await AssertThrowsQuicExceptionAsync(QuicError.ConnectionRefused, async () => await CreateQuicConnection(listener.LocalEndPoint));
+
+            // Accept the remaining connection to see that failure do not affect them.
+            await using var serverConnection2 = await listener.AcceptConnectionAsync();
+            await using var serverConnection3 = await listener.AcceptConnectionAsync();
+        }
+
+        [Theory]
+        [InlineData(1, 2)]
+        [InlineData(2, 1)]
+        [InlineData(15, 10)]
+        [InlineData(10, 10)]
+        [InlineData(10, 15)]
+        public Task Listener_BacklogLimitRefusesConnection_ParallelClients_ClientThrows(int backlogLimit, int connectCount)
+            => Listener_BacklogLimitRefusesConnection_ParallelClients_ClientThrows_Core(backlogLimit, connectCount);
+
+        [Theory]
+        [InlineData(100, 250)]
+        [InlineData(250, 100)]
+        [InlineData(100, 99)]
+        [InlineData(100, 100)]
+        [InlineData(100, 101)]
+        [InlineData(15, 100)]
+        [InlineData(10, 1_000)]
+        [OuterLoop("Higher number of connections slow the test down.")]
+        private Task Listener_BacklogLimitRefusesConnection_ParallelClients_ClientThrows_Slow(int backlogLimit, int connectCount)
+            => Listener_BacklogLimitRefusesConnection_ParallelClients_ClientThrows_Core(backlogLimit, connectCount);
+
+        private async Task Listener_BacklogLimitRefusesConnection_ParallelClients_ClientThrows_Core(int backlogLimit, int connectCount)
+        {
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ListenBacklog = backlogLimit;
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            // Kick off requested number of parallel connects.
+            List<Task> connectTasks = new List<Task>();
+            for (int i = 0; i < connectCount; ++i)
+            {
+                connectTasks.Add(CreateQuicConnection(listener.LocalEndPoint).AsTask());
+            }
+
+            // Count the number of successful connections and refused connections.
+            int success = 0;
+            int failure = 0;
+            await Parallel.ForEachAsync(connectTasks, async (connectTask, cancellationToken) =>
+            {
+                try
+                {
+                    await connectTask;
+                    Interlocked.Increment(ref success);
+                }
+                catch (QuicException qex) when (qex.QuicError == QuicError.ConnectionRefused)
+                {
+                    Interlocked.Increment(ref failure);
+                }
+            });
+
+            // Check that the numbers correspond to backlog limit.
+            int pendingConnections = 0;
+            if (backlogLimit < connectCount)
+            {
+                pendingConnections = backlogLimit;
+                Assert.Equal(backlogLimit, success);
+                Assert.Equal(connectCount - backlogLimit, failure);
+            }
+            else
+            {
+                pendingConnections = connectCount;
+                Assert.Equal(connectCount, success);
+                Assert.Equal(0, failure);
+            }
+
+            // Accept all connections and check that the next accept pends.
+            for (int i = 0; i < pendingConnections; ++i)
+            {
+                await using var connection = await listener.AcceptConnectionAsync();
+            }
+
+            // All pending connection should be accepted and the following call needs to be cancelled.
+            var cts = new CancellationTokenSource();
+            var token = cts.Token;
+            ValueTask<QuicConnection> acceptTask = listener.AcceptConnectionAsync(cts.Token);
+            Assert.False(acceptTask.IsCompleted);
+            cts.Cancel();
+            var oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await acceptTask);
+            Assert.Equal(cts.Token, oce.CancellationToken);
+        }
+
+        [Fact]
+        public async Task AcceptConnectionAsync_CancelThrows()
+        {
+            await using QuicListener listener = await CreateQuicListener();
+
+            var cts = new CancellationTokenSource();
+            var token = cts.Token;
+
+            var acceptTask = listener.AcceptConnectionAsync(token);
+            cts.Cancel();
+
+            var exception = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await acceptTask);
+            Assert.Equal(token, exception.CancellationToken);
+        }
+
+        [Fact]
+        public async Task AcceptConnectionAsync_ClientConnects_CancelIgnored()
+        {
+            await using QuicListener listener = await CreateQuicListener();
+
+            var cts = new CancellationTokenSource();
+            var token = cts.Token;
+
+            var acceptTask = listener.AcceptConnectionAsync(token);
+            await using var clientConnection = await CreateQuicConnection(listener.LocalEndPoint);
+
+            await Task.Delay(TimeSpan.FromSeconds(0.5));
+
+            // Cancellation should get ignored as the connection was connected.
+            cts.Cancel();
+
+            await using var serverConnection = await acceptTask;
         }
 
         [Fact]

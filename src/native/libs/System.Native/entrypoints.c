@@ -48,6 +48,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetSignalForBreak)
     DllImportEntry(SystemNative_SetSignalForBreak)
     DllImportEntry(SystemNative_GetSystemTimeAsTicks)
+    DllImportEntry(SystemNative_GetTimeZoneData)
     DllImportEntry(SystemNative_ConvertErrorPlatformToPal)
     DllImportEntry(SystemNative_ConvertErrorPalToPlatform)
     DllImportEntry(SystemNative_StrErrorR)

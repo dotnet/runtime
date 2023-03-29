@@ -15,7 +15,7 @@
   .field public int32 a
 } // end of class VT
 
-.class private auto ansi beforefieldinit ldfldunboxedvt
+.class public auto ansi beforefieldinit ldfldunboxedvt
        extends [mscorlib]System.Object
 {
   .method public hidebysig static void f() cil managed

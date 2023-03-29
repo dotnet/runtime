@@ -91,7 +91,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
                 if (exception != 0)
                     throw new JSException((string)indexValue);
-                JSHostImplementation.ReleaseInFlight(indexValue);
+                LegacyHostImplementation.ReleaseInFlight(indexValue);
                 return indexValue;
             }
             set

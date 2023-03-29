@@ -81,7 +81,6 @@
 #include <mono/utils/mono-stack-unwinding.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-threads.h>
-#include <mono/utils/networking.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -89,6 +88,7 @@
 
 #include <mono/component/debugger-state-machine.h>
 #include "debugger-agent.h"
+#include "debugger-networking.h"
 #include <mono/mini/mini.h>
 #include <mono/mini/seq-points.h>
 #include <mono/mini/aot-runtime.h>
@@ -1047,7 +1047,7 @@ socket_transport_connect (const char *address)
 	listen_fd = INVALID_SOCKET;
 
 	MONO_ENTER_GC_UNSAFE;
-	mono_networking_init();
+	mono_debugger_networking_init ();
 	MONO_EXIT_GC_UNSAFE;
 
 	if (host) {
@@ -1060,7 +1060,7 @@ socket_transport_connect (const char *address)
 		for (size_t i = 0; i < sizeof(hints) / sizeof(int); i++) {
 			/* Obtain address(es) matching host/port */
 			MONO_ENTER_GC_UNSAFE;
-			s = mono_get_address_info (host, port, hints[i], &result);
+			s = mono_debugger_get_address_info (host, port, hints[i], &result);
 			MONO_EXIT_GC_UNSAFE;
 			if (s == 0)
 				break;
@@ -1111,7 +1111,7 @@ socket_transport_connect (const char *address)
 				int n = 1;
 
 				MONO_ENTER_GC_UNSAFE;
-				mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
+				mono_debugger_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
 				MONO_EXIT_GC_UNSAFE;
 
 				sfd = socket (rp->family, rp->socktype, rp->protocol);
@@ -1133,7 +1133,7 @@ socket_transport_connect (const char *address)
 			}
 
 			MONO_ENTER_GC_UNSAFE;
-			mono_free_address_info (result);
+			mono_debugger_free_address_info (result);
 			MONO_EXIT_GC_UNSAFE;
 		}
 
@@ -1176,7 +1176,7 @@ socket_transport_connect (const char *address)
 				socklen_t sock_len;
 
 				MONO_ENTER_GC_UNSAFE;
-				mono_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
+				mono_debugger_socket_address_init (&sockaddr, &sock_len, rp->family, &rp->address, port);
 				MONO_EXIT_GC_UNSAFE;
 
 				sfd = socket (rp->family, rp->socktype,
@@ -1213,7 +1213,7 @@ socket_transport_connect (const char *address)
 		conn_fd = sfd;
 
 		MONO_ENTER_GC_UNSAFE;
-		mono_free_address_info (result);
+		mono_debugger_free_address_info (result);
 		MONO_EXIT_GC_UNSAFE;
 	}
 
@@ -7954,6 +7954,58 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		buffer_add_int (buf, image->raw_data_len);
         break;
 	}
+	case MDBGPROT_CMD_ASSEMBLY_GET_DEBUG_INFORMATION: {
+		guint8 pe_guid [16];
+		gint32 pe_age;
+		gint32 pe_timestamp;
+		guint8 *ppdb_data = NULL;
+		int ppdb_size = 0, ppdb_compressed_size = 0;
+		char *ppdb_path;
+		GArray *pdb_checksum_hash_type = g_array_new (FALSE, TRUE, sizeof (char*));
+		GArray *pdb_checksum = g_array_new (FALSE, TRUE, sizeof (guint8*));
+		gboolean has_debug_info = mono_get_pe_debug_info_full (ass->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, pdb_checksum_hash_type, pdb_checksum);
+		if (!has_debug_info || ppdb_size > 0)
+		{
+			buffer_add_byte (buf, 0);
+			g_array_free (pdb_checksum_hash_type, TRUE);
+			g_array_free (pdb_checksum, TRUE);
+			return ERR_NONE;
+		}
+		buffer_add_byte (buf, 1);
+		buffer_add_int (buf, pe_age);
+		buffer_add_byte_array (buf, pe_guid, 16);
+		buffer_add_string (buf, ppdb_path);
+		buffer_add_int (buf, pdb_checksum_hash_type->len);
+		for (int i = 0 ; i < pdb_checksum_hash_type->len; ++i) {
+			char* checksum_hash_type =  g_array_index (pdb_checksum_hash_type, char*, i);
+			buffer_add_string (buf, checksum_hash_type);
+			if (!strcmp (checksum_hash_type, "SHA256"))
+				buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 32);
+			else if (!strcmp (checksum_hash_type, "SHA384"))
+				buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 48);
+			else if (!strcmp (checksum_hash_type, "SHA512"))
+				buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 64);
+		}
+		g_array_free (pdb_checksum_hash_type, TRUE);
+		g_array_free (pdb_checksum, TRUE);
+		break;
+	}
+	case MDBGPROT_CMD_ASSEMBLY_HAS_DEBUG_INFO_LOADED: {
+		MonoImage* image = ass->image;
+		MonoDebugHandle* handle = mono_debug_get_handle (image);
+		if (!handle) {
+			buffer_add_byte (buf, 0);
+			return ERR_NONE;
+		}
+		MonoPPDBFile* ppdb = handle->ppdb;
+		if (ppdb) {
+			image = mono_ppdb_get_image (ppdb);
+			buffer_add_byte (buf, image->raw_data_len > 0);
+		} else {
+			buffer_add_byte (buf, 0);
+		}
+		break;
+	}
 	default:
 		return ERR_NOT_IMPLEMENTED;
 	}
@@ -8798,7 +8850,7 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 
 		/* Emit parameter names */
 		names = g_new (char *, sig->param_count);
-		mono_method_get_param_names (method, (const char **) names);
+		mono_method_get_param_names_internal (method, (const char **) names);
 		for (guint16 i = 0; i < sig->param_count; ++i)
 			buffer_add_string (buf, names [i]);
 		g_free (names);

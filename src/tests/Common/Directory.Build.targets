@@ -165,6 +165,10 @@
           TargetDir="runtime-test/"/>
 
         <RunTimeDependencyCopyLocal
+          Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\index.html"
+          TargetDir="runtime-test/"/>
+
+        <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\build\*"
           TargetDir="build/"/>
     </ItemGroup>
