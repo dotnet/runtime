@@ -6,7 +6,7 @@ using Xunit;
 
 public class Foo
 {
-	public virtual void foo () {
+	internal virtual void foo () {
 	}
 }
 
@@ -16,7 +16,7 @@ public class Derived : Foo
 		a ();
 	}
 
-	public override void foo () {
+	internal override void foo () {
 		foo2 (base.foo);
 	}
 
