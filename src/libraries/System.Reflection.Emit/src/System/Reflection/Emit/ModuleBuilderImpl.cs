@@ -11,7 +11,7 @@ namespace System.Reflection.Emit
 {
     internal sealed class ModuleBuilderImpl : ModuleBuilder
     {
-        private readonly AssemblyBuilderImpl _assemblyBuilder;
+        internal readonly Assembly _coreAssembly;
         private readonly string _name;
 
         #region Internal Data Members
@@ -24,11 +24,15 @@ namespace System.Reflection.Emit
 
         #endregion
 
-        internal ModuleBuilderImpl(string name, AssemblyBuilderImpl assembly)
+        internal ModuleBuilderImpl(string name, Assembly coreAssembly)
         {
-            _assemblyBuilder = assembly;
+            _coreAssembly = coreAssembly;
             _name = name;
         }
+
+#pragma warning disable IL2026 // Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code
+        internal Type GetTypeFromCoreAssembly(string name) => _coreAssembly.GetType(name, throwOnError: true)!;
+#pragma warning restore IL2026
 
         internal void AppendMetadata(MetadataBuilder metadata)
         {

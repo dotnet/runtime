@@ -37,10 +37,6 @@ namespace System.Reflection.Emit
         }
 
         internal ModuleBuilderImpl GetModuleBuilder() => _module;
-        // TODO: Placeholder for "typeof(object)", we don't want to emit reference to runtime System.Private.CoreLib
-        // We will need to invent a way how to control the name of the system module. The name of the system module
-        // may need to be an optional argument when constructing the assembly builder.
-        internal static Type GetObjectType() => throw new NotImplementedException();
         protected override PackingSize PackingSizeCore => throw new NotImplementedException();
         protected override int SizeCore => throw new NotImplementedException();
         protected override void AddInterfaceImplementationCore([DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type interfaceType) => throw new NotImplementedException();
@@ -89,7 +85,7 @@ namespace System.Reflection.Emit
                 if ((_attributes & TypeAttributes.Interface) != TypeAttributes.Interface)
                 {
 #pragma warning disable IL2074 // Value stored in field does not satisfy 'DynamicallyAccessedMembersAttribute' requirements. The return value of the source method does not have matching annotations.
-                    _typeParent = GetObjectType();
+                    _typeParent = _module.GetTypeFromCoreAssembly("System.Object");
 #pragma warning restore IL2074
                 }
                 else

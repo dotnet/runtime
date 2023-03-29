@@ -13,13 +13,15 @@ namespace System.Reflection.Emit
     {
         private bool _previouslySaved;
         private readonly AssemblyName _assemblyName;
+        internal readonly Assembly _coreAssembly;
         private ModuleBuilderImpl? _module;
 
-        internal AssemblyBuilderImpl(AssemblyName name, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
+        internal AssemblyBuilderImpl(AssemblyName name, Assembly coreAssembly, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             ArgumentNullException.ThrowIfNull(name);
 
             name = (AssemblyName)name.Clone();
+            _coreAssembly = coreAssembly;
 
             if (string.IsNullOrEmpty(name.Name))
             {
@@ -37,15 +39,10 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal static AssemblyBuilderImpl DefineDynamicAssembly(AssemblyName name)
-            => new AssemblyBuilderImpl(name, null);
+        internal static AssemblyBuilderImpl DefinePersistedAssembly(AssemblyName name, Assembly coreAssembly, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
+                => new AssemblyBuilderImpl(name, coreAssembly, assemblyAttributes);
 
-        internal static AssemblyBuilderImpl DefineDynamicAssembly(
-            AssemblyName name,
-            IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
-                => new AssemblyBuilderImpl(name, assemblyAttributes);
-
-        private static void WritePEImage(Stream peStream, MetadataBuilder metadataBuilder, BlobBuilder ilBuilder) // MethodDefinitionHandle entryPointHandle when we have main method.
+        private static void WritePEImage(Stream peStream, MetadataBuilder metadataBuilder, BlobBuilder ilBuilder)
         {
             // Create executable with the managed metadata from the specified MetadataBuilder.
             var peHeaderBuilder = new PEHeaderBuilder(
@@ -117,7 +114,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
             }
 
-            _module = new ModuleBuilderImpl(name, this);
+            _module = new ModuleBuilderImpl(name, _coreAssembly);
             return _module;
         }
 

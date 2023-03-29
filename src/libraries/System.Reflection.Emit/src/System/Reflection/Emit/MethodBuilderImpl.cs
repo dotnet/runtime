@@ -22,7 +22,7 @@ namespace System.Reflection.Emit
             Type[]? parameterTypes, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
         {
             _module = module;
-            _returnType = returnType ?? TypeBuilderImpl.GetObjectType();
+            _returnType = returnType ?? _module.GetTypeFromCoreAssembly("System.Void"); ;
             _name = name;
             _attributes = attributes;
             _callingConventions = callingConventions;

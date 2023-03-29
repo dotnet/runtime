@@ -2,7 +2,7 @@
   <assembly fullname="System.Reflection.Emit">
     <type fullname="System.Reflection.Emit.AssemblyBuilderImpl">
       <!-- Internal API used by tests only. -->
-      <method name="DefineDynamicAssembly" />
+      <method name="DefinePersistedAssembly" />
       <method name="Save" />
     </type>
   </assembly>

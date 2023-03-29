@@ -18,7 +18,8 @@ namespace System.Reflection.Emit.Tests
         {
             MethodInfo defineDynamicAssemblyMethod = PopulateMethods(typeof(string), out MethodInfo saveMethod);
 
-            AssemblyBuilder assemblyBuilder = (AssemblyBuilder)defineDynamicAssemblyMethod.Invoke(null, new object[] { assemblyName, assemblyAttributes });
+            AssemblyBuilder assemblyBuilder = (AssemblyBuilder)defineDynamicAssemblyMethod.Invoke(null,
+                new object[] { assemblyName, CoreMetadataAssemblyResolver.s_coreAssembly, assemblyAttributes });
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
 
             PopulateMembersForModule(types, mb);
@@ -54,7 +55,8 @@ namespace System.Reflection.Emit.Tests
         {
             MethodInfo defineDynamicAssemblyMethod = PopulateMethods(typeof(Stream), out MethodInfo saveMethod);
 
-            AssemblyBuilder assemblyBuilder = (AssemblyBuilder)defineDynamicAssemblyMethod.Invoke(null, new object[] { assemblyName, assemblyAttributes });
+            AssemblyBuilder assemblyBuilder = (AssemblyBuilder)defineDynamicAssemblyMethod.Invoke(null,
+                new object[] { assemblyName, CoreMetadataAssemblyResolver.s_coreAssembly, assemblyAttributes });
 
             ModuleBuilder mb = assemblyBuilder.DefineDynamicModule(assemblyName.Name);
 
@@ -63,7 +65,7 @@ namespace System.Reflection.Emit.Tests
             saveMethod.Invoke(assemblyBuilder, new object[] { stream });
         }
 
-        private static MethodInfo PopulateMethods(Type parameterType, out MethodInfo saveMethod)
+        internal static MethodInfo PopulateMethods(Type parameterType, out MethodInfo saveMethod)
         {
             Type assemblyType = Type.GetType(
                     "System.Reflection.Emit.AssemblyBuilderImpl, System.Reflection.Emit",
@@ -71,8 +73,8 @@ namespace System.Reflection.Emit.Tests
 
             saveMethod = assemblyType.GetMethod("Save", BindingFlags.NonPublic | BindingFlags.Instance, new Type[] { parameterType });
 
-            return assemblyType.GetMethod("DefineDynamicAssembly", BindingFlags.NonPublic | BindingFlags.Static,
-                new Type[] { typeof(AssemblyName), typeof(List<CustomAttributeBuilder>) });
+            return assemblyType.GetMethod("DefinePersistedAssembly", BindingFlags.NonPublic | BindingFlags.Static,
+                new Type[] { typeof(AssemblyName), typeof(Assembly), typeof(List<CustomAttributeBuilder>) });
         }
 
         internal static Assembly TryLoadAssembly(string filePath)
@@ -103,8 +105,9 @@ namespace System.Reflection.Emit.Tests
     }
 
     // The resolver copied from MLC tests
-    public sealed class CoreMetadataAssemblyResolver : MetadataAssemblyResolver
+    internal sealed class CoreMetadataAssemblyResolver : MetadataAssemblyResolver
     {
+        public static Assembly s_coreAssembly = typeof(object).Assembly;
         public CoreMetadataAssemblyResolver() { }
 
         public override Assembly Resolve(MetadataLoadContext context, AssemblyName assemblyName)
@@ -146,7 +149,7 @@ namespace System.Reflection.Emit.Tests
                 }
             }
 
-            return File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(typeof(object).Assembly));
+            return File.OpenRead(AssemblyPathHelper.GetAssemblyLocation(s_coreAssembly));
         }
     }
 }

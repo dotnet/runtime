@@ -380,6 +380,40 @@ namespace System.Reflection.Emit.Tests
                 }
             }
         }
+
+        [Fact]
+        public void MethodReturnTypeLoadedFromCoreAssemblyTest()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                MethodInfo defineDynamicAssemblyMethod = AssemblyTools.PopulateMethods(typeof(string), out MethodInfo saveMethod);
+
+                AssemblyBuilder assemblyBuilder = (AssemblyBuilder)defineDynamicAssemblyMethod.Invoke(null,
+                    new object[] { s_assemblyName, typeof(object).Assembly, null });
+                ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
+                TypeBuilder tb = mb.DefineType("TestInterface", TypeAttributes.Interface | TypeAttributes.Abstract);
+                tb.DefineMethod("TestMethod", MethodAttributes.Public);
+
+                saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
+
+                Assembly assemblyFromDisk = AssemblyTools.TryLoadAssembly(file.Path);
+                Assert.NotNull(assemblyFromDisk);
+
+                Module moduleFromDisk = assemblyFromDisk.Modules.First();
+
+                Assert.NotNull(moduleFromDisk);
+                Assert.Equal("My Module", moduleFromDisk.ScopeName);
+                Assert.Equal(1, moduleFromDisk.GetTypes().Length);
+
+                Type testType = moduleFromDisk.GetTypes()[0];
+                Assert.Equal("TestInterface", testType.Name);
+
+                MethodInfo method = testType.GetMethods()[0];
+                Assert.Equal("TestMethod", method.Name);
+                Assert.Empty(method.GetParameters());
+                Assert.Equal("System.Void", method.ReturnType.FullName);
+            }
+        }
     }
 
     // Test Interfaces
