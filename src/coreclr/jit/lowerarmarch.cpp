@@ -1098,34 +1098,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicDot(node);
         }
 
-        case NI_Vector128_GetUpper:
-        {
-            // Converts to equivalent managed code:
-            //   AdvSimd.ExtractVector128(vector, Vector128<T>.Zero, 8 / sizeof(T)).GetLower();
-
-            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-            var_types   simdBaseType    = node->GetSimdBaseType();
-            unsigned    simdSize        = node->GetSimdSize();
-
-            GenTree* op1 = node->Op(1);
-
-            GenTree* op2 = comp->gtNewZeroConNode(TYP_SIMD16);
-            BlockRange().InsertBefore(node, op2);
-            LowerNode(op2);
-
-            GenTree* op3 = comp->gtNewIconNode(8 / genTypeSize(simdBaseType));
-            BlockRange().InsertAfter(op2, op3);
-            LowerNode(op3);
-
-            GenTree* tmp = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_AdvSimd_ExtractVector128,
-                                                          simdBaseJitType, simdSize);
-            BlockRange().InsertAfter(op3, tmp);
-            LowerNode(tmp);
-
-            node->ResetHWIntrinsicId(NI_Vector128_GetLower, comp, tmp);
-            break;
-        }
-
         case NI_Vector64_op_Equality:
         case NI_Vector128_op_Equality:
         {
