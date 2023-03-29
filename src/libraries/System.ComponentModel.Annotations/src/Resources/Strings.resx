@@ -58,7 +58,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AllowedValuesAttribute_Invalid" xml:space="preserve">
-    <value>The {0} field does not equal any of the values specified in AllowedValuesAttribute.</value>
+    <value>The field {0} does not equal any of the values specified in AllowedValuesAttribute.</value>
   </data>
   <data name="ArgumentIsNullOrWhitespace" xml:space="preserve">
     <value>The argument '{0}' cannot be null, empty or contain only whitespace.</value>
@@ -70,7 +70,7 @@
     <value>The type '{0}' does not contain a public property named '{1}'.</value>
   </data>
   <data name="Base64StringAttribute_Invalid" xml:space="preserve">
-    <value>The {0} field is not a valid Base64 encoding.</value>
+    <value>The field {0} is not a valid Base64 encoding.</value>
   </data>
   <data name="Common_PropertyNotFound" xml:space="preserve">
     <value>The property {0}.{1} could not be found.</value>
@@ -82,7 +82,7 @@
     <value>Could not find a property named {0}.</value>
   </data>
   <data name="CreditCardAttribute_Invalid" xml:space="preserve">
-    <value>The {0} field is not a valid credit card number.</value>
+    <value>The field {0} is not a valid credit card number.</value>
   </data>
   <data name="CustomValidationAttribute_Method_Must_Return_ValidationResult" xml:space="preserve">
     <value>The CustomValidationAttribute method '{0}' in type '{1}' must return System.ComponentModel.DataAnnotations.ValidationResult.  Use System.ComponentModel.DataAnnotations.ValidationResult.Success to represent success.</value>
@@ -112,13 +112,13 @@
     <value>The custom DataType string cannot be null or empty.</value>
   </data>
   <data name="DeniedValuesAttribute_Invalid" xml:space="preserve">
-    <value>The {0} field equals one of the values specified in DeniedValuesAttribute.</value>
+    <value>The field {0} equals one of the values specified in DeniedValuesAttribute.</value>
   </data>
   <data name="DisplayAttribute_PropertyNotSet" xml:space="preserve">
-    <value>The {0} property has not been set.  Use the {1} method to get the value.</value>
+    <value>The property {0} has not been set.  Use the {1} method to get the value.</value>
   </data>
   <data name="EmailAddressAttribute_Invalid" xml:space="preserve">
-    <value>The {0} field is not a valid e-mail address.</value>
+    <value>The field {0} is not a valid e-mail address.</value>
   </data>
   <data name="EnumDataTypeAttribute_TypeCannotBeNull" xml:space="preserve">
     <value>The type provided for EnumDataTypeAttribute cannot be null.</value>
@@ -127,7 +127,7 @@
     <value>The type '{0}' needs to represent an enumeration type.</value>
   </data>
   <data name="FileExtensionsAttribute_Invalid" xml:space="preserve">
-    <value>The {0} field only accepts files with the following extensions: {1}</value>
+    <value>The field {0} only accepts files with the following extensions: {1}</value>
   </data>
   <data name="LocalizableString_LocalizationFailed" xml:space="preserve">
     <value>Cannot retrieve property '{0}' because localization failed.  Type '{1}' is not public or does not contain a public static string property with the name '{2}'.</value>
@@ -160,7 +160,7 @@
     <value>The field of type {0} must be a string, array or ICollection type.</value>
   </data>
   <data name="PhoneAttribute_Invalid" xml:space="preserve">
-    <value>The {0} field is not a valid phone number.</value>
+    <value>The field {0} is not a valid phone number.</value>
   </data>
   <data name="RangeAttribute_ArbitraryTypeNotIComparable" xml:space="preserve">
     <value>The type {0} must implement {1}.</value>
@@ -196,7 +196,7 @@
     <value>The pattern must be set to a valid regular expression.</value>
   </data>
   <data name="RequiredAttribute_ValidationError" xml:space="preserve">
-    <value>The {0} field is required.</value>
+    <value>The field {0} is required.</value>
   </data>
   <data name="StringLengthAttribute_InvalidMaxLength" xml:space="preserve">
     <value>The maximum length must be a nonnegative integer.</value>
@@ -220,7 +220,7 @@
     <value>The number of control parameters must be even.</value>
   </data>
   <data name="UrlAttribute_Invalid" xml:space="preserve">
-    <value>The {0} field is not a valid fully-qualified http, https, or ftp URL.</value>
+    <value>The field {0} is not a valid fully-qualified http, https, or ftp URL.</value>
   </data>
   <data name="ValidationAttribute_Cannot_Set_ErrorMessage_And_Resource" xml:space="preserve">
     <value>Either ErrorMessageString or ErrorMessageResourceName must be set, but not both.</value>
