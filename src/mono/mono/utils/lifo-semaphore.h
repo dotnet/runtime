@@ -3,6 +3,21 @@
 
 #include <mono/utils/mono-coop-mutex.h>
 
+typedef struct _LifoSemaphoreBase LifoSemaphoreBase;
+
+struct _LifoSemaphoreBase
+{
+	MonoCoopMutex mutex;
+	uint8_t       kind;
+};
+
+enum {
+	LIFO_SEMAPHORE_NORMAL = 1,
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+	LIFO_SEMAPHORE_ASYNC_JS,
+#endif
+};
+	
 typedef struct _LifoSemaphore LifoSemaphore;
 typedef struct _LifoSemaphoreWaitEntry LifoSemaphoreWaitEntry;
 
@@ -14,7 +29,7 @@ struct _LifoSemaphoreWaitEntry {
 };
 
 struct _LifoSemaphore {
-	MonoCoopMutex mutex;
+	LifoSemaphoreBase base;
 	LifoSemaphoreWaitEntry *head;
 	uint32_t pending_signals;
 };
@@ -64,7 +79,7 @@ struct _LifoJSSemaphoreWaitEntry {
 };
 	
 struct _LifoJSSemaphore {
-	MonoCoopMutex mutex;
+	LifoSemaphoreBase base;
 	LifoJSSemaphoreWaitEntry *head;
 	uint32_t pending_signals;
 };
