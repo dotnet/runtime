@@ -9,7 +9,7 @@ all supported platforms, as well as the sources to .NET runtime and libraries.
 
 ## What is .NET?
 
-Official Starting Page: https://dotnet.microsoft.com
+Official Page: https://dotnet.microsoft.com
 
 * [How to use .NET](https://docs.microsoft.com/dotnet/core/get-started) (with VS, VS Code, command-line CLI)
   * [Install official releases](https://dotnet.microsoft.com/download)
