@@ -401,7 +401,7 @@
       <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
+    <!-- <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
       <_DedupAssembly>$(BuildDir)\aot-instances.dll</_DedupAssembly>
     </PropertyGroup>
     <WriteLinesToFile Condition="'$(RunAOTCompilation)' == 'true'" File="$(_MobileIntermediateOutputPath)/aot-instances.cs" Overwrite="true" Lines="" WriteOnlyWhenDifferent="true" />
@@ -418,7 +418,7 @@
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
-    </ItemGroup>
+    </ItemGroup> -->
 
     <RemoveDuplicates
         Inputs="@(_AotInputAssemblies)">
@@ -432,7 +432,6 @@
         OutputDir="$(_MobileIntermediateOutputPath)"
         Mode="$(_AOTMode)"
         OutputType="AsmOnly"
-        DedupAssembly="$(_DedupAssembly)"
         Assemblies="@(_AotInputAssembliesDedup)"
         AotModulesTablePath="$(BundleDir)\modules.m"
         AotModulesTableLanguage="ObjC"
