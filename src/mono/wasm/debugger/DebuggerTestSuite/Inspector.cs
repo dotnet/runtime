@@ -358,15 +358,6 @@ namespace DebuggerTests
             try
             {
                 await LaunchBrowser(start, span);
-Retry:
-                if (_isFailingWithException is not null && retry == 0)
-                {
-                    _isFailingWithException = null;
-                    _cancellationTokenSource = new CancellationTokenSource();
-                    Token = _cancellationTokenSource.Token;
-                    retry++;
-                    await Client.SendCommand("Page.navigate", JObject.FromObject(new { url = urlToInspect }), _cancellationTokenSource.Token);
-                }
                 var init_cmds = getInitCmds(Client, _cancellationTokenSource.Token);
 
                 Task<Result> readyTask = Task.Run(async () => Result.FromJson(await WaitFor(APP_READY)));
@@ -382,12 +373,7 @@ Retry:
                     string cmd_name = init_cmds[cmdIdx].Item1;
 
                     if (_isFailingWithException is not null)
-                    {
-                        if (retry == 0)
-                            goto Retry;
-                        else
-                            throw _isFailingWithException;
-                    }
+                        throw _isFailingWithException;
 
                     if (completedTask.IsCanceled)
                     {
@@ -402,11 +388,15 @@ Retry:
                         _logger.LogError($"Command {cmd_name} failed with {completedTask.Exception}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}.");
                         throw completedTask.Exception!;
                     }
+
                     await Client.ProcessCommand(completedTask.Result, _cancellationTokenSource.Token);
                     Result res = completedTask.Result;
+
                     if (!res.IsOk)
                         throw new ArgumentException($"Command {cmd_name} failed with: {res.Error}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}");
 
+                    if (DebuggerTestBase.RunningOnChrome && cmd_name == "Debugger.enable")
+                        await Client.SendCommand("Page.navigate", JObject.FromObject(new { url = urlToInspect }), _cancellationTokenSource.Token);
                     init_cmds.RemoveAt(cmdIdx);
                 }
 

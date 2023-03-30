@@ -56,7 +56,7 @@ internal class ChromeProvider : WasmHostProvider
             // for WIndows setting --lang arg is enough
             if (!OperatingSystem.IsWindows())
                 Environment.SetEnvironmentVariable("LANGUAGE", locale);
-            ProcessStartInfo psi = GetProcessStartInfo(s_browserPath.Value, GetInitParms(remoteDebuggingPort, locale), targetUrl);
+            ProcessStartInfo psi = GetProcessStartInfo(s_browserPath.Value, GetInitParms(remoteDebuggingPort, locale), "about:blank");
             line = await LaunchHostAsync(
                                     psi,
                                     context,
@@ -175,7 +175,7 @@ internal class ChromeProvider : WasmHostProvider
         }
         else if (Environment.GetEnvironmentVariable("SKIP_LOG_TO_CONSOLE") == "1")
         {
-            Console.WriteLine ("Detected CI, disabling software rasterizer for debugger tests.");
+            Console.WriteLine ("Detected CI, disabling sandboxing for debugger tests.");
             str = "--no-sandbox " + str;
         }
         return str;
