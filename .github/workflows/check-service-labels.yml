@@ -5,7 +5,7 @@ permissions:
 
 on:
   pull_request:
-    types: [opened, reopened, labeled, unlabeled, synchronize]
+    types: [opened, edited, reopened, labeled, unlabeled, synchronize]
     branches:
       - 'release/**'
 
