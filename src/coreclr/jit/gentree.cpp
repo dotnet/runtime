@@ -6570,22 +6570,7 @@ bool GenTree::OperRequiresAsgFlag()
 #ifdef FEATURE_HW_INTRINSICS
     if (gtOper == GT_HWINTRINSIC)
     {
-        GenTreeHWIntrinsic* hwIntrinsicNode = this->AsHWIntrinsic();
-        NamedIntrinsic      intrinsicId     = hwIntrinsicNode->GetHWIntrinsicId();
-
-        if (hwIntrinsicNode->OperIsMemoryStore())
-        {
-            // A MemoryStore operation is an assignment
-            return true;
-        }
-#if defined(TARGET_XARCH)
-        else if (HWIntrinsicInfo::HasSpecialSideEffect_Barrier(intrinsicId))
-        {
-            // While these don't technically do an assignment, they are modeled the
-            // same as GT_MEMORYBARRIER which tracks itself as requiring GT_ASG flag
-            return true;
-        }
-#endif // TARGET_XARCH
+        return AsHWIntrinsic()->OperRequiresAsgFlag();
     }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -24332,6 +24317,29 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
     return OperIsMemoryLoad() || OperIsMemoryStore();
 }
 
+//------------------------------------------------------------------------------
+// OperRequiresAsgFlag : Check whether the operation requires GTF_ASG flag regardless
+//                       of the children's flags.
+//
+bool GenTreeHWIntrinsic::OperRequiresAsgFlag() const
+{
+    if (OperIsMemoryStore())
+    {
+        // A MemoryStore operation is an assignment
+        return true;
+    }
+#if defined(TARGET_XARCH)
+    else if (HWIntrinsicInfo::HasSpecialSideEffect_Barrier(GetHWIntrinsicId()))
+    {
+        // While these don't technically do an assignment, they are modeled the
+        // same as GT_MEMORYBARRIER which tracks itself as requiring GT_ASG flag
+        return true;
+    }
+#endif // TARGET_XARCH
+
+    return false;
+}
+
 //------------------------------------------------------------------------
 // GetLayout: Get the layout for this TYP_STRUCT HWI node.
 //
@@ -24412,13 +24420,13 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId, bool isSimdAsHWI
 {
     SetHWIntrinsicId(intrinsicId);
 
-    if (OperIsMemoryLoad())
-    {
-        gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
-    }
-    else if (OperIsMemoryStore())
+    if (OperIsMemoryStore())
     {
         gtFlags |= (GTF_ASG | GTF_GLOB_REF | GTF_EXCEPT);
+    }
+    else if (OperIsMemoryLoad())
+    {
+        gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
     }
     else if (HWIntrinsicInfo::HasSpecialSideEffect(intrinsicId))
     {
