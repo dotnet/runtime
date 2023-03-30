@@ -38,10 +38,14 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA384:
                 case HashAlgorithmNames.SHA512:
                     return true;
-                default:
+                case HashAlgorithmNames.SHA3_256:
+                case HashAlgorithmNames.SHA3_384:
+                case HashAlgorithmNames.SHA3_512:
                     return BCryptAlgorithmCache.IsBCryptAlgorithmSupported(
                         hashAlgorithmId,
                         BCryptOpenAlgorithmProviderFlags.None);
+                default:
+                    return false;
             }
         }
 
@@ -56,10 +60,14 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA384:
                 case HashAlgorithmNames.SHA512:
                     return true;
-                default:
+                case HashAlgorithmNames.SHA3_256:
+                case HashAlgorithmNames.SHA3_384:
+                case HashAlgorithmNames.SHA3_512:
                     return BCryptAlgorithmCache.IsBCryptAlgorithmSupported(
                         hashAlgorithmId,
                         BCryptOpenAlgorithmProviderFlags.BCRYPT_ALG_HANDLE_HMAC_FLAG);
+                default:
+                    return false;
             }
         }
 
