@@ -194,6 +194,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
+      <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == ''">-Os</_EmccOptimizationFlagDefault>
       <EmccLinkOptimizationFlag Condition="'$(EmccLinkOptimizationFlag)' == ''">-Os -Wl,-O0 -Wl,--lto-O0</EmccLinkOptimizationFlag>
     </PropertyGroup>
 
