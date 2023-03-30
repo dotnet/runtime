@@ -5919,6 +5919,7 @@ private:
     void fgTryReplaceStructLocalWithField(GenTree* tree);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnAssignment(GenTreeOp* asg);
+    GenTree* fgOptimizeBitCast(GenTreeUnOp* bitCast);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithFullRangeConst(GenTreeOp* cmp);

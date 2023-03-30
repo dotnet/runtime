@@ -3560,6 +3560,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_CAST:
+        case GT_BITCAST:
             return true; // CSE these Unary Operators
 
         case GT_SUB:
