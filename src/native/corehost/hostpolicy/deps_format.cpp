@@ -11,6 +11,7 @@
 #include <iterator>
 #include <cassert>
 #include <functional>
+#include <minipal/utils.h>
 
 const std::array<const pal::char_t*, deps_entry_t::asset_types::count> deps_entry_t::s_known_asset_types = {{
     _X("runtime"), _X("resources"), _X("native")
@@ -182,25 +183,31 @@ void deps_json_t::reconcile_libraries_with_targets(
 
 namespace
 {
+    #define CURRENT_ARCH_SUFFIX _X("-") _STRINGIFY(CURRENT_ARCH_NAME)
+    #define RID_CURRENT_ARCH_LIST(os) \
+        _X(os) CURRENT_ARCH_SUFFIX, \
+        _X(os),
+
     const pal::char_t* s_host_rids[] =
     {
 #if defined(TARGET_WINDOWS)
-        _X("win"),
+        RID_CURRENT_ARCH_LIST("win")
 #elif defined(TARGET_OSX)
-        _X("osx"),
-        _X("unix"),
+        RID_CURRENT_ARCH_LIST("osx")
+        RID_CURRENT_ARCH_LIST("unix")
 #elif defined(TARGET_LINUX_MUSL)
-        _X("linux-musl"),
-        _X("linux"),
-        _X("unix"),
+        RID_CURRENT_ARCH_LIST("linux-musl")
+        RID_CURRENT_ARCH_LIST("linux")
+        RID_CURRENT_ARCH_LIST("unix")
 #elif defined(TARGET_ANDROID)
-        _X("linux-bionic"),
-        _X("linux"),
-        _X("unix"),
+        RID_CURRENT_ARCH_LIST("linux-bionic")
+        RID_CURRENT_ARCH_LIST("linux")
+        RID_CURRENT_ARCH_LIST("unix")
 #else
-        _X("linux"),
-        _X("unix"),
+        RID_CURRENT_ARCH_LIST(FALLBACK_HOST_OS)
+        RID_CURRENT_ARCH_LIST("unix")
 #endif
+        _X("any"),
     };
 
     // Returns the RID determined (computed or fallback) for the platform the host is running on.
@@ -225,51 +232,48 @@ namespace
         return currentRid;
     }
 
-    std::vector<pal::string_t> get_host_rid_list(const pal::string_t& host_rid)
+    void print_host_rid_list(const pal::string_t& host_rid, const pal::string_t& host_rid_no_arch)
     {
-        std::vector<pal::string_t> rids;
-        rids.reserve((sizeof(s_host_rids) / sizeof(*s_host_rids)) * 2 + 3);
-
-        pal::string_t arch_suffix = _X("-");
-        arch_suffix.append(get_current_arch_name());
-
-        rids.push_back(host_rid);
-        if (ends_with(host_rid, arch_suffix, true))
+        if (trace::is_enabled())
         {
-            // Host RID without architecture
-            rids.push_back(host_rid.substr(0, host_rid.size() - arch_suffix.size()));
+            trace::verbose(_X("Host RID list = ["));
+            trace::verbose(_X("  %s,"), host_rid.c_str());
+            if (!host_rid_no_arch.empty())
+                trace::verbose(_X("  %s,"), host_rid_no_arch.c_str());
+
+            for (const pal::char_t* rid : s_host_rids)
+            {
+                trace::verbose(_X("  %s,"), rid);
+            }
+            trace::verbose(_X("]"));
+        }
+    }
+
+    bool try_get_matching_rid(const std::unordered_map<pal::string_t, std::vector<deps_asset_t>>& rid_assets, const pal::string_t& host_rid, const pal::string_t& host_rid_no_arch, pal::string_t& out_rid)
+    {
+        // Check for exact match with the host RID
+        if (rid_assets.count(host_rid) != 0)
+        {
+            out_rid = host_rid;
+            return true;
+        }
+
+        // Host RID without architecture
+        if (!host_rid_no_arch.empty() && rid_assets.count(host_rid_no_arch) != 0)
+        {
+            out_rid = host_rid_no_arch;
+            return true;
         }
 
         // Use our list of known portable RIDs
         for (const pal::char_t* rid : s_host_rids)
         {
-            // Architecture-specific RID
-            rids.push_back(rid + arch_suffix);
-
-            // RID without architecture
-            rids.push_back(rid);
-        }
-
-        rids.push_back(_X("any"));
-
-        if (trace::is_enabled())
-        {
-            trace::verbose(_X("Host RID list = ["));
-            for (const pal::string_t& rid : rids)
-            {
-                trace::verbose(_X("  %s,"), rid.c_str());
-            }
-            trace::verbose(_X("]"));
-        }
-
-        return rids;
-    }
-
-    bool try_get_matching_rid(const std::unordered_map<pal::string_t, std::vector<deps_asset_t>>& rid_assets, const std::vector<pal::string_t>& rid_list, pal::string_t& out_rid)
-    {
-        for (const pal::string_t& rid : rid_list)
-        {
-            if (rid_assets.count(rid) != 0)
+            const auto& iter = std::find_if(rid_assets.cbegin(), rid_assets.cend(),
+                [&](const std::pair<pal::string_t, std::vector<deps_asset_t>>& rid_asset)
+                {
+                    return pal::strcmp(rid_asset.first.c_str(), rid) == 0;
+                });
+            if (iter != rid_assets.cend())
             {
                 out_rid = rid;
                 return true;
@@ -319,9 +323,14 @@ void deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets)
 
     const pal::string_t host_rid = get_current_rid(rid_fallback_graph);
 
-    std::vector<pal::string_t> host_rid_list;
+    pal::string_t host_rid_no_arch;
     if (!m_rid_resolution_options.use_fallback_graph)
-        host_rid_list = get_host_rid_list(host_rid);
+    {
+        if (ends_with(host_rid, CURRENT_ARCH_SUFFIX, true))
+            host_rid_no_arch = host_rid.substr(0, host_rid.size() - STRING_LENGTH(CURRENT_ARCH_SUFFIX));
+
+        print_host_rid_list(host_rid, host_rid_no_arch);
+    }
 
     for (auto& package : portable_assets->libs)
     {
@@ -335,7 +344,7 @@ void deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets)
             pal::string_t matched_rid;
             bool found_match = m_rid_resolution_options.use_fallback_graph
                 ? try_get_matching_rid_with_fallback_graph(rid_assets, host_rid, *rid_fallback_graph, matched_rid)
-                : try_get_matching_rid(rid_assets, host_rid_list, matched_rid);
+                : try_get_matching_rid(rid_assets, host_rid, host_rid_no_arch, matched_rid);
             if (!found_match)
             {
                 trace::verbose(_X("  No matching %s assets for package %s"), deps_entry_t::s_known_asset_types[asset_type_index], package.first.c_str());
