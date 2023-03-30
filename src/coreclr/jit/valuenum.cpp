@@ -5669,9 +5669,18 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 #ifdef TARGET_XARCH
             case VNF_HWI_POPCNT_PopCount:
             case VNF_HWI_POPCNT_X64_PopCount:
+            case VNF_HWI_LZCNT_LeadingZeroCount:
+            case VNF_HWI_LZCNT_X64_LeadingZeroCount:
+            case VNF_HWI_BMI1_TrailingZeroCount:
+            case VNF_HWI_BMI1_X64_TrailingZeroCount:
                 return true;
 #elif TARGET_ARM64
             case VNF_HWI_AdvSimd_PopCount:
+            case VNF_HWI_AdvSimd_LeadingZeroCount:
+            case VNF_HWI_AdvSimd_LeadingSignCount:
+            case VNF_HWI_ArmBase_LeadingZeroCount:
+            case VNF_HWI_ArmBase_Arm64_LeadingZeroCount:
+            case VNF_HWI_ArmBase_Arm64_LeadingSignCount:
                 return true;
 #endif
 #endif // FEATURE_HW_INTRINSICS
