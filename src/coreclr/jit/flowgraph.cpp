@@ -4296,6 +4296,11 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo);
 
+    if (threadStaticBlocksInfo.tlsIndex > 0)
+    {
+        noway_assert(!"_tls_index should be > 0");
+    }
+
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
     SCAN_BLOCK_AGAIN:
@@ -4384,16 +4389,13 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                 GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(2)->GetNode();
 
                 void**   pIdAddr = nullptr;
-                unsigned IdValue = threadStaticBlocksInfo.tlsIndex;
+                unsigned tlsIndexValue = threadStaticBlocksInfo.tlsIndex;
                 GenTree* dllRef  = nullptr;
-                if (IdValue != 0)
-                {
 #ifdef TARGET_64BIT
-                    dllRef = gtNewIconNode(IdValue * 8, TYP_I_IMPL);
+                dllRef = gtNewIconNode(tlsIndexValue * 8, TYP_I_IMPL);
 #else
-                    dllRef                     = gtNewIconNode(IdValue * 4, TYP_I_IMPL);
+                dllRef = gtNewIconNode(tlsIndexValue * 4, TYP_I_IMPL);
 #endif
-                }
 
                 // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
                 GenTree* tlsRef =

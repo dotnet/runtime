@@ -13505,7 +13505,6 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
         if (id->idIsDspReloc())
         {
             // All static field and data section constant accesses should be marked as relocatable
-            // noway_assert(id->idIsDspReloc());
             dst += emitOutputLong(dst, 0);
         }
         else
@@ -13515,14 +13514,6 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 #else
         dst += emitOutputLong(dst, (int)(ssize_t)target);
 #endif // TARGET_AMD64
-
-//#ifdef TARGET_AMD64
-//        // All static field and data section constant accesses should be marked as relocatable
-//        // noway_assert(id->idIsDspReloc());
-//        dst += emitOutputLong(dst, 0);
-//#else  // TARGET_X86
-//        dst += emitOutputLong(dst, (int)(ssize_t)target);
-//#endif // TARGET_X86
 
         if (id->idIsDspReloc())
         {
