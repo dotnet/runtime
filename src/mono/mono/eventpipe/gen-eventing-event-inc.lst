@@ -6,7 +6,9 @@ AssemblyLoad_V1
 AssemblyUnload_V1
 BulkType
 ContentionStart_V1
+ContentionStart_V2
 ContentionStop
+ContentionStop_V1
 DCEndComplete_V1
 DCEndInit_V1
 DomainModuleDCEnd_V1
@@ -21,6 +23,7 @@ ExceptionFinallyStart
 ExceptionFinallyStop
 ExceptionThrown_V1
 ExceptionThrownStop
+ContentionLockCreated
 MethodDCEndILToNativeMap
 MethodDCEnd_V1
 MethodDCEndVerbose_V1

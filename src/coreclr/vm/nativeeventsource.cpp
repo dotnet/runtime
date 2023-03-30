@@ -153,4 +153,40 @@ extern "C" void QCALLTYPE LogThreadPoolIOPack(_In_z_ void* nativeOverlapped, _In
 
     END_QCALL;
 }
+
+extern "C" void QCALLTYPE LogContentionLockCreated(void* LockID, void* AssociatedObjectID, uint16_t ClrInstanceID)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    FireEtwContentionLockCreated(LockID, AssociatedObjectID, ClrInstanceID);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE LogContentionStart(
+    uint8_t ContentionFlags,
+    uint16_t ClrInstanceID,
+    void* LockID,
+    void* AssociatedObjectID,
+    uint64_t LockOwnerThreadID)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    FireEtwContentionStart_V2(ContentionFlags, ClrInstanceID, LockID, AssociatedObjectID, LockOwnerThreadID);
+
+    END_QCALL;
+}
+
+extern "C" void QCALLTYPE LogContentionStop(uint8_t ContentionFlags, uint16_t ClrInstanceID, double DurationNs)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    FireEtwContentionStop_V1(ContentionFlags, ClrInstanceID, DurationNs);
+
+    END_QCALL;
+}
+
 #endif // FEATURE_PERFTRACING
