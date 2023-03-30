@@ -3156,7 +3156,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{T}" /> with the upper 64-bits set to the specified value and the upper 64-bits set to the same value as that in the given vector.</summary>
+        /// <summary>Creates a new <see cref="Vector128{T}" /> with the upper 64-bits set to the specified value and the lower 64-bits set to the same value as that in the given vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to get the lower 64-bits from.</param>
         /// <param name="value">The value of the upper 64-bits as a <see cref="Vector64{T}" />.</param>

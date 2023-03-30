@@ -3106,7 +3106,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Creates a new <see cref="Vector512{T}" /> with the upper 256-bits set to the specified value and the upper 256-bits set to the same value as that in the given vector.</summary>
+        /// <summary>Creates a new <see cref="Vector512{T}" /> with the upper 256-bits set to the specified value and the lower 256-bits set to the same value as that in the given vector.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
         /// <param name="vector">The vector to get the lower 256-bits from.</param>
         /// <param name="value">The value of the upper 256-bits as a <see cref="Vector256{T}" />.</param>
