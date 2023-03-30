@@ -7,10 +7,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);BASELINE_INTRINSICS</DefineConstants>
     <StripSymbols>true</StripSymbols>
-    
-    <!-- We should be able to delete once CI machines no longer use ancient LLVM -->
-    <ObjCopyName>objcopy</ObjCopyName>
-  </PropertyGroup>
+    </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
   </ItemGroup>
