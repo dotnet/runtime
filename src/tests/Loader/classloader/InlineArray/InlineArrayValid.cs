@@ -414,7 +414,6 @@ unsafe class Validate
     }
 
     [Fact]
-    [SkipOnCoreClr("Mono-specific implementation details.")]
     public static void MonoGCDescOpt()
     {
         Console.WriteLine($"{nameof(MonoGCDescOpt)}...");
@@ -423,7 +422,7 @@ unsafe class Validate
 
         GC.Collect(2, GCCollectionMode.Forced, true, true);
 
-        MakeGarbage ();
+        MakeGarbage();
 
         for (short i = 0; i < ObjShortArr.Length; i++)
         {
