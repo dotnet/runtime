@@ -707,6 +707,8 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_CTZ_I8:
 		case MINT_POPCNT_I8:
 		case MINT_LOG2_I8:
+		case MINT_SHL_AND_I4:
+		case MINT_SHL_AND_I8:
 			return TRACE_CONTINUE;
 
 		case MINT_BR:
