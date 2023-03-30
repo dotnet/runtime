@@ -1526,10 +1526,6 @@
             <Issue>Static virtual methods are not yet implemented in the Mono runtime.</Issue>
         </ExcludeList>
 
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/InlineArray/**">
-            <Issue>https://github.com/dotnet/runtime/issues/80798</Issue>
-        </ExcludeList>
-
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/stackoverflow/stackoverflowtester/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
