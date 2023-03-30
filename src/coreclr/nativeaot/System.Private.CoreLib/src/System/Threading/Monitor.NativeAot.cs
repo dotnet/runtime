@@ -74,7 +74,7 @@ namespace System.Threading
                 return false;
 
             Lock lck = SyncTable.GetLockObject(resultOrIndex);
-            return lck.TryAcquire(0);
+            return lck.TryEnter();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -101,7 +101,7 @@ namespace System.Threading
                 SyncTable.GetLockObject(resultOrIndex);
 
             if (millisecondsTimeout == 0)
-                return lck.TryAcquireNoSpin();
+                return lck.TryEnter();
 
             return TryAcquireSlow(lck, obj, millisecondsTimeout);
         }
@@ -165,7 +165,7 @@ namespace System.Threading
         {
             using (new DebugBlockingScope(obj, DebugBlockingItemType.MonitorCriticalSection, millisecondsTimeout, out _))
             {
-                return lck.TryAcquireSlow(Environment.CurrentManagedThreadId, millisecondsTimeout, trackContentions: true);
+                return lck.TryEnter(millisecondsTimeout);
             }
         }
 
@@ -229,28 +229,10 @@ namespace System.Threading
 
         #region Metrics
 
-        private static readonly ThreadInt64PersistentCounter s_lockContentionCounter = new ThreadInt64PersistentCounter();
-
-        [ThreadStatic]
-        private static object t_ContentionCountObject;
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static object CreateThreadLocalContentionCountObject()
-        {
-            Debug.Assert(t_ContentionCountObject == null);
-
-            object threadLocalContentionCountObject = s_lockContentionCounter.CreateThreadLocalCountObject();
-            t_ContentionCountObject = threadLocalContentionCountObject;
-            return threadLocalContentionCountObject;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void IncrementLockContentionCount() => ThreadInt64PersistentCounter.Increment(t_ContentionCountObject ?? CreateThreadLocalContentionCountObject());
-
         /// <summary>
         /// Gets the number of times there was contention upon trying to take a <see cref="Monitor"/>'s lock so far.
         /// </summary>
-        public static long LockContentionCount => s_lockContentionCounter.Count;
+        public static long LockContentionCount => Lock.ContentionCount;
 
         #endregion
     }

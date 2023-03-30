@@ -277,3 +277,49 @@ void SystemNative_Abort(void)
 {
     abort();
 }
+
+#ifdef TARGET_OSX
+
+// Gets a non-truncated OS thread ID that is also suitable for diagnostics, for platforms that offer a 64-bit ID
+uint64_t SystemNative_GetUInt64OSThreadId()
+{
+    uint64_t threadId;
+    int result = pthread_threadid_np(pthread_self(), &threadId);
+    assert(result == 0);
+    return threadId;
+}
+
+#else // !TARGET_OSX
+
+#if defined(__FreeBSD__)
+#include <pthread_np.h>
+#elif defined(__NetBSD__)
+#include <lwp.h>
+#endif
+
+// Tries to get a non-truncated OS thread ID that is also suitable for diagnostics, for platforms that offer a 32-bit ID.
+// Returns (uint32_t)-1 when the implementation does not know how to get the OS thread ID.
+uint32_t SystemNative_TryGetUInt32OSThreadId()
+{
+    const uint32_t InvalidId = (uint32_t)-1;
+
+#if defined(__linux__)
+    assert(sizeof(pid_t) == sizeof(uint32_t));
+    uint32_t threadId = (uint32_t)syscall(SYS_gettid);
+    assert(threadId != InvalidId);
+    return threadId;
+#elif defined(__FreeBSD__)
+    uint32_t threadId = (uint32_t)pthread_getthreadid_np();
+    assert(threadId != InvalidId);
+    return threadId;
+#elif defined(__NetBSD__)
+    assert(sizeof(lwpid_t) == sizeof(uint32_t));
+    uint32_t threadId = (uint32_t)_lwp_self();
+    assert(threadId != InvalidId);
+    return threadId;
+#else
+    return InvalidId;
+#endif
+}
+
+#endif // TARGET_OSX

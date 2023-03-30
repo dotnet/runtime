@@ -29,3 +29,9 @@ PALEXPORT int32_t SystemNative_SchedGetCpu(void);
 PALEXPORT __attribute__((noreturn)) void SystemNative_Exit(int32_t exitCode);
 
 PALEXPORT __attribute__((noreturn)) void SystemNative_Abort(void);
+
+#ifdef TARGET_OSX
+PALEXPORT uint64_t SystemNative_GetUInt64OSThreadId();
+#else
+PALEXPORT uint32_t SystemNative_TryGetUInt32OSThreadId();
+#endif

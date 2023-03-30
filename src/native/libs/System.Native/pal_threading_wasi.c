@@ -80,3 +80,21 @@ void SystemNative_Abort(void)
 {
     abort();
 }
+
+#ifdef TARGET_OSX
+
+uint64_t SystemNative_GetUInt64OSThreadId()
+{
+    assert(false);
+    return 0;
+}
+
+#else // !TARGET_OSX
+
+// Returns (uint32_t)-1 when the implementation does not know how to get the OS thread ID.
+uint32_t SystemNative_TryGetUInt32OSThreadId()
+{
+    return (uint32_t)-1;
+}
+
+#endif // TARGET_OSX

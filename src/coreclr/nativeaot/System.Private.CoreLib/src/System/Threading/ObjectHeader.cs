@@ -217,7 +217,7 @@ namespace System.Threading
         {
             // Holding this lock implies there is at most one thread setting the sync entry index at
             // any given time.  We also require that the sync entry index has not been already set.
-            Debug.Assert(SyncTable.s_lock.IsAcquired);
+            Debug.Assert(SyncTable.s_lock.IsHeldByCurrentThread);
             int oldBits, newBits;
 
             do
@@ -323,7 +323,7 @@ namespace System.Threading
                     }
                     else if (GetSyncEntryIndex(oldBits, out int syncIndex))
                     {
-                        if (SyncTable.GetLockObject(syncIndex).TryAcquireOneShot(currentThreadID))
+                        if (SyncTable.GetLockObject(syncIndex).TryEnterOneShot(currentThreadID))
                         {
                             return -1;
                         }
@@ -348,9 +348,9 @@ namespace System.Threading
             if (currentThreadID > SBLK_MASK_LOCK_THREADID)
                 return GetSyncIndex(obj);
 
-            // Lock.s_processorCount is lazy-initialized at fist contended acquire
-            // untill then it is 0 and we assume we have multicore machine
-            int retries = oneShot || Lock.s_processorCount == 1 ? 0 : 16;
+            // Lock.IsSingleProcessor gets a value that is lazy-initialized at the first contended acquire.
+            // Until then it is false and we assume we have multicore machine.
+            int retries = oneShot || Lock.IsSingleProcessor ? 0 : 16;
 
             // retry when the lock is owned by somebody else.
             // this loop will spinwait between iterations.
@@ -481,7 +481,7 @@ namespace System.Threading
                 }
             }
 
-            fatLock.ReleaseByThread(currentThreadID);
+            fatLock.Exit(currentThreadID);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -510,7 +510,7 @@ namespace System.Threading
 
                 if (GetSyncEntryIndex(oldBits, out int syncIndex))
                 {
-                    return SyncTable.GetLockObject(syncIndex).IsAcquiredByThread(currentThreadID);
+                    return SyncTable.GetLockObject(syncIndex).GetIsHeldByCurrentThread(currentThreadID);
                 }
 
                 // someone else owns or noone.
