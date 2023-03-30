@@ -965,6 +965,8 @@ struct static_data
     size_t gc_clock; // number of gcs after which to collect generation
 };
 
+// dynamic data is maintained per generation, so we have total_generation_count number of them.
+// 
 // The dynamic data fields are grouped into 3 categories:
 //
 // calculated logical data (like desired_allocation)
@@ -973,11 +975,21 @@ struct static_data
 class dynamic_data
 {
 public:
+    // Updated if the generation (the dynamic data is for) is condemned or if there's anything
+    // allocated into this generation.
+    // If the generation is condemned, we will calculate its new desired_allocation and re-init this field with that value.
+    // If there's anything allocated into this generation, it will be updated, ie, decreased by
+    // the amount that was allocated into this generation.
     ptrdiff_t new_allocation;
-    ptrdiff_t gc_new_allocation; // new allocation at beginning of gc
+
+    //
+    // The next group of fields are updated during a GC if that GC condemns this generation.
+    // 
+    // Same as new_allocation but only updated during a GC if the generation is condemned.
+    // We should really just get rid of this.
+    ptrdiff_t gc_new_allocation;
     float     surv;
     size_t    desired_allocation;
-
     // # of bytes taken by objects (ie, not free space) at the beginning
     // of the GC.
     size_t    begin_data_size;
@@ -987,7 +999,6 @@ public:
     size_t    pinned_survived_size;
     size_t    artificial_pinned_survived_size;
     size_t    added_pinned_size;
-
 #ifdef SHORT_PLUGS
     size_t    padding_size;
 #endif //SHORT_PLUGS
@@ -1000,14 +1011,28 @@ public:
     size_t    collection_count;
     size_t    promoted_size;
     size_t    freach_previous_promotion;
-    size_t    fragmentation;    //fragmentation when we don't compact
-    size_t    gc_clock;         //gc# when last GC happened
-    uint64_t  time_clock;       //time when last gc started
+
+    // Updated in each GC. For a generation that's not condemned during that GC, its free list could be used so
+    // we also update this.
+    size_t    fragmentation;
+
+    //
+    // The following 3 fields are updated at the beginning of each GC, if that GC condemns this generation.
+    //
+    // The number of GC that condemned this generation. The only difference between this
+    // and collection_count is just that collection_count is maintained for all physical generations
+    // (currently there are 5) whereas this is only updated for logical generations (there are 3).
+    size_t    gc_clock;
+    uint64_t  time_clock;       //time when this gc started
     uint64_t  previous_time_clock; // time when previous gc started
+
+    // Updated at the end of a GC, if that GC condemns this generation.
     size_t    gc_elapsed_time;  // Time it took for the gc to complete
 
+    //
+    // The following fields (and fields in sdata) are initialized during GC init time and do not change.
+    //
     size_t    min_size;
-
     static_data* sdata;
 };
 
