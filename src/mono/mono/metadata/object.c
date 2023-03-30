@@ -880,6 +880,9 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			if (m_class_is_inlinearray (p))
 				field_iter = m_class_inlinearray_value (p);
 
+			if (field_iter > 500)
+				g_warning ("Large number of iterations detected when creating a GC bitmap, might affect performance.");
+
 			while (field_iter) {
 				pos = field_instance_offset / TARGET_SIZEOF_VOID_P;
 				pos += offset;
