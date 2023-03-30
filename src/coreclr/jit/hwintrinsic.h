@@ -184,7 +184,7 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_SpecialSideEffect_Barrier = 0x200000,
 
     // The intrinsic has some other special side effect that should be tracked
-    HW_Flag_SpecialSideEffect_Other  = 0x400000,
+    HW_Flag_SpecialSideEffect_Other = 0x400000,
 
     HW_Flag_SpecialSideEffectMask = (HW_Flag_SpecialSideEffect_Barrier | HW_Flag_SpecialSideEffect_Other),
 };
