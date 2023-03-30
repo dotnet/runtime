@@ -5893,17 +5893,7 @@ mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int p
 	return method;
 }
 
-/**
- * mono_class_get_method_from_name_checked:
- * \param klass where to look for the method
- * \param name_space name of the method
- * \param param_count number of parameters. -1 for any number.
- * \param flags flags which must be set in the method
- * \param error
- *
- * Obtains a \c MonoMethod with a given name and number of parameters.
- * It only works if there are no multiple signatures for any given method name.
- */
+// It only works if there are no multiple signatures for any given method name.
 MonoMethod *
 mono_class_get_method_from_name_checked (MonoClass *klass, const char *name,
 	int param_count, int flags, MonoError *error)
@@ -5913,7 +5903,7 @@ mono_class_get_method_from_name_checked (MonoClass *klass, const char *name,
 
 	mono_class_init_internal (klass);
 
-	if (mono_class_is_ginst (klass) && !m_class_get_methods (klass)) {
+	if (mono_class_is_ginst (klass) && (!m_class_get_methods (klass) || m_class_get_image (klass)->has_updates)) {
 		res = mono_class_get_method_from_name_checked (mono_class_get_generic_class (klass)->container_class, name, param_count, flags, error);
 
 		if (res)
