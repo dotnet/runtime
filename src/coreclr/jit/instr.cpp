@@ -1768,12 +1768,12 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
     if (dstIsFloatReg)
     {
         assert(!genIsValidFloatReg(srcReg));
-        return dstType == TYP_FLOAT ? INS_fcvt_s_l : INS_fcvt_d_l;
+        return dstType == TYP_FLOAT ? INS_fmv_w_x : INS_fmv_d_x;
     }
     else
     {
         assert(genIsValidFloatReg(srcReg));
-        return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_fcvt_w_d : INS_fcvt_l_d;
+        return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_fmv_x_w : INS_fmv_x_d;
     }
     return INS_invalid;
 #else // TARGET*

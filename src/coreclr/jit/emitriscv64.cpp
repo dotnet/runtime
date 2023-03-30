@@ -3236,7 +3236,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                 case 0x70:            // FMV.X.W & FCLASS.S
                     if (opcode4 == 0) // FMV.X.W
                     {
-                        printf("fmv.x.w      %s, %s\n", xd, xs1);
+                        printf("fmv.x.w      %s, %s\n", xd, fs1);
                     }
                     else if (opcode4 == 1) // FCLASS.S
                     {
@@ -3382,7 +3382,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     {
                         printf("fcvt.w.d     %s, %s\n", xd, fs1);
                     }
-                    if (opcode3 == 1) // FCVT.WU.D
+                    else if (opcode3 == 1) // FCVT.WU.D
                     {
                         printf("fcvt.wu.d    %s, %s\n", xd, fs1);
                     }
@@ -3394,7 +3394,6 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
                     {
                         printf("fcvt.lu.d    %s, %s\n", xd, fs1);
                     }
-
                     else
                     {
                         NYI_RISCV64("illegal ins within emitDisInsName!");
