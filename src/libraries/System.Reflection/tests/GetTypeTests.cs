@@ -271,6 +271,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37871", TestRuntimes.Mono)]
         public void GetType_InvalidAssemblyName()
         {
             Assert.Null(Type.GetType("MissingAssemblyName, "));
