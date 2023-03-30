@@ -16336,7 +16336,7 @@ bool Compiler::gtSplitTree(
                 return false;
             }
 
-            if (useInf.User->OperIs(GT_ADDR, GT_ASG) && (useInf.Use == &useInf.User->AsUnOp()->gtOp1))
+            if (useInf.User->OperIs(GT_ASG) && (useInf.Use == &useInf.User->AsUnOp()->gtOp1))
             {
                 return true;
             }
