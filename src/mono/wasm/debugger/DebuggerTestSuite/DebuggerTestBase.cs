@@ -65,7 +65,7 @@ namespace DebuggerTests
         static int s_idCounter = -1;
 
         public int Id { get; init; }
-
+        public string driver;
         public static string DebuggerTestAppPath
         {
             get
@@ -130,7 +130,7 @@ namespace DebuggerTests
                 Directory.Delete(TempPath, recursive: true);
         }
 
-        public DebuggerTestBase(ITestOutputHelper testOutput, string locale, string driver = "debugger-driver.html")
+        public DebuggerTestBase(ITestOutputHelper testOutput, string locale, string _driver = "debugger-driver.html")
         {
             _env = new TestEnvironment(testOutput);
             _testOutput = testOutput;
@@ -141,6 +141,7 @@ namespace DebuggerTests
 
             insp = new Inspector(Id, _testOutput);
             cli = insp.Client;
+            driver = _driver;
             scripts = SubscribeToScripts(insp);
             startTask = TestHarnessProxy.Start(DebuggerTestAppPath, driver, UrlToRemoteDebugging(), testOutput, locale);
         }

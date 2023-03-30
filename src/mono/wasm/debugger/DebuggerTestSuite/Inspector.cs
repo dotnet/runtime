@@ -29,7 +29,7 @@ namespace DebuggerTests
         ConcurrentQueue<(string, JObject)> nextNotifications = new (); //in a multithreaded runtime we can receive more than one pause at same time
         public const string PAUSE = "pause";
         public const string APP_READY = "app-ready";
-        public CancellationToken Token { get; }
+        public CancellationToken Token { get; set; }
         public InspectorClient Client { get; }
         public DebuggerProxyBase? Proxy { get; }
         public bool DetectAndFailOnAssertions { get; set; } = true;
