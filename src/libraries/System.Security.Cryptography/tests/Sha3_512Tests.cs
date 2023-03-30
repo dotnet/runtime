@@ -54,6 +54,68 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
+        [ConditionalFact(nameof(IsSupported))]
+        public void SHA3_512_Empty_Stream()
+        {
+            VerifyRepeating(
+                "",
+                0,
+                "a69f73cca23a9ac5c8b567dc185a756e97c982164fe25859e0d1dcc1475c80a615b2123af1f5f94c11e3e9402c3ac558f500199d95b6d3e301758586281dcd26");
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public async Task SHA3_512_Empty_Stream_Async()
+        {
+            await VerifyRepeatingAsync(
+                "",
+                0,
+                "a69f73cca23a9ac5c8b567dc185a756e97c982164fe25859e0d1dcc1475c80a615b2123af1f5f94c11e3e9402c3ac558f500199d95b6d3e301758586281dcd26");
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void SHA3_512_VerifyLargeStream_MultipleOf4096()
+        {
+            // Verfied with:
+            // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl dgst -sha3-512
+            VerifyRepeating(
+                "0102030405060708",
+                1024,
+                "b5ec7fe7061c944b65f42a3193ebafcc3b35f063dc2ac7a5af05140b2439c425e4d9e63bc97103f704a7b6849a1986cec743ac288ca2f123e82c0ce60b714615");
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public void SHA3_512_VerifyLargeStream_NotMultipleOf4096()
+        {
+            // Verfied with:
+            // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl dgst -sha3-512
+            VerifyRepeating(
+                "0102030405060708",
+                1025,
+                "ea418b3d279a9b25ddc6f8a294006c63068cbd4b872163365f7d11f6f287c8291adc0e3b77999db9606a40c989d7eca405247162104feec1d5a46e59404692a2");
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public async Task SHA3_512_VerifyLargeStream_NotMultipleOf4096_Async()
+        {
+            // Verfied with:
+            // for _ in {1..1025}; do echo -n "0102030405060708"; done | openssl dgst -sha3-512
+            await VerifyRepeatingAsync(
+                "0102030405060708",
+                1025,
+                "ea418b3d279a9b25ddc6f8a294006c63068cbd4b872163365f7d11f6f287c8291adc0e3b77999db9606a40c989d7eca405247162104feec1d5a46e59404692a2");
+        }
+
+        [ConditionalFact(nameof(IsSupported))]
+        public async Task SHA3_512_VerifyLargeStream_MultipleOf4096_Async()
+        {
+            // Verfied with:
+            // for _ in {1..1024}; do echo -n "0102030405060708"; done | openssl dgst -sha3-512
+            await VerifyRepeatingAsync(
+                "0102030405060708",
+                1024,
+                "b5ec7fe7061c944b65f42a3193ebafcc3b35f063dc2ac7a5af05140b2439c425e4d9e63bc97103f704a7b6849a1986cec743ac288ca2f123e82c0ce60b714615");
+        }
+
         private static IEnumerable<(string Msg, string MD)> Fips202Kats
         {
             get

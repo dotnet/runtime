@@ -361,14 +361,9 @@ namespace System.Security.Cryptography
         }
 
         [Theory]
-        [InlineData("SHA1")]
-        [InlineData("SHA256")]
-        [InlineData("SHA384")]
-        [InlineData("SHA512")]
-        public static void CheckHashAlgorithmValue(string hashAlgorithmName)
+        [MemberData(nameof(HashAlgorithmNames))]
+        public static void CheckHashAlgorithmValue(HashAlgorithmName hashAlgorithm)
         {
-            HashAlgorithmName hashAlgorithm = new HashAlgorithmName(hashAlgorithmName);
-
             using (var pbkdf2 = new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, hashAlgorithm))
             {
                 Assert.Equal(hashAlgorithm, pbkdf2.HashAlgorithm);
@@ -462,6 +457,24 @@ namespace System.Security.Cryptography
                 }
 
                 yield return new object[] { testCase };
+            }
+        }
+
+        public static IEnumerable<object[]> HashAlgorithmNames
+        {
+            get
+            {
+                yield return new object[] { HashAlgorithmName.SHA1 };
+                yield return new object[] { HashAlgorithmName.SHA256 };
+                yield return new object[] { HashAlgorithmName.SHA384 };
+                yield return new object[] { HashAlgorithmName.SHA512 };
+
+                if (PlatformDetection.SupportsSha3)
+                {
+                    yield return new object[] { HashAlgorithmName.SHA3_256 };
+                    yield return new object[] { HashAlgorithmName.SHA3_384 };
+                    yield return new object[] { HashAlgorithmName.SHA3_512 };
+                }
             }
         }
 
