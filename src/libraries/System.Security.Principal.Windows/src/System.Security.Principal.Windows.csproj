@@ -68,6 +68,8 @@
              Link="Common\Interop\Interop.DuplicateHandle_SafeAccessTokenHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs"
              Link="Common\Interop\Interop.CloseHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs"
+             Link="Common\Interop\Windows\Kernel32\Interop.LocalFree.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LsaGetLogonSessionData.cs"
              Link="Common\Interop\Interop.LsaGetLogonSessionData.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SspiCli\Interop.LsaFreeReturnBuffer.cs"
