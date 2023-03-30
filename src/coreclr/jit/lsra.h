@@ -1211,6 +1211,7 @@ private:
     regMaskTP filterConsecutiveCandidates(regMaskTP    candidates,
                                           unsigned int registersNeeded,
                                           regMaskTP*   allConsecutiveCandidates);
+    regMaskTP filterConsecutiveCandidatesForSpill(regMaskTP availableRegisters, regMaskTP consecutiveCandidates, unsigned int registersNeeded);
 #endif // TARGET_ARM64
 
     regMaskTP getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
