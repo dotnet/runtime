@@ -250,7 +250,7 @@ namespace JIT.HardwareIntrinsics.Arm
             for (var i = 0; i < Op2ElementCount; i++) { _data5[i] = {NextValueOp2}; }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op2VectorType}<{Op2BaseType}>, byte>(ref _fld5), ref Unsafe.As<{Op2BaseType}, byte>(ref _data5[0]), (uint)Unsafe.SizeOf<{Op2VectorType}<{Op2BaseType}>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data0[i] = {NextValueOp0}; }
+            for (var i = 0; i < Op2ElementCount; i++) { _data0[i] = {NextValueOp0}; }
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = {NextValueOp1}; }
             for (var i = 0; i < Op1ElementCount; i++) { _data2[i] = {NextValueOp1}; }
             for (var i = 0; i < Op1ElementCount; i++) { _data3[i] = {NextValueOp1}; }
