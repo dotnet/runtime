@@ -58,12 +58,15 @@
       <LegacyRunnableTestPaths Separator="%(LegacyRunnableTestPaths.SecondSeparator)" Condition="'%(LegacyRunnableTestPaths.SecondSeparator)' != '-1'" />
       <TestDirectoriesWithDup Include="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').Substring(0, %(LegacyRunnableTestPaths.Separator)))" />
     </ItemGroup>
-
-    <RemoveDuplicates Inputs="@(TestDirectoriesWithDup)">
+    <!-- TODO: Test tracing/eventpipe -->
+    <!-- <RemoveDuplicates Inputs="@(TestDirectoriesWithDup)">
       <Output
           TaskParameter="Filtered"
           ItemName="TestDirectories"/>
-    </RemoveDuplicates>
+    </RemoveDuplicates> -->
+    <ItemGroup>
+      <TestDirectories Include="$(XunitTestBinBase)tracing/eventpipe" />
+    </ItemGroup>
   </Target>
 
   <!-- Target to check the test build, to see if it looks ok. We've had several cases where a change inadvertently and drastically changes
@@ -421,16 +424,16 @@
         Inputs="@(_AotInputAssemblies)">
         <Output
             TaskParameter="Filtered"
-            ItemName="_AotInputAssemblies"/>
+            ItemName="_AotInputAssembliesDedup"/>
     </RemoveDuplicates>
-
+    <Message Text="RunAOTCompilation $(RunAOTCompilation)" Importance="High"/>
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
         CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
         OutputDir="$(_MobileIntermediateOutputPath)"
         Mode="$(_AOTMode)"
         OutputType="AsmOnly"
         DedupAssembly="$(_DedupAssembly)"
-        Assemblies="@(_AotInputAssemblies)"
+        Assemblies="@(_AotInputAssembliesDedup)"
         AotModulesTablePath="$(BundleDir)\modules.m"
         AotModulesTableLanguage="ObjC"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
@@ -446,19 +449,19 @@
         Inputs="@(_AppleAssembliesInternal)">
         <Output
             TaskParameter="Filtered"
-            ItemName="_AppleAssembliesInternal"/>
+            ItemName="_AppleAssembliesInternalDedup"/>
     </RemoveDuplicates>
 
     <Message Importance = "High" Text="!!!naricc_debug!!! MsBuildProjectName: $(MsBuildProjectName)" />
     <Message Importance = "High" Text="!!!naricc_debug!!! AssemblyName: $(AssemblyName)" />
-    <Message Importance = "High" Text="!!!naricc_debug!!! _AppleAssembliesInternal: @(_AppleAssembliesInternal)" />
-    <Message Importance = "High" Text="!!!naricc_debug!!! _AotInputAssemblies: @(_AotInputAssemblies)" />
+    <Message Importance = "High" Text="!!!naricc_debug!!! _AppleAssembliesInternalDedup: @(_AppleAssembliesInternalDedup)" />
+    <Message Importance = "High" Text="!!!naricc_debug!!! _AotInputAssembliesDedup: @(_AotInputAssembliesDedup)" />
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
         ProjectName="$(AssemblyName)"
         AppDir="$(BuildDir)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)/include/mono-2.0"
-        Assemblies="@(_AppleAssembliesInternal)"
+        Assemblies="@(_AppleAssembliesInternalDedup)"
         Arch="$(TargetArchitecture)"
         OutputDirectory="$(BundleDir)"
         Optimized="True"
@@ -580,8 +583,9 @@
 
     <!-- We need to build group #1 manually as it doesn't have a _GroupStartsWith item associated with it, see the comment in Common\dirs.proj -->
     <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=1;__SkipRestorePackages=1" Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator'" />
-    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=11;__SkipRestorePackages=11" Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator'" />
     <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=%(_GroupStartsWith.GroupNumber);__SkipRestorePackages=1" Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator'" />
+  
+    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=9;__SkipRestorePackages=9" Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator'" />
   </Target>
 
   <Target Name="BuildManagedTestGroup"

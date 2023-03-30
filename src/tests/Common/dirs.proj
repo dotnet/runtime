@@ -72,8 +72,8 @@
         <GroupNumber>3</GroupNumber>
       </_GroupStartsWith>
 
-      <_GroupStartsWith Include="$(TestRoot)tracing\eventpipe\bigevent\bigevent.csproj">
-        <GroupNumber>11</GroupNumber>
+      <_GroupStartsWith Include="$(TestRoot)tracing\eventpipe\">
+        <GroupNumber>9</GroupNumber>
       </_GroupStartsWith>
     </ItemGroup>
 
@@ -117,10 +117,6 @@
 
       <_GroupStartsWith Include="$(TestRoot)Loader\classloader\generics\VSD\Class2_ImplicitOverrideVirtualNewslot.csproj">
         <GroupNumber>10</GroupNumber>
-      </_GroupStartsWith>
-
-      <_GroupStartsWith Include="$(TestRoot)tracing\eventpipe\bigevent\bigevent.csproj">
-        <GroupNumber>11</GroupNumber>
       </_GroupStartsWith>
     </ItemGroup>
 
