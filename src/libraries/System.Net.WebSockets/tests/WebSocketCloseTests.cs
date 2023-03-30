@@ -43,7 +43,7 @@ namespace System.Net.WebSockets.Tests
         public void WebSocketReceiveResult_WebSocketCloseStatus_Roundtrip(WebSocketCloseStatus closeStatus)
         {
             string closeStatusDescription = "closeStatus " + closeStatus.ToString();
-            WebSocketReceiveResult wsrr = new WebSocketReceiveResult(42, WebSocketMessageType.Close, true, closeStatus, closeStatusDescription);
+            WebSocketReceiveResult wsrr = new WebSocketReceiveResult(42, WebSocketMessageType.Close, endOfMessage: true, closeStatus, closeStatusDescription);
             Assert.Equal(42, wsrr.Count);
             Assert.Equal(closeStatus, wsrr.CloseStatus);
             Assert.Equal(closeStatusDescription, wsrr.CloseStatusDescription);
@@ -57,8 +57,8 @@ namespace System.Net.WebSockets.Tests
             WebSocketTestStream stream = new();
             Encoding encoding = Encoding.UTF8;
 
-            using (WebSocket server = WebSocket.CreateFromStream(stream, isServer: true, null, TimeSpan.FromSeconds(3)))
-            using (WebSocket client = WebSocket.CreateFromStream(stream.Remote, isServer: false, null, TimeSpan.FromSeconds(3)))
+            using (WebSocket server = WebSocket.CreateFromStream(stream, isServer: true, subProtocol: null, TimeSpan.FromSeconds(3)))
+            using (WebSocket client = WebSocket.CreateFromStream(stream.Remote, isServer: false, subProtocol: null, TimeSpan.FromSeconds(3)))
             {
                 Assert.NotNull(server);
                 Assert.NotNull(client);
@@ -66,7 +66,7 @@ namespace System.Net.WebSockets.Tests
                 // send something
                 string hello = "Testing " + closeStatus.ToString();
                 byte[] sendBytes = encoding.GetBytes(hello);
-                await server.SendAsync(sendBytes.AsMemory(), WebSocketMessageType.Text, WebSocketMessageFlags.DisableCompression, CancellationToken);
+                await server.SendAsync(sendBytes.AsMemory(), WebSocketMessageType.Text, WebSocketMessageFlags.None, CancellationToken);
 
                 // and then server-side close with the test status
                 string closeStatusDescription = "CloseStatus " + closeStatus.ToString();
@@ -82,7 +82,7 @@ namespace System.Net.WebSockets.Tests
                 WebSocketReceiveResult closing = await client.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken);
                 Assert.Equal(WebSocketMessageType.Close, closing.MessageType);
                 Assert.Equal(closeStatus, closing.CloseStatus);
-                Assert.Equal(serverMessage, closing.CloseStatusDescription);
+                Assert.Equal(closeStatusDescription, closing.CloseStatusDescription);
             }
         }
     }
