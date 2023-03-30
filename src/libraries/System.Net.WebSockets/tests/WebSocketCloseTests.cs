@@ -57,8 +57,8 @@ namespace System.Net.WebSockets.Tests
             WebSocketTestStream stream = new();
             Encoding encoding = Encoding.UTF8;
 
-            using (WebSocket server = WebSocket.CreateFromStream(stream, true, null, TimeSpan.FromSeconds(3)))
-            using (WebSocket client = WebSocket.CreateFromStream(stream.Remote, false, null, TimeSpan.FromSeconds(3)))
+            using (WebSocket server = WebSocket.CreateFromStream(stream, isServer: true, null, TimeSpan.FromSeconds(3)))
+            using (WebSocket client = WebSocket.CreateFromStream(stream.Remote, isServer: false, null, TimeSpan.FromSeconds(3)))
             {
                 Assert.NotNull(server);
                 Assert.NotNull(client);
