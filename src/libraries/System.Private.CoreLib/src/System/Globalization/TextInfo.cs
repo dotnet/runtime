@@ -32,6 +32,8 @@ namespace System.Globalization
         private readonly string _cultureName;
         private readonly CultureData _cultureData;
 
+        private bool HasEmptyCultureName { get { return _cultureName.Length == 0; } }
+
         // // Name of the text info we're using (ie: _cultureData.TextInfoName)
         private readonly string _textInfoName;
 

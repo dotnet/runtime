@@ -24,7 +24,7 @@ namespace System.Globalization
             Debug.Assert(GlobalizationMode.Hybrid);
 
             string exceptionMessage;
-            if (IsInvariant)
+            if (HasEmptyCultureName)
             {
                 TextInfoInterop.ChangeCaseInvariantJS(out exceptionMessage, src, srcLen, dstBuffer, dstBufferCapacity, toUpper);
             }
