@@ -4714,12 +4714,24 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 {
                     resultVN = VNOneForType(typ);
                 }
-                else if ((genTreeOps(func) == GT_GE) && varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
+                else if (varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
                 {
                     ZeroVN = VNZeroForType(typ);
-                    if ((arg1VN == ZeroVN) && IsVNNeverNegative(arg0VN))
+                    if (genTreeOps(func) == GT_GE)
                     {
-                        resultVN = VNOneForType(typ);
+                        // (never negative) >= 0 == true
+                        if ((arg1VN == ZeroVN) && IsVNNeverNegative(arg0VN))
+                        {
+                            resultVN = VNOneForType(typ);
+                        }
+                    }
+                    else if (genTreeOps(func) == GT_LE)
+                    {
+                        // 0 <= (never negative) == true
+                        if ((arg0VN == ZeroVN) && IsVNNeverNegative(arg1VN))
+                        {
+                            resultVN = VNOneForType(typ);
+                        }
                     }
                 }
                 break;
@@ -4781,12 +4793,24 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 {
                     resultVN = VNZeroForType(typ);
                 }
-                else if ((genTreeOps(func) == GT_LT) && varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
+                else if (varTypeIsIntegralOrI(TypeOfVN(arg0VN)))
                 {
                     ZeroVN = VNZeroForType(typ);
-                    if ((arg1VN == ZeroVN) && IsVNNeverNegative(arg0VN))
+                    if (genTreeOps(func) == GT_LT)
                     {
-                        resultVN = ZeroVN;
+                        // (never negative) < 0 == false
+                        if ((arg1VN == ZeroVN) && IsVNNeverNegative(arg0VN))
+                        {
+                            resultVN = ZeroVN;
+                        }
+                    }
+                    else if (genTreeOps(func) == GT_GT)
+                    {
+                        // 0 > (never negative) == false
+                        if ((arg0VN == ZeroVN) && IsVNNeverNegative(arg1VN))
+                        {
+                            resultVN = ZeroVN;
+                        }
                     }
                 }
                 break;
