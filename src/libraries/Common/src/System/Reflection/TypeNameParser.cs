@@ -6,6 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
+#nullable enable
+
 namespace System.Reflection
 {
     //
@@ -622,10 +624,12 @@ namespace System.Reflection
             return fullName;
         }
 
+#if SYSTEM_PRIVATE_CORELIB
         private void ParseError()
         {
             if (_throwOnError)
                 throw new ArgumentException(SR.Arg_ArgumentException, $"typeName@{_errorIndex}");
         }
+#endif
     }
 }
