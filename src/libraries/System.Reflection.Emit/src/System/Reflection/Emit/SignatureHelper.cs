@@ -11,7 +11,7 @@ namespace System.Reflection.Emit
     {
         internal static BlobBuilder FieldSignatureEncoder(Type fieldType)
         {
-            var fieldSignature = new BlobBuilder();
+            BlobBuilder fieldSignature = new();
 
             WriteSignatureTypeForReflectionType(new BlobEncoder(fieldSignature).FieldSignature(), fieldType);
 
@@ -21,7 +21,7 @@ namespace System.Reflection.Emit
         internal static BlobBuilder MethodSignatureEncoder(ModuleBuilderImpl _module, Type[]? parameters, Type? returnType, bool isInstance)
         {
             // Encoding return type and parameters.
-            var methodSignature = new BlobBuilder();
+            BlobBuilder methodSignature = new();
 
             ParametersEncoder parEncoder;
             ReturnTypeEncoder retEncoder;
@@ -53,6 +53,7 @@ namespace System.Reflection.Emit
         private static void WriteSignatureTypeForReflectionType(SignatureTypeEncoder signature, Type type)
         {
             // We need to translate from Reflection.Type to SignatureTypeEncoder. Most common types for proof of concept. More types will be added.
+            // TODO: This switch should be done by comparing Type objects, without fetching FullName.
             switch (type.FullName)
             {
                 case "System.Boolean":
@@ -80,7 +81,7 @@ namespace System.Reflection.Emit
                     signature.String();
                     break;
 
-                default: throw new NotImplementedException(SR.Format(SR.SignatureNotSupported, type.FullName));
+                default: throw new NotSupportedException(SR.Format(SR.NotSupported_Signature, type.FullName));
             }
         }
     }

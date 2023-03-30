@@ -270,6 +270,11 @@ namespace System.Reflection.Emit
         /// <returns>Dynamic module with the specified name.</returns>
         protected override ModuleBuilder? GetDynamicModuleCore(string name)
         {
+            if (name[0] == '\0')
+            {
+                throw new ArgumentException(SR.Argument_InvalidName, nameof(name));
+            }
+
             if (_isManifestModuleUsedAsDefinedModule)
             {
                 if (RuntimeModuleBuilder.ManifestModuleName == name)

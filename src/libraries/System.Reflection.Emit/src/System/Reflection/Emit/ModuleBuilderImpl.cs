@@ -14,16 +14,11 @@ namespace System.Reflection.Emit
         private readonly Assembly _coreAssembly;
         private readonly string _name;
         private readonly Dictionary<string, Type> _coreTypes = new();
-
-        #region Internal Data Members
-
-        internal readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyRefStore = new();
-        internal readonly Dictionary<Type, TypeReferenceHandle> _typeRefStore = new();
-        internal readonly List<TypeBuilderImpl> _typeDefStore = new();
-        internal int _nextMethodDefRowId = 1;
-        internal int _nextFieldDefRowId = 1;
-
-        #endregion
+        private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyRefStore = new();
+        private readonly Dictionary<Type, TypeReferenceHandle> _typeRefStore = new();
+        private readonly List<TypeBuilderImpl> _typeDefStore = new();
+        private int _nextMethodDefRowId = 1;
+        private int _nextFieldDefRowId = 1;
 
         internal ModuleBuilderImpl(string name, Assembly coreAssembly)
         {
@@ -35,6 +30,7 @@ namespace System.Reflection.Emit
         {
             Type? type;
 
+            // TODO: Use Enum as the key for perf
             if (!_coreTypes.TryGetValue(name, out type))
             {
 #pragma warning disable IL2026 // Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code
@@ -51,19 +47,19 @@ namespace System.Reflection.Emit
             // Add module metadata
             metadata.AddModule(
                 generation: 0,
-                metadata.GetOrAddString(ScopeName),
-                metadata.GetOrAddGuid(Guid.NewGuid()),
-                default,
-                default);
+                moduleName: metadata.GetOrAddString(ScopeName),
+                mvid: metadata.GetOrAddGuid(Guid.NewGuid()),
+                encId: default,
+                encBaseId: default);
 
             // Create type definition for the special <Module> type that holds global functions
             metadata.AddTypeDefinition(
-                default,
-                default,
-                metadata.GetOrAddString("<Module>"),
+                attributes: default,
+                @namespace: default,
+                name: metadata.GetOrAddString("<Module>"),
                 baseType: default,
                 fieldList: MetadataTokens.FieldDefinitionHandle(1),
-                methodList: MetadataTokens.MethodDefinitionHandle(1));
+                methodList: MetadataTokens.MethodDefinitionHandle(1)); ;
 
             // Add each type definition to metadata table.
             foreach (TypeBuilderImpl typeBuilder in _typeDefStore)
@@ -113,7 +109,7 @@ namespace System.Reflection.Emit
             return MetadataHelper.AddAssemblyReference(assembly, metadata);
         }
         [RequiresAssemblyFiles("Returns <Unknown> for modules with no file path")]
-        public override string Name => _name;
+        public override string Name => "<In Memory Module>";
         public override string ScopeName => _name;
         public override bool IsDefined(Type attributeType, bool inherit) => throw new NotImplementedException();
         public override int GetFieldMetadataToken(FieldInfo field) => throw new NotImplementedException();

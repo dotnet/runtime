@@ -21,7 +21,6 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(name);
 
             name = (AssemblyName)name.Clone();
-            _coreAssembly = coreAssembly;
 
             if (string.IsNullOrEmpty(name.Name))
             {
@@ -29,6 +28,7 @@ namespace System.Reflection.Emit
             }
 
             _assemblyName = name;
+            _coreAssembly = coreAssembly;
 
             if (assemblyAttributes != null)
             {
@@ -66,12 +66,12 @@ namespace System.Reflection.Emit
 
             if (_module == null)
             {
-                throw new InvalidOperationException(SR.AModuleRequired);
+                throw new InvalidOperationException(SR.InvalidOperation_AModuleRequired);
             }
 
             if (_previouslySaved) // Cannot save an assembly multiple times. This is consistent with Save() in .Net Framework.
             {
-                throw new InvalidOperationException(SR.CannotSaveMultipleTimes);
+                throw new InvalidOperationException(SR.InvalidOperation_CannotSaveMultipleTimes);
             }
 
             // Add assembly metadata
@@ -103,12 +103,17 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(assemblyFileName);
 
-            using var peStream = new FileStream(assemblyFileName, FileMode.CreateNew, FileAccess.Write);
+            using var peStream = new FileStream(assemblyFileName, FileMode.Create, FileAccess.Write);
             Save(peStream);
         }
 
         protected override ModuleBuilder DefineDynamicModuleCore(string name)
         {
+            if (name[0] == '\0')
+            {
+                throw new ArgumentException(SR.Argument_InvalidName, nameof(name));
+            }
+
             if (_module != null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);

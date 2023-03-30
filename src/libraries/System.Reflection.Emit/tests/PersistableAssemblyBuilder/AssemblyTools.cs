@@ -77,31 +77,11 @@ namespace System.Reflection.Emit.Tests
                 new Type[] { typeof(AssemblyName), typeof(Assembly), typeof(List<CustomAttributeBuilder>) });
         }
 
-        internal static Assembly TryLoadAssembly(string filePath)
-        {
-            // Get the array of runtime assemblies.
-            string[] runtimeAssemblies = Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.dll");
+        internal static Assembly LoadAssemblyFromPath(string filePath) =>
+            new MetadataLoadContext(new CoreMetadataAssemblyResolver()).LoadFromAssemblyPath(filePath);
 
-            // Create the list of assembly paths consisting of runtime assemblies and the inspected assembly.
-            var paths = new List<string>(runtimeAssemblies);
-            paths.Add(filePath);
-
-            // Create PathAssemblyResolver that can resolve assemblies using the created list.
-            var resolver = new PathAssemblyResolver(paths);
-            var mlc = new MetadataLoadContext(resolver);
-
-            // Load assembly into MetadataLoadContext.
-            return mlc.LoadFromAssemblyPath(filePath);
-        }
-
-        internal static Assembly TryLoadAssembly(Stream stream)
-        {
-            var resolver = new CoreMetadataAssemblyResolver();
-            var mlc = new MetadataLoadContext(resolver);
-
-            // Load assembly into MetadataLoadContext.
-            return mlc.LoadFromStream(stream);
-        }
+        internal static Assembly LoadAssemblyFromStream(Stream stream) =>
+            new MetadataLoadContext(new CoreMetadataAssemblyResolver()).LoadFromStream(stream);
     }
 
     // The resolver copied from MLC tests

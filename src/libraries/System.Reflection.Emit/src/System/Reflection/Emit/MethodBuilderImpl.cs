@@ -30,13 +30,11 @@ namespace System.Reflection.Emit
 
             if (parameterTypes != null)
             {
-                foreach (Type t in parameterTypes)
-                {
-                    ArgumentNullException.ThrowIfNull(t, nameof(parameterTypes));
-                }
-
                 _parameterTypes = new Type[parameterTypes.Length];
-                Array.Copy(parameterTypes, _parameterTypes, parameterTypes.Length);
+                for (int i = 0; i < parameterTypes.Length; i++)
+                {
+                    ArgumentNullException.ThrowIfNull(_parameterTypes[i] = parameterTypes[i], nameof(parameterTypes));
+                }
             }
         }
 

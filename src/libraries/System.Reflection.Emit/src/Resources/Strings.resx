@@ -117,7 +117,7 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="CannotSaveMultipleTimes" xml:space="preserve">
+  <data name="InvalidOperation_CannotSaveMultipleTimes" xml:space="preserve">
     <value>Cannot save an assembly multiple times.</value>
   </data>
   <data name="Argument_CannotSetParentToInterface" xml:space="preserve">
@@ -126,10 +126,10 @@
   <data name="InvalidOperation_BadInterfaceNotAbstract" xml:space="preserve">
     <value>Interface must be declared abstract.</value>
   </data>
-  <data name="SignatureNotSupported" xml:space="preserve">
-    <value>The signature {0} is not yet supported.</value>
+  <data name="NotSupported_Signature" xml:space="preserve">
+    <value>The signature {0} is not supported.</value>
   </data>
-  <data name="AModuleRequired" xml:space="preserve">
+  <data name="InvalidOperation_AModuleRequired" xml:space="preserve">
     <value>Assembly needs at least one module defined.</value>
   </data>
   <data name="Argument_NullOrEmptyAssemblyName" xml:space="preserve">
@@ -140,5 +140,8 @@
   </data>
   <data name="NotSupported_DynamicModule" xml:space="preserve">
     <value>The invoked member is not supported in a dynamic module.</value>
+  </data>
+  <data name="Argument_InvalidName" xml:space="preserve">
+    <value>Invalid name.</value>
   </data>
 </root>

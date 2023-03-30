@@ -1556,6 +1556,11 @@ namespace System.Reflection.Emit
 
         protected override EventBuilder DefineEventCore(string name, EventAttributes attributes, Type eventtype)
         {
+            if (name[0] == '\0')
+            {
+                throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
+            }
+
             lock (SyncRoot)
             {
                 int tkType;

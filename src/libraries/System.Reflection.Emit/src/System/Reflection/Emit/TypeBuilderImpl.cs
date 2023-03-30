@@ -26,9 +26,9 @@ namespace System.Reflection.Emit
             _module = module;
             _attributes = typeAttributes;
             SetParent(parent);
+
             // Extract namespace from fullName
             int idx = _name.LastIndexOf('.');
-
             if (idx != -1)
             {
                 _namespace = _name[..idx];
@@ -49,7 +49,7 @@ namespace System.Reflection.Emit
         {
             var field = new FieldBuilderImpl(this, fieldName, type, attributes);
             _fieldDefStore.Add(field);
-           return field;
+            return field;
         }
         protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names) => throw new NotImplementedException();
         protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes) => throw new NotImplementedException();
@@ -93,7 +93,7 @@ namespace System.Reflection.Emit
                     if ((_attributes & TypeAttributes.Abstract) == 0)
                         throw new InvalidOperationException(SR.InvalidOperation_BadInterfaceNotAbstract);
 
-                    // there is no extends for interface class
+                    // There is no extends for interface class.
                     _typeParent = null;
                 }
             }
