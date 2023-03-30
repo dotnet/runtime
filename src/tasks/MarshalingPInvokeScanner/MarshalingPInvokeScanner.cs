@@ -76,7 +76,7 @@ public class MarshalingPInvokeScanner : Task
     }
 
     #pragma warning disable IDE0060
-    private static bool IsAssemblyIncompatible(Assembly assy, List<PInvoke> pivs, List<string> strs, List<PInvokeCallback> cbks)
+    private bool IsAssemblyIncompatible(Assembly assy, List<PInvoke> pivs, List<string> strs, List<PInvokeCallback> cbks)
     {
         // Assembly is incompatible with the lightweight mono marshaler if it does not have the
         // DisableRuntimeMarshallingAttribute and has P/Invokes with nonblittable types.
@@ -97,19 +97,22 @@ public class MarshalingPInvokeScanner : Task
                         return true;
                 }
 
-                if (!PInvokeCollector.IsBlittable(piv.Method.ReturnType))
+                if (!PInvokeCollector.IsBlittable(piv.Method.ReturnType) &&
+                    piv.Method.ReturnType.FullName != "System.Void")
                     return true;
             }
         }
-        catch (NotSupportedException)
+        catch (NotSupportedException ex)
         {
-            // This is work around "Parsing function pointer types in signatures is not supported."
+            Log.LogWarning(null, "WASM0001", "", "", 0, 0, 0, 0,
+                $"Could not parse method signature because '{ex.Message}'. This will result in the assembly being marked as incompatible with the lightweight Mono marshaler, potentially as a false positive. ");
             return true;
         }
 
         return false;
     }
     #pragma warning restore IDE0060
+
 
     public string FixupSymbolName(string name)
     {
