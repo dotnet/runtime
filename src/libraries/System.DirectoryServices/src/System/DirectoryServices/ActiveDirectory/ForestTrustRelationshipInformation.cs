@@ -78,7 +78,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public void Save()
+        public unsafe void Save()
         {
             int count = 0;
             IntPtr records = (IntPtr)0;
