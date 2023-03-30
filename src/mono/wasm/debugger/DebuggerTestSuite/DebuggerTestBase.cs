@@ -168,9 +168,9 @@ namespace DebuggerTests
             try {
                 await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
             }
-            catch (TaskCanceledException) //if timed out for some reason let's try again
+            catch (TaskCanceledException exc) //if timed out for some reason let's try again
             {
-                _logger.LogInformation("Let's retry");
+                _testOutput.WriteLine($"Let's retry: {exc.ToString()}");
                 await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
             }
         }
