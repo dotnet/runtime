@@ -1198,6 +1198,12 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         return FALSE;
     }
 
+    NewHolder<LoaderHeapBlock> pNewBlock = new (nothrow) LoaderHeapBlock;
+    if (pNewBlock == NULL)
+    {
+        return FALSE;
+    }
+
     // Record reserved range in range list, if one is specified
     // Do this AFTER the commit - otherwise we'll have bogus ranges included.
     if (m_pRangeList != NULL)
@@ -1210,14 +1216,9 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         }
     }
 
-    LoaderHeapBlock *pNewBlock = new (nothrow) LoaderHeapBlock;
-    if (pNewBlock == NULL)
-    {
-        return FALSE;
-    }
-
     m_dwTotalAlloc += dwSizeToCommit;
 
+    pNewBlock.SuppressRelease();
     pData.SuppressRelease();
 
     pNewBlock->dwVirtualSize    = dwSizeToReserve;

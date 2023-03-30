@@ -5,6 +5,7 @@ parameters:
   osSubgroup: ''
   testBuildArgs: ''
   helixQueues: ''
+  liveLibrariesBuildConfig: ''
 
 steps:
   # Build coreclr native test output and send to helix
@@ -19,6 +20,7 @@ steps:
       testBuildArgs: ${{ parameters.testBuildArgs }}
       nativeAotTest: true
       helixQueues: ${{ parameters.helixQueues }}
+      liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
 
   # Can't run arm/arm64 tests on x64 build machines
   - ${{ if and(ne(parameters.archType, 'arm'), ne(parameters.archType, 'arm64')) }}:

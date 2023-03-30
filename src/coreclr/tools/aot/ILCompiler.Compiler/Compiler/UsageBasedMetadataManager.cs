@@ -380,6 +380,13 @@ namespace ILCompiler
             return false;
         }
 
+        public override void GetDependenciesDueToEETypePresence(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        {
+            base.GetDependenciesDueToEETypePresence(ref dependencies, factory, type);
+
+            DataflowAnalyzedTypeDefinitionNode.GetDependencies(ref dependencies, factory, FlowAnnotations, type);
+        }
+
         public override bool HasConditionalDependenciesDueToEETypePresence(TypeDesc type)
         {
             // Note: these are duplicated with the checks in GetConditionalDependenciesDueToEETypePresence
@@ -552,26 +559,9 @@ namespace ILCompiler
 
             if (scanReflection)
             {
-                if (methodIL != null && FlowAnnotations.RequiresDataflowAnalysis(method))
+                if (methodIL != null && Dataflow.ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForMethodBody(FlowAnnotations, method))
                 {
                     AddDataflowDependency(ref dependencies, factory, methodIL, "Method has annotated parameters");
-                }
-
-                if ((method.HasInstantiation && !method.IsCanonicalMethod(CanonicalFormKind.Any)))
-                {
-                    MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
-                    Debug.Assert(typicalMethod != method);
-
-                    GetFlowDependenciesForInstantiation(ref dependencies, factory, method.Instantiation, typicalMethod.Instantiation, method);
-                }
-
-                TypeDesc owningType = method.OwningType;
-                if (owningType.HasInstantiation && !owningType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                {
-                    TypeDesc owningTypeDefinition = owningType.GetTypeDefinition();
-                    Debug.Assert(owningType != owningTypeDefinition);
-
-                    GetFlowDependenciesForInstantiation(ref dependencies, factory, owningType.Instantiation, owningTypeDefinition.Instantiation, owningType);
                 }
             }
 
@@ -673,40 +663,8 @@ namespace ILCompiler
                 AddDataflowDependency(ref dependencies, factory, methodIL, "Access to interesting field");
             }
 
-            string reason = "Use of a field";
-
-            bool generatesMetadata = false;
-            if (!IsReflectionBlocked(writtenField))
-            {
-                if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
-                {
-                    // If access to the field should trigger metadata generation, we should generate the field
-                    generatesMetadata = true;
-                }
-                else
-                {
-                    // There's an invalid suppression in the CoreLib that assumes used fields on attributes will be kept.
-                    // It's used in the reflection-based implementation of Attribute.Equals and Attribute.GetHashCode.
-                    // .NET Native used to have a non-reflection based implementation of Equals/GetHashCode to get around
-                    // this problem. We could explore that as well, but for now, emulate the fact that accessed fields
-                    // on custom attributes will be visible in reflection metadata.
-                    MetadataType currentType = (MetadataType)writtenField.OwningType.BaseType;
-                    while (currentType != null)
-                    {
-                        if (currentType.Module == factory.TypeSystemContext.SystemModule
-                            && currentType.Name == "Attribute" && currentType.Namespace == "System")
-                        {
-                            generatesMetadata = true;
-                            reason = "Field of an attribute";
-                            break;
-                        }
-
-                        currentType = currentType.MetadataBaseType;
-                    }
-                }
-            }
-
-            if (generatesMetadata)
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0
+                && !IsReflectionBlocked(writtenField))
             {
                 FieldDesc fieldToReport = writtenField;
 
@@ -724,7 +682,7 @@ namespace ILCompiler
                 }
 
                 dependencies ??= new DependencyList();
-                dependencies.Add(factory.ReflectedField(fieldToReport), reason);
+                dependencies.Add(factory.ReflectedField(fieldToReport), "Use of a field");
             }
 
             if (writtenField.GetTypicalFieldDefinition() is EcmaField ecmaField)
@@ -753,66 +711,12 @@ namespace ILCompiler
             return null;
         }
 
-        private void GetFlowDependenciesForInstantiation(ref DependencyList dependencies, NodeFactory factory, Instantiation instantiation, Instantiation typicalInstantiation, TypeSystemEntity source)
-        {
-            for (int i = 0; i < instantiation.Length; i++)
-            {
-                var genericParameter = (GenericParameterDesc)typicalInstantiation[i];
-                if (FlowAnnotations.GetGenericParameterAnnotation(genericParameter) != default)
-                {
-                    try
-                    {
-                        var deps = (new ILCompiler.Dataflow.GenericArgumentDataFlow(Logger, factory, FlowAnnotations, new Logging.MessageOrigin(source))).ProcessGenericArgumentDataFlow(genericParameter, instantiation[i]);
-                        if (deps.Count > 0)
-                        {
-                            if (dependencies == null)
-                                dependencies = deps;
-                            else
-                                dependencies.AddRange(deps);
-                        }
-                    }
-                    catch (TypeSystemException)
-                    {
-                        // Wasn't able to do dataflow because of missing references or something like that.
-                        // This likely won't compile either, so we don't care about missing dependencies.
-                    }
-                }
-            }
-        }
-
         public override void GetDependenciesForGenericDictionary(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            TypeDesc owningType = method.OwningType;
-
-            if (FlowAnnotations.HasAnyAnnotations(owningType))
-            {
-                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
-                Debug.Assert(typicalMethod != method);
-
-                GetFlowDependenciesForInstantiation(ref dependencies, factory, method.Instantiation, typicalMethod.Instantiation, method);
-
-                if (owningType.HasInstantiation)
-                {
-                    // Since this also introduces a new type instantiation into the system, collect the dependencies for that too.
-                    // We might not see the instantiated type elsewhere.
-                    GetFlowDependenciesForInstantiation(ref dependencies, factory, owningType.Instantiation, owningType.GetTypeDefinition().Instantiation, method);
-                }
-            }
-
             // Presence of code might trigger the reflectability dependencies.
             if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
             {
                 GetDependenciesDueToReflectability(ref dependencies, factory, method);
-            }
-        }
-
-        public override void GetDependenciesForGenericDictionary(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
-        {
-            if (FlowAnnotations.HasAnyAnnotations(type))
-            {
-                TypeDesc typeDefinition = type.GetTypeDefinition();
-                Debug.Assert(type != typeDefinition);
-                GetFlowDependenciesForInstantiation(ref dependencies, factory, type.Instantiation, typeDefinition.Instantiation, type);
             }
         }
 
@@ -832,6 +736,9 @@ namespace ILCompiler
         {
             baseMethod = baseMethod.GetTypicalMethodDefinition();
             overridingMethod = overridingMethod.GetTypicalMethodDefinition();
+
+            if (baseMethod == overridingMethod)
+                return;
 
             bool baseMethodTypeIsInterface = baseMethod.OwningType.IsInterface;
             foreach (var requiresAttribute in _requiresAttributeMismatchNameAndId)
@@ -860,8 +767,8 @@ namespace ILCompiler
         {
             bool baseMethodCreatesRequirement = baseMethod.DoesMethodRequire(requiresAttributeName, out _);
             bool overridingMethodCreatesRequirement = overridingMethod.DoesMethodRequire(requiresAttributeName, out _);
-            bool baseMethodFulfillsRequirement = baseMethod.IsOverrideInRequiresScope(requiresAttributeName);
-            bool overridingMethodFulfillsRequirement = overridingMethod.IsOverrideInRequiresScope(requiresAttributeName);
+            bool baseMethodFulfillsRequirement = baseMethod.IsInRequiresScope(requiresAttributeName);
+            bool overridingMethodFulfillsRequirement = overridingMethod.IsInRequiresScope(requiresAttributeName);
             return (baseMethodCreatesRequirement && !overridingMethodFulfillsRequirement) || (overridingMethodCreatesRequirement && !baseMethodFulfillsRequirement);
         }
 
@@ -960,6 +867,9 @@ namespace ILCompiler
 
         private void AddDataflowDependency(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, string reason)
         {
+            if (ShouldSkipDataflowForMethod(methodIL))
+                return;
+
             MethodIL methodILDefinition = methodIL.GetMethodILDefinition();
             if (FlowAnnotations.CompilerGeneratedState.TryGetUserMethodForCompilerGeneratedMember(methodILDefinition.OwningMethod, out var userMethod))
             {
@@ -968,6 +878,8 @@ namespace ILCompiler
                 // It is possible that this will try to add the DatadlowAnalyzedMethod node multiple times for the same method
                 // but that's OK since the node factory will only add actually one node.
                 methodILDefinition = FlowAnnotations.ILProvider.GetMethodIL(userMethod);
+                if (ShouldSkipDataflowForMethod(methodILDefinition))
+                    return;
             }
 
             // Data-flow (reflection scanning) for compiler-generated methods will happen as part of the
@@ -975,8 +887,26 @@ namespace ILCompiler
             if (CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(methodILDefinition.OwningMethod))
                 return;
 
+            // Currently we add data flow for reasons which are not directly related to data flow
+            // or don't need full data flow processing.
+            // The prime example is that we run data flow for any method which contains an access
+            // to a member on a generic type with annotated generic parameters. These are relatively common
+            // as there are quite a few types which use the new/struct/unmanaged constraints (which are all treated as annotations).
+            // Technically we don't need to run data flow only because of this, since the result of analysis
+            // will not depend on stack modeling and of the other data flow functionality.
+            // See https://github.com/dotnet/runtime/issues/82603 for more details and some ideas.
+
             dependencies ??= new DependencyList();
             dependencies.Add(factory.DataflowAnalyzedMethod(methodILDefinition), reason);
+
+            // Some MethodIL implementations can't/don't provide the method definition version of the IL
+            // for example if the method is a stub generated by the compiler, the IL may look very different
+            // between each instantiation (and definition version may not even make sense).
+            // We will skip data flow for such methods for now, since currently dataflow can't handle instantiated
+            // generics.
+            static bool ShouldSkipDataflowForMethod(MethodIL method)
+                => method.GetMethodILDefinition() == method &&
+                method.OwningMethod.GetTypicalMethodDefinition() != method.OwningMethod;
         }
 
         private struct ReflectableEntityBuilder<T>

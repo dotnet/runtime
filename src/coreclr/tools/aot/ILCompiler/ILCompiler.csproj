@@ -10,10 +10,12 @@
   <!-- BEGIN: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
   <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
     <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
-    <PublishTrimmed>true</PublishTrimmed>
-    <!-- Don't R2R on ARM64 machines because ARM64 crossgen2 that comes with .NET SDK <= 7.0 Preview 7 crashes.-->
-    <PublishReadyToRun Condition="'$(BuildArchitecture)' != 'arm64'">true</PublishReadyToRun>
-    <PublishSingleFile>true</PublishSingleFile>
+    <NativeAotSupported Condition="'$(TargetOS)' != 'windows' and '$(TargetOS)' != 'linux' and '$(TargetOS)' != 'osx'">false</NativeAotSupported>
+    <NativeAotSupported Condition="'$(TargetArchitecture)' != 'x64'">false</NativeAotSupported>
+    <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>
+    <PublishReadyToRun Condition="'$(NativeAotSupported)' != 'true'">true</PublishReadyToRun>
+    <PublishSingleFile Condition="'$(NativeAotSupported)' != 'true'">true</PublishSingleFile>
+    <PublishTrimmed Condition="'$(NativeAotSupported)' != 'true'">true</PublishTrimmed>
   </PropertyGroup>
 
   <Target Name="PublishCompiler"

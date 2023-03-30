@@ -12,6 +12,7 @@ using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
 namespace Mono.Linker.Tests.Cases.DataFlow
 {
+	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
 	[ExpectedNoWarnings]
 	[SkipKeptItemsValidation]
 	class ConstructedTypesDataFlow
@@ -25,7 +26,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		class DeconstructedVariable
 		{
 			// https://github.com/dotnet/linker/issues/3158
-			[ExpectedWarning ("IL2077", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+			[ExpectedWarning ("IL2077", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void DeconstructVariableNoAnnotation ((Type type, object instance) input)
 			{
 				var (type, instance) = input;
@@ -44,7 +45,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			// For analyzer, this is currently
 			// https://github.com/dotnet/linker/issues/3158
 			//   But it's possible that with that fixed there won't be a warning from the analyzer anyway (depends on the implementation)
-			[ExpectedWarning ("IL2067", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+			[ExpectedWarning ("IL2067", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void DeconstructRecordWithAnnotation (TypeAndInstance value)
 			{
 				var (type, instance) = value;
@@ -91,7 +92,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			// https://github.com/dotnet/linker/issues/3158
-			[ExpectedWarning ("IL2067", ProducedBy = ProducedBy.Trimmer | ProducedBy.NativeAot)]
+			[ExpectedWarning ("IL2067", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			static void DeconstructRecordManualWithMismatchAnnotation (TypeAndInstanceRecordManual value)
 			{
 				var (type, instance) = value;

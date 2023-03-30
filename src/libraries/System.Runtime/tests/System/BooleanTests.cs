@@ -63,7 +63,7 @@ namespace System.Tests
             yield return new object[] { "T", typeof(FormatException) };
             yield return new object[] { "0", typeof(FormatException) };
             yield return new object[] { "1", typeof(FormatException) };
-    }
+        }
 
         [Theory]
         [MemberData(nameof(Parse_Invalid_TestData))]

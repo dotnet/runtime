@@ -847,6 +847,7 @@ struct _MonoDelegate {
 	MonoReflectionMethod *method_info;
 	MonoReflectionMethod *original_method_info;
 	MonoObject *data;
+	/* Whenever to resolve the target method using ldvirtftn at call time */
 	MonoBoolean method_is_virtual;
 	MonoBoolean bound;
 };
@@ -1237,19 +1238,12 @@ struct _MonoReflectionTypeBuilder {
 typedef struct {
 	MonoReflectionType type;
 	MonoReflectionType *element_type;
+	gint32 type_kind;
 	gint32 rank;
-} MonoReflectionArrayType;
+} MonoReflectionSymbolType;
 
-/* Safely access System.Reflection.Emit.ArrayType (in DerivedTypes.cs) from native code */
-TYPED_HANDLE_DECL (MonoReflectionArrayType);
-
-typedef struct {
-	MonoReflectionType type;
-	MonoReflectionType *element_type;
-} MonoReflectionDerivedType;
-
-/* Safely access System.Reflection.Emit.SymbolType and subclasses (in DerivedTypes.cs) from native code */
-TYPED_HANDLE_DECL (MonoReflectionDerivedType);
+/* Safely access System.Reflection.Emit.SymbolType from native code */
+TYPED_HANDLE_DECL (MonoReflectionSymbolType);
 
 typedef struct {
 	MonoReflectionType type;

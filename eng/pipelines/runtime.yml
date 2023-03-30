@@ -10,7 +10,6 @@ trigger:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     exclude:
     - '**.md'
     - eng/Version.Details.xml
@@ -37,7 +36,6 @@ pr:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     exclude:
     - '**.md'
     - eng/Version.Details.xml
@@ -63,7 +61,6 @@ extends:
       - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
         - template: /eng/pipelines/common/evaluate-default-paths.yml
 
-      #
       # CoreCLR NativeAOT release build and smoke tests
       # Only when CoreCLR is changed
       #
@@ -93,7 +90,12 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testBuildArgs: nativeaot tree nativeaot
+              liveLibrariesBuildConfig: Release
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),

@@ -23,7 +23,7 @@ monoaot=false
 monoaot_path=
 run_categories="Libraries Runtime"
 csproj="src\benchmarks\micro\MicroBenchmarks.csproj"
-configurations="CompliationMode=$compilation_mode RunKind=$kind"
+configurations="CompilationMode=$compilation_mode RunKind=$kind"
 perf_fork=""
 perf_fork_branch="main"
 run_from_perf_repo=false

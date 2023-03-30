@@ -8,7 +8,7 @@ namespace ILLink.RoslynAnalyzer
 {
 	public static class RequiresISymbolExtensions
 	{
-		// TODO: Consider sharing with linker DoesMemberRequire method
+		// TODO: Consider sharing with ILLink DoesMemberRequire method
 		/// <summary>
 		/// True if the target of a call is considered to be annotated with the Requires... attribute
 		/// </summary>
@@ -25,7 +25,7 @@ namespace ILLink.RoslynAnalyzer
 			return false;
 		}
 
-		// TODO: Consider sharing with linker IsInRequiresScope method
+		// TODO: Consider sharing with ILLink IsInRequiresScope method
 		/// <summary>
 		/// True if the source of a call is considered to be annotated with the Requires... attribute
 		/// </summary>

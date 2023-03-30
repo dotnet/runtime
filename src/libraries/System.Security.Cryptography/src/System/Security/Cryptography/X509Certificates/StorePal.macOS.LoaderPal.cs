@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     using (safeSecKeyRefHandle)
                     {
-                        ICertificatePal newPal;
+                        AppleCertificatePal newPal;
 
                         // SecItemImport doesn't seem to respect non-exportable import for PKCS#8,
                         // only PKCS#12.
@@ -119,6 +119,11 @@ namespace System.Security.Cryptography.X509Certificates
 
                         X509Certificate2 cert = new X509Certificate2(newPal);
                         collection.Add(cert);
+
+                        if (newPal != pal)
+                        {
+                            pal.Dispose();
+                        }
                     }
                 }
             }

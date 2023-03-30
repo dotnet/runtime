@@ -8,7 +8,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	/// Tracks dependencies created via DynamicDependencyAttribute in the linker.
+	/// Tracks dependencies created via DynamicDependencyAttribute in trimming.
 	/// This is almost identical to DynamicDependencyAttribute, but it holds a
 	/// TypeReference instead of a Type, and it has a reference to the original
 	/// CustomAttribute for dependency tracing. It is also a place for helper

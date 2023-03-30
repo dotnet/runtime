@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization
 {
-    internal struct ReferenceEqualsWrapper : IEquatable<ReferenceEqualsWrapper>
+    internal readonly struct ReferenceEqualsWrapper : IEquatable<ReferenceEqualsWrapper>
     {
         private readonly object _object;
 

@@ -200,8 +200,8 @@ namespace Microsoft.Interop
 
         private sealed class ExtendedInvariantsValidator : IMarshallingGeneratorFactory
         {
-            private ManagedTypeInfo _nativeReturnType;
-            private IMarshallingGeneratorFactory _inner;
+            private readonly ManagedTypeInfo _nativeReturnType;
+            private readonly IMarshallingGeneratorFactory _inner;
 
             public ExtendedInvariantsValidator(ManagedTypeInfo nativeReturnType, IMarshallingGeneratorFactory inner)
             {

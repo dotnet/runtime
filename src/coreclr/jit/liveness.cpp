@@ -1046,8 +1046,7 @@ void Compiler::fgExtendDbgLifetimes()
                 {
                     printf("Created zero-init of V%02u in " FMT_BB "\n", varNum, block->bbNum);
                 }
-#endif                                         // DEBUG
-                block->bbFlags |= BBF_CHANGED; // indicates that the contents of the block have changed.
+#endif // DEBUG
             }
 
             /* Update liveness information so that redoing fgLiveVarAnalysis()
@@ -2224,6 +2223,12 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
                 operand->SetUnusedValue();
                 return GenTree::VisitResult::Continue;
             });
+
+            if (node->OperIs(GT_SELECTCC, GT_SETCC))
+            {
+                assert((node->gtPrev->gtFlags & GTF_SET_FLAGS) != 0);
+                node->gtPrev->gtFlags &= ~GTF_SET_FLAGS;
+            }
 
             blockRange->Remove(node);
             return true;

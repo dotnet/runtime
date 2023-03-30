@@ -542,3 +542,6 @@ initTargetDistroRid
 if [ -z "$__OutputRid" ]; then
     __OutputRid="$(echo $__DistroRid | tr '[:upper:]' '[:lower:]')"
 fi
+
+# When the host runs on an unknown rid, it falls back to the output rid
+__HostFallbackOS="${__OutputRid%-*}" # Strip architecture

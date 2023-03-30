@@ -1761,6 +1761,25 @@ BOOL MethodTable::CanShareVtableChunksFrom(MethodTable *pTargetMT, Module *pCurr
     return pTargetMT->GetLoaderModule() == pCurrentLoaderModule;
 }
 
+BOOL MethodTable::IsAllGCPointers()
+{
+    if (this->ContainsPointers())
+    {
+        // check for canonical GC encoding for all-pointer types
+        CGCDesc* pDesc = CGCDesc::GetCGCDescFromMT(this);
+        if (pDesc->GetNumSeries() != 1)
+            return false;
+
+        int offsetToData = IsArray() ? ArrayBase::GetDataPtrOffset(this) : sizeof(size_t);
+        CGCDescSeries* pSeries = pDesc->GetHighestSeries();
+        return ((int)pSeries->GetSeriesOffset() == offsetToData) &&
+            ((SSIZE_T)pSeries->GetSeriesSize() == -(SSIZE_T)(offsetToData + sizeof(size_t)));
+    }
+
+    return false;
+}
+
+
 #ifdef _DEBUG
 
 void
@@ -5838,7 +5857,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMapFrom(dwParentInterfaces);
             while (!it.Finished())
             {
-                MethodTable *pCurMT = it.GetInterface(pMT);
+                MethodTable *pCurMT = it.GetInterface(pMT, level);
 
                 MethodDesc *pCurMD = NULL;
                 if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, allowVariance, &pCurMD, level))
@@ -8269,23 +8288,24 @@ MethodTable::ResolveVirtualStaticMethod(
                         }
                     }
                 }
+            }
 
-                BOOL haveUniqueDefaultImplementation = pMT->FindDefaultInterfaceImplementation(
-                    pInterfaceMD,
-                    pInterfaceType,
-                    &pMD,
-                    /* allowVariance */ allowVariantMatches,
-                    /* throwOnConflict */ uniqueResolution == nullptr,
-                    level);
-                if (haveUniqueDefaultImplementation || (pMD != nullptr && (verifyImplemented || uniqueResolution != nullptr)))
+            MethodDesc *pMDDefaultImpl = nullptr;
+            BOOL haveUniqueDefaultImplementation = FindDefaultInterfaceImplementation(
+                pInterfaceMD,
+                pInterfaceType,
+                &pMDDefaultImpl,
+                /* allowVariance */ allowVariantMatches,
+                /* throwOnConflict */ uniqueResolution == nullptr,
+                level);
+            if (haveUniqueDefaultImplementation || (pMDDefaultImpl != nullptr && (verifyImplemented || uniqueResolution != nullptr)))
+            {
+                // We tolerate conflicts upon verification of implemented SVMs so that they only blow up when actually called at execution time.
+                if (uniqueResolution != nullptr)
                 {
-                    // We tolerate conflicts upon verification of implemented SVMs so that they only blow up when actually called at execution time.
-                    if (uniqueResolution != nullptr)
-                    {
-                        *uniqueResolution = haveUniqueDefaultImplementation;
-                    }
-                    return pMD;
+                    *uniqueResolution = haveUniqueDefaultImplementation;
                 }
+                return pMDDefaultImpl;
             }
         }
 

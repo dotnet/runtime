@@ -6,10 +6,10 @@ namespace System.Reflection.Emit
     public sealed class LocalBuilder : LocalVariableInfo
     {
         #region Private Data Members
-        private int m_localIndex;
-        private Type m_localType;
-        private MethodInfo m_methodBuilder;
-        private bool m_isPinned;
+        private readonly int m_localIndex;
+        private readonly Type m_localType;
+        private readonly MethodInfo m_methodBuilder;
+        private readonly bool m_isPinned;
         #endregion
 
         #region Constructor

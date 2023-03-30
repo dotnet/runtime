@@ -61,8 +61,6 @@ private:
     void IfConvertDump();
 #endif
 
-    bool IsHWIntrinsicCC(GenTree* node);
-
 public:
     bool optIfConvert();
 };
@@ -406,69 +404,6 @@ void OptIfConversionDsc::IfConvertDump()
 }
 #endif
 
-#ifdef TARGET_XARCH
-//-----------------------------------------------------------------------------
-// IsHWIntrinsicCC:
-//   Check if this is a HW intrinsic node that can be compared efficiently
-//   against 0.
-//
-// Returns:
-//   True if so.
-//
-// Notes:
-//   For xarch, we currently skip if-conversion for these cases as the backend can handle them more efficiently
-//   when they are normal compares.
-//
-bool OptIfConversionDsc::IsHWIntrinsicCC(GenTree* node)
-{
-#ifdef FEATURE_HW_INTRINSICS
-    if (!node->OperIs(GT_HWINTRINSIC))
-    {
-        return false;
-    }
-
-    switch (node->AsHWIntrinsic()->GetHWIntrinsicId())
-    {
-        case NI_SSE_CompareScalarOrderedEqual:
-        case NI_SSE_CompareScalarOrderedNotEqual:
-        case NI_SSE_CompareScalarOrderedLessThan:
-        case NI_SSE_CompareScalarOrderedLessThanOrEqual:
-        case NI_SSE_CompareScalarOrderedGreaterThan:
-        case NI_SSE_CompareScalarOrderedGreaterThanOrEqual:
-        case NI_SSE_CompareScalarUnorderedEqual:
-        case NI_SSE_CompareScalarUnorderedNotEqual:
-        case NI_SSE_CompareScalarUnorderedLessThanOrEqual:
-        case NI_SSE_CompareScalarUnorderedLessThan:
-        case NI_SSE_CompareScalarUnorderedGreaterThanOrEqual:
-        case NI_SSE_CompareScalarUnorderedGreaterThan:
-        case NI_SSE2_CompareScalarOrderedEqual:
-        case NI_SSE2_CompareScalarOrderedNotEqual:
-        case NI_SSE2_CompareScalarOrderedLessThan:
-        case NI_SSE2_CompareScalarOrderedLessThanOrEqual:
-        case NI_SSE2_CompareScalarOrderedGreaterThan:
-        case NI_SSE2_CompareScalarOrderedGreaterThanOrEqual:
-        case NI_SSE2_CompareScalarUnorderedEqual:
-        case NI_SSE2_CompareScalarUnorderedNotEqual:
-        case NI_SSE2_CompareScalarUnorderedLessThanOrEqual:
-        case NI_SSE2_CompareScalarUnorderedLessThan:
-        case NI_SSE2_CompareScalarUnorderedGreaterThanOrEqual:
-        case NI_SSE2_CompareScalarUnorderedGreaterThan:
-        case NI_SSE41_TestC:
-        case NI_SSE41_TestZ:
-        case NI_SSE41_TestNotZAndNotC:
-        case NI_AVX_TestC:
-        case NI_AVX_TestZ:
-        case NI_AVX_TestNotZAndNotC:
-            return true;
-        default:
-            return false;
-    }
-#else
-    return false;
-#endif
-}
-#endif
-
 //-----------------------------------------------------------------------------
 // optIfConvert
 //
@@ -717,39 +652,6 @@ bool OptIfConversionDsc::optIfConvert()
                 elseCost = m_elseOperation.node->gtGetOp1()->GetCostEx();
             }
         }
-
-#ifdef TARGET_XARCH
-        // Currently the xarch backend does not handle SELECT (EQ/NE (arithmetic op that sets ZF) 0) ...
-        // as efficiently as JTRUE (EQ/NE (arithmetic op that sets ZF) 0). The support is complicated
-        // to add due to the destructive nature of xarch instructions.
-        // The exception is for cases that can be transformed into TEST_EQ/TEST_NE.
-        // TODO-CQ: Fix this.
-        if (m_cond->OperIs(GT_EQ, GT_NE) && m_cond->gtGetOp2()->IsIntegralConst(0) &&
-            !m_cond->gtGetOp1()->OperIs(GT_AND) &&
-            (m_cond->gtGetOp1()->SupportsSettingZeroFlag() || IsHWIntrinsicCC(m_cond->gtGetOp1())))
-        {
-            JITDUMP("Skipping if-conversion where condition is EQ/NE 0 with operation that sets ZF");
-            return false;
-        }
-
-        // However, in some cases bit tests can emit 'bt' when not going
-        // through the GT_SELECT path.
-        if (m_cond->OperIs(GT_EQ, GT_NE) && m_cond->gtGetOp1()->OperIs(GT_AND) &&
-            m_cond->gtGetOp2()->IsIntegralConst(0))
-        {
-            // A bit test that can be transformed into 'bt' will look like
-            // EQ/NE(AND(x, LSH(1, y)), 0)
-
-            GenTree* andOp1 = m_cond->gtGetOp1()->gtGetOp1();
-            GenTree* andOp2 = m_cond->gtGetOp1()->gtGetOp2();
-
-            if (andOp2->OperIs(GT_LSH) && andOp2->gtGetOp1()->IsIntegralConst(1))
-            {
-                JITDUMP("Skipping if-conversion where condition is amenable to be transformed to BT");
-                return false;
-            }
-        }
-#endif
 
         // Cost to allow for "x = cond ? a + b : c + d".
         if (thenCost > 7 || elseCost > 7)

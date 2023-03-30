@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Reflection.PortableExecutable;
 using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -128,7 +127,7 @@ public class ManagedToNativeGenerator : Task
 
             try
             {
-                if (!IsManagedAssembly(asmPath))
+                if (!Utils.IsManagedAssembly(asmPath))
                 {
                     Log.LogMessage(MessageImportance.Low, $"Skipping unmanaged {asmPath}.");
                     continue;
@@ -145,15 +144,4 @@ public class ManagedToNativeGenerator : Task
 
         return managedAssemblies;
     }
-
-    private static bool IsManagedAssembly(string filePath)
-    {
-        if (!File.Exists(filePath))
-            return false;
-
-        using FileStream fileStream = File.OpenRead(filePath);
-        using PEReader reader = new(fileStream, PEStreamOptions.Default);
-        return reader.HasMetadata;
-    }
-
 }

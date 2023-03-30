@@ -38,6 +38,8 @@ namespace System.Collections.Concurrent.Tests
 
         protected override bool Enumerator_Current_UndefinedOperation_Throws => false;
 
+        protected override bool Enumerator_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
+
         protected override bool IDictionary_NonGeneric_Keys_Values_ModifyingTheDictionaryUpdatesTheCollection => false;
 
         protected override bool ICollection_NonGeneric_SupportsSyncRoot => false;
