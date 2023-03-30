@@ -173,7 +173,6 @@ namespace DebuggerTests
                 _testOutput.WriteLine($"Let's retry: {exc.ToString()}");
                 insp = new Inspector(Id, _testOutput);
                 cli = insp.Client;
-                driver = _driver;
                 scripts = SubscribeToScripts(insp);
                 await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
             }
