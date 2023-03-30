@@ -165,7 +165,7 @@ LOCAL_LABEL(Done_CONTEXT_CONTROL):
 
     sd  tp, (CONTEXT_Tp)(a0)
     sd  gp, (CONTEXT_Gp)(a0)
-    sd  a0, (CONTEXT_A1)(a0)
+    sd  a0, (CONTEXT_A0)(a0)
     sd  a1, (CONTEXT_A1)(a0)
     sd  a2, (CONTEXT_A2)(a0)
     sd  a3, (CONTEXT_A3)(a0)
