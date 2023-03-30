@@ -42,11 +42,11 @@ namespace System.Net.WebSockets.Tests
         [MemberData(nameof(CloseStatuses))]
         public void WebSocketReceiveResult_WebSocketCloseStatus_Roundtrip(WebSocketCloseStatus closeStatus)
         {
-            string serverMessage = "closeStatus " + closeStatus.ToString();
-            WebSocketReceiveResult wsrr = new WebSocketReceiveResult(42, WebSocketMessageType.Close, true, closeStatus, serverMessage);
+            string closeStatusDescription = "closeStatus " + closeStatus.ToString();
+            WebSocketReceiveResult wsrr = new WebSocketReceiveResult(42, WebSocketMessageType.Close, true, closeStatus, closeStatusDescription);
             Assert.Equal(42, wsrr.Count);
             Assert.Equal(closeStatus, wsrr.CloseStatus);
-            Assert.Equal(serverMessage, wsrr.CloseStatusDescription);
+            Assert.Equal(closeStatusDescription, wsrr.CloseStatusDescription);
         }
 
         [Theory]
