@@ -317,10 +317,10 @@ COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (MethodTable* pEEType, uint32_t uFlags, u
     }
 #else
 
-    // NOTE: The x64 fixup above would not be sufficient on ARM64 an similar architectures since
+    // NOTE: The x64 fixup above would not be sufficient on ARM64 and similar architectures since
     //       m_RIP is used to restore LR in POP_COOP_PINVOKE_FRAME.
-    //       However, this entire scenario tis not a problem on architectures where the return address is
-    //       in a register as that would make tail-calling methods not hijackable.
+    //       However, this entire scenario is not a problem on architectures where the return address is
+    //       in a register as that makes tail-calling methods not hijackable.
     //       (see:GetReturnAddressHijackInfo for detailed reasons in the context of ARM64)
     ASSERT(!Thread::IsHijackTarget(pTransitionFrame->m_RIP));
 
