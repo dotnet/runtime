@@ -75,15 +75,6 @@ private:
 
     void genMarkLabelsForCodegen();
 
-    inline RegState* regStateForType(var_types t)
-    {
-        return varTypeUsesFloatReg(t) ? &floatRegState : &intRegState;
-    }
-    inline RegState* regStateForReg(regNumber reg)
-    {
-        return genIsValidFloatReg(reg) ? &floatRegState : &intRegState;
-    }
-
     regNumber genFramePointerReg()
     {
         if (isFramePointerUsed())
