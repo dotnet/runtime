@@ -10,6 +10,7 @@ namespace System.Globalization
         private unsafe void NlsChangeCase(char* pSource, int pSourceLen, char* pResult, int pResultLen, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
+            Debug.Assert(!GlobalizationMode.Hybrid);
             Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert(pSource != null);
             Debug.Assert(pResult != null);
