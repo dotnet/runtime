@@ -997,6 +997,8 @@ EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 // Standard calling convention variant and actual implementation for RhpGcPoll
 EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 {
+    ASSERT(!Thread::IsHijackTarget(pFrame->m_RIP));
+
     Thread* pThread = ThreadStore::GetCurrentThread();
     pFrame->m_pThread = pThread;
 
