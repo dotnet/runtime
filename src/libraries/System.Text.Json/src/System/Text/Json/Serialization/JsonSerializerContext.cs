@@ -37,6 +37,14 @@ namespace System.Text.Json.Serialization
             }
         }
 
+        internal void AssociateWithOptions(JsonSerializerOptions options)
+        {
+            Debug.Assert(!options.IsReadOnly);
+            options.TypeInfoResolver = this;
+            options.MakeReadOnly();
+            _options = options;
+        }
+
         /// <summary>
         /// Indicates whether pre-generated serialization logic for types in the context
         /// is compatible with the run time specified <see cref="JsonSerializerOptions"/>.
@@ -94,9 +102,7 @@ namespace System.Text.Json.Serialization
             if (options != null)
             {
                 options.VerifyMutable();
-                options.TypeInfoResolver = this;
-                options.MakeReadOnly();
-                _options = options;
+                AssociateWithOptions(options);
             }
         }
 
