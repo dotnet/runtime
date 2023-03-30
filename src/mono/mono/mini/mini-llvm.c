@@ -3900,7 +3900,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	}
 
 	names = g_new (char *, sig->param_count);
-	mono_method_get_param_names (cfg->method, (const char **) names);
+	mono_method_get_param_names_internal (cfg->method, (const char **) names);
 
 	for (int i = 0; i < sig->param_count; ++i) {
 		LLVMArgInfo *ainfo = &linfo->args [i + sig->hasthis];
@@ -7655,6 +7655,39 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
+		case OP_SHL:
+		case OP_SSHR:
+		case OP_SSRA:
+		case OP_USHR:
+		case OP_USRA: {
+			gboolean right = FALSE;
+			gboolean add = FALSE;
+			gboolean arith = FALSE;
+			switch (ins->opcode) {
+			case OP_USHR: right = TRUE; break;
+			case OP_USRA: right = TRUE; add = TRUE; break;
+			case OP_SSHR: arith = TRUE; break;
+			case OP_SSRA: arith = TRUE; add = TRUE; break;
+			}
+			LLVMValueRef shiftarg = lhs;
+			LLVMValueRef shift = rhs;
+			if (add) {
+				shiftarg = rhs;
+				shift = arg3;
+			}
+			shift = create_shift_vector (ctx, shiftarg, shift);
+			LLVMValueRef result = NULL;
+			if (right)
+				result = LLVMBuildLShr (builder, shiftarg, shift, "");
+			else if (arith)
+				result = LLVMBuildAShr (builder, shiftarg, shift, "");
+			else
+				result = LLVMBuildShl (builder, shiftarg, shift, "");
+			if (add)
+				result = LLVMBuildAdd (builder, lhs, result, "arm64_usra");
+			values [ins->dreg] = result;
+			break;
+		}
 		case OP_SSHLL:
 		case OP_SSHLL2:
 		case OP_USHLL:
@@ -7959,7 +7992,9 @@ MONO_RESTORE_WARNING
 				break;
 			}
 			case OP_IMAX:
-			case OP_IMIN: {
+			case OP_IMIN:
+			case OP_IMAX_UN:
+			case OP_IMIN_UN: {
 				gboolean is_unsigned = ins->inst_c1 == MONO_TYPE_U1 || ins->inst_c1 == MONO_TYPE_U2 || ins->inst_c1 == MONO_TYPE_U4 || ins->inst_c1 == MONO_TYPE_U8;
 				LLVMIntPredicate op;
 				switch (ins->inst_c0) {
@@ -7968,6 +8003,12 @@ MONO_RESTORE_WARNING
 					break;
 				case OP_IMIN:
 					op = is_unsigned ? LLVMIntULT : LLVMIntSLT;
+					break;
+				case OP_IMAX_UN:
+					op = LLVMIntUGT;
+					break;
+				case OP_IMIN_UN:
+					op = LLVMIntULT;
 					break;
 				default:
 					g_assert_not_reached ();
@@ -7984,6 +8025,12 @@ MONO_RESTORE_WARNING
 						break;
 					case OP_IMIN:
 						iid = is_unsigned ? INTRINS_AARCH64_ADV_SIMD_UMIN : INTRINS_AARCH64_ADV_SIMD_SMIN;
+						break;
+					case OP_IMAX_UN:
+						iid = INTRINS_AARCH64_ADV_SIMD_UMAX;
+						break;
+					case OP_IMIN_UN:
+						iid = INTRINS_AARCH64_ADV_SIMD_UMIN;
 						break;
 					default:
 						g_assert_not_reached ();
@@ -10679,39 +10726,6 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
-		case OP_ARM64_SHL:
-		case OP_ARM64_SSHR:
-		case OP_ARM64_SSRA:
-		case OP_ARM64_USHR:
-		case OP_ARM64_USRA: {
-			gboolean right = FALSE;
-			gboolean add = FALSE;
-			gboolean arith = FALSE;
-			switch (ins->opcode) {
-			case OP_ARM64_USHR: right = TRUE; break;
-			case OP_ARM64_USRA: right = TRUE; add = TRUE; break;
-			case OP_ARM64_SSHR: arith = TRUE; break;
-			case OP_ARM64_SSRA: arith = TRUE; add = TRUE; break;
-			}
-			LLVMValueRef shiftarg = lhs;
-			LLVMValueRef shift = rhs;
-			if (add) {
-				shiftarg = rhs;
-				shift = arg3;
-			}
-			shift = create_shift_vector (ctx, shiftarg, shift);
-			LLVMValueRef result = NULL;
-			if (right)
-				result = LLVMBuildLShr (builder, shiftarg, shift, "");
-			else if (arith)
-				result = LLVMBuildAShr (builder, shiftarg, shift, "");
-			else
-				result = LLVMBuildShl (builder, shiftarg, shift, "");
-			if (add)
-				result = LLVMBuildAdd (builder, lhs, result, "arm64_usra");
-			values [ins->dreg] = result;
-			break;
-		}
 		case OP_ARM64_SHRN:
 		case OP_ARM64_SHRN2: {
 			LLVMValueRef shiftarg = lhs;
@@ -12209,7 +12223,7 @@ emit_method_inner (EmitContext *ctx)
 		LLVMSetValueName (LLVMGetParam (method, linfo->dummy_arg_pindex), "dummy_arg");
 
 	names = g_new (char *, sig->param_count);
-	mono_method_get_param_names (cfg->method, (const char **) names);
+	mono_method_get_param_names_internal (cfg->method, (const char **) names);
 
 	/* Set parameter names/attributes */
 	for (int i = 0; i < sig->param_count; ++i) {
@@ -13405,7 +13419,7 @@ AddJitGlobal (MonoLLVMModule *module, LLVMTypeRef type, const char *name)
 	return v;
 }
 #define FILE_INFO_NUM_HEADER_FIELDS 2
-#define FILE_INFO_NUM_SCALAR_FIELDS 23
+#define FILE_INFO_NUM_SCALAR_FIELDS 25
 #define FILE_INFO_NUM_ARRAY_FIELDS 5
 #define FILE_INFO_NUM_AOTID_FIELDS 1
 #define FILE_INFO_NFIELDS (FILE_INFO_NUM_HEADER_FIELDS + MONO_AOT_FILE_INFO_NUM_SYMBOLS + FILE_INFO_NUM_SCALAR_FIELDS + FILE_INFO_NUM_ARRAY_FIELDS + FILE_INFO_NUM_AOTID_FIELDS)
@@ -13603,6 +13617,8 @@ emit_aot_file_info (MonoLLVMModule *module)
 	fields [tindex ++] = const_int32 (info->datafile_size);
 	fields [tindex ++] = const_int32 (module->unbox_tramp_num);
 	fields [tindex ++] = const_int32 (module->unbox_tramp_elemsize);
+	fields [tindex ++] = const_int32 (info->n_exported_methods);
+	fields [tindex ++] = const_int32 (info->exported_methods);
 	/* Arrays */
 	fields [tindex ++] = llvm_array_from_uints (LLVMInt32Type (), info->table_offsets, MONO_AOT_TABLE_NUM);
 	fields [tindex ++] = llvm_array_from_uints (LLVMInt32Type (), info->num_trampolines, MONO_AOT_TRAMP_NUM);

@@ -1007,20 +1007,14 @@ namespace System.Threading.Tasks.Tests
             var al = new AsyncLocal<int>();
             al.Value = 42;
 
-            if (!flowContext)
+            Task t;
+            using (!flowContext ? ExecutionContext.SuppressFlow() : default)
             {
-                ExecutionContext.SuppressFlow();
-            }
-
-            Task t = Parallel.ForEachAsync(Iterate(), async (item, cancellationToken) =>
-            {
-                await Task.Yield();
-                Assert.Equal(flowContext ? 42 : 0, al.Value);
-            });
-
-            if (!flowContext)
-            {
-                ExecutionContext.RestoreFlow();
+                t = Parallel.ForEachAsync(Iterate(), async (item, cancellationToken) =>
+                {
+                    await Task.Yield();
+                    Assert.Equal(flowContext ? 42 : 0, al.Value);
+                });
             }
 
             await t;

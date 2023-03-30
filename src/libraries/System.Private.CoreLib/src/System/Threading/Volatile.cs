@@ -47,13 +47,13 @@ namespace System.Threading
         public static double Read(ref double location)
         {
             long result = Read(ref Unsafe.As<double, long>(ref location));
-            return *(double*)&result;
+            return BitConverter.Int64BitsToDouble(result);
         }
 
         [Intrinsic]
         [NonVersionable]
         public static void Write(ref double location, double value) =>
-            Write(ref Unsafe.As<double, long>(ref location), *(long*)&value);
+            Write(ref Unsafe.As<double, long>(ref location), BitConverter.DoubleToInt64Bits(value));
         #endregion
 
         #region Int16

@@ -2162,14 +2162,14 @@ static unsigned MarkGCField(BYTE* gcPtrs, CorInfoGCType type)
     return 0;
 }
 
-/*********************************************************************/
-static unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
+static unsigned ComputeGCLayout(MethodTable* pMT, BYTE* gcPtrs)
 {
     STANDARD_VM_CONTRACT;
 
     _ASSERTE(pMT->IsValueType());
 
     unsigned result = 0;
+    bool isInlineArray = pMT->GetClass()->IsInlineArray();
     ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
     for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
     {
@@ -2177,7 +2177,7 @@ static unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
 
         if (pFD->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
         {
-            MethodTable * pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+            MethodTable* pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
             result += ComputeGCLayout(pFieldMT, gcPtrs + fieldStartIndex);
         }
         else if (pFD->IsObjRef())
@@ -2187,6 +2187,25 @@ static unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
         else if (pFD->IsByRef())
         {
             result += MarkGCField(gcPtrs + fieldStartIndex, TYPE_GC_BYREF);
+        }
+
+        if (isInlineArray)
+        {
+            if (result > 0)
+            {
+                _ASSERTE(pFD->GetOffset() == 0);
+                DWORD totalLayoutSize = pMT->GetNumInstanceFieldBytes() / TARGET_POINTER_SIZE;
+                DWORD elementLayoutSize = pFD->GetSize() / TARGET_POINTER_SIZE;
+                DWORD gcPointersInElement = result;
+                for (DWORD offset = elementLayoutSize; offset < totalLayoutSize; offset += elementLayoutSize)
+                {
+                    memcpy(gcPtrs + offset, gcPtrs, elementLayoutSize);
+                    result += gcPointersInElement;
+                }
+            }
+
+            // inline array has only one element field
+            break;
         }
     }
     return result;
@@ -2229,7 +2248,7 @@ unsigned CEEInfo::getClassGClayoutStatic(TypeHandle VMClsHnd, BYTE* gcPtrs)
     {
         memset(gcPtrs, TYPE_GC_NONE,
             (VMClsHnd.GetSize() + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE);
-        // ByRefLike structs can be included as fields in other value types.
+        // ByRefLike structs can contain byref fields or other ByRefLike structs
         result = ComputeGCLayout(VMClsHnd.AsMethodTable(), gcPtrs);
     }
     else
@@ -2874,7 +2893,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             {
                 pResult->indirections = 2;
                 pResult->testForNull = 0;
-                pResult->testForFixup = 0;
                 pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
 
                 uint32_t data;
@@ -2914,7 +2932,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             // Just use the method descriptor that was passed in!
             pResult->indirections = 0;
             pResult->testForNull = 0;
-            pResult->testForFixup = 0;
 
             return;
         }
@@ -2951,7 +2968,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
             {
                 pResult->indirections = 3;
                 pResult->testForNull = 0;
-                pResult->testForFixup = 0;
                 pResult->offsets[0] = MethodTable::GetOffsetOfPerInstInfo();
                 pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
                 uint32_t data;
@@ -2974,7 +2990,6 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
                 // Just use the vtable pointer itself!
                 pResult->indirections = 0;
                 pResult->testForNull = 0;
-                pResult->testForFixup = 0;
 
                 return;
             }
@@ -3166,7 +3181,6 @@ NoSpecialCase:
         if (DictionaryLayout::FindToken(pContextMD, pContextMD->GetLoaderAllocator(), 1, &sigBuilder, NULL, signatureSource, pResult, &slot))
         {
             pResult->testForNull = 1;
-            pResult->testForFixup = 0;
             int minDictSize = pContextMD->GetNumGenericMethodArgs() + 1 + pContextMD->GetDictionaryLayout()->GetNumInitialSlots();
             if (slot >= minDictSize)
             {
@@ -3185,7 +3199,6 @@ NoSpecialCase:
         if (DictionaryLayout::FindToken(pContextMT, pContextMT->GetLoaderAllocator(), 2, &sigBuilder, NULL, signatureSource, pResult, &slot))
         {
             pResult->testForNull = 1;
-            pResult->testForFixup = 0;
             int minDictSize = pContextMT->GetNumGenericArgs() + 1 + pContextMT->GetClass()->GetDictionaryLayout()->GetNumInitialSlots();
             if (slot >= minDictSize)
             {
@@ -3552,6 +3565,10 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
         }
         if (pClass->HasExplicitFieldOffsetLayout() && pClass->HasOverlaidField())
             ret |= CORINFO_FLG_OVERLAPPING_FIELDS;
+
+        if (pClass->IsInlineArray())
+            ret |= CORINFO_FLG_INDEXABLE_FIELDS;
+
         if (VMClsHnd.IsCanonicalSubtype())
             ret |= CORINFO_FLG_SHAREDINST;
 
@@ -11056,7 +11073,7 @@ void CEEJitInfo::reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unw
     _ASSERTE_MSG(m_theUnwindBlock == NULL,
         "reserveUnwindInfo() can only be called before allocMem(), but allocMem() has already been called. "
         "This may indicate the JIT has hit a NO_WAY assert after calling allocMem(), and is re-JITting. "
-        "Set COMPlus_JitBreakOnBadCode=1 and rerun to get the real error.");
+        "Set DOTNET_JitBreakOnBadCode=1 and rerun to get the real error.");
 
     uint32_t currentSize  = unwindSize;
 
@@ -11688,8 +11705,59 @@ bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t
 
             if (size >= (UINT)bufferSize && valueOffset >= 0 && (UINT)valueOffset <= size - (UINT)bufferSize)
             {
-                memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
-                result = true;
+                // For structs containing GC pointers we want to make sure those GC pointers belong to FOH
+                // so we expect valueOffset to be a real field offset (same for bufferSize)
+                if (!field->IsRVA() && field->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+                {
+                    PTR_MethodTable structType = field->GetFieldTypeHandleThrowing().AsMethodTable();
+                    if (structType->ContainsPointers() && (UINT)bufferSize == sizeof(CORINFO_OBJECT_HANDLE))
+                    {
+                        ApproxFieldDescIterator fieldIterator(structType, ApproxFieldDescIterator::INSTANCE_FIELDS);
+                        for (FieldDesc* subField = fieldIterator.Next(); subField != NULL; subField = fieldIterator.Next())
+                        {
+                            // TODO: If subField is also a struct we might want to inspect its fields too
+                            if (subField->GetOffset() == (DWORD)valueOffset && subField->IsObjRef())
+                            {
+                                GCX_COOP();
+
+                                // Read field's value
+                                Object* subFieldValue = nullptr;
+                                memcpy(&subFieldValue, (uint8_t*)baseAddr + valueOffset, bufferSize);
+
+                                if (subFieldValue == nullptr)
+                                {
+                                    // Report null
+                                    memset(buffer, 0, bufferSize);
+                                    result = true;
+                                }
+                                else if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(subFieldValue))
+                                {
+                                    CORINFO_OBJECT_HANDLE handle = getJitHandleForObject(
+                                        ObjectToOBJECTREF(subFieldValue), /*knownFrozen*/ true);
+
+                                    // GC handle is either from FOH or null
+                                    memcpy(buffer, &handle, bufferSize);
+                                    result = true;
+                                }
+
+                                // We're done with this struct
+                                break;
+                            }
+                        }
+                    }
+                    else if (!structType->ContainsPointers())
+                    {
+                        // No gc pointers in the struct
+                        memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
+                        result = true;
+                    }
+                }
+                else
+                {
+                    // Primitive or RVA
+                    memcpy(buffer, (uint8_t*)baseAddr + valueOffset, bufferSize);
+                    result = true;
+                }
             }
         }
     }
@@ -11949,7 +12017,11 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     S_SIZE_T totalSize = S_SIZE_T(codeSize);
 
     size_t roDataAlignment = sizeof(void*);
-    if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN)!= 0)
+    if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN)!= 0)
+    {
+        roDataAlignment = 64;
+    }
+    else if ((pArgs->flag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN)!= 0)
     {
         roDataAlignment = 32;
     }
@@ -14346,10 +14418,10 @@ void EECodeInfo::Init(PCODE codeAddress, ExecutionManager::ScanFlag scanFlag)
     if (pRS == NULL)
         goto Invalid;
 
-    if (!pRS->pjit->JitCodeToMethodInfo(pRS, codeAddress, &m_pMD, this))
+    if (!pRS->_pjit->JitCodeToMethodInfo(pRS, codeAddress, &m_pMD, this))
         goto Invalid;
 
-    m_pJM = pRS->pjit;
+    m_pJM = pRS->_pjit;
     return;
 
 Invalid:

@@ -507,13 +507,13 @@ void emitterStats(FILE* fout)
 /*****************************************************************************/
 
 const unsigned short emitTypeSizes[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) sze,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) sze,
 #include "typelist.h"
 #undef DEF_TP
 };
 
 const unsigned short emitTypeActSz[] = {
-#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, tf) asze,
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf) asze,
 #include "typelist.h"
 #undef DEF_TP
 };
@@ -1741,10 +1741,10 @@ void emitter::emitCheckIGList()
         }
 
         // An IG can have at most one of the prolog and epilog flags set.
-        assert(genCountBits(currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) <= 1);
+        assert(genCountBits((unsigned)currIG->igFlags & (IGF_FUNCLET_PROLOG | IGF_FUNCLET_EPILOG | IGF_EPILOG)) <= 1);
 
         // An IG can't have both IGF_HAS_ALIGN and IGF_REMOVED_ALIGN.
-        assert(genCountBits(currIG->igFlags & (IGF_HAS_ALIGN | IGF_REMOVED_ALIGN)) <= 1);
+        assert(genCountBits((unsigned)currIG->igFlags & (IGF_HAS_ALIGN | IGF_REMOVED_ALIGN)) <= 1);
 
         if (currIG->igFlags & IGF_EXTEND)
         {
@@ -2609,20 +2609,15 @@ void emitter::emitSetFrameRangeArgs(int offsLo, int offsHi)
 
 /*****************************************************************************
  *
- *  A conversion table used to map an operand size value (in bytes) into its
- *  small encoding (0 through 3), and vice versa.
+ *  A conversion table used to map an operand size value (in bytes) into its emitAttr
  */
 
-const emitter::opSize emitter::emitSizeEncode[] = {
-    emitter::OPSZ1, emitter::OPSZ2,  OPSIZE_INVALID, emitter::OPSZ4,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
-    emitter::OPSZ8, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
-    OPSIZE_INVALID, emitter::OPSZ16, OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
-    OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, OPSIZE_INVALID, OPSIZE_INVALID,
-    OPSIZE_INVALID, OPSIZE_INVALID,  OPSIZE_INVALID, emitter::OPSZ32,
+const emitAttr emitter::emitSizeDecode[emitter::OPSZ_COUNT] = {
+    EA_1BYTE,  EA_2BYTE,  EA_4BYTE, EA_8BYTE, EA_16BYTE,
+#if defined(TARGET_XARCH)
+    EA_32BYTE, EA_64BYTE,
+#endif // TARGET_XARCH
 };
-
-const emitAttr emitter::emitSizeDecode[emitter::OPSZ_COUNT] = {EA_1BYTE, EA_2BYTE,  EA_4BYTE,
-                                                               EA_8BYTE, EA_16BYTE, EA_32BYTE};
 
 /*****************************************************************************
  *
@@ -5656,10 +5651,14 @@ bool emitter::emitEndsWithAlignInstr()
 //       isAlignAdjusted - Determine if adjustments are done to the align instructions or not.
 //                         During generating code, it is 'false' (because we haven't adjusted the size yet).
 //                         During outputting code, it is 'true'.
+//      containingIGNum  - IG number of IG that contains the current align instruction we are processing.
+//      loopHeadPredIGNum - IG number of IG that preceds the IG that we are aligning with current align instruction.
 //
 //  Returns:  size of a loop in bytes.
 //
-unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted))
+unsigned emitter::getLoopSize(insGroup* igLoopHeader,
+                              unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted)
+                                  DEBUG_ARG(UNATIVE_OFFSET containingIGNum) DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum))
 {
     unsigned loopSize = 0;
 
@@ -5672,47 +5671,81 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
 
         if (igInLoop->endsWithAlignInstr() || igInLoop->hadAlignInstr())
         {
-            // If IGF_HAS_ALIGN is present, igInLoop contains align instruction at the end,
-            // for next IG or some future IG.
-            //
-            // For both cases, remove the padding bytes from igInLoop's size so it is not included in loopSize.
-            //
-            // If the loop was formed because of forward jumps like the loop IG18 below, the backedge is not
-            // set for them and such loops are not aligned. For such cases, the loop size threshold will never
-            // be met and we would break as soon as loopSize > maxLoopSize.
-            //
-            // IG05:
-            //      ...
-            //      jmp IG18
-            // ...
-            // IG18:
-            //      ...
-            //      jne IG05
-            //
-            // If igInLoop is a legitimate loop, and igInLoop's end with another 'align' instruction for different IG
-            // representing a loop that needs alignment, then igInLoop should be the last IG of the current loop and
-            // should have backedge to current loop header.
-            //
-            // Below, IG05 is the last IG of loop IG04-IG05 and its backedge points to IG04.
-            //
-            // IG03:
-            //      ...
-            //      align
-            // IG04:
-            //      ...
-            //      ...
-            // IG05:
-            //      ...
-            //      jne IG04
-            //      align     ; <---
-            // IG06:
-            //      ...
-            //      jne IG06
-            //
-            //
-            assert((igInLoop->igLoopBackEdge == nullptr) || (igInLoop->igLoopBackEdge == igLoopHeader));
+// If IGF_HAS_ALIGN is present, igInLoop contains align instruction at the end,
+// for next IG or some future IG.
+//
+// For both cases, remove the padding bytes from igInLoop's size so it is not included in loopSize.
+//
+// If the loop was formed because of forward jumps like the loop IG18 below, the backedge is not
+// set for them and such loops are not aligned. For such cases, the loop size threshold will never
+// be met and we would break as soon as loopSize > maxLoopSize.
+//
+// IG05:
+//      ...
+//      jmp IG18
+// ...
+// IG18:
+//      ...
+//      jne IG05
+//
+// If igInLoop is a legitimate loop, and igInLoop's end with another 'align' instruction for different IG
+// representing a loop that needs alignment, then igInLoop should be the last IG of the current loop and
+// should have backedge to current loop header.
+//
+// Below, IG05 is the last IG of loop IG04-IG05 and its backedge points to IG04.
+//
+// IG03:
+//      ...
+//      align
+// IG04:
+//      ...
+//      ...
+// IG05:
+//      ...
+//      jne IG04
+//      align     ; <---
+// IG06:
+//      ...
+//      jne IG06
+//
+//
 
 #ifdef DEBUG
+            if ((igInLoop->igLoopBackEdge != nullptr) && (igInLoop->igLoopBackEdge != igLoopHeader))
+            {
+                char buffer[5000];
+                int  written = sprintf_s(buffer, 35, "Mismatch in align instruction.\n");
+                written += sprintf_s(buffer + written, 100, "Containing IG: IG%02u\n", containingIGNum);
+                written += sprintf_s(buffer + written, 100, "loopHeadPredIG: IG%02u\n", loopHeadPredIGNum);
+                written += sprintf_s(buffer + written, 100, "loopHeadIG: IG%02u\n", igLoopHeader->igNum);
+                written += sprintf_s(buffer + written, 100, "igInLoop: IG%02u\n", igInLoop->igNum);
+                written +=
+                    sprintf_s(buffer + written, 100, "igInLoop->backEdge: IG%02u\n", igInLoop->igLoopBackEdge->igNum);
+
+#if EMIT_BACKWARDS_NAVIGATION
+                if (igInLoop->endsWithAlignInstr())
+                {
+
+                    instrDescAlign* alignInstr = (instrDescAlign*)igInLoop->igLastIns;
+                    assert(alignInstr->idaIG == igInLoop);
+                    written += sprintf_s(buffer + written, 100, "igInLoop has align instruction for : IG%02u\n",
+                                         alignInstr->idaLoopHeadPredIG->igNext->igNum);
+                }
+#endif // EMIT_BACKWARDS_NAVIGATION
+
+                written += sprintf_s(buffer + written, 35, "Loop:\n");
+                for (insGroup* igInLoop = igLoopHeader; igInLoop != nullptr; igInLoop = igInLoop->igNext)
+                {
+                    if (igInLoop->igLoopBackEdge == igLoopHeader)
+                    {
+                        break;
+                    }
+                    written += sprintf_s(buffer + written, 100, "\tIG%02u\n", igInLoop->igNum);
+                }
+                printf("%s", buffer);
+                assert(false);
+            }
+
             if (isAlignAdjusted)
             {
                 // If this IG is already align adjusted, get the adjusted padding already calculated.
@@ -5957,7 +5990,9 @@ void emitter::emitLoopAlignAdjustments()
 
         unsigned actualPaddingNeeded =
             containingIG->endsWithAlignInstr()
-                ? emitCalculatePaddingForLoopAlignment(loopHeadIG, loopIGOffset DEBUG_ARG(false))
+                ? emitCalculatePaddingForLoopAlignment(loopHeadIG,
+                                                       loopIGOffset DEBUG_ARG(false) DEBUG_ARG(containingIG->igNum)
+                                                           DEBUG_ARG(loopHeadPredIG->igNum))
                 : 0;
 
         assert(estimatedPaddingNeeded >= actualPaddingNeeded);
@@ -6071,6 +6106,8 @@ void emitter::emitLoopAlignAdjustments()
 //       isAlignAdjusted - Determine if adjustments are done to the align instructions or not.
 //                         During generating code, it is 'false' (because we haven't adjusted the size yet).
 //                         During outputting code, it is 'true'.
+//      containingIGNum  - IG number of IG that contains the current align instruction we are processing.
+//      loopHeadPredIGNum - IG number of IG that preceds the IG that we are aligning with current align instruction.
 //
 //  Returns: Padding amount.
 //    0 means no padding is needed, either because loop is already aligned or it
@@ -6095,7 +6132,9 @@ void emitter::emitLoopAlignAdjustments()
 //     3c. return paddingNeeded.
 //
 unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* loopHeadIG,
-                                                       size_t offset DEBUG_ARG(bool isAlignAdjusted))
+                                                       size_t offset DEBUG_ARG(bool isAlignAdjusted)
+                                                           DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
+                                                               DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum))
 {
     unsigned alignmentBoundary = emitComp->opts.compJitAlignLoopBoundary;
 
@@ -6118,11 +6157,12 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* loopHeadIG,
     }
     else
     {
-        // For non-adaptive, just take whatever is supplied using COMPlus_ variables
+        // For non-adaptive, just take whatever is supplied using DOTNET_ variables
         maxLoopSize = emitComp->opts.compJitAlignLoopMaxCodeSize;
     }
 
-    unsigned loopSize = getLoopSize(loopHeadIG, maxLoopSize DEBUG_ARG(isAlignAdjusted));
+    unsigned loopSize = getLoopSize(loopHeadIG, maxLoopSize DEBUG_ARG(isAlignAdjusted) DEBUG_ARG(containingIGNum)
+                                                    DEBUG_ARG(loopHeadPredIGNum));
 
     // No padding if loop is big
     if (loopSize > maxLoopSize)
@@ -6550,8 +6590,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
     coldCodeBlock = nullptr;
 
-    // This restricts the data alignment to: 4, 8, 16, or 32 bytes
-    // Alignments greater than 32 would require VM support in ICorJitInfo::allocMem
+    // This restricts the data alignment to: 4, 8, 16, 32 or 64 bytes
+    // Alignments greater than 64 would require VM support in ICorJitInfo::allocMem
     uint32_t dataAlignment = emitConsDsc.alignment;
     assert((dataSection::MIN_DATA_ALIGN <= dataAlignment) && (dataAlignment <= dataSection::MAX_DATA_ALIGN) &&
            isPow2(dataAlignment));
@@ -6631,6 +6671,10 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     {
         allocMemFlagDataAlign = CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN;
     }
+    else if (dataAlignment == 64)
+    {
+        allocMemFlagDataAlign = CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN;
+    }
 
     CorJitAllocMemFlag allocMemFlag = static_cast<CorJitAllocMemFlag>(allocMemFlagCodeAlign | allocMemFlagDataAlign);
 
@@ -6666,11 +6710,16 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     {
         assert(((size_t)codeBlock & 15) == 0);
     }
-    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
+
+    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_64BYTE_ALIGN) != 0)
+    {
+        assert(((size_t)consBlock & 63) == 0);
+    }
+    else if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_32BYTE_ALIGN) != 0)
     {
         assert(((size_t)consBlock & 31) == 0);
     }
-    if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
+    else if ((allocMemFlag & CORJIT_ALLOCMEM_FLG_RODATA_16BYTE_ALIGN) != 0)
     {
         assert(((size_t)consBlock & 15) == 0);
     }
@@ -7077,9 +7126,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
         {
 #ifdef DEBUG
-            size_t     curInstrAddr = (size_t)cp;
-            instrDesc* curInstrDesc = id;
-
             if ((emitComp->opts.disAsm || emitComp->verbose) && (JitConfig.JitDisasmWithDebugInfo() != 0) &&
                 (id->idCodeSize() > 0))
             {
@@ -7106,16 +7152,20 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     ++nextMapping;
                 }
             }
-
 #endif
-
             size_t insSize = emitIssue1Instr(ig, id, &cp);
             emitAdvanceInstrDesc(&id, insSize);
+        }
 
-#ifdef DEBUG
-            // Print the alignment boundary
-            if ((emitComp->opts.disAsm || emitComp->verbose) && (emitComp->opts.disAddr || emitComp->opts.disAlignment))
+        // Print the alignment boundary
+        if ((emitComp->opts.disAsm INDEBUG(|| emitComp->verbose)) &&
+            (INDEBUG(emitComp->opts.disAddr ||) emitComp->opts.disAlignment))
+        {
+            for (unsigned cnt = ig->igInsCnt; cnt > 0; cnt--)
             {
+                size_t     curInstrAddr = (size_t)cp;
+                instrDesc* curInstrDesc = id;
+
                 size_t      afterInstrAddr   = (size_t)cp;
                 instruction curIns           = curInstrDesc->idIns();
                 bool        isJccAffectedIns = false;
@@ -7197,7 +7247,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                     }
                 }
             }
-#endif // DEBUG
         }
 
 #ifdef DEBUG
@@ -7965,6 +8014,25 @@ CORINFO_FIELD_HANDLE emitter::emitSimd32Const(simd32_t constValue)
     UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD32);
     return emitComp->eeFindJitDataOffs(cnum);
 }
+
+CORINFO_FIELD_HANDLE emitter::emitSimd64Const(simd64_t constValue)
+{
+    // Access to inline data is 'abstracted' by a special type of static member
+    // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
+    // to constant data, not a real static field.
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+    unsigned cnsSize  = 64;
+    unsigned cnsAlign = cnsSize;
+
+    if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
+    {
+        cnsAlign = dataSection::MIN_DATA_ALIGN;
+    }
+
+    UNATIVE_OFFSET cnum = emitDataConst(&constValue, cnsSize, cnsAlign, TYP_SIMD64);
+    return emitComp->eeFindJitDataOffs(cnum);
+}
 #endif // TARGET_XARCH
 #endif // FEATURE_SIMD
 
@@ -8275,12 +8343,13 @@ void emitter::emitDispDataSec(dataSecDsc* section, BYTE* dst)
                                 i += j;
                                 break;
 
+                            case 64:
                             case 32:
                             case 16:
                             case 8:
                                 assert((data->dsSize % 8) == 0);
                                 printf("\tdq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont[i]));
-                                for (j = 8; j < 32; j += 8)
+                                for (j = 8; j < 64; j += 8)
                                 {
                                     if (i + j >= data->dsSize)
                                         break;

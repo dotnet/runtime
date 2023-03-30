@@ -67,7 +67,7 @@ namespace System
         }
     }
 
-    internal abstract class SZGenericArrayEnumeratorBase
+    internal abstract class SZGenericArrayEnumeratorBase : IDisposable
     {
         protected readonly Array _array;
         protected int _index;
@@ -141,7 +141,7 @@ namespace System
         object? IEnumerator.Current => Current;
     }
 
-    internal abstract class GenericEmptyEnumeratorBase
+    internal abstract class GenericEmptyEnumeratorBase : IDisposable, IEnumerator
     {
 #pragma warning disable CA1822 // https://github.com/dotnet/roslyn-analyzers/issues/5911
         public bool MoveNext() => false;

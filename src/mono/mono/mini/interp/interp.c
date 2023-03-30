@@ -1853,7 +1853,7 @@ interp_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo **out_info, MonoE
 		if (imethod->del_info && imethod->del_info->klass == del->object.vtable->klass) {
 			*out_info = imethod->del_info;
 		} else if (!imethod->del_info) {
-			imethod->del_info = mono_create_delegate_trampoline_info (del->object.vtable->klass, method);
+			imethod->del_info = mono_create_delegate_trampoline_info (del->object.vtable->klass, method, FALSE);
 			*out_info = imethod->del_info;
 		}
 	}
@@ -3798,30 +3798,10 @@ max_d (double lhs, double rhs)
 		return fmax (lhs, rhs);
 }
 
-#ifdef HOST_BROWSER
-MONO_ALWAYS_INLINE static ptrdiff_t
-mono_interp_tier_enter_jiterpreter (
-	JiterpreterThunk thunk, InterpFrame *frame, unsigned char *locals, ThreadContext *context,
-	const guint16 *ip
-)
-{
-	// g_assert(thunk);
-	ptrdiff_t offset = thunk(frame, locals);
-	/*
-	* Verify that the offset returned by the thunk is not total garbage
-	* FIXME: These constants might actually be too small since a method
-	*  could have massive amounts of IL - maybe we should disable the jiterpreter
-	*  for methods that big
-	*/
-	// g_assertf((offset >= -0xFFFFF) && (offset <= 0xFFFFF), "thunk returned an obviously invalid offset: %i", offset);
-#ifdef ENABLE_EXPERIMENT_TIERED
-	if (offset < 0) {
-		mini_tiered_inc (frame->imethod->method, &frame->imethod->tiered_counter, 0);
-	}
+#if HOST_BROWSER
+// Dummy call info used outside of monitoring phase. We don't care what's in it
+static JiterpreterCallInfo jiterpreter_call_info = { 0 };
 #endif
-	return offset;
-}
-#endif // HOST_BROWSER
 
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
@@ -5440,6 +5420,14 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], guint64) = LOCAL_VAR (ip [2], guint64) >> ip [3];
 			ip += 4;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SHL_AND_I4)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) << (LOCAL_VAR (ip [3], gint32) & 31);
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SHL_AND_I8)
+			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) << (LOCAL_VAR (ip [3], gint64) & 63);
+			ip += 4;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_NEG_I4)
 			LOCAL_VAR (ip [1], gint32) = - LOCAL_VAR (ip [2], gint32);
 			ip += 3;
@@ -5820,6 +5808,44 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 7;
 			goto call;
 		}
+
+		MINT_IN_CASE(MINT_ROL_I4_IMM) {
+			guint32 val = LOCAL_VAR (ip [2], guint32);
+			int amount = ip [3];
+			LOCAL_VAR (ip [1], guint32) = (val << amount) | (val >> (32 - amount));
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_ROL_I8_IMM) {
+			guint64 val = LOCAL_VAR (ip [2], guint64);
+			int amount = ip [3];
+			LOCAL_VAR (ip [1], guint64) = (val << amount) | (val >> (64 - amount));
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_ROR_I4_IMM) {
+			guint32 val = LOCAL_VAR (ip [2], guint32);
+			int amount = ip [3];
+			LOCAL_VAR (ip [1], guint32) = (val >> amount) | (val << (32 - amount));
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_ROR_I8_IMM) {
+			guint64 val = LOCAL_VAR (ip [2], guint64);
+			int amount = ip [3];
+			LOCAL_VAR (ip [1], guint64) = (val >> amount) | (val << (64 - amount));
+			ip += 4;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_CLZ_I4) LOCAL_VAR (ip [1], gint32) = interp_intrins_clz_i4 (LOCAL_VAR (ip [2], guint32)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CLZ_I8) LOCAL_VAR (ip [1], gint64) = interp_intrins_clz_i8 (LOCAL_VAR (ip [2], guint64)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CTZ_I4) LOCAL_VAR (ip [1], gint32) = interp_intrins_ctz_i4 (LOCAL_VAR (ip [2], guint32)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CTZ_I8) LOCAL_VAR (ip [1], gint64) = interp_intrins_ctz_i8 (LOCAL_VAR (ip [2], guint64)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_POPCNT_I4) LOCAL_VAR (ip [1], gint32) = interp_intrins_popcount_i4 (LOCAL_VAR (ip [2], guint32)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_POPCNT_I8) LOCAL_VAR (ip [1], gint64) = interp_intrins_popcount_i8 (LOCAL_VAR (ip [2], guint64)); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOG2_I4) LOCAL_VAR (ip [1], gint32) = 31 ^ interp_intrins_clz_i4 (LOCAL_VAR (ip [2], guint32) | 1); ip += 3; MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LOG2_I8) LOCAL_VAR (ip [1], gint32) = 63 ^ interp_intrins_clz_i8 (LOCAL_VAR (ip [2], guint64) | 1); ip += 3; MINT_IN_BREAK;
+
 #ifdef INTERP_ENABLE_SIMD
 		MINT_IN_CASE(MINT_SIMD_V128_LDC) {
 			memcpy (locals + ip [1], ip + 2, SIZEOF_V128);
@@ -5948,11 +5974,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_INTRINS_WIDEN_ASCII_TO_UTF16) {
 			LOCAL_VAR (ip [1], mono_u) = interp_intrins_widen_ascii_to_utf16 (LOCAL_VAR (ip [2], guint8*), LOCAL_VAR (ip [3], mono_unichar2*), LOCAL_VAR (ip [4], mono_u));
 			ip += 5;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_INTRINS_UNSAFE_BYTE_OFFSET) {
-			LOCAL_VAR (ip [1], mono_u) = LOCAL_VAR (ip [3], guint8*) - LOCAL_VAR (ip [2], guint8*);
-			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE) {
@@ -7758,9 +7779,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 						break;
 					case JITERPRETER_NOT_JITTED:
 						// Patch opcode to disable it because this trace failed to JIT.
-						mono_memory_barrier ();
-						*mutable_ip = MINT_TIER_NOP_JITERPRETER;
-						mono_memory_barrier ();
+						if (!mono_opt_jiterpreter_estimate_heat) {
+							mono_memory_barrier ();
+							*mutable_ip = MINT_TIER_NOP_JITERPRETER;
+							mono_memory_barrier ();
+						}
 						ip += 3;
 						break;
 					default:
@@ -7772,17 +7795,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 						 * (note that right now threading doesn't work, but it's worth being correct
 						 *  here so that implementing thread support will be easier later.)
 						 */
-						*mutable_ip = MINT_TIER_NOP_JITERPRETER;
-						mono_memory_barrier ();
-						*(volatile JiterpreterThunk*)(ip + 1) = prepare_result;
-						mono_memory_barrier ();
-						*mutable_ip = MINT_TIER_ENTER_JITERPRETER;
+						*mutable_ip = MINT_TIER_MONITOR_JITERPRETER;
 						// now execute the trace
 						// this isn't important for performance, but it makes it easier to use the
 						//  jiterpreter early in automated tests where code only runs once
-						offset = mono_interp_tier_enter_jiterpreter (
-							prepare_result, frame, locals, context, ip
-						);
+						offset = prepare_result(frame, locals, &jiterpreter_call_info);
 						ip = (guint16*) (((guint8*)ip) + offset);
 						break;
 				}
@@ -7793,11 +7810,18 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 
+		MINT_IN_CASE(MINT_TIER_MONITOR_JITERPRETER) {
+			// The trace is in monitoring mode, where we track how far it actually goes
+			//  each time it is executed for a while. After N more hits, we either
+			//  turn it into an ENTER or a NOP depending on how well it is working
+			ptrdiff_t offset = mono_jiterp_monitor_trace (ip, frame, locals);
+			ip = (guint16*) (((guint8*)ip) + offset);
+			MINT_IN_BREAK;
+		}
+
 		MINT_IN_CASE(MINT_TIER_ENTER_JITERPRETER) {
 			JiterpreterThunk thunk = (void*)READ32(ip + 1);
-			ptrdiff_t offset = mono_interp_tier_enter_jiterpreter (
-				thunk, frame, locals, context, ip
-			);
+			ptrdiff_t offset = thunk(frame, locals, &jiterpreter_call_info);
 			ip = (guint16*) (((guint8*)ip) + offset);
 			MINT_IN_BREAK;
 		}
@@ -7913,8 +7937,12 @@ interp_parse_options (const char *options)
 				opt = INTERP_OPT_BBLOCKS;
 			else if (strncmp (arg, "tiering", 7) == 0)
 				opt = INTERP_OPT_TIERING;
-			else if (strncmp (arg, "simd", 7) == 0)
+			else if (strncmp (arg, "simd", 4) == 0)
 				opt = INTERP_OPT_SIMD;
+#if HOST_BROWSER
+			else if (strncmp (arg, "jiterp", 6) == 0)
+				opt = INTERP_OPT_JITERPRETER;
+#endif
 			else if (strncmp (arg, "all", 3) == 0)
 				opt = ~INTERP_OPT_NONE;
 

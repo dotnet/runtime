@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices.Marshalling
     // This type implements the logic to get the managed object from the unmanaged "this" pointer.
     // If we decide to not expose the VTable source generator, we don't need to expose this and we can just inline the logic
     // into the generated code in the source generator.
-    internal sealed unsafe class ComWrappersUnwrapper : IUnmanagedObjectUnwrapper
+    public sealed unsafe class ComWrappersUnwrapper : IUnmanagedObjectUnwrapper
     {
         public static object GetObjectForUnmanagedWrapper(void* ptr)
         {

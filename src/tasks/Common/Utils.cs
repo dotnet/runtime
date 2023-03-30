@@ -3,9 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Reflection.PortableExecutable;
+using System.Reflection.Metadata;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Build.Framework;
@@ -64,6 +67,9 @@ internal static class Utils
             using StreamWriter sw = new(file);
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
+                // set encoding to UTF-8 -> full Unicode support is needed for usernames -
+                // `command` contains tmp dir path with the username
+                sw.WriteLine(@"%SystemRoot%\System32\chcp.com 65001>nul");
                 sw.WriteLine("setlocal");
                 sw.WriteLine("set errorlevel=dummy");
                 sw.WriteLine("set errorlevel=");
@@ -190,29 +196,6 @@ internal static class Utils
         return (process.ExitCode, outputBuilder.ToString().Trim('\r', '\n'));
     }
 
-    internal static string CreateTemporaryBatchFile(string command)
-    {
-        string extn = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".cmd" : ".sh";
-        string file = Path.Combine(Path.GetTempPath(), $"tmp{Guid.NewGuid():N}{extn}");
-
-        using StreamWriter sw = new(file);
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-                sw.WriteLine("setlocal");
-                sw.WriteLine("set errorlevel=dummy");
-                sw.WriteLine("set errorlevel=");
-        }
-        else
-        {
-            // Use sh rather than bash, as not all 'nix systems necessarily have Bash installed
-            sw.WriteLine("#!/bin/sh");
-        }
-
-        sw.WriteLine(command);
-
-        return file;
-    }
-
     public static bool CopyIfDifferent(string src, string dst, bool useHash)
     {
         if (!File.Exists(src))
@@ -237,6 +220,32 @@ internal static class Utils
         return Convert.ToBase64String(hash);
     }
 
+    public static string ComputeIntegrity(string filepath)
+    {
+        using var stream = File.OpenRead(filepath);
+        using HashAlgorithm hashAlgorithm = SHA256.Create();
+
+        byte[] hash = hashAlgorithm.ComputeHash(stream);
+        return "sha256-" + Convert.ToBase64String(hash);
+    }
+
+    public static string ComputeIntegrity(byte[] bytes)
+    {
+        using HashAlgorithm hashAlgorithm = SHA256.Create();
+
+        byte[] hash = hashAlgorithm.ComputeHash(bytes);
+        return "sha256-" + Convert.ToBase64String(hash);
+    }
+
+    public static string ComputeTextIntegrity(string str)
+    {
+        using HashAlgorithm hashAlgorithm = SHA256.Create();
+
+        var bytes = Encoding.UTF8.GetBytes(str);
+        byte[] hash = hashAlgorithm.ComputeHash(bytes);
+        return "sha256-" + Convert.ToBase64String(hash);
+    }
+
 #if NETCOREAPP
     public static void DirectoryCopy(string sourceDir, string destDir, Func<string, bool>? predicate=null)
     {
@@ -258,4 +267,44 @@ internal static class Utils
         }
     }
 #endif
+
+    public static bool IsManagedAssembly(string filePath)
+    {
+        if (!File.Exists(filePath))
+            return false;
+
+        // Try to read CLI metadata from the PE file.
+        using FileStream fileStream = File.OpenRead(filePath);
+        using PEReader peReader = new(fileStream, PEStreamOptions.Default);
+        return IsManagedAssembly(peReader);
+    }
+
+    public static bool IsManagedAssembly(byte[] bytes)
+    {
+        using var peReader = new PEReader(ImmutableArray.Create(bytes));
+        return IsManagedAssembly(peReader);
+    }
+
+    private static bool IsManagedAssembly(PEReader peReader)
+    {
+        try
+        {
+            if (!peReader.HasMetadata)
+            {
+                return false; // File does not have CLI metadata.
+            }
+
+            // Check that file has an assembly manifest.
+            MetadataReader reader = peReader.GetMetadataReader();
+            return reader.IsAssembly;
+        }
+        catch (BadImageFormatException)
+        {
+            return false;
+        }
+        catch (FileNotFoundException)
+        {
+            return false;
+        }
+    }
 }

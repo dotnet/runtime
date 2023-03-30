@@ -847,6 +847,7 @@ struct _MonoDelegate {
 	MonoReflectionMethod *method_info;
 	MonoReflectionMethod *original_method_info;
 	MonoObject *data;
+	/* Whenever to resolve the target method using ldvirtftn at call time */
 	MonoBoolean method_is_virtual;
 	MonoBoolean bound;
 };

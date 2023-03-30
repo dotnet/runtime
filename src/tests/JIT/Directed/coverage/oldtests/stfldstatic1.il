@@ -9,8 +9,8 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly stfldstatic1 {}
-.class private auto ansi beforefieldinit stfldstatic1
+.assembly 'stfldstatic1_oldtests' {}
+.class public auto ansi beforefieldinit stfldstatic1
        extends [mscorlib]System.Object
 {
   .field private static int32 s1
@@ -25,7 +25,7 @@
   .field private static valuetype [mscorlib]System.Decimal s10
   .field private static string s11
   .field private int32 a
-  .method private hidebysig static int32  Main() cil managed
+  .method public hidebysig static int32  Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

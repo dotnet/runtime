@@ -79,7 +79,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			var elements = operation.Initializer?.ElementValues.Select (val => Visit (val, state)).ToArray () ?? System.Array.Empty<MultiValue> ();
 			foreach (var array in arrayValue.Cast<ArrayValue> ()) {
 				for (int i = 0; i < elements.Length; i++) {
-					array.IndexValues.Add (i, elements[i]);
+					array.IndexValues.Add (i, ArrayValue.SanitizeArrayElementValue(elements[i]));
 				}
 			}
 
@@ -229,9 +229,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 						arr.IndexValues.Clear ();
 					} else {
 						if (arr.IndexValues.TryGetValue (index.Value, out _)) {
-							arr.IndexValues[index.Value] = valueToWrite;
+							arr.IndexValues[index.Value] = ArrayValue.SanitizeArrayElementValue(valueToWrite);
 						} else if (arr.IndexValues.Count < MaxTrackedArrayValues) {
-							arr.IndexValues[index.Value] = valueToWrite;
+							arr.IndexValues[index.Value] = ArrayValue.SanitizeArrayElementValue(valueToWrite);
 						}
 					}
 				}
