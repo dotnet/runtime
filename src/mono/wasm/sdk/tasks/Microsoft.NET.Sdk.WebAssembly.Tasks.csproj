@@ -4,7 +4,6 @@
     <TargetFrameworks>$(TargetFrameworkForNETCoreTasks);$(TargetFrameworkForNETFrameworkTasks)</TargetFrameworks>
     <NoWarn>$(NoWarn),CA1050,CA1850,CA1845,CA1859,NU5128</NoWarn>
     <RootNamespace>Microsoft.NET.Sdk.WebAssembly</RootNamespace>
-    <EnableDefaultItems>false</EnableDefaultItems>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
@@ -16,7 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="..\build\*.props;..\build\*.targets" Pack="true" PackagePath="build\%(Filename)%(Extension)" />
+    <None Include="..\build\*.props;..\build\*.targets;..\build\*.web.config" Pack="true" PackagePath="build\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemDefinitionGroup>
