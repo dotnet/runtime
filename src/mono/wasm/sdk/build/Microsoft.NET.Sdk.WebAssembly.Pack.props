@@ -9,35 +9,9 @@ WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and
 Copyright (c) .NET Foundation. All rights reserved.
 ***********************************************************************************************
 -->
-<Project ToolsVersion="14.0" TreatAsLocalProperty="RuntimeIdentifier">
+<Project ToolsVersion="14.0">
   <PropertyGroup>
-    <!-- Avoid having the rid show up in output paths -->
-    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-
-    <OutputType>exe</OutputType>
-
-    <IsPackable>false</IsPackable>
-
-    <WarnOnPackingNonPackableProject>false</WarnOnPackingNonPackableProject>
-
-    <!-- Turn off symbol publishing by default -->
-    <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
-
-    <!-- Trimmer defaults -->
-    <PublishTrimmed Condition="'$(PublishTrimmed)' == ''">true</PublishTrimmed>
-    <TrimMode Condition="'$(TrimMode)' == ''">partial</TrimMode>
-    <TrimmerRemoveSymbols Condition="'$(TrimmerRemoveSymbols)' == ''">false</TrimmerRemoveSymbols>
-
-    <!-- Static web assets defaults -->
-    <StaticWebAssetBasePath Condition="'$(StaticWebAssetBasePath)' == ''">/</StaticWebAssetBasePath>
-    <StaticWebAssetProjectMode Condition="'$(StaticWebAssetProjectMode)' == ''">Root</StaticWebAssetProjectMode>
-    <StaticWebAssetsAdditionalBuildPropertiesToRemove>$(StaticWebAssetsAdditionalBuildPropertiesToRemove);RuntimeIdentifier;SelfContained</StaticWebAssetsAdditionalBuildPropertiesToRemove>
-    <StaticWebAssetsGetPublishAssetsTargets>ComputeFilesToPublish;GetCurrentProjectPublishStaticWebAssetItems</StaticWebAssetsGetPublishAssetsTargets>
-    <StaticWebAssetsAdditionalPublishProperties>$(StaticWebAssetsAdditionalPublishProperties);BuildProjectReferences=false;ResolveAssemblyReferencesFindRelatedSatellites=true</StaticWebAssetsAdditionalPublishProperties>
-    <StaticWebAssetsAdditionalPublishPropertiesToRemove>$(StaticWebAssetsAdditionalPublishPropertiesToRemove);NoBuild;RuntimeIdentifier</StaticWebAssetsAdditionalPublishPropertiesToRemove>
+    <_WebAssemblyPropsFile>$(MSBuildThisFileDirectory)\Microsoft.NET.Sdk.WebAssembly.props</_WebAssemblyPropsFile>
+    <_WebAssemblyTargetsFile>$(MSBuildThisFileDirectory)\Microsoft.NET.Sdk.WebAssembly.targets</_WebAssemblyTargetsFile>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectCapability Include="WebAssembly" />
-  </ItemGroup>
 </Project>
