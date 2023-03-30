@@ -218,7 +218,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             }
 
             List<string> paths = new List<string>();
-            foreach (string relativePath in relativePaths.Split(';'))
+            foreach (string relativePath in relativePaths.Split(';', StringSplitOptions.RemoveEmptyEntries))
             {
                 string path = relativePath.Replace('/', Path.DirectorySeparatorChar);
                 if (app != null)

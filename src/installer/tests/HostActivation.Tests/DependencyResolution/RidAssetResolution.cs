@@ -485,7 +485,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         [InlineData("win10-x86", "win/ManagedWin.dll;win/AnotherWin.dll", "native/win-x86")]
         // For "linux" on the other hand the DependencyLib will be resolved because there are
         // no RID-specific assembly assets available.
-        [InlineData("linux-x64", "", "native/linux")]
+        [InlineData("linux-x64", "DependencyLib.dll", "native/linux")]
         public void MostSpecificRidAssemblySelectedPerTypeMultipleAssets(string rid, string expectedAssemblyPath, string expectedNativePath)
         {
             RunTest(
@@ -504,12 +504,67 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .WithPackage("ridAgnosticLib", "2.0.0", p => p
                         .WithAssemblyGroup(null, g => g.WithAsset("PortableLib.dll").WithAsset("PortableLib2.dll"))),
                 setup: new TestSetup() { Rid = rid, HasRuntimeFallbacks = true, ReadRidGraph = true },
-                // The PortableLib an PortableLib2 are from a separate package which has no RID specific assets,
+                // PortableLib and PortableLib2 are from a separate package which has no RID specific assets,
                 // so the RID-agnostic assets are always included
                 expected: new ResolvedPaths()
                 {
                     IncludedAssemblyPaths = expectedAssemblyPath + ";PortableLib.dll;PortableLib2.dll",
                     IncludedNativeLibraryPaths = expectedNativePath
+                });
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(true, null)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        [InlineData(false, null)]
+        public void MostSpecificRidAssemblySelectedPerTypeMultipleAssets_ComputedRid(bool hasRuntimeFallbacks, bool? readRidGraph)
+        {
+            // When not using the RID graph, the host uses the target OS for which it was built to determine applicable
+            // RIDs that apply, so it can find both the arch-specific and the OS-only assets.
+            // When using the RID graph, the host uses it to resolve any RID-specific assets that don't exactly match
+            // the current RID, so the OS-only asset remains excluded if there are no fallbacks.
+            string suffix = ".2";
+            string includedAssemblyPath = "ridSpecificLib.dll";
+            string excludedAssemblyPath = $"{CurrentOSAsset};{CurrentOS}/{CurrentOS}Asset{suffix}.dll";
+            string includedNativePath = null;
+            if (readRidGraph != true || hasRuntimeFallbacks)
+            {
+                includedAssemblyPath = $"{CurrentOSAsset};{CurrentOS}/{CurrentOS}Asset{suffix}.dll";
+                excludedAssemblyPath = "ridSpecificLib.dll";
+                includedNativePath = $"native/{CurrentRid}/;native/{CurrentRid}{suffix}/;native{suffix}/{CurrentRid}/";
+            }
+
+            RunTest(
+                assetsCustomizer: null,
+                appCustomizer: b => b
+                    .WithPackage("ridSpecificLib", "1.0.0", p => p
+                        .WithAssemblyGroup(null, g => g.WithAsset("ridSpecificLib.dll"))
+                        .WithAssemblyGroup(CurrentOS, g => g.WithAsset(CurrentOSAsset))
+                        .WithAssemblyGroup(CurrentOS, g => g.WithAsset($"{CurrentOS}/{CurrentOS}Asset{suffix}.dll"))
+                        .WithNativeLibraryGroup(CurrentOS, g => g.WithAsset($"native/{CurrentOSAsset}"))
+                        .WithNativeLibraryGroup(CurrentRid, g => g.WithAsset($"native/{CurrentRidAsset}"))
+                        .WithNativeLibraryGroup(CurrentRid, g => g.WithAsset($"native/{CurrentRid}{suffix}/Asset"))
+                        .WithNativeLibraryGroup(CurrentRid, g => g.WithAsset($"native{suffix}/{CurrentRidAsset}")))
+                    .WithPackage("noRidMatch", "1.0.0", p => p
+                        .WithAssemblyGroup(null, g => g.WithAsset("noRidMatch.dll"))
+                        .WithAssemblyGroup(DifferentArch, g => g.WithAsset(DifferentArchAsset))
+                        .WithNativeLibraryGroup(null, g => g.WithAsset($"noRidMatch"))
+                        .WithNativeLibraryGroup(DifferentArch, g => g.WithAsset($"native/{DifferentArchAsset}")))
+                    .WithPackage("ridAgnosticLib", "1.0.0", p => p
+                        .WithAssemblyGroup(null, g => g.WithAsset("PortableLib.dll").WithAsset("PortableLib2.dll"))),
+                setup: new TestSetup() { Rid = null, HasRuntimeFallbacks = hasRuntimeFallbacks, ReadRidGraph = readRidGraph },
+                // PortableLib and PortableLib2 are from a separate package which has no RID specific assets,
+                // so the RID-agnostic assets are always included. noRidMatch is from a package where none of
+                // RID-specific assets match, so the RID-agnostic asset is included.
+                expected: new ResolvedPaths()
+                {
+                    IncludedAssemblyPaths = $"{includedAssemblyPath};noRidMatch.dll;PortableLib.dll;PortableLib2.dll",
+                    ExcludedAssemblyPaths = $"{excludedAssemblyPath};{DifferentArchAsset}",
+                    IncludedNativeLibraryPaths = $"{includedNativePath};/",
+                    ExcludedNativeLibraryPaths = $"native/{CurrentOS}/;native/{DifferentArch}/"
                 });
         }
 
