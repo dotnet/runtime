@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -19,20 +20,18 @@ public class MarshalingPInvokeScanner : Task
     [Output]
     public string[]? IncompatibleAssemblies { get; private set; }
 
-    private static readonly char[] s_charsToReplace = new[] { '.', '-', '+' };
+    private static readonly char[] s_charsToReplace = new char[] { '.', '-', '+' };
 
     // Avoid sharing this cache with all the invocations of this task throughout the build
-    private readonly Dictionary<string, string> _symbolNameFixups = new();
+    private readonly Dictionary<string, string> _symbolNameFixups = new Dictionary<string, string>();
 
     public override bool Execute()
     {
-        if (Assemblies!.Length == 0)
+        if (Assemblies is null || Assemblies!.Length == 0)
         {
             Log.LogError($"{nameof(MarshalingPInvokeScanner)}.{nameof(Assemblies)} cannot be empty");
             return false;
         }
-
-        List<string> incompatibleAssemblies = new List<string>();
 
         try
         {
@@ -48,34 +47,69 @@ public class MarshalingPInvokeScanner : Task
 
     private void ExecuteInternal()
     {
-        if (Assemblies != null)
-        {
-            ScanAssemblies(Assemblies);
-        }
+        if (Assemblies is not null)
+            IncompatibleAssemblies = ScanAssemblies(Assemblies);
     }
 
-    private void ScanAssemblies(string[] assemblies)
+    private string[] ScanAssemblies(string[] assemblies)
     {
-        if (assemblies != null)
+        List<string> incompatible = new List<string>();
 
+        PathAssemblyResolver resolver = new PathAssemblyResolver(assemblies);
+        using MetadataLoadContext mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
+        foreach (string aname in assemblies)
         {
-            var resolver = new System.Reflection.PathAssemblyResolver(assemblies);
-            using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
-            foreach (string aname in assemblies)
-            {
-                var a = mlc.LoadFromAssemblyPath(aname);
-                List<PInvoke> pinvokes = new List<PInvoke>();
-                var signatures = new List<string>();
-                var callbacks = new List<PInvokeCallback>();
-                PInvokeCollector pinvokeCollector = new PInvokeCollector(Log);
+            Assembly assy = mlc.LoadFromAssemblyPath(aname);
+            List<PInvoke> pinvokes = new List<PInvoke>();
+            List<string> signatures = new List<string>();
+            List<PInvokeCallback> callbacks = new List<PInvokeCallback>();
+            PInvokeCollector pinvokeCollector = new PInvokeCollector(Log);
 
-                foreach (var type in a.GetTypes())
+            foreach (Type type in assy.GetTypes())
+                pinvokeCollector.CollectPInvokes(pinvokes, callbacks, signatures, type);
+
+            if (IsAssemblyIncompatible(assy, pinvokes, signatures, callbacks))
+                incompatible.Add(aname);
+        }
+
+        return incompatible.ToArray();
+    }
+
+    #pragma warning disable IDE0060
+    private static bool IsAssemblyIncompatible(Assembly assy, List<PInvoke> pivs, List<string> strs, List<PInvokeCallback> cbks)
+    {
+        // Assembly is incompatible with the lightweight mono marshaler if it does not have the
+        // DisableRuntimeMarshallingAttribute and has P/Invokes with nonblittable types.
+        IList<CustomAttributeData> attrs = assy.GetCustomAttributesData();
+        foreach (CustomAttributeData attr in attrs)
+        {
+            if (attr.AttributeType == typeof(DisableRuntimeMarshallingAttribute))
+                return false;
+        }
+
+        try
+        {
+            foreach (PInvoke piv in pivs)
+            {
+                foreach (ParameterInfo parInfo in piv.Method.GetParameters())
                 {
-                    pinvokeCollector.CollectPInvokes(pinvokes, callbacks, signatures, type);
+                    if (!PInvokeCollector.IsBlittable(parInfo.ParameterType))
+                        return true;
                 }
+
+                if (!PInvokeCollector.IsBlittable(piv.Method.ReturnType))
+                    return true;
             }
         }
+        catch (NotSupportedException)
+        {
+            // This is work around "Parsing function pointer types in signatures is not supported."
+            return true;
+        }
+
+        return false;
     }
+    #pragma warning restore IDE0060
 
     public string FixupSymbolName(string name)
     {

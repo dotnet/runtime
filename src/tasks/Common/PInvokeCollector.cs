@@ -169,6 +169,14 @@ internal sealed class PInvokeCollector {
         }
     }
 
+    public static bool IsBlittable(Type type)
+    {
+        if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum)
+            return true;
+        else
+            return false;
+    }
+
     private static void Error(string msg) => throw new LogAsErrorException(msg);
 
     private static bool HasAttribute(MemberInfo element, params string[] attributeNames)
@@ -192,14 +200,6 @@ internal sealed class PInvokeCollector {
             }
         }
         return false;
-    }
-
-    private static bool IsBlittable(Type type)
-    {
-        if (type.IsPrimitive || type.IsByRef || type.IsPointer || type.IsEnum)
-            return true;
-        else
-            return false;
     }
 
     private static bool TryIsMethodGetParametersUnsupported(MethodInfo method, [NotNullWhen(true)] out string? reason)

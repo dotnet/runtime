@@ -20,7 +20,7 @@
       <Output TaskParameter="IncompatibleAssemblies" ItemName="BadAssemblies" />
     </MarshalingPInvokeScanner>
 
-    <Message Importance="High" Text="!!!naricc_debug!!! $(BadAssemblies)" />
+    <Message Importance="High" Text="!!!naricc_debug!!! @(BadAssemblies)" />
   </Target>
 
   <Target Name="AOTCompileApp" Condition="'$(RunAOTCompilation)' == 'true'" AfterTargets="CopyFilesToPublishDirectory">
