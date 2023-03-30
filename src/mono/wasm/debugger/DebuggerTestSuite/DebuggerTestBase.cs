@@ -171,6 +171,10 @@ namespace DebuggerTests
             catch (TaskCanceledException exc) //if timed out for some reason let's try again
             {
                 _testOutput.WriteLine($"Let's retry: {exc.ToString()}");
+                insp = new Inspector(Id, _testOutput);
+                cli = insp.Client;
+                driver = _driver;
+                scripts = SubscribeToScripts(insp);
                 await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
             }
         }
