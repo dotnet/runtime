@@ -5,10 +5,9 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal sealed record NullableSpec : TypeSpec
+    internal sealed record ConfigurationSectionTypeSpec : TypeSpec
     {
-        public NullableSpec(ITypeSymbol type) : base(type) { }
-        public override TypeSpecKind SpecKind => TypeSpecKind.Nullable;
-        public required TypeSpec UnderlyingType { get; init; }
+        public ConfigurationSectionTypeSpec(ITypeSymbol type) : base(type) { }
+        public override TypeSpecKind SpecKind => TypeSpecKind.IConfigurationSection;
     }
 }

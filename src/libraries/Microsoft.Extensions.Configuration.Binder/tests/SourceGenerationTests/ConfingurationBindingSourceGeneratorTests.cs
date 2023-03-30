@@ -115,6 +115,45 @@ public class Program
         }
 
         [Fact]
+        public async Task TestBaseline_TestPrimitivesGen()
+        {
+            string testSourceCode = """
+                using System;
+                using System.Collections.Generic;
+                using System.Globalization;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        MyClass options = config.Get<MyClass>();
+                    }
+
+                    public class MyClass
+                    {
+                        public string MyString { get; set; }
+                        public Int128 MyInt128 { get; set; }
+                        public int MyInt { get; set; }
+                        public UInt128 MyUInt128 { get; set; }
+                        public long MyLong { get; set; }
+                        public Uri MyUri { get; set; }
+                        public CultureInfo MyCultureInfo { get; set; }
+                        public Half MyHalf { get; set; }
+                        public bool MyBool { get; set; }
+                        public object MyObject { get; set; }
+                        public byte[] MyByteArray { get; set; }
+                    }
+                }
+                """;
+
+            await VerifyAgainstBaselineUsingFile("TestPrimitivesGen.generated.txt", testSourceCode);
+        }
+
+        [Fact]
         public async Task LangVersionMustBeCharp11OrHigher()
         {
             var (d, r) = await RunGenerator(BindCallSampleCode, LanguageVersion.CSharp10);
@@ -140,6 +179,11 @@ public class Program
             Assert.Empty(d);
             Assert.Single(r);
 
+            if (!RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText, out _))
+            {
+                Console.WriteLine(r[0].SourceText);
+            }
+
             Assert.True(RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText,
                 out string errorMessage), errorMessage);
         }
@@ -151,11 +195,13 @@ public class Program
                 new ConfigurationBindingSourceGenerator(),
                 new[] {
                     typeof(ConfigurationBinder).Assembly,
+                    typeof(CultureInfo).Assembly,
                     typeof(IConfiguration).Assembly,
                     typeof(IServiceCollection).Assembly,
                     typeof(IDictionary).Assembly,
                     typeof(ServiceCollection).Assembly,
                     typeof(OptionsConfigurationServiceCollectionExtensions).Assembly,
+                    typeof(Uri).Assembly,
                 },
                 new[] { testSourceCode },
                 langVersion: langVersion).ConfigureAwait(false);

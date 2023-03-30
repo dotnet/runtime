@@ -34,10 +34,24 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             defaultSeverity: DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        // Unlike sourcegen warnings, exception messages should not be localized so we keep them in source.
+        // Runtime exception messages; not localized so we keep them in source.
         private static class ExceptionMessages
         {
             public const string TypeNotSupported = "Unable to bind to type '{0}': '{1}'";
+            public const string FailedBinding = "Failed to convert configuration value at '{0}' to type '{1}'.";
+        }
+
+        private static class NotSupportedReason
+        {
+            public const string AbstractOrInterfaceNotSupported = "Abstract or interface types are not supported";
+            public const string NeedPublicParameterlessConstructor = "Only objects with public parameterless ctors are supported";
+            public const string CollectionNotSupported = "The collection type is not supported";
+            public const string DictionaryKeyNotSupported = "The dictionary key type is not supported";
+            public const string ElementTypeNotSupported = "The collection element type is not supported";
+            public const string MultiDimArraysNotSupported = "Multidimensional arrays are not supported.";
+            public const string NullableUnderlyingTypeNotSupported = "Nullable underlying type is not supported";
+            public const string TypeNotDetectedAsInput = "Generator parser did not detect the type as input";
+            public const string TypeNotSupported = "The type is not supported";
         }
 
         private static class Identifier
@@ -45,6 +59,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             public const string configuration = nameof(configuration);
             public const string element = nameof(element);
             public const string enumValue = nameof(enumValue);
+            public const string exception = nameof(exception);
             public const string key = nameof(key);
             public const string obj = nameof(obj);
             public const string originalCount = nameof(originalCount);
@@ -64,10 +79,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             public const string CopyTo = nameof(CopyTo);
             public const string ContainsKey = nameof(ContainsKey);
             public const string Count = nameof(Count);
+            public const string CultureInfo = nameof(CultureInfo);
+            public const string CultureNotFoundException = nameof(CultureNotFoundException);
             public const string Enum = nameof(Enum);
+            public const string Exception = nameof(Exception);
+            public const string Float = nameof(Float);
             public const string GeneratedConfigurationBinder = nameof(GeneratedConfigurationBinder);
             public const string Get = nameof(Get);
             public const string GetChildren = nameof(GetChildren);
+            public const string GetCultureInfoByIetfLanguageTag = nameof(GetCultureInfoByIetfLanguageTag);
             public const string GetSection = nameof(GetSection);
             public const string HasChildren = nameof(HasChildren);
             public const string HasValueOrChildren = nameof(HasValueOrChildren);
@@ -76,42 +96,49 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             public const string IConfiguration = nameof(IConfiguration);
             public const string IConfigurationSection = nameof(IConfigurationSection);
             public const string Int32 = "int";
+            public const string Integer = nameof(Integer);
+            public const string InvalidOperationException = nameof(InvalidOperationException);
+            public const string InvariantCulture = nameof(InvariantCulture);
             public const string Length = nameof(Length);
+            public const string NumberStyles = nameof(NumberStyles);
             public const string Parse = nameof(Parse);
+            public const string Path = nameof(Path);
+            public const string RelativeOrAbsolute = nameof(RelativeOrAbsolute);
             public const string Resize = nameof(Resize);
+            public const string TryCreate = nameof(TryCreate);
             public const string TryGetValue = nameof(TryGetValue);
             public const string TryParse = nameof(TryParse);
+            public const string Uri = nameof(Uri);
+            public const string UriKind = nameof(UriKind);
             public const string Value = nameof(Value);
-        }
-
-        private static class NotSupportedReason
-        {
-            public const string AbstractOrInterfaceNotSupported = "Abstract or interface types are not supported";
-            public const string NeedPublicParameterlessConstructor = "Only objects with public parameterless ctors are supported";
-            public const string CollectionNotSupported = "The collection type is not supported";
-            public const string DictionaryKeyNotSupported = "The dictionary key type is not supported";
-            public const string ElementTypeNotSupported = "The collection element type is not supported";
-            public const string MultiDimArraysNotSupported = "Multidimensional arrays are not supported.";
-            public const string NullableUnderlyingTypeNotSupported = "Nullable underlying type is not supported";
-            public const string TypeNotDetectedAsInput = "Generator parser did not detect the type as input";
-            public const string TypeNotSupported = "The type is not supported";
         }
 
         private static class TypeFullName
         {
             public const string ConfigurationKeyNameAttribute = "Microsoft.Extensions.Configuration.ConfigurationKeyNameAttribute";
+            public const string CultureInfo = "System.Globalization.CultureInfo";
+            public const string DateOnly = "System.DateOnly";
+            public const string DateTimeOffset = "System.DateTimeOffset";
             public const string Dictionary = "System.Collections.Generic.Dictionary`2";
             public const string GenericIDictionary = "System.Collections.Generic.IDictionary`2";
+            public const string Guid = "System.Guid";
+            public const string Half = "System.Half";
             public const string HashSet = "System.Collections.Generic.HashSet`1";
             public const string IConfiguration = "Microsoft.Extensions.Configuration.IConfiguration";
             public const string IConfigurationSection = "Microsoft.Extensions.Configuration.IConfigurationSection";
             public const string IDictionary = "System.Collections.Generic.IDictionary";
+            public const string Int128 = "System.Int128";
             public const string ISet = "System.Collections.Generic.ISet`1";
             public const string IServiceCollection = "Microsoft.Extensions.DependencyInjection.IServiceCollection";
             public const string List = "System.Collections.Generic.List`1";
+            public const string TimeOnly = "System.TimeOnly";
+            public const string TimeSpan = "System.TimeSpan";
+            public const string UInt128 = "System.UInt128";
+            public const string Uri = "System.Uri";
+            public const string Version = "System.Version";
         }
 
-        private static bool TypesAreEqual(ITypeSymbol first, ITypeSymbol second)
+        private static bool TypesAreEqual(ITypeSymbol first, ITypeSymbol? second)
                 => first.Equals(second, SymbolEqualityComparer.Default);
     }
 }
