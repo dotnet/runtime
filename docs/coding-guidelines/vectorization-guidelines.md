@@ -38,7 +38,7 @@ Vectorization is an art of converting an algorithm from operating on a single va
 
 In the recent releases, .NET has introduced plenty of APIs for vectorization. Vast majority of them were hardware specific. It required the users to provide implementation per processor architecture (x64 and/or arm64), with a possibility to use the most optimal instructions for hardware that is executing the code.
 
-.NET 7 introduced a set of new APIs for `Vector128<T>` and `Vector256<T>` that aim for writing hardware-agnostic vectorized code. The purpose of this document is to introduce the readers to the new APIs and provide a set of best practices.
+.NET 7 introduced a set of new APIs for `Vector128<T>` and `Vector256<T>` that aim for writing hardware-agnostic, and cross platform vectorized code. The purpose of this document is to introduce the readers to the new APIs and provide a set of best practices.
 
 ## Code structure
 
@@ -64,9 +64,9 @@ Each `Vector128` operation allows to operate on: 16 (s)bytes, 8 (u)shorts, 4 (u)
 -----------------------------------------------------------------
 ```
 
-`Vector256<T>` is twice as big as `Vector128<T>`, so when it is hardware accelerated, we should prefer it over a `Vector128<T>`. To check the acceleration, we need to use `Vector128.IsHardwareAccelerated` and `Vector256.IsHardwareAccelerated` properties.
+`Vector256<T>` is twice as big as `Vector128<T>`, so when it is hardware accelerated, and the data is large enough we should prefer it over a `Vector128<T>`. To check the acceleration, we need to use `Vector128.IsHardwareAccelerated` and `Vector256.IsHardwareAccelerated` properties.
 
-We also must account for the size of the input. It needs to be at least of the size of a single vector to be able to execute the vectorized code path. `Vector128<T>.Count` and `Vector128<T>.Count` return the size of a vector of given type in bytes.
+We also must account for the size of the input. It needs to be at least of the size of a single vector to be able to execute the vectorized code path. `Vector128<T>.Count` and `Vector256<T>.Count` return the size of a vector of given type in bytes.
 Both APIs are turned into constants (no method call is required to retrieve the information) by the Just-In-Time compiler. It's not true for pre-compiled code (NativeAOT).
 
 That is why the code is very often structured like this:
@@ -113,15 +113,15 @@ Such a code structure requires us to **test all possible code paths**:
 
 It's possible to implement tests that cover some of the scenarios based on the size, but it's impossible to toggle hardware acceleration from unit test level. It can be controlled with environment variables before .NET process is started:
 
-* When `COMPlus_EnableAVX2` is set to `0`, `Vector256.IsHardwareAccelerated` returns `false`.
-* When `COMPlus_EnableAVX` is set to `0`, `Vector128.IsHardwareAccelerated` returns `false`.
-* When `COMPlus_EnableHWIntrinsic` is set to `0`, not only both mentioned APIs return `false`, but also `Vector64.IsHardwareAccelerated` and `Vector.IsHardwareAccelerated`.
+* When `DOTNET_EnableAVX2` is set to `0`, `Vector256.IsHardwareAccelerated` returns `false`.
+* When `DOTNET_EnableAVX` is set to `0`, `Vector128.IsHardwareAccelerated` returns `false`.
+* When `DOTNET_EnableHWIntrinsic` is set to `0`, not only both mentioned APIs return `false`, but also `Vector64.IsHardwareAccelerated` and `Vector.IsHardwareAccelerated`.
 
 Assuming that we run the tests on an `x64` machine that supports `Vector256` we need to write tests that cover all size scenarios and run them with:
 * no custom settings
-* `COMPlus_EnableAVX2=0`
-* `COMPlus_EnableAVX=0` (it can be skipped if `Vector64<T>` and `Vector<T>` are not involved)
-* `COMPlus_EnableHWIntrinsic=0`
+* `DOTNET_EnableAVX2=0`
+* `DOTNET_EnableAVX=0` (it can be skipped if `Vector64<T>` and `Vector<T>` are not involved)
+* `DOTNET_EnableHWIntrinsic=0`
 
 ### Benchmarking
 
@@ -143,13 +143,13 @@ static void Main(string[] args)
         .HideColumns(Column.EnvironmentVariables, Column.RatioSD, Column.Error)
         .AddDiagnoser(new DisassemblyDiagnoser(new DisassemblyDiagnoserConfig
             (exportGithubMarkdown: true, printInstructionAddresses: false)))
-        .AddJob(enough.WithEnvironmentVariable("COMPlus_EnableHWIntrinsic", "0").WithId("Scalar").AsBaseline());
+        .AddJob(enough.WithEnvironmentVariable("DOTNET_EnableHWIntrinsic", "0").WithId("Scalar").AsBaseline());
 
     if (Vector256.IsHardwareAccelerated)
     {
         config = config
             .AddJob(enough.WithId("Vector256"))
-            .AddJob(enough.WithEnvironmentVariable("COMPlus_EnableAVX2", "0").WithId("Vector128"));
+            .AddJob(enough.WithEnvironmentVariable("DOTNET_EnableAVX2", "0").WithId("Vector128"));
 
     }
     else if (Vector128.IsHardwareAccelerated)
@@ -287,7 +287,7 @@ int Sum(Span<int> buffer)
 }
 ```
 
-**Note:** Use `ref MemoryMarshal.GetReference(span)` instead `ref span[0]` and `ref MemoryMarshal.GetArrayDataReference(array)` instead `ref array[0]` to handle empty buffer scenarios. If the buffer is empty, these methods return a reference to the location where the 0th element would have been stored. Such a reference may or may not be null. It can be used for pinning but must never be dereferenced.
+**Note:** Use `ref MemoryMarshal.GetReference(span)` instead `ref span[0]` and `ref MemoryMarshal.GetArrayDataReference(array)` instead `ref array[0]` to handle empty buffer scenarios (which would throw `IndexOutOfRangeException`). If the buffer is empty, these methods return a reference to the location where the 0th element would have been stored. Such a reference may or may not be null. It can be used for pinning but must never be dereferenced.
 
 **Note:** The `GetReference` method has an overload that accepts a `ReadOnlySpan` and returns mutable reference. Please use it with caution!
 
@@ -321,7 +321,7 @@ bool Contains(Span<int> buffer, int searched)
     }
 
     // If any elements remain, process the last vector in the search space.
-    if ((uint)buffer.Length % Vector128<int>.Count != 0)
+    if (buffer.Length % Vector128<int>.Count != 0)
     {
         loaded = Vector128.LoadUnsafe(ref searchSpace, oneVectorAwayFromEnd);
         if (Vector128.Equals(loaded, values) != Vector128<int>.Zero)
@@ -338,7 +338,7 @@ bool Contains(Span<int> buffer, int searched)
 
 `Vector128.Equals(Vector128 left, Vector128 right)` compares two vectors and returns a vector whose elements are all-bits-set or zero, depending on if the provided elements in left and right were equal. If the result of comparison is non zero, it means that there was at least one match.
 
-### AV testing
+### Access violation (AV) testing
 
 Handling the remainder in an invalid way, may lead to non-deterministic and hard to diagnose issues.
 
@@ -422,7 +422,7 @@ int ManagedReferencesSum(int[] buffer)
 {
     ref int current = ref MemoryMarshal.GetArrayDataReference(buffer);
     ref int end = ref Unsafe.Add(ref current, buffer.Length);
-    ref int oneVectorAwayFromEnd = ref Unsafe.Add(ref end, -Vector128<int>.Count);
+    ref int oneVectorAwayFromEnd = ref Unsafe.Subtract(ref end, Vector128<int>.Count);
 
     Vector128<int> sum = Vector128<int>.Zero;
 
@@ -577,7 +577,7 @@ Before we start working on the implementation, let's list all edge cases for our
 
 Once we know all edge cases, we need to understand our problem and find a scalar solution.
 
-ASCII characters are values in the range from `0` to `127` (inclusive). It means that we can find invalid ASCII bytes by just searching for values that are larger than `127`. If we treat `byte` (unsigned) as `sbyte` (signed), it's a matter of performing "is less than zero" check.
+ASCII characters are values in the range from `0` to `127` (inclusive). It means that we can find invalid ASCII bytes by just searching for values that are larger than `127`. If we treat `byte` (unsigned, range from 0 to 255) as `sbyte` (signed, range from -128 to 127), it's a matter of performing "is less than zero" check.
 
 The binary representation of 0-127 range is following:
 
@@ -746,7 +746,7 @@ Console.WriteLine(equals);
 <0, 0, -1, 0>
 ```
 
-`-1` is just `FFFFFFFF` (all-bits-set). We could use `GetElement` to get the first non-zero element.
+`-1` is just `0xFFFFFFFF` (all-bits-set). We could use `GetElement` to get the first non-zero element.
 
 ```cs
 public static T GetElement<T>(this Vector128<T> vector, int index) where T : struct
@@ -1033,9 +1033,7 @@ Console.WriteLine(Vector128.Shuffle(intVector, Vector128.Create(3, 2, 1, 0)));
 
 `Vector256.Shuffle` and `Avx2.Shuffle` are not identical.
 
-`Avx2.Shuffle` is effectively `2x128-bit ops` and so if we do `Vector256.Shuffle(value, Vector256.Create(0L, 1L, 0L, 1L))` it is going to think we want `value[0], value[1], value[0], value[1]`. Where-as `Avx2.Shuffle` treats this as `value[0], value[1], value[2], value[3]`.
-
-While `Vector256.Shuffle` treats it as a "single 256-bit vector" (rather than "2x128-bit vectors"). This was done for consistency and to better map to a cross-platform mentality where `AVX-512` and `SVE` all operate on "full width".
+`Avx2.Shuffle` is effectively `2x128-bit ops` while `Vector256.Shuffle` treats it as a "single 256-bit vector" (rather than "2x128-bit vectors"). This was done for consistency and to better map to a cross-platform mentality where `AVX-512` and `SVE` all operate on "full width".
 
 ## Summary
 
@@ -1048,8 +1046,8 @@ The main goal of the new `Vector128` and `Vector256` APIs is to make writing fas
 
 ### Best practices
 
-1. Implement tests that cover all code paths, including Acces Violation.
-2. Run tests for all hardware acceleration scenarios, use the existing env vars to do that.
+1. Implement tests that cover all code paths, including Acces Violations.
+2. Run tests for all hardware acceleration scenarios, use the existing environment variables to do that.
 3. Implement benchmarks that mimic real life scenarios, do not increase the complexity of your code when it's not beneficial for your end users.
 4. Prefer managed references over unsafe pointers to avoid pinning and safety issues.
 5. Use `ref MemoryMarshal.GetReference(span)` instead `ref span[0]` and `ref MemoryMarshal.GetArrayDataReference(array)` instead `ref array[0]` to handle empty buffers correctly.
