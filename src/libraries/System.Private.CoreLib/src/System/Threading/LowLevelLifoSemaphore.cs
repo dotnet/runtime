@@ -39,6 +39,9 @@ namespace System.Threading
 
         public bool Wait(int timeoutMs, bool spinWait)
         {
+#if TARGET_BROWSER && FEATURE_WASM_THREADS
+            ThrowIfInvalidSemaphoreKind(LifoSemaphoreKind.Normal);
+#endif
             Debug.Assert(timeoutMs >= -1);
 
             int spinCount = spinWait ? _spinCount : 0;

@@ -567,20 +567,16 @@ NOHANDLES(ICALL(ILOCK_21, "Increment(long&)", ves_icall_System_Threading_Interlo
 NOHANDLES(ICALL(ILOCK_22, "MemoryBarrierProcessWide", ves_icall_System_Threading_Interlocked_MemoryBarrierProcessWide))
 NOHANDLES(ICALL(ILOCK_23, "Read(long&)", ves_icall_System_Threading_Interlocked_Read_Long))
 
-/* include these icalls if we're in the threaded wasm runtime, or if we're building a wasm-targeting cross compiler and we need to support --print-icall-table */
-#if (defined(HOST_BROWSER) && !defined(DISABLE_THREADS)) || (defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP))
-ICALL_TYPE(JSSEM, "System.Threading.LowLevelJSSemaphore", JSSEM_1)
-NOHANDLES(ICALL(JSSEM_1, "DeleteInternal", ves_icall_System_Threading_LowLevelJSSemaphore_DeleteInternal))
-NOHANDLES(ICALL(JSSEM_2, "InitInternal", ves_icall_System_Threading_LowLevelJSSemaphore_InitInternal))
-NOHANDLES(ICALL(JSSEM_3, "PrepareWaitInternal", ves_icall_System_Threading_LowLevelJSSemaphore_PrepareWaitInternal))
-NOHANDLES(ICALL(JSSEM_4, "ReleaseInternal", ves_icall_System_Threading_LowLevelJSSemaphore_ReleaseInternal))
-#endif
-
 ICALL_TYPE(LIFOSEM, "System.Threading.LowLevelLifoSemaphore", LIFOSEM_1)
 NOHANDLES(ICALL(LIFOSEM_1, "DeleteInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal))
 NOHANDLES(ICALL(LIFOSEM_2, "InitInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal))
+/* include these icalls if we're in the threaded wasm runtime, or if we're building a wasm-targeting cross compiler and we need to support --print-icall-table */
+#if (defined(HOST_BROWSER) && !defined(DISABLE_THREADS)) || (defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP))
+NOHANDLES(ICALL(LIFOSEM_5, "PrepareAsyncWaitInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_PrepareAsyncWaitInternal))
+#endif
 NOHANDLES(ICALL(LIFOSEM_3, "ReleaseInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal))
 NOHANDLES(ICALL(LIFOSEM_4, "TimedWaitInternal", ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal))
+
 
 ICALL_TYPE(MONIT, "System.Threading.Monitor", MONIT_0)
 HANDLES(MONIT_0, "Enter", ves_icall_System_Threading_Monitor_Monitor_Enter, void, 1, (MonoObject))

@@ -4999,58 +4999,72 @@ ves_icall_System_Threading_Thread_GetCurrentOSThreadId (MonoError *error)
 }
 
 gpointer
-ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal (void)
+ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal (int32_t kind)
 {
-	return (gpointer)mono_lifo_semaphore_init ();
+	switch (kind) {
+	case LIFO_SEMAPHORE_NORMAL:
+		return (gpointer)mono_lifo_semaphore_init ();
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+	case LIFO_SEMAPHORE_ASYNC_JS:
+		return (gpointer)mono_lifo_js_semaphore_init ();
+#endif
+	default:
+		g_error ("Invalid LowLevelLifoSemaphore kind %d\n", kind);
+		g_assert_not_reached();
+	}
 }
 
 void
 ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal (gpointer sem_ptr)
 {
-	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	mono_lifo_semaphore_delete (sem);
+	LifoSemaphoreBase *sem = (LifoSemaphoreBase *)sem_ptr;
+	switch (sem->kind) {
+	case LIFO_SEMAPHORE_NORMAL:
+		mono_lifo_semaphore_delete ((LifoSemaphore*)sem);
+		break;
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+	case LIFO_SEMAPHORE_ASYNC_JS:
+		mono_lifo_js_semaphore_delete ((LifoJSSemaphore*)sem);
+		break;
+#endif
+	default:
+		g_assert_not_reached();
+	}
 }
 
 gint32
 ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal (gpointer sem_ptr, gint32 timeout_ms)
 {
 	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
+	g_assert (sem->base.kind == LIFO_SEMAPHORE_NORMAL);
 	return mono_lifo_semaphore_timed_wait (sem, timeout_ms);
 }
 
 void
 ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count)
 {
-	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	mono_lifo_semaphore_release (sem, count);
+	LifoSemaphoreBase *sem = (LifoSemaphoreBase *)sem_ptr;
+	switch (sem->kind) {
+	case LIFO_SEMAPHORE_NORMAL:
+		mono_lifo_semaphore_release ((LifoSemaphore*)sem, count);
+		break;
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+	case LIFO_SEMAPHORE_ASYNC_JS:
+		mono_lifo_js_semaphore_release ((LifoJSSemaphore*)sem, count);
+		break;
+#endif
+	default:
+		g_assert_not_reached();
+	}
 }
 
 #if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-gpointer
-ves_icall_System_Threading_LowLevelJSSemaphore_InitInternal (void)
-{
-	return (gpointer)mono_lifo_js_semaphore_init ();
-}
-
 void
-ves_icall_System_Threading_LowLevelJSSemaphore_DeleteInternal (gpointer sem_ptr)
+ves_icall_System_Threading_LowLevelLifoSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, gpointer gchandle, gpointer user_data)
 {
 	LifoJSSemaphore *sem = (LifoJSSemaphore *)sem_ptr;
-	mono_lifo_js_semaphore_delete (sem);
-}
-
-void
-ves_icall_System_Threading_LowLevelJSSemaphore_PrepareWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, gpointer gchandle, gpointer user_data)
-{
-	LifoJSSemaphore *sem = (LifoJSSemaphore *)sem_ptr;
+	g_assert (sem->base.kind == LIFO_SEMAPHORE_ASYNC_JS);
 	mono_lifo_js_semaphore_prepare_wait (sem, timeout_ms, (LifoJSSemaphoreCallbackFn)success_cb, (LifoJSSemaphoreCallbackFn)timedout_cb, (uint32_t)(MonoGCHandle)gchandle, user_data);
-}
-
-void
-ves_icall_System_Threading_LowLevelJSSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count)
-{
-	LifoJSSemaphore *sem = (LifoJSSemaphore *)sem_ptr;
-	mono_lifo_js_semaphore_release (sem, count);
 }
 
 void
@@ -5091,29 +5105,10 @@ ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
 /* for the AOT cross compiler with --print-icall-table these don't need to be callable, they just
  * need to be defined */
 #if defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP)
-gpointer
-ves_icall_System_Threading_LowLevelJSSemaphore_InitInternal (void)
-{
-	g_assert_not_reached();
-}
-
 void
-ves_icall_System_Threading_LowLevelJSSemaphore_DeleteInternal (gpointer sem_ptr)
+ves_icall_System_Threading_LowLevelLifoSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, gpointer gchandle, gpointer user_data)
 {
 	g_assert_not_reached();
-}
-
-void
-ves_icall_System_Threading_LowLevelJSSemaphore_PrepareWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, gpointer gchandle, gpointer user_data)
-{
-	g_assert_not_reached();
-}
-
-void
-ves_icall_System_Threading_LowLevelJSSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count)
-{
-	g_assert_not_reached();
-
 }
 
 void

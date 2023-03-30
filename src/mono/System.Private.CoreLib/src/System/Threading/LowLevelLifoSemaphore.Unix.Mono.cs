@@ -8,14 +8,24 @@ namespace System.Threading
     internal sealed unsafe partial class LowLevelLifoSemaphore : IDisposable
     {
         private IntPtr lifo_semaphore;
+#if FEATURE_WASM_THREADS
+        private LifoSemaphoreKind _kind;
+
+        // Keep in sync with lifo-semaphore.h
+        private enum LifoSemaphoreKind : int {
+            Normal = 1,
+            AsyncJS = 2,
+        }
+#endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern IntPtr InitInternal();
+        private static extern IntPtr InitInternal(int kind);
 
 #pragma warning disable IDE0060
         private void Create(int maximumSignalCount)
         {
-            lifo_semaphore = InitInternal();
+            _kind = LifoSemaphoreKind.Normal;
+            lifo_semaphore = InitInternal((int)_kind);
         }
 #pragma warning restore IDE0060
 
@@ -26,6 +36,7 @@ namespace System.Threading
         {
             DeleteInternal(lifo_semaphore);
             lifo_semaphore = IntPtr.Zero;
+            _kind = (LifoSemaphoreKind)0;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -33,7 +44,14 @@ namespace System.Threading
 
         private bool WaitCore(int timeoutMs)
         {
+            ThrowIfInvalidSemaphoreKind(LifoSemaphoreKind.Normal);
             return TimedWaitInternal(lifo_semaphore, timeoutMs) != 0;
+        }
+
+        private void ThrowIfInvalidSemaphoreKind(LifoSemaphoreKind expected)
+        {
+            if (_kind != expected)
+                throw new InvalidOperationException ($"Unexpected LowLevelLifoSemaphore kind {_kind} expected {expected}");
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
