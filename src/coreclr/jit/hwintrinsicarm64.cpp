@@ -424,7 +424,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(retType == TYP_SIMD8);
 
             op1     = impSIMDPopStack(TYP_SIMD16);
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector128_GetLower, simdBaseJitType, simdSize);
+            retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_Vector128_GetLower, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1056,7 +1056,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsByte(simdBaseType) && (simdSize == 16))
             {
-                CORINFO_CLASS_HANDLE simdClsHnd = gtGetStructHandleForSIMD(simdType, simdBaseJitType);
+                CORINFO_CLASS_HANDLE simdClsHnd = gtGetStructHandleForSimdOrHW(TYP_SIMD16, simdBaseJitType);
 
                 op1 = impCloneExpr(op1, &op2, simdClsHnd, CHECK_SPILL_ALL,
                                    nullptr DEBUGARG("Clone op1 for vector extractmostsignificantbits"));
@@ -1069,10 +1069,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                                /* isSimdAsHWIntrinsic */ false);
                 op1 = gtNewCastNode(TYP_INT, op1, /* isUnsigned */ true, TYP_INT);
 
-                GenTree* zero  = gtNewZeroConNode(simdType);
+                GenTree* zero  = gtNewZeroConNode(TYP_SIMD16);
                 ssize_t  index = 8 / genTypeSize(simdBaseType);
 
-                op2 = gtNewSimdHWIntrinsicNode(simdType, op2, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
+                op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
                                                simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
                 op2 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op2, NI_Vector128_GetLower, simdBaseJitType, simdSize,
                                                /* isSimdAsHWIntrinsic */ false);
@@ -1091,7 +1091,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     if ((simdSize == 8) && ((simdBaseType == TYP_INT) || (simdBaseType == TYP_UINT)))
                     {
-                        CORINFO_CLASS_HANDLE simdClsHnd = gtGetStructHandleForSIMD(simdType, simdBaseJitType);
+                        CORINFO_CLASS_HANDLE simdClsHnd = gtGetStructHandleForSimdOrHW(simdType, simdBaseJitType);
 
                         op1 = impCloneExpr(op1, &op2, simdClsHnd, CHECK_SPILL_ALL,
                                            nullptr DEBUGARG("Clone op1 for vector extractmostsignificantbits"));

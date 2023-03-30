@@ -346,6 +346,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Icu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureNotFoundException.cs" />
@@ -808,6 +809,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\InternalsVisibleToAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IntrinsicAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsByRefLikeAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\InlineArrayAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsConst.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsReadOnlyAttribute.cs" />
@@ -1277,6 +1279,9 @@
     <Compile Include="$(CommonPath)Interop\Interop.Locale.cs">
       <Link>Common\Interop\Interop.Locale.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.Locale.OSX.cs" Condition="'$(IsOSXLike)' == 'true'">
+      <Link>Common\Interop\Interop.Locale.OSX.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Normalization.cs">
       <Link>Common\Interop\Interop.Normalization.cs</Link>
     </Compile>
@@ -1316,6 +1321,12 @@
     </Compile>
     <Compile Include="$(CommonPath)SkipLocalsInit.cs">
       <Link>Common\SkipLocalsInit.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\ITimer.cs">
+      <Link>Common\System\ITimer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\TimeProvider.cs">
+      <Link>Common\System\TimeProvider.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
       <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
@@ -1358,6 +1369,9 @@
     </Compile>
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Reflection\TypeNameParser.cs">
+      <Link>Common\System\Reflection\TypeNameParser.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs">
       <Link>Common\System\Runtime\Versioning\NonVersionableAttribute.cs</Link>

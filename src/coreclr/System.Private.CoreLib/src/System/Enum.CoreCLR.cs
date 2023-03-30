@@ -82,17 +82,22 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(RuntimeType enumType, bool getNames = true)
-            where TUnderlyingValue : struct, INumber<TUnderlyingValue>
+        private static EnumInfo<TStorage> GetEnumInfo<TStorage>(RuntimeType enumType, bool getNames = true)
+            where TStorage : struct, INumber<TStorage>
         {
-            return enumType.GenericCache is EnumInfo<TUnderlyingValue> info && (!getNames || info.Names is not null) ?
+            Debug.Assert(
+                typeof(TStorage) == typeof(byte) || typeof(TStorage) == typeof(ushort) || typeof(TStorage) == typeof(uint) || typeof(TStorage) == typeof(ulong) ||
+                typeof(TStorage) == typeof(nuint) || typeof(TStorage) == typeof(float) || typeof(TStorage) == typeof(double) || typeof(TStorage) == typeof(char),
+                $"Unexpected {nameof(TStorage)} == {typeof(TStorage)}");
+
+            return enumType.GenericCache is EnumInfo<TStorage> info && (!getNames || info.Names is not null) ?
                 info :
                 InitializeEnumInfo(enumType, getNames);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static EnumInfo<TUnderlyingValue> InitializeEnumInfo(RuntimeType enumType, bool getNames)
+            static EnumInfo<TStorage> InitializeEnumInfo(RuntimeType enumType, bool getNames)
             {
-                TUnderlyingValue[]? values = null;
+                TStorage[]? values = null;
                 string[]? names = null;
 
                 GetEnumValuesAndNames(
@@ -101,12 +106,12 @@ namespace System
                     ObjectHandleOnStack.Create(ref names),
                     getNames ? Interop.BOOL.TRUE : Interop.BOOL.FALSE);
 
-                Debug.Assert(values!.GetType() == typeof(TUnderlyingValue[]));
+                Debug.Assert(values!.GetType() == typeof(TStorage[]));
                 Debug.Assert(!getNames || names!.GetType() == typeof(string[]));
 
                 bool hasFlagsAttribute = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);
 
-                var entry = new EnumInfo<TUnderlyingValue>(hasFlagsAttribute, values, names!);
+                var entry = new EnumInfo<TStorage>(hasFlagsAttribute, values, names!);
                 enumType.GenericCache = entry;
                 return entry;
             }

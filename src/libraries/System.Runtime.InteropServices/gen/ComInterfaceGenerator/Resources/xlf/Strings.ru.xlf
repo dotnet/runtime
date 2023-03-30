@@ -94,17 +94,17 @@
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageDescription">
         <source>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="new">Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <target state="translated">Интерфейсы с атрибутом GeneratedComInterfaceAttribute должны быть частичными и должны указывать GUID с помощью System.Runtime.InteropServices.GuidAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute">
         <source>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</source>
-        <target state="new">Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</target>
+        <target state="translated">Для "{0}" интерфейса указан атрибут GeneratedComInterfaceAttribute, но отсутствует атрибут System.Runtime.InteropServices.GuidAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGeneratedComInterfaceAttributeUsageTitle">
         <source>Invalid 'GeneratedComInterfaceAttribute' usage.</source>
-        <target state="new">Invalid 'GeneratedComInterfaceAttribute' usage.</target>
+        <target state="translated">Недопустимое применение GeneratedComInterfaceAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidStringMarshallingConfigurationDescription">

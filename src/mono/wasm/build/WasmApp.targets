@@ -49,9 +49,13 @@
       - $(EmccFlags)                        - Emcc flags used for both compiling native files, and linking
       - $(EmccExtraLDFlags)                 - Extra emcc flags for linking
       - $(EmccExtraCFlags)                  - Extra emcc flags for compiling native files
+      - $(EmccEnableAssertions)             - Corresponds to `ASSERTIONS` arg for emcc. Default false.
+      - $(EmccEnvironment)                  - Corresponds to `ENVIRONMENT` arg for emcc. Default is `web,webview,worker,node,shell`.
       - $(EmccInitialHeapSize)              - Initial heap size specified with `emcc`. Default value: 16777216 or size of the DLLs, whichever is larger.
-                                              Corresponds to `INITIAL_MEMORY` arg for emcc.
+                                              Corresponds to `-s INITIAL_MEMORY=...` emcc arg.
                                               (previously named EmccTotalMemory, which is still kept as an alias)
+      - $(EmccStackSize)                    - Stack size. Default value: 5MB.
+                                              Corresponds to `-s STACK_SIZE=...` emcc arg.
 
       - $(WasmBuildAppAfterThisTarget)      - This target is used as `AfterTargets` for `WasmBuildApp. this
                                               is what triggers the wasm app building. Defaults to `Build`.
@@ -88,6 +92,7 @@
                                     <WasmExtraConfig Include="string_val" Value="&quot;abc&quot;" />
                                     <WasmExtraConfig Include="string_with_json" Value="&quot;{ &quot;abc&quot;: 4 }&quot;" />
       - @(EmccExportedRuntimeMethod) - Extra method for emcc flag EXPORTED_RUNTIME_METHODS
+      - @(EmccExportedLibraryFunction) - Extra method for emcc flag DEFAULT_LIBRARY_FUNCS_TO_INCLUDE
       - @(EmccExportedFunction)      - Extra function for emcc flag EXPORTED_FUNCTIONS
   -->
 
@@ -339,7 +344,6 @@
                        Condition="'$(WasmEmitSymbolMap)' == 'true' and
                                   '$(_HasDotnetJsSymbols)' != 'true' and
                                   Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.symbols')" />
-      <WasmFilesToIncludeInFileSystem Include="@(WasmNativeAsset)" Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(InvariantGlobalization)' != 'true'">
@@ -362,7 +366,7 @@
     <PropertyGroup>
       <_WasmAppIncludeThreadsWorker Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'">true</_WasmAppIncludeThreadsWorker>
       <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.js -->
-      <_WasmPThreadPoolSize Condition="'$(_WasmPThreadPoolSize)' == '' and ('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true')">-1</_WasmPThreadPoolSize>
+      <_WasmPThreadPoolSize Condition="'$(_WasmPThreadPoolSize)' == ''">-1</_WasmPThreadPoolSize>
     </PropertyGroup>
 
     <ItemGroup>

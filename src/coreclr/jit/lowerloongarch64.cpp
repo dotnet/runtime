@@ -295,7 +295,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             blkNode->SetOper(GT_STORE_BLK);
         }
 
-        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= INITBLK_UNROLL_LIMIT) && src->OperIs(GT_CNS_INT))
+        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)) &&
+            src->OperIs(GT_CNS_INT))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -347,13 +348,15 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
             comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
+
+        unsigned copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
         if (blkNode->OperIs(GT_STORE_OBJ))
         {
             if (!blkNode->AsObj()->GetLayout()->HasGCPtr())
             {
                 blkNode->SetOper(GT_STORE_BLK);
             }
-            else if (dstAddr->OperIsLocalAddr() && (size <= CPBLK_UNROLL_LIMIT))
+            else if (dstAddr->OperIsLocalAddr() && (size <= copyBlockUnrollLimit))
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the
@@ -370,8 +373,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
         }
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////
-        else if (blkNode->OperIs(GT_STORE_BLK) && (size <= CPBLK_UNROLL_LIMIT))
+        else if (blkNode->OperIs(GT_STORE_BLK) && (size <= copyBlockUnrollLimit))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 

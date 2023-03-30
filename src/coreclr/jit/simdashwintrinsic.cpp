@@ -240,7 +240,7 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
     // if it isn't the basis for anything carried on the node.
     simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &simdSize);
 
-    if ((clsHnd != m_simdHandleCache->SIMDVectorHandle) &&
+    if ((clsHnd != m_simdHandleCache->VectorHandle) &&
         ((simdBaseJitType == CORINFO_TYPE_UNDEF) || !varTypeIsArithmetic(JitType2PreciseVarType(simdBaseJitType))))
     {
         // We want to exit early if the clsHnd should have a base type and it isn't one
@@ -286,7 +286,7 @@ GenTree* Compiler::impSimdAsHWIntrinsic(NamedIntrinsic        intrinsic,
             simdBaseJitType = getBaseJitTypeAndSizeOfSIMDType(clsHnd, &simdSize);
         }
     }
-    else if ((clsHnd == m_simdHandleCache->SIMDVectorHandle) && (numArgs != 0) &&
+    else if ((clsHnd == m_simdHandleCache->VectorHandle) && (numArgs != 0) &&
              !SimdAsHWIntrinsicInfo::KeepBaseTypeFromRet(intrinsic))
     {
         // We need to fixup the clsHnd in the case we are an intrinsic on Vector

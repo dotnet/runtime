@@ -45,7 +45,7 @@ namespace Microsoft.Interop
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            // Get all methods with the [GeneratedComInterface] attribute.
+            // Get all types with the [GeneratedComInterface] attribute.
             var attributedInterfaces = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
                     TypeNames.GeneratedComInterfaceAttribute,
@@ -62,7 +62,7 @@ namespace Microsoft.Interop
                 return new { data.Syntax, data.Symbol, Diagnostic = diagnostic };
             });
 
-            // Split the methods we want to generate and the ones we don't into two separate groups.
+            // Split the types we want to generate and the ones we don't into two separate groups.
             var interfacesToGenerate = interfacesWithDiagnostics.Where(static data => data.Diagnostic is null);
             var invalidTypeDiagnostics = interfacesWithDiagnostics.Where(static data => data.Diagnostic is not null);
 
@@ -393,6 +393,47 @@ namespace Microsoft.Interop
             // Create the stub.
             var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, new InteropAttributeCompilationData(), generatedComAttribute), environment, typeof(VtableIndexStubGenerator).Assembly);
 
+            // Search for the element information for the managed return value.
+            // We need to transform it such that any return type is converted to an out parameter at the end of the parameter list.
+            ImmutableArray<TypePositionInfo> returnSwappedSignatureElements = signatureContext.ElementTypeInformation;
+            for (int i = 0; i < returnSwappedSignatureElements.Length; ++i)
+            {
+                if (returnSwappedSignatureElements[i].IsManagedReturnPosition)
+                {
+                    if (returnSwappedSignatureElements[i].ManagedType == SpecialTypeInfo.Void)
+                    {
+                        // Return type is void, just remove the element from the signature list.
+                        // We don't introduce an out parameter.
+                        returnSwappedSignatureElements = returnSwappedSignatureElements.RemoveAt(i);
+                    }
+                    else
+                    {
+                        // Convert the current element into an out parameter on the native signature
+                        // while keeping it at the return position in the managed signature.
+                        var managedSignatureAsNativeOut = returnSwappedSignatureElements[i] with
+                        {
+                            RefKind = RefKind.Out,
+                            RefKindSyntax = SyntaxKind.OutKeyword,
+                            ManagedIndex = TypePositionInfo.ReturnIndex,
+                            NativeIndex = symbol.Parameters.Length
+                        };
+                        returnSwappedSignatureElements = returnSwappedSignatureElements.SetItem(i, managedSignatureAsNativeOut);
+                    }
+                    break;
+                }
+            }
+
+            signatureContext = signatureContext with
+            {
+                // Add the HRESULT return value in the native signature.
+                // This element does not have any influence on the managed signature, so don't assign a managed index.
+                ElementTypeInformation = returnSwappedSignatureElements.Add(
+                    new TypePositionInfo(SpecialTypeInfo.Int32, new ManagedHResultExceptionMarshallingInfo())
+                    {
+                        NativeIndex = TypePositionInfo.ReturnIndex
+                    })
+            };
+
             var containingSyntaxContext = new ContainingSyntaxContext(syntax);
 
             var methodSyntaxTemplate = new ContainingSyntax(syntax.Modifiers.StripTriviaFromTokens(), SyntaxKind.MethodDeclaration, syntax.Identifier, syntax.TypeParameterList);
@@ -685,7 +726,7 @@ namespace Microsoft.Interop
                         .WithExpressionBody(
                             ArrowExpressionClause(
                                 ConditionalExpression(
-                                    BinaryExpression(SyntaxKind.EqualsExpression,
+                                    BinaryExpression(SyntaxKind.NotEqualsExpression,
                                         IdentifierName(vtableFieldName),
                                         LiteralExpression(SyntaxKind.NullLiteralExpression)),
                                     IdentifierName(vtableFieldName),

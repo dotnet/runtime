@@ -190,7 +190,7 @@ enum _regMask_enum : unsigned
 #error Unsupported target architecture
 #endif
 
-#if defined(TARGET_AMD64)
+#if defined(TARGET_XARCH)
 // AVAILABLE_REG_COUNT is defined to be dynamic, based on whether AVX-512 high registers are available.
 #define AVAILABLE_REG_COUNT get_AVAILABLE_REG_COUNT()
 #else
@@ -298,7 +298,6 @@ C_ASSERT((FEATURE_TAILCALL_OPT == 0) || (FEATURE_FASTTAILCALL == 1));
 /*****************************************************************************/
 
 #define BITS_PER_BYTE              8
-#define RBM_ALL(type) (varTypeUsesFloatReg(type) ? RBM_ALLFLOAT : RBM_ALLINT)
 
 /*****************************************************************************/
 
@@ -352,7 +351,7 @@ inline bool isByteReg(regNumber reg)
 #endif
 
 inline regMaskTP genRegMask(regNumber reg);
-inline regMaskTP genRegMaskFloat(regNumber reg, var_types type = TYP_DOUBLE);
+inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
 
 /*****************************************************************************
  * Return true if the register number is valid
@@ -557,7 +556,7 @@ inline regMaskTP genRegMask(regNumber reg)
  *  Map a register number to a floating-point register mask.
  */
 
-inline regMaskTP genRegMaskFloat(regNumber reg, var_types type /* = TYP_DOUBLE */)
+inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_DOUBLE */))
 {
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64)
     assert(genIsValidFloatReg(reg));
@@ -601,20 +600,22 @@ inline regMaskTP genRegMaskFloat(regNumber reg, var_types type /* = TYP_DOUBLE *
 //
 inline regMaskTP genRegMask(regNumber regNum, var_types type)
 {
-#ifndef TARGET_ARM
-    return genRegMask(regNum);
-#else
+#if defined(TARGET_ARM)
     regMaskTP regMask = RBM_NONE;
 
-    if (varTypeUsesFloatReg(type))
-    {
-        regMask = genRegMaskFloat(regNum, type);
-    }
-    else
+    if (varTypeUsesIntReg(type))
     {
         regMask = genRegMask(regNum);
     }
+    else
+    {
+        assert(varTypeUsesFloatReg(type));
+        regMask = genRegMaskFloat(regNum, type);
+    }
+
     return regMask;
+#else
+    return genRegMask(regNum);
 #endif
 }
 
@@ -654,16 +655,27 @@ inline regNumber regNextOfType(regNumber reg, var_types type)
     regReturn = REG_NEXT(reg);
 #endif
 
-    if (varTypeUsesFloatReg(type))
+    if (varTypeUsesIntReg(type))
     {
-        if (regReturn > REG_FP_LAST)
+        if (regReturn > REG_INT_LAST)
         {
             regReturn = REG_NA;
         }
     }
+#if defined(TARGET_XARCH)
+    else if (varTypeUsesMaskReg(type))
+    {
+        if (regReturn > REG_MASK_LAST)
+        {
+            regReturn = REG_NA;
+        }
+    }
+#endif // TARGET_XARCH
     else
     {
-        if (regReturn > REG_INT_LAST)
+        assert(varTypeUsesFloatReg(type));
+
+        if (regReturn > REG_FP_LAST)
         {
             regReturn = REG_NA;
         }

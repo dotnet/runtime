@@ -3055,6 +3055,26 @@ unsigned CallArgs::CountArgs()
 }
 
 //------------------------------------------------------------------------
+// CountArgs: Count the number of arguments ignoring non-user ones, e.g.
+//    r2r cell argument in a user function.
+//
+// Remarks:
+//   See IsUserArg's comments
+//
+unsigned CallArgs::CountUserArgs()
+{
+    unsigned numArgs = 0;
+    for (CallArg& arg : Args())
+    {
+        if (arg.IsUserArg())
+        {
+            numArgs++;
+        }
+    }
+    return numArgs;
+}
+
+//------------------------------------------------------------------------
 // fgMorphArgs: Walk and transform (morph) the arguments of a call
 //
 // Arguments:
@@ -3312,7 +3332,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         {
                             argVarDsc = lvaGetDesc(argLclNum);
                             if ((genTypeSize(argVarDsc) != originalSize) ||
-                                (varTypeUsesFloatReg(argVarDsc) != varTypeUsesFloatReg(structBaseType)))
+                                !varTypeUsesSameRegType(argVarDsc, structBaseType))
                             {
                                 argLclNum = BAD_VAR_NUM;
                             }
@@ -3775,7 +3795,8 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 
                 var_types fieldType = lvaGetDesc(fieldLclNum)->TypeGet();
                 var_types regType   = genActualType(elems[inx].Type);
-                if (varTypeUsesFloatReg(fieldType) != varTypeUsesFloatReg(regType))
+
+                if (!varTypeUsesSameRegType(fieldType, regType))
                 {
                     // TODO-LSRA - It currently doesn't support the passing of floating point LCL_VARS in the
                     // integer registers. So for now we will use GT_LCLFLD's to pass this struct.
@@ -7047,14 +7068,8 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     // If pRuntimeLookup->indirections is equal to CORINFO_USEHELPER, it specifies that a run-time helper should be
     // used; otherwise, it specifies the number of indirections via pRuntimeLookup->offsets array.
     if ((pRuntimeLookup->indirections == CORINFO_USEHELPER) || (pRuntimeLookup->indirections == CORINFO_USENULL) ||
-        pRuntimeLookup->testForNull || pRuntimeLookup->testForFixup)
+        pRuntimeLookup->testForNull)
     {
-        // If the first condition is true, runtime lookup tree is available only via the run-time helper function.
-        // TODO-CQ If the second or third condition is true, we are always using the slow path since we can't
-        // introduce control flow at this point. See impRuntimeLookupToTree for the logic to avoid calling the helper.
-        // The long-term solution is to introduce a new node representing a runtime lookup, create instances
-        // of that node both in the importer and here, and expand the node in lower (introducing control flow if
-        // necessary).
         return gtNewRuntimeLookupHelperCallNode(pRuntimeLookup,
                                                 getRuntimeContextTree(pLookup->lookupKind.runtimeLookupKind),
                                                 compileTimeHandle);
@@ -7111,7 +7126,6 @@ GenTree* Compiler::getRuntimeLookupTree(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     assert(!pRuntimeLookup->testForNull);
     if (pRuntimeLookup->indirections > 0)
     {
-        assert(!pRuntimeLookup->testForFixup);
         result = gtNewOperNode(GT_IND, TYP_I_IMPL, result);
         result->gtFlags |= GTF_IND_NONFAULTING;
     }
@@ -8366,7 +8380,7 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
                 // to turn the tree type into "CorInfoType".
                 if ((tree->TypeGet() == simdBaseType) && ((fieldOffset % baseTypeSize) == 0))
                 {
-                    *simdSizeOut        = varDsc->lvExactSize;
+                    *simdSizeOut        = varDsc->lvExactSize();
                     *simdBaseJitTypeOut = simdBaseJitType;
                     *indexOut           = fieldOffset / baseTypeSize;
 
@@ -9834,12 +9848,10 @@ DONE_MORPHING_CHILDREN:
 
             // Only do this optimization when we are in the global optimizer. Doing this after value numbering
             // could result in an invalid value number for the newly generated GT_IND node.
-            if ((op1->OperGet() == GT_COMMA) && fgGlobalMorph)
+            // We skip INDs with GTF_DONT_CSE which is set if the IND is a location.
+            if (op1->OperIs(GT_COMMA) && fgGlobalMorph && ((tree->gtFlags & GTF_DONT_CSE) == 0))
             {
                 // Perform the transform IND(COMMA(x, ..., z)) -> COMMA(x, ..., IND(z)).
-                // TBD: this transformation is currently necessary for correctness -- it might
-                // be good to analyze the failures that result if we don't do this, and fix them
-                // in other ways.  Ideally, this should be optional.
                 GenTree*     commaNode = op1;
                 GenTreeFlags treeFlags = tree->gtFlags;
                 commaNode->gtType      = typ;
@@ -11510,6 +11522,13 @@ GenTree* Compiler::fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow,
     // Comma throw propagation does not preserve VNs, and deletes nodes.
     assert(fgGlobalMorph);
     assert(fgIsCommaThrow(commaThrow));
+
+    bool mightBeLocation = parent->OperIsIndir() && ((parent->gtFlags & GTF_DONT_CSE) != 0);
+
+    if (mightBeLocation)
+    {
+        return nullptr;
+    }
 
     if ((commaThrow->gtFlags & GTF_COLON_COND) == 0)
     {
@@ -13499,6 +13518,60 @@ bool Compiler::fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(cons
     return removedStmt;
 }
 
+//------------------------------------------------------------------------
+// fgMorphStmtBlockOps: Morph all block ops in the specified statement.
+//
+// Arguments:
+//    stmt - the statement
+//
+void Compiler::fgMorphStmtBlockOps(BasicBlock* block, Statement* stmt)
+{
+    struct Visitor : GenTreeVisitor<Visitor>
+    {
+        enum
+        {
+            DoPostOrder = true,
+        };
+
+        Visitor(Compiler* comp) : GenTreeVisitor(comp)
+        {
+        }
+
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            if ((*use)->OperIsBlkOp())
+            {
+                if ((*use)->OperIs(GT_STORE_DYN_BLK))
+                {
+                    *use = m_compiler->fgMorphStoreDynBlock((*use)->AsStoreDynBlk());
+                }
+                else if ((*use)->OperIsInitBlkOp())
+                {
+                    *use = m_compiler->fgMorphInitBlock(*use);
+                }
+                else
+                {
+                    *use = m_compiler->fgMorphCopyBlock(*use);
+                }
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    compCurBB   = block;
+    compCurStmt = stmt;
+    Visitor visitor(this);
+    visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+
+    gtSetStmtInfo(stmt);
+
+    if (fgNodeThreading == NodeThreading::AllTrees)
+    {
+        fgSetStmtSeq(stmt);
+    }
+}
+
 /*****************************************************************************
  *
  *  Morph the statements of the given block.
@@ -13793,14 +13866,13 @@ void Compiler::fgMorphBlocks()
     //
     if (opts.IsOSR() && (fgEntryBB != nullptr))
     {
-        if (fgOSROriginalEntryBBProtected)
-        {
-            JITDUMP("OSR: un-protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
-            assert(fgEntryBB->bbRefs > 0);
-            fgEntryBB->bbRefs--;
-        }
+        JITDUMP("OSR: un-protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
+        assert(fgEntryBBExtraRefs == 1);
+        assert(fgEntryBB->bbRefs >= 1);
+        fgEntryBB->bbRefs--;
+        fgEntryBBExtraRefs = 0;
 
-        // And we don't need to remember this block anymore.
+        // We don't need to remember this block anymore.
         fgEntryBB = nullptr;
     }
 
@@ -14490,8 +14562,10 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
     // if they are going to be cleared by fgSplitBlockAfterStatement(). We currently only do this only
     // for the GC safe point bit, the logic being that if 'block' was marked gcsafe, then surely
     // remainderBlock will still be GC safe.
-    BasicBlockFlags propagateFlags = block->bbFlags & BBF_GC_SAFE_POINT;
-    BasicBlock*     remainderBlock = fgSplitBlockAfterStatement(block, stmt);
+    BasicBlockFlags propagateFlagsToRemainder = block->bbFlags & BBF_GC_SAFE_POINT;
+    // Conservatively propagate BBF_COPY_PROPAGATE flags to all blocks
+    BasicBlockFlags propagateFlagsToAll = block->bbFlags & BBF_COPY_PROPAGATE;
+    BasicBlock*     remainderBlock      = fgSplitBlockAfterStatement(block, stmt);
     fgRemoveRefPred(remainderBlock, block); // We're going to put more blocks between block and remainderBlock.
 
     BasicBlock* condBlock = fgNewBBafter(BBJ_COND, block, true);
@@ -14507,13 +14581,16 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
         elseBlock->bbFlags |= BBF_IMPORTED;
     }
 
-    remainderBlock->bbFlags |= propagateFlags;
+    remainderBlock->bbFlags |= (propagateFlagsToRemainder | propagateFlagsToAll);
 
     condBlock->inheritWeight(block);
 
     fgAddRefPred(condBlock, block);
     fgAddRefPred(elseBlock, condBlock);
     fgAddRefPred(remainderBlock, elseBlock);
+
+    condBlock->bbFlags |= propagateFlagsToAll;
+    elseBlock->bbFlags |= propagateFlagsToAll;
 
     BasicBlock* thenBlock = nullptr;
     if (hasTrueExpr && hasFalseExpr)
@@ -14531,6 +14608,7 @@ void Compiler::fgExpandQmarkStmt(BasicBlock* block, Statement* stmt)
 
         thenBlock             = fgNewBBafter(BBJ_ALWAYS, condBlock, true);
         thenBlock->bbJumpDest = remainderBlock;
+        thenBlock->bbFlags |= propagateFlagsToAll;
         if ((block->bbFlags & BBF_INTERNAL) == 0)
         {
             thenBlock->bbFlags &= ~BBF_INTERNAL;
@@ -14739,7 +14817,7 @@ PhaseStatus Compiler::fgPromoteStructs()
 
         // If we have marked this as lvUsedInSIMDIntrinsic, then we do not want to promote
         // its fields.  Instead, we will attempt to enregister the entire struct.
-        if (varDsc->lvIsSIMDType() && (varDsc->lvIsUsedInSIMDIntrinsic() || isOpaqueSIMDLclVar(varDsc)))
+        if (varTypeIsSIMD(varDsc) && (varDsc->lvIsUsedInSIMDIntrinsic() || isOpaqueSIMDLclVar(varDsc)))
         {
             varDsc->lvRegStruct = true;
         }
@@ -14761,7 +14839,7 @@ PhaseStatus Compiler::fgPromoteStructs()
 
         madeChanges |= promotedVar;
 
-        if (!promotedVar && varDsc->lvIsSIMDType() && !varDsc->lvFieldAccessed)
+        if (!promotedVar && varTypeIsSIMD(varDsc) && !varDsc->lvFieldAccessed)
         {
             // Even if we have not used this in a SIMD intrinsic, if it is not being promoted,
             // we will treat it as a reg struct.
