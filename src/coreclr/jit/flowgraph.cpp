@@ -4296,7 +4296,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo);
 
-    if (threadStaticBlocksInfo.tlsIndex > 0)
+    if (threadStaticBlocksInfo.tlsIndex == 0)
     {
         noway_assert(!"_tls_index should be > 0");
     }
