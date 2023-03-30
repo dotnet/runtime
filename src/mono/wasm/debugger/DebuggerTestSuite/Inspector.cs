@@ -351,13 +351,22 @@ namespace DebuggerTests
             });
         }
 
-        public async Task OpenSessionAsync(Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> getInitCmds, TimeSpan span)
+        public async Task OpenSessionAsync(Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> getInitCmds, string urlToInspect, TimeSpan span)
         {
+            int retry = 0;
             var start = DateTime.Now;
             try
             {
                 await LaunchBrowser(start, span);
-
+Retry:
+                if (_isFailingWithException is not null && retry == 0)
+                {
+                    _isFailingWithException = null;
+                    _cancellationTokenSource = new CancellationTokenSource();
+                    Token = _cancellationTokenSource.Token;
+                    retry++;
+                    await Client.SendCommand("Page.navigate", JObject.FromObject(new { url = urlToInspect }), _cancellationTokenSource.Token);
+                }
                 var init_cmds = getInitCmds(Client, _cancellationTokenSource.Token);
 
                 Task<Result> readyTask = Task.Run(async () => Result.FromJson(await WaitFor(APP_READY)));
@@ -373,7 +382,12 @@ namespace DebuggerTests
                     string cmd_name = init_cmds[cmdIdx].Item1;
 
                     if (_isFailingWithException is not null)
-                        throw _isFailingWithException;
+                    {
+                        if (retry == 0)
+                            goto Retry;
+                        else
+                            throw _isFailingWithException;
+                    }
 
                     if (completedTask.IsCanceled)
                     {

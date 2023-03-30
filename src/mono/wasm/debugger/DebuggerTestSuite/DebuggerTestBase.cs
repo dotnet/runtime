@@ -164,7 +164,7 @@ namespace DebuggerTests
              };
 
             await Ready();
-            await insp.OpenSessionAsync(fn, TestTimeout);
+            await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
         }
 
         public virtual async Task DisposeAsync()
