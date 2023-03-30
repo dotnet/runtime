@@ -551,7 +551,7 @@ private:
     BasicBlock*           m_block;
 
 #ifdef FEATURE_FIXED_OUT_ARGS
-    unsigned              m_outgoingArgSpaceSize = 0;
+    unsigned m_outgoingArgSpaceSize = 0;
 #endif
 };
 

@@ -8284,7 +8284,8 @@ void Lowering::RequireOutgoingArgSpace(GenTree* node, unsigned size)
         return;
     }
 
-    JITDUMP("Bumping outgoing arg space size from %u to %u for [%06u]\n", m_outgoingArgSpaceSize, size, Compiler::dspTreeID(node));
+    JITDUMP("Bumping outgoing arg space size from %u to %u for [%06u]\n", m_outgoingArgSpaceSize, size,
+            Compiler::dspTreeID(node));
     m_outgoingArgSpaceSize = size;
 #endif
 }
@@ -8313,7 +8314,8 @@ void Lowering::FinalizeOutgoingArgSpace()
     if (m_outgoingArgSpaceSize < MIN_ARG_AREA_FOR_CALL)
     {
         if (comp->compUsesThrowHelper || comp->compIsProfilerHookNeeded() ||
-            (comp->compMethodRequiresPInvokeFrame() && !comp->opts.ShouldUsePInvokeHelpers()) || comp->getNeedsGSSecurityCookie())
+            (comp->compMethodRequiresPInvokeFrame() && !comp->opts.ShouldUsePInvokeHelpers()) ||
+            comp->getNeedsGSSecurityCookie())
         {
             m_outgoingArgSpaceSize = MIN_ARG_AREA_FOR_CALL;
             JITDUMP("Bumping outgoing arg space size to %u for possible helper or profile hook call",
