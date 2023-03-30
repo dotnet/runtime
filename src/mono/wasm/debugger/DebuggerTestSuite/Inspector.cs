@@ -353,7 +353,6 @@ namespace DebuggerTests
 
         public async Task OpenSessionAsync(Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> getInitCmds, string urlToInspect, TimeSpan span)
         {
-            int retry = 0;
             var start = DateTime.Now;
             try
             {
