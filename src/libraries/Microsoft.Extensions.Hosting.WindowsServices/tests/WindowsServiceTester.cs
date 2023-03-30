@@ -3,6 +3,8 @@
 
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.ServiceProcess;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
@@ -11,24 +13,45 @@ namespace Microsoft.Extensions.Hosting
 {
     public class WindowsServiceTester : ServiceController
     {
-        private WindowsServiceTester(SafeServiceHandle handle, string serviceName) : base(serviceName)
+        private WindowsServiceTester(SafeServiceHandle serviceHandle, RemoteInvokeHandle remoteInvokeHandle, string serviceName) : base(serviceName)
         {
-            _handle = handle;
+            _serviceHandle = serviceHandle;
+            _remoteInvokeHandle = remoteInvokeHandle;
         }
 
-        private SafeServiceHandle _handle;
+        private SafeServiceHandle _serviceHandle;
+        private RemoteInvokeHandle _remoteInvokeHandle;
 
-        public static WindowsServiceTester Create(string serviceName, Action serviceMain)
+        public new void Start()
+        {
+            Start(Array.Empty<string>());
+        }
+
+        public new void Start(string[] args)
+        {
+            base.Start(args);
+
+            // get the process
+            _remoteInvokeHandle.Process.Dispose();
+            _remoteInvokeHandle.Process = null;
+
+            var statusEx = QueryServiceStatusEx();
+            try
+            {
+                _remoteInvokeHandle.Process = Process.GetProcessById(statusEx.dwProcessId);
+                // fetch the process handle so that we can get the exit code later.
+                var _ = _remoteInvokeHandle.Process.SafeHandle;
+            }
+            catch (ArgumentException)
+            { }
+        }
+
+        public static WindowsServiceTester Create(Action serviceMain, [CallerMemberName] string serviceName = null)
         {
             // create remote executor commandline arguments
-            string commandLine;
-            using (var remoteExecutorHandle = RemoteExecutor.Invoke(serviceMain, new RemoteInvokeOptions() { Start = false }))
-            {
-                var startInfo = remoteExecutorHandle.Process.StartInfo;
-                remoteExecutorHandle.Process.Dispose();
-                remoteExecutorHandle.Process = null;
-                commandLine = startInfo.FileName + " " + startInfo.Arguments;
-            }
+            var remoteInvokeHandle = RemoteExecutor.Invoke(serviceMain, new RemoteInvokeOptions() { Start = false });
+            var startInfo = remoteInvokeHandle.Process.StartInfo;
+            string commandLine = startInfo.FileName + " " + startInfo.Arguments;
 
             // install the service
             using (var serviceManagerHandle = new SafeServiceHandle(Interop.Advapi32.OpenSCManager(null, null, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_ALL)))
@@ -67,24 +90,25 @@ namespace Microsoft.Extensions.Hosting
                     throw new Win32Exception("Could not create service");
                 }
 
-                return new WindowsServiceTester(serviceHandle, serviceName);
+                return new WindowsServiceTester(serviceHandle, remoteInvokeHandle, serviceName);
             }
         }
 
         internal unsafe Interop.Advapi32.SERVICE_STATUS QueryServiceStatus()
         {
             Interop.Advapi32.SERVICE_STATUS status = default;
-            bool success = Interop.Advapi32.QueryServiceStatus(_handle, &status);
+            bool success = Interop.Advapi32.QueryServiceStatus(_serviceHandle, &status);
             if (!success)
             {
                 throw new Win32Exception();
             }
             return status;
         }
+
         internal unsafe Interop.Advapi32.SERVICE_STATUS_PROCESS QueryServiceStatusEx()
         {
             Interop.Advapi32.SERVICE_STATUS_PROCESS status = default;
-            bool success = Interop.Advapi32.QueryServiceStatusEx(_handle, &status);
+            bool success = Interop.Advapi32.QueryServiceStatusEx(_serviceHandle, &status);
             if (!success)
             {
                 throw new Win32Exception();
@@ -94,14 +118,17 @@ namespace Microsoft.Extensions.Hosting
 
         protected override void Dispose(bool disposing)
         {
-            if (!_handle.IsInvalid)
+            if (_remoteInvokeHandle != null)
+            {
+                _remoteInvokeHandle.Dispose();               
+            }
+
+            if (!_serviceHandle.IsInvalid)
             {
                 // delete the temporary test service
-                Interop.Advapi32.DeleteService(_handle);
-                _handle.Close();
-                _handle = null;
+                Interop.Advapi32.DeleteService(_serviceHandle);
+                _serviceHandle.Close();
             }
         }
-
     }
 }

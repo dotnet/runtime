@@ -18,10 +18,10 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
     public class WindowsServiceLifetime : ServiceBase, IHostLifetime
     {
         private readonly TaskCompletionSource<object?> _delayStart = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-        private readonly TaskCompletionSource<object?> _serviceStopped = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<object?> _serviceDispatcherStopped = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly ManualResetEventSlim _delayStop = new ManualResetEventSlim();
         private readonly HostOptions _hostOptions;
-        private bool _isStopped;
+        private bool _serviceStopped;
 
         /// <summary>
         /// Initializes a new <see cref="WindowsServiceLifetime"/> instance.
@@ -89,23 +89,24 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             {
                 Run(this); // This blocks until the service is stopped.
                 _delayStart.TrySetException(new InvalidOperationException("Stopped without starting"));
+                _serviceDispatcherStopped.TrySetResult(null);
             }
             catch (Exception ex)
             {
                 _delayStart.TrySetException(ex);
+                _serviceDispatcherStopped.TrySetException(ex);
             }
-            _serviceStopped.TrySetResult(null);
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
-            if (!_isStopped)
+            if (!_serviceStopped)
             {
-                Task.Run(Stop, CancellationToken.None);
+                await Task.Run(Stop, CancellationToken.None).ConfigureAwait(false);
             }
 
             // When the underlying service is stopped this will cause the ServiceBase.Run method to complete and return, which completes _serviceStopped.
-            return _serviceStopped.Task;
+            await _serviceDispatcherStopped.Task.ConfigureAwait(false);
         }
 
         // Called by base.Run when the service is ready to start.
@@ -122,7 +123,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         /// <remarks>This might be called multiple times by service Stop, ApplicationStopping, and StopAsync. That's okay because StopApplication uses a CancellationTokenSource and prevents any recursion.</remarks>
         protected override void OnStop()
         {
-            _isStopped = true;
+            _serviceStopped = true;
             ApplicationLifetime.StopApplication();
             // Wait for the host to shutdown before marking service as stopped.
             _delayStop.Wait(_hostOptions.ShutdownTimeout);
@@ -134,7 +135,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         /// </summary>
         protected override void OnShutdown()
         {
-            _isStopped = true;
+            _serviceStopped = true;
             ApplicationLifetime.StopApplication();
             // Wait for the host to shutdown before marking service as stopped.
             _delayStop.Wait(_hostOptions.ShutdownTimeout);

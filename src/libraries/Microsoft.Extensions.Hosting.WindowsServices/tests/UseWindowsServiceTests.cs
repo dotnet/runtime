@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Hosting
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void CanCreateService()
         {
-            using var serviceTester = WindowsServiceTester.Create(nameof(CanCreateService), () =>
+            using var serviceTester = WindowsServiceTester.Create(() =>
             {
                 using IHost host = new HostBuilder()
                     .UseWindowsService()
