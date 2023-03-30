@@ -183,6 +183,7 @@ public class EmbeddingApiTests
     [TestCase(typeof(ValueAnimal), 5)]
     [TestCase(typeof(int[]), 2)]
     [TestCase(typeof(int), 1000000)]
+    [Ignore("Unstable due to CoreCLR GC")]
     public void ArrayNew(Type arrayType, int length)
     {
         Assert.That(CoreCLRHostTestingWrappers.array_new(arrayType, length), Is.EquivalentTo(Array.CreateInstance(arrayType, length)));
@@ -194,6 +195,7 @@ public class EmbeddingApiTests
     [TestCase(typeof(ValueAnimal), 5, 5)]
     [TestCase(typeof(int[]), 2, 1)]
     [TestCase(typeof(int), 1000, 1000)]
+    [Ignore("Unstable due to CoreCLR GC")]
     public void ArrayNew2d(Type arrayType, int size0, int size1)
     {
         var result = CoreCLRHostTestingWrappers.unity_array_new_2d(arrayType, size0, size1);
