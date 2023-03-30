@@ -1097,6 +1097,27 @@ export function generate_wasm_body (
                 break;
             }
 
+            case MintOpcode.MINT_SHL_AND_I4:
+            case MintOpcode.MINT_SHL_AND_I8: {
+                const isI32 = (opcode === MintOpcode.MINT_SHL_AND_I4),
+                    loadOp = isI32 ? WasmOpcode.i32_load : WasmOpcode.i64_load,
+                    storeOp = isI32 ? WasmOpcode.i32_store : WasmOpcode.i64_store;
+
+                builder.local("pLocals");
+
+                append_ldloc(builder, getArgU16(ip, 2), loadOp);
+                append_ldloc(builder, getArgU16(ip, 3), loadOp);
+                if (isI32)
+                    builder.i32_const(31);
+                else
+                    builder.i52_const(63);
+                builder.appendU8(isI32 ? WasmOpcode.i32_and : WasmOpcode.i64_and);
+                builder.appendU8(isI32 ? WasmOpcode.i32_shl : WasmOpcode.i64_shl);
+
+                append_stloc_tail(builder, getArgU16(ip, 1), storeOp);
+                break;
+            }
+
             case MintOpcode.MINT_FMA:
             case MintOpcode.MINT_FMAF: {
                 const isF32 = (opcode === MintOpcode.MINT_FMAF),
