@@ -289,7 +289,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     for (int i = 0; i < sidList.Count; i++)
                     {
-                        global::Interop.Kernel32.LocalFree((void*)sidList[i]!);
+                        global::Interop.Kernel32.LocalFree((void*)(nint)sidList[i]!);
                     }
 
                     if (records != (IntPtr)0)
