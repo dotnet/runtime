@@ -67,8 +67,8 @@ namespace Internal.IL.Stubs
             TypeDesc methodTableType = Context.SystemModule.GetKnownType("Internal.Runtime", "MethodTable");
             MethodDesc methodTableOfMethod = methodTableType.GetKnownMethod("Of", null);
 
-            ILToken firstFieldToken = owningType.IsValueType ? default :
-                emitter.NewToken(Context.GetWellKnownType(WellKnownType.Object).GetKnownField("m_pEEType"));
+            ILToken rawDataToken = owningType.IsValueType ? default :
+                emitter.NewToken(Context.SystemModule.GetKnownType("System.Runtime.CompilerServices", "RawData").GetKnownField("Data"));
 
             var switchStream = emitter.NewCodeStream();
             var getFieldStream = emitter.NewCodeStream();
@@ -112,7 +112,7 @@ namespace Internal.IL.Stubs
 
                 // If this is a reference type, we subtract from the first field. Otherwise subtract from `ref this`.
                 if (!owningType.IsValueType)
-                    getFieldStream.Emit(ILOpcode.ldflda, firstFieldToken);
+                    getFieldStream.Emit(ILOpcode.ldflda, rawDataToken);
 
                 getFieldStream.Emit(ILOpcode.sub);
 

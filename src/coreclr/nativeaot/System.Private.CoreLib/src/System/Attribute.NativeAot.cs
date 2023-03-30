@@ -33,9 +33,8 @@ namespace System
 
             int numFields = __GetFieldHelper(-1, out _);
 
-            // Subtract nint size to get to the m_pEEType field. Can't get from "ref MethodTable*" to "ref byte" currently.
-            ref byte thisRawData = ref Unsafe.Subtract(ref this.GetRawData(), nint.Size);
-            ref byte thatRawData = ref Unsafe.Subtract(ref obj.GetRawData(), nint.Size);
+            ref byte thisRawData = ref this.GetRawData();
+            ref byte thatRawData = ref obj.GetRawData();
 
             for (int i = 0; i < numFields; i++)
             {
@@ -58,8 +57,7 @@ namespace System
         {
             int numFields = __GetFieldHelper(-1, out _);
 
-            // Subtract nint size to get to the m_pEEType field. Can't get from "ref MethodTable*" to "ref byte" currently.
-            ref byte thisRawData = ref Unsafe.Subtract(ref this.GetRawData(), nint.Size);
+            ref byte thisRawData = ref this.GetRawData();
 
             object? vThis = null;
 
