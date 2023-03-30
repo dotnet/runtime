@@ -108,6 +108,7 @@ jobs:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux musl arm
@@ -222,6 +223,7 @@ jobs:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux x86
