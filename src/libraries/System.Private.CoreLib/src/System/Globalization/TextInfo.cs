@@ -686,7 +686,7 @@ namespace System.Globalization
                 NlsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);
                 return;
             }
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER || TARGET_WASI
+#if TARGET_BROWSER || TARGET_WASI
             if (GlobalizationMode.Hybrid)
             {
                 JsChangeCase(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);

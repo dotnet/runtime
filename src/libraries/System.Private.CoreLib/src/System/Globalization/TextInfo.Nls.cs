@@ -10,7 +10,7 @@ namespace System.Globalization
         private unsafe void NlsChangeCase(char* pSource, int pSourceLen, char* pResult, int pResultLen, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS || TARGET_BROWSER || TARGET_WASI
+#if TARGET_BROWSER || TARGET_WASI
             Debug.Assert(!GlobalizationMode.Hybrid);
 #endif
             Debug.Assert(GlobalizationMode.UseNls);
