@@ -44,7 +44,7 @@ public class TestSummary
                               + $@" method=""{MethodName}"" time=""{Duration.TotalSeconds:F6}""");
 
             string outputElement = !string.IsNullOrWhiteSpace(Output)
-                                 ? $"<output><![CDATA[{Output}]]></output>"
+                                 ? $"<output><![CDATA[{XmlConvert.EncodeName(Output)}]]></output>"
                                  : string.Empty;
 
             if (Exception is not null)
