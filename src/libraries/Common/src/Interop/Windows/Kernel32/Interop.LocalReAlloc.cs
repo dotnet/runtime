@@ -9,6 +9,7 @@ internal static partial class Interop
     {
         internal const uint LMEM_MOVEABLE = 0x0002;
 
+        // https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-localrealloc
         [LibraryImport(Libraries.Kernel32)]
         // [return: NativeTypeName("HLOCAL")]
         private static partial nint LocalReAlloc(

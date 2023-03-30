@@ -12,6 +12,7 @@ internal static partial class Interop
         private const uint LMEM_ZEROINIT = 0x0040;
         private const uint LPTR = LMEM_FIXED | LMEM_ZEROINIT;
 
+        // https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-localalloc
         [LibraryImport(Libraries.Kernel32)]
         // [return: NativeTypeName("HLOCAL")]
         private static partial nint LocalAlloc(uint uFlags, nuint uBytes);
