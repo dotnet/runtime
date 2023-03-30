@@ -926,6 +926,31 @@ public:
             GenTree* src = m_compiler->gtNewLclFldNode(lclNum, rep.AccessType, rep.Offset);
             *use = m_compiler->gtNewOperNode(GT_COMMA, (*use)->TypeGet(), m_compiler->gtNewAssignNode(dst, src), *use);
             rep.NeedsReadBack = false;
+
+            // TODO-CQ: Local copy prop does not take into account that the
+            // uses of LCL_VAR occur at the user, which means it may introduce
+            // illegally overlapping lifetimes, such as:
+            //
+            // └──▌  ADD       int
+            //    ├──▌  LCL_VAR   int    V10 tmp6        -> copy propagated to [V35 tmp31]
+            //    └──▌  COMMA     int
+            //       ├──▌  ASG       int
+            //       │  ├──▌  LCL_VAR   int    V35 tmp31
+            //       │  └──▌  LCL_FLD   int    V03 loc1         [+4]
+            // This really ought to be handled by local copy prop, but the way it works during
+            // morph makes it hard to fix there.
+            //
+            // This is the short term fix. Long term fixes may be:
+            // 1. Fix local copy prop
+            // 2. Teach LSRA to allow the above cases, simplifying IR concepts (e.g.
+            //    introduce something like GT_COPY on top of LCL_VAR when they
+            //    need to be "defs")
+            // 3. Change the pass here to avoid creating any embedded assignments by making use
+            //    of gtSplitTree. We will only need to split in very edge cases since the point
+            //    at which the replacement was marked as needing read back is practically always
+            //    going to be in a previous statement, so this shouldn't be too bad for CQ.
+
+            m_compiler->lvaGetDesc(rep.LclNum)->lvRedefinedInEmbeddedStatement = true;
         }
 
         m_madeChanges = true;

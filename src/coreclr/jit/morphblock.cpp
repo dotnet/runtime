@@ -146,7 +146,7 @@ GenTree* MorphInitBlockHelper::Morph()
 #ifdef DEBUG
     // If we are going to return a different node than the input then morph
     // expects us to have set GTF_DEBUG_NODE_MORPHED.
-    if ((m_result != m_asg) || (sideEffects != nullptr))
+    if ((m_result != m_asg) /* || (sideEffects != nullptr)*/)
     {
         m_result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
     }

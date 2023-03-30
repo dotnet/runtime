@@ -653,6 +653,9 @@ public:
     unsigned char lvIsOSRLocal : 1; // Root method local in an OSR method. Any stack home will be on the Tier0 frame.
                                     // Initial value will be defined by Tier0. Requires special handing in prolog.
 
+    unsigned char lvRedefinedInEmbeddedStatement : 1; // Local has redefinitions inside embedded statements that
+                                                      // disqualify it from local copy prop.
+
 private:
     unsigned char lvIsNeverNegative : 1; // The local is known to be never negative
 
