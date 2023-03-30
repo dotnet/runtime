@@ -23955,6 +23955,17 @@ GenTree* Compiler::gtNewSimdWithElementNode(var_types   type,
 }
 
 #ifdef TARGET_ARM64
+//------------------------------------------------------------------------
+// gtConvertTableOpToFieldList: Convert a operand that represents table of rows into
+//    field list, where each field represents a row in the table.
+//
+// Arguments:
+//    op                  -- Operand to convert.
+//    fieldCount          -- Number of fields or rows present.
+//
+// Return Value:
+//    The GenTreeFieldList node.
+//
 GenTreeFieldList* Compiler::gtConvertTableOpToFieldList(GenTree* op, unsigned fieldCount)
 {
     LclVarDsc* opVarDsc  = lvaGetDesc(op->AsLclVar());

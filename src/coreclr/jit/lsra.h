@@ -775,9 +775,11 @@ private:
     static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R3 | RBM_R4 | RBM_R5);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F16 | RBM_F17);
 #elif defined(TARGET_ARM64)
-    static const regMaskTP LsraLimitSmallIntSet         = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
-    static const regMaskTP LsraLimitSmallFPSet          = (RBM_V0 | RBM_V1 | RBM_V2 | RBM_V8 | RBM_V9);
-    static const regMaskTP LsraExtraFPSetForConsecutive = (RBM_V3 | RBM_V5 | RBM_V7);
+    static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
+    static const regMaskTP LsraLimitSmallFPSet  = (RBM_V0 | RBM_V1 | RBM_V2 | RBM_V8 | RBM_V9);
+    // LsraLimitFPSetForConsecutive is used for stress mode and gives few extra registers to satisfy
+    // the requirements for allocating consecutive registers.
+    static const regMaskTP LsraLimitFPSetForConsecutive = (RBM_V3 | RBM_V5 | RBM_V7);
 #elif defined(TARGET_X86)
     static const regMaskTP LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EDI);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
@@ -1204,7 +1206,7 @@ private:
 
 #if defined(TARGET_ARM64)
     bool canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
-    void setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regNumber firstRegAssigned);
+    void assignConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
     regMaskTP getConsecutiveCandidates(regMaskTP candidates, RefPosition* refPosition, regMaskTP* busyCandidates);
     regMaskTP filterConsecutiveCandidates(regMaskTP    candidates,
                                           unsigned int registersNeeded,

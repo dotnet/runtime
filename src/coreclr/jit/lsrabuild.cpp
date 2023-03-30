@@ -1862,7 +1862,7 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
 #ifdef TARGET_ARM64
                 if (newRefPosition->isFirstRefPositionOfConsecutiveRegisters())
                 {
-                    newRefPosition->registerAssignment |= LsraExtraFPSetForConsecutive;
+                    newRefPosition->registerAssignment |= LsraLimitFPSetForConsecutive;
                 }
 #endif
                 if ((newRefPosition->registerAssignment != oldAssignment) && (newRefPosition->refType == RefTypeUse) &&

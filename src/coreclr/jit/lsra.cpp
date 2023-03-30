@@ -500,7 +500,7 @@ regMaskTP LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
 #ifdef TARGET_ARM64
         if ((refPosition != nullptr) && refPosition->isFirstRefPositionOfConsecutiveRegisters())
         {
-            mask |= LsraExtraFPSetForConsecutive;
+            mask |= LsraLimitFPSetForConsecutive;
         }
 #endif
     }
@@ -5367,7 +5367,7 @@ void LinearScan::allocateRegisters()
                         currentRefPosition.registerAssignment = assignedRegBit;
                         INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_KEPT_ALLOCATION, currentInterval, assignedRegister));
 
-                        setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegister);
+                        assignConsecutiveRegisters(&currentRefPosition, assignedRegister);
                     }
                     else
                     {
@@ -5437,7 +5437,7 @@ void LinearScan::allocateRegisters()
                             currentRefPosition.registerAssignment = assignedRegBit;
                         }
 
-                        setNextConsecutiveRegisterAssignment(&currentRefPosition, copyReg);
+                        assignConsecutiveRegisters(&currentRefPosition, copyReg);
                         continue;
                     }
                 }
@@ -5493,7 +5493,7 @@ void LinearScan::allocateRegisters()
                             // If the first RefPosition was not assigned to the register that we wanted, we added
                             // a copyReg for it. Allocate subsequent RefPositions with the consecutive
                             // registers.
-                            setNextConsecutiveRegisterAssignment(&currentRefPosition, copyReg);
+                            assignConsecutiveRegisters(&currentRefPosition, copyReg);
                         }
 
                         // For consecutive register, it doesn't matter what the assigned register was.
@@ -5660,7 +5660,7 @@ void LinearScan::allocateRegisters()
                         allocateReg<true>(currentInterval, &currentRefPosition DEBUG_ARG(&registerScore));
                     if (currentRefPosition.isFirstRefPositionOfConsecutiveRegisters())
                     {
-                        setNextConsecutiveRegisterAssignment(&currentRefPosition, assignedRegister);
+                        assignConsecutiveRegisters(&currentRefPosition, assignedRegister);
                     }
                 }
                 else

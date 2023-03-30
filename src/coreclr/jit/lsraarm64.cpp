@@ -26,13 +26,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lower.h"
 
 //------------------------------------------------------------------------
-// getNextConsecutiveRefPosition: Get the next subsequent refPosition.
+// getNextConsecutiveRefPosition: Get the next subsequent RefPosition.
 //
 // Arguments:
-//    refPosition   - The refposition for which we need to find next refposition
+//    refPosition   - The RefPosition for which we need to find the next RefPosition.
 //
 // Return Value:
-//    The next refPosition or nullptr if there is not one.
+//    The next RefPosition or nullptr if there is not one.
 //
 RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 {
@@ -45,23 +45,23 @@ RefPosition* LinearScan::getNextConsecutiveRefPosition(RefPosition* refPosition)
 }
 
 //------------------------------------------------------------------------
-// setNextConsecutiveRegisterAssignment: For subsequent refPositions, set the register
+// assignConsecutiveRegisters: For subsequent RefPositions, set the register
 //   requirement to be the consecutive register(s) of the register that is assigned to
 //   the firstRefPosition.
 //   If one of the subsequent RefPosition is RefTypeUpperVectorRestore, sets the
 //   registerAssignment to not include any of the consecutive registers that are being
-//   assigned to the RefTypeUse refpositions.
+//   assigned to the RefTypeUse RefPositions.
 //
 // Arguments:
-//    firstRefPosition  - First refPosition of the series of consecutive registers.
-//    firstRegAssigned  - Register assigned to the first refposition.
+//    firstRefPosition  - First RefPosition of the series of consecutive registers.
+//    firstRegAssigned  - Register assigned to the first RefPosition.
 //
 //  Note:
 //      This method will set the registerAssignment of subsequent RefPositions with consecutive registers.
 //      Some of the registers could be busy, and they will be spilled. We would end up with busy registers if
 //      we did not find free consecutive registers.
 //
-void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosition, regNumber firstRegAssigned)
+void LinearScan::assignConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned)
 {
     assert(compiler->info.compNeedsConsecutiveRegisters);
     assert(firstRefPosition->assignedReg() == firstRegAssigned);
@@ -71,7 +71,7 @@ void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
     RefPosition* consecutiveRefPosition = getNextConsecutiveRefPosition(firstRefPosition);
     regNumber    regToAssign            = firstRegAssigned == REG_FP_LAST ? REG_FP_FIRST : REG_NEXT(firstRegAssigned);
 
-    // First refposition should always start with RefTypeUse
+    // First RefPosition should always start with RefTypeUse
     assert(firstRefPosition->refType != RefTypeUpperVectorRestore);
 
     INDEBUG(int refPosCount = 1);
@@ -115,8 +115,8 @@ void LinearScan::setNextConsecutiveRegisterAssignment(RefPosition* firstRefPosit
 //   consecutive registers are free or are already assigned to the subsequent RefPositions.
 //
 // Arguments:
-//    firstRefPosition  - First refPosition of the series of consecutive registers.
-//    firstRegAssigned  - Register assigned to the first refposition.
+//    firstRefPosition  - First RefPosition of the series of consecutive registers.
+//    firstRegAssigned  - Register assigned to the first RefPosition.
 //
 //  Returns:
 //      True if all the consecutive registers starting from `firstRegAssigned` are assignable.
@@ -127,7 +127,8 @@ bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition
     int          registersCount  = firstRefPosition->regCount;
     RefPosition* nextRefPosition = firstRefPosition;
     regNumber    regToAssign     = firstRegAssigned;
-    assert(compiler->info.compNeedsConsecutiveRegisters && registersCount > 1);
+    assert(compiler->info.compNeedsConsecutiveRegisters);
+    assert(registersCount > 1);
     assert(emitter::isVectorRegister(firstRegAssigned));
 
     int i = 1;
@@ -163,7 +164,7 @@ bool LinearScan::canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition
 //   registers are available in it, and if yes, returns first bit set of every possible series.
 //
 // Arguments:
-//    candidates                - Set of availble candidates.
+//    candidates                - Set of available candidates.
 //    registersNeeded           - Number of consecutive registers needed.
 //    allConsecutiveCandidates  - Mask returned containing all bits set for possible consecutive register candidates.
 //
@@ -177,7 +178,7 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
 {
     if (BitOperations::PopCount(candidates) < registersNeeded)
     {
-        // There is no way the register demanded can be satisfied for this refposition
+        // There is no way the register demanded can be satisfied for this RefPosition
         // based on the candidates from which it can allocate a register.
         return RBM_NONE;
     }
@@ -228,7 +229,7 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         }
         regMaskTP endMask = (1ULL << regAvailableEndIndex) - 1;
 
-        // Anything between regAvailableStart and regAvailableEnd is the range of consecutive registers available
+        // Anything between regAvailableStart and regAvailableEnd is the range of consecutive registers available.
         // If they are equal to or greater than our register requirements, then add all of them to the result.
         if ((regAvailableEndIndex - regAvailableStartIndex) >= registersNeeded)
         {
@@ -237,7 +238,8 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         currAvailableRegs &= ~endMask;
     } while (currAvailableRegs != RBM_NONE);
 
-    if ((candidates & 0x8000000100000000) == 0x8000000100000000)
+    regMaskTP v0_v31_mask = RBM_V0 | RBM_V31;
+    if ((candidates & v0_v31_mask) == v0_v31_mask)
     {
         // Finally, check for round robin case where sequence of last register
         // round to first register is available.
@@ -250,41 +252,55 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         switch (registersNeeded)
         {
             case 2:
-                if ((candidates & 0x8000000100000000) != RBM_NONE)
+            {
+                if ((candidates & v0_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= 0x8000000000000000;
-                    overallResult |= 0x8000000100000000;
+                    consecutiveResult |= RBM_V31;
+                    overallResult |= v0_v31_mask;
                 }
                 break;
+            }
             case 3:
-                if ((candidates & 0xC000000100000000) != RBM_NONE)
+            {
+                regMaskTP v0_v30_v31_mask = RBM_V0 | RBM_V30 | RBM_V31;
+                if ((candidates & v0_v30_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= 0x4000000000000000;
-                    overallResult |= 0xC000000100000000;
+                    consecutiveResult |= RBM_V30;
+                    overallResult |= v0_v30_v31_mask;
                 }
-                if ((candidates & 0x8000000300000000) != RBM_NONE)
+
+                regMaskTP v0_v1_v31_mask = RBM_V0 | RBM_V1 | RBM_V31;
+                if ((candidates & v0_v1_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= 0x8000000000000000;
-                    overallResult |= 0x8000000300000000;
+                    consecutiveResult |= RBM_V31;
+                    overallResult |= v0_v1_v31_mask;
                 }
                 break;
+            }
             case 4:
-                if ((candidates & 0xE000000100000000) != RBM_NONE)
+            {
+                regMaskTP v0_v29_v30_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
+                if ((candidates & v0_v29_v30_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= 0x2000000000000000;
-                    overallResult |= 0xE000000100000000;
+                    consecutiveResult |= RBM_V29;
+                    overallResult |= v0_v29_v30_v31_mask;
                 }
-                if ((candidates & 0xC000000300000000) != RBM_NONE)
+
+                regMaskTP v0_v1_v30_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
+                if ((candidates & v0_v1_v30_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= 0x4000000000000000;
-                    overallResult |= 0xC000000300000000;
+                    consecutiveResult |= RBM_V30;
+                    overallResult |= v0_v1_v30_v31_mask;
                 }
-                if ((candidates & 0x8000000700000000) != RBM_NONE)
+
+                regMaskTP v0_v1_v2_v31_mask = RBM_V0 | RBM_V29 | RBM_V30 | RBM_V31;
+                if ((candidates & v0_v1_v2_v31_mask) != RBM_NONE)
                 {
-                    consecutiveResult |= 0x8000000000000000;
-                    overallResult |= 0x8000000700000000;
+                    consecutiveResult |= RBM_V31;
+                    overallResult |= v0_v1_v2_v31_mask;
                 }
                 break;
+            }
             default:
                 assert(!"Unexpected registersNeeded\n");
         }
@@ -296,13 +312,13 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
 
 //------------------------------------------------------------------------
 // getConsecutiveCandidates: Returns the mask of all the consecutive candidates
-//   for given refPosition. For first RefPosition of a series of refpositions that needs
+//   for given RefPosition. For first RefPosition of a series of RefPositions that needs
 //   consecutive registers, then returns only the mask such that it satisfies the need
 //   of having free consecutive registers. If free consecutive registers are not available
 //   it finds such a series that needs fewer registers spilling.
 //
 // Arguments:
-//    allCandidates   - Register assigned to the first refposition.
+//    allCandidates   - Register assigned to the first RefPosition.
 //    refPosition  - Number of registers to check.
 //
 //  Returns:
@@ -333,9 +349,9 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
     regMaskTP consecutiveResultForFree = filterConsecutiveCandidates(freeCandidates, registersNeeded, &overallResult);
     if (consecutiveResultForFree != RBM_NONE)
     {
-        // One last time, check if subsequent refpositions (all refpositions except the first for which
+        // One last time, check if subsequent RefPositions (all RefPositions except the first for which
         // we assigned above) already have consecutive registers assigned. If yes, and if one of the
-        // register out of the `consecutiveResult` is available for the first refposition, then just use
+        // register out of the `consecutiveResult` is available for the first RefPosition, then just use
         // that. This will avoid unnecessary copies.
 
         regNumber firstRegNum  = REG_NA;
@@ -399,19 +415,19 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
     //      In other words, try to find register sequence that needs fewer registers to be spilled. This
     //      will give optimal CQ.
     //
-    //  2.  Check if some of the refpositions in the series are already in *somewhat* consecutive registers
+    //  2.  Check if some of the RefPositions in the series are already in *somewhat* consecutive registers
     //      and if yes, assign that register sequence. That way, we will avoid copying values of
-    //      refpositions that are already positioned in the desired registers. Checking this is beneficial
+    //      RefPositions that are already positioned in the desired registers. Checking this is beneficial
     //      only if it can happen frequently. So for RefPositions <RP# 5, RP# 6, RP# 7, RP# 8>, it should
     //      be that, RP# 6 is already in V14 and RP# 8 is already in V16. But this can be rare (not tested).
     //      In future, if we see such cases being hit, we could use this heuristics.
     //
     //  3.  Give one of the free register to the first position and the algorithm will
-    //      give the subsequent consecutive registers (free or busy) to the remaining refpositions
+    //      give the subsequent consecutive registers (free or busy) to the remaining RefPositions
     //      of the series. This may not give optimal CQ however.
     //
     //  4.  Return the set of available registers and let selection heuristics pick one of them to get
-    //      assigned to the first refposition. Remaining refpositions will be assigned to the subsequent
+    //      assigned to the first RefPosition. Remaining RefPositions will be assigned to the subsequent
     //      registers (if busy, they will be spilled), similar to #3 above and will not give optimal CQ.
     //
     //
@@ -427,7 +443,7 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
         // We did not find free consecutive candidates, however we found some registers among the `allCandidates` that
         // are mix of free and busy. Since `busyCandidates` just has bit set for first register of such series, return
         // the mask that starts with free register, if possible. The busy registers will be spilled during assignment of
-        // subsequent refposition.
+        // subsequent RefPosition.
         *busyCandidates = mixConsecutiveResult;
     }
 
@@ -1559,7 +1575,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 //  the RefPositions created, it sets the `needsConsecutive` flag so it can be used to
 //  identify these RefPositions during allocation.
 //
-//  It also populates a `refPositionMap` to access the subsequent RefPositions from
+//  It also populates a `RefPositionMap` to access the subsequent RefPositions from
 //  a given RefPosition. This was preferred rather than adding a field in RefPosition
 //  for this purpose.
 //
@@ -1607,7 +1623,7 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode)
                 // as well so during register assignment, we could visit it and
                 // make sure that it doesn't get assigned one of register that is part
                 // of consecutive registers we are allocating for this treeNode.
-                // See setNextConsecutiveRegisterAssignment().
+                // See assignConsecutiveRegisters().
                 restoreRefPos->needsConsecutive = true;
                 restoreRefPos->regCount         = 0;
                 if (firstRefPos == nullptr)
@@ -1615,7 +1631,7 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode)
                     // Always set the non UpperVectorRestore as the firstRefPos.
                     // UpperVectorRestore can be assigned to a different independent
                     // register.
-                    // See TODO-CQ in setNextConsecutiveRegisterAssignment().
+                    // See TODO-CQ in assignConsecutiveRegisters().
                     firstRefPos = currRefPos;
                 }
                 refPositionMap->Set(lastRefPos, restoreRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
@@ -1637,8 +1653,8 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode)
             regCount++;
         }
 
-        // Just `regCount` to actual registers count for first ref-position.
-        // For others, set 0 so we can identify that this is non-first refposition.
+        // Set `regCount` to actual consecutive registers count for first ref-position.
+        // For others, set 0 so we can identify that this is non-first RefPosition.
         firstRefPos->regCount = regCount;
 
 #ifdef DEBUG
