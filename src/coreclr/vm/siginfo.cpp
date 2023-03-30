@@ -1000,7 +1000,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
     CONTRACT_END
 
     _ASSERTE(!pRecursiveFieldGenericHandling || dropGenericArgumentLevel); // pRecursiveFieldGenericHandling can only be set if dropGenericArgumentLevel is set
-    if (!!pRecursiveFieldGenericHandling)
+    if (pRecursiveFieldGenericHandling != NULL)
     {
         // if pRecursiveFieldGenericHandling is set, we must allow loading types
         _ASSERTE(fLoadTypes == ClassLoader::LoadTypes);
@@ -1388,7 +1388,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 
                                 if (tmpEType == ELEMENT_TYPE_CLASS)
                                     typeHnd = TypeHandle(g_pCanonMethodTableClass);
-                                else if (!!pRecursiveFieldGenericHandling && (tmpEType == ELEMENT_TYPE_VALUETYPE))
+                                else if ((pRecursiveFieldGenericHandling != NULL) && (tmpEType == ELEMENT_TYPE_VALUETYPE))
                                     checkTokenForRecursion = true;
                             }
                             else if ((elemType == (CorElementType)ELEMENT_TYPE_CANON_ZAPSIG) ||
@@ -1396,7 +1396,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                             {
                                 typeHnd = TypeHandle(g_pCanonMethodTableClass);
                             }
-                            else if ((elemType == ELEMENT_TYPE_VALUETYPE) && !!pRecursiveFieldGenericHandling)
+                            else if ((elemType == ELEMENT_TYPE_VALUETYPE) && (pRecursiveFieldGenericHandling != NULL))
                             {
                                 checkTokenForRecursion = true;
                             }
@@ -1407,6 +1407,32 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                 IfFailThrowBF(tempsig.GetToken(&valueTypeToken), BFA_BAD_SIGNATURE, pOrigModule);
                                 if (valueTypeToken == pRecursiveFieldGenericHandling->tkTypeDefToAvoidIfPossible && pOrigModule == pRecursiveFieldGenericHandling->pModuleWithTokenToAvoidIfPossible)
                                 {
+                                    bool recursionDetected = true;
+
+                                    if (elemType == ELEMENT_TYPE_GENERICINST)
+                                    {
+                                        // Check to ensure that the type variables in use are for an exact self-referential generic.
+                                        // Other cases are possible, but this logic is scoped to exactly self-referential generics.
+                                        uint32_t instantiationCount;
+                                        IfFailThrowBF(tempsig.GetData(&instantiationCount), BFA_BAD_SIGNATURE, pModule);
+                                        for (uint32_t iInstantiation = 0; iInstantiation < instantiationCount; iInstantiation++)
+                                        {
+                                            IfFailThrowBF(tempsig.GetElemType(&elemType), BFA_BAD_SIGNATURE, pOrigModule);
+                                            if (elemType != ELEMENT_TYPE_VAR)
+                                            {
+                                                recursionDetected = false;
+                                                break;
+                                            }
+
+                                            uint32_t varIndex;
+                                            IfFailThrowBF(tempsig.GetData(&varIndex), BFA_BAD_SIGNATURE, pModule);
+                                            if (varIndex != iInstantiation)
+                                            {
+                                                recursionDetected = false;
+                                                break;
+                                            }
+                                        }
+                                    }
                                     handlingRecursiveGenericFieldScenario = true;
                                     if (iRecursiveGenericFieldHandlingPass == 0)
                                     {

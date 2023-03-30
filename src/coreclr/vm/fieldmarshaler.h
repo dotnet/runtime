@@ -54,7 +54,6 @@ bool IsFieldBlittable(
     mdFieldDef fd,
     CorElementType corElemType,
     TypeHandle valueTypeHandle,
-    const SigTypeContext* pTypeContext,
     ParseNativeTypeFlags flags
 );
 

@@ -2232,6 +2232,7 @@ private:
     }
     int GetValueClassCacheIndex()
     {
+        LIMITED_METHOD_CONTRACT;
         return m_currField;
     }
 };

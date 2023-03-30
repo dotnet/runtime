@@ -572,7 +572,7 @@ namespace
                 *fHasAutoLayoutField |= TypeHasAutoLayoutField(corElemType, typeHandleMaybe);
                 *fHasInt128Field |= TypeHasInt128Field(corElemType, typeHandleMaybe);
 
-                if (!IsFieldBlittable(pModule, fd, corElemType, typeHandleMaybe, pTypeContext, nativeTypeFlags))
+                if (!IsFieldBlittable(pModule, fd, corElemType, typeHandleMaybe, nativeTypeFlags))
                     *pIsBlittableOut = FALSE;
 
                 (*cInstanceFields)++;
