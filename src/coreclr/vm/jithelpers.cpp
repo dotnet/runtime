@@ -1841,7 +1841,7 @@ HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, DomainLocalModule *p
         staticBlock = HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
     }
 
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
         if (t_threadStaticBlocksSize <= staticBlockIndex)
         {
             UINT32 prevThreadStaticBlocksSize = t_threadStaticBlocksSize;
@@ -1869,7 +1869,7 @@ HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, DomainLocalModule *p
         }
 
         _ASSERTE(CEEInfo::g_threadStaticBlockTypeIDMap.LookupType(staticBlockIndex));
-#endif
+#endif // HOST_WINDOWS
 
     return staticBlock;
 }

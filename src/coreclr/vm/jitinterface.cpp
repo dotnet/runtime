@@ -65,7 +65,10 @@
 
 #include "tailcallhelp.h"
 
+#ifdef HOST_WINDOWS
 EXTERN_C uint32_t _tls_index;
+#endif
+
 #ifdef _MSC_VER
 __declspec(selectany) __declspec(thread) uint32_t t_maxThreadStaticBlocks;
 __declspec(selectany) __declspec(thread) void** t_threadStaticBlocks;
@@ -848,7 +851,7 @@ size_t CEEInfo::findNameOfToken (Module* module,
     return strlen (szFQName);
 }
 
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
 /* static */
 uint32_t CEEInfo::ThreadLocalOffset(void* p)
 {
@@ -857,7 +860,7 @@ uint32_t CEEInfo::ThreadLocalOffset(void* p)
     uint8_t* pOurTls = pTls[_tls_index];
     return (uint32_t)((uint8_t*)p - pOurTls);
 }
-#endif // TARGET_WINDOWS
+#endif // HOST_WINDOWS
 
 CorInfoHelpFunc CEEInfo::getLazyStringLiteralHelper(CORINFO_MODULE_HANDLE handle)
 {
@@ -1553,7 +1556,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             else if (pField->IsThreadStatic())
             {
                  // We always treat accessing thread statics as if we are in domain neutral code.
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
                 if (((pField->GetFieldType() >= ELEMENT_TYPE_BOOLEAN) && (pField->GetFieldType() < ELEMENT_TYPE_STRING)))
                 {
                     fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
@@ -1561,7 +1564,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                     pResult->helper = CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
                 }
                 else
-#endif // TARGET_WINDOWS
+#endif // HOST_WINDOWS
                 {
                     fieldAccessor = CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
 
@@ -1750,7 +1753,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
 /*********************************************************************/
 
-#ifdef TARGET_WINDOWS
+#ifdef HOST_WINDOWS
 TypeIDMap CEEInfo::g_threadStaticBlockTypeIDMap;
 
 uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
@@ -1791,7 +1794,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     
     EE_TO_JIT_TRANSITION();
 }
-#else // TARGET_UNIX
+#else
 uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
 {
     CONTRACTL {
@@ -1820,7 +1823,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     
     EE_TO_JIT_TRANSITION();
 }
-#endif // TARGET_WINDOWS
+#endif // HOST_WINDOWS
 
 //---------------------------------------------------------------------------------------
 //
