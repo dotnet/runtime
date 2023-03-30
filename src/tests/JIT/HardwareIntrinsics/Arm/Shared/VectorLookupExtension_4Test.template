@@ -286,24 +286,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var method = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] {
                 typeof({Op2VectorType}<{Op2BaseType}>),
-                typeof({Op1VectorType}<{Op1BaseType}>),
-                typeof({Op1VectorType}<{Op1BaseType}>),
-                typeof({Op1VectorType}<{Op1BaseType}>),
-                typeof({Op1VectorType}<{Op1BaseType}>),
+                typeof(({Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op1BaseType}>, {Op1VectorType}<{Op1BaseType}>)),
                 typeof({Op2VectorType}<{Op2BaseType}>)
             });
-
-            if (method is null)
-            {
-                method = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), 1, new Type[] {
-                    typeof({Op1VectorType}<>).MakeGenericType(Type.MakeGenericMethodParameter(0)),
-                    typeof({Op1VectorType}<>).MakeGenericType(Type.MakeGenericMethodParameter(0)),
-                    typeof({Op1VectorType}<>).MakeGenericType(Type.MakeGenericMethodParameter(0)),
-                    typeof({Op1VectorType}<>).MakeGenericType(Type.MakeGenericMethodParameter(0)),
-                    typeof({Op1VectorType}<>).MakeGenericType(Type.MakeGenericMethodParameter(0)),
-                    typeof({Op2VectorType}<>).MakeGenericType(Type.MakeGenericMethodParameter(0))
-                });
-            }
 
             if (method.IsGenericMethodDefinition)
             {
@@ -312,10 +297,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var result = method.Invoke(null, new object[] {
                 Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray0Ptr),
-                Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr),
-                Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray2Ptr),
-                Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray3Ptr),
-                Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray4Ptr),
+                (Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray1Ptr), Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray2Ptr), Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray3Ptr), Unsafe.Read<{Op1VectorType}<{Op1BaseType}>>(_dataTable.inArray4Ptr)),
                 Unsafe.Read<{Op2VectorType}<{Op2BaseType}>>(_dataTable.inArray5Ptr)
             });
 
