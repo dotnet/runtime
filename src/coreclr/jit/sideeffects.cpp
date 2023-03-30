@@ -184,9 +184,22 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         isWrite = true;
     }
 #ifdef FEATURE_HW_INTRINSICS
-    else if (node->OperIsHWIntrinsic() && node->AsHWIntrinsic()->OperIsMemoryStore())
+    else if (node->OperIsHWIntrinsic())
     {
-        isWrite = true;
+        GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
+        NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
+        if (hwintrinsic->OperIsMemoryStore())
+        {
+            isWrite = true;
+        }
+#if defined(TARGET_XARCH)
+        else if (HWIntrinsicInfo::HasSpecialSideEffect_Barrier(intrinsicId))
+        {
+            // This is modeled the same as GT_MEMORYBARRIER
+            isWrite = true;
+        }
+#endif // TARGET_XARCH
     }
 #endif // FEATURE_HW_INTRINSICS
 

@@ -6566,17 +6566,29 @@ bool GenTree::OperRequiresAsgFlag()
     {
         return true;
     }
+
 #ifdef FEATURE_HW_INTRINSICS
     if (gtOper == GT_HWINTRINSIC)
     {
         GenTreeHWIntrinsic* hwIntrinsicNode = this->AsHWIntrinsic();
+        NamedIntrinsic      intrinsicId     = hwIntrinsicNode->GetHWIntrinsicId();
+
         if (hwIntrinsicNode->OperIsMemoryStore())
         {
             // A MemoryStore operation is an assignment
             return true;
         }
+#if defined(TARGET_XARCH)
+        else if (HWIntrinsicInfo::HasSpecialSideEffect_Barrier(intrinsicId))
+        {
+            // While these don't technically do an assignment, they are modeled the
+            // same as GT_MEMORYBARRIER which tracks itself as requiring GT_ASG flag
+            return true;
+        }
+#endif // TARGET_XARCH
     }
 #endif // FEATURE_HW_INTRINSICS
+
     if (gtOper == GT_CALL)
     {
         // If the call has return buffer argument, it produced a definition and hence
@@ -6791,18 +6803,25 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
         case GT_HWINTRINSIC:
         {
             GenTreeHWIntrinsic* hwIntrinsicNode = this->AsHWIntrinsic();
-            assert(hwIntrinsicNode != nullptr);
-            if (hwIntrinsicNode->OperIsMemoryLoadOrStore())
+
+            if (hwIntrinsicNode->OperIsMemoryLoad())
             {
-                // This operation contains an implicit indirection
-                //   it could throw a null reference exception.
-                //
+                assert((gtFlags & GTF_IND_NONFAULTING) == 0);
+
+                // TODO-CQ: We should use comp->fgAddrCouldBeNull on the address operand
+                // to determine if this can actually produce an NRE or not
+
+                return ExceptionSetFlags::NullReferenceException;
+            }
+            else if (hwIntrinsicNode->OperIsMemoryStore())
+            {
                 return ExceptionSetFlags::NullReferenceException;
             }
 
             return ExceptionSetFlags::None;
         }
 #endif // FEATURE_HW_INTRINSICS
+
         default:
             if (gtOverflowEx())
             {
@@ -24387,6 +24406,70 @@ void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
            (op1->GetSimdBaseType() == op2->GetSimdBaseType()) && (op1->GetSimdSize() == op2->GetSimdSize()) &&
            (op1->GetAuxiliaryType() == op2->GetAuxiliaryType()) && (op1->GetOtherReg() == op2->GetOtherReg()) &&
            OperandsAreEqual(op1, op2);
+}
+
+void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId, bool isSimdAsHWIntrinsic)
+{
+    SetHWIntrinsicId(intrinsicId);
+
+    if (OperIsMemoryLoad())
+    {
+        gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
+    }
+    else if (OperIsMemoryStore())
+    {
+        gtFlags |= (GTF_ASG | GTF_GLOB_REF | GTF_EXCEPT);
+    }
+    else if (HWIntrinsicInfo::HasSpecialSideEffect(intrinsicId))
+    {
+        switch (intrinsicId)
+        {
+#if defined(TARGET_XARCH)
+            case NI_X86Base_Pause:
+            {
+                gtFlags |= GTF_ORDER_SIDEEFF;
+                break;
+            }
+
+            case NI_SSE_StoreFence:
+            case NI_SSE2_LoadFence:
+            case NI_SSE2_MemoryFence:
+            case NI_X86Serialize_Serialize:
+            {
+                gtFlags |= (GTF_ASG | GTF_GLOB_REF);
+                break;
+            }
+
+            case NI_SSE_Prefetch0:
+            case NI_SSE_Prefetch1:
+            case NI_SSE_Prefetch2:
+            case NI_SSE_PrefetchNonTemporal:
+            {
+                gtFlags |= GTF_GLOB_REF;
+                break;
+            }
+#endif // TARGET_XARCH
+
+#if defined(TARGET_ARM64)
+            case NI_ArmBase_Yield:
+            {
+                gtFlags |= GTF_ORDER_SIDEEFF;
+                break;
+            }
+#endif // TARGET_ARM64
+
+            default:
+            {
+                assert(!"Unexpected hwintrinsic side-effect");
+                break;
+            }
+        }
+    }
+
+    if (isSimdAsHWIntrinsic)
+    {
+        gtFlags |= GTF_SIMDASHW_OP;
+    }
 }
 #endif // FEATURE_HW_INTRINSICS
 

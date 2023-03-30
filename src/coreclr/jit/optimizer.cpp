@@ -8753,11 +8753,23 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
 
 #ifdef FEATURE_HW_INTRINSICS
                     case GT_HWINTRINSIC:
-                        if (tree->AsHWIntrinsic()->OperIsMemoryStore())
+                    {
+                        GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
+                        NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
+                        if (hwintrinsic->OperIsMemoryStore())
                         {
                             memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                         }
+#if defined(TARGET_XARCH)
+                        else if (HWIntrinsicInfo::HasSpecialSideEffect_Barrier(intrinsicId))
+                        {
+                            // This is modeled the same as GT_MEMORYBARRIER
+                            memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
+                        }
+#endif // TARGET_XARCH
                         break;
+                    }
 #endif // FEATURE_HW_INTRINSICS
 
                     case GT_LOCKADD:

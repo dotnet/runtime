@@ -6294,28 +6294,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);
 
-    void Initialize(NamedIntrinsic intrinsicId, bool isSimdAsHWIntrinsic)
-    {
-        SetHWIntrinsicId(intrinsicId);
-
-        bool isStore = OperIsMemoryStore();
-        bool isLoad  = OperIsMemoryLoad();
-
-        if (isStore || isLoad)
-        {
-            gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
-
-            if (isStore)
-            {
-                gtFlags |= GTF_ASG;
-            }
-        }
-
-        if (isSimdAsHWIntrinsic)
-        {
-            gtFlags |= GTF_SIMDASHW_OP;
-        }
-    }
+    void Initialize(NamedIntrinsic intrinsicId, bool isSimdAsHWIntrinsic);
 };
 #endif // FEATURE_HW_INTRINSICS
 

@@ -554,10 +554,28 @@ bool Compiler::fgCheckRemoveStmt(BasicBlock* block, Statement* stmt)
     GenTree*   tree = stmt->GetRootNode();
     genTreeOps oper = tree->OperGet();
 
-    if (OperIsControlFlow(oper) || GenTree::OperIsHWIntrinsic(oper) || oper == GT_NO_OP)
+    if (OperIsControlFlow(oper) || oper == GT_NO_OP)
     {
         return false;
     }
+
+#if defined(FEATURE_HW_INTRINSICS)
+    if (oper == GT_HWINTRINSIC)
+    {
+        GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
+        NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+
+        if (HWIntrinsicInfo::HasSpecialSideEffect(intrinsicId))
+        {
+            // We don't want to remove things which have special side effects
+            return false;
+        }
+        else
+        {
+            assert(!hwintrinsic->OperIsMemoryLoadOrStore() || ((tree->gtFlags & GTF_SIDE_EFFECT) != 0));
+        }
+    }
+#endif // FEATURE_HW_INTRINSICS
 
     // TODO: Use a recursive version of gtNodeHasSideEffects()
     if (tree->gtFlags & GTF_SIDE_EFFECT)
