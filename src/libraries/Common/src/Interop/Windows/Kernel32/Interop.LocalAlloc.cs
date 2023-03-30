@@ -13,6 +13,7 @@ internal static partial class Interop
         private const uint LPTR = LMEM_FIXED | LMEM_ZEROINIT;
 
         [LibraryImport(Libraries.Kernel32)]
+        // [return: NativeTypeName("HLOCAL")]
         private static partial nint LocalAlloc(uint uFlags, nuint uBytes);
 
         internal static unsafe void* LocalAlloc(nuint byteCount) =>

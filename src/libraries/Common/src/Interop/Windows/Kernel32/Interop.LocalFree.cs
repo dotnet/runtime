@@ -8,7 +8,10 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [LibraryImport(Libraries.Kernel32)]
-        private static partial nint LocalFree(nint hMem);
+        // [return: NativeTypeName("HLOCAL")]
+        private static partial nint LocalFree(
+            // [NativeTypeName("HLOCAL")]
+            nint hMem);
 
         internal static unsafe void* LocalFree(void* ptr) => (void*)LocalFree((nint)ptr);
     }

@@ -10,7 +10,9 @@ internal static partial class Interop
         internal const uint LMEM_MOVEABLE = 0x0002;
 
         [LibraryImport(Libraries.Kernel32)]
+        // [return: NativeTypeName("HLOCAL")]
         private static partial nint LocalReAlloc(
+            // [NativeTypeName("HLOCAL")]
             nint hMem,
             nuint uBytes,
             uint uFlags);
