@@ -24,29 +24,37 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             var test = new VectorLookupExtension_4Test__{Method}{RetBaseType}();
 
-            // Validates basic functionality works, using Unsafe.Read
-            test.RunBasicScenario_UnsafeRead();
+            if (test.IsSupported)
+            {
+                // Validates basic functionality works, using Unsafe.Read
+                test.RunBasicScenario_UnsafeRead();
 
-            // Validates calling via reflection works, using Unsafe.Read
-            test.RunReflectionScenario_UnsafeRead();
+                // Validates calling via reflection works, using Unsafe.Read
+                test.RunReflectionScenario_UnsafeRead();
 
-            // Validates passing a static member works
-            test.RunClsVarScenario();
+                // Validates passing a static member works
+                test.RunClsVarScenario();
 
-            // Validates passing a local works, using Unsafe.Read
-            test.RunLclVarScenario_UnsafeRead();
+                // Validates passing a local works, using Unsafe.Read
+                test.RunLclVarScenario_UnsafeRead();
 
-            // Validates passing the field of a local class works
-            test.RunClassLclFldScenario();
+                // Validates passing the field of a local class works
+                test.RunClassLclFldScenario();
 
-            // Validates passing an instance member of a class works
-            test.RunClassFldScenario();
+                // Validates passing an instance member of a class works
+                test.RunClassFldScenario();
 
-            // Validates passing the field of a local struct works
-            test.RunStructLclFldScenario();
+                // Validates passing the field of a local struct works
+                test.RunStructLclFldScenario();
 
-            // Validates passing an instance member of a struct works
-            test.RunStructFldScenario();
+                // Validates passing an instance member of a struct works
+                test.RunStructFldScenario();
+            }
+            else
+            {
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }
 
             if (!test.Succeeded)
             {
@@ -251,6 +259,8 @@ namespace JIT.HardwareIntrinsics.Arm
             _dataTable = new DataTable(_data0, _data1, _data2, _data3, _data4, _data5, new {RetBaseType}[RetElementCount], LargestVectorSize);
         }
 
+        public bool IsSupported => {Isa}.IsSupported;
+        
         public bool Succeeded { get; set; }
 
         public void RunBasicScenario_UnsafeRead()
@@ -384,6 +394,27 @@ namespace JIT.HardwareIntrinsics.Arm
 
             var test = TestStruct.Create();
             test.RunStructFldScenario(this);
+        }
+
+        public void RunUnsupportedScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
+            bool succeeded = false;
+
+            try
+            {
+                RunBasicScenario_UnsafeRead();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                succeeded = true;
+            }
+
+            if (!succeeded)
+            {
+                Succeeded = false;
+            }
         }
 
         private void ValidateResult({Op2VectorType}<{Op2BaseType}> op0, {Op1VectorType}<{Op1BaseType}> op1, {Op1VectorType}<{Op1BaseType}> op2, {Op1VectorType}<{Op1BaseType}> op3, {Op1VectorType}<{Op1BaseType}> op4, {Op2VectorType}<{Op2BaseType}> op5, void* result, [CallerMemberName] string method = "")
