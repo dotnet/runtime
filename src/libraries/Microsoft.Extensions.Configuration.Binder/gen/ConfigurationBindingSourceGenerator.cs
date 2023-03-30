@@ -5,6 +5,7 @@
 using System.Collections.Immutable;
 using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.Operations;
@@ -19,15 +20,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            IncrementalValueProvider<KnownTypeData> compilationData =
+            IncrementalValueProvider<CompilationData?> compilationData =
                 context.CompilationProvider
-                    .Select((compilation, _) => new KnownTypeData(compilation));
+                    .Select((compilation, _) => compilation.Options is CSharpCompilationOptions options
+                        ? new CompilationData((CSharpCompilation)compilation)
+                        : null);
 
             IncrementalValuesProvider<BinderInvocationOperation> inputCalls = context.SyntaxProvider.CreateSyntaxProvider(
                 (node, _) => node is InvocationExpressionSyntax invocation,
                 (context, cancellationToken) => new BinderInvocationOperation(context, cancellationToken));
 
-            IncrementalValueProvider<(KnownTypeData, ImmutableArray<BinderInvocationOperation>)> inputData = compilationData.Combine(inputCalls.Collect());
+            IncrementalValueProvider<(CompilationData?, ImmutableArray<BinderInvocationOperation>)> inputData = compilationData.Combine(inputCalls.Collect());
 
             context.RegisterSourceOutput(inputData, (spc, source) => Execute(source.Item1, source.Item2, spc));
         }
@@ -35,7 +38,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         /// <summary>
         /// Generates source code to optimize binding with ConfigurationBinder.
         /// </summary>
-        private static void Execute(KnownTypeData typeData, ImmutableArray<BinderInvocationOperation> inputCalls, SourceProductionContext context)
+        private static void Execute(CompilationData compilationData, ImmutableArray<BinderInvocationOperation> inputCalls, SourceProductionContext context)
         {
 #if LAUNCH_DEBUGGER
             if (!System.Diagnostics.Debugger.IsAttached)
@@ -48,12 +51,33 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return;
             }
 
-            Parser parser = new(context, typeData);
+            if (compilationData?.LanguageVersionIsSupported != true)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(LanguageVersionNotSupported, location: null));
+                return;
+            }
+
+            Parser parser = new(context, compilationData.TypeData!);
             SourceGenerationSpec? spec = parser.GetSourceGenerationSpec(inputCalls);
             if (spec is not null)
             {
                 Emitter emitter = new(context, spec);
                 emitter.Emit();
+            }
+        }
+
+        private sealed record CompilationData
+        {
+            public bool LanguageVersionIsSupported { get; }
+            public KnownTypeData? TypeData { get; }
+
+            public CompilationData(CSharpCompilation compilation)
+            {
+                LanguageVersionIsSupported = compilation.LanguageVersion >= LanguageVersion.CSharp11;
+                if (LanguageVersionIsSupported)
+                {
+                    TypeData = new KnownTypeData(compilation);
+                }
             }
         }
 
@@ -75,7 +99,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             public INamedTypeSymbol? SymbolForISet { get; }
             public INamedTypeSymbol? SymbolForList { get; }
 
-            public KnownTypeData(Compilation compilation)
+            public KnownTypeData(CSharpCompilation compilation)
             {
                 SymbolForIEnumerable = compilation.GetSpecialType(SpecialType.System_Collections_IEnumerable);
                 SymbolForConfigurationKeyNameAttribute = compilation.GetBestTypeByMetadataName(TypeFullName.ConfigurationKeyNameAttribute);

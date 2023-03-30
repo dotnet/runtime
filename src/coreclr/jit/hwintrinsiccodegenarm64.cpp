@@ -955,6 +955,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Vector128_GetUpper:
+            {
+                const int byteIndex = 8;
+                GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op1Reg, byteIndex, INS_OPTS_16B);
+                break;
+            }
+
             case NI_Vector128_AsVector3:
             {
                 // AsVector3 can be a no-op when it's already in the right register, otherwise

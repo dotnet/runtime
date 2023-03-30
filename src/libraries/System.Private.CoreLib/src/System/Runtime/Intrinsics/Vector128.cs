@@ -3144,22 +3144,16 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value of the lower 64-bits as a <see cref="Vector64{T}" />.</param>
         /// <returns>A new <see cref="Vector128{T}" /> with the lower 64-bits set to <paramref name="value" /> and the upper 64-bits set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> WithLower<T>(this Vector128<T> vector, Vector64<T> value)
             where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
 
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.InsertScalar(vector.AsUInt64(), 0, value.AsUInt64()).As<ulong, T>();
-            }
-            else
-            {
-                Vector128<T> result = vector;
-                result.SetLowerUnsafe(value);
-                return result;
-            }
+            Vector128<T> result = vector;
+            result.SetLowerUnsafe(value);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector128{T}" /> with the upper 64-bits set to the specified value and the upper 64-bits set to the same value as that in the given vector.</summary>
@@ -3168,22 +3162,16 @@ namespace System.Runtime.Intrinsics
         /// <param name="value">The value of the upper 64-bits as a <see cref="Vector64{T}" />.</param>
         /// <returns>A new <see cref="Vector128{T}" /> with the upper 64-bits set to <paramref name="value" /> and the lower 64-bits set to the same value as that in <paramref name="vector" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> WithUpper<T>(this Vector128<T> vector, Vector64<T> value)
             where T : struct
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
 
-            if (AdvSimd.IsSupported)
-            {
-                return AdvSimd.InsertScalar(vector.AsUInt64(), 1, value.AsUInt64()).As<ulong, T>();
-            }
-            else
-            {
-                Vector128<T> result = vector;
-                result.SetUpperUnsafe(value);
-                return result;
-            }
+            Vector128<T> result = vector;
+            result.SetUpperUnsafe(value);
+            return result;
         }
 
         /// <summary>Computes the exclusive-or of two vectors.</summary>

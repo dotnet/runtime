@@ -393,15 +393,8 @@ private:
             asg                      = inlinee;
         }
 
-        // Block morphing does not support (promoted) locals under commas, as such, instead of "COMMA(asg, lcl)" we
-        // do "OBJ(COMMA(asg, ADDR(LCL)))". TODO-1stClassStructs: improve block morphing and delete this workaround.
-        //
-        GenTree* lcl  = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
-        GenTree* addr = m_compiler->gtNewOperNode(GT_ADDR, TYP_I_IMPL, lcl);
-        addr          = m_compiler->gtNewOperNode(GT_COMMA, addr->TypeGet(), asg, addr);
-        GenTree* obj  = m_compiler->gtNewObjNode(varDsc->GetLayout(), addr);
-
-        return obj;
+        GenTree* lcl = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
+        return m_compiler->gtNewOperNode(GT_COMMA, lcl->TypeGet(), asg, lcl);
     }
 #endif // FEATURE_MULTIREG_RET
 

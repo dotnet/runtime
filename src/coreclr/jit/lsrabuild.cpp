@@ -2621,8 +2621,18 @@ void LinearScan::buildIntervals()
                     // Given that we also don't have a good way to tell whether the variable is live
                     // across a call in the non-EH code, we'll be extra conservative about this.
                     // Note that for writeThru intervals we don't update the preferences to be only callee-save.
-                    unsigned calleeSaveCount =
-                        (varTypeUsesFloatReg(interval->registerType)) ? CNT_CALLEE_SAVED_FLOAT : CNT_CALLEE_ENREG;
+                    unsigned calleeSaveCount;
+
+                    if (varTypeUsesIntReg(interval->registerType))
+                    {
+                        calleeSaveCount = CNT_CALLEE_ENREG;
+                    }
+                    else
+                    {
+                        assert(varTypeUsesFloatReg(interval->registerType));
+                        calleeSaveCount = CNT_CALLEE_SAVED_FLOAT;
+                    }
+
                     if ((weight <= (BB_UNITY_WEIGHT * 7)) || varDsc->lvVarIndex >= calleeSaveCount)
                     {
                         // If this is relatively low weight, don't prefer callee-save at all.
@@ -2820,7 +2830,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
         type = tree->GetRegTypeByIndex(multiRegIdx);
     }
 
-    if (varTypeUsesFloatReg(type))
+    if (!varTypeUsesIntReg(type))
     {
         compiler->compFloatingPointUsed = true;
     }
@@ -3849,13 +3859,15 @@ int LinearScan::BuildReturn(GenTree* tree)
                         {
                             hasMismatchedRegTypes = true;
                             regMaskTP dstRegMask  = genRegMask(retTypeDesc.GetABIReturnReg(i));
-                            if (varTypeUsesFloatReg(dstType))
+
+                            if (varTypeUsesIntReg(dstType))
                             {
-                                buildInternalFloatRegisterDefForNode(tree, dstRegMask);
+                                buildInternalIntRegisterDefForNode(tree, dstRegMask);
                             }
                             else
                             {
-                                buildInternalIntRegisterDefForNode(tree, dstRegMask);
+                                assert(varTypeUsesFloatReg(dstType));
+                                buildInternalFloatRegisterDefForNode(tree, dstRegMask);
                             }
                         }
                     }

@@ -8,4 +8,10 @@
   </PropertyGroup>
 
   <Import Project="..\..\Directory.Build.props" />
+
+  <PropertyGroup>
+    <RunAnalyzers>true</RunAnalyzers>
+    <NoWarn>$(NoWarn);xUnit1013</NoWarn>
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+  </PropertyGroup>
 </Project>
