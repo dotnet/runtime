@@ -183,12 +183,9 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         return RBM_NONE;
     }
 
-    regMaskTP currAvailableRegs      = candidates;
-    regMaskTP overallResult          = RBM_NONE;
-    regMaskTP consecutiveResult      = RBM_NONE;
-
-    // TODO: What about this?
-    regMaskTP busyRegsInThisLocation = regsBusyUntilKill | regsInUseThisLocation;
+    regMaskTP currAvailableRegs = candidates;
+    regMaskTP overallResult     = RBM_NONE;
+    regMaskTP consecutiveResult = RBM_NONE;
 
 // At this point, for 'n' registers requirement, if Rm, Rm+1, Rm+2, ..., Rm+k-1 are
 // available, create the mask only for Rm, Rm+1, ..., Rm+(k-n) to convey that it
@@ -308,17 +305,31 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         }
     }
 
+    // consecutiveResult should always be a subset of overallResult
+    assert((overallResult & consecutiveResult) == consecutiveResult);
     *allConsecutiveCandidates = overallResult;
     return consecutiveResult;
 }
 
-
-regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP    availableRegisters,
-                                                          regMaskTP    consecutiveCandidates,
-                                                          unsigned int registersNeeded)
+//------------------------------------------------------------------------
+// filterConsecutiveCandidatesForSpill: Amoung the selected consecutiveCandidates,
+//   check if there are any ranges that would require fewer registers to spill
+//   and returns such mask. The return result would always be a subset of
+//   consecutiveCandidates.
+//
+// Arguments:
+//    consecutiveCandidates   - Consecutive candidates to filter  on.
+//    registersNeeded         - Number of registers needed.
+//
+//  Returns:
+//      Filtered candidates that needs fewer spilling.
+//
+regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP consecutiveCandidates, unsigned int registersNeeded)
 {
-    regMaskTP consecutiveResult      = RBM_NONE;
-    regMaskTP unprocessedRegs        = consecutiveCandidates;
+    assert(consecutiveCandidates != RBM_NONE);
+    assert((registersNeeded >= 2) && (registersNeeded <= 4));
+    regMaskTP consecutiveResultForBusy = RBM_NONE;
+    regMaskTP unprocessedRegs          = consecutiveCandidates;
     DWORD     regAvailableStartIndex = 0, regAvailableEndIndex = 0;
     int       maxSpillRegs        = registersNeeded;
     regMaskTP registersNeededMask = (1ULL << registersNeeded) - 1;
@@ -327,40 +338,56 @@ regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP    available
         // From LSB, find the first available register (bit `1`)
         BitScanForward64(&regAvailableStartIndex, static_cast<DWORD64>(unprocessedRegs));
 
-        regMaskTP startMask = (1ULL << regAvailableStartIndex) - 1;
-
-        // Mask all the bits that are processed from LSB thru regAvailableStart until the last `1`.
-        regMaskTP maskProcessed = ~(unprocessedRegs | startMask);
-
-        // From regAvailableStart, find the first unavailable register (bit `0`).
-        if (maskProcessed == RBM_NONE)
+        // For the current range, find how many registers are free vs. busy
+        regMaskTP maskForCurRange        = RBM_NONE;
+        bool      shouldCheckForRounding = false;
+        switch (registersNeeded)
         {
-            regAvailableEndIndex = 64;
-            // We won't be here, if there was alread
-            assert((regAvailableEndIndex - regAvailableStartIndex) < registersNeeded);
+            case 2:
+                shouldCheckForRounding = (regAvailableStartIndex == 63);
+                break;
+            case 3:
+                shouldCheckForRounding = (regAvailableStartIndex >= 62);
+                break;
+            case 4:
+                shouldCheckForRounding = (regAvailableStartIndex >= 61);
+                break;
+            default:
+                assert("Unsupported registersNeeded\n");
+                break;
         }
-        else
+
+        if (shouldCheckForRounding)
         {
-            //regMaskTP maskForCurRange = registersNeededMask << regAvailableStartIndex;
-
-            //maskForCurRange = maskForCurRange & availableRegisters;
-            //if (maskForCurRange != RBM_NONE)
-            //{
-            //    int curSpillRegs = registersNeeded - BitOperations::PopCount(maskForCurRange) + 1;
-            //    if (curSpillRegs < maxSpillRegs)
-            //    {
-            //        // We found a series that will need fewer registers to be spilled.
-            //        // Reset whatever we found so far and start accumulating the result again.
-            //        consecutiveResultForBusy = RBM_NONE;
-            //        maxSpillRegs             = curSpillRegs;
-            //    }
-
-            //    consecutiveResultForBusy |= 1ULL << regAvailableStartIndex;
-            //}
+            unsigned int roundedRegistersNeeded = registersNeeded - (63 - regAvailableStartIndex + 1);
+            maskForCurRange                     = (1ULL << roundedRegistersNeeded) - 1;
         }
-        unprocessedRegs &= 0; // Just set the `regAvailableStartIndex` bit 0.
-    } while (true);
-    return RBM_NONE;
+
+        maskForCurRange |= (registersNeededMask << regAvailableStartIndex);
+        maskForCurRange &= m_AvailableRegs;
+
+        if (maskForCurRange != RBM_NONE)
+        {
+            // In the given range, there are some free registers available. Calculate how many registers
+            // will need spilling if this range is picked.
+
+            int curSpillRegs = registersNeeded - BitOperations::PopCount(maskForCurRange);
+            if (curSpillRegs < maxSpillRegs)
+            {
+                consecutiveResultForBusy = 1ULL << regAvailableStartIndex;
+                maxSpillRegs             = curSpillRegs;
+            }
+            else if (curSpillRegs == maxSpillRegs)
+            {
+                consecutiveResultForBusy |= 1ULL << regAvailableStartIndex;
+            }
+        }
+        unprocessedRegs &= ~(1ULL << regAvailableStartIndex);
+    } while (unprocessedRegs != RBM_NONE);
+
+    // consecutiveResultForBusy should always be a subset of consecutiveCandidates.
+    assert((consecutiveCandidates & consecutiveResultForBusy) == consecutiveResultForBusy);
+    return consecutiveResultForBusy;
 }
 
 //------------------------------------------------------------------------
@@ -372,10 +399,14 @@ regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP    available
 //
 // Arguments:
 //    allCandidates   - Register assigned to the first RefPosition.
-//    refPosition  - Number of registers to check.
+//    refPosition     - Number of registers to check.
+//    busyCandidates  - Register mask of free/busy registers.
 //
 //  Returns:
-//      Register mask of consecutive registers.
+//      Register mask of free consecutive registers. If there are not enough free registers,
+//      or the free registers are not consecutive, then return RBM_NONE. In that case,
+//      `busyCandidates` will contain the register mask that can be assigned and will include
+//      both free and busy registers.
 //
 //  Notes:
 //      The consecutive registers mask includes just the bits of first registers or
@@ -493,8 +524,10 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
     regMaskTP consecutiveResultForBusy =
         filterConsecutiveCandidates(allCandidates, registersNeeded, &overallResultForBusy);
 
-    regMaskTP overallResultForSpill = m_AvailableRegs & overallResultForBusy;
-    if (overallResultForSpill != RBM_NONE)
+    *busyCandidates = consecutiveResultForBusy;
+
+    // Check if we can further check better registers amoung consecutiveResultForBusy.
+    if ((m_AvailableRegs & overallResultForBusy) != RBM_NONE)
     {
         // `overallResultForBusy` contains the mask of entire series that can be the consecutive candidates.
         // If there is an overlap of that with free registers, then try to find a series that will need least
@@ -506,21 +539,18 @@ regMaskTP LinearScan::getConsecutiveCandidates(regMaskTP    allCandidates,
         if (optimalConsecutiveResultForBusy != RBM_NONE)
         {
             *busyCandidates = optimalConsecutiveResultForBusy;
-            // TODO: What to do with mixConsecutiveResult?
+        }
+        else if ((m_AvailableRegs & consecutiveResultForBusy) != RBM_NONE)
+        {
+            // We did not find free consecutive candidates, however we found some registers among the
+            // `allCandidates` that are mix of free and busy. Since `busyCandidates` just has bit set for first
+            // register of such series, return the mask that starts with free register, if possible. The busy
+            // registers will be spilled during assignment of subsequent RefPosition.
+            *busyCandidates = (m_AvailableRegs & consecutiveResultForBusy);
         }
     }
 
-    regMaskTP mixConsecutiveResult     = m_AvailableRegs & consecutiveResultForBusy;
-    if (mixConsecutiveResult != RBM_NONE)
-    {
-        // We did not find free consecutive candidates, however we found some registers among the `allCandidates` that
-        // are mix of free and busy. Since `busyCandidates` just has bit set for first register of such series, return
-        // the mask that starts with free register, if possible. The busy registers will be spilled during assignment of
-        // subsequent RefPosition.
-        *busyCandidates = mixConsecutiveResult;
-    }
-
-    *busyCandidates = consecutiveResultForBusy;
+    // Return RBM_NONE because there was no free candidates.
     return RBM_NONE;
 }
 //------------------------------------------------------------------------

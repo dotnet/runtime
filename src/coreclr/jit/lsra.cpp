@@ -12271,6 +12271,10 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
             {
                 candidates = busyConsecutiveCandidates;
             }
+            else
+            {
+                assert(busyConsecutiveCandidates == RBM_NONE);
+            }
         }
         else
         {
