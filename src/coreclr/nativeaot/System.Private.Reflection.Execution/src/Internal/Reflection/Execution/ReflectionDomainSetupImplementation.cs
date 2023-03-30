@@ -36,7 +36,7 @@ namespace Internal.Reflection.Execution
                 if (methodBase is ConstructorInfo)
                 {
                     Type declaringType = methodBase.DeclaringType;
-                    if (typeof(Delegate).IsAssignableFrom(declaringType))
+                    if (declaringType.BaseType == typeof(MulticastDelegate))
                         throw new PlatformNotSupportedException(SR.PlatformNotSupported_CannotInvokeDelegateCtor);
                 }
             }

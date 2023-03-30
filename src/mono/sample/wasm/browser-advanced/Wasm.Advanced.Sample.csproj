@@ -1,9 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
-    <_SampleProject>Wasm.Advanced.Sample.csproj</_SampleProject>
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
+    <WasmEnableWebcil>true</WasmEnableWebcil>
+    <WasmEmitSymbolMap>true</WasmEmitSymbolMap>
+    <EmccEnableAssertions>true</EmccEnableAssertions>
+    <EmccEnvironment>web,worker</EmccEnvironment>
     <!-- add OpenGL emulation -->
     <EmccExtraLDFlags> -s USE_CLOSURE_COMPILER=1 -s LEGACY_GL_EMULATION=1 -lGL -lSDL -lidbfs.js</EmccExtraLDFlags>
     <!-- just to prove we don't do JS eval() -->
@@ -12,9 +15,13 @@
     <WasmProfilers>browser;</WasmProfilers>
   </PropertyGroup>
   <ItemGroup>
+    <WasmExtraFilesToDeploy Include="main.js" />
     <!-- add export GL object from Module -->
     <EmccExportedRuntimeMethod Include="GL" />
     <NativeFileReference Include="fibonacci.c" />
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
+
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowserAndSimpleServer" />
+
 </Project>

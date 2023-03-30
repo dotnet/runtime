@@ -102,6 +102,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         private bool _composite;
         private ulong _imageBase;
         private int _readyToRunHeaderRVA;
+        private string _ownerCompositeExecutable;
         private ReadyToRunHeader _readyToRunHeader;
         private List<ReadyToRunCoreHeader> _readyToRunAssemblyHeaders;
         private List<ReadyToRunAssembly> _readyToRunAssemblies;
@@ -282,6 +283,15 @@ namespace ILCompiler.Reflection.ReadyToRun
             {
                 EnsureHeader();
                 return _readyToRunAssemblies;
+            }
+        }
+
+        public string OwnerCompositeExecutable
+        {
+            get
+            {
+                EnsureHeader();
+                return _ownerCompositeExecutable;
             }
         }
 
@@ -664,6 +674,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             Debug.Assert(_readyToRunHeaderRVA != 0);
             int r2rHeaderOffset = GetOffset(_readyToRunHeaderRVA);
             _readyToRunHeader = new ReadyToRunHeader(Image, _readyToRunHeaderRVA, r2rHeaderOffset);
+
+            FindOwnerCompositeExecutable();
 
             _readyToRunAssemblies = new List<ReadyToRunAssembly>();
             if (_composite)
@@ -1376,6 +1388,21 @@ namespace ILCompiler.Reflection.ReadyToRun
                 ReadyToRunCoreHeader assemblyHeader = new ReadyToRunCoreHeader(Image, ref headerOffset);
                 _readyToRunAssemblyHeaders.Add(assemblyHeader);
                 _readyToRunAssemblies.Add(new ReadyToRunAssembly(this));
+            }
+        }
+
+        private void FindOwnerCompositeExecutable()
+        {
+            _ownerCompositeExecutable = null;
+            foreach (ReadyToRunSection section in ReadyToRunHeader.Sections.Values)
+            {
+                if (section.Type == ReadyToRunSectionType.OwnerCompositeExecutable)
+                {
+                    int oceOffset = GetOffset(section.RelativeVirtualAddress);
+                    string ownerCompositeExecutable = Encoding.UTF8.GetString(Image, oceOffset, section.Size - 1); // exclude the zero terminator
+                    _ownerCompositeExecutable = ownerCompositeExecutable.ToEscapedString(placeQuotes: false);
+                    break;
+                }
             }
         }
 

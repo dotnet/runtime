@@ -310,7 +310,20 @@ namespace System.Media
                 int streamLen = (int)_stream.Length;
                 _currentPos = 0;
                 _streamData = new byte[streamLen];
-                _stream.Read(_streamData, 0, streamLen);
+#if NET7_0_OR_GREATER
+                _stream.ReadExactly(_streamData);
+#else
+                int totalRead = 0;
+                while (totalRead < streamLen)
+                {
+                    int bytesRead = _stream.Read(_streamData, totalRead, streamLen - totalRead);
+                    if (bytesRead <= 0)
+                    {
+                        throw new EndOfStreamException();
+                    }
+                    totalRead += bytesRead;
+                }
+#endif
                 IsLoadCompleted = true;
                 OnLoadCompleted(new AsyncCompletedEventArgs(null, false, null));
             }

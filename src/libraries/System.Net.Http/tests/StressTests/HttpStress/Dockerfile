@@ -1,11 +1,11 @@
-ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-bullseye-slim
+ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:7.0-bullseye-slim
 FROM $SDK_BASE_IMAGE
 
 # Build latest msquic locally
 WORKDIR /msquic
 RUN apt-get update -y && \
     apt-get upgrade -y && \
-    apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev && \
+    apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev libnuma-dev && \
     gem install fpm
 RUN git clone --recursive https://github.com/dotnet/msquic
 RUN cd msquic/src/msquic && \
@@ -33,9 +33,9 @@ RUN dotnet build -c $CONFIGURATION \
     -p:MicrosoftNetCoreAppRuntimePackDir=/live-runtime-artifacts/microsoft.netcore.app.runtime.linux-x64/$CONFIGURATION/
 
 # Enable dump collection
-ENV COMPlus_DbgEnableMiniDump=1
-ENV COMPlus_DbgMiniDumpType=MiniDumpWithFullMemory
-ENV COMPlus_DbgMiniDumpName="/dumps-share/coredump.%p"
+ENV DOTNET_DbgEnableMiniDump=1
+ENV DOTNET_DbgMiniDumpType=MiniDumpWithFullMemory
+ENV DOTNET_DbgMiniDumpName="/dumps-share/coredump.%p"
 
 EXPOSE 5001
 

@@ -429,14 +429,13 @@ namespace System.Xml.XPath
         {
             XPathNodeRef nodeRef;
 
-            if (_idValueMap == null || !_idValueMap.ContainsKey(id))
+            if (_idValueMap == null || !_idValueMap.TryGetValue(id, out nodeRef))
             {
                 pageElem = null;
                 return 0;
             }
 
             // Extract page and index from XPathNodeRef
-            nodeRef = _idValueMap[id];
             pageElem = nodeRef.Page;
             return nodeRef.Index;
         }

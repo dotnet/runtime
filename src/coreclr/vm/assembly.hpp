@@ -77,9 +77,6 @@ public:
     // PrepareModule call.
     void PrepareModuleForAssembly(Module* module, AllocMemTracker *pamTracker);
 
-    // This is the final step of publishing a Module into an Assembly. This step cannot fail.
-    void PublishModuleIntoAssembly(Module *module);
-
 #ifndef DACCESS_COMPILE
     void SetIsTenured()
     {

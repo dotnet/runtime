@@ -38,7 +38,6 @@ namespace System.Reflection.TypeLoading
         protected sealed override MethodImplAttributes ComputeMethodImplementationFlags() => _genericMethodDefinition.MethodImplementationFlags;
 
         protected sealed override MethodSig<RoParameter> ComputeMethodSig() => _genericMethodDefinition.SpecializeMethodSig(this);
-        protected sealed override MethodSig<RoType> ComputeCustomModifiers() => _genericMethodDefinition.SpecializeCustomModifiers(TypeContext);
 
         public sealed override MethodBody? GetMethodBody() => _genericMethodDefinition.SpecializeMethodBody(this);
 

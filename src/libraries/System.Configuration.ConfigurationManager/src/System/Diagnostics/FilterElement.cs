@@ -7,7 +7,7 @@ namespace System.Diagnostics
 {
     internal sealed class FilterElement : TypedElement
     {
-        private static ConditionalWeakTable<TraceFilter, string> s_initData = new();
+        private static readonly ConditionalWeakTable<TraceFilter, string> s_initData = new();
 
         public FilterElement() : base(typeof(TraceFilter)) { }
 

@@ -171,6 +171,18 @@ namespace DebuggerTests
             );
         }
 
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task CreateGoodBreakpointWithoutColumnAndHit()
+        {
+            var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, -1);
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_add(); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
+                "Math.IntAdd"
+            );
+        }
+
         public static TheoryData<string, string, string, bool> FalseConditions = new TheoryData<string, string, string, bool>
         {
             { "invoke_add()", "IntAdd", "0.0", false },
@@ -233,7 +245,7 @@ namespace DebuggerTests
             await SetBreakpoint("/debugger-driver.html", line_bp, column_bp, condition: condition);
             await SetBreakpoint("/debugger-driver.html", 80, 11);
 
-            await EvaluateAndCheck(
+            var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { conditional_breakpoint_test(5, 10, null); }, 1);",
                 "debugger-driver.html", line_expected, column_expected, "conditional_breakpoint_test");
         }
@@ -472,7 +484,6 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("load_non_wasm_page")]
-        [InlineData("load_non_wasm_page_forcing_runtime_ready")] //to simulate the same behavior that has when debugging from VS and OnDefaultContextCreated is called
         public async Task CreateGoodBreakpointAndHitGoToNonWasmPageComeBackAndHitAgain(string func_name)
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);

@@ -1362,13 +1362,14 @@ namespace System.Threading
         /// <summary>Shim used to invoke <see cref="IAsyncStateMachineBox.MoveNext"/> of the supplied <see cref="IAsyncStateMachineBox"/>.</summary>
         internal static readonly Action<object?> s_invokeAsyncStateMachineBox = static state =>
         {
-            if (!(state is IAsyncStateMachineBox box))
+            if (state is IAsyncStateMachineBox box)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
-                return;
+                box.MoveNext();
             }
-
-            box.MoveNext();
+            else
+            {
+                ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
+            }
         };
 
         internal static bool EnableWorkerTracking => IsWorkerTrackingEnabledInConfig && EventSource.IsSupported;
@@ -1559,12 +1560,12 @@ namespace System.Threading
             //
             // This occurs when user code queues its provided continuation to the ThreadPool;
             // internally we call UnsafeQueueUserWorkItemInternal directly for Tasks.
-            if (ReferenceEquals(callBack, ThreadPool.s_invokeAsyncStateMachineBox))
+            if (ReferenceEquals(callBack, s_invokeAsyncStateMachineBox))
             {
                 if (!(state is IAsyncStateMachineBox))
                 {
                     // The provided state must be the internal IAsyncStateMachineBox (Task) type
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
+                    ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
                 }
 
                 UnsafeQueueUserWorkItemInternal((object)state!, preferLocal);

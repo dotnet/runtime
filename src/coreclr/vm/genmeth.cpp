@@ -118,11 +118,17 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
         pMD->SetIsIntrinsic();
     }
 
+#ifdef EnC_SUPPORTED
+    if (pTemplateMD->IsEnCAddedMethod())
+    {
+        pMD->SetIsEnCAddedMethod();
+    }
+#endif // EnC_SUPPORTED
+
     pMD->SetMemberDef(token);
     pMD->SetSlot(pTemplateMD->GetSlot());
 
 #ifdef _DEBUG
-    pMD->m_pszDebugMethodName = pTemplateMD->m_pszDebugMethodName;
     //<NICE> more info here</NICE>
     pMD->m_pszDebugMethodSignature = "<generic method signature>";
     pMD->m_pszDebugClassName  = "<generic method class name>";
@@ -1351,19 +1357,21 @@ MethodDesc * MethodDesc::FindOrCreateTypicalSharedInstantiation(BOOL allowCreate
 }
 
 //@GENERICSVER: Set the typical (ie. formal) instantiation
-void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport *pIMDII,
+void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport* pIMDII,
                                                           LoaderAllocator* pAllocator,
-                                                          AllocMemTracker *pamTracker,
-                                                          Module *pModule,
+                                                          AllocMemTracker* pamTracker,
+                                                          Module* pModule,
                                                           mdMethodDef tok)
 {
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(CheckPointer(pModule));
         PRECONDITION(CheckPointer(pIMDII));
+        PRECONDITION(CheckPointer(pAllocator));
+        PRECONDITION(CheckPointer(pamTracker));
+        PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
 

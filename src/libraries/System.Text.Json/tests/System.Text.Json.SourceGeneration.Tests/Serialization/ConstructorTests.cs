@@ -140,7 +140,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_Param))]
         [JsonSerializable(typeof(ClassWithIgnoredSameType))]
         [JsonSerializable(typeof(ClassWithDefaultCtorParams))]
+#if FIXED  // https://github.com/dotnet/roslyn/issues/66900
         [JsonSerializable(typeof(ClassWithManyConstructorParameters))]
+#endif
+        [JsonSerializable(typeof(ClassWithInvalidArray))]
+        [JsonSerializable(typeof(ClassWithInvalidDictionary))]
+        [JsonSerializable(typeof(TypeWithEnumParameters))]
+        [JsonSerializable(typeof(ClassWithIgnoredPropertyDefaultParam))]
         internal sealed partial class ConstructorTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -276,7 +282,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_Param))]
         [JsonSerializable(typeof(ClassWithIgnoredSameType))]
         [JsonSerializable(typeof(ClassWithDefaultCtorParams))]
+#if FIXED // https://github.com/dotnet/roslyn/issues/66900
         [JsonSerializable(typeof(ClassWithManyConstructorParameters))]
+#endif
+        [JsonSerializable(typeof(ClassWithInvalidArray))]
+        [JsonSerializable(typeof(ClassWithInvalidDictionary))]
+        [JsonSerializable(typeof(TypeWithEnumParameters))]
+        [JsonSerializable(typeof(ClassWithIgnoredPropertyDefaultParam))]
         internal sealed partial class ConstructorTestsContext_Default : JsonSerializerContext
         {
         }

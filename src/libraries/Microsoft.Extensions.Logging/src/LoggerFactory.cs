@@ -18,10 +18,10 @@ namespace Microsoft.Extensions.Logging
         private readonly List<ProviderRegistration> _providerRegistrations = new List<ProviderRegistration>();
         private readonly object _sync = new object();
         private volatile bool _disposed;
-        private IDisposable? _changeTokenRegistration;
+        private readonly IDisposable? _changeTokenRegistration;
         private LoggerFilterOptions _filterOptions;
         private IExternalScopeProvider? _scopeProvider;
-        private LoggerFactoryOptions _factoryOptions;
+        private readonly LoggerFactoryOptions _factoryOptions;
 
         /// <summary>
         /// Creates a new <see cref="LoggerFactory"/> instance.

@@ -44,4 +44,9 @@ typedef int (CORECLR_DELEGATE_CALLTYPE *get_function_pointer_fn)(
     void         *reserved           /* Extensibility parameter (currently unused and must be 0) */,
     /*out*/ void **delegate          /* Pointer where to store the function pointer result */);
 
+typedef int (CORECLR_DELEGATE_CALLTYPE *load_assembly_fn)(
+    const char_t *assembly_path     /* Fully qualified path to assembly */,
+    void         *load_context      /* Extensibility parameter (currently unused and must be 0) */,
+    void         *reserved          /* Extensibility parameter (currently unused and must be 0) */);
+
 #endif // __CORECLR_DELEGATES_H__

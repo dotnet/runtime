@@ -371,7 +371,7 @@ namespace Microsoft.Interop
                 elementStatements.AddRange(_elementMarshaller.Generate(localElementInfo, elementSubContext));
             }
 
-            if (elementStatements.Any())
+            if (elementStatements.Count != 0)
             {
                 StatementSyntax marshallingStatement = Block(
                     List(_elementMarshaller.Generate(localElementInfo, elementSetupSubContext)
@@ -389,48 +389,6 @@ namespace Microsoft.Interop
             }
 
             return EmptyStatement();
-        }
-
-        /// <summary>
-        /// Rewrite assignment expressions to the native identifier to cast to IntPtr.
-        /// This handles the case where the native type of a non-blittable managed type is a pointer,
-        /// which are unsupported in generic type parameters.
-        /// </summary>
-        private sealed class PointerNativeTypeAssignmentRewriter : CSharpSyntaxRewriter
-        {
-            private readonly string _nativeIdentifier;
-            private readonly PointerTypeSyntax _nativeType;
-
-            public PointerNativeTypeAssignmentRewriter(string nativeIdentifier, PointerTypeSyntax nativeType)
-            {
-                _nativeIdentifier = nativeIdentifier;
-                _nativeType = nativeType;
-            }
-
-            public override SyntaxNode VisitAssignmentExpression(AssignmentExpressionSyntax node)
-            {
-                if (node.Left.ToString() == _nativeIdentifier)
-                {
-                    return node.WithRight(
-                        CastExpression(MarshallerHelpers.SystemIntPtrType, node.Right));
-                }
-                if (node.Right.ToString() == _nativeIdentifier)
-                {
-                    return node.WithRight(CastExpression(_nativeType, node.Right));
-                }
-
-                return base.VisitAssignmentExpression(node);
-            }
-
-            public override SyntaxNode? VisitArgument(ArgumentSyntax node)
-            {
-                if (node.Expression.ToString() == _nativeIdentifier)
-                {
-                    return node.WithExpression(
-                        CastExpression(_nativeType, node.Expression));
-                }
-                return base.VisitArgument(node);
-            }
         }
     }
 }

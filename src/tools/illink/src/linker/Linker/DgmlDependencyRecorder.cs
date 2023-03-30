@@ -137,7 +137,7 @@ namespace Mono.Linker
 			}
 		}
 
-		private int _nodeIndex = 0;
+		private int _nodeIndex;
 
 		void AddNode (string node)
 		{

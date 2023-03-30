@@ -9,6 +9,9 @@
     <RunScriptInputName Condition="'$(BuildTestsOnHelix)' == 'true' and '$(TargetsAppleMobile)' == 'true'">AppleHelixRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(BuildTestsOnHelix)' != 'true' and '$(TargetsAppleMobile)' == 'true'">AppleRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'android'">AndroidRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'wasi' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' == 'true'">WasiRunnerAOTTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'wasi' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' != 'true'">WasiRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'wasi' and '$(OS)' == 'Windows_NT'">WasiRunnerTemplate.cmd</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' == 'true'">WasmRunnerAOTTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' != 'true'">WasmRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'browser' and '$(OS)' == 'Windows_NT'">WasmRunnerTemplate.cmd</RunScriptInputName>
@@ -23,7 +26,7 @@
 
     <RunScriptOutputName Condition="'$(RunScriptWindowsCmd)' != 'true'">RunTests.sh</RunScriptOutputName>
     <RunScriptOutputName Condition="'$(BuildTestsOnHelix)' == 'true' and '$(TargetsAppleMobile)' == 'true'">build-apple-app.sh</RunScriptOutputName>
-    <RunScriptOutputName Condition="'$(RunScriptWindowsCmd)' == 'true' or ('$(TargetOS)' == 'browser' and '$(OS)' == 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
+    <RunScriptOutputName Condition="'$(RunScriptWindowsCmd)' == 'true' or (('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(OS)' == 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
     <InnerRunScriptOutputName>$(AssemblyName).sh</InnerRunScriptOutputName>
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
     <InnerRunScriptOutputPath>$([MSBuild]::NormalizePath('$(OutDir)', '$(InnerRunScriptOutputName)'))</InnerRunScriptOutputPath>
@@ -63,12 +66,12 @@
     <!-- For browser we need to hook up the target with DependsOnTargets in PublishTestAsSelfContained
     because we do a Publish which runs after Build, if we run after PrepareForRun we would generated
     an empty zip because we haven't published the selfcontained app.  -->
-    <ArchiveTestsAfterTargets Condition="'$(TargetOS)' == 'browser' or '$(TestSingleFile)' == 'true'" />
+    <ArchiveTestsAfterTargets Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(TestSingleFile)' == 'true'" />
   </PropertyGroup>
 
   <!-- Archive test binaries. -->
   <Target Name="ArchiveTests"
-          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'browser' or '$(BuildTestsOnHelix)' == 'true')"
+          Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true' and ('$(TargetsMobile)' != 'true' or '$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(BuildTestsOnHelix)' == 'true')"
           AfterTargets="$(ArchiveTestsAfterTargets)"
           DependsOnTargets="GenerateRunScript;ZipTestArchive" />
   
@@ -78,7 +81,7 @@
 
     <PropertyGroup>
       <_ZipSourceDirectory>$(OutDir)</_ZipSourceDirectory>
-      <_ZipSourceDirectory Condition="'$(TargetOS)' == 'browser' or '$(TestSingleFile)' == 'true'">$(BundleDir)</_ZipSourceDirectory>
+      <_ZipSourceDirectory Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi' or '$(TestSingleFile)' == 'true'">$(BundleDir)</_ZipSourceDirectory>
     </PropertyGroup>
 
     <MakeDir Directories="$(TestArchiveTestsDir)" />
@@ -94,8 +97,8 @@
   <Target Name="GenerateRunScript">
     <PropertyGroup>
       <!-- RSP file support. -->
-      <RunScriptCommand Condition="'$(RunScriptWindowsCmd)' != 'true' and ('$(TargetOS)' != 'browser' or '$(OS)' != 'Windows_NT')">$(RunScriptCommand) $RSP_FILE</RunScriptCommand>
-      <RunScriptCommand Condition="'$(RunScriptWindowsCmd)' == 'true' or ('$(TargetOS)' == 'browser' and '$(OS)' == 'Windows_NT')">$(RunScriptCommand) %RSP_FILE%</RunScriptCommand>
+      <RunScriptCommand Condition="'$(RunScriptWindowsCmd)' != 'true' and (('$(TargetOS)' != 'browser' and '$(TargetOS)' != 'wasi') or '$(OS)' != 'Windows_NT')">$(RunScriptCommand) $RSP_FILE</RunScriptCommand>
+      <RunScriptCommand Condition="'$(RunScriptWindowsCmd)' == 'true' or (('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi') and '$(OS)' == 'Windows_NT')">$(RunScriptCommand) %RSP_FILE%</RunScriptCommand>
 
       <!-- Escape potential user input. -->
       <RunScriptCommand>$([MSBuild]::Escape('$(RunScriptCommand)'))</RunScriptCommand>

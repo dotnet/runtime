@@ -74,7 +74,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		static void TestUnknownBindingFlags (BindingFlags bindingFlags)
 		{
-			// Since the binding flags are not known linker should mark all properties on the type
+			// Since the binding flags are not known trimming tools should mark all properties on the type
 			var property = typeof (UnknownBindingFlags).GetProperty ("SomeProperty", bindingFlags);
 			property.GetValue (null, new object[] { });
 		}
@@ -82,7 +82,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		[Kept]
 		static void TestUnknownBindingFlagsAndName (BindingFlags bindingFlags, string name)
 		{
-			// Since the binding flags and name are not known linker should mark all properties on the type
+			// Since the binding flags and name are not known trimming tools should mark all properties on the type
 			var property = typeof (UnknownBindingFlagsAndName).GetProperty (name, bindingFlags);
 			property.GetValue (null, new object[] { });
 		}

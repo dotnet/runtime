@@ -128,7 +128,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		{
 		}
 
-		[Kept]
+		// https://github.com/dotnet/runtime/issues/72833
+		// NativeAOT doesn't implement full type name parser yet
+		[Kept (By = Tool.Trimmer)]
 		class FromStringConstantWithGenericInner
 		{
 		}
@@ -141,10 +143,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public T GetValue () { return default (T); }
 		}
 
-		[Kept]
+		// https://github.com/dotnet/runtime/issues/72833
+		// NativeAOT doesn't implement full type name parser yet
+		[Kept (By = Tool.Trimmer)]
 		class FromStringConstantWithGenericInnerInner
 		{
-			[Kept]
+			[Kept (By = Tool.Trimmer)]
 			public void Method ()
 			{
 			}
@@ -152,15 +156,17 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			int unusedField;
 		}
 
-		[Kept]
+		[Kept (By = Tool.Trimmer)]
 		class FromStringConstantWithGenericInnerOne<
 		[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
-		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute))]
+		[KeptAttributeAttribute (typeof (DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
 		T>
 		{
 		}
 
-		[Kept]
+		// https://github.com/dotnet/runtime/issues/72833
+		// NativeAOT doesn't implement full type name parser yet
+		[Kept (By = Tool.Trimmer)]
 		class FromStringConstantWithGenericInnerTwo
 		{
 			void UnusedMethod ()
@@ -168,14 +174,22 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 		}
 
-		[Kept]
+		// https://github.com/dotnet/runtime/issues/72833
+		// NativeAOT doesn't implement full type name parser yet
+		[Kept (By = Tool.Trimmer)]
 		class FromStringConstantWitGenericInnerMultiDimArray
 		{
 		}
 
+		// https://github.com/dotnet/runtime/issues/72833
+		// NativeAOT actually preserves this, but for a slightly wrong reason - it completely ignores the array notations
 		[Kept]
+		[KeptMember (".ctor()", By = Tool.NativeAot)]
 		class FromStringConstantWithMultiDimArray
 		{
+			// https://github.com/dotnet/runtime/issues/72833
+			// NativeAOT actually preserves this, but for a slightly wrong reason - it completely ignores the array notations
+			[Kept (By = Tool.NativeAot)]
 			public void UnusedMethod () { }
 		}
 

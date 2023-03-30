@@ -43,6 +43,7 @@ private:
     HRESULT CloseGenericArgument();
     HRESULT AddName(LPCWSTR szName);
     HRESULT AddName(LPCWSTR szName, LPCWSTR szNamespace);
+    HRESULT AddNameNoEscaping(LPCWSTR szName);
     HRESULT AddPointer();
     HRESULT AddByRef();
     HRESULT AddSzArray();

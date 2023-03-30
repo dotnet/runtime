@@ -102,6 +102,10 @@ void Phase::PostPhase(PhaseStatus status)
 
 #ifdef DEBUG
 
+#if DUMP_FLOWGRAPHS
+    comp->fgDumpFlowGraph(m_phase, Compiler::PhasePosition::PostPhase);
+#endif // DUMP_FLOWGRAPHS
+
     // Don't dump or check post phase unless the phase made changes.
     //
     const bool madeChanges       = (status != PhaseStatus::MODIFIED_NOTHING);
@@ -168,8 +172,4 @@ void Phase::PostPhase(PhaseStatus status)
         }
     }
 #endif // DEBUG
-
-#if DUMP_FLOWGRAPHS
-    comp->fgDumpFlowGraph(m_phase, Compiler::PhasePosition::PostPhase);
-#endif // DUMP_FLOWGRAPHS
 }

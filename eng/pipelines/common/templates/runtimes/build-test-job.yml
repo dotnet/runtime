@@ -98,17 +98,13 @@ jobs:
 
       # Only build GCSimulator tests when the gc-simulator group is specified.
       - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
-        - ${{ if eq(parameters.osGroup, 'windows') }}:
           - name: testTreeFilterArg
             value: 'tree GC/Scenarios/GCSimulator'
-        - ${{ if ne(parameters.osGroup, 'windows') }}:
-          - name: testTreeFilterArg
-            value: '-tree:GC/Scenarios/GCSimulator'
 
     steps:
 
     # Install test build dependencies
-    - ${{ if eq(parameters.osGroup, 'osx') }}:
+    - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
 

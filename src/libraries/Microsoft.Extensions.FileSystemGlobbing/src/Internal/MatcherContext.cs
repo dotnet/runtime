@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
             Declare();
 
             var entities = new List<FileSystemInfoBase?>();
-            if (_declaredWildcardPathSegment || _declaredLiteralFileSegments.Any())
+            if (_declaredWildcardPathSegment || _declaredLiteralFileSegments.Count != 0)
             {
                 entities.AddRange(directory.EnumerateFileSystemInfos());
             }

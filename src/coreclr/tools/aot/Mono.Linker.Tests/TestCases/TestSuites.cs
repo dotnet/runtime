@@ -9,7 +9,6 @@ namespace Mono.Linker.Tests.TestCases
 {
 	public class All
 	{
-
 		[Theory]
 		[MemberData(nameof(TestDatabase.DataFlow), MemberType = typeof(TestDatabase))]
 		public void DataFlow(string t)
@@ -20,6 +19,13 @@ namespace Mono.Linker.Tests.TestCases
 		[Theory]
 		[MemberData (nameof (TestDatabase.DynamicDependencies), MemberType = typeof (TestDatabase))]
 		public void DynamicDependencies (string t)
+		{
+			Run (t);
+		}
+
+		[Theory]
+		[MemberData (nameof (TestDatabase.Generics), MemberType = typeof (TestDatabase))]
+		public void Generics (string t)
 		{
 			Run (t);
 		}
@@ -43,6 +49,20 @@ namespace Mono.Linker.Tests.TestCases
 		public void RequiresCapability(string t)
 		{
 			Run(t);
+		}
+
+		[Theory]
+		[MemberData (nameof (TestDatabase.SingleFile), MemberType = typeof (TestDatabase))]
+		public void SingleFile (string t)
+		{
+			Run (t);
+		}
+
+		[Theory]
+		[MemberData (nameof (TestDatabase.Warnings), MemberType = typeof (TestDatabase))]
+		public void Warnings (string t)
+		{
+			Run (t);
 		}
 
 		protected virtual void Run(string testName)

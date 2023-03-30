@@ -46,12 +46,13 @@ initNonPortableDistroRid()
                     VERSION_ID="${VERSION_ID%.*}"
                 fi
 
-                if [ -z "${VERSION_ID+x}" ]; then
-                        # Rolling release distros do not set VERSION_ID, so omit
-                        # it here to be consistent with everything else.
-                        nonPortableBuildID="${ID}-${buildArch}"
+                if [[ "${VERSION_ID}" =~ ^([[:digit:]]|\.)+$ ]]; then
+                    nonPortableBuildID="${ID}.${VERSION_ID}-${buildArch}"
                 else
-                        nonPortableBuildID="${ID}.${VERSION_ID}-${buildArch}"
+                    # Rolling release distros either do not set VERSION_ID, set it as blank or
+                    # set it to non-version looking string (such as TEMPLATE_VERSION_ID on ArchLinux);
+                    # so omit it here to be consistent with everything else.
+                    nonPortableBuildID="${ID}-${buildArch}"
                 fi
             fi
 

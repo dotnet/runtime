@@ -19,6 +19,10 @@
 #undef TARGET_OSX
 #endif
 
+#ifdef TARGET_APPLE
+#undef TARGET_APPLE
+#endif
+
 #ifdef TARGET_WINDOWS
 #undef TARGET_WINDOWS
 #endif
@@ -61,7 +65,11 @@ inline bool compUnixX86Abi()
 /*****************************************************************************/
 // The following are intended to capture only those #defines that cannot be replaced
 // with static const members of Target
-#if defined(TARGET_XARCH)
+#if defined(TARGET_AMD64)
+#define REGMASK_BITS 64
+#define CSE_CONST_SHARED_LOW_BITS 16
+
+#elif defined(TARGET_X86)
 #define REGMASK_BITS 32
 #define CSE_CONST_SHARED_LOW_BITS 16
 
@@ -146,13 +154,14 @@ enum _regNumber_enum : unsigned
     ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
 };
 
-enum _regMask_enum : unsigned
+enum _regMask_enum : uint64_t
 {
     RBM_NONE = 0,
 
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
 #include "register.h"
+
 };
 
 #elif defined(TARGET_X86)
@@ -181,6 +190,13 @@ enum _regMask_enum : unsigned
 #error Unsupported target architecture
 #endif
 
+#if defined(TARGET_XARCH)
+// AVAILABLE_REG_COUNT is defined to be dynamic, based on whether AVX-512 high registers are available.
+#define AVAILABLE_REG_COUNT get_AVAILABLE_REG_COUNT()
+#else
+#define AVAILABLE_REG_COUNT ACTUAL_REG_COUNT
+#endif
+
 /*****************************************************************************/
 
 // TODO-Cleanup: The types defined below are mildly confusing: why are there both?
@@ -192,7 +208,7 @@ enum _regMask_enum : unsigned
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 typedef unsigned __int64 regMaskTP;
 #else
 typedef unsigned       regMaskTP;
@@ -282,7 +298,6 @@ C_ASSERT((FEATURE_TAILCALL_OPT == 0) || (FEATURE_FASTTAILCALL == 1));
 /*****************************************************************************/
 
 #define BITS_PER_BYTE              8
-#define RBM_ALL(type) (varTypeUsesFloatReg(type) ? RBM_ALLFLOAT : RBM_ALLINT)
 
 /*****************************************************************************/
 
@@ -336,7 +351,7 @@ inline bool isByteReg(regNumber reg)
 #endif
 
 inline regMaskTP genRegMask(regNumber reg);
-inline regMaskTP genRegMaskFloat(regNumber reg, var_types type = TYP_DOUBLE);
+inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type = TYP_DOUBLE));
 
 /*****************************************************************************
  * Return true if the register number is valid
@@ -528,7 +543,7 @@ inline regMaskTP genRegMask(regNumber reg)
     // (L1 latency on sandy bridge is 4 cycles for [base] and 5 for [base + index*c] )
     // the reason this is AMD-only is because the x86 BE will try to get reg masks for REG_STK
     // and the result needs to be zero.
-    regMaskTP result = 1 << reg;
+    regMaskTP result = 1ULL << reg;
     assert(result == regMasks[reg]);
     return result;
 #else
@@ -541,7 +556,7 @@ inline regMaskTP genRegMask(regNumber reg)
  *  Map a register number to a floating-point register mask.
  */
 
-inline regMaskTP genRegMaskFloat(regNumber reg, var_types type /* = TYP_DOUBLE */)
+inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_DOUBLE */))
 {
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64)
     assert(genIsValidFloatReg(reg));
@@ -585,20 +600,22 @@ inline regMaskTP genRegMaskFloat(regNumber reg, var_types type /* = TYP_DOUBLE *
 //
 inline regMaskTP genRegMask(regNumber regNum, var_types type)
 {
-#ifndef TARGET_ARM
-    return genRegMask(regNum);
-#else
+#if defined(TARGET_ARM)
     regMaskTP regMask = RBM_NONE;
 
-    if (varTypeUsesFloatReg(type))
-    {
-        regMask = genRegMaskFloat(regNum, type);
-    }
-    else
+    if (varTypeUsesIntReg(type))
     {
         regMask = genRegMask(regNum);
     }
+    else
+    {
+        assert(varTypeUsesFloatReg(type));
+        regMask = genRegMaskFloat(regNum, type);
+    }
+
     return regMask;
+#else
+    return genRegMask(regNum);
 #endif
 }
 
@@ -638,16 +655,27 @@ inline regNumber regNextOfType(regNumber reg, var_types type)
     regReturn = REG_NEXT(reg);
 #endif
 
-    if (varTypeUsesFloatReg(type))
+    if (varTypeUsesIntReg(type))
     {
-        if (regReturn > REG_FP_LAST)
+        if (regReturn > REG_INT_LAST)
         {
             regReturn = REG_NA;
         }
     }
+#if defined(TARGET_XARCH)
+    else if (varTypeUsesMaskReg(type))
+    {
+        if (regReturn > REG_MASK_LAST)
+        {
+            regReturn = REG_NA;
+        }
+    }
+#endif // TARGET_XARCH
     else
     {
-        if (regReturn > REG_INT_LAST)
+        assert(varTypeUsesFloatReg(type));
+
+        if (regReturn > REG_FP_LAST)
         {
             regReturn = REG_NA;
         }

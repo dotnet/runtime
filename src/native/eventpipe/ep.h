@@ -293,22 +293,24 @@ ep_ipc_stream_factory_callback_set (EventPipeIpcStreamFactorySuspendedPortsCallb
 
 static
 inline
-void
+uint32_t
 ep_write_buffer_uint8_t (uint8_t **buffer, uint8_t value)
 {
 	memcpy (*buffer, &value, sizeof (value));
 	*buffer += sizeof (value);
+	return sizeof (value);
 }
 
 #define EP_WRITE_BUFFER_INT(BITS, SIGNEDNESS) \
 static \
 inline \
-void \
+uint32_t \
 ep_write_buffer_##SIGNEDNESS##int##BITS##_t (uint8_t **buffer, SIGNEDNESS##int##BITS##_t value) \
 { \
 	value = ep_rt_val_##SIGNEDNESS##int##BITS##_t (value); \
 	memcpy (*buffer, &value, sizeof (value)); \
 	*buffer += sizeof (value); \
+	return sizeof (value); \
 }
 
 EP_WRITE_BUFFER_INT (16, )
@@ -322,19 +324,54 @@ EP_WRITE_BUFFER_INT (64, u)
 
 static
 inline
-void
-ep_write_buffer_string_utf16_t (uint8_t **buf, const ep_char16_t *str, size_t len)
+uint32_t
+ep_write_buffer_uintptr_t (uint8_t **buffer, uintptr_t value)
 {
-	memcpy (*buf, str, len);
-	*buf += len;
+	value = ep_rt_val_uintptr_t (value);
+	memcpy (*buffer, &value, sizeof (value));
+	*buffer += sizeof (value);
+	return sizeof (value);
 }
 
 static
 inline
-void
+uint32_t
+ep_write_buffer_string_utf8_to_utf16_t (uint8_t **buf, const ep_char8_t *str, uint32_t len)
+{
+	if (len == 0) {
+		(*buf)[0] = 0;
+		(*buf)[1] = 0;
+		*buf += sizeof (ep_char16_t);
+		return sizeof (ep_char16_t);
+	}
+	ep_char16_t *str_utf16 = ep_rt_utf8_to_utf16le_string (str, len);
+	uint32_t num_bytes_utf16_str = 0;
+	while (str_utf16[num_bytes_utf16_str] != 0)
+		++num_bytes_utf16_str;
+	num_bytes_utf16_str = (num_bytes_utf16_str + 1) * sizeof (ep_char16_t);
+	memcpy (*buf, str_utf16, num_bytes_utf16_str);
+	*buf += num_bytes_utf16_str;
+	ep_rt_utf16_string_free (str_utf16);
+	return num_bytes_utf16_str;
+}
+
+static
+inline
+uint32_t
+ep_write_buffer_string_utf16_t (uint8_t **buf, const ep_char16_t *str, uint32_t len)
+{
+	uint32_t num_bytes = (len + 1) * sizeof (ep_char16_t);
+	memcpy (*buf, str, num_bytes);
+	*buf += num_bytes;
+	return num_bytes;
+}
+
+static
+inline
+uint32_t
 ep_write_buffer_timestamp (uint8_t **buffer, ep_timestamp_t value)
 {
-	ep_write_buffer_int64_t (buffer, value);
+	return ep_write_buffer_int64_t (buffer, value);
 }
 
 #else /* ENABLE_PERFTRACING */

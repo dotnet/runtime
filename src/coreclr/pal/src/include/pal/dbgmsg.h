@@ -500,7 +500,7 @@ Function :
     PAL_DisplayDialog
 
     Display a simple modal dialog with an alert icon and a single OK button. Caller supplies the title of the
-    dialog and the main text. The dialog is displayed only if the COMPlus_EnableAssertDialog environment
+    dialog and the main text. The dialog is displayed only if the DOTNET_EnableAssertDialog environment
     variable is set to the value "1".
 
 --*/

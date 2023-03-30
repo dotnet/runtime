@@ -717,7 +717,7 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Out, source_file, 15, 4, "TestAsyncStepOut");
         }
 
-        [Fact]
+        [ConditionalFact(nameof(WasmSingleThreaded))]
         public async Task ResumeOutOfAsyncMethodToAsyncCallerWithBreakpoint()
         {
             string source_file = "dotnet://debugger-test.dll/debugger-async-step.cs";
@@ -1214,6 +1214,27 @@ namespace DebuggerTests
                     await CheckObject(locals, "this", "Newtonsoft.Json.Linq.JArray", description: "[]");
                 }, times: 2
             );
+        }
+
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SkipWasmFunctionsAccordinglyJustMyCode(bool justMyCode)
+        {
+            await SetJustMyCode(justMyCode);
+            var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
+
+            var pause_location = await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_add(); invoke_add(); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
+                "Math.IntAdd"
+            );
+            if (justMyCode)
+                Assert.False(pause_location["callFrames"].Value<JArray>().Any(f => f?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true));
+            else
+                Assert.True(pause_location["callFrames"].Value<JArray>().Any(f => f?["scopeChain"]?[0]?["type"]?.Value<string>()?.Equals("wasm-expression-stack") == true));
+            if (justMyCode)
+                await StepAndCheck(StepKind.Out, "dotnet://debugger-test.dll/debugger-test.cs", 10, 8, "Math.IntAdd", times: 4);
         }
     }
 }

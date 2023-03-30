@@ -6,6 +6,14 @@
 
 namespace System.ComponentModel.DataAnnotations
 {
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple = false)]
+    [System.CLSCompliant(false)]
+    public partial class AllowedValuesAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
+    {
+        public AllowedValuesAttribute(params object?[] values) { }
+        public object?[] Values { get { throw null; } }
+        public override bool IsValid(object? value) { throw null; }
+    }
     public partial class AssociatedMetadataTypeTypeDescriptionProvider : System.ComponentModel.TypeDescriptionProvider
     {
         public AssociatedMetadataTypeTypeDescriptionProvider(System.Type type) { }
@@ -23,6 +31,12 @@ namespace System.ComponentModel.DataAnnotations
         public System.Collections.Generic.IEnumerable<string> OtherKeyMembers { get { throw null; } }
         public string ThisKey { get { throw null; } }
         public System.Collections.Generic.IEnumerable<string> ThisKeyMembers { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = false)]
+    public class Base64StringAttribute : ValidationAttribute
+    {
+        public Base64StringAttribute() { }
+        public override bool IsValid(object? value) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
     public partial class CompareAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
@@ -85,6 +99,14 @@ namespace System.ComponentModel.DataAnnotations
         public System.ComponentModel.DataAnnotations.DataType DataType { get { throw null; } }
         public System.ComponentModel.DataAnnotations.DisplayFormatAttribute? DisplayFormat { get { throw null; } protected set { } }
         public virtual string GetDataTypeName() { throw null; }
+        public override bool IsValid(object? value) { throw null; }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple = false)]
+    [System.CLSCompliant(false)]
+    public partial class DeniedValuesAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
+    {
+        public DeniedValuesAttribute(params object?[] values) { }
+        public object?[] Values { get { throw null; } }
         public override bool IsValid(object? value) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
@@ -183,6 +205,16 @@ namespace System.ComponentModel.DataAnnotations
     {
         public KeyAttribute() { }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple = false)]
+    public partial class LengthAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
+    {
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Uses reflection to get the 'Count' property on types that don't implement ICollection. This 'Count' property may be trimmed. Ensure it is preserved.")]
+        public LengthAttribute(int minimumLength, int maximumLength) { }
+        public int MinimumLength { get { throw null; } }
+        public int MaximumLength { get { throw null; } }
+        public override string FormatErrorMessage(string name) { throw null; }
+        public override bool IsValid(object? value) { throw null; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
     public partial class MaxLengthAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
     {
@@ -225,7 +257,9 @@ namespace System.ComponentModel.DataAnnotations
         public RangeAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type type, string minimum, string maximum) { }
         public bool ConvertValueInInvariantCulture { get { throw null; } set { } }
         public object Maximum { get { throw null; } }
+        public bool MaximumIsExclusive { get { throw null; } set { } }
         public object Minimum { get { throw null; } }
+        public bool MinimumIsExclusive { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
         public System.Type OperandType { get { throw null; } }
         public bool ParseLimitsInInvariantCulture { get { throw null; } set { } }
@@ -247,6 +281,7 @@ namespace System.ComponentModel.DataAnnotations
     {
         public RequiredAttribute() { }
         public bool AllowEmptyStrings { get { throw null; } set { } }
+        public bool DisallowAllDefaultValues { get { throw null; } set { } }
         public override bool IsValid(object? value) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]

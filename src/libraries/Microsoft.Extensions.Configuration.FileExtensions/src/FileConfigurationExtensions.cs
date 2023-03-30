@@ -11,8 +11,8 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public static class FileConfigurationExtensions
     {
-        private static string FileProviderKey = "FileProvider";
-        private static string FileLoadExceptionHandlerKey = "FileLoadExceptionHandler";
+        private const string FileProviderKey = "FileProvider";
+        private const string FileLoadExceptionHandlerKey = "FileLoadExceptionHandler";
 
         /// <summary>
         /// Sets the default <see cref="IFileProvider"/> to be used for file-based providers.

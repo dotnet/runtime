@@ -354,12 +354,7 @@ internal sealed class OletxResourceManager
         }
 
         // Verify that the resource manager guid in the recovery info matches that of the calling resource manager.
-        byte[] rmGuidArray = new byte[16];
-        for (int i = 0; i < 16; i++)
-        {
-            rmGuidArray[i] = prepareInfo[i + 16];
-        }
-        Guid rmGuid = new(rmGuidArray);
+        var rmGuid = new Guid(prepareInfo.AsSpan(16, 16));
         if (rmGuid != ResourceManagerIdentifier)
         {
             throw TransactionException.Create(SR.ResourceManagerIdDoesNotMatchRecoveryInformation, null);

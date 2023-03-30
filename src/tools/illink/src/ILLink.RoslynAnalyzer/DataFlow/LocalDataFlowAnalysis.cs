@@ -44,8 +44,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
 		public void InterproceduralAnalyze ()
 		{
-			var methodGroupLattice = new ValueSetLattice<MethodBodyValue> ();
-			var hoistedLocalLattice = new DictionaryLattice<LocalKey, Maybe<TValue>, MaybeLattice<TValue, TLattice>> ();
+			ValueSetLattice<MethodBodyValue> methodGroupLattice = default;
+			DictionaryLattice<LocalKey, Maybe<TValue>, MaybeLattice<TValue, TLattice>> hoistedLocalLattice = default;
 			var interproceduralStateLattice = new InterproceduralStateLattice<TValue, TLattice> (
 				methodGroupLattice, hoistedLocalLattice);
 			var interproceduralState = interproceduralStateLattice.Top;

@@ -22,6 +22,7 @@ parameters:
   helixProjectArguments: ''
   runInUnloadableContext: ''
   tieringTest: ''
+  nativeAotTest: ''
   longRunningGcTests: ''
   gcSimulatorTests: ''
   runtimeFlavor: 'CoreCLR'
@@ -51,6 +52,7 @@ steps:
       _CompositeBuildMode: ${{ parameters.compositeBuildMode }}
       _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
       _TieringTest: ${{ parameters.tieringTest }}
+      _NativeAotTest: ${{ parameters.nativeAotTest }}
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}
       _Scenarios: ${{ join(',', parameters.scenarios) }}

@@ -584,6 +584,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public virtual bool IsPublic
+        {
+            get
+            {
+                return false;
+            }
+        }
+
         public abstract bool HasCustomAttribute(string attributeNamespace, string attributeName);
 
         /// <summary>
