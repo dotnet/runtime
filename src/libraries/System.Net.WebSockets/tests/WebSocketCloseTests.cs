@@ -69,8 +69,8 @@ namespace System.Net.WebSockets.Tests
                 await server.SendAsync(sendBytes.AsMemory(), WebSocketMessageType.Text, WebSocketMessageFlags.DisableCompression, CancellationToken);
 
                 // and then server-side close with the test status
-                string serverMessage = "CloseStatus " + closeStatus.ToString();
-                await server.CloseOutputAsync(closeStatus, serverMessage, CancellationToken);
+                string closeStatusDescription = "CloseStatus " + closeStatus.ToString();
+                await server.CloseOutputAsync(closeStatus, closeStatusDescription, CancellationToken);
 
                 // get the hello from the client (after the close message was sent)
                 WebSocketReceiveResult result = await client.ReceiveAsync(new ArraySegment<byte>(receiveBuffer), CancellationToken);
