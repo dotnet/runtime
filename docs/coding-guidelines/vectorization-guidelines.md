@@ -9,7 +9,7 @@
   * [Loops](#loops)
     + [Scalar remainder handling](#scalar-remainder-handling)
     + [Vectorized remainder handling](#vectorized-remainder-handling)
-    + [AV testing](#av-testing)
+    + [Access violation testing](#access-violation-av-testing)
   * [Loading and storing vectors](#loading-and-storing-vectors)
     + [Loading](#loading)
     + [Storing](#storing)
@@ -34,11 +34,11 @@ TL;DR: Go to [Summary](#summary)
 
 # Introduction to vectorization with Vector128 and Vector256
 
-Vectorization is an art of converting an algorithm from operating on a single value at a time to operating on a set of values (vector). It can greatly improve performance at a cost of increased code complexity.
+Vectorization is the art of converting an algorithm from operating on a single value at a time to operating on a set of values (vector). It can greatly improve performance at a cost of increased code complexity.
 
-In the recent releases, .NET has introduced plenty of APIs for vectorization. Vast majority of them were hardware specific. It required the users to provide implementation per processor architecture (x64 and/or arm64), with a possibility to use the most optimal instructions for hardware that is executing the code.
+In recent releases, .NET has introduced many new APIs for vectorization. The vast majority of them are hardware specific, so they require users to provide an implementation per processor architecture (x64 and/or arm64), with the option of using the most optimal instructions for hardware that is executing the code.
 
-.NET 7 introduced a set of new APIs for `Vector128<T>` and `Vector256<T>` that aim for writing hardware-agnostic, and cross platform vectorized code. The purpose of this document is to introduce the readers to the new APIs and provide a set of best practices.
+.NET 7 introduced a set of new APIs for `Vector128<T>` and `Vector256<T>` for writing hardware-agnostic, cross platform vectorized code. The purpose of this document is to introduce you to the new APIs and provide a set of best practices.
 
 ## Code structure
 
@@ -50,7 +50,7 @@ In the recent releases, .NET has introduced plenty of APIs for vectorization. Va
 * `long`, `ulong` and `double` (64 bits).
 * `nint` and `unit` (32 or 64 bits, depending on the architecture)
 
-Each `Vector128` operation allows to operate on: 16 (s)bytes, 8 (u)shorts, 4 (u)ints/floats and 2 (u)longs/double(s).
+A single `Vector128` operation allows you to operate on: 16 (s)bytes, 8 (u)shorts, 4 (u)ints/floats, or 2 (u)longs/double(s).
 
 ```
 ------------------------------128-bits---------------------------
@@ -64,10 +64,10 @@ Each `Vector128` operation allows to operate on: 16 (s)bytes, 8 (u)shorts, 4 (u)
 -----------------------------------------------------------------
 ```
 
-`Vector256<T>` is twice as big as `Vector128<T>`, so when it is hardware accelerated, and the data is large enough we should prefer it over a `Vector128<T>`. To check the acceleration, we need to use `Vector128.IsHardwareAccelerated` and `Vector256.IsHardwareAccelerated` properties.
+`Vector256<T>` is twice as big as `Vector128<T>`, so when it is hardware accelerated, and the data is large enough, you should use it instead of `Vector128<T>`. To check the acceleration, use `Vector128.IsHardwareAccelerated` and `Vector256.IsHardwareAccelerated` properties.
 
-We also must account for the size of the input. It needs to be at least of the size of a single vector to be able to execute the vectorized code path. `Vector128<T>.Count` and `Vector256<T>.Count` return the size of a vector of given type in bytes.
-Both APIs are turned into constants (no method call is required to retrieve the information) by the Just-In-Time compiler. It's not true for pre-compiled code (NativeAOT).
+The size of the input also matters. It needs to be at least of the size of a single vector to be able to execute the vectorized code path. `Vector128<T>.Count` and `Vector256<T>.Count` return the size of a vector of given type in bytes.
+Both APIs are turned into constants (no method call is required to retrieve the information) by the Just-In-Time compiler. In case of pre-compiled code (NativeAOT) it's not true for `IsHardwareAccelerated` property, as the required information is not available at compile time.
 
 That is why the code is very often structured like this:
 
@@ -190,7 +190,7 @@ public unsafe class Benchmarks
     public void Setup()
     {
         _pointer = NativeMemory.AlignedAlloc(byteCount: Size * sizeof(int), alignment: 32);
-        new Span<int>(_pointer, (int)Size).Fill(0); // ensure it's all zeros, so 1 is never found
+        NativeMemory.Clear(_pointer, byteCount: Size * sizeof(int)); // ensure it's all zeros, so 1 is never found
     }
 
     [Benchmark]
@@ -235,11 +235,11 @@ The alternative is to enable memory randomization. Before every iteration, the h
 
 You can read more about it [here](https://github.com/dotnet/BenchmarkDotNet/pull/1587), it requires understanding of what distribution is and how to read it. It's also out of scope of this document, but [Pro .NET Benchmarking](https://aakinshin.net/prodotnetbenchmarking/) book has two chapters dedicated to statistics and can help you get a very good understanding of this subject.
 
-No matter how you are going to benchmark your code, you need to keep in mind that **the larger the input, the more you can benefit from vectorization**. If your code uses small buffers, you might not benefit from it, or even regress the performance.
+No matter how you are going to benchmark your code, you need to keep in mind that **the larger the input, the more you can benefit from vectorization**. If your code uses small buffers, performance might even get worse.
 
 ## Loops
 
-To work with inputs that are bigger than a single vector, we typically need to loop over the entire input. This should be split into two parts:
+To work with inputs that are bigger than a single vector, you typically need to loop over the entire input. This should be split into two parts:
 
 * vectorized loop that operates on multiple values at a time
 * handling of the remainder
@@ -248,7 +248,7 @@ Example: our input is a buffer of ten integers, assuming that `Vector128` is acc
 
 ### Scalar remainder handling
 
-Imagine that we want to calculate the sum of all the numbers in given buffer. We definitely want to add every element just once, without repetitions. That is why in the first loop, we add four (128/32) integers in one iteration. In the second loop, we handle the remaining values.
+Imagine that we want to calculate the sum of all the numbers in given buffer. We definitely want to add every element just once, without repetitions. That is why in the first loop, we add four (128 bits / 32 bits) integers in one iteration. In the second loop, we handle the remaining values.
 
 
 ```cs
@@ -287,7 +287,7 @@ int Sum(Span<int> buffer)
 }
 ```
 
-**Note:** Use `ref MemoryMarshal.GetReference(span)` instead `ref span[0]` and `ref MemoryMarshal.GetArrayDataReference(array)` instead `ref array[0]` to handle empty buffer scenarios (which would throw `IndexOutOfRangeException`). If the buffer is empty, these methods return a reference to the location where the 0th element would have been stored. Such a reference may or may not be null. It can be used for pinning but must never be dereferenced.
+**Note:** Use `ref MemoryMarshal.GetReference(span)` instead of `ref span[0]` and `ref MemoryMarshal.GetArrayDataReference(array)` instead of `ref array[0]` to handle empty buffer scenarios (which would throw `IndexOutOfRangeException`). If the buffer is empty, these methods return a reference to the location where the 0th element would have been stored. Such a reference may or may not be null. You can use it for pinning but you must never dereference it.
 
 **Note:** The `GetReference` method has an overload that accepts a `ReadOnlySpan` and returns mutable reference. Please use it with caution!
 
@@ -340,7 +340,7 @@ bool Contains(Span<int> buffer, int searched)
 
 ### Access violation (AV) testing
 
-Handling the remainder in an invalid way, may lead to non-deterministic and hard to diagnose issues.
+Handling the remainder in an invalid way may lead to non-deterministic and hard to diagnose issues.
 
 Let's look at the following code:
 
@@ -354,9 +354,9 @@ while (elementOffset < (nuint)buffer.Length)
 }
 ```
 
-How many time the loop is going to execute for a buffer of six integers? Twice! The first time it's going to load the first four elements, the second time it's going to load the two last elements and turn random memory that is following the buffer into next two elements!
+How many times will the loop execute for a buffer of six integers? Twice! The first time it will load the first four elements, but the second time it will load the random content of the memory following the buffer!
 
-Writing tests that detect such issues is hard, but not impossible. .NET Team uses a helper utility called [BoundedMemory](https://github.com/dotnet/runtime/blob/main/src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Creation.cs) that allocates memory region which is immediately preceded by or immediately followed by a poison (`MEM_NOACCESS`) page. Attempting to read the memory immediately before or after it results in `AccessViolationException`.
+Writing tests that detect that issue is hard, but not impossible. The .NET Team uses a helper utility called [BoundedMemory](https://github.com/dotnet/runtime/blob/main/src/libraries/Common/tests/TestUtilities/System/Buffers/BoundedMemory.Creation.cs) that allocates a memory region which is immediately preceded by or immediately followed by a poison (`MEM_NOACCESS`) page. Attempting to read the memory immediately before or after it results in `AccessViolationException`.
 
 ## Loading and storing vectors
 
@@ -375,7 +375,7 @@ public static class Vector128
 }
 ```
 
-The first three overloads require a pointer to the source. To be able to use a pointer in a safe way, the buffer needs to be pinned first (the GC is not tracking unmanaged pointers, we have to ensure that the memory does not get moved by GC in the meantime, as the pointers would silently become invalid). That is simple, the problem is doing the pointer arithmetic right:
+The first three overloads require a pointer to the source. To be able to use a pointer in a safe way, the buffer needs to be pinned first. This is because the GC cannot track unmanaged pointers. It needs help to ensure that it doesn't move the memory while you're using it, as the pointers would silently become invalid. The tricky part here is doing the pointer arithmetic right:
 
 ```cs
 unsafe int UnmanagedPointersSum(Span<int> buffer)
@@ -409,7 +409,7 @@ unsafe int UnmanagedPointersSum(Span<int> buffer)
 }
 ```
 
-The `LoadAligned` and `LoadAlignedNonTemporal` require the input to be aligned. Aligned reads and writes should be slightly faster but using them comes at a price of increased complexity.
+`LoadAligned` and `LoadAlignedNonTemporal` require the input to be aligned. Aligned reads and writes should be slightly faster but using them comes at a price of increased complexity.
 
 Currently .NET exposes only one API fo allocating unmanaged aligned memory: [NativeMemory.AlignedAlloc](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.nativememory.alignedalloc). In the future, we might provide [a dedicated API](https://github.com/dotnet/runtime/issues/27146) for allocating managed, aligned and hence pinned memory buffers.
 
