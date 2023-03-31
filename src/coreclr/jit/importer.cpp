@@ -9897,13 +9897,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // May throw a stack overflow exception. Obviously, we don't want locallocs to be CSE'd.
                         op1->gtFlags |= (GTF_EXCEPT | GTF_DONT_CSE);
 
-                        if (op2->IsIntegralConst() && info.compInitMem)
-                        {
-                            // Align LCLHEAP's size
-                            op2->AsIntCon()->gtIconVal = AlignUp((size_t)op2->AsIntCon()->IconValue(), STACK_ALIGN);
-                            op2->gtFlags |= GTF_DONT_CSE;
-                        }
-
                         // Ensure we have stack security for this method.
                         setNeedsGSSecurityCookie();
 
