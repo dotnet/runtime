@@ -8621,8 +8621,6 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
             {
                 GenTree* lhs = tree->gtGetOp1();
 
-                assert(!lhs->OperIs(GT_COMMA));
-
                 if (lhs->OperIs(GT_IND))
                 {
                     GenTree* arg = lhs->AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
@@ -8693,20 +8691,12 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                 }
                 else if (lhs->OperIsBlk())
                 {
-                    GenTreeLclVarCommon* lclVarTree;
-                    bool                 isEntire;
-                    if (!tree->DefinesLocal(this, &lclVarTree, &isEntire))
-                    {
-                        // For now, assume arbitrary side effects on GcHeap/ByrefExposed...
-                        memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
-                    }
-                    else if (lvaVarAddrExposed(lclVarTree->GetLclNum()))
-                    {
-                        memoryHavoc |= memoryKindSet(ByrefExposed);
-                    }
+                    // For now, assume arbitrary side effects on GcHeap/ByrefExposed...
+                    // TODO-CQ: delete this pessimization by folding into the above.
+                    memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
                 }
-                // Otherwise, must be local lhs form.  I should assert that.
-                else if (lhs->OperIsLocal())
+                // Otherwise, must be local lhs form.
+                else
                 {
                     GenTreeLclVarCommon* lhsLcl = lhs->AsLclVarCommon();
                     ValueNum             rhsVN  = tree->AsOp()->gtOp2->gtVNPair.GetLiberal();
