@@ -81,24 +81,27 @@ namespace System.Reflection.Emit.Tests
                     Type sourceType = types[i];
                     Type typeFromDisk = typesFromDisk[i];
 
+                    Assert.True(typeFromDisk.IsInterface);
                     AssertTypeProperties(sourceType, typeFromDisk);
-
-                    MethodInfo[] sourceMethods = sourceType.GetMethods();
-                    MethodInfo[] methodsFromDisk = typeFromDisk.GetMethods();
-
-                    Assert.Equal(sourceMethods.Length, methodsFromDisk.Length);
-
-                    // Method comparisons
-                    for (int j = 0; j < sourceMethods.Length; j++)
-                    {
-                        MethodInfo sourceMethod = sourceMethods[j];
-                        MethodInfo methodFromDisk = methodsFromDisk[j];
-
-                        Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
-                        Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
-                        Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
-                    }
+                    AssertMethods(sourceType.GetMethods(), typeFromDisk.GetMethods());
+                    AssertFields(sourceType.GetFields(), typeFromDisk.GetFields());
                 }
+            }
+        }
+
+        private static void AssertMethods(MethodInfo[] sourceMethods, MethodInfo[] methodsFromDisk)
+        {
+            Assert.Equal(sourceMethods.Length, methodsFromDisk.Length);
+
+            // Method comparisons
+            for (int j = 0; j < sourceMethods.Length; j++)
+            {
+                MethodInfo sourceMethod = sourceMethods[j];
+                MethodInfo methodFromDisk = methodsFromDisk[j];
+
+                Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
+                Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
+                Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
             }
         }
 
@@ -139,24 +142,24 @@ namespace System.Reflection.Emit.Tests
                 Type typeFromDisk = typesFromDisk[i];
 
                 Assert.True(sourceType.IsValueType);
-                Assert.Empty(typeFromDisk.GetMethods(BindingFlags.DeclaredOnly));
                 AssertTypeProperties(sourceType, typeFromDisk);
+                AssertMethods(sourceType.GetMethods(), typeFromDisk.GetMethods());
+                AssertFields(sourceType.GetFields(), typeFromDisk.GetFields());
+            }
+        }
 
-                FieldInfo[] declaredFields = sourceType.GetFields();
-                FieldInfo[] fieldsFromDisk = typeFromDisk.GetFields();
+        private static void AssertFields(FieldInfo[] declaredFields, FieldInfo[] fieldsFromDisk)
+        {
+            Assert.Equal(declaredFields.Length, fieldsFromDisk.Length);
 
-                Assert.Equal(declaredFields.Length, fieldsFromDisk.Length);
+            for (int j = 0; j < declaredFields.Length; j++)
+            {
+                FieldInfo sourceField = declaredFields[j];
+                FieldInfo fieldFromDisk = fieldsFromDisk[j];
 
-                // Field comparison
-                for (int j = 0; j < declaredFields.Length; j++)
-                {
-                    FieldInfo sourceField = declaredFields[j];
-                    FieldInfo fieldFromDisk = fieldsFromDisk[j];
-
-                    Assert.Equal(sourceField.Name, fieldFromDisk.Name);
-                    Assert.Equal(sourceField.Attributes, fieldFromDisk.Attributes);
-                    Assert.Equal(sourceField.FieldType.FullName, fieldFromDisk.FieldType.FullName);
-                }
+                Assert.Equal(sourceField.Name, fieldFromDisk.Name);
+                Assert.Equal(sourceField.Attributes, fieldFromDisk.Attributes);
+                Assert.Equal(sourceField.FieldType.FullName, fieldFromDisk.FieldType.FullName);
             }
         }
 
@@ -176,9 +179,8 @@ namespace System.Reflection.Emit.Tests
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromPath(file.Path);
-                Module moduleFromDisk = assemblyFromDisk.Modules.FirstOrDefault();
+                Module moduleFromDisk = assemblyFromDisk.Modules.First();
 
-                Assert.NotNull(moduleFromDisk);
                 Assert.Equal("My Module", moduleFromDisk.ScopeName);
                 Assert.Equal(1, moduleFromDisk.GetTypes().Length);
 
