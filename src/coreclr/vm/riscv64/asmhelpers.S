@@ -408,8 +408,8 @@ LEAF_ENTRY HelperMethodFrameRestoreState, _TEXT
     RestoreRegMS  9, s9
     RestoreRegMS  10, s10
     RestoreRegMS  11, s11
-    RestoreRegMS  12, tp
-    RestoreRegMS  13, gp
+    RestoreRegMS  12, gp
+    RestoreRegMS  13, tp
 LOCAL_LABEL(Done):
     // Its imperative that the return value of HelperMethodFrameRestoreState is zero
     // as it is used in the state machine to loop until it becomes zero.
@@ -446,8 +446,8 @@ LEAF_ENTRY LazyMachStateCaptureState, _TEXT
     sd  s9, 72(a1)
     sd  s10, 80(a1)
     sd  s11, 88(a1)
-    sd  tp, 96(a1)
-    sd  gp, 104(a1)
+    sd  gp, 96(a1)
+    sd  tp, 104(a1)
 
     ret
 LEAF_END LazyMachStateCaptureState, _TEXT
