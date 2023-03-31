@@ -14,7 +14,7 @@
     <NativeAotSupported Condition="'$(TargetArchitecture)' != 'x64'">false</NativeAotSupported>
     <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>
     <!-- TODO: change to <LinkerFlavor>lld</LinkerFlavor> once we pick up an SDK with https://github.com/dotnet/runtime/pull/83558. -->
-    <UseLLVMLinker Condition="'$(NativeAotSupported)' == 'true'">true</UseLLVMLinker>
+    <UseLLVMLinker Condition="'$(NativeAotSupported)' == 'true' and '$(TargetOS)' == 'linux'">true</UseLLVMLinker>
     <SysRoot Condition="'$(NativeAotSupported)' == 'true' and '$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <PublishReadyToRun Condition="'$(NativeAotSupported)' != 'true'">true</PublishReadyToRun>
     <PublishSingleFile Condition="'$(NativeAotSupported)' != 'true'">true</PublishSingleFile>
