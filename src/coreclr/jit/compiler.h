@@ -2529,7 +2529,7 @@ public:
     GenTreeLclVar* gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs = BAD_IL_OFFSET));
 
     GenTreeLclFld* gtNewLclVarAddrNode(unsigned lclNum, var_types type = TYP_I_IMPL);
-    GenTreeLclFld* gtNewLclFldAddrNode(unsigned lclNum, unsigned lclOffs, var_types type = TYP_I_IMPL);
+    GenTreeLclFld* gtNewLclAddrNode(unsigned lclNum, unsigned lclOffs, var_types type = TYP_I_IMPL);
 
     GenTreeConditional* gtNewConditionalNode(
         genTreeOps oper, GenTree* cond, GenTree* op1, GenTree* op2, var_types type);

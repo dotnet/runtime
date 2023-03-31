@@ -475,7 +475,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
             else
             {
                 layout  = src->AsLclFld()->GetLayout();
-                lclAddr = comp->gtNewLclFldAddrNode(lclNum, src->AsLclFld()->GetLclOffs());
+                lclAddr = comp->gtNewLclAddrNode(lclNum, src->AsLclFld()->GetLclOffs());
             }
 
             src->ChangeOper(GT_OBJ);

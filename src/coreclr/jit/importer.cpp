@@ -1212,8 +1212,7 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
             return gtNewLclVarAddrNode(structVal->AsLclVar()->GetLclNum(), TYP_BYREF);
 
         case GT_LCL_FLD:
-            return gtNewLclFldAddrNode(structVal->AsLclFld()->GetLclNum(), structVal->AsLclFld()->GetLclOffs(),
-                                       TYP_BYREF);
+            return gtNewLclAddrNode(structVal->AsLclFld()->GetLclNum(), structVal->AsLclFld()->GetLclOffs(), TYP_BYREF);
 
         case GT_FIELD:
         {

@@ -7630,11 +7630,11 @@ GenTreeLclVar* Compiler::gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL
 
 GenTreeLclFld* Compiler::gtNewLclVarAddrNode(unsigned lclNum, var_types type)
 {
-    GenTreeLclFld* node = gtNewLclFldAddrNode(lclNum, 0, type);
+    GenTreeLclFld* node = gtNewLclAddrNode(lclNum, 0, type);
     return node;
 }
 
-GenTreeLclFld* Compiler::gtNewLclFldAddrNode(unsigned lclNum, unsigned lclOffs, var_types type)
+GenTreeLclFld* Compiler::gtNewLclAddrNode(unsigned lclNum, unsigned lclOffs, var_types type)
 {
     GenTreeLclFld* node = new (this, GT_LCL_ADDR) GenTreeLclFld(GT_LCL_ADDR, type, lclNum, lclOffs);
     return node;

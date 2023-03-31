@@ -4284,7 +4284,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         {
             ClassLayout*   layout = lclStore->GetLayout(comp);
             const unsigned lclNum = lclStore->GetLclNum();
-            GenTreeLclFld* addr   = comp->gtNewLclFldAddrNode(lclNum, lclStore->GetLclOffs(), TYP_BYREF);
+            GenTreeLclFld* addr   = comp->gtNewLclAddrNode(lclNum, lclStore->GetLclOffs(), TYP_BYREF);
             comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
 
             addr->gtFlags |= lclStore->gtFlags & (GTF_VAR_DEF | GTF_VAR_USEASG);
