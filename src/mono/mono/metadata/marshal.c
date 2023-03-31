@@ -2091,8 +2091,6 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	MonoMethod *res;
 	GHashTable *cache;
 	gpointer cache_key = NULL;
-	SignaturePointerPair key = { NULL, NULL };
-	SignaturePointerPair *new_key;
 	char *name;
 	MonoClass *target_class = NULL;
 	gboolean closed_over_null = FALSE;
@@ -2102,7 +2100,6 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 	WrapperInfo *info;
 	WrapperSubtype subtype = WRAPPER_SUBTYPE_NONE;
 	MonoMemoryManager *mem_manager = NULL;
-	gboolean found;
 
 	g_assert (method && m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class &&
 		  !strcmp (method->name, "Invoke"));
