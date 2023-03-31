@@ -415,7 +415,7 @@ public:
         // mov reg, [reg+offs]
         // It may also be contained. Overall we are going to cost each use of
         // an unpromoted local at 6.5 bytes.
-        // TODO: We can make much better guesses on what will and won't be contained.
+        // TODO-CQ: We can make much better guesses on what will and won't be contained.
         costWithout += access.CountWtd * 6.5;
 
         weight_t costWith = 0;
@@ -560,29 +560,35 @@ public:
     {
         GenTree* tree = *use;
 
-        if (tree->OperIsLocal())
+        if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
         {
             GenTreeLclVarCommon* lcl = tree->AsLclVarCommon();
             LclVarDsc*           dsc = m_compiler->lvaGetDesc(lcl);
             if (!dsc->lvPromoted && (dsc->TypeGet() == TYP_STRUCT) && !dsc->IsAddressExposed())
             {
+                var_types       accessType;
+                ClassLayout*    accessLayout;
+                AccessKindFlags accessFlags;
+
                 if (lcl->OperIsLocalAddr())
                 {
                     assert(user->OperIs(GT_CALL) && dsc->IsHiddenBufferStructArg() &&
                            (user->AsCall()->gtArgs.GetRetBufferArg()->GetNode() == lcl));
-                    // TODO: We should record that this is used as the address
-                    // of a retbuf -- it makes promotion less desirable as we
-                    // have to reload fields back from the retbuf.
+
+                    accessType   = TYP_STRUCT;
+                    accessLayout = m_compiler->typGetObjLayout(user->AsCall()->gtRetClsHnd);
+                    accessFlags  = AccessKindFlags::IsCallRetBuf;
                 }
                 else
                 {
-                    unsigned        offs         = lcl->GetLclOffs();
-                    var_types       accessType   = lcl->TypeGet();
-                    ClassLayout*    accessLayout = accessType == TYP_STRUCT ? lcl->GetLayout(m_compiler) : nullptr;
-                    AccessKindFlags accessFlags  = ClassifyLocalAccess(lcl, user);
-                    GetOrCreateUses(lcl->GetLclNum())
-                        ->RecordAccess(offs, accessType, accessLayout, accessFlags, m_curBB->getBBWeight(m_compiler));
+                    accessType   = lcl->TypeGet();
+                    accessLayout = accessType == TYP_STRUCT ? lcl->GetLayout(m_compiler) : nullptr;
+                    accessFlags  = ClassifyLocalRead(lcl, user);
                 }
+
+                LocalUses* uses = GetOrCreateUses(lcl->GetLclNum());
+                unsigned   offs = lcl->GetLclOffs();
+                uses->RecordAccess(offs, accessType, accessLayout, accessFlags, m_curBB->getBBWeight(m_compiler));
             }
         }
 
@@ -620,52 +626,47 @@ private:
     // Returns:
     //   Flags classifying the access.
     //
-    AccessKindFlags ClassifyLocalAccess(GenTreeLclVarCommon* lcl, GenTree* user)
+    AccessKindFlags ClassifyLocalRead(GenTreeLclVarCommon* lcl, GenTree* user)
     {
+        assert(lcl->OperIsLocalRead());
+
         AccessKindFlags flags = AccessKindFlags::None;
         if (user->IsCall())
         {
-            GenTreeCall* call = user->AsCall();
-            if (call->IsOptimizingRetBufAsLocal() && (m_compiler->gtCallGetDefinedRetBufLclAddr(call) == lcl))
+            GenTreeCall* call     = user->AsCall();
+            unsigned     argIndex = 0;
+            for (CallArg& arg : call->gtArgs.Args())
             {
-                flags |= AccessKindFlags::IsCallRetBuf;
-            }
-            else
-            {
-                unsigned argIndex = 0;
-                for (CallArg& arg : call->gtArgs.Args())
+                if (arg.GetNode() != lcl)
                 {
-                    if (arg.GetNode() != lcl)
-                    {
-                        argIndex++;
-                        continue;
-                    }
+                    argIndex++;
+                    continue;
+                }
 
-                    flags |= AccessKindFlags::IsCallArg;
+                flags |= AccessKindFlags::IsCallArg;
 
-                    unsigned argSize = 0;
-                    if (arg.GetSignatureType() != TYP_STRUCT)
-                    {
-                        argSize = genTypeSize(arg.GetSignatureType());
-                    }
-                    else
-                    {
-                        argSize = m_compiler->typGetObjLayout(arg.GetSignatureClassHandle())->GetSize();
-                    }
+                unsigned argSize = 0;
+                if (arg.GetSignatureType() != TYP_STRUCT)
+                {
+                    argSize = genTypeSize(arg.GetSignatureType());
+                }
+                else
+                {
+                    argSize = m_compiler->typGetObjLayout(arg.GetSignatureClassHandle())->GetSize();
+                }
 
 #ifdef WINDOWS_AMD64_ABI
-                    if ((argSize != 1) && (argSize != 2) && (argSize != 4) && (argSize != 8))
-                    {
-                        flags |= AccessKindFlags::IsCallArgByImplicitRef;
-                    }
-
-                    if (argIndex >= 4)
-                    {
-                        flags |= AccessKindFlags::IsCallArgOnStack;
-                    }
-#endif
-                    break;
+                if ((argSize != 1) && (argSize != 2) && (argSize != 4) && (argSize != 8))
+                {
+                    flags |= AccessKindFlags::IsCallArgByImplicitRef;
                 }
+
+                if (argIndex >= 4)
+                {
+                    flags |= AccessKindFlags::IsCallArgOnStack;
+                }
+#endif
+                break;
             }
         }
 
