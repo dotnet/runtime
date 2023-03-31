@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project>
   <PropertyGroup>
+    <!-- Temporary: disable all in-process execution for JIT\Regression
+         to fix gcstress runs -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
     <BuildAsStandalone Condition="'$(BuildAsStandalone)' == ''">false</BuildAsStandalone>
 
     <AssemblyName Condition="'$(BuildAsStandalone)' != 'true'">$(MSBuildProjectName.Replace('_il_d', '').Replace('_il_r', ''))</AssemblyName>
