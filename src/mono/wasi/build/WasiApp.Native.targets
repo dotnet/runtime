@@ -341,9 +341,9 @@
           <!--EnvironmentVariables="@(EmscriptenEnvVars)" />-->
   <!--</Target>-->
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmitWasmBundleObjectFiles" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="EmitBundleObjectFiles" AssemblyFile="$(EmitBundleTasksAssemblyPath)" />
   <Target Name="_GenerateAssemblyObjectFiles" Returns="@(_WasiObjectFilesForBundle)">
-    <!-- Get the file hashes of everything in @(_WasmBundleFiles), then pass it all to EmitWasmBundleObjectFiles. This
+    <!-- Get the file hashes of everything in @(_WasmBundleFiles), then pass it all to EmitBundleObjectFiles. This
          will emit corresponding .o files for anything we don't already have on disk. -->
     <PropertyGroup>
       <_WasmAssembliesBundleObjectFile>$(_WasmIntermediateOutputPath)wasi_bundled_assemblies.o</_WasmAssembliesBundleObjectFile>
@@ -357,7 +357,7 @@
       </WasmBundleAssembliesWithHashes>
     </ItemGroup>
     <!-- TODO make this incremental compilation -->
-    <EmitWasmBundleObjectFiles
+    <EmitBundleObjectFiles
       FilesToBundle="@(WasmBundleAssembliesWithHashes)"
       ClangExecutable="$(WasiClang)"
       BundleName="assemblies"
