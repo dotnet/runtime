@@ -534,12 +534,6 @@ mono_gc_finalize_domain (MonoDomain *domain)
 	sgen_finalize_if (object_in_domain_predicate, domain);
 }
 
-void
-mono_gc_suspend_finalizers (void)
-{
-	sgen_set_suspend_finalizers ();
-}
-
 /*
  * Ephemerons
  */

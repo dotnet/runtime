@@ -2844,13 +2844,6 @@ sgen_object_is_live (GCObject *obj)
  */
 
 static volatile gboolean pending_unqueued_finalizer = FALSE;
-volatile gboolean sgen_suspend_finalizers = FALSE;
-
-void
-sgen_set_suspend_finalizers (void)
-{
-	sgen_suspend_finalizers = TRUE;
-}
 
 int
 sgen_gc_invoke_finalizers (void)
@@ -2906,8 +2899,6 @@ sgen_gc_invoke_finalizers (void)
 gboolean
 sgen_have_pending_finalizers (void)
 {
-	if (sgen_suspend_finalizers)
-		return FALSE;
 	return pending_unqueued_finalizer || !sgen_pointer_queue_is_empty (&fin_ready_queue) || !sgen_pointer_queue_is_empty (&critical_fin_queue);
 }
 

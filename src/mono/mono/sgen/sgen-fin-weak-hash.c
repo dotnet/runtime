@@ -584,9 +584,6 @@ finalize_with_predicate (SgenObjectPredicateFunc predicate, void *user_data, Sge
 			sgen_queue_finalization_entry (object);
 			SGEN_LOG (5, "Enqueuing object for finalization: %p (%s) (%d)", object, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (object)), sgen_hash_table_num_entries (hash_table));
 		}
-
-		if (sgen_suspend_finalizers)
-			break;
 	} SGEN_HASH_TABLE_FOREACH_END;
 }
 

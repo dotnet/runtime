@@ -905,7 +905,6 @@ void sgen_object_register_for_finalization (GCObject *obj, SGenFinalizationProc 
 void sgen_finalize_if (SgenObjectPredicateFunc predicate, void *user_data)
 	MONO_PERMIT (need (sgen_lock_gc));
 void sgen_remove_finalizers_if (SgenObjectPredicateFunc predicate, void *user_data, int generation);
-void sgen_set_suspend_finalizers (void);
 
 void sgen_wbroots_iterate_live_block_ranges (sgen_cardtable_block_callback cb);
 void sgen_wbroots_scan_card_table (ScanCopyContext ctx);
@@ -1106,7 +1105,6 @@ extern NurseryClearPolicy sgen_nursery_clear_policy;
 extern gboolean sgen_try_free_some_memory;
 extern mword sgen_total_promoted_size;
 extern mword sgen_total_allocated_major;
-extern volatile gboolean sgen_suspend_finalizers;
 extern MonoCoopMutex sgen_gc_mutex;
 #ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 extern volatile gboolean sgen_concurrent_collection_in_progress;
