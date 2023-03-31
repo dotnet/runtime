@@ -107,7 +107,18 @@ namespace System.Reflection
         internal static unsafe RuntimeType? GetTypeHelper(char* pTypeName, RuntimeAssembly? requestingAssembly,
             bool throwOnError, bool suppressCASearchRules)
         {
-            RuntimeType? type = (RuntimeType?)new TypeNameParser(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pTypeName))
+            ReadOnlySpan<char> typeName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pTypeName);
+
+            // Compat: Empty name throws TypeLoadException instead of
+            // the natural ArgumentException
+            if (typeName.Length == 0)
+            {
+                if (throwOnError)
+                    throw new TypeLoadException(SR.Arg_TypeLoadNullStr);
+                return null;
+            }
+
+            RuntimeType? type = (RuntimeType?)new TypeNameParser(typeName)
             {
                 _requestingAssembly = requestingAssembly,
                 _throwOnError = throwOnError,
