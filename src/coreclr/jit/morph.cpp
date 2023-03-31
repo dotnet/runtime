@@ -14750,7 +14750,7 @@ PhaseStatus Compiler::fgPromoteStructs()
     }
 
 #ifdef DEBUG
-    if (compStressCompile(STRESS_NO_OLD_PROMOTION, 20))
+    if (compStressCompile(STRESS_NO_OLD_PROMOTION, 10))
     {
         JITDUMP("  skipping due to stress\n");
         return PhaseStatus::MODIFIED_NOTHING;
