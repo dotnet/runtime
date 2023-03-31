@@ -4393,13 +4393,9 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                 unsigned tlsIndexValue = threadStaticBlocksInfo.tlsIndex;
                 GenTree* dllRef        = nullptr;
 
-                if (tlsIndexValue == 0)
+                if (tlsIndexValue != 0)
                 {
-#ifdef TARGET_64BIT
-                    dllRef = gtNewIconNode(tlsIndexValue * 8, TYP_I_IMPL);
-#else
-                    dllRef                     = gtNewIconNode(tlsIndexValue * 4, TYP_I_IMPL);
-#endif
+                    dllRef = gtNewIconNode(tlsIndexValue * TARGET_POINTER_SIZE, TYP_I_IMPL);
                 }
 
                 // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
