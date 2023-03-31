@@ -121,7 +121,7 @@ namespace System.Reflection.Emit.Tests
             if (PlatformDetection.IsNotBrowser)
             {
                 string assumedLocationOfCoreLibrary = typeof(object).Assembly.Location;
-                if (assumedLocationOfCoreLibrary == null || assumedLocationOfCoreLibrary == string.Empty)
+                if (string.IsNullOrEmpty(assumedLocationOfCoreLibrary))
                 {
                     throw new Exception("Could not find a core assembly to use for tests as 'typeof(object).Assembly.Location` returned " +
                         "a null or empty value. The most likely cause is that you built the tests for a Jitted runtime but are running them " +

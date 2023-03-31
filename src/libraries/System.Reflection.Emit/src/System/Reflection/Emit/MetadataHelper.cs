@@ -13,17 +13,19 @@ namespace System.Reflection.Emit
         {
             AssemblyName assemblyName = assembly.GetName();
 
-            return AddAssemblyReference(metadata, assemblyName.Name!, assemblyName.Version, assemblyName.CultureName, assemblyName.GetPublicKey(), (AssemblyFlags)assemblyName.Flags);
+            return AddAssemblyReference(metadata, assemblyName.Name!, assemblyName.Version, assemblyName.CultureName,
+                assemblyName.GetPublicKeyToken(), (AssemblyFlags)assemblyName.Flags, assemblyName.ContentType);
         }
 
-        internal static AssemblyReferenceHandle AddAssemblyReference(MetadataBuilder metadata, string name, Version? version, string? culture, byte[]? publicKey, AssemblyFlags flags)
+        internal static AssemblyReferenceHandle AddAssemblyReference(MetadataBuilder metadata, string name, Version? version,
+            string? culture, byte[]? publicKeyToken, AssemblyFlags flags, AssemblyContentType contentType)
         {
             return metadata.AddAssemblyReference(
                 name: metadata.GetOrAddString(name),
                 version: version ?? new Version(0, 0, 0, 0),
                 culture: (culture == null) ? default : metadata.GetOrAddString(value: culture),
-                publicKeyOrToken: (publicKey == null) ? default : metadata.GetOrAddBlob(publicKey),
-                flags: flags,
+                publicKeyOrToken: (publicKeyToken == null) ? default : metadata.GetOrAddBlob(publicKeyToken), // reference has token, not full public key
+                flags: (AssemblyFlags)((int)contentType << 9) | ((flags & AssemblyFlags.Retargetable) != 0 ? AssemblyFlags.Retargetable : 0),
                 hashValue: default); // .file directive assemblies not supported, no need to handle this value.
         }
 

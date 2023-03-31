@@ -47,7 +47,7 @@ namespace System.Reflection.Emit
             // Add module metadata
             metadata.AddModule(
                 generation: 0,
-                moduleName: metadata.GetOrAddString(ScopeName),
+                moduleName: metadata.GetOrAddString(_name),
                 mvid: metadata.GetOrAddGuid(Guid.NewGuid()),
                 encId: default,
                 encBaseId: default);

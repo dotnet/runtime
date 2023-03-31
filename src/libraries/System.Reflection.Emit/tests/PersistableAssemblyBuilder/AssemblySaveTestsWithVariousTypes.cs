@@ -25,8 +25,6 @@ namespace System.Reflection.Emit.Tests
             using (TempFile file = TempFile.Create())
             {
                 Assembly assemblyFromDisk = WriteAndLoadAssembly(Type.EmptyTypes, file.Path);
-                Assert.NotNull(assemblyFromDisk);
-
                 AssemblyName aNameFromDisk = assemblyFromDisk.GetName();
 
                 // Test AssemblyName properties
@@ -37,8 +35,9 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(s_assemblyName.ContentType, aNameFromDisk.ContentType);
                 // Runtime assemblies adding AssemblyNameFlags.PublicKey in Assembly.GetName() overloads
                 Assert.Equal(s_assemblyName.Flags | AssemblyNameFlags.PublicKey, aNameFromDisk.Flags);
+                Assert.Empty(assemblyFromDisk.GetTypes());
 
-                Module moduleFromDisk = assemblyFromDisk.Modules.First();
+                Module moduleFromDisk = assemblyFromDisk.Modules.FirstOrDefault();
 
                 Assert.NotNull(moduleFromDisk);
                 Assert.Equal(s_assemblyName.Name, moduleFromDisk.ScopeName);
@@ -70,14 +69,10 @@ namespace System.Reflection.Emit.Tests
             using (TempFile file = TempFile.Create())
             {
                 Assembly assemblyFromDisk = WriteAndLoadAssembly(types, file.Path);
-                Assert.NotNull(assemblyFromDisk);
-
-                Assert.NotNull(assemblyFromDisk);
 
                 Module moduleFromDisk = assemblyFromDisk.Modules.First();
                 Type[] typesFromDisk = moduleFromDisk.GetTypes();
 
-                Assert.NotNull(moduleFromDisk);
                 Assert.Equal(types.Length, typesFromDisk.Length);
 
                 // Type comparisons
@@ -86,9 +81,7 @@ namespace System.Reflection.Emit.Tests
                     Type sourceType = types[i];
                     Type typeFromDisk = typesFromDisk[i];
 
-                    Assert.Equal(sourceType.Name, typeFromDisk.Name);
-                    Assert.Equal(sourceType.Namespace, typeFromDisk.Namespace);
-                    Assert.Equal(sourceType.Attributes, typeFromDisk.Attributes);
+                    AssertTypeProperties(sourceType, typeFromDisk);
 
                     MethodInfo[] sourceMethods = sourceType.GetMethods();
                     MethodInfo[] methodsFromDisk = typeFromDisk.GetMethods();
@@ -109,6 +102,13 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
+        private static void AssertTypeProperties(Type sourceType, Type typeFromDisk)
+        {
+            Assert.Equal(sourceType.Name, typeFromDisk.Name);
+            Assert.Equal(sourceType.Namespace, typeFromDisk.Namespace);
+            Assert.Equal(sourceType.Attributes, typeFromDisk.Attributes);
+        }
+
         public static IEnumerable<object[]> VariousStructsTestData()
         {
             yield return new object[] { new Type[] { typeof(EmptyStruct) } };
@@ -126,13 +126,11 @@ namespace System.Reflection.Emit.Tests
 
             Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromStream(stream);
 
-            Assert.NotNull(assemblyFromDisk);
             Assert.Equal(s_assemblyName.Name, assemblyFromDisk.GetName().Name);
 
             Module moduleFromDisk = assemblyFromDisk.Modules.First();
             Type[] typesFromDisk = moduleFromDisk.GetTypes();
 
-            Assert.NotNull(moduleFromDisk);
             Assert.Equal(types.Length, typesFromDisk.Length);
 
             for (int i = 0; i < types.Length; i++)
@@ -141,10 +139,8 @@ namespace System.Reflection.Emit.Tests
                 Type typeFromDisk = typesFromDisk[i];
 
                 Assert.True(sourceType.IsValueType);
-                Assert.Equal(sourceType.Name, typeFromDisk.Name);
-                Assert.Equal(sourceType.Namespace, typeFromDisk.Namespace);
-                Assert.Equal(sourceType.Attributes, typeFromDisk.Attributes);
                 Assert.Empty(typeFromDisk.GetMethods(BindingFlags.DeclaredOnly));
+                AssertTypeProperties(sourceType, typeFromDisk);
 
                 FieldInfo[] declaredFields = sourceType.GetFields();
                 FieldInfo[] fieldsFromDisk = typeFromDisk.GetFields();
@@ -180,9 +176,7 @@ namespace System.Reflection.Emit.Tests
                 saveMethod.Invoke(assemblyBuilder, new object[] { file.Path });
 
                 Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromPath(file.Path);
-                Assert.NotNull(assemblyFromDisk);
-
-                Module moduleFromDisk = assemblyFromDisk.Modules.First();
+                Module moduleFromDisk = assemblyFromDisk.Modules.FirstOrDefault();
 
                 Assert.NotNull(moduleFromDisk);
                 Assert.Equal("My Module", moduleFromDisk.ScopeName);

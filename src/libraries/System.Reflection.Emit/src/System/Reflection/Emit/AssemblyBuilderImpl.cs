@@ -109,11 +109,6 @@ namespace System.Reflection.Emit
 
         protected override ModuleBuilder DefineDynamicModuleCore(string name)
         {
-            if (name[0] == '\0')
-            {
-                throw new ArgumentException(SR.Argument_InvalidName, nameof(name));
-            }
-
             if (_module != null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
