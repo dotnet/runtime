@@ -1432,7 +1432,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // // Expected behavior is different on Apple platforms and Linux
+        [PlatformSpecific(TestPlatforms.Windows)] // Expected behavior is different on Apple platforms and Linux
         public void BeginReceiveMessageFromV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
