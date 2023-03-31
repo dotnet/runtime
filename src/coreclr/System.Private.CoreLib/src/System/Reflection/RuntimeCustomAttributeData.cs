@@ -568,7 +568,7 @@ namespace System.Reflection
         }
         private static RuntimeType ResolveType(RuntimeModule scope, string typeName)
         {
-            RuntimeType type = TypeNameParser.GetTypeByNameUsingCARules(typeName, scope);
+            RuntimeType type = TypeNameParser.GetTypeReferencedByCustomAttribute(typeName, scope);
             Debug.Assert(type is not null);
             return type;
         }
@@ -1855,12 +1855,12 @@ namespace System.Reflection
                 out int sizeConst, out string? marshalTypeName, out string? marshalCookie, out int iidParamIndex);
 
             RuntimeType? safeArrayUserDefinedType = string.IsNullOrEmpty(safeArrayUserDefinedTypeName) ? null :
-                TypeNameParser.GetTypeByNameUsingCARules(safeArrayUserDefinedTypeName, scope);
+                TypeNameParser.GetTypeReferencedByCustomAttribute(safeArrayUserDefinedTypeName, scope);
             RuntimeType? marshalTypeRef = null;
 
             try
             {
-                marshalTypeRef = marshalTypeName is null ? null : TypeNameParser.GetTypeByNameUsingCARules(marshalTypeName, scope);
+                marshalTypeRef = marshalTypeName is null ? null : TypeNameParser.GetTypeReferencedByCustomAttribute(marshalTypeName, scope);
             }
             catch (TypeLoadException)
             {

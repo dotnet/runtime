@@ -35,7 +35,7 @@ class TypeName
 {
 public:
     //-------------------------------------------------------------------------------------------
-    // Retrieves a type in the default context.
+    // Retrieves a type in the default context. Requires assembly qualified type name.
     //-------------------------------------------------------------------------------------------
     static TypeHandle GetTypeFromAsmQualifiedName(LPCWSTR szFullyQualifiedName, BOOL bThrowIfNotFound = FALSE);
 
@@ -56,8 +56,8 @@ public:
     //       - raise an AssemblyResolveEvent() in the current appdomain
     //
     //--------------------------------------------------------------------------------------------
-    static TypeHandle GetTypeUsingCASearchRules(LPCUTF8 szTypeName, Assembly *pRequestingAssembly);
-    static TypeHandle GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRequestingAssembly);
+    static TypeHandle GetTypeReferencedByCustomAttribute(LPCUTF8 szTypeName, Assembly *pRequestingAssembly);
+    static TypeHandle GetTypeReferencedByCustomAttribute(LPCWSTR szTypeName, Assembly *pRequestingAssembly);
 };
 
 #endif

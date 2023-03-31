@@ -7,7 +7,7 @@
 #include "common.h"
 #include "typeparse.h"
 
-static TypeHandle GetTypeHelper(LPCWSTR szTypeName, Assembly* pRequestingAssembly, BOOL bThrowIfNotFound, BOOL bSuppressCASearchRules)
+static TypeHandle GetTypeHelper(LPCWSTR szTypeName, Assembly* pRequestingAssembly, BOOL bThrowIfNotFound, BOOL brequireAssemblyQualifiedName)
 {
     CONTRACTL
     {
@@ -36,7 +36,7 @@ static TypeHandle GetTypeHelper(LPCWSTR szTypeName, Assembly* pRequestingAssembl
     args[ARGNUM_0] = PTR_TO_ARGHOLDER(szTypeName);
     args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(objRequestingAssembly);
     args[ARGNUM_2] = BOOL_TO_ARGHOLDER(bThrowIfNotFound);
-    args[ARGNUM_3] = BOOL_TO_ARGHOLDER(bSuppressCASearchRules);
+    args[ARGNUM_3] = BOOL_TO_ARGHOLDER(brequireAssemblyQualifiedName);
 
     REFLECTCLASSBASEREF objType = NULL;
     CALL_MANAGED_METHOD_RETREF(objType, REFLECTCLASSBASEREF, args);
@@ -51,21 +51,21 @@ static TypeHandle GetTypeHelper(LPCWSTR szTypeName, Assembly* pRequestingAssembl
     return type;
 }
 
-TypeHandle TypeName::GetTypeUsingCASearchRules(LPCUTF8 szTypeName, Assembly* pRequestingAssembly)
+TypeHandle TypeName::GetTypeReferencedByCustomAttribute(LPCUTF8 szTypeName, Assembly* pRequestingAssembly)
 {
     WRAPPER_NO_CONTRACT;
     StackSString sszAssemblyQualifiedName(SString::Utf8, szTypeName);
-    return GetTypeHelper(sszAssemblyQualifiedName.GetUnicode(), pRequestingAssembly, TRUE /* bThrowIfNotFound */, FALSE /* bSuppressCASearchRules */);
+    return GetTypeHelper(sszAssemblyQualifiedName.GetUnicode(), pRequestingAssembly, TRUE /* bThrowIfNotFound */, FALSE /* brequireAssemblyQualifiedName */);
 }
 
-TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly* pRequestingAssembly)
+TypeHandle TypeName::GetTypeReferencedByCustomAttribute(LPCWSTR szTypeName, Assembly* pRequestingAssembly)
 {
     WRAPPER_NO_CONTRACT;
-    return GetTypeHelper(szTypeName, pRequestingAssembly, TRUE /* bThrowIfNotFound */, FALSE /* bSuppressCASearchRules */);
+    return GetTypeHelper(szTypeName, pRequestingAssembly, TRUE /* bThrowIfNotFound */, FALSE /* brequireAssemblyQualifiedName */);
 }
 
 TypeHandle TypeName::GetTypeFromAsmQualifiedName(LPCWSTR szFullyQualifiedName, BOOL bThrowIfNotFound)
 {
     WRAPPER_NO_CONTRACT;
-    return GetTypeHelper(szFullyQualifiedName, NULL, bThrowIfNotFound, TRUE /* bSuppressCASearchRules */);
+    return GetTypeHelper(szFullyQualifiedName, NULL, bThrowIfNotFound, TRUE /* brequireAssemblyQualifiedName */);
 }

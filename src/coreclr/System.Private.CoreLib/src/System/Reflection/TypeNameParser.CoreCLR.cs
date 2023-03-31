@@ -20,7 +20,7 @@ namespace System.Reflection
         private bool _throwOnError;
         private bool _ignoreCase;
         private bool _extensibleParser;
-        private bool _suppressCASearchRules;
+        private bool _requireAssemblyQualifiedName;
         private bool _suppressContextualReflectionContext;
         private Assembly? _requestingAssembly;
         private Assembly? _topLevelAssembly;
@@ -84,7 +84,12 @@ namespace System.Reflection
             }.Parse();
         }
 
-        internal static RuntimeType GetTypeByNameUsingCARules(string typeName, RuntimeModule scope)
+        // Resolve type name referenced by a custom attribute metadata.
+        // It uses the standard Type.GetType(typeName, throwOnError: true) algorithm with the following modifications:
+        // - ContextualReflectionContext is not taken into account
+        // - The dependency between the returned type and the requesting assembly is recorded for the purpose of
+        // lifetime tracking of collectible types.
+        internal static RuntimeType GetTypeReferencedByCustomAttribute(string typeName, RuntimeModule scope)
         {
             ArgumentException.ThrowIfNullOrEmpty(typeName);
 
@@ -104,8 +109,9 @@ namespace System.Reflection
             return type;
         }
 
+        // Used by VM
         internal static unsafe RuntimeType? GetTypeHelper(char* pTypeName, RuntimeAssembly? requestingAssembly,
-            bool throwOnError, bool suppressCASearchRules)
+            bool throwOnError, bool requireAssemblyQualifiedName)
         {
             ReadOnlySpan<char> typeName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pTypeName);
 
@@ -123,7 +129,7 @@ namespace System.Reflection
                 _requestingAssembly = requestingAssembly,
                 _throwOnError = throwOnError,
                 _suppressContextualReflectionContext = true,
-                _suppressCASearchRules = suppressCASearchRules,
+                _requireAssemblyQualifiedName = requireAssemblyQualifiedName,
             }.Parse();
 
             if (type != null)
@@ -206,7 +212,7 @@ namespace System.Reflection
             {
                 if (assembly is null)
                 {
-                    if (_suppressCASearchRules)
+                    if (_requireAssemblyQualifiedName)
                     {
                         if (_throwOnError)
                         {

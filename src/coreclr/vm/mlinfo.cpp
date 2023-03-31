@@ -933,7 +933,7 @@ CustomMarshalerHelper *EEMarshalingData::GetCustomMarshalerHelper(Assembly *pAss
         SString strCMMarshalerTypeName(SString::Utf8, strMarshalerTypeName, cMarshalerTypeNameBytes);
 
         // Load the custom marshaler class.
-        hndCustomMarshalerType = TypeName::GetTypeUsingCASearchRules(strCMMarshalerTypeName.GetUnicode(), pAssembly);
+        hndCustomMarshalerType = TypeName::GetTypeReferencedByCustomAttribute(strCMMarshalerTypeName.GetUnicode(), pAssembly);
 
         if (hndCustomMarshalerType.IsGenericTypeDefinition())
         {
@@ -1001,7 +1001,7 @@ CustomMarshalerInfo *EEMarshalingData::GetCustomMarshalerInfo(SharedCustomMarsha
     strCMMarshalerTypeName[strLen] = 0;
 
     // Load the custom marshaler class.
-    hndCustomMarshalerType = TypeName::GetTypeUsingCASearchRules(strCMMarshalerTypeName.Ptr(), pSharedCMHelper->GetAssembly());
+    hndCustomMarshalerType = TypeName::GetTypeReferencedByCustomAttribute(strCMMarshalerTypeName.Ptr(), pSharedCMHelper->GetAssembly());
     if (hndCustomMarshalerType.IsGenericTypeDefinition())
     {
         // Instantiate generic custom marshalers using the instantiation of the type being marshaled.
@@ -2126,7 +2126,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                                     // Load the type. Use an SString for the string since we need to NULL terminate the string
                                     // that comes from the metadata.
                                     SString safeArrayUserDefTypeName(SString::Utf8, ParamInfo.m_strSafeArrayUserDefTypeName, ParamInfo.m_cSafeArrayUserDefTypeNameBytes);
-                                    thElement = TypeName::GetTypeUsingCASearchRules(safeArrayUserDefTypeName.GetUTF8(), pAssembly);
+                                    thElement = TypeName::GetTypeReferencedByCustomAttribute(safeArrayUserDefTypeName.GetUTF8(), pAssembly);
                                 }
                             }
                             else
