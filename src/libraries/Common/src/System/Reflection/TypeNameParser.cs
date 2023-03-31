@@ -50,6 +50,8 @@ namespace System.Reflection
                     return null;
 
                 assemblyName = GetNextAssemblyName();
+                if (assemblyName is null)
+                    return null;
                 Debug.Assert(Peek == TokenType.End);
             }
 
@@ -128,7 +130,7 @@ namespace System.Reflection
                 return null;
 
             // Because "[" is used both for generic arguments and array indexes, we must peek two characters deep.
-            if (!(Peek == TokenType.OpenSqBracket && (PeekSecond == TokenType.Other || PeekSecond == TokenType.OpenSqBracket)))
+            if (!(Peek is TokenType.OpenSqBracket && (PeekSecond is TokenType.Other or TokenType.OpenSqBracket)))
                 return namedType;
 
             Skip();
@@ -330,9 +332,10 @@ namespace System.Reflection
         // Lex the next segment as the assembly name at the end of an assembly-qualified type name. (Do not use for
         // assembly names embedded inside generic type arguments.)
         //
-        private string GetNextAssemblyName()
+        private string? GetNextAssemblyName()
         {
-            SkipWhiteSpace();
+            if (!StartAssemblyName())
+                return null;
 
             string assemblyName = new string(_input.Slice(_index));
             _index = _input.Length;
@@ -346,7 +349,8 @@ namespace System.Reflection
         //
         private string? GetNextEmbeddedAssemblyName()
         {
-            SkipWhiteSpace();
+            if (!StartAssemblyName())
+                return null;
 
             ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[64]);
 
@@ -382,6 +386,18 @@ namespace System.Reflection
             }
 
             return sb.ToString();
+        }
+
+        private bool StartAssemblyName()
+        {
+            // Compat: Treat invalid starting token of assembly name as type name parsing error instead of assembly name parsing error. This only affects
+            // exception returned by the parser.
+            if (Peek is TokenType.End or TokenType.Comma)
+            {
+                ParseError();
+                return false;
+            }
+            return true;
         }
 
         //
