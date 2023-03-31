@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Hosting
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void ServiceStops()
         {
-            using var serviceTester = WindowsServiceTester.Create(() =>
+            using var serviceTester = WindowsServiceTester.Create(async () =>
             {
                 var applicationLifetime = new ApplicationLifetime(NullLogger<ApplicationLifetime>.Instance);
                 using var lifetime = new WindowsServiceLifetime(
@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Hosting
                     NullLoggerFactory.Instance,
                     new OptionsWrapper<HostOptions>(new HostOptions()));
 
-                lifetime.WaitForStartAsync(CancellationToken.None).GetAwaiter().GetResult();
+                await lifetime.WaitForStartAsync(CancellationToken.None);
                 
                 // would normally occur here, but WindowsServiceLifetime does not depend on it.
                 // applicationLifetime.NotifyStarted();
@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.Hosting
                 // required by WindowsServiceLifetime to identify that app has stopped.
                 applicationLifetime.NotifyStopped();
 
-                lifetime.StopAsync(CancellationToken.None).GetAwaiter().GetResult();
+                await lifetime.StopAsync(CancellationToken.None);
             });
 
             serviceTester.Start();
@@ -64,14 +64,13 @@ namespace Microsoft.Extensions.Hosting
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework is missing the fix from https://github.com/dotnet/corefx/commit/3e68d791066ad0fdc6e0b81828afbd9df00dd7f8")]
         public void ExceptionOnStartIsPropagated()
         {
-            using var serviceTester = WindowsServiceTester.Create(() =>
+            using var serviceTester = WindowsServiceTester.Create(async () =>
             {
-                using (var lifetime = ThrowingWindowsServiceLifetime.Create())
+                using (var lifetime = ThrowingWindowsServiceLifetime.Create(throwOnStart: new Exception("Should be thrown")))
                 {
-                    lifetime.ThrowOnStart = new Exception("Should be thrown");
                     Assert.Equal(lifetime.ThrowOnStart,
-                            Assert.Throws<Exception>( () => 
-                                lifetime.WaitForStartAsync(CancellationToken.None).GetAwaiter().GetResult() ));
+                            await Assert.ThrowsAsync<Exception>(async () => 
+                                await lifetime.WaitForStartAsync(CancellationToken.None)));
                 }
             });
 
@@ -85,17 +84,15 @@ namespace Microsoft.Extensions.Hosting
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void ExceptionOnStopIsPropagated()
         {
-            using var serviceTester = WindowsServiceTester.Create(() =>
+            using var serviceTester = WindowsServiceTester.Create(async () =>
             {
-                using (var lifetime = ThrowingWindowsServiceLifetime.Create())
+                using (var lifetime = ThrowingWindowsServiceLifetime.Create(throwOnStop: new Exception("Should be thrown")))
                 {
-                    lifetime.WaitForStartAsync(CancellationToken.None).GetAwaiter().GetResult();
-                    
-                    lifetime.ThrowOnStop = new Exception("Should be thrown");
+                    await lifetime.WaitForStartAsync(CancellationToken.None);
                     lifetime.ApplicationLifetime.NotifyStopped();
                     Assert.Equal(lifetime.ThrowOnStop,
-                            Assert.Throws<Exception>( () => 
-                                lifetime.StopAsync(CancellationToken.None).GetAwaiter().GetResult() ));
+                            await Assert.ThrowsAsync<Exception>( async () => 
+                                await lifetime.StopAsync(CancellationToken.None)));
                 }
             });
 
@@ -109,7 +106,7 @@ namespace Microsoft.Extensions.Hosting
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void CancelStopAsync()
         {
-            using var serviceTester = WindowsServiceTester.Create(() =>
+            using var serviceTester = WindowsServiceTester.Create(async () =>
             {
                 var applicationLifetime = new ApplicationLifetime(NullLogger<ApplicationLifetime>.Instance);
                 using var lifetime = new WindowsServiceLifetime(
@@ -117,28 +114,22 @@ namespace Microsoft.Extensions.Hosting
                     applicationLifetime,
                     NullLoggerFactory.Instance,
                     new OptionsWrapper<HostOptions>(new HostOptions()));
-                {
-                    lifetime.WaitForStartAsync(CancellationToken.None).GetAwaiter().GetResult();
-                    
-                    applicationLifetime.NotifyStopped();
-
-                    Assert.ThrowsAsync<OperationCanceledException>(async () => await lifetime.StopAsync(new CancellationToken(true)));
-                    lifetime.StopAsync(CancellationToken.None).GetAwaiter().GetResult();                    
-                }
+                await lifetime.WaitForStartAsync(CancellationToken.None);
+                
+                await Assert.ThrowsAsync<OperationCanceledException>(async () => await lifetime.StopAsync(new CancellationToken(true)));
             });
 
             serviceTester.Start();
 
-            // service will proceed to stopped without any error
-            serviceTester.WaitForStatus(ServiceControllerStatus.Stopped);        
+            serviceTester.WaitForStatus(ServiceControllerStatus.Stopped);
             var status = serviceTester.QueryServiceStatus();
-            Assert.Equal(0, status.win32ExitCode);
+            Assert.Equal(1067, status.win32ExitCode);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         public void ServiceCanStopItself()
         {
-            using (var serviceTester = WindowsServiceTester.Create(() =>
+            using (var serviceTester = WindowsServiceTester.Create(async () =>
             {
                 FileLogger.InitializeForTestCase(nameof(ServiceCanStopItself));
                 using IHost host = new HostBuilder()
@@ -158,7 +149,7 @@ namespace Microsoft.Extensions.Hosting
                 host.Start();
 
                 FileLogger.Log("host.Stop()");
-                host.StopAsync().GetAwaiter().GetResult();
+                await host.StopAsync();
                 FileLogger.Log("host.Stop() complete");
             }))
             {

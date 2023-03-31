@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.ServiceProcess;
+using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
 
@@ -46,10 +47,20 @@ namespace Microsoft.Extensions.Hosting
             { }
         }
 
-        public static WindowsServiceTester Create(Action serviceMain, [CallerMemberName] string serviceName = null)
+        // the following overloads are necessary to ensure the compiler will produce the correct signature from a lambda.
+        public static WindowsServiceTester Create(Func<Task> serviceMain, [CallerMemberName] string serviceName = null) => Create(RemoteExecutor.Invoke(serviceMain, remoteInvokeOptions), serviceName);
+        
+        public static WindowsServiceTester Create(Func<Task<int>> serviceMain, [CallerMemberName] string serviceName = null) => Create(RemoteExecutor.Invoke(serviceMain, remoteInvokeOptions), serviceName);
+
+        public static WindowsServiceTester Create(Func<int> serviceMain, [CallerMemberName] string serviceName = null) => Create(RemoteExecutor.Invoke(serviceMain, remoteInvokeOptions), serviceName);
+        
+        public static WindowsServiceTester Create(Action serviceMain, [CallerMemberName] string serviceName = null) => Create(RemoteExecutor.Invoke(serviceMain, remoteInvokeOptions), serviceName);
+
+        private static RemoteInvokeOptions remoteInvokeOptions = new RemoteInvokeOptions() { Start = false };
+
+        private static WindowsServiceTester Create(RemoteInvokeHandle remoteInvokeHandle, string serviceName)
         {
             // create remote executor commandline arguments
-            var remoteInvokeHandle = RemoteExecutor.Invoke(serviceMain, new RemoteInvokeOptions() { Start = false });
             var startInfo = remoteInvokeHandle.Process.StartInfo;
             string commandLine = startInfo.FileName + " " + startInfo.Arguments;
 
