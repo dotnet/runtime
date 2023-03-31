@@ -223,7 +223,7 @@ AMD Ryzen Threadripper PRO 3945WX 12-Cores, 1 CPU, 24 logical and 12 physical co
 | Contains | Vector256 | 1024 |  55.769 ns | 0.6720 ns |  0.39 |     391 B |
 ```
 
-The results should be very stable (flat distributions), but on the other hand we are measuring the performance of best case scenario (the input is large and it's entire content is searched for, as the value is never found).
+The results should be very stable (flat distributions), but on the other hand we are measuring the performance of the best case scenario (the input is large and its entire contents are searched through, as the value is never found).
 
 Explaining benchmark design guidelines is outside of the scope of this document, but we have a [dedicated document](https://github.com/dotnet/performance/blob/main/docs/microbenchmark-design-guidelines.md#benchmarks-are-not-unit-tests) about it. To make a long story short, **you should benchmark all scenarios that are realistic for your production environment**, so your customers can actually benefit from your improvements.
 
@@ -295,7 +295,7 @@ int Sum(Span<int> buffer)
 
 Now imagine that we need to check whether the given buffer contains a specific number. In this case, processing some values more than once is acceptable, we don't need to handle the remainder in a non-vectorized fashion.
 
-Example: a buffer contains six 32-bit integers, `Vector128` is accelerated, and it can work with four integers at a time. In the first loop iteration, we handle the first four elements. In the second (and last) iteration, we need to handle the remaining two, but it's less than `Vector128` size, so we handle last four elements. Which means that two values in the middle get checked twice.
+Example: a buffer contains six 32-bit integers, `Vector128` is accelerated, and it can work with four integers at a time. In the first loop iteration, we handle the first four elements. In the second (and last) iteration we need to handle the remaining two elements. Since the remainder is smaller than one `Vector128` and we are not mutating the input, we perform a vectorized operation on a `Vector128` containing the last four elements.
 
 ```cs
 bool Contains(Span<int> buffer, int searched)
@@ -332,7 +332,7 @@ bool Contains(Span<int> buffer, int searched)
 }
 ```
 
-`Vector128.Create(value)` creates a new vector with all elements initialized to the specified value. So `Vector128<int>.Zero` is an equivalent of `Vector128.Create(0)`.
+`Vector128.Create(value)` creates a new vector with all elements initialized to the specified value. So `Vector128<int>.Zero` is equivalent to `Vector128.Create(0)`.
 
 `Vector128.Equals(Vector128 left, Vector128 right)` compares two vectors and returns a vector whose elements are all-bits-set or zero, depending on if the provided elements in left and right were equal. If the result of comparison is non zero, it means that there was at least one match.
 
@@ -651,7 +651,7 @@ Even such a simple problem can be solved in at least 5 different ways. Using sop
 
 ## Toolchain
 
-`Vector128`, `Vector128<T>`, `Vector256` and `Vector256<T>` expose a LOT of APIs. We are constrained by time, so we won't describe all of them with examples. Instead, we have grouped them into categories to give you an overview of their capabilities. It's not required to remember what  each of these methods is doing, it's important to remember what kind of operations they allow for and check the details when needed.
+`Vector128`, `Vector128<T>`, `Vector256` and `Vector256<T>` expose a LOT of APIs. We are constrained by time, so we won't describe all of them with examples. Instead, we have grouped them into categories to give you an overview of their capabilities. It's not required to remember what each of these methods is doing, but it's important to remember what kind of operations they allow for and check the details when needed.
 
 ### Creation
 
@@ -676,7 +676,7 @@ We also have an overload that allows for specifying every value in given vector:
 public static Vector128<short> Create(short e0, short e1, short e2, short e3, short e4, short e5, short e6, short e7)
 ```
 
-And last, but not least a `Create` overload that accepts a buffer. It creates a vector with its elements set to the first `VectorXYZ<T>.Count`-many elements of the buffer. It's not recommended to use it in a loop, where `Load` methods should be used instead (performance).
+And last but not least we have a `Create` overload which accepts a buffer. It creates a vector with its elements set to the first `VectorXYZ<T>.Count` elements of the buffer. It's not recommended to use it in a loop, where `Load` methods should be used instead (for performance).
 
 ```cs
 public static Vector128<T> Create<T>(ReadOnlySpan<T> values) where T : struct
@@ -725,13 +725,13 @@ public static bool EqualsAll<T>(Vector128<T> left, Vector128<T> right) where T :
 public static bool EqualsAny<T>(Vector128<T> left, Vector128<T> right) where T : struct
 ```
 
-`Equals` compares two vectors to determine if they are equal on a per-element basis. It returns a vector whose elements are all-bits-set or zero, depending on if the corresponding elements in `left` and `right` arguments were equal.
+`Equals` compares two vectors to determine if they are equal on a per-element basis. It returns a vector whose elements are all-bits-set or zero, depending on whether the corresponding elements in the `left` and `right` arguments were equal.
 
 ```cs
 public static Vector128<T> Equals<T>(Vector128<T> left, Vector128<T> right) where T : struct
 ```
 
-How to calculate the index of first match? Let's take a closer look at the result of following equality check:
+How do we calculate the index of the first match? Let's take a closer look at the result of following equality check:
 
 ```cs
 Vector128<int> left = Vector128.Create(1, 2, 3, 4);
@@ -750,7 +750,7 @@ Console.WriteLine(equals);
 public static T GetElement<T>(this Vector128<T> vector, int index) where T : struct
 ```
 
-But it would not be an optimal solution. We should rather extract the most significant bits:
+But it would not be an optimal solution. We should instead extract the most significant bits:
 
 ```cs
 uint mostSignificantBits = equals.ExtractMostSignificantBits();
@@ -761,11 +761,11 @@ Console.WriteLine(Convert.ToString(mostSignificantBits, 2).PadLeft(32, '0'));
 00000000000000000000000000000100
 ```
 
-and use [BitOperations.TrailingZeroCount](https://learn.microsoft.com/dotnet/api/system.numerics.bitoperations.trailingzerocount) to get trailing zero count.
+and use [BitOperations.TrailingZeroCount](https://learn.microsoft.com/dotnet/api/system.numerics.bitoperations.trailingzerocount) to get the trailing zero count.
 
-To calculate the last index, we should use [BitOperations.LeadingZeroCount](https://learn.microsoft.com/dotnet/api/system.numerics.bitoperations.leadingzerocount). But the returned value needs to be subtracted from 31 (32 bits in an `unit`, and indexed from 0).
+To calculate the last index, we should use [BitOperations.LeadingZeroCount](https://learn.microsoft.com/dotnet/api/system.numerics.bitoperations.leadingzerocount). But the returned value needs to be subtracted from 31 (32 bits in an `unit`, indexed from 0).
 
-If we were working with a buffer loaded from memory (example: searching for the last index of given character in a buffer) both results would be relative to the `elementOffset` provided to the `Load` method that was used to load the vector from the buffer.
+If we were working with a buffer loaded from memory (example: searching for the last index of a given character in the buffer) both results would be relative to the `elementOffset` provided to the `Load` method that was used to load the vector from the buffer.
 
 ```cs
 int ComputeLastIndex<T>(nint elementOffset, Vector128<T> equals) where T : struct
@@ -794,7 +794,7 @@ unsafe int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector128<T> e
 
 ### Comparison
 
-Beside equality checks, vector APIs allow for comparison. The `bool` returning overload return `true` when given condition is true:
+Beside equality checks, vector APIs allow for comparison. The `bool`-returning overloads return `true` when the given condition is true:
 
 ```cs
 public static bool GreaterThanAll<T>(Vector128<T> left, Vector128<T> right) where T : struct
@@ -807,7 +807,7 @@ public static bool LessThanOrEqualAll<T>(Vector128<T> left, Vector128<T> right) 
 public static bool LessThanOrEqualAny<T>(Vector128<T> left, Vector128<T> right) where T : struct
 ```
 
-Similarly to `Equals`, vector-returning overloads return a vector whose elements are all-bits-set or zero, depending on if the corresponding elements in `left` and `right` meet given condition.
+Similarly to `Equals`, vector-returning overloads return a vector whose elements are all-bits-set or zero, depending on whether the corresponding elements in `left` and `right` meet the given condition.
 
 ```cs
 public static Vector128<T> GreaterThan<T>(Vector128<T> left, Vector128<T> right) where T : struct
@@ -862,7 +862,7 @@ public static T Sum<T>(Vector128<T> vector) where T : struct
 
 ### Conversion
 
-Vector types provide a set of methods dedicated to numbers conversion:
+Vector types provide a set of methods dedicated to number conversions:
 
 ```cs
 public static unsafe Vector128<double> ConvertToDouble(Vector128<long> vector)
@@ -1003,7 +1003,7 @@ if (Sse2.IsSupported)
 
 ### Shuffle
 
-`Shuffle` creates a new vector by selecting values from an input vector using a set of indices (values that represent indexes if the input vector).
+`Shuffle` creates a new vector by selecting values from an input vector using a set of indices (values that represent indexes of the input vector).
 
 ```cs
 public static Vector128<int> Shuffle(Vector128<int> vector, Vector128<int> indices)
@@ -1044,7 +1044,7 @@ The main goal of the new `Vector128` and `Vector256` APIs is to make writing fas
 
 ### Best practices
 
-1. Implement tests that cover all code paths, including Acces Violations.
+1. Implement tests that cover all code paths, including Access Violations.
 2. Run tests for all hardware acceleration scenarios, use the existing environment variables to do that.
 3. Implement benchmarks that mimic real life scenarios, do not increase the complexity of your code when it's not beneficial for your end users.
 4. Prefer managed references over unsafe pointers to avoid pinning and safety issues.
