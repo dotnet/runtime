@@ -138,17 +138,11 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        public bool TryGetMethodNameAndSignatureFromNativeLayoutOffset(TypeManagerHandle moduleHandle, uint nativeLayoutOffset, out MethodNameAndSignature nameAndSignature)
+        public MethodNameAndSignature GetMethodNameAndSignatureFromNativeLayoutOffset(TypeManagerHandle moduleHandle, uint nativeLayoutOffset)
         {
-            nameAndSignature = null;
-
             NativeReader reader = GetNativeLayoutInfoReader(moduleHandle);
             NativeParser parser = new NativeParser(reader, nativeLayoutOffset);
-            if (parser.IsNull)
-                return false;
-
-            nameAndSignature = GetMethodNameAndSignature(ref parser, moduleHandle, out _, out _);
-            return true;
+            return GetMethodNameAndSignature(ref parser, moduleHandle, out _, out _);
         }
 
         internal static MethodNameAndSignature GetMethodNameAndSignature(ref NativeParser parser, TypeManagerHandle moduleHandle, out RuntimeSignature methodNameSig, out RuntimeSignature methodSig)

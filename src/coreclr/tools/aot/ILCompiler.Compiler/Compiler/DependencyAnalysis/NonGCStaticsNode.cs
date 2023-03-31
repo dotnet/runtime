@@ -103,7 +103,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             // TODO: Assert that StaticClassConstructionContext type has the expected size
             //       (need to make it a well known type?)
-            return target.PointerSize * 2;
+            return target.PointerSize;
         }
 
         private static int GetClassConstructorContextStorageSize(TargetDetails target, MetadataType type)
@@ -172,26 +172,15 @@ namespace ILCompiler.DependencyAnalysis
                 // cctor context as already executed.
                 if (!HasLazyStaticConstructor)
                 {
-                    // Pointer to the cctor: we don't care - emit as zero
+                    // Pointer to the cctor: Zero means initialized
                     builder.EmitZeroPointer();
-
-                    // Constructor executed
-                    // TODO-NICE: introduce a named constant and also use it in the runner in CoreLib
-                    builder.EmitInt(1);
                 }
                 else
                 {
                     // Emit pointer to the cctor
                     MethodDesc cctorMethod = _type.GetStaticConstructor();
                     builder.EmitPointerReloc(factory.ExactCallableAddress(cctorMethod));
-
-                    // Constructor didn't execute
-                    builder.EmitInt(0);
                 }
-
-                // Emit padding if needed
-                if (builder.TargetPointerSize == 8)
-                    builder.EmitInt(0);
             }
             else
             {

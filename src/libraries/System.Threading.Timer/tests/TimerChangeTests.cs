@@ -38,14 +38,15 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public void Timer_Change_AfterDispose_Throws()
+        public void Timer_Change_AfterDispose_Test()
         {
             var t = new Timer(new TimerCallback(EmptyTimerTarget), null, 1, 1);
+            Assert.True(t.Change(1, 1));
             t.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => t.Change(1, 1));
-            Assert.Throws<ObjectDisposedException>(() => t.Change(1L, 1L));
-            Assert.Throws<ObjectDisposedException>(() => t.Change(1u, 1u));
-            Assert.Throws<ObjectDisposedException>(() => t.Change(TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1)));
+            Assert.False(t.Change(1, 1));
+            Assert.False(t.Change(1L, 1L));
+            Assert.False(t.Change(1u, 1u));
+            Assert.False(t.Change(TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1)));
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
