@@ -66,8 +66,8 @@ A single `Vector128` operation allows you to operate on: 16 (s)bytes, 8 (u)short
 
 `Vector256<T>` is twice as big as `Vector128<T>`, so when it is hardware accelerated, and the data is large enough, you should use it instead of `Vector128<T>`. To check the acceleration, use `Vector128.IsHardwareAccelerated` and `Vector256.IsHardwareAccelerated` properties.
 
-The size of the input also matters. It needs to be at least of the size of a single vector to be able to execute the vectorized code path. `Vector128<T>.Count` and `Vector256<T>.Count` return the size of a vector of given type in bytes.
-Both APIs are turned into constants (no method call is required to retrieve the information) by the Just-In-Time compiler. In case of pre-compiled code (NativeAOT) it's not true for `IsHardwareAccelerated` property, as the required information is not available at compile time.
+The size of the input also matters. It needs to be at least of the size of a single vector to be able to execute the vectorized code path. `Vector128<T>.Count` and `Vector256<T>.Count` return the number of elements of the given type T in a single vector.
+Both APIs are turned into constants by the Just-In-Time compiler (i.e. no method call is required to retrieve the information). In the case of pre-compiled code (NativeAOT), this is not true for the `IsHardwareAccelerated` property, as the required information is not available at compile time.
 
 That is why the code is very often structured like this:
 
@@ -111,16 +111,14 @@ Such a code structure requires us to **test all possible code paths**:
   * The input is too small to benefit from any kind of vectorization.
 * Neither `Vector128` or  `Vector256` are accelerated.
 
-It's possible to implement tests that cover some of the scenarios based on the size, but it's impossible to toggle hardware acceleration from unit test level. It can be controlled with environment variables before .NET process is started:
+It's possible to implement tests that cover some of the scenarios based on the size, but it's impossible to toggle hardware acceleration at the unit test level. It can be controlled with environment variables before .NET process is started:
 
 * When `DOTNET_EnableAVX2` is set to `0`, `Vector256.IsHardwareAccelerated` returns `false`.
-* When `DOTNET_EnableAVX` is set to `0`, `Vector128.IsHardwareAccelerated` returns `false`.
-* When `DOTNET_EnableHWIntrinsic` is set to `0`, not only both mentioned APIs return `false`, but also `Vector64.IsHardwareAccelerated` and `Vector.IsHardwareAccelerated`.
+* When `DOTNET_EnableHWIntrinsic` is set to `0`, not only do both mentioned APIs return `false`, but so also do `Vector64.IsHardwareAccelerated` and `Vector.IsHardwareAccelerated`.
 
-Assuming that we run the tests on an `x64` machine that supports `Vector256` we need to write tests that cover all size scenarios and run them with:
+Assuming that we run the tests on an `x64` machine that supports `Vector256`, we need to write tests that cover all size scenarios and run them with:
 * no custom settings
 * `DOTNET_EnableAVX2=0`
-* `DOTNET_EnableAVX=0` (it can be skipped if `Vector64<T>` and `Vector<T>` are not involved)
 * `DOTNET_EnableHWIntrinsic=0`
 
 ### Benchmarking
@@ -166,12 +164,12 @@ static void Main(string[] args)
 
 #### Memory alignment
 
-BenchmarkDotNet does a lot of heavy lifting for the end users, but it can not protect us from the random memory alignment which can be different per each benchmark run and affect the stability of the benchmarks.
+BenchmarkDotNet does a lot of heavy lifting for the end users, but it cannot protect us from the random memory alignment which can be different per each benchmark run and can affect the stability of the benchmarks.
 
 We have three possibilities:
 
 * We can enforce the alignment ourselves and have very stable results.
-* We can ask the harness to try to randomize the memory and observe entire possible distribution with each run.
+* We can ask the harness to try to randomize the memory and observe the entire possible distribution with each run.
 * We can do nothing and wonder why the results vary from time to time.
 
 ##### Enforcing memory alignment
@@ -233,7 +231,7 @@ Explaining benchmark design guidelines is outside of the scope of this document,
 
 The alternative is to enable memory randomization. Before every iteration, the harness is going to allocate random-size objects, keep them alive and re-run the setup that should allocate the actual memory.
 
-You can read more about it [here](https://github.com/dotnet/BenchmarkDotNet/pull/1587), it requires understanding of what distribution is and how to read it. It's also out of scope of this document, but [Pro .NET Benchmarking](https://aakinshin.net/prodotnetbenchmarking/) book has two chapters dedicated to statistics and can help you get a very good understanding of this subject.
+You can read more about it [here](https://github.com/dotnet/BenchmarkDotNet/pull/1587). It requires an understanding of what distribution is and how to read it. It's also out of scope of this document, but [Pro .NET Benchmarking](https://aakinshin.net/prodotnetbenchmarking/) has two chapters dedicated to statistics and can help you get a very good understanding of the subject.
 
 No matter how you are going to benchmark your code, you need to keep in mind that **the larger the input, the more you can benefit from vectorization**. If your code uses small buffers, performance might even get worse.
 
@@ -295,7 +293,7 @@ int Sum(Span<int> buffer)
 
 ### Vectorized remainder handling
 
-Now imagine that we need to check whether the given buffer contains specific number. In this case, processing some values more than once is acceptable, we don't need to handle the remainder in a non-vectorized fashion.
+Now imagine that we need to check whether the given buffer contains a specific number. In this case, processing some values more than once is acceptable, we don't need to handle the remainder in a non-vectorized fashion.
 
 Example: a buffer contains six 32-bit integers, `Vector128` is accelerated, and it can work with four integers at a time. In the first loop iteration, we handle the first four elements. In the second (and last) iteration, we need to handle the remaining two, but it's less than `Vector128` size, so we handle last four elements. Which means that two values in the middle get checked twice.
 
