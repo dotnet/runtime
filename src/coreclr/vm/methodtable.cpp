@@ -2239,8 +2239,9 @@ static SystemVClassificationType ReClassifyField(SystemVClassificationType origi
     }
 }
 
-MethodTable* ByValueClassCacheLookup(MethodTable** pByValueClassCache, unsigned index)
+static MethodTable* ByValueClassCacheLookup(MethodTable** pByValueClassCache, unsigned index)
 {
+    LIMITED_METHOD_CONTRACT;
     if (pByValueClassCache == NULL)
         return NULL;
     else

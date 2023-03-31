@@ -206,6 +206,14 @@ bool IsFieldBlittable(
     ParseNativeTypeFlags flags
 )
 {
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
     PCCOR_SIGNATURE marshalInfoSig;
     ULONG marshalInfoSigLength;
 

@@ -1407,7 +1407,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                 IfFailThrowBF(tempsig.GetToken(&valueTypeToken), BFA_BAD_SIGNATURE, pOrigModule);
                                 if (valueTypeToken == pRecursiveFieldGenericHandling->tkTypeDefToAvoidIfPossible && pOrigModule == pRecursiveFieldGenericHandling->pModuleWithTokenToAvoidIfPossible)
                                 {
-                                    bool recursionDetected = true;
+                                    bool exactSelfRecursionDetected = true;
 
                                     if (elemType == ELEMENT_TYPE_GENERICINST)
                                     {
@@ -1420,7 +1420,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                             IfFailThrowBF(tempsig.GetElemType(&elemType), BFA_BAD_SIGNATURE, pOrigModule);
                                             if (elemType != ELEMENT_TYPE_VAR)
                                             {
-                                                recursionDetected = false;
+                                                exactSelfRecursionDetected = false;
                                                 break;
                                             }
 
@@ -1428,19 +1428,22 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                             IfFailThrowBF(tempsig.GetData(&varIndex), BFA_BAD_SIGNATURE, pModule);
                                             if (varIndex != iInstantiation)
                                             {
-                                                recursionDetected = false;
+                                                exactSelfRecursionDetected = false;
                                                 break;
                                             }
                                         }
                                     }
-                                    handlingRecursiveGenericFieldScenario = true;
-                                    if (iRecursiveGenericFieldHandlingPass == 0)
+                                    if (exactSelfRecursionDetected)
                                     {
-                                        typeHnd = TypeHandle(g_pCanonMethodTableClass);
-                                    }
-                                    else
-                                    {
-                                        typeHnd = TypeHandle(CoreLibBinder::GetClass(CLASS__BYTE));
+                                        handlingRecursiveGenericFieldScenario = true;
+                                        if (iRecursiveGenericFieldHandlingPass == 0)
+                                        {
+                                            typeHnd = TypeHandle(g_pCanonMethodTableClass);
+                                        }
+                                        else
+                                        {
+                                            typeHnd = TypeHandle(CoreLibBinder::GetClass(CLASS__BYTE));
+                                        }
                                     }
                                 }
                             }

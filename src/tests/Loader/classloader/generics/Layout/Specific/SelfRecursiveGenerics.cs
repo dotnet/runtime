@@ -3,9 +3,16 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 class SelfRecursiveGenerics
 {
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void WillFailOnCoreCLRDueToLimitationsInTypeLoader()
+    {
+        Console.WriteLine(new SelfReferentialGenericStructWithNoFieldsAutoNonLoadable<int, byte>());
+    }
     static int Main()
     {
         Console.WriteLine(new SelfReferentialStructWithNoFieldsAuto());
@@ -23,6 +30,15 @@ class SelfRecursiveGenerics
 
         Console.WriteLine(typeof(MyNodeAuto).FullName);
         Console.WriteLine(typeof(MyNodeSequential).FullName);
+
+        try
+        {
+            WillFailOnCoreCLRDueToLimitationsInTypeLoader();
+        }
+        catch (TypeLoadException tle)
+        {
+            Console.WriteLine("Hit TLE" + tle.ToString());
+        }
 
         return 100;
     }
@@ -53,6 +69,11 @@ class SelfRecursiveGenerics
         public int Fld1;
         [FieldOffset(4)]
         public int Fld2;
+    }
+
+    [StructLayout(LayoutKind.Auto)]
+    public struct SelfReferentialGenericStructWithNoFieldsAutoNonLoadable<T,V> {
+        public Container<SelfReferentialGenericStructWithNoFieldsAutoNonLoadable<V,T>>.Nested Nested;
     }
 
     [StructLayout(LayoutKind.Auto)]
