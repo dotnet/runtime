@@ -7,9 +7,9 @@
 template <class T>
 class ArrayStack
 {
+public:
     static const int builtinSize = 8;
 
-public:
     explicit ArrayStack(CompAllocator alloc, int initialCapacity = builtinSize) : m_alloc(alloc)
     {
         if (initialCapacity > builtinSize)
@@ -78,7 +78,7 @@ public:
     }
 
     // Return the i'th element from the top
-    T Top(int i = 0)
+    T Top(int i = 0) const
     {
         assert(tosIndex > i);
         return data[tosIndex - 1 - i];
@@ -91,18 +91,18 @@ public:
         return data[tosIndex - 1 - i];
     }
 
-    int Height()
+    int Height() const
     {
         return tosIndex;
     }
 
-    bool Empty()
+    bool Empty() const
     {
         return tosIndex == 0;
     }
 
     // Return the i'th element from the bottom
-    T Bottom(int i = 0)
+    T Bottom(int i = 0) const
     {
         assert(tosIndex > i);
         return data[i];
@@ -118,6 +118,11 @@ public:
     void Reset()
     {
         tosIndex = 0;
+    }
+
+    int Capacity() const
+    {
+        return maxIndex;
     }
 
 private:

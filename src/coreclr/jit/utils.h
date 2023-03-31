@@ -788,6 +788,191 @@ public:
     static double UInt64BitsToDouble(uint64_t value);
 };
 
+/*****************************************************************************
+ *
+ *  Return the lowest bit that is set
+ */
+
+template <typename T>
+inline T genFindLowestBit(T value)
+{
+    return (value & (0 - value));
+}
+
+//------------------------------------------------------------------------
+// genFindHighestBit:  Return the highest bit that is set (that is, a mask that includes just the
+//                     highest bit).
+//
+// Return Value:
+//    The highest position (0 is LSB) of bit that is set in the 'value'.
+//
+// Note:
+//    It performs the "LeadingZeroCount" operation using intrinsics and then mask out everything
+//    but the highest bit.
+//
+inline unsigned int genFindHighestBit(unsigned int mask)
+{
+    assert(mask != 0);
+    uint32_t index = BitOperations::BitScanReverse(mask);
+    return 1L << index;
+}
+
+//------------------------------------------------------------------------
+// genFindHighestBit:  Return the highest bit that is set (that is, a mask that includes just the
+//                     highest bit).
+//
+// Return Value:
+//    The highest position (0 is LSB) of bit that is set in the 'value'.
+//
+// Note:
+//    It performs the "LeadingZeroCount" operation using intrinsics and then mask out everything
+//    but the highest bit.
+//
+inline unsigned __int64 genFindHighestBit(unsigned __int64 mask)
+{
+    assert(mask != 0);
+    uint32_t index = BitOperations::BitScanReverse(mask);
+    return 1LL << index;
+}
+
+/*****************************************************************************
+*
+*  Return true if the given 64-bit value has exactly zero or one bits set.
+*/
+
+template <typename T>
+inline bool genMaxOneBit(T value)
+{
+    return (value & (value - 1)) == 0;
+}
+
+/*****************************************************************************
+*
+*  Return true if the given 32-bit value has exactly zero or one bits set.
+*/
+
+inline bool genMaxOneBit(unsigned value)
+{
+    return (value & (value - 1)) == 0;
+}
+
+/*****************************************************************************
+*
+*  Return true if the given 64-bit value has exactly one bit set.
+*/
+
+template <typename T>
+inline bool genExactlyOneBit(T value)
+{
+    return ((value != 0) && genMaxOneBit(value));
+}
+
+/*****************************************************************************
+*
+*  Return true if the given 32-bit value has exactly zero or one bits set.
+*/
+
+inline bool genExactlyOneBit(unsigned value)
+{
+    return ((value != 0) && genMaxOneBit(value));
+}
+
+/*****************************************************************************
+ *
+ *  Given a value that has exactly one bit set, return the position of that
+ *  bit, in other words return the logarithm in base 2 of the given value.
+ */
+inline unsigned genLog2(unsigned value)
+{
+    return BitPosition(value);
+}
+
+// Given an unsigned 64-bit value, returns the lower 32-bits in unsigned format
+//
+inline unsigned ulo32(unsigned __int64 value)
+{
+    return static_cast<unsigned>(value);
+}
+
+// Given an unsigned 64-bit value, returns the upper 32-bits in unsigned format
+//
+inline unsigned uhi32(unsigned __int64 value)
+{
+    return static_cast<unsigned>(value >> 32);
+}
+
+/*****************************************************************************
+ *
+ *  Given a value that has exactly one bit set, return the position of that
+ *  bit, in other words return the logarithm in base 2 of the given value.
+ */
+
+inline unsigned genLog2(unsigned __int64 value)
+{
+#ifdef HOST_64BIT
+    return BitPosition(value);
+#else // HOST_32BIT
+    unsigned lo32 = ulo32(value);
+    unsigned hi32 = uhi32(value);
+
+    if (lo32 != 0)
+    {
+        assert(hi32 == 0);
+        return genLog2(lo32);
+    }
+    else
+    {
+        return genLog2(hi32) + 32;
+    }
+#endif
+}
+
+#ifdef __APPLE__
+inline unsigned genLog2(size_t value)
+{
+    return genLog2((unsigned __int64)value);
+}
+#endif // __APPLE__
+
+/*****************************************************************************
+ *
+ *  A rather simple routine that counts the number of bits in a given number.
+ */
+
+inline unsigned genCountBits(uint64_t bits)
+{
+    return BitOperations::PopCount(bits);
+}
+
+/*****************************************************************************
+ *
+ *  A rather simple routine that counts the number of bits in a given number.
+ */
+
+inline unsigned genCountBits(uint32_t bits)
+{
+    return BitOperations::PopCount(bits);
+}
+
+/*****************************************************************************
+ *
+ *  Given 3 masks value, end, start, returns the bits of value between start
+ *  and end (exclusive).
+ *
+ *  value[bitNum(end) - 1, bitNum(start) + 1]
+ */
+
+inline unsigned __int64 BitsBetween(unsigned __int64 value, unsigned __int64 end, unsigned __int64 start)
+{
+    assert(start != 0);
+    assert(start < end);
+    assert((start & (start - 1)) == 0);
+    assert((end & (end - 1)) == 0);
+
+    return value & ~((start - 1) | start) & // Ones to the left of set bit in the start mask.
+           (end - 1);                       // Ones to the right of set bit in the end mask.
+}
+
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but
 // that can't be called until the CLR is initialized. If we have static data that we'd like to protect by a
 // lock, and we have a statically allocated lock to protect that data, there's an issue in how to initialize

@@ -5249,7 +5249,36 @@ protected:
     BasicBlock* fgIntersectDom(BasicBlock* a, BasicBlock* b); // Intersect two immediate dominator sets.
 
     void fgDfsReversePostorder();
+
+    struct DfsBlockEntry
+    {
+    public:
+        DfsBlockEntry(Compiler* comp, BasicBlock* block) : m_block(block), m_nSucc(block->NumSucc(comp)), m_iter(0)
+        {
+        }
+
+        BasicBlock* getBlock()
+        {
+            return m_block;
+        }
+
+        BasicBlock* getNextSucc(Compiler* comp)
+        {
+            if (m_iter >= m_nSucc)
+            {
+                return nullptr;
+            }
+            return m_block->GetSucc(m_iter++, comp);
+        }
+
+    private:
+        BasicBlock* m_block;
+        unsigned    m_nSucc;
+        unsigned    m_iter;
+    };
+
     void fgDfsReversePostorderHelper(BasicBlock* block,
+                                     ArrayStack<DfsBlockEntry>& stack,
                                      BlockSet&   visited,
                                      unsigned&   preorderIndex,
                                      unsigned&   reversePostorderIndex);

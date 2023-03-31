@@ -767,6 +767,25 @@ void Compiler::fgDfsReversePostorder()
     assert(BlockSetOps::IsMember(this, startNodes, fgFirstBB->bbNum));
 
     // Call the flowgraph DFS traversal helper.
+
+    // Allocate a local stack to hold the DFS traversal actions necessary
+    // to compute pre/post-ordering of the control flowgraph.
+    // Share this between invocations of fgDfsReversePostorderHelper.
+
+    // Set the initial capacity to something reasonable, to avoid excessive reallocation.
+    // Estimate the size as 60% of the number of BasicBlocks in the function. Minimum
+    // is the ArrayStack built-in size. Round up to a power of two, and cap at 64 to
+    // avoid excessive initial allocation.
+
+    unsigned initialCapacity = 6 * fgBBcount / 10;
+    assert(ArrayStack<DfsBlockEntry>::builtinSize > 0);
+    initialCapacity = max(initialCapacity, ArrayStack<DfsBlockEntry>::builtinSize);
+    // round up to nearest power of 2. e.g., 127 => 128, 128 => 128.
+    initialCapacity = genFindHighestBit((initialCapacity << 1) - 1);
+    initialCapacity = min(initialCapacity, 64);
+
+    ArrayStack<DfsBlockEntry> stack(getAllocator(CMK_ArrayStack), (int)initialCapacity);
+
     unsigned preorderIndex  = 1;
     unsigned postorderIndex = 1;
     for (BasicBlock* const block : Blocks())
@@ -776,7 +795,7 @@ void Compiler::fgDfsReversePostorder()
         if (BlockSetOps::IsMember(this, startNodes, block->bbNum) &&
             !BlockSetOps::IsMember(this, visited, block->bbNum))
         {
-            fgDfsReversePostorderHelper(block, visited, preorderIndex, postorderIndex);
+            fgDfsReversePostorderHelper(block, stack, visited, preorderIndex, postorderIndex);
         }
     }
 
@@ -789,7 +808,7 @@ void Compiler::fgDfsReversePostorder()
         {
             if (!BlockSetOps::IsMember(this, visited, block->bbNum))
             {
-                fgDfsReversePostorderHelper(block, visited, preorderIndex, postorderIndex);
+                fgDfsReversePostorderHelper(block, stack, visited, preorderIndex, postorderIndex);
             }
         }
     }
@@ -855,6 +874,7 @@ BlockSet_ValRet_T Compiler::fgDomFindStartNodes()
 //
 // Arguments:
 //    block   - The starting entry block
+//    stack   - The stack of blocks being processed
 //    visited - The set of visited blocks
 //    preorderIndex - preorder visit counter
 //    postorderIndex - postorder visit counter
@@ -863,44 +883,16 @@ BlockSet_ValRet_T Compiler::fgDomFindStartNodes()
 //    Compute a non-recursive DFS traversal of the flow graph using an
 //    evaluation stack to assign pre and post-order numbers.
 //
-void Compiler::fgDfsReversePostorderHelper(BasicBlock* block,
-                                           BlockSet&   visited,
-                                           unsigned&   preorderIndex,
-                                           unsigned&   postorderIndex)
+void Compiler::fgDfsReversePostorderHelper(BasicBlock*                block,
+                                           ArrayStack<DfsBlockEntry>& stack,
+                                           BlockSet&                  visited,
+                                           unsigned&                  preorderIndex,
+                                           unsigned&                  postorderIndex)
 {
     // Assume we haven't visited this node yet (callers ensure this).
     assert(!BlockSetOps::IsMember(this, visited, block->bbNum));
 
-    struct DfsBlockEntry
-    {
-    public:
-        DfsBlockEntry(Compiler* comp, BasicBlock* block) : m_block(block), m_nSucc(block->NumSucc(comp)), m_iter(0)
-        {
-        }
-
-        BasicBlock* getBlock()
-        {
-            return m_block;
-        }
-
-        BasicBlock* getNextSucc(Compiler* comp)
-        {
-            if (m_iter >= m_nSucc)
-            {
-                return nullptr;
-            }
-            return m_block->GetSucc(m_iter++, comp);
-        }
-
-    private:
-        BasicBlock* m_block;
-        unsigned    m_nSucc;
-        unsigned    m_iter;
-    };
-
-    // Allocate a local stack to hold the DFS traversal actions necessary
-    // to compute pre/post-ordering of the control flowgraph.
-    ArrayStack<DfsBlockEntry> stack(getAllocator(CMK_ArrayStack));
+    stack.Reset();
 
     // Push the first block on the stack to seed the traversal, mark it visited to avoid backtracking,
     // and give it a preorder number.
