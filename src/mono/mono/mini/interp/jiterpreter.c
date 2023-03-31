@@ -1061,6 +1061,12 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 
 		build_address_taken_bitset (td, bb, bitset_size);
 	}
+
+	// If we didn't insert any entry points and we allocated the bitset, free it.
+	if (!imethod->contains_traces && imethod->address_taken_bits) {
+		mono_bitset_free (imethod->address_taken_bits);
+		imethod->address_taken_bits = NULL;
+	}
 }
 
 EMSCRIPTEN_KEEPALIVE double
