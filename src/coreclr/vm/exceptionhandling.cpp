@@ -3288,7 +3288,7 @@ static inline UINT_PTR *GetFirstNonVolatileRegisterAddress(PCONTEXT pContextReco
 #elif defined(TARGET_X86)
     return (UINT_PTR*)&(pContextRecord->Edi);
 #elif defined(TARGET_RISCV64)
-    return (UINT_PTR*)&(pContextRecord->S1);
+    return (UINT_PTR*)&(pContextRecord->Fp);
 #else
     PORTABILITY_ASSERT("GetFirstNonVolatileRegisterAddress");
     return NULL;
