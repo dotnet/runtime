@@ -47,11 +47,11 @@ namespace ILCompiler.Dataflow
 
             foreach (var member in typeDefinition.GetDynamicallyAccessedMembers(requiredMemberTypes, declaredOnly))
             {
-                MarkTypeSystemEntity(origin, member, reason);
+                MarkTypeSystemEntity(origin, member, reason, dynamicallyAccessedMembersMark: true);
             }
         }
 
-        internal void MarkTypeSystemEntity(in MessageOrigin origin, TypeSystemEntity entity, string reason)
+        internal void MarkTypeSystemEntity(in MessageOrigin origin, TypeSystemEntity entity, string reason, bool dynamicallyAccessedMembersMark = false)
         {
             switch (entity)
             {
@@ -107,7 +107,7 @@ namespace ILCompiler.Dataflow
             return true;
         }
 
-        internal void MarkType(in MessageOrigin origin, TypeDesc type, string reason)
+        internal void MarkType(in MessageOrigin origin, TypeDesc type, string reason, bool dynamicallyAccessedMembersMark = false)
         {
             if (!_enabled)
                 return;
@@ -115,27 +115,27 @@ namespace ILCompiler.Dataflow
             RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, Factory, type, reason);
         }
 
-        internal void MarkMethod(in MessageOrigin origin, MethodDesc method, string reason)
+        internal void MarkMethod(in MessageOrigin origin, MethodDesc method, string reason, bool dynamicallyAccessedMembersMark = false)
         {
             if (!_enabled)
                 return;
 
-            CheckAndWarnOnReflectionAccess(origin, method);
+            CheckAndWarnOnReflectionAccess(origin, method, dynamicallyAccessedMembersMark);
 
             RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, Factory, method, reason);
         }
 
-        internal void MarkField(in MessageOrigin origin, FieldDesc field, string reason)
+        internal void MarkField(in MessageOrigin origin, FieldDesc field, string reason, bool dynamicallyAccessedMembersMark = false)
         {
             if (!_enabled)
                 return;
 
-            CheckAndWarnOnReflectionAccess(origin, field);
+            CheckAndWarnOnReflectionAccess(origin, field, dynamicallyAccessedMembersMark);
 
             RootingHelpers.TryGetDependenciesForReflectedField(ref _dependencies, Factory, field, reason);
         }
 
-        internal void MarkProperty(in MessageOrigin origin, PropertyPseudoDesc property, string reason)
+        internal void MarkProperty(in MessageOrigin origin, PropertyPseudoDesc property, string reason, bool dynamicallyAccessedMembersMark = false)
         {
             if (!_enabled)
                 return;
@@ -146,7 +146,7 @@ namespace ILCompiler.Dataflow
                 MarkMethod(origin, property.SetMethod, reason);
         }
 
-        private void MarkEvent(in MessageOrigin origin, EventPseudoDesc @event, string reason)
+        private void MarkEvent(in MessageOrigin origin, EventPseudoDesc @event, string reason, bool dynamicallyAccessedMembersMark = false)
         {
             if (!_enabled)
                 return;
@@ -209,7 +209,7 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        internal void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity)
+        internal void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, bool dynamicallyAccessedMembersMark = false)
         {
             if (!_enabled)
                 return;
@@ -220,46 +220,76 @@ namespace ILCompiler.Dataflow
             }
             else
             {
-                ReportWarningsForReflectionAccess(origin, entity);
+                ReportWarningsForReflectionAccess(origin, entity, dynamicallyAccessedMembersMark);
             }
         }
 
-        private void ReportWarningsForReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity)
+        private void ReportWarningsForReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, bool dynamicallyAccessedMembersMark)
         {
+            Debug.Assert(entity is MethodDesc or FieldDesc);
+
+            bool skipWarningsForOverride = false;
+            bool isReflectionAccessCoveredByRUC = false;
+            if (entity is MethodDesc methodForOverrideCheck)
+            {
+                // All override methods should have the same annotations as their base methods
+                // (else we will produce warning IL2046 or IL2092 or some other warning).
+                // When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
+                skipWarningsForOverride = dynamicallyAccessedMembersMark && IsOverrideMethod(methodForOverrideCheck);
+            }
+
             // Note that we're using `ShouldSuppressAnalysisWarningsForRequires` instead of `DoesMemberRequire`.
             // This is because reflection access is actually problematic on all members which are in a "requires" scope
             // so for example even instance methods. See for example https://github.com/dotnet/linker/issues/3140 - it's possible
             // to call a method on a "null" instance via reflection.
             if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute))
             {
-                ReportRequires(origin, entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, requiresAttribute.Value);
+                isReflectionAccessCoveredByRUC = true;
+                if (!skipWarningsForOverride)
+                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, requiresAttribute.Value);
             }
 
             if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out requiresAttribute))
             {
-                ReportRequires(origin, entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, requiresAttribute.Value);
+                if (!skipWarningsForOverride)
+                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, requiresAttribute.Value);
             }
 
             if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, out requiresAttribute))
             {
-                ReportRequires(origin, entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, requiresAttribute.Value);
+                if (!skipWarningsForOverride)
+                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, requiresAttribute.Value);
             }
 
-            if (!Annotations.ShouldWarnWhenAccessedForReflection(entity))
+            // Below is about accessing DAM annotated members, so only RUC is applicable as a suppression scope
+            if (_logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute))
                 return;
 
-            if (!_logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute))
+            bool isReflectionAccessCoveredByDAM = Annotations.ShouldWarnWhenAccessedForReflection(entity);
+            if (isReflectionAccessCoveredByDAM && !skipWarningsForOverride)
             {
-                if (entity is FieldDesc)
-                {
-                    _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, entity.GetDisplayName());
-                }
-                else
-                {
-                    Debug.Assert(entity is MethodDesc);
-
+                if (entity is MethodDesc)
                     _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, entity.GetDisplayName());
-                }
+                else
+                    _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, entity.GetDisplayName());
+            }
+
+            // Warn on reflection access to compiler-generated methods, if the method isn't already unsafe to access via reflection
+            // due to annotations. For the annotation-based warnings, we skip virtual overrides since those will produce warnings on
+            // the base, but for unannotated compiler-generated methods this is not the case, so we must produce these warnings even
+            // for virtual overrides. This ensures that we include the unannotated MoveNext state machine method. Lambdas and local
+            // functions should never be virtual overrides in the first place.
+            bool isCoveredByAnnotations = isReflectionAccessCoveredByRUC || isReflectionAccessCoveredByDAM;
+            if (entity is MethodDesc method)
+            {
+                if (ShouldWarnForReflectionAccessToCompilerGeneratedCode(method, isCoveredByAnnotations))
+                    _logger.LogWarning(origin, DiagnosticId.CompilerGeneratedMemberAccessedViaReflection, method.GetDisplayName());
+            }
+            else
+            {
+                FieldDesc field = (FieldDesc)entity;
+                if (ShouldWarnForReflectionAccessToCompilerGeneratedCode(field, isCoveredByAnnotations))
+                    _logger.LogWarning(origin, DiagnosticId.CompilerGeneratedMemberAccessedViaReflection, field.GetDisplayName());
             }
         }
 
@@ -294,21 +324,7 @@ namespace ILCompiler.Dataflow
             // All override methods should have the same annotations as their base methods
             // (else we will produce warning IL2046 or IL2092 or some other warning).
             // When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
-
-            // TODO: This feels very expensive - can we do better?
-            // At the very least - move this such that it's only computed if we do find some annotation
-            // currently we compute it on every virtual method.
-            static bool IsVirtualSlotMethod(MethodDesc m)
-            {
-                foreach (MethodDesc virtualSlotMethod in m.OwningType.EnumAllVirtualSlots())
-                {
-                    if (m == virtualSlotMethod)
-                        return true;
-                }
-
-                return false;
-            }
-            bool skipWarningsForOverride = entity is MethodDesc m && m.IsVirtual && !IsVirtualSlotMethod(m);
+            bool skipWarningsForOverride = entity is MethodDesc m && IsOverrideMethod(m);
 
             // For now we decided to not report single-file or dynamic-code warnings due to type hierarchy marking.
             // It is considered too complex to figure out for the user and the likelihood of this
@@ -349,6 +365,23 @@ namespace ILCompiler.Dataflow
                 var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase;
                 _logger.LogWarning(origin, id, _typeHierarchyDataFlowOrigin.GetDisplayName(), field.GetDisplayName());
             }
+        }
+
+        private static bool IsOverrideMethod(MethodDesc method)
+        {
+            if (!method.IsVirtual)
+                return false;
+
+            // TODO: This feels very expensive - can we do better?
+            // At the very least - move this such that it's only computed if we do find some annotation
+            // currently we compute it on every virtual method.
+            foreach (MethodDesc virtualSlotMethod in method.OwningType.EnumAllVirtualSlots())
+            {
+                if (method == virtualSlotMethod)
+                    return false;
+            }
+
+            return true;
         }
 
         private static bool ShouldWarnForReflectionAccessToCompilerGeneratedCode(MethodDesc method, bool isCoveredByAnnotations)
