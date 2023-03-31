@@ -3158,7 +3158,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     }
     else
     {
-        assert(dstAddr->OperIsLocalAddr());
+        assert(dstAddr->OperIs(GT_LCL_FLD_ADDR));
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
@@ -3445,7 +3445,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     }
     else
     {
-        assert(dstAddr->OperIsLocalAddr());
+        assert(dstAddr->OperIs(GT_LCL_FLD_ADDR));
         const GenTreeLclVarCommon* lclVar = dstAddr->AsLclVarCommon();
         dstLclNum                         = lclVar->GetLclNum();
         dstOffset                         = lclVar->GetLclOffs();
@@ -3493,7 +3493,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         }
         else
         {
-            assert(srcAddr->OperIsLocalAddr());
+            assert(srcAddr->OperIs(GT_LCL_FLD_ADDR));
             srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
             srcOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
         }
@@ -4144,7 +4144,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     GenTree*  dstAddr     = cpObjNode->Addr();
     GenTree*  source      = cpObjNode->Data();
     var_types srcAddrType = TYP_BYREF;
-    bool      dstOnStack  = dstAddr->gtSkipReloadOrCopy()->OperIsLocalAddr();
+    bool      dstOnStack  = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_FLD_ADDR);
 
     // If the GenTree node has data about GC pointers, this means we're dealing
     // with CpObj, so this requires special logic.

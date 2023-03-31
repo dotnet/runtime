@@ -2613,7 +2613,7 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
     unsigned int tmpLclNum = BAD_VAR_NUM;
     for (GenTree* treeNode = lookForUsesStart; treeNode != callNode; treeNode = treeNode->gtNext)
     {
-        if (!treeNode->OperIsLocal() && !treeNode->OperIsLocalAddr())
+        if (!treeNode->OperIsLocal() && !treeNode->OperIs(GT_LCL_FLD_ADDR))
         {
             continue;
         }

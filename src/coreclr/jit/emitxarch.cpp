@@ -4623,7 +4623,7 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
         return;
     }
 
-    if (addr->OperIsLocalAddr())
+    if (addr->OperIs(GT_LCL_FLD_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
         unsigned             offset  = varNode->GetLclOffs();
@@ -4708,7 +4708,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         return;
     }
 
-    if (addr->OperIsLocalAddr())
+    if (addr->OperIs(GT_LCL_FLD_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
         unsigned             offset  = varNode->GetLclOffs();
@@ -5293,7 +5293,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
                 break;
         }
 
-        if (addr->isContained() && addr->OperIsLocalAddr())
+        if (addr->isContained() && addr->OperIs(GT_LCL_FLD_ADDR))
         {
             GenTreeLclVarCommon* lclVar = addr->AsLclVarCommon();
             emitIns_S_I(ins, attr, lclVar->GetLclNum(), lclVar->GetLclOffs(), iconVal);
@@ -5359,7 +5359,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
         offset = storeInd->Offset();
     }
 
-    if (addr->isContained() && addr->OperIsLocalAddr())
+    if (addr->isContained() && addr->OperIs(GT_LCL_FLD_ADDR))
     {
         GenTreeLclVarCommon* lclVar = addr->AsLclVarCommon();
         emitIns_S(ins, attr, lclVar->GetLclNum(), lclVar->GetLclOffs());

@@ -568,7 +568,7 @@ void GenTree::DumpNodeSizes(FILE* fp)
 LocalsGenTreeList::iterator LocalsGenTreeList::begin() const
 {
     GenTree* first = m_stmt->GetTreeList();
-    assert((first == nullptr) || first->OperIsLocal() || first->OperIsLocalAddr());
+    assert((first == nullptr) || first->OperIsLocal() || first->OperIs(GT_LCL_FLD_ADDR));
     return iterator(static_cast<GenTreeLclVarCommon*>(first));
 }
 
@@ -2926,7 +2926,7 @@ AGAIN:
 
     if (tree->OperIsLeaf())
     {
-        if ((tree->OperIsLocal() || tree->OperIsLocalAddr()) && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
+        if ((tree->OperIsLocal() || tree->OperIs(GT_LCL_FLD_ADDR)) && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
         {
             return true;
         }
@@ -7842,7 +7842,7 @@ GenTreeObj* Compiler::gtNewObjNode(ClassLayout* layout, GenTree* addr)
     {
         // TODO-Bug: this method does not have enough information to make this determination.
         // The local may end up (or already is) address-exposed.
-        if (addr->OperIsLocalAddr())
+        if (addr->OperIs(GT_LCL_FLD_ADDR))
         {
             objNode->gtFlags |= GTF_IND_NONFAULTING;
             if (lvaIsImplicitByRefLocal(addr->AsLclVarCommon()->GetLclNum()))
@@ -18551,7 +18551,7 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
     // This may be called very late to check validity of LIR.
     node = node->gtSkipReloadOrCopy();
 
-    assert(node->OperIsLocalAddr() && lvaGetDesc(node->AsLclVarCommon())->IsHiddenBufferStructArg());
+    assert(node->OperIs(GT_LCL_FLD_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsHiddenBufferStructArg());
 
     return node->AsLclVarCommon();
 }
@@ -25077,7 +25077,7 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
 
 bool GenTree::IsInvariant() const
 {
-    return OperIsConst() || OperIsLocalAddr();
+    return OperIsConst() || OperIs(GT_LCL_FLD_ADDR);
 }
 
 //------------------------------------------------------------------------

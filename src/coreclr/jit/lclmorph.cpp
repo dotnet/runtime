@@ -65,7 +65,7 @@ public:
             else
             {
                 assert(lastNode->gtNext == nullptr);
-                assert(lastNode->OperIsLocal() || lastNode->OperIsLocalAddr());
+                assert(lastNode->OperIsLocal() || lastNode->OperIs(GT_LCL_FLD_ADDR));
             }
 
             firstNode->gtPrev = nullptr;
@@ -78,7 +78,7 @@ public:
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
         GenTree* node = *use;
-        if (node->OperIsLocal() || node->OperIsLocalAddr())
+        if (node->OperIsLocal() || node->OperIs(GT_LCL_FLD_ADDR))
         {
             SequenceLocal(node->AsLclVarCommon());
         }
@@ -564,7 +564,7 @@ public:
             MorphLocalField(node, user);
         }
 
-        if (node->OperIsLocal() || node->OperIsLocalAddr())
+        if (node->OperIsLocal() || node->OperIs(GT_LCL_FLD_ADDR))
         {
             unsigned const   lclNum = node->AsLclVarCommon()->GetLclNum();
             LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);

@@ -2788,7 +2788,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     }
     else
     {
-        assert(dstAddr->OperIsLocalAddr());
+        assert(dstAddr->OperIs(GT_LCL_FLD_ADDR));
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
@@ -2921,7 +2921,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIsLocalAddr();
+    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_FLD_ADDR);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -6480,7 +6480,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
     }
     else
     {
-        assert(dstAddr->OperIsLocalAddr());
+        assert(dstAddr->OperIs(GT_LCL_FLD_ADDR));
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
@@ -6513,7 +6513,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
         }
         else
         {
-            assert(srcAddr->OperIsLocalAddr());
+            assert(srcAddr->OperIs(GT_LCL_FLD_ADDR));
             srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
             srcOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
         }
@@ -6660,7 +6660,7 @@ void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst
 {
     emitter* emit = GetEmitter();
 
-    if (base->OperIsLocalAddr())
+    if (base->OperIs(GT_LCL_FLD_ADDR))
     {
         if (base->gtOper == GT_LCL_FLD_ADDR)
         {

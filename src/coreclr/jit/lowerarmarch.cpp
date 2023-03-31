@@ -512,7 +512,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     GenTree* src     = blkNode->Data();
     unsigned size    = blkNode->Size();
 
-    const bool isDstAddrLocal = dstAddr->OperIsLocalAddr();
+    const bool isDstAddrLocal = dstAddr->OperIs(GT_LCL_FLD_ADDR);
 
     if (blkNode->OperIsInitBlkOp())
     {
@@ -647,7 +647,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIsLocalAddr())
+    if (addr->OperIs(GT_LCL_FLD_ADDR))
     {
         addr->SetContained();
         return;

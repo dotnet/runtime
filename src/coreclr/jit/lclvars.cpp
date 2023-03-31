@@ -4230,7 +4230,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
         }
     }
 
-    if (tree->OperIsLocalAddr())
+    if (tree->OperIs(GT_LCL_FLD_ADDR))
     {
         LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
         assert(varDsc->IsAddressExposed() || varDsc->IsHiddenBufferStructArg());

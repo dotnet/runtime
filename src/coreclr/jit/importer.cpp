@@ -2556,12 +2556,12 @@ CORINFO_CLASS_HANDLE Compiler::impGetObjectClass()
 /* static */
 void Compiler::impBashVarAddrsToI(GenTree* tree1, GenTree* tree2)
 {
-    if (tree1->OperIsLocalAddr())
+    if (tree1->OperIs(GT_LCL_FLD_ADDR))
     {
         tree1->gtType = TYP_I_IMPL;
     }
 
-    if (tree2 && tree2->OperIsLocalAddr())
+    if (tree2 && tree2->OperIs(GT_LCL_FLD_ADDR))
     {
         tree2->gtType = TYP_I_IMPL;
     }
@@ -6827,7 +6827,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // We had better assign it a value of the correct type
                 assertImp(
                     genActualType(lclTyp) == genActualType(op1->gtType) ||
-                    (genActualType(lclTyp) == TYP_I_IMPL && op1->OperIsLocalAddr()) ||
+                    (genActualType(lclTyp) == TYP_I_IMPL && op1->OperIs(GT_LCL_FLD_ADDR)) ||
                     (genActualType(lclTyp) == TYP_I_IMPL && (op1->gtType == TYP_BYREF || op1->gtType == TYP_REF)) ||
                     (genActualType(op1->gtType) == TYP_I_IMPL && lclTyp == TYP_BYREF) ||
                     (varTypeIsFloating(lclTyp) && varTypeIsFloating(op1->TypeGet())) ||
@@ -13515,7 +13515,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 assert(varTypeIsIntOrI(sigType));
 
                 /* If possible bash the BYREF to an int */
-                if (inlArgNode->OperIsLocalAddr())
+                if (inlArgNode->OperIs(GT_LCL_FLD_ADDR))
                 {
                     inlArgNode->gtType           = TYP_I_IMPL;
                     lclVarInfo[i].lclVerTypeInfo = typeInfo(varType2tiType(TYP_I_IMPL));

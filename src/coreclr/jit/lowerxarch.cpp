@@ -430,7 +430,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 blkNode->SetOper(GT_STORE_BLK);
             }
 #ifndef JIT32_GCENCODER
-            else if (dstAddr->OperIsLocalAddr() &&
+            else if (dstAddr->OperIs(GT_LCL_FLD_ADDR) &&
                      (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, false)))
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
@@ -453,7 +453,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // the entire operation takes 20 cycles and encodes in 5 bytes (loading RCX and REP MOVSD/Q).
             unsigned nonGCSlots = 0;
 
-            if (dstAddr->OperIsLocalAddr())
+            if (dstAddr->OperIs(GT_LCL_FLD_ADDR))
             {
                 // If the destination is on the stack then no write barriers are needed.
                 nonGCSlots = blkNode->GetLayout()->GetSlotCount();
@@ -531,7 +531,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIsLocalAddr())
+    if (addr->OperIs(GT_LCL_FLD_ADDR))
     {
         addr->SetContained();
         return;

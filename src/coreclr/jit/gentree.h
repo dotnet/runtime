@@ -1081,7 +1081,7 @@ public:
 
     bool IsNotGcDef() const
     {
-        return IsIntegralConst(0) || OperIsLocalAddr();
+        return IsIntegralConst(0) || OperIs(GT_LCL_FLD_ADDR);
     }
 
     // LIR flags
@@ -1157,11 +1157,6 @@ public:
     {
         static_assert_no_msg(AreContiguous(GT_PHI_ARG, GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD));
         return (GT_PHI_ARG <= gtOper) && (gtOper <= GT_STORE_LCL_FLD);
-    }
-
-    static bool OperIsLocalAddr(genTreeOps gtOper)
-    {
-        return gtOper == GT_LCL_FLD_ADDR;
     }
 
     static bool OperIsLocalField(genTreeOps gtOper)
@@ -1298,11 +1293,6 @@ public:
     bool OperIsLocal() const
     {
         return OperIsLocal(OperGet());
-    }
-
-    bool OperIsLocalAddr() const
-    {
-        return OperIsLocalAddr(OperGet());
     }
 
     bool OperIsScalarLocal() const
@@ -7330,7 +7320,7 @@ public:
 #ifdef TARGET_XARCH
     bool IsOnHeapAndContainsReferences()
     {
-        return (m_layout != nullptr) && m_layout->HasGCPtr() && !Addr()->OperIsLocalAddr();
+        return (m_layout != nullptr) && m_layout->HasGCPtr() && !Addr()->OperIs(GT_LCL_FLD_ADDR);
     }
 #endif
 
@@ -7663,14 +7653,14 @@ public:
 
         iterator& operator++()
         {
-            assert((m_tree->gtNext == nullptr) || m_tree->gtNext->OperIsLocal() || m_tree->gtNext->OperIsLocalAddr());
+            assert((m_tree->gtNext == nullptr) || m_tree->gtNext->OperIsLocal() || m_tree->gtNext->OperIs(GT_LCL_FLD_ADDR));
             m_tree = static_cast<GenTreeLclVarCommon*>(m_tree->gtNext);
             return *this;
         }
 
         iterator& operator--()
         {
-            assert((m_tree->gtPrev == nullptr) || m_tree->gtPrev->OperIsLocal() || m_tree->gtPrev->OperIsLocalAddr());
+            assert((m_tree->gtPrev == nullptr) || m_tree->gtPrev->OperIsLocal() || m_tree->gtPrev->OperIs(GT_LCL_FLD_ADDR));
             m_tree = static_cast<GenTreeLclVarCommon*>(m_tree->gtPrev);
             return *this;
         }
