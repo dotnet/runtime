@@ -88,7 +88,7 @@ namespace System.Reflection
         {
             ArgumentException.ThrowIfNullOrEmpty(typeName);
 
-            Assembly requestingAssembly = scope.Assembly;
+            RuntimeAssembly requestingAssembly = scope.GetRuntimeAssembly();
 
             RuntimeType? type = (RuntimeType?)new TypeNameParser(typeName)
             {
@@ -99,7 +99,7 @@ namespace System.Reflection
 
             Debug.Assert(type != null);
 
-            // TODO: Check for collectible assemblies - NotSupported_CollectibleBoundNonCollectible?
+            RuntimeTypeHandle.RegisterCollectibleTypeDependency(type, requestingAssembly);
 
             return type;
         }
@@ -126,7 +126,8 @@ namespace System.Reflection
                 _suppressCASearchRules = suppressCASearchRules,
             }.Parse();
 
-            // TODO: Check for collectible assemblies - NotSupported_CollectibleBoundNonCollectible?
+            if (type != null)
+                RuntimeTypeHandle.RegisterCollectibleTypeDependency(type, requestingAssembly);
 
             return type;
         }

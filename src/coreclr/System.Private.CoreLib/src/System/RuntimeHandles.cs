@@ -659,6 +659,14 @@ namespace System
             return new MetadataImport(_GetMetadataImport(type), type);
         }
 
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_RegisterCollectibleTypeDependency")]
+        private static partial void RegisterCollectibleTypeDependency(QCallTypeHandle type, QCallAssembly assembly);
+
+        internal static void RegisterCollectibleTypeDependency(RuntimeType type, RuntimeAssembly? assembly)
+        {
+            RegisterCollectibleTypeDependency(new QCallTypeHandle(ref type), new QCallAssembly(ref assembly!));
+        }
+
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();

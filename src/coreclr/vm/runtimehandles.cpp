@@ -1580,6 +1580,29 @@ extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemory(QCall:
     return allocatedMemory;
 }
 
+extern "C" void QCALLTYPE RuntimeTypeHandle_RegisterCollectibleTypeDependency(QCall::TypeHandle pTypeHandle, QCall::AssemblyHandle pAssembly)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    LoaderAllocator* pLoaderAllocator = pTypeHandle.AsTypeHandle().GetLoaderAllocator();
+
+    if (pLoaderAllocator->IsCollectible())
+    {
+        if ((pAssembly == NULL) || !pAssembly->GetLoaderAllocator()->IsCollectible())
+        {
+            COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
+        }
+        else
+        {
+            pAssembly->GetLoaderAllocator()->EnsureReference(pLoaderAllocator);
+        }
+    }
+
+    END_QCALL;
+}
+
 //***********************************************************************************
 //***********************************************************************************
 //***********************************************************************************
