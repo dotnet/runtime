@@ -651,13 +651,7 @@ namespace Internal.Runtime.TypeLoader
 
                 uint nameAndSigPointerToken = entryParser.GetUnsigned();
 
-                MethodNameAndSignature nameAndSig;
-                if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(module.Handle, nameAndSigPointerToken, out nameAndSig))
-                {
-                    Debug.Assert(false);
-                    continue;
-                }
-
+                MethodNameAndSignature nameAndSig = TypeLoaderEnvironment.Instance.GetMethodNameAndSignatureFromNativeLayoutOffset(module.Handle, nameAndSigPointerToken);
                 if (!methodSignatureComparer.IsMatchingNativeLayoutMethodNameAndSignature(nameAndSig.Name, nameAndSig.Signature))
                 {
                     continue;
@@ -972,12 +966,7 @@ namespace Internal.Runtime.TypeLoader
                 else
                 {
                     uint nameAndSigToken = entryParser.GetUnsigned();
-                    MethodNameAndSignature nameAndSig;
-                    if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(_moduleHandle, nameAndSigToken, out nameAndSig))
-                    {
-                        Debug.Assert(false);
-                        return;
-                    }
+                    MethodNameAndSignature nameAndSig = TypeLoaderEnvironment.Instance.GetMethodNameAndSignatureFromNativeLayoutOffset(_moduleHandle, nameAndSigToken);
                     Debug.Assert(nameAndSig.Signature.IsNativeLayoutSignature);
                     if (!methodSignatureComparer.IsMatchingNativeLayoutMethodNameAndSignature(nameAndSig.Name, nameAndSig.Signature))
                         return;
@@ -1004,11 +993,7 @@ namespace Internal.Runtime.TypeLoader
                     Debug.Assert((_hasEntryPoint || ((_flags & InvokeTableFlags.HasVirtualInvoke) != 0)) && ((_flags & InvokeTableFlags.RequiresInstArg) != 0));
 
                     uint nameAndSigPointerToken = entryParser.GetUnsigned();
-                    if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(_moduleHandle, nameAndSigPointerToken, out _nameAndSignature))
-                    {
-                        Debug.Assert(false);    //Error
-                        _isMatchingMethodHandleAndDeclaringType = false;
-                    }
+                    _nameAndSignature = TypeLoaderEnvironment.Instance.GetMethodNameAndSignatureFromNativeLayoutOffset(_moduleHandle, nameAndSigPointerToken);
                 }
                 else if (((_flags & InvokeTableFlags.RequiresInstArg) != 0) && _hasEntryPoint)
                     _entryDictionary = extRefTable.GetGenericDictionaryFromIndex(entryParser.GetUnsigned());
