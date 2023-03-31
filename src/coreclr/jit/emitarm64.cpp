@@ -16297,8 +16297,7 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
         return eRO_none;
     }
 
-    if (reg1 == REG_SP || prevReg1 == REG_SP || (isGeneralRegisterOrZR(reg1) && isVectorRegister(prevReg1)) ||
-        (isVectorRegister(reg1) && isGeneralRegisterOrZR(prevReg1)))
+    if ((reg1 == REG_SP) || (prevReg1 == REG_SP) || (isGeneralRegisterOrZR(reg1) != isGeneralRegisterOrZR(prevReg1)))
     {
         // We cannot optimise when one of the following conditions are met
         // 1. reg1 or prevReg1 is SP
@@ -16306,8 +16305,9 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
         return eRO_none;
     }
 
-    if (lastInsFmt != fmt && !(lastInsFmt == IF_LS_2B && fmt == IF_LS_2A) &&
-        !(lastInsFmt == IF_LS_2A && fmt == IF_LS_2B))
+    const bool compatibleFmt = (lastInsFmt == fmt) || (lastInsFmt == IF_LS_2B && fmt == IF_LS_2A) ||
+                               (lastInsFmt == IF_LS_2A && fmt == IF_LS_2B);
+    if (!compatibleFmt)
     {
         // We cannot optimise when all of the following conditions are met
         // 1. instruction formats differ
