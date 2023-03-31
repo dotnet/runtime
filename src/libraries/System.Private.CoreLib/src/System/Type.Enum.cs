@@ -174,8 +174,7 @@ namespace System
                     t == typeof(uint) ||
                     t == typeof(long) ||
                     t == typeof(ulong) ||
-                    t == typeof(char) ||
-                    t == typeof(bool);
+                    t == typeof(char);
         }
     }
 }

@@ -16,12 +16,16 @@ class MdBinaryWriterGen : CsWriter
 
     public void EmitSource()
     {
-        WriteLine("#pragma warning disable 649");
+        WriteLine("#pragma warning disable 649, SA1121, IDE0036, SA1129");
         WriteLine();
 
+        WriteLine("using System;");
+        WriteLine("using System.IO;");
         WriteLine("using System.Collections.Generic;");
         WriteLine("using System.Reflection;");
+        WriteLine("using Internal.LowLevelLinq;");
         WriteLine("using Internal.NativeFormat;");
+        WriteLine("using Debug = System.Diagnostics.Debug;");
         WriteLine();
 
         OpenScope("namespace Internal.Metadata.NativeFormat.Writer");

@@ -43,9 +43,8 @@ namespace System.Collections.ObjectModel
         }
 
         public IEnumerator<T> GetEnumerator() =>
-            list.Count == 0 ?
-                SZGenericArrayEnumerator<T>.Empty :
-                list.GetEnumerator();
+            list.Count == 0 ? SZGenericArrayEnumerator<T>.Empty :
+            list.GetEnumerator();
 
         public int IndexOf(T value)
         {
@@ -140,7 +139,7 @@ namespace System.Collections.ObjectModel
                 Type sourceType = typeof(T);
                 if (!(targetType.IsAssignableFrom(sourceType) || sourceType.IsAssignableFrom(targetType)))
                 {
-                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+                    ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
                 }
 
                 //
@@ -150,7 +149,7 @@ namespace System.Collections.ObjectModel
                 object?[]? objects = array as object[];
                 if (objects == null)
                 {
-                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+                    ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
                 }
 
                 int count = list.Count;
@@ -163,7 +162,7 @@ namespace System.Collections.ObjectModel
                 }
                 catch (ArrayTypeMismatchException)
                 {
-                    ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
+                    ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
                 }
             }
         }

@@ -47,7 +47,7 @@ namespace System
 
         public override bool Equals(object? o)
         {
-            throw new NotSupportedException("ArgIterator does not support Equals.");
+            throw new NotSupportedException(SR.NotSupported_NYI);
         }
 
         public override int GetHashCode()
@@ -59,11 +59,13 @@ namespace System
         public TypedReference GetNextArg()
         {
             if (num_args == next_arg)
-                throw new InvalidOperationException("Invalid iterator position.");
+                throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
             TypedReference result = default;
             unsafe
             {
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('TypedReference')
                 IntGetNextArg(&result);
+#pragma warning restore CS8500
             }
             return result;
         }
@@ -75,11 +77,13 @@ namespace System
         public TypedReference GetNextArg(RuntimeTypeHandle rth)
         {
             if (num_args == next_arg)
-                throw new InvalidOperationException("Invalid iterator position.");
+                throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
             TypedReference result = default;
             unsafe
             {
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('TypedReference')
                 IntGetNextArgWithType(&result, rth.Value);
+#pragma warning restore CS8500
             }
             return result;
         }
@@ -90,7 +94,7 @@ namespace System
         public RuntimeTypeHandle GetNextArgType()
         {
             if (num_args == next_arg)
-                throw new InvalidOperationException("Invalid iterator position.");
+                throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
             return new RuntimeTypeHandle(IntGetNextArgType());
         }
 

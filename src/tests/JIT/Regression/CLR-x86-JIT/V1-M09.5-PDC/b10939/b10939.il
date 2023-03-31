@@ -18,6 +18,7 @@
 
 
 
+.class public auto ansi Test_b10939 extends [mscorlib] System.Object {
  .method public static int32 main() {
   .entrypoint
 
@@ -30,3 +31,4 @@
   ldc.i4 100
   ret 
  }
+}

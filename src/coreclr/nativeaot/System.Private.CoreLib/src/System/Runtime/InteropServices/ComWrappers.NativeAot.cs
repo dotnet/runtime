@@ -4,11 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Threading;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
@@ -22,17 +21,51 @@ namespace System.Runtime.InteropServices
         private const ulong DestroySentinel = 0x0000000080000000UL;
         private const ulong TrackerRefCountMask = 0xffffffff00000000UL;
         private const ulong ComRefCountMask = 0x000000007fffffffUL;
+        private const int COR_E_ACCESSING_CCW = unchecked((int)0x80131544);
 
         internal static IntPtr DefaultIUnknownVftblPtr { get; } = CreateDefaultIUnknownVftbl();
+        internal static IntPtr TaggedImplVftblPtr { get; } = CreateTaggedImplVftbl();
         internal static IntPtr DefaultIReferenceTrackerTargetVftblPtr { get; } = CreateDefaultIReferenceTrackerTargetVftbl();
 
         internal static Guid IID_IUnknown = new Guid(0x00000000, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46);
         internal static Guid IID_IReferenceTrackerTarget = new Guid(0x64bd43f8, 0xbfee, 0x4ec4, 0xb7, 0xeb, 0x29, 0x35, 0x15, 0x8d, 0xae, 0x21);
+        internal static Guid IID_TaggedImpl = new Guid(0x5c13e51c, 0x4f32, 0x4726, 0xa3, 0xfd, 0xf3, 0xed, 0xd6, 0x3d, 0xa3, 0xa0);
+
+        private static readonly ConditionalWeakTable<object, NativeObjectWrapper> s_rcwTable = new ConditionalWeakTable<object, NativeObjectWrapper>();
 
         private readonly ConditionalWeakTable<object, ManagedObjectWrapperHolder> _ccwTable = new ConditionalWeakTable<object, ManagedObjectWrapperHolder>();
         private readonly Lock _lock = new Lock();
         private readonly Dictionary<IntPtr, GCHandle> _rcwCache = new Dictionary<IntPtr, GCHandle>();
-        private readonly ConditionalWeakTable<object, NativeObjectWrapper> _rcwTable = new ConditionalWeakTable<object, NativeObjectWrapper>();
+
+        public static unsafe bool TryGetComInstance(object obj, out IntPtr unknown)
+        {
+            unknown = IntPtr.Zero;
+            if (obj == null
+                || !s_rcwTable.TryGetValue(obj, out NativeObjectWrapper? wrapper))
+            {
+                return false;
+            }
+
+            return Marshal.QueryInterface(wrapper._externalComObject, ref IID_IUnknown, out unknown) == 0;
+        }
+
+        public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
+        {
+            obj = null;
+            if (unknown == IntPtr.Zero)
+            {
+                return false;
+            }
+
+            ComInterfaceDispatch* comInterfaceDispatch = TryGetComInterfaceDispatch(unknown);
+            if (comInterfaceDispatch == null)
+            {
+                return false;
+            }
+
+            obj = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
+            return true;
+        }
 
         /// <summary>
         /// ABI for function dispatch of a COM interface.
@@ -161,9 +194,37 @@ namespace System.Runtime.InteropServices
 
             public unsafe int QueryInterface(in Guid riid, out IntPtr ppvObject)
             {
+                if (GetComCount(RefCount) == 0)
+                {
+                    ppvObject = IntPtr.Zero;
+                    return COR_E_ACCESSING_CCW;
+                }
+
                 ppvObject = AsRuntimeDefined(in riid);
                 if (ppvObject == IntPtr.Zero)
                 {
+                    if ((Flags & CreateComInterfaceFlagsEx.LacksICustomQueryInterface) == 0)
+                    {
+                        var customQueryInterface = GCHandle.FromIntPtr(Target).Target as ICustomQueryInterface;
+                        if (customQueryInterface is null)
+                        {
+                            SetFlag(CreateComInterfaceFlagsEx.LacksICustomQueryInterface);
+                        }
+                        else
+                        {
+                            Guid riidLocal = riid;
+                            switch (customQueryInterface.GetInterface(ref riidLocal, out ppvObject))
+                            {
+                                case CustomQueryInterfaceResult.Handled:
+                                    return HResults.S_OK;
+                                case CustomQueryInterfaceResult.NotHandled:
+                                    break;
+                                case CustomQueryInterfaceResult.Failed:
+                                    return HResults.COR_E_INVALIDCAST;
+                            }
+                        }
+                    }
+
                     ppvObject = AsUserDefined(in riid);
                     if (ppvObject == IntPtr.Zero)
                         return HResults.COR_E_INVALIDCAST;
@@ -196,6 +257,8 @@ namespace System.Runtime.InteropServices
 
             private unsafe IntPtr AsRuntimeDefined(in Guid riid)
             {
+                // The order of interface lookup here is important.
+                // See CreateCCW() for the expected order.
                 int i = UserDefinedCount;
                 if ((Flags & CreateComInterfaceFlagsEx.CallerDefinedIUnknown) == 0)
                 {
@@ -210,6 +273,15 @@ namespace System.Runtime.InteropServices
                 if ((Flags & CreateComInterfaceFlagsEx.TrackerSupport) != 0)
                 {
                     if (riid == IID_IReferenceTrackerTarget)
+                    {
+                        return (IntPtr)(Dispatches + i);
+                    }
+
+                    i++;
+                }
+
+                {
+                    if (riid == IID_TaggedImpl)
                     {
                         return (IntPtr)(Dispatches + i);
                     }
@@ -270,6 +342,8 @@ namespace System.Runtime.InteropServices
 
             public unsafe IntPtr ComIp => _wrapper->As(in ComWrappers.IID_IUnknown);
 
+            public uint AddRef() => _wrapper->AddRef();
+
             ~ManagedObjectWrapperHolder()
             {
                 // Release GC handle created when MOW was built.
@@ -280,8 +354,8 @@ namespace System.Runtime.InteropServices
 
         internal unsafe class NativeObjectWrapper
         {
-            private readonly IntPtr _externalComObject;
-            private readonly ComWrappers _comWrappers;
+            internal IntPtr _externalComObject;
+            private ComWrappers _comWrappers;
             internal GCHandle _proxyHandle;
 
             public NativeObjectWrapper(IntPtr externalComObject, ComWrappers comWrappers, object comProxy)
@@ -292,15 +366,29 @@ namespace System.Runtime.InteropServices
                 _proxyHandle = GCHandle.Alloc(comProxy, GCHandleType.Weak);
             }
 
-            ~NativeObjectWrapper()
+            public void Release()
             {
-                _comWrappers.RemoveRCWFromCache(_externalComObject);
+                if (_comWrappers != null)
+                {
+                    _comWrappers.RemoveRCWFromCache(_externalComObject);
+                    _comWrappers = null;
+                }
+
                 if (_proxyHandle.IsAllocated)
                 {
                     _proxyHandle.Free();
                 }
 
-                Marshal.Release(_externalComObject);
+                if (_externalComObject != IntPtr.Zero)
+                {
+                    Marshal.Release(_externalComObject);
+                    _externalComObject = IntPtr.Zero;
+                }
+            }
+
+            ~NativeObjectWrapper()
+            {
+                Release();
             }
         }
 
@@ -327,12 +415,12 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public unsafe IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags)
         {
-            if (instance == null)
-                throw new ArgumentNullException(nameof(instance));
+            ArgumentNullException.ThrowIfNull(instance);
 
             ManagedObjectWrapperHolder? ccwValue;
             if (_ccwTable.TryGetValue(instance, out ccwValue))
             {
+                ccwValue.AddRef();
                 return ccwValue.ComIp;
             }
 
@@ -347,9 +435,13 @@ namespace System.Runtime.InteropServices
         private unsafe ManagedObjectWrapper* CreateCCW(object instance, CreateComInterfaceFlags flags)
         {
             ComInterfaceEntry* userDefined = ComputeVtables(instance, flags, out int userDefinedCount);
+            if ((userDefined == null && userDefinedCount != 0) || userDefinedCount < 0)
+            {
+                throw new ArgumentException();
+            }
 
             // Maximum number of runtime supplied vtables.
-            Span<IntPtr> runtimeDefinedVtable = stackalloc IntPtr[4];
+            Span<IntPtr> runtimeDefinedVtable = stackalloc IntPtr[3];
             int runtimeDefinedCount = 0;
 
             // Check if the caller will provide the IUnknown table.
@@ -361,6 +453,10 @@ namespace System.Runtime.InteropServices
             if ((flags & CreateComInterfaceFlags.TrackerSupport) != 0)
             {
                 runtimeDefinedVtable[runtimeDefinedCount++] = DefaultIReferenceTrackerTargetVftblPtr;
+            }
+
+            {
+                runtimeDefinedVtable[runtimeDefinedCount++] = TaggedImplVftblPtr;
             }
 
             // Compute size for ManagedObjectWrapper instance.
@@ -443,8 +539,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper, IntPtr inner)
         {
-            if (wrapper == null)
-                throw new ArgumentNullException(nameof(wrapper));
+            ArgumentNullException.ThrowIfNull(wrapper);
 
             object? obj;
             if (!TryGetOrCreateObjectForComInstanceInternal(externalComObject, inner, flags, wrapper, out obj))
@@ -453,13 +548,28 @@ namespace System.Runtime.InteropServices
             return obj!;
         }
 
-        private unsafe ComInterfaceDispatch* TryGetComInterfaceDispatch(IntPtr comObject)
+        private static unsafe ComInterfaceDispatch* TryGetComInterfaceDispatch(IntPtr comObject)
         {
-            // If the first Vtable entry is part of the ManagedObjectWrapper IUnknown impl,
+            // If the first Vtable entry is part of a ManagedObjectWrapper impl,
             // we know how to interpret the IUnknown.
-            if (((IntPtr*)((IntPtr*)comObject)[0])[0] != ((IntPtr*)DefaultIUnknownVftblPtr)[0])
+            IntPtr knownQI = ((IntPtr*)((IntPtr*)comObject)[0])[0];
+            if (knownQI != ((IntPtr*)DefaultIUnknownVftblPtr)[0]
+                || knownQI != ((IntPtr*)DefaultIReferenceTrackerTargetVftblPtr)[0])
             {
-                return null;
+                // It is possible the user has defined their own IUnknown impl so
+                // we fallback to the tagged interface approach to be sure.
+                if (0 != Marshal.QueryInterface(comObject, ref IID_TaggedImpl, out nint implMaybe))
+                {
+                    return null;
+                }
+
+                IntPtr currentVersion = (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, int>)&ITaggedImpl_IsCurrentVersion;
+                int hr = ((delegate* unmanaged<IntPtr, IntPtr, int>)(*(*(void***)implMaybe + 3 /* ITaggedImpl.IsCurrentVersion slot */)))(implMaybe, currentVersion);
+                Marshal.Release(implMaybe);
+                if (hr != 0)
+                {
+                    return null;
+                }
             }
 
             return (ComInterfaceDispatch*)comObject;
@@ -485,6 +595,9 @@ namespace System.Runtime.InteropServices
             if (externalComObject == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(externalComObject));
 
+            if (innerMaybe != IntPtr.Zero && !flags.HasFlag(CreateObjectFlags.Aggregation))
+                throw new InvalidOperationException(SR.InvalidOperation_SuppliedInnerMustBeMarkedAggregation);
+
             if (flags.HasFlag(CreateObjectFlags.Aggregation))
                 throw new NotImplementedException();
 
@@ -507,6 +620,22 @@ namespace System.Runtime.InteropServices
                         retValue = handle.Target;
                         return true;
                     }
+
+                    if (wrapperMaybe is not null)
+                    {
+                        retValue = wrapperMaybe;
+                        NativeObjectWrapper wrapper = new NativeObjectWrapper(
+                            externalComObject,
+                            this,
+                            retValue);
+                        if (!s_rcwTable.TryAdd(retValue, wrapper))
+                        {
+                            wrapper.Release();
+                            throw new NotSupportedException();
+                        }
+                        _rcwCache.Add(externalComObject, wrapper._proxyHandle);
+                        return true;
+                    }
                 }
             }
 
@@ -519,7 +648,15 @@ namespace System.Runtime.InteropServices
 
             if (flags.HasFlag(CreateObjectFlags.UniqueInstance))
             {
-                // No need to cache NativeObjectWrapper for unique instances. They are not cached.
+                NativeObjectWrapper wrapper = new NativeObjectWrapper(
+                    externalComObject,
+                    null, // No need to cache NativeObjectWrapper for unique instances. They are not cached.
+                    retValue);
+                if (!s_rcwTable.TryAdd(retValue, wrapper))
+                {
+                    wrapper.Release();
+                    throw new NotSupportedException();
+                }
                 return true;
             }
 
@@ -535,7 +672,11 @@ namespace System.Runtime.InteropServices
                         externalComObject,
                         this,
                         retValue);
-                    _rcwTable.Add(retValue, wrapper);
+                    if (!s_rcwTable.TryAdd(retValue, wrapper))
+                    {
+                        wrapper.Release();
+                        throw new NotSupportedException();
+                    }
                     _rcwCache.Add(externalComObject, wrapper._proxyHandle);
                 }
             }
@@ -565,8 +706,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public static void RegisterForTrackerSupport(ComWrappers instance)
         {
-            if (instance == null)
-                throw new ArgumentNullException(nameof(instance));
+            ArgumentNullException.ThrowIfNull(instance);
 
             if (null != Interlocked.CompareExchange(ref s_globalInstanceForTrackerSupport, instance, null))
             {
@@ -590,8 +730,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatformAttribute("windows")]
         public static void RegisterForMarshalling(ComWrappers instance)
         {
-            if (instance == null)
-                throw new ArgumentNullException(nameof(instance));
+            ArgumentNullException.ThrowIfNull(instance);
 
             if (null != Interlocked.CompareExchange(ref s_globalInstanceForMarshalling, instance, null))
             {
@@ -605,7 +744,7 @@ namespace System.Runtime.InteropServices
         /// <param name="fpQueryInterface">Function pointer to QueryInterface.</param>
         /// <param name="fpAddRef">Function pointer to AddRef.</param>
         /// <param name="fpRelease">Function pointer to Release.</param>
-        protected internal static unsafe void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
+        public static unsafe void GetIUnknownImpl(out IntPtr fpQueryInterface, out IntPtr fpAddRef, out IntPtr fpRelease)
         {
             fpQueryInterface = (IntPtr)(delegate* unmanaged<IntPtr, Guid*, IntPtr*, int>)&ComWrappers.IUnknown_QueryInterface;
             fpAddRef = (IntPtr)(delegate* unmanaged<IntPtr, uint>)&ComWrappers.IUnknown_AddRef;
@@ -667,7 +806,7 @@ namespace System.Runtime.InteropServices
         {
             ManagedObjectWrapper* wrapper = ComInterfaceDispatch.ToManagedObjectWrapper((ComInterfaceDispatch*)pThis);
             uint refcount = wrapper->Release();
-            if (refcount == 0)
+            if (wrapper->RefCount == 0)
             {
                 wrapper->Destroy();
             }
@@ -710,10 +849,28 @@ namespace System.Runtime.InteropServices
             return wrapper->Unpeg();
         }
 
+        [UnmanagedCallersOnly]
+        internal static unsafe int ITaggedImpl_IsCurrentVersion(IntPtr pThis, IntPtr version)
+        {
+            return version == (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, int>)&ITaggedImpl_IsCurrentVersion
+                ? HResults.S_OK
+                : HResults.E_FAIL;
+        }
+
         private static unsafe IntPtr CreateDefaultIUnknownVftbl()
         {
             IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComWrappers), 3 * sizeof(IntPtr));
             GetIUnknownImpl(out vftbl[0], out vftbl[1], out vftbl[2]);
+            return (IntPtr)vftbl;
+        }
+
+        // This IID represents an internal interface we define to tag any ManagedObjectWrappers we create.
+        // This interface type and GUID do not correspond to any public interface; it is an internal implementation detail.
+        private static unsafe IntPtr CreateTaggedImplVftbl()
+        {
+            IntPtr* vftbl = (IntPtr*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ComWrappers), 4 * sizeof(IntPtr));
+            GetIUnknownImpl(out vftbl[0], out vftbl[1], out vftbl[2]);
+            vftbl[3] = (IntPtr)(delegate* unmanaged<IntPtr, IntPtr, int>)&ITaggedImpl_IsCurrentVersion;
             return (IntPtr)vftbl;
         }
 

@@ -17,7 +17,7 @@
 				App.method_with_structs = exports.DebuggerTests.ValueTypesTest.MethodWithLocalStructs;
 				App.run_all = exports.DebuggerTest.run_all;
 				App.static_method_table = {};
-				console.debug ("#debugger-app-ready#"); console.log ("ready"); // HACK: firefox tests are looking for this "ready"
+				console.debug ("#debugger-app-ready#");
 			},
 		};
 		function invoke_static_method (method_name, ...args) {
@@ -44,7 +44,6 @@
 		function invoke_getters_js_test () {
 			getters_js_test ();
 		}
-
 		function invoke_add () {
 			return App.int_add (10, 20);
 		}
@@ -91,10 +90,7 @@
 		function load_wasm_page_without_assets () {
 			console.log("load_wasm_page_without_assets")
 			window.location.replace("http://localhost:9400/wasm-page-without-assets.html");
-		}
-		function load_non_wasm_page_forcing_runtime_ready () {
-			console.log("load_non_wasm_page_forcing_runtime_ready")
-			window.location.replace("http://localhost:9400/non-wasm-page-forcing-runtime-ready.html");
+			console.debug ("#debugger-app-ready#");
 		}
 		</script>
 

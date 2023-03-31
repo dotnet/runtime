@@ -7,7 +7,11 @@
     <IlcTrimMetadata>false</IlcTrimMetadata>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+  <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- This doesn't run on V8 shell because https://bugs.chromium.org/p/v8/issues/detail?id=12541 -->
     <Scenario>WasmTestOnBrowser</Scenario>
     <TestArchiveTestsRoot>$(TestArchiveRoot)browserornodejs/</TestArchiveTestsRoot>
@@ -250,7 +254,6 @@
     <Compile Include="XmlDocument\XmlProcessingInstructionTests\DataTests.cs" />
     <Compile Include="XmlDocument\XmlProcessingInstructionTests\TargetTests.cs" />
     <Compile Include="XmlDocument\XmlTextTests\SplitTextTests.cs" />
-    <Compile Include="XmlReader\Tests\ReadCharsTests.cs" />
     <Content Include="XmlDocument\example.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -322,6 +325,7 @@
     <Compile Include="XmlReader\Tests\AsyncReaderLateInitTests.cs" />
     <Compile Include="XmlReader\Tests\DisposeTests.cs" />
     <Compile Include="XmlReader\Tests\BaseUriTests.cs" />
+    <Compile Include="XmlReader\Tests\ReadCharsTests.cs" />
     <Compile Include="XmlReader\Tests\ReaderEncodingTests.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -433,6 +437,7 @@
     <Compile Include="XmlWriter\WriteWithEncoding.cs" />
     <Compile Include="XmlWriter\WriteWithEncodingWithFallback.cs" />
     <Compile Include="XmlWriter\WriteWithInvalidSurrogate.cs" />
+    <Compile Include="XmlWriter\WriteWithXmlnsNewLine.cs" />
     <Compile Include="XmlWriter\XmlTextWriterTests.cs" />
   </ItemGroup>
 

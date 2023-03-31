@@ -93,7 +93,7 @@ namespace System.Net
                 }
                 if (statusCode != Interop.HttpApi.ERROR_SUCCESS && statusCode != Interop.HttpApi.ERROR_HANDLE_EOF)
                 {
-                    Exception exception = new HttpListenerException((int)statusCode);
+                    var exception = new HttpListenerException((int)statusCode);
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception.ToString());
                     throw exception;
                 }
@@ -199,9 +199,8 @@ namespace System.Net
                     }
                     else
                     {
-                        Exception exception = new HttpListenerException((int)statusCode);
+                        var exception = new HttpListenerException((int)statusCode);
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception.ToString());
-                        asyncResult.InternalCleanup();
                         throw exception;
                     }
                 }

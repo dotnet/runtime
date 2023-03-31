@@ -13,7 +13,7 @@ internal struct A
 
 class Test
 {
-    static unsafe int Main(string[] args)
+    static unsafe int Main()
     {
         int i = sizeof(A);
         int j = Marshal.SizeOf(typeof(A));

@@ -33,13 +33,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public const string Disable = "Disable";
         }
 
-        public static class Tfm
-        {
-            public const string RuntimeConfigPropertyName = "tfm";
-            public const string Net6 = "net6.0";
-            public const string Net7 = "net7.0";
-        }
-
         public static class FxVersion
         {
             public const string CommandLineArgument = "--fx-version";
@@ -48,6 +41,17 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public static class AdditionalDeps
         {
             public const string CommandLineArgument = "--additional-deps";
+        }
+
+        public static class AdditionalProbingPath
+        {
+            public const string CommandLineArgument = "--additionalprobingpath";
+            public const string RuntimeConfigPropertyName = "additionalProbingPaths";
+        }
+
+        public static class DepsFile
+        {
+            public const string CommandLineArgument = "--depsfile";
         }
 
         public static class RollForwardToPreRelease

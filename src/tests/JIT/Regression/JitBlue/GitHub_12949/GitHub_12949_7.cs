@@ -13,7 +13,7 @@ public struct V
     public int Token;
 }
 
-class M
+public class M
 {
     static int F(int x, object a)
     {

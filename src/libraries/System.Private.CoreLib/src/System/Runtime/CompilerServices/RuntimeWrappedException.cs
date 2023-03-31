@@ -12,7 +12,7 @@ namespace System.Runtime.CompilerServices
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class RuntimeWrappedException : Exception
     {
-        private object _wrappedException; // EE expects this name
+        private readonly object _wrappedException; // EE expects this name
 
         // Not an api but has to be public as System.Linq.Expression invokes this through Reflection when an expression
         // throws an object that doesn't derive from Exception.

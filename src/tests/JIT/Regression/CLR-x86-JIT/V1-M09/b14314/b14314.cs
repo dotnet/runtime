@@ -26,9 +26,9 @@ namespace DefaultNamespace
 
     }
 
-    internal class Finalize
+    public class Finalize
     {
-        public static int Main(String[] args)
+        public static int Main()
         {
             Class1 Cls = new Class1();
             Cls.Method();

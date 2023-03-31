@@ -6,9 +6,9 @@ namespace Test
 {
     using System;
 
-    class AA
+    public class AA
     {
-        static int Main()
+        public static int Main()
         {
             int[] an = new int[2];
             bool b = false;

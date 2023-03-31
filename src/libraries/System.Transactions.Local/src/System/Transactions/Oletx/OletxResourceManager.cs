@@ -354,12 +354,7 @@ internal sealed class OletxResourceManager
         }
 
         // Verify that the resource manager guid in the recovery info matches that of the calling resource manager.
-        byte[] rmGuidArray = new byte[16];
-        for (int i = 0; i < 16; i++)
-        {
-            rmGuidArray[i] = prepareInfo[i + 16];
-        }
-        Guid rmGuid = new(rmGuidArray);
+        var rmGuid = new Guid(prepareInfo.AsSpan(16, 16));
         if (rmGuid != ResourceManagerIdentifier)
         {
             throw TransactionException.Create(SR.ResourceManagerIdDoesNotMatchRecoveryInformation, null);
@@ -493,7 +488,7 @@ internal sealed class OletxResourceManager
         lock (ReenlistList)
         {
             // This will do a linear search of the list, but that is what we need to do because
-            // the enlistments may change indicies while notifications are outstanding.  Also,
+            // the enlistments may change indices while notifications are outstanding.  Also,
             // this does not throw if the enlistment isn't on the list.
             ReenlistPendingList.Remove(enlistment);
 
@@ -609,7 +604,7 @@ internal sealed class OletxResourceManager
                             // Make sure we have a prepare info.
                             if (localEnlistment.ProxyPrepareInfoByteArray == null)
                             {
-                                Debug.Assert(false, string.Format(null, "this.prepareInfoByteArray == null in RecoveryInformation()"));
+                                Debug.Fail("this.prepareInfoByteArray == null in RecoveryInformation()");
                                 if (etwLog.IsEnabled())
                                 {
                                     etwLog.InternalError();

@@ -217,7 +217,7 @@ void PendingTypeLoadTable::Dump()
             SString name;
             TypeKey entryTypeKey = pSearch->pData->GetTypeKey();
             TypeString::AppendTypeKeyDebug(name, &entryTypeKey);
-            LOG((LF_CLASSLOADER, LL_INFO10000, "  Entry %S with handle %p at level %s\n", name.GetUnicode(), pSearch->pData->m_typeHandle.AsPtr(),
+            LOG((LF_CLASSLOADER, LL_INFO10000, "  Entry %s with handle %p at level %s\n", name.GetUTF8(), pSearch->pData->m_typeHandle.AsPtr(),
                  pSearch->pData->m_typeHandle.IsNull() ? "not-applicable" : classLoadLevelName[pSearch->pData->m_typeHandle.GetLoadLevel()]));
         }
     }

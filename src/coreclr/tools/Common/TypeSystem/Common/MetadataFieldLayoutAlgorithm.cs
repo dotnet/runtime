@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -358,6 +357,12 @@ namespace Internal.TypeSystem
                 layoutMetadata.Size,
                 out instanceByteSizeAndAlignment);
 
+            // inline array cannot have explicit layout
+            if (type.IsInlineArray)
+            {
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayExplicit, type);
+            }
+
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
             {
                 IsAutoLayoutOrHasAutoLayoutFields = hasAutoLayoutField,
@@ -429,6 +434,11 @@ namespace Internal.TypeSystem
                 layoutMetadata.Size,
                 out instanceByteSizeAndAlignment);
 
+            if (type.IsInlineArray)
+            {
+                AdjustForInlineArray(type, numInstanceFields, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
+            }
+
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
             {
                 IsAutoLayoutOrHasAutoLayoutFields = hasAutoLayoutField,
@@ -442,6 +452,45 @@ namespace Internal.TypeSystem
             computedLayout.LayoutAbiStable = layoutAbiStable;
 
             return computedLayout;
+        }
+
+        private static void AdjustForInlineArray(
+            MetadataType type,
+            int instanceFieldCount,
+            ref SizeAndAlignment instanceByteSizeAndAlignment,
+            ref SizeAndAlignment instanceSizeAndAlignment)
+        {
+            int repeat = type.GetInlineArrayLength();
+
+            if (repeat <= 0)
+            {
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayLength, type);
+            }
+
+            if (instanceFieldCount != 1)
+            {
+                ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadInlineArrayFieldCount, type);
+            }
+
+            if (!instanceByteSizeAndAlignment.Size.IsIndeterminate)
+            {
+                long size = instanceByteSizeAndAlignment.Size.AsInt;
+                size *= repeat;
+
+                // limit the max size of array instance to 1MiB
+                const int maxSize = 1024 * 1024;
+                if (size > maxSize)
+                {
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, type);
+                }
+
+                instanceByteSizeAndAlignment.Size = new LayoutInt((int)size);
+            }
+
+            if (!instanceSizeAndAlignment.Size.IsIndeterminate)
+            {
+                instanceSizeAndAlignment.Size = new LayoutInt(instanceSizeAndAlignment.Size.AsInt * repeat);
+            }
         }
 
         protected virtual void AlignBaseOffsetIfNecessary(MetadataType type, ref LayoutInt baseOffset, bool requiresAlign8, bool requiresAlignedBase)
@@ -746,6 +795,11 @@ namespace Internal.TypeSystem
                 classLayoutSize: 0,
                 byteCount: out instanceByteSizeAndAlignment);
 
+            if (type.IsInlineArray)
+            {
+                AdjustForInlineArray(type, numInstanceFields, ref instanceByteSizeAndAlignment, ref instanceSizeAndAlignment);
+            }
+
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout
             {
                 IsAutoLayoutOrHasAutoLayoutFields = true,
@@ -944,6 +998,14 @@ namespace Internal.TypeSystem
             return ComputeHomogeneousAggregateCharacteristic(type);
         }
 
+        /// <summary>
+        /// Identify whether a given type is a homogeneous floating-point aggregate. This code must be
+        /// kept in sync with the CoreCLR runtime method EEClass::CheckForHFA, as of this change it
+        /// can be found at
+        /// https://github.com/dotnet/runtime/blob/1928cd2b65c04ebe6fe528d4ebb581e46f1fed47/src/coreclr/vm/class.cpp#L1567
+        /// </summary>
+        /// <param name="type">Type to analyze</param>
+        /// <returns>HFA classification of the type parameter</returns>
         private static ValueTypeShapeCharacteristics ComputeHomogeneousAggregateCharacteristic(DefType type)
         {
             // Use this constant to make the code below more laconic
@@ -959,12 +1021,7 @@ namespace Internal.TypeSystem
                 return NotHA;
 
             MetadataType metadataType = (MetadataType)type;
-
-            // No HAs with explicit layout. There may be cases where explicit layout may be still
-            // eligible for HA, but it is hard to tell the real intent. Make it simple and just
-            // unconditionally disable HAs for explicit layout.
-            if (metadataType.IsExplicitLayout)
-                return NotHA;
+            int haElementSize = 0;
 
             switch (metadataType.Category)
             {
@@ -977,11 +1034,17 @@ namespace Internal.TypeSystem
                 case TypeFlags.ValueType:
                     // Find the common HA element type if any
                     ValueTypeShapeCharacteristics haResultType = NotHA;
+                    bool hasZeroOffsetField = false;
 
                     foreach (FieldDesc field in metadataType.GetFields())
                     {
                         if (field.IsStatic)
                             continue;
+
+                        if (field.Offset == LayoutInt.Zero)
+                        {
+                            hasZeroOffsetField = true;
+                        }
 
                         // If a field isn't a DefType, then this type cannot be a HA type
                         if (!(field.FieldType is DefType fieldType))
@@ -996,6 +1059,15 @@ namespace Internal.TypeSystem
                         {
                             // If we hadn't yet figured out what form of HA this type might be, we've now found one case
                             haResultType = haFieldType;
+
+                            haElementSize = haResultType switch
+                            {
+                                ValueTypeShapeCharacteristics.Float32Aggregate => 4,
+                                ValueTypeShapeCharacteristics.Float64Aggregate => 8,
+                                ValueTypeShapeCharacteristics.Vector64Aggregate => 8,
+                                ValueTypeShapeCharacteristics.Vector128Aggregate => 16,
+                                _ => throw new ArgumentOutOfRangeException()
+                            };
                         }
                         else if (haResultType != haFieldType)
                         {
@@ -1004,20 +1076,16 @@ namespace Internal.TypeSystem
                             // be a HA type.
                             return NotHA;
                         }
+
+                        if (field.Offset.IsIndeterminate || field.Offset.AsInt % haElementSize != 0)
+                        {
+                            return NotHA;
+                        }
                     }
 
-                    // If there are no instance fields, this is not a HA type
-                    if (haResultType == NotHA)
+                    // If the struct doesn't have a zero-offset field, it's not an HFA.
+                    if (!hasZeroOffsetField)
                         return NotHA;
-
-                    int haElementSize = haResultType switch
-                    {
-                        ValueTypeShapeCharacteristics.Float32Aggregate => 4,
-                        ValueTypeShapeCharacteristics.Float64Aggregate => 8,
-                        ValueTypeShapeCharacteristics.Vector64Aggregate => 8,
-                        ValueTypeShapeCharacteristics.Vector128Aggregate => 16,
-                        _ => throw new ArgumentOutOfRangeException()
-                    };
 
                     // Types which are indeterminate in field size are not considered to be HA
                     if (type.InstanceFieldSize.IsIndeterminate)
@@ -1027,8 +1095,13 @@ namespace Internal.TypeSystem
                     // - Type of fields can be HA valuetype itself.
                     // - Managed C++ HA valuetypes have just one <alignment member> of type float to signal that
                     //   the valuetype is HA and explicitly specified size.
-                    int maxSize = haElementSize * type.Context.Target.MaxHomogeneousAggregateElementCount;
-                    if (type.InstanceFieldSize.AsInt > maxSize)
+                    int totalSize = type.InstanceFieldSize.AsInt;
+
+                    if (totalSize % haElementSize != 0)
+                        return NotHA;
+
+                    // On ARM, HFAs can have a maximum of four fields regardless of whether those are float or double.
+                    if (totalSize > haElementSize * type.Context.Target.MaxHomogeneousAggregateElementCount)
                         return NotHA;
 
                     // All the tests passed. This is a HA type.

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { IMemoryView } from "./marshal";
-import { createDotnetRuntime, CreateDotnetRuntimeType, DotnetModuleConfig, RuntimeAPI, MonoConfig, ModuleAPI } from "./types";
+import { createDotnetRuntime, CreateDotnetRuntimeType, DotnetModuleConfig, RuntimeAPI, MonoConfig, ModuleAPI, AssetEntry, ResourceRequest } from "./types";
 import { EmscriptenModule } from "./types/emscripten";
 
 // -----------------------------------------------------------
@@ -22,6 +22,6 @@ declare const exit: ModuleAPI["exit"];
 
 export {
     EmscriptenModule,
-    RuntimeAPI, ModuleAPI, DotnetModuleConfig, CreateDotnetRuntimeType, MonoConfig, IMemoryView,
+    RuntimeAPI, ModuleAPI, DotnetModuleConfig, CreateDotnetRuntimeType, MonoConfig, IMemoryView, AssetEntry, ResourceRequest,
     dotnet, exit
 };

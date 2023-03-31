@@ -142,12 +142,6 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
     bool bClock = false;
     Clockwork   cw;
 
-#ifdef HOST_WINDOWS
-    // SWI has requested that the exact form of the function call below be used. For details
-    // see http://swi/SWI%20Docs/Detecting%20Heap%20Corruption.doc
-    (void)HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
-#endif
-
     memset(pwzInputFiles,0,1024*sizeof(WCHAR*));
     memset(pwzDeltaFiles,0,1024*sizeof(WCHAR*));
     memset(&cw,0,sizeof(Clockwork));
@@ -173,7 +167,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
 #endif
     {
         printf("\n.NET IL Assembler version " CLR_PRODUCT_VERSION);
-        printf("\n%S\n\n", VER_LEGALCOPYRIGHT_LOGO_STR_L);
+        printf("\n%s\n\n", VER_LEGALCOPYRIGHT_LOGO_STR);
         goto PrintUsageAndExit;
 
     ErrorExit:
@@ -391,7 +385,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                             pAsm->m_wzResourceFile = pStr;
                         }
                         else
-                            printf("Multiple resource files not allowed. Option %ls skipped\n",argv[i]);
+                            printf("Multiple resource files not allowed. Last RES option skipped\n");
                     }
                     else if (!_stricmp(szOpt, "KEY"))
                     {
@@ -665,7 +659,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                 if(bLogo)
                 {
                     printf("\n.NET IL Assembler.  Version " CLR_PRODUCT_VERSION);
-                    printf("\n%S", VER_LEGALCOPYRIGHT_LOGO_STR_L);
+                    printf("\n%s", VER_LEGALCOPYRIGHT_LOGO_STR);
                 }
 
                 pAsm->SetDLL(IsDLL);
@@ -728,7 +722,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                         }
                         if(pIn)
                         {
-                            pIn->set_namew(NULL);
+                            pIn->clear_name();
                             delete pIn;
                         }
                     } // end for(iFile)
@@ -793,7 +787,8 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                                             if (pAsm->m_fStdMapping == FALSE)
                                                 pParser->msg(", with REFERENCE mapping");
 
-                                            pParser->msg(" --> '%S.*'\n", wzNewOutputFilename);
+                                            MAKE_UTF8PTR_FROMWIDE(newOutputFilenameUtf8, wzNewOutputFilename);
+                                            pParser->msg(" --> '%s.*'\n", newOutputFilenameUtf8);
                                         }
                                         exitval = 0;
                                         pIn = new MappedFileStream(wzInputFilename);
@@ -816,7 +811,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                                         } // end if ((!pIn) || !(pIn->IsValid())) -- else
                                         if(pIn)
                                         {
-                                            pIn->set_namew(NULL);
+                                            pIn->clear_name();
                                             delete pIn;
                                         }
                                     } // end for(iFile)
@@ -848,14 +843,14 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
         wcscpy_s(pc+1,4,W("PDB"));
 
 #ifdef TARGET_WINDOWS
-        _wremove(wzOutputFilename);        
+        _wremove(wzOutputFilename);
 #else
         MAKE_UTF8PTR_FROMWIDE_NOTHROW(szOutputFilename, wzOutputFilename);
         if (szOutputFilename != NULL)
         {
             remove(szOutputFilename);
         }
-#endif        
+#endif
     }
     if (exitval == 0)
     {

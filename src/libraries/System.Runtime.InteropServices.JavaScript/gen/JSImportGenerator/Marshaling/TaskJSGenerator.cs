@@ -11,7 +11,8 @@ namespace Microsoft.Interop.JavaScript
 {
     internal sealed class TaskJSGenerator : BaseJSGenerator
     {
-        private MarshalerType _resultMarshalerType;
+        private readonly MarshalerType _resultMarshalerType;
+
         public TaskJSGenerator(MarshalerType resultMarshalerType)
             : base(MarshalerType.Task, new Forwarder())
         {
@@ -79,21 +80,21 @@ namespace Microsoft.Interop.JavaScript
             }
         }
 
-        private StatementSyntax ToManagedMethodVoid(string target, ArgumentSyntax source)
+        private ExpressionStatementSyntax ToManagedMethodVoid(string target, ArgumentSyntax source)
         {
             return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(target), GetToManagedMethod(Type)))
                     .WithArgumentList(ArgumentList(SingletonSeparatedList(source.WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))))));
         }
 
-        private StatementSyntax ToJSMethodVoid(string target, ArgumentSyntax source)
+        private ExpressionStatementSyntax ToJSMethodVoid(string target, ArgumentSyntax source)
         {
             return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(target), GetToJSMethod(Type)))
                     .WithArgumentList(ArgumentList(SingletonSeparatedList(source))));
         }
 
-        private StatementSyntax ToManagedMethod(string target, ArgumentSyntax source, TypeSyntax sourceType)
+        private ExpressionStatementSyntax ToManagedMethod(string target, ArgumentSyntax source, TypeSyntax sourceType)
         {
             return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(target), GetToManagedMethod(Type)))
@@ -116,7 +117,7 @@ namespace Microsoft.Interop.JavaScript
                         }))))))))}))));
         }
 
-        private StatementSyntax ToJSMethod(string target, ArgumentSyntax source, TypeSyntax sourceType)
+        private ExpressionStatementSyntax ToJSMethod(string target, ArgumentSyntax source, TypeSyntax sourceType)
         {
             return ExpressionStatement(InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
                     IdentifierName(target), GetToJSMethod(Type)))

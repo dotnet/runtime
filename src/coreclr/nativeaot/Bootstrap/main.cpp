@@ -94,7 +94,6 @@ static char& __unbox_z = __stop___unbox;
 #endif // _MSC_VER
 
 extern "C" bool RhInitialize();
-extern "C" void RhpShutdown();
 extern "C" void RhSetRuntimeInitializationCallback(int (*fPtr)());
 
 extern "C" bool RhRegisterOSModule(void * pModule,
@@ -112,6 +111,12 @@ extern "C" void OnFirstChanceException();
 extern "C" void OnUnhandledException();
 extern "C" void IDynamicCastableIsInterfaceImplemented();
 extern "C" void IDynamicCastableGetInterfaceImplementation();
+#ifdef FEATURE_OBJCMARSHAL
+extern "C" void ObjectiveCMarshalTryGetTaggedMemory();
+extern "C" void ObjectiveCMarshalGetIsTrackedReferenceCallback();
+extern "C" void ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback();
+extern "C" void ObjectiveCMarshalGetUnhandledExceptionPropagationHandler();
+#endif
 
 typedef void(*pfn)();
 
@@ -126,6 +131,17 @@ static const pfn c_classlibFunctions[] = {
     &OnUnhandledException,
     &IDynamicCastableIsInterfaceImplemented,
     &IDynamicCastableGetInterfaceImplementation,
+#ifdef FEATURE_OBJCMARSHAL
+    &ObjectiveCMarshalTryGetTaggedMemory,
+    &ObjectiveCMarshalGetIsTrackedReferenceCallback,
+    &ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback,
+    &ObjectiveCMarshalGetUnhandledExceptionPropagationHandler,
+#else
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+#endif
 };
 
 #ifndef _countof
@@ -199,11 +215,7 @@ int main(int argc, char* argv[])
     if (initval != 0)
         return initval;
 
-    int retval = __managed__Main(argc, argv);
-
-    RhpShutdown();
-
-    return retval;
+    return __managed__Main(argc, argv);
 }
 #endif // !NATIVEAOT_DLL
 

@@ -99,7 +99,7 @@
       // as this is used for the managed-ret-val feature, but the debugger filters out these mappings and does not
       // report them in the ETW event. We should probably change this, those mappings should be useful in any case.
       property int32[] Debug = int32[10]( 0x0 0x6 0xe 0x12 0x1a 0x1c 0x24 0x28 0x2c 0x34 ) 
-      property int32[] Opts = int32[4]( 0x0 0x6 0x12 0x1c )
+      property int32[] Opts = int32[6]( 0x0 0x6 0xe 0x12 0x1c 0x2c )
     }
     .maxstack  2
     .locals init (int32 V_0)

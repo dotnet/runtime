@@ -626,10 +626,8 @@ namespace System.IO
         private static int ToTimeoutMilliseconds(TimeSpan timeout)
         {
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(timeout));
-            }
+            ArgumentOutOfRangeException.ThrowIfLessThan(totalMilliseconds, -1, nameof(timeout));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(totalMilliseconds, int.MaxValue, nameof(timeout));
             return (int)totalMilliseconds;
         }
 
@@ -726,10 +724,7 @@ namespace System.IO
                     get
                     {
                         string[] items = Items;
-                        if ((uint)index >= (uint)items.Length)
-                        {
-                            throw new ArgumentOutOfRangeException(nameof(index));
-                        }
+                        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)items.Length, nameof(index));
                         return items[index];
                     }
                     set

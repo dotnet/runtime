@@ -3,25 +3,17 @@
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Threading.Thread.Start:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>ref/net7.0/System.Threading.Thread.dll</Left>
-    <Right>lib/net7.0/System.Threading.Thread.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Threading.Thread.Start(System.Object):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>ref/net7.0/System.Threading.Thread.dll</Left>
-    <Right>lib/net7.0/System.Threading.Thread.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Threading.Thread.UnsafeStart:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>ref/net7.0/System.Threading.Thread.dll</Left>
-    <Right>lib/net7.0/System.Threading.Thread.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:System.Threading.Thread.UnsafeStart(System.Object):[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
-    <Left>ref/net7.0/System.Threading.Thread.dll</Left>
-    <Right>lib/net7.0/System.Threading.Thread.dll</Right>
   </Suppression>
 </Suppressions>

@@ -27,19 +27,23 @@ export function mono_wasm_runtime_ready(): void {
     if ((<any>globalThis).dotnetDebugger)
         // eslint-disable-next-line no-debugger
         debugger;
-    else
-        console.debug("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
-
 }
 
-export function mono_wasm_fire_debugger_agent_message(): void {
+export function mono_wasm_fire_debugger_agent_message_with_data_to_pause(base64String: string): void {
+    //keep this console.assert, otherwise optimization will remove the assignments
+    console.assert(true, `mono_wasm_fire_debugger_agent_message_with_data ${base64String}`);
     // eslint-disable-next-line no-debugger
     debugger;
 }
 
+export function mono_wasm_fire_debugger_agent_message_with_data(data: number, len: number): void {
+    const base64String = toBase64StringImpl(new Uint8Array(Module.HEAPU8.buffer, data, len));
+    mono_wasm_fire_debugger_agent_message_with_data_to_pause(base64String);
+}
+
 export function mono_wasm_add_dbg_command_received(res_ok: boolean, id: number, buffer: number, buffer_len: number): void {
-    const assembly_data = new Uint8Array(Module.HEAPU8.buffer, buffer, buffer_len);
-    const base64String = toBase64StringImpl(assembly_data);
+    const dbg_command = new Uint8Array(Module.HEAPU8.buffer, buffer, buffer_len);
+    const base64String = toBase64StringImpl(dbg_command);
     const buffer_obj = {
         res_ok,
         res: {

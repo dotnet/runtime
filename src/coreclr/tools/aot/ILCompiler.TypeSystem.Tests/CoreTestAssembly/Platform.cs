@@ -182,4 +182,22 @@ namespace System.Runtime.Intrinsics
         private readonly ulong _00;
         private readonly ulong _01;
     }
+
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential, Size = 32)]
+    public readonly struct Vector256<T>
+        where T : struct
+    {
+        private readonly Vector128<T> _lower;
+        private readonly Vector128<T> _upper;
+    }
+
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential, Size = 64)]
+    public readonly struct Vector512<T>
+        where T : struct
+    {
+        private readonly Vector256<T> _lower;
+        private readonly Vector256<T> _upper;
+    }
 }

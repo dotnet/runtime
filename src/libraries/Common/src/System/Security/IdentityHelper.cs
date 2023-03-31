@@ -15,14 +15,6 @@ namespace System.Security
     /// </summary>
     internal static class IdentityHelper
     {
-        private static readonly char[] s_base32Char =
-        {
-            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
-            'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
-            'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
-            'y', 'z', '0', '1', '2', '3', '4', '5'
-        };
-
         /// <summary>
         /// Gives a hash equivalent to what Url.Normalize() gives.
         /// </summary>
@@ -95,6 +87,7 @@ namespace System.Security
             // Create l chars using the last 5 bits of each byte.
             // Consume 3 MSB bits 5 bytes at a time.
 
+            ReadOnlySpan<byte> base32Chars = "abcdefghijklmnopqrstuvwxyz012345"u8;
             do
             {
                 byte b0 = (i < l) ? buff[i++] : (byte)0;
@@ -104,18 +97,18 @@ namespace System.Security
                 byte b4 = (i < l) ? buff[i++] : (byte)0;
 
                 // Consume the 5 Least significant bits of each byte
-                sb.Append(s_base32Char[b0 & 0x1F]);
-                sb.Append(s_base32Char[b1 & 0x1F]);
-                sb.Append(s_base32Char[b2 & 0x1F]);
-                sb.Append(s_base32Char[b3 & 0x1F]);
-                sb.Append(s_base32Char[b4 & 0x1F]);
+                sb.Append((char)base32Chars[b0 & 0x1F]);
+                sb.Append((char)base32Chars[b1 & 0x1F]);
+                sb.Append((char)base32Chars[b2 & 0x1F]);
+                sb.Append((char)base32Chars[b3 & 0x1F]);
+                sb.Append((char)base32Chars[b4 & 0x1F]);
 
                 // Consume 3 MSB of b0, b1, MSB bits 6, 7 of b3, b4
-                sb.Append(s_base32Char[(
+                sb.Append((char)base32Chars[(
                         ((b0 & 0xE0) >> 5) |
                         ((b3 & 0x60) >> 2))]);
 
-                sb.Append(s_base32Char[(
+                sb.Append((char)base32Chars[(
                         ((b1 & 0xE0) >> 5) |
                         ((b4 & 0x60) >> 2))]);
 
@@ -130,7 +123,7 @@ namespace System.Security
                 if ((b4 & 0x80) != 0)
                     b2 |= 0x10;
 
-                sb.Append(s_base32Char[b2]);
+                sb.Append((char)base32Chars[b2]);
 
             } while (i < l);
 

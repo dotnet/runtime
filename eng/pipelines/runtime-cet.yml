@@ -17,7 +17,6 @@ pr:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     exclude:
     - /**/*.md
     - eng/Version.Details.xml
@@ -32,65 +31,67 @@ variables:
   - template: /eng/pipelines/common/variables.yml
 
 extends:
-  template:  /eng/pipelines/common/templates/single-stage-pipeline-with-resources.yml
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
   parameters:
-    jobs:
+    stages:
+    - stage: Build
+      jobs:
 
-    #
-    # Build CoreCLR checked
-    # Only when CoreCLR is changed
-    #
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
-        buildConfig: checked
-        platforms:
-        - windows_x64
-        jobParameters:
-          testGroup: innerloop
+      #
+      # Build CoreCLR checked
+      # Only when CoreCLR is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          buildConfig: checked
+          platforms:
+          - windows_x64
+          jobParameters:
+            testGroup: innerloop
 
-    #
-    # Build CoreCLR release
-    # Always as they are needed by Installer and we always build and test the Installer.
-    #
+      #
+      # Build CoreCLR release
+      # Always as they are needed by Installer and we always build and test the Installer.
+      #
 
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/libraries/build-job.yml
-        buildConfig: release
-        platforms:
-        - windows_x64
-        jobParameters:
-          testScope: innerloop
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/libraries/build-job.yml
+          buildConfig: release
+          platforms:
+          - windows_x64
+          jobParameters:
+            testScope: innerloop
 
-    #
-    # CoreCLR Test builds using live libraries release build
-    # Only when CoreCLR is changed
-    #
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
-        buildConfig: checked
-        platforms:
-        - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-        jobParameters:
-          testGroup: innerloop
+      #
+      # CoreCLR Test builds using live libraries release build
+      # Only when CoreCLR is changed
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+          buildConfig: checked
+          platforms:
+          - CoreClrTestBuildHost # Either osx_x64 or linux_x64
+          jobParameters:
+            testGroup: innerloop
 
 
-    #
-    # CoreCLR Test executions using live libraries
-    # Only when CoreCLR is changed
-    #
+      #
+      # CoreCLR Test executions using live libraries
+      # Only when CoreCLR is changed
+      #
 
-    - template: /eng/pipelines/common/platform-matrix.yml
-      parameters:
-        jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-        buildConfig: checked
-        platforms:
-        - windows_x64
-        helixQueueGroup: cet
-        helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-        jobParameters:
-          testGroup: innerloop
-          liveLibrariesBuildConfig: release
-          useCodeFlowEnforcement: true
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+          buildConfig: checked
+          platforms:
+          - windows_x64
+          helixQueueGroup: cet
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            testGroup: innerloop
+            liveLibrariesBuildConfig: release
+            useCodeFlowEnforcement: true

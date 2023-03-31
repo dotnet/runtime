@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 using System.Text;
 
@@ -23,7 +22,7 @@ namespace ILCompiler
                 PropertyPseudoDesc property => property.GetDisplayName(),
                 EventPseudoDesc @event => @event.GetDisplayName(),
 #endif
-                _ => throw new InvalidOperationException(),
+                _ => null,
             };
         }
 
@@ -34,9 +33,9 @@ namespace ILCompiler
             sb.Append(method.OwningType.GetDisplayName());
             sb.Append('.');
 
-            if (method.IsConstructor)
+            if (method.IsConstructor && method.OwningType is DefType defType)
             {
-                sb.Append(method.OwningType.GetDisplayNameWithoutNamespace());
+                sb.Append(defType.Name);
             }
 #if !READYTORUN
             else if (method.GetPropertyForAccessor() is PropertyPseudoDesc property)
@@ -89,7 +88,10 @@ namespace ILCompiler
             if (method.Signature.Length > 0)
             {
                 for (int i = 0; i < method.Signature.Length - 1; i++)
-                    sb.Append(method.Signature[i].GetDisplayNameWithoutNamespace()).Append(',');
+                {
+                    TypeDesc instantiatedType = method.Signature[i].InstantiateSignature(method.OwningType.Instantiation, method.Instantiation);
+                    sb.Append(instantiatedType.GetDisplayNameWithoutNamespace()).Append(',');
+                }
 
                 sb.Append(method.Signature[method.Signature.Length - 1].GetDisplayNameWithoutNamespace());
             }
@@ -238,12 +240,8 @@ namespace ILCompiler
 
             protected override Unit AppendNameForNestedType(StringBuilder sb, DefType nestedType, DefType containingType, FormatOptions options)
             {
-                if ((options & FormatOptions.NamespaceQualify) != 0)
-                {
-                    AppendName(sb, containingType, options);
-                    sb.Append('.');
-                }
-
+                AppendName(sb, containingType, options);
+                sb.Append('.');
                 sb.Append(nestedType.Name);
 
                 return default;

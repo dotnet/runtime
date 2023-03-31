@@ -93,7 +93,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
             __Command+=" dotnet"
         fi
         __R2RDumpCommand=$__Command" $CORE_ROOT/R2RDump/R2RDump.dll"
-        __R2RDumpCommand+=" --header --sc --in $__OutputFile --out $__OutputFile.r2rdump"
+        __R2RDumpCommand+=" --header --sc --in $__OutputFile --out $__OutputFile.r2rdump --val"
         __Command+=" $CORE_ROOT/crossgen2/crossgen2.dll"
         __Command+=" @$__ResponseFile"
         __Command+=" $ExtraCrossGen2Args"
@@ -103,17 +103,23 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         echo -o:$__OutputFile>>$__ResponseFile
         echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
         echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
+        echo -r:$CORE_ROOT/xunit.*.dll>>$__ResponseFile
         echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
         echo --verify-type-and-field-layout>>$__ResponseFile
+        echo --method-layout:random>>$__ResponseFile
+        if [ ! -z ${CrossGen2SynthesizePgo+x} ]%3B then
+            echo --synthesize-random-mibc>>$__ResponseFile
+            echo --embed-pgo-data>>$__ResponseFile
+        fi
         echo --targetarch:$(TargetArchitecture)>>$__ResponseFile
+        echo --targetos:$(TargetOS)>>$__ResponseFile
         echo -O>>$__ResponseFile
 
         echo "Response file: $__ResponseFile"
         cat $__ResponseFile
 
-        # Suppress some DOTNET and COMPlus variables for the duration of Crossgen2 execution
+        # Suppress some DOTNET variables for the duration of Crossgen2 execution
         export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
-        export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun COMPlus_TC_OnStackReplacement COMPlus_TC_PartialCompilation
 
         echo "Running CrossGen2: $__Command"
         $__Command
@@ -124,7 +130,6 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         __r2rDumpExitCode=$?
 
         export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
-        export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun COMPlus_TC_OnStackReplacement COMPlus_TC_PartialCompilation
         date +%H:%M:%S
       }
 
@@ -239,17 +244,23 @@ if defined RunCrossGen2 (
         set __Command=!__Command! "dotnet"
     )
     set __R2RDumpCommand=!__Command! "!CORE_ROOT!\r2rdump\r2rdump.dll"
-    set __R2RDumpCommand=!__R2RDumpCommand! --header --sc --in !__OutputFile! --out !__OutputFile!.r2rdump
+    set __R2RDumpCommand=!__R2RDumpCommand! --header --sc --in !__OutputFile! --out !__OutputFile!.r2rdump --val
     set __Command=!__Command! "!CORE_ROOT!\crossgen2\crossgen2.dll"
     set __Command=!__Command! @"!__ResponseFile!"
     set __Command=!__Command! !ExtraCrossGen2Args!
     echo !__InputFile!>>!__ResponseFile!
     echo -o:!__OutputFile!>>!__ResponseFile!
     echo --targetarch:$(TargetArchitecture)>>!__ResponseFile!
+    echo --targetos:$(TargetOS)>>!__ResponseFile!
     echo --verify-type-and-field-layout>>!__ResponseFile!
     echo --method-layout:random>>!__ResponseFile!
+    if defined CrossGen2SynthesizePgo (
+        echo --synthesize-random-mibc>>!__ResponseFile!
+        echo --embed-pgo-data>>!__ResponseFile!
+    )
     echo -r:!CORE_ROOT!\System.*.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\Microsoft.*.dll>>!__ResponseFile!
+    echo -r:!CORE_ROOT!\xunit.*.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\mscorlib.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\netstandard.dll>>!__ResponseFile!
     echo -O>>!__ResponseFile!
@@ -267,16 +278,10 @@ if defined RunCrossGen2 (
     set "DOTNET_GCStress="
     set "DOTNET_HeapVerify="
     set "DOTNET_ReadyToRun="
-    set "COMPlus_GCName="
-    set "COMPlus_GCStress="
-    set "COMPlus_HeapVerify="
-    set "COMPlus_ReadyToRun="
 
     REM work around problems in 6.0 OSR
     set "DOTNET_TC_OnStackReplacement="
     set "DOTNET_TC_PartialCompilation="
-    set "COMPlus_TC_OnStackReplacement="
-    set "COMPlus_TC_PartialCompilation="
 
     echo "!__Command!"
     call !__Command!

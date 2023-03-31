@@ -145,6 +145,11 @@ namespace Internal.TypeSystem.Interop
             return IsCoreNamedType(context, type, "System.Runtime.Intrinsics", "Vector256`1");
         }
 
+        public static bool IsSystemRuntimeIntrinsicsVector512T(TypeSystemContext context, TypeDesc type)
+        {
+            return IsCoreNamedType(context, type, "System.Runtime.Intrinsics", "Vector512`1");
+        }
+
         public static bool IsSystemNumericsVectorT(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System.Numerics", "Vector`1");

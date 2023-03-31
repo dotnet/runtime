@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using System.Diagnostics;
 using System.Net.Mime;
 
@@ -185,7 +186,7 @@ namespace System.Net.Mail
         // non-whitespace control characters as well as all remaining ASCII chars except backslash and double quote.
         private static bool IsValidQtext(bool allowUnicode, char ch)
         {
-            if (ch > MailBnfHelper.Ascii7bitMaxValue)
+            if (!Ascii.IsValid(ch))
             {
                 return allowUnicode;
             }

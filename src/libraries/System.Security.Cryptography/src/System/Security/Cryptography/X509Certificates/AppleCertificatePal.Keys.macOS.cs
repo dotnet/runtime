@@ -139,7 +139,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private ICertificatePal CopyWithPrivateKey(SafeSecKeyRefHandle? privateKey)
+        private AppleCertificatePal CopyWithPrivateKey(SafeSecKeyRefHandle? privateKey)
         {
             if (privateKey == null)
             {

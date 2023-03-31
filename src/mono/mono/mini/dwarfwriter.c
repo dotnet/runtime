@@ -939,6 +939,11 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	if (die)
 		return die;
 
+	if (m_class_is_ginst (klass) && !vtype) {
+		/* This could lead to recursion */
+		return NULL;
+	}
+
 	if (!((m_class_get_byval_arg (klass)->type == MONO_TYPE_CLASS) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_OBJECT) || m_class_get_byval_arg (klass)->type == MONO_TYPE_GENERICINST || m_class_is_enumtype (klass) || (m_class_get_byval_arg (klass)->type == MONO_TYPE_VALUETYPE && vtype) ||
 		(m_class_get_byval_arg (klass)->type >= MONO_TYPE_BOOLEAN && m_class_get_byval_arg (klass)->type <= MONO_TYPE_R8 && !vtype)))
 		return NULL;
@@ -1174,6 +1179,8 @@ get_type_die (MonoDwarfWriter *w, MonoType *t)
 		case MONO_TYPE_GENERICINST:
 			if (!MONO_TYPE_ISSTRUCT (t)) {
 				tdie = (const char *)g_hash_table_lookup (w->class_to_reference_die, klass);
+				if (!tdie)
+					tdie = ".LDIE_OBJECT";
 			} else {
 				tdie = ".LDIE_I4";
 			}
@@ -1798,7 +1805,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 
 	/* Subprogram */
 	names = g_new0 (char *, sig->param_count);
-	mono_method_get_param_names (method, (const char **) names);
+	mono_method_get_param_names_internal (method, (const char **) names);
 
 	emit_uleb128 (w, ABBREV_SUBPROGRAM);
 	/* DW_AT_name */

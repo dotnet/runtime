@@ -831,7 +831,8 @@ public:
     // instantiations of the superclass or interfaces e.g. System.Int32 : IComparable<System.Int32>
 
     void AllocateRegularStaticBoxes();
-    static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle = 0);
+    void AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStaticHandle);
+    static OBJECTREF AllocateStaticBox(MethodTable* pFieldMT, BOOL fPinned, OBJECTHANDLE* pHandle = 0, bool canBeFrozen = false);
 
     void CheckRestore();
 
@@ -1581,6 +1582,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return GetFlag(enum_flag_ContainsPointers);
     }
+
     BOOL            Collectible()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1590,6 +1592,7 @@ public:
         return FALSE;
 #endif
     }
+
     BOOL            ContainsPointersOrCollectible()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1600,6 +1603,8 @@ public:
     NOINLINE BYTE *GetLoaderAllocatorObjectForGC();
 
     BOOL            IsNotTightlyPacked();
+
+    BOOL            IsAllGCPointers();
 
     void SetContainsPointers()
     {

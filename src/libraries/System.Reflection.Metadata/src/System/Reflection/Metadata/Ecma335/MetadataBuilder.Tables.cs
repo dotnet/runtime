@@ -215,10 +215,10 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Returns the current number of entires in the specified table.
+        /// Returns the current number of entries in the specified table.
         /// </summary>
         /// <param name="table">Table index.</param>
-        /// <returns>The number of entires in the table.</returns>
+        /// <returns>The number of entries in the table.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="table"/> is not a valid table index.</exception>
         public int GetRowCount(TableIndex table)
         {
@@ -286,7 +286,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Returns the current number of entires in each table.
+        /// Returns the current number of entries in each table.
         /// </summary>
         /// <returns>
         /// An array of size <see cref="MetadataTokens.TableCount"/> with each item filled with the current row count of the corresponding table.
@@ -493,7 +493,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// Note that if this directive applies to a value type, then the size shall be less than 1 MB.
         /// </param>
         /// <remarks>
-        /// Entires must be added in the same order as the corresponding type definitions.
+        /// Entries must be added in the same order as the corresponding type definitions.
         /// </remarks>
         public void AddTypeLayout(
             TypeDefinitionHandle type,
@@ -897,7 +897,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <param name="field">Field definition.</param>
         /// <param name="offset">The byte offset of the field within the declaring type instance.</param>
         /// <remarks>
-        /// Entires must be added in the same order as the corresponding field definitions.
+        /// Entries must be added in the same order as the corresponding field definitions.
         /// </remarks>
         public void AddFieldLayout(
             FieldDefinitionHandle field,
@@ -946,7 +946,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// by adding the offset to the virtual address of the block start.
         /// </param>
         /// <remarks>
-        /// Entires must be added in the same order as the corresponding field definitions.
+        /// Entries must be added in the same order as the corresponding field definitions.
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="offset"/> is negative.</exception>
         public void AddFieldRelativeVirtualAddress(FieldDefinitionHandle field, int offset)

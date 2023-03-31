@@ -149,12 +149,12 @@ namespace System.Text.Json
             }
         }
 
-        public static bool AllBitsEqual(this BitArray bitArray, bool value)
+#if !NET8_0_OR_GREATER
+        public static bool HasAllSet(this BitArray bitArray)
         {
-            // Optimize this when https://github.com/dotnet/runtime/issues/72999 is fixed
             for (int i = 0; i < bitArray.Count; i++)
             {
-                if (bitArray[i] != value)
+                if (!bitArray[i])
                 {
                     return false;
                 }
@@ -162,5 +162,6 @@ namespace System.Text.Json
 
             return true;
         }
+#endif
     }
 }

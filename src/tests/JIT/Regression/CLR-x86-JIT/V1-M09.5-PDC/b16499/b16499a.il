@@ -7,11 +7,11 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly ILGEN_0x38e3b289 {}
-.class ILGEN_0x38e3b289 {
+.assembly 'b16499a' {}
+.class public ILGEN_0x38e3b289 {
 
 .field static	unsigned int16 field_0x1
-.method static int32 main() {
+.method public static int32 main() {
 .entrypoint
 .maxstack	10
 

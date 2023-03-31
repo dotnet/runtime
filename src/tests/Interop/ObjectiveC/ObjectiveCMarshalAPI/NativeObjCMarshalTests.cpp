@@ -1,5 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+// Always enable asserts.
+#undef NDEBUG
+
 #include <cstdlib>
 #include <cstdio>
 #include <cassert>
@@ -7,6 +11,7 @@
 #include <exception>
 #include <platformdefines.h>
 
+using BeforeThrowNativeExceptionCallback = void(STDMETHODCALLTYPE *)(void);
 using BeginEndCallback = void(STDMETHODCALLTYPE *)(void);
 using IsReferencedCallback = int(STDMETHODCALLTYPE *)(void*);
 using EnteredFinalizationCallback = void(STDMETHODCALLTYPE *)(void*);
@@ -90,6 +95,15 @@ extern "C" DLL_EXPORT void GetExports(
     *enteredFinalizer = EnteredFinalizerCb;
 }
 
+static BeforeThrowNativeExceptionCallback s_beforeThrow;
+
+extern "C" DLL_EXPORT void SetImports(BeforeThrowNativeExceptionCallback beforeThrow)
+{
+    assert(beforeThrow != nullptr);
+
+    s_beforeThrow = beforeThrow;
+}
+
 using propagation_func_t = void(*)(void*);
 
 namespace
@@ -97,6 +111,7 @@ namespace
     [[noreturn]]
     void ThrowInt(void* cxt)
     {
+        s_beforeThrow();
         int val = (int)(size_t)cxt;
         throw val;
     }
@@ -104,6 +119,7 @@ namespace
     [[noreturn]]
     void ThrowException(void*)
     {
+        s_beforeThrow();
         throw std::exception{};
     }
 }
@@ -131,6 +147,8 @@ extern "C" DLL_EXPORT int CallAndCatch(fptr_t fptr, int a)
     }
     catch (int e)
     {
+        // check that a was not clobbered.
+        assert(a == e);
         return e;
     }
     catch (const std::exception &e)

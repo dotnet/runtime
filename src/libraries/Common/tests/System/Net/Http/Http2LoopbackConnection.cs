@@ -91,7 +91,7 @@ namespace System.Net.Test.Common
                 throw new Exception("Connection stream closed while attempting to read connection preface.");
             }
 
-            if (Text.Encoding.ASCII.GetString(_prefix).Contains("HTTP/1.1"))
+            if (_prefix.AsSpan().IndexOf("HTTP/1.1"u8) >= 0)
             {
                 // Tests that use HttpAgnosticLoopbackServer will attempt to send an HTTP/1.1 request to an HTTP/2 server.
                 // This is invalid and we should terminate the connection.
@@ -402,7 +402,7 @@ namespace System.Net.Test.Common
             return (HeadersFrame)frame;
         }
 
-        public async Task<Frame> ReadDataFrameAsync()
+        public async Task<DataFrame> ReadDataFrameAsync()
         {
             // Receive DATA frame for request.
             Frame frame = await ReadFrameAsync(_timeout).ConfigureAwait(false);
@@ -412,7 +412,7 @@ namespace System.Net.Test.Common
             }
 
             Assert.Equal(FrameType.Data, frame.Type);
-            return frame;
+            return Assert.IsType<DataFrame>(frame);
         }
 
         private static (int bytesConsumed, int value) DecodeInteger(ReadOnlySpan<byte> headerBlock, byte prefixMask)

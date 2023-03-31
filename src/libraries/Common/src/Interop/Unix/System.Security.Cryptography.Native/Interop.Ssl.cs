@@ -262,7 +262,7 @@ internal static partial class Interop
             }
         }
 
-        internal static bool AddExtraChainCertificates(SafeSslHandle ssl, X509Certificate2[] chain)
+        internal static bool AddExtraChainCertificates(SafeSslHandle ssl, ReadOnlySpan<X509Certificate2> chain)
         {
             // send pre-computed list of intermediates.
             for (int i = 0; i < chain.Length; i++)
@@ -421,6 +421,7 @@ namespace Microsoft.Win32.SafeHandles
 
             if (AlpnHandle.IsAllocated)
             {
+                Interop.Ssl.SslSetData(handle, IntPtr.Zero);
                 AlpnHandle.Free();
             }
 

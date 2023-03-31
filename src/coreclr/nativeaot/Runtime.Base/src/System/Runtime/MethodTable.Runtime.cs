@@ -30,15 +30,6 @@ namespace Internal.Runtime
 #if INPLACE_RUNTIME
             return RuntimeExceptionHelpers.GetRuntimeException(id);
 #else
-            DynamicModule* dynamicModule = this.DynamicModule;
-            if (dynamicModule != null)
-            {
-                delegate* <System.Runtime.ExceptionIDs, System.Exception> getRuntimeException = dynamicModule->GetRuntimeException;
-                if (getRuntimeException != null)
-                {
-                    return getRuntimeException(id);
-                }
-            }
             if (IsParameterizedType)
             {
                 return RelatedParameterType->GetClasslibException(id);
@@ -105,6 +96,14 @@ namespace Internal.Runtime
         internal static bool BothSimpleCasting(MethodTable* pThis, MethodTable* pOther)
         {
             return ((pThis->_uFlags | pOther->_uFlags) & (uint)EETypeFlags.ComplexCastingMask) == 0;
+        }
+
+        internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2)
+        {
+            if (mt1 == mt2)
+                return true;
+
+            return mt1->IsEquivalentTo(mt2);
         }
 
         internal bool IsEquivalentTo(MethodTable* pOtherEEType)

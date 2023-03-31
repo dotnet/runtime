@@ -26,6 +26,15 @@ namespace System.Net.Security
         {
         }
 
+        public static SecurityStatusPal SelectApplicationProtocol(
+            SafeFreeCredentials? credentialsHandle,
+            SafeDeleteSslContext? context,
+            SslAuthenticationOptions sslAuthenticationOptions,
+            ReadOnlySpan<byte> clientProtocols)
+        {
+            throw new PlatformNotSupportedException(nameof(SelectApplicationProtocol));
+        }
+
         public static SecurityStatusPal AcceptSecurityContext(
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
@@ -42,8 +51,7 @@ namespace System.Net.Security
             string? targetName,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
-            SslAuthenticationOptions sslAuthenticationOptions,
-            SelectClientCertificate? clientCertificateSelectionCallback)
+            SslAuthenticationOptions sslAuthenticationOptions)
         {
             return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions);
         }
@@ -57,7 +65,7 @@ namespace System.Net.Security
             throw new PlatformNotSupportedException();
         }
 
-        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
+        public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions _1, bool _2)
         {
             return null;
         }
@@ -169,6 +177,14 @@ namespace System.Net.Security
             connectionInfo.UpdateSslConnectionInfo(securityContext.SslContext);
         }
 
+        public static bool TryUpdateClintCertificate(
+            SafeFreeCredentials? _1,
+            SafeDeleteSslContext? _2,
+            SslAuthenticationOptions _3)
+        {
+            return false;
+        }
+
         private static SecurityStatusPal HandshakeInternal(
             SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
@@ -180,7 +196,7 @@ namespace System.Net.Security
             {
                 SafeDeleteSslContext? sslContext = ((SafeDeleteSslContext?)context);
 
-                if ((context == null) || context.IsInvalid)
+                if (context == null || context.IsInvalid)
                 {
                     context = new SafeDeleteSslContext(sslAuthenticationOptions);
                     sslContext = context;
@@ -203,7 +219,8 @@ namespace System.Net.Security
 
                 outputBuffer = sslContext.ReadPendingWrites();
 
-                return new SecurityStatusPal(statusCode);
+                Exception? validationException = sslContext?.SslStreamProxy.ValidationException;
+                return new SecurityStatusPal(statusCode, validationException);
             }
             catch (Exception exc)
             {

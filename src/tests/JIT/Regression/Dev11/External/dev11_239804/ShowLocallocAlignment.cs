@@ -18,7 +18,7 @@ namespace ShowLocallocAlignment
     public struct Struct1 { public int F1; }
     public struct Struct2 { public int F1; public int F2; }
 
-    internal static class App
+    public static class App
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void CallTarget1(int arg1, int arg2, int arg3, int arg4, int arg5) { return; }
@@ -94,7 +94,7 @@ namespace ShowLocallocAlignment
             return 101;
         }
 
-        private static int Main()
+        public static int Main()
         {
             return App.RunAlignmentCheckScenario();
         }

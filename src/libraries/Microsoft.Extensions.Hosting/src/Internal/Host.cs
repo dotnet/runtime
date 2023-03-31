@@ -125,7 +125,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 // Trigger IHostApplicationLifetime.ApplicationStopping
                 _applicationLifetime.StopApplication();
 
-                IList<Exception> exceptions = new List<Exception>();
+                var exceptions = new List<Exception>();
                 if (_hostedServices != null) // Started?
                 {
                     foreach (IHostedService hostedService in _hostedServices.Reverse())

@@ -38,6 +38,25 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
+        public sealed override bool IsByRefLike
+        {
+            get
+            {
+                // If we have a type handle, ask the runtime
+                RuntimeTypeHandle typeHandle = InternalTypeHandleIfAvailable;
+                if (!typeHandle.IsNull)
+                    return Internal.Runtime.Augments.RuntimeAugments.IsByRefLike(typeHandle);
+
+                // Otherwise fall back to attributes
+                foreach (CustomAttributeHandle cah in _typeDefinition.CustomAttributes)
+                {
+                    if (cah.IsCustomAttributeOfType(_reader, "System.Runtime.CompilerServices", "IsByRefLikeAttribute"))
+                        return true;
+                }
+                return false;
+            }
+        }
+
         protected sealed override Guid? ComputeGuidFromCustomAttributes()
         {
             //

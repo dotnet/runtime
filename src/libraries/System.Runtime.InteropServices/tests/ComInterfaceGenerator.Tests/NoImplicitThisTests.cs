@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace ComInterfaceGenerator.Tests
@@ -16,20 +12,19 @@ namespace ComInterfaceGenerator.Tests
     {
         internal partial class NoImplicitThis
         {
-            public readonly record struct NoCasting;
-
-            internal partial interface IStaticMethodTable : IUnmanagedInterfaceType<NoCasting>
+            [UnmanagedObjectUnwrapperAttribute<VTableGCHandlePair<IStaticMethodTable>>]
+            internal partial interface IStaticMethodTable : IUnmanagedInterfaceType
             {
-                static NoCasting IUnmanagedInterfaceType<NoCasting>.TypeKey => default;
+                static void* IUnmanagedInterfaceType.VirtualMethodTableManagedImplementation => null;
 
-                [VirtualMethodIndex(0, ImplicitThisParameter = false)]
+                [VirtualMethodIndex(0, Direction = MarshalDirection.ManagedToUnmanaged, ImplicitThisParameter = false)]
                 int Add(int x, int y);
-                [VirtualMethodIndex(1, ImplicitThisParameter = false)]
+                [VirtualMethodIndex(1, Direction = MarshalDirection.ManagedToUnmanaged, ImplicitThisParameter = false)]
                 int Multiply(int x, int y);
             }
 
             [NativeMarshalling(typeof(StaticMethodTableMarshaller))]
-            public class StaticMethodTable : IStaticMethodTable.Native, IUnmanagedVirtualMethodTableProvider<NoCasting>
+            public class StaticMethodTable : IStaticMethodTable.Native, IUnmanagedVirtualMethodTableProvider
             {
                 private readonly void* _vtableStart;
 
@@ -38,7 +33,11 @@ namespace ComInterfaceGenerator.Tests
                     _vtableStart = vtableStart;
                 }
 
-                public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(NoCasting typeKey) => new VirtualMethodTableInfo(IntPtr.Zero, new ReadOnlySpan<IntPtr>(_vtableStart, 2));
+                public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(Type type)
+                {
+                    Assert.Equal(typeof(IStaticMethodTable), type);
+                    return new VirtualMethodTableInfo((void*)null, (void**)_vtableStart);
+                }
             }
 
             [CustomMarshaller(typeof(StaticMethodTable), MarshalMode.ManagedToUnmanagedOut, typeof(StaticMethodTableMarshaller))]

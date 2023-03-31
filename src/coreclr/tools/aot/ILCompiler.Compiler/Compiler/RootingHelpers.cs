@@ -26,7 +26,7 @@ namespace ILCompiler
 
         public static void RootType(IRootingServiceProvider rootProvider, TypeDesc type, string reason)
         {
-            rootProvider.AddCompilationRoot(type, reason);
+            rootProvider.AddReflectionRoot(type, reason);
 
             InstantiatedType fallbackNonCanonicalOwningType = null;
 
@@ -43,7 +43,7 @@ namespace ILCompiler
 
                 type = ((MetadataType)type).MakeInstantiatedType(canonInst);
 
-                rootProvider.AddCompilationRoot(type, reason);
+                rootProvider.AddReflectionRoot(type, reason);
             }
 
             // Also root base types. This is so that we make methods on the base types callable.
@@ -162,7 +162,7 @@ namespace ILCompiler
             if (typicalMethod.IsGenericMethodDefinition || typicalMethod.OwningType.IsGenericDefinition)
             {
                 dependencies ??= new DependencyList();
-                dependencies.Add(factory.ReflectableMethod(typicalMethod), reason);
+                dependencies.Add(factory.ReflectedMethod(typicalMethod), reason);
             }
 
             // If there's any genericness involved, try to create a fitting instantiation that would be usable at runtime.
@@ -207,7 +207,7 @@ namespace ILCompiler
             }
 
             dependencies ??= new DependencyList();
-            dependencies.Add(factory.ReflectableMethod(method), reason);
+            dependencies.Add(factory.ReflectedMethod(method), reason);
 
             return true;
         }
@@ -227,7 +227,7 @@ namespace ILCompiler
             // for it below.
             if (typicalField.OwningType.HasInstantiation)
             {
-                dependencies.Add(factory.ReflectableField(typicalField), reason);
+                dependencies.Add(factory.ReflectedField(typicalField), reason);
             }
 
             // If there's any genericness involved, try to create a fitting instantiation that would be usable at runtime.
@@ -248,7 +248,7 @@ namespace ILCompiler
                     ((MetadataType)owningType).MakeInstantiatedType(inst));
             }
 
-            dependencies.Add(factory.ReflectableField(field), reason);
+            dependencies.Add(factory.ReflectedField(field), reason);
 
             return true;
         }
@@ -270,7 +270,7 @@ namespace ILCompiler
 
                 dependencies ??= new DependencyList();
 
-                dependencies.Add(factory.MaximallyConstructableType(type), reason);
+                dependencies.Add(factory.ReflectedType(type), reason);
 
                 // If there's any unknown genericness involved, try to create a fitting instantiation that would be usable at runtime.
                 // This is not a complete solution to the problem.
@@ -281,7 +281,7 @@ namespace ILCompiler
                     Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(type.Instantiation, allowCanon: true);
                     if (!inst.IsNull)
                     {
-                        dependencies.Add(factory.MaximallyConstructableType(((MetadataType)type).MakeInstantiatedType(inst)), reason);
+                        dependencies.Add(factory.ReflectedType(((MetadataType)type).MakeInstantiatedType(inst)), reason);
                     }
                 }
             }

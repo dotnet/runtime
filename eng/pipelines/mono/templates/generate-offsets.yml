@@ -43,9 +43,9 @@ jobs:
       value: ''
     - ${{ if eq(parameters.isOfficialBuild, true) }}:
       - name: officialBuildIdArg
-        value: '/p:officialBuildId=$(Build.BuildNumber)'
+        value: '/p:OfficialBuildId=$(Build.BuildNumber)'
     - name: osOverride
-      value: -os Linux
+      value: -os linux
     - name: archType
       value: x64
     - ${{ parameters.variables }}
@@ -56,7 +56,7 @@ jobs:
     # Linux builds use docker images with dependencies preinstalled,
     # and FreeBSD builds use a build agent with dependencies
     # preinstalled, so we only need this step for OSX and Windows.
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+    - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup)
         displayName: Install native dependencies
 

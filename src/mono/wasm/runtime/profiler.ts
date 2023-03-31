@@ -36,9 +36,12 @@ export const enum MeasuredBlock {
     emscriptenStartup = "mono.emscriptenStartup",
     instantiateWasm = "mono.instantiateWasm",
     preInit = "mono.preInit",
+    preInitWorker = "mono.preInitWorker",
     preRun = "mono.preRun",
+    preRunWorker = "mono.preRunWorker",
     onRuntimeInitialized = "mono.onRuntimeInitialized",
     postRun = "mono.postRun",
+    memorySnapshot = "mono.memorySnapshot",
     loadRuntime = "mono.loadRuntime",
     bindingsInit = "mono.bindingsInit",
     bindJsFunction = "mono.bindJsFunction:",
@@ -91,7 +94,6 @@ export function mono_wasm_profiler_leave(method: MonoMethod): void {
             const chars = cwraps.mono_wasm_method_get_name(method);
             methodName = Module.UTF8ToString(chars);
             methodNames.set(method as any, methodName);
-            Module._free(chars as any);
         }
         globalThis.performance.measure(methodName, options);
     }

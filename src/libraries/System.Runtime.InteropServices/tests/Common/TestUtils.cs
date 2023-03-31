@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.DotNet.XUnitExtensions;
+using SourceGenerators.Tests;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;

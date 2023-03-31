@@ -190,7 +190,7 @@ namespace System.Collections.Tests
                     IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
                     if (casted.Count() > 0)
                     {
-                        var keys = casted.Keys.GetEnumerator();
+                        IEnumerator<TKey> keys = casted.Keys.GetEnumerator();
                         keys.MoveNext();
                         casted[keys.Current] = CreateTValue(12);
                         return true;
@@ -205,7 +205,7 @@ namespace System.Collections.Tests
                     IDictionary<TKey, TValue> casted = ((IDictionary<TKey, TValue>)enumerable);
                     if (casted.Count() > 0)
                     {
-                        var keys = casted.Keys.GetEnumerator();
+                        IEnumerator<TKey> keys = casted.Keys.GetEnumerator();
                         keys.MoveNext();
                         casted.Remove(keys.Current);
                         return true;
@@ -421,7 +421,7 @@ namespace System.Collections.Tests
                 ICollection<TKey> keys = dictionary.Keys;
                 IEnumerator<TKey> keysEnum = keys.GetEnumerator();
                 dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
-                if (IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified)
+                if (count == 0 ? Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException : IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified)
                 {
                     Assert.Throws<InvalidOperationException>(() => keysEnum.MoveNext());
                     Assert.Throws<InvalidOperationException>(() => keysEnum.Reset());
@@ -455,7 +455,7 @@ namespace System.Collections.Tests
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             ICollection<TKey> keys = dictionary.Keys;
-            var enumerator = keys.GetEnumerator();
+            IEnumerator<TKey> enumerator = keys.GetEnumerator();
             if (IDictionary_Generic_Keys_Values_Enumeration_ResetImplemented)
                 enumerator.Reset();
             else
@@ -528,7 +528,7 @@ namespace System.Collections.Tests
                 ICollection<TValue> values = dictionary.Values;
                 IEnumerator<TValue> valuesEnum = values.GetEnumerator();
                 dictionary.Add(GetNewKey(dictionary), CreateTValue(3432));
-                if (IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified)
+                if (count == 0 ? Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException : IDictionary_Generic_Keys_Values_Enumeration_ThrowsInvalidOperation_WhenParentModified)
                 {
                     Assert.Throws<InvalidOperationException>(() => valuesEnum.MoveNext());
                     Assert.Throws<InvalidOperationException>(() => valuesEnum.Reset());
@@ -562,7 +562,7 @@ namespace System.Collections.Tests
         {
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             ICollection<TValue> values = dictionary.Values;
-            var enumerator = values.GetEnumerator();
+            IEnumerator<TValue> enumerator = values.GetEnumerator();
             if (IDictionary_Generic_Keys_Values_Enumeration_ResetImplemented)
                 enumerator.Reset();
             else

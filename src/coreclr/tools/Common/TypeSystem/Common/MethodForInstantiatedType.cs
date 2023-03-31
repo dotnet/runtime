@@ -109,6 +109,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public override bool IsPublic
+        {
+            get
+            {
+                return _typicalMethodDef.IsPublic;
+            }
+        }
+
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
             return _typicalMethodDef.HasCustomAttribute(attributeNamespace, attributeName);
@@ -124,6 +132,14 @@ namespace Internal.TypeSystem
             get
             {
                 return _typicalMethodDef.IsDefaultConstructor;
+            }
+        }
+
+        public override bool IsStaticConstructor
+        {
+            get
+            {
+                return _typicalMethodDef.IsStaticConstructor;
             }
         }
 

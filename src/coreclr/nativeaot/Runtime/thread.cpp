@@ -17,7 +17,6 @@
 #include "holder.h"
 #include "Crst.h"
 #include "event.h"
-#include "RWLock.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "thread.inl"
@@ -260,7 +259,10 @@ void Thread::Construct()
     // alloc_context ever needs different initialization, a matching change to the tls_CurrentThread
     // static initialization will need to be made.
 
-    m_uPalThreadIdForLogging = PalGetCurrentThreadIdForLogging();
+    m_pTransitionFrame = TOP_OF_STACK_MARKER;
+    m_pDeferredTransitionFrame = TOP_OF_STACK_MARKER;
+    m_hPalThread = INVALID_HANDLE_VALUE;
+
     m_threadId.SetToCurrentThread();
 
     HANDLE curProcessPseudo = PalGetCurrentProcess();
@@ -275,8 +277,6 @@ void Thread::Construct()
     if (!PalGetMaximumStackBounds(&m_pStackLow, &m_pStackHigh))
         RhFailFast();
 
-    m_pTEB = PalNtCurrentTeb();
-
 #ifdef STRESS_LOG
     if (StressLog::StressLogOn(~0u, 0))
         m_pThreadStressLog = StressLog::CreateThreadStressLog(this);
@@ -285,7 +285,6 @@ void Thread::Construct()
     // Everything else should be initialized to 0 via the static initialization of tls_CurrentThread.
 
     ASSERT(m_pThreadLocalModuleStatics == NULL);
-    ASSERT(m_numThreadLocalModuleStatics == 0);
 
     ASSERT(m_pGCFrameRegistrations == NULL);
 
@@ -328,7 +327,7 @@ bool Thread::CatchAtSafePoint()
 
 uint64_t Thread::GetPalThreadIdForLogging()
 {
-    return m_uPalThreadIdForLogging;
+    return *(uint64_t*)&m_threadId;
 }
 
 bool Thread::IsCurrentThread()
@@ -338,12 +337,8 @@ bool Thread::IsCurrentThread()
 
 void Thread::Detach()
 {
-    // Thread::Destroy is called when the thread's "home" fiber dies.  We mark the thread as "detached" here
-    // so that we can validate, in our DLL_THREAD_DETACH handler, that the thread was already destroyed at that
-    // point.
-    SetDetached();
-
     RedhawkGCInterface::ReleaseAllocContext(GetAllocContext());
+    SetDetached();
 }
 
 void Thread::Destroy()
@@ -352,18 +347,6 @@ void Thread::Destroy()
 
     if (m_hPalThread != INVALID_HANDLE_VALUE)
         PalCloseHandle(m_hPalThread);
-
-    if (m_pThreadLocalModuleStatics != NULL)
-    {
-        for (uint32_t i = 0; i < m_numThreadLocalModuleStatics; i++)
-        {
-            if (m_pThreadLocalModuleStatics[i] != NULL)
-            {
-                RhHandleFree(m_pThreadLocalModuleStatics[i]);
-            }
-        }
-        delete[] m_pThreadLocalModuleStatics;
-    }
 
 #ifdef STRESS_LOG
     ThreadStressLog* ptsl = reinterpret_cast<ThreadStressLog*>(GetThreadStressLog());
@@ -631,10 +614,20 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
     Thread* pThread = (Thread*) pThreadToHijack;
     if (pThread == NULL)
     {
-        pThread = ThreadStore::GetCurrentThread();
+        pThread = ThreadStore::GetCurrentThreadIfAvailable();
+        if (pThread == NULL)
+        {
+            ASSERT(!"a not attached thread got signaled");
+            // perhaps we share the signal with something else?
+            return;
+        }
 
-        ASSERT(pThread != NULL);
-        ASSERT(pThread != ThreadStore::GetSuspendingThread());
+        if (pThread == ThreadStore::GetSuspendingThread())
+        {
+            ASSERT(!"trying to suspend suspending thread");
+            // perhaps we share the signal with something else?
+            return;
+        }
     }
 
     // we have a thread stopped, and we do not know where exactly.
@@ -1077,6 +1070,23 @@ void Thread::SetDetached()
     SetState(TSF_Detached);
 }
 
+bool Thread::IsActivationPending()
+{
+    return IsStateSet(TSF_ActivationPending);
+}
+
+void Thread::SetActivationPending(bool isPending)
+{
+    if (isPending)
+    {
+        SetState(TSF_ActivationPending);
+    }
+    else
+    {
+        ClearState(TSF_ActivationPending);
+    }
+}
+
 #endif // !DACCESS_COMPILE
 
 void Thread::ValidateExInfoStack()
@@ -1094,20 +1104,6 @@ void Thread::ValidateExInfoStack()
     }
 #endif // _DEBUG
 #endif // !DACCESS_COMPILE
-}
-
-
-
-// Retrieve the start of the TLS storage block allocated for the given thread for a specific module identified
-// by the TLS slot index allocated to that module and the offset into the OS allocated block at which
-// Redhawk-specific data is stored.
-PTR_UInt8 Thread::GetThreadLocalStorage(uint32_t uTlsIndex, uint32_t uTlsStartOffset)
-{
-#if 0
-    return (*(uint8_t***)(m_pTEB + OFFSETOF__TEB__ThreadLocalStoragePointer))[uTlsIndex] + uTlsStartOffset;
-#else
-    return (*dac_cast<PTR_PTR_PTR_UInt8>(dac_cast<TADDR>(m_pTEB) + OFFSETOF__TEB__ThreadLocalStoragePointer))[uTlsIndex] + uTlsStartOffset;
-#endif
 }
 
 #ifndef DACCESS_COMPILE
@@ -1141,6 +1137,10 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
 
         return false; // bad transition
     }
+
+    // this is an ordinary transition to managed code
+    // GC threads should not do that
+    ASSERT(!IsGCSpecial());
 
     // save the previous transition frame
     pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;
@@ -1256,78 +1256,15 @@ COOP_PINVOKE_HELPER(Object *, RhpGetThreadAbortException, ())
     return pCurThread->GetThreadAbortException();
 }
 
-Object* Thread::GetThreadStaticStorageForModule(uint32_t moduleIndex)
+Object** Thread::GetThreadStaticStorage()
 {
-    // Return a pointer to the TLS storage if it has already been
-    // allocated for the specified module.
-    if (moduleIndex < m_numThreadLocalModuleStatics)
-    {
-        Object** threadStaticsStorageHandle = (Object**)m_pThreadLocalModuleStatics[moduleIndex];
-        if (threadStaticsStorageHandle != NULL)
-        {
-            return *threadStaticsStorageHandle;
-        }
-    }
-
-    return NULL;
+    return &m_pThreadLocalModuleStatics;
 }
 
-bool Thread::SetThreadStaticStorageForModule(Object * pStorage, uint32_t moduleIndex)
-{
-    // Grow thread local storage if needed.
-    if (m_numThreadLocalModuleStatics <= moduleIndex)
-    {
-        uint32_t newSize = moduleIndex + 1;
-        if (newSize < moduleIndex)
-        {
-            return false;
-        }
-
-        PTR_PTR_VOID pThreadLocalModuleStatics = new (nothrow) PTR_VOID[newSize];
-        if (pThreadLocalModuleStatics == NULL)
-        {
-            return false;
-        }
-
-        memset(&pThreadLocalModuleStatics[m_numThreadLocalModuleStatics], 0, sizeof(PTR_VOID) * (newSize - m_numThreadLocalModuleStatics));
-
-        if (m_pThreadLocalModuleStatics != NULL)
-        {
-            memcpy(pThreadLocalModuleStatics, m_pThreadLocalModuleStatics, sizeof(PTR_VOID) * m_numThreadLocalModuleStatics);
-            delete[] m_pThreadLocalModuleStatics;
-        }
-
-        m_pThreadLocalModuleStatics = pThreadLocalModuleStatics;
-        m_numThreadLocalModuleStatics = newSize;
-    }
-
-    if (m_pThreadLocalModuleStatics[moduleIndex] != NULL)
-    {
-        RhHandleSet(m_pThreadLocalModuleStatics[moduleIndex], pStorage);
-    }
-    else
-    {
-        void* threadStaticsStorageHandle = RhpHandleAlloc(pStorage, 2 /* Normal */);
-        if (threadStaticsStorageHandle == NULL)
-        {
-            return false;
-        }
-        m_pThreadLocalModuleStatics[moduleIndex] = threadStaticsStorageHandle;
-    }
-
-    return true;
-}
-
-COOP_PINVOKE_HELPER(Object*, RhGetThreadStaticStorageForModule, (uint32_t moduleIndex))
+COOP_PINVOKE_HELPER(Object**, RhGetThreadStaticStorage, ())
 {
     Thread * pCurrentThread = ThreadStore::RawGetCurrentThread();
-    return pCurrentThread->GetThreadStaticStorageForModule(moduleIndex);
-}
-
-COOP_PINVOKE_HELPER(FC_BOOL_RET, RhSetThreadStaticStorageForModule, (Array * pStorage, uint32_t moduleIndex))
-{
-    Thread * pCurrentThread = ThreadStore::RawGetCurrentThread();
-    FC_RETURN_BOOL(pCurrentThread->SetThreadStaticStorageForModule((Object*)pStorage, moduleIndex));
+    return pCurrentThread->GetThreadStaticStorage();
 }
 
 // This is function is used to quickly query a value that can uniquely identify a thread

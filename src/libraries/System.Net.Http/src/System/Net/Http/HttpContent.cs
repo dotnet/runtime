@@ -624,7 +624,7 @@ namespace System.Net.Http
             return true;
         }
 
-        private MemoryStream? CreateMemoryStream(long maxBufferSize, out Exception? error)
+        private LimitMemoryStream? CreateMemoryStream(long maxBufferSize, out Exception? error)
         {
             error = null;
 
@@ -832,7 +832,7 @@ namespace System.Net.Http
             return returnFunc(state);
         }
 
-        private static Exception CreateOverCapacityException(int maxBufferSize)
+        private static HttpRequestException CreateOverCapacityException(int maxBufferSize)
         {
             return new HttpRequestException(SR.Format(SR.net_http_content_buffersize_exceeded, maxBufferSize));
         }
@@ -1031,10 +1031,10 @@ namespace System.Net.Http
             }
 
             public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
-                TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+                TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
             public override void EndWrite(IAsyncResult asyncResult) =>
-                TaskToApm.End(asyncResult);
+                TaskToAsyncResult.End(asyncResult);
 
             public override void WriteByte(byte value)
             {

@@ -270,15 +270,6 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
             }
             return WALK_SKIP_SUBTREES;
 
-        case GT_ADDR:
-            newState.isUnderIndir = false;
-            // We'll assume p in "**p = " can be vulnerable because by changing 'p', someone
-            // could control where **p stores to.
-            {
-                comp->fgWalkTreePre(&tree->AsOp()->gtOp1, comp->gsMarkPtrsAndAssignGroups, (void*)&newState);
-            }
-            return WALK_SKIP_SUBTREES;
-
         case GT_ASG:
         {
             GenTreeOp* asg = tree->AsOp();
@@ -443,9 +434,8 @@ void Compiler::gsParamsToShadows()
         shadowVarDsc->lvType = type;
 
 #ifdef FEATURE_SIMD
-        shadowVarDsc->lvSIMDType            = varDsc->lvSIMDType;
         shadowVarDsc->lvUsedInSIMDIntrinsic = varDsc->lvUsedInSIMDIntrinsic;
-        if (varDsc->lvSIMDType)
+        if (varTypeIsSIMD(varDsc))
         {
             CorInfoType simdBaseJitType = varDsc->GetSimdBaseJitType();
             shadowVarDsc->SetSimdBaseJitType(simdBaseJitType);
@@ -463,12 +453,17 @@ void Compiler::gsParamsToShadows()
         {
             // We don't need unsafe value cls check here since we are copying the params and this flag
             // would have been set on the original param before reaching here.
-            lvaSetStruct(shadowVarNum, varDsc->GetStructHnd(), false);
+            lvaSetStruct(shadowVarNum, varDsc->GetLayout(), false);
             shadowVarDsc->lvIsMultiRegArg = varDsc->lvIsMultiRegArg;
             shadowVarDsc->lvIsMultiRegRet = varDsc->lvIsMultiRegRet;
         }
         shadowVarDsc->lvIsUnsafeBuffer = varDsc->lvIsUnsafeBuffer;
         shadowVarDsc->lvIsPtr          = varDsc->lvIsPtr;
+
+        if (varDsc->IsNeverNegative())
+        {
+            shadowVarDsc->SetIsNeverNegative(true);
+        }
 
 #ifdef DEBUG
         if (verbose)
@@ -568,8 +563,8 @@ void Compiler::gsParamsToShadows()
         if (type == TYP_STRUCT)
         {
             assert(shadowVarDsc->GetLayout() != nullptr);
-            assert(shadowVarDsc->lvExactSize != 0);
-            opAssign = gtNewBlkOpNode(dst, src, false, true);
+            assert(shadowVarDsc->lvExactSize() != 0);
+            opAssign = gtNewBlkOpNode(dst, src);
         }
         else
         {
@@ -618,7 +613,7 @@ void Compiler::gsParamsToShadows()
                 GenTree* opAssign = nullptr;
                 if (varDsc->TypeGet() == TYP_STRUCT)
                 {
-                    opAssign = gtNewBlkOpNode(dst, src, false, true);
+                    opAssign = gtNewBlkOpNode(dst, src);
                 }
                 else
                 {

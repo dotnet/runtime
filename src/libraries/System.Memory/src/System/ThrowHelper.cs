@@ -27,32 +27,32 @@ namespace System
         [DoesNotReturn]
         internal static void ThrowArgumentNullException(ExceptionArgument argument) { throw CreateArgumentNullException(argument); }
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Exception CreateArgumentNullException(ExceptionArgument argument) { return new ArgumentNullException(argument.ToString()); }
+        private static ArgumentNullException CreateArgumentNullException(ExceptionArgument argument) { return new ArgumentNullException(argument.ToString()); }
 
         [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException(ExceptionArgument argument) { throw CreateArgumentOutOfRangeException(argument); }
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Exception CreateArgumentOutOfRangeException(ExceptionArgument argument) { return new ArgumentOutOfRangeException(argument.ToString()); }
+        private static ArgumentOutOfRangeException CreateArgumentOutOfRangeException(ExceptionArgument argument) { return new ArgumentOutOfRangeException(argument.ToString()); }
 
         [DoesNotReturn]
         internal static void ThrowInvalidOperationException() { throw CreateInvalidOperationException(); }
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Exception CreateInvalidOperationException() { return new InvalidOperationException(); }
+        private static InvalidOperationException CreateInvalidOperationException() { return new InvalidOperationException(); }
 
         [DoesNotReturn]
         internal static void ThrowInvalidOperationException_EndPositionNotReached() { throw CreateInvalidOperationException_EndPositionNotReached(); }
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Exception CreateInvalidOperationException_EndPositionNotReached() { return new InvalidOperationException(SR.EndPositionNotReached); }
+        private static InvalidOperationException CreateInvalidOperationException_EndPositionNotReached() { return new InvalidOperationException(SR.EndPositionNotReached); }
 
         [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException_PositionOutOfRange() { throw CreateArgumentOutOfRangeException_PositionOutOfRange(); }
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Exception CreateArgumentOutOfRangeException_PositionOutOfRange() { return new ArgumentOutOfRangeException("position"); }
+        private static ArgumentOutOfRangeException CreateArgumentOutOfRangeException_PositionOutOfRange() { return new ArgumentOutOfRangeException("position"); }
 
         [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException_OffsetOutOfRange() { throw CreateArgumentOutOfRangeException_OffsetOutOfRange(); }
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static Exception CreateArgumentOutOfRangeException_OffsetOutOfRange() { return new ArgumentOutOfRangeException(nameof(ExceptionArgument.offset)); }
+        private static ArgumentOutOfRangeException CreateArgumentOutOfRangeException_OffsetOutOfRange() { return new ArgumentOutOfRangeException(nameof(ExceptionArgument.offset)); }
 
         //
         // ReadOnlySequence .ctor validation Throws coalesced to enable inlining of the .ctor
@@ -96,7 +96,7 @@ namespace System
         public static void ThrowStartOrEndArgumentValidationException(long start)
             => throw CreateStartOrEndArgumentValidationException(start);
 
-        private static Exception CreateStartOrEndArgumentValidationException(long start)
+        private static ArgumentOutOfRangeException CreateStartOrEndArgumentValidationException(long start)
         {
             if (start < 0)
                 return CreateArgumentOutOfRangeException(ExceptionArgument.start);

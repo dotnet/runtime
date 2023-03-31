@@ -55,11 +55,19 @@ namespace Microsoft.Interop.Analyzers
                     if (libraryImportAttrType == null)
                         return;
 
-                    context.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, libraryImportAttrType), SymbolKind.Method);
+                    TargetFrameworkSettings targetFramework = context.Options.AnalyzerConfigOptionsProvider.GlobalOptions.GetTargetFrameworkSettings();
+
+                    StubEnvironment env = new StubEnvironment(
+                        context.Compilation,
+                        targetFramework.TargetFramework,
+                        targetFramework.Version,
+                        context.Compilation.SourceModule.GetAttributes().Any(attr => attr.AttributeClass.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute));
+
+                    context.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, libraryImportAttrType, env), SymbolKind.Method);
                 });
         }
 
-        private static void AnalyzeSymbol(SymbolAnalysisContext context, INamedTypeSymbol libraryImportAttrType)
+        private static void AnalyzeSymbol(SymbolAnalysisContext context, INamedTypeSymbol libraryImportAttrType, StubEnvironment env)
         {
             var method = (IMethodSymbol)context.Symbol;
 
@@ -86,7 +94,6 @@ namespace Microsoft.Interop.Analyzers
             // If any diagnostics or failures to marshal are reported, then mark this diagnostic with a property signifying that it may require
             // later user work.
             AnyDiagnosticsSink diagnostics = new();
-            StubEnvironment env = context.Compilation.CreateStubEnvironment();
             AttributeData dllImportAttribute = method.GetAttributes().First(attr => attr.AttributeClass.ToDisplayString() == TypeNames.DllImportAttribute);
             SignatureContext targetSignatureContext = SignatureContext.Create(method, DefaultMarshallingInfoParser.Create(env, diagnostics, method, CreateInteropAttributeDataFromDllImport(dllImportData), dllImportAttribute), env, typeof(ConvertToLibraryImportAnalyzer).Assembly);
 
@@ -99,7 +106,7 @@ namespace Microsoft.Interop.Analyzers
 
             var forwarder = new Forwarder();
             // We don't actually need the bound generators. We just need them to be attempted to be bound to determine if the generator will be able to bind them.
-            _ = new BoundGenerators(targetSignatureContext.ElementTypeInformation, info =>
+            BoundGenerators generators = BoundGenerators.Create(targetSignatureContext.ElementTypeInformation, new CallbackGeneratorFactory((info, context) =>
             {
                 if (s_unsupportedTypeNames.Contains(info.ManagedType.FullTypeName))
                 {
@@ -111,16 +118,10 @@ namespace Microsoft.Interop.Analyzers
                     anyExplicitlyUnsupportedInfo = true;
                     return forwarder;
                 }
-                try
-                {
-                    return generatorFactoryKey.GeneratorFactory.Create(info, stubCodeContext);
-                }
-                catch (MarshallingNotSupportedException)
-                {
-                    mayRequireAdditionalWork = true;
-                    return forwarder;
-                }
-            });
+                return generatorFactoryKey.GeneratorFactory.Create(info, stubCodeContext);
+            }), stubCodeContext, forwarder, out var bindingFailures);
+
+            mayRequireAdditionalWork |= bindingFailures.Length > 0;
 
             if (anyExplicitlyUnsupportedInfo)
             {
@@ -143,7 +144,7 @@ namespace Microsoft.Interop.Analyzers
             if (info.MarshallingAttributeInfo is not MarshalAsInfo(UnmanagedType unmanagedType, _))
                 return false;
 
-            return !System.Enum.IsDefined(typeof(UnmanagedType), unmanagedType)
+            return !Enum.IsDefined(typeof(UnmanagedType), unmanagedType)
                 || unmanagedType == UnmanagedType.CustomMarshaler
                 || unmanagedType == UnmanagedType.Interface
                 || unmanagedType == UnmanagedType.IDispatch
@@ -152,9 +153,9 @@ namespace Microsoft.Interop.Analyzers
                 || unmanagedType == UnmanagedType.SafeArray;
         }
 
-        private static InteropAttributeData CreateInteropAttributeDataFromDllImport(DllImportData dllImportData)
+        private static InteropAttributeCompilationData CreateInteropAttributeDataFromDllImport(DllImportData dllImportData)
         {
-            InteropAttributeData interopData = new();
+            InteropAttributeCompilationData interopData = new();
             if (dllImportData.SetLastError)
             {
                 interopData = interopData with { IsUserDefined = interopData.IsUserDefined | InteropAttributeMember.SetLastError, SetLastError = true };
@@ -172,6 +173,18 @@ namespace Microsoft.Interop.Analyzers
             public bool AnyDiagnostics { get; private set; }
             public void ReportConfigurationNotSupported(AttributeData attributeData, string configurationName, string? unsupportedValue) => AnyDiagnostics = true;
             public void ReportInvalidMarshallingAttributeInfo(AttributeData attributeData, string reasonResourceName, params string[] reasonArgs) => AnyDiagnostics = true;
+        }
+
+        private sealed class CallbackGeneratorFactory : IMarshallingGeneratorFactory
+        {
+            private readonly Func<TypePositionInfo, StubCodeContext, IMarshallingGenerator> _func;
+
+            public CallbackGeneratorFactory(Func<TypePositionInfo, StubCodeContext, IMarshallingGenerator> func)
+            {
+                _func = func;
+            }
+
+            public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context) => _func(info, context);
         }
     }
 }

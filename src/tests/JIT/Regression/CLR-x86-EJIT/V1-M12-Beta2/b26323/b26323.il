@@ -11,7 +11,7 @@
 .assembly extern xunit.core {}
 .namespace Test
 {
-  .class auto ansi App extends [mscorlib]System.Object
+  .class public auto ansi App extends [mscorlib]System.Object
   {
     .field public int32 m_nField
     .method public specialname rtspecialname instance vararg void .ctor() il managed
@@ -27,7 +27,7 @@
 		ret
     }
 
-    .method private static int32 Main() il managed
+    .method public static int32 Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

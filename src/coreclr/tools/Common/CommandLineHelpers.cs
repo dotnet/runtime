@@ -70,14 +70,19 @@ namespace System.CommandLine
                 throw new NotImplementedException();
             }
 
-            if (token.Equals("windows", StringComparison.OrdinalIgnoreCase))
-                return TargetOS.Windows;
-            else if (token.Equals("linux", StringComparison.OrdinalIgnoreCase))
-                return TargetOS.Linux;
-            else if (token.Equals("osx", StringComparison.OrdinalIgnoreCase))
-                return TargetOS.OSX;
-
-            throw new CommandLineException($"Target OS '{token}' is not supported");
+            return token.ToLowerInvariant() switch
+            {
+                "linux" => TargetOS.Linux,
+                "win" or "windows" => TargetOS.Windows,
+                "osx" => TargetOS.OSX,
+                "freebsd" => TargetOS.FreeBSD,
+                "maccatalyst" => TargetOS.MacCatalyst,
+                "iossimulator" => TargetOS.iOSSimulator,
+                "ios" => TargetOS.iOS,
+                "tvossimulator" => TargetOS.tvOSSimulator,
+                "tvos" => TargetOS.tvOS,
+                _ => throw new CommandLineException($"Target OS '{token}' is not supported")
+            };
         }
 
         public static TargetArchitecture GetTargetArchitecture(string token)
@@ -94,22 +99,21 @@ namespace System.CommandLine
                     _ => throw new NotImplementedException()
                 };
             }
-
-            if (token.Equals("x86", StringComparison.OrdinalIgnoreCase))
-                return TargetArchitecture.X86;
-            else if (token.Equals("x64", StringComparison.OrdinalIgnoreCase))
-                return TargetArchitecture.X64;
-            else if (token.Equals("arm", StringComparison.OrdinalIgnoreCase) || token.Equals("armel", StringComparison.OrdinalIgnoreCase))
-                return TargetArchitecture.ARM;
-            else if (token.Equals("arm64", StringComparison.OrdinalIgnoreCase))
-                return TargetArchitecture.ARM64;
-            else if (token.Equals("loongarch64", StringComparison.OrdinalIgnoreCase))
-                return TargetArchitecture.LoongArch64;
-
-            throw new CommandLineException($"Target architecture '{token}' is not supported");
+            else
+            {
+                return token.ToLowerInvariant() switch
+                {
+                    "x86" => TargetArchitecture.X86,
+                    "x64" => TargetArchitecture.X64,
+                    "arm" or "armel" => TargetArchitecture.ARM,
+                    "arm64" => TargetArchitecture.ARM64,
+                    "loongarch64" => TargetArchitecture.LoongArch64,
+                    _ => throw new CommandLineException($"Target architecture '{token}' is not supported")
+                };
+            }
         }
 
-        public static void MakeReproPackage(string makeReproPath, string outputFilePath, string[] args, ParseResult res, IEnumerable<string> inputOptions)
+        public static void MakeReproPackage(string makeReproPath, string outputFilePath, string[] args, ParseResult res, IEnumerable<string> inputOptions, IEnumerable<string> outputOptions = null)
         {
             Directory.CreateDirectory(makeReproPath);
 
@@ -169,6 +173,8 @@ namespace System.CommandLine
 
                 HashSet<string> inputOptionNames = new HashSet<string>(inputOptions);
                 Dictionary<string, string> inputToReproPackageFileName = new();
+                HashSet<string> outputOptionNames = outputOptions == null ? new HashSet<string>() : new HashSet<string>(outputOptions);
+                Dictionary<string, string> outputToReproPackageFileName = new();
 
                 List<string> rspFile = new List<string>();
                 foreach (var option in res.CommandResult.Command.Options)
@@ -179,51 +185,71 @@ namespace System.CommandLine
                     }
 
                     IValueDescriptor descriptor = option;
-                    object val = res.CommandResult.GetValueForOption(option);
+                    object val = res.CommandResult.GetValue(option);
                     if (val is not null && !(descriptor.HasDefaultValue && descriptor.GetDefaultValue().Equals(val)))
                     {
-                        if (val is IEnumerable<string> values)
+                        if (val is IEnumerable<string> || val is IDictionary<string, string>)
                         {
+                            if (val is not IEnumerable<string> values)
+                                values = ((IDictionary<string, string>)val).Values;
+
                             if (inputOptionNames.Contains(option.Name))
                             {
                                 Dictionary<string, string> dictionary = new();
                                 foreach (string optInList in values)
                                 {
-                                    AppendExpandedPaths(dictionary, optInList, false);
+                                    if (!string.IsNullOrEmpty(optInList))
+                                        AppendExpandedPaths(dictionary, optInList, false);
                                 }
                                 foreach (string inputFile in dictionary.Values)
                                 {
-                                    rspFile.Add($"--{option.Name}:{ConvertFromInputPathToReproPackagePath(inputFile)}");
+                                    rspFile.Add($"--{option.Name}:{ConvertFromOriginalPathToReproPackagePath(input: true, inputFile)}");
                                 }
                             }
                             else
                             {
                                 foreach (string optInList in values)
                                 {
-                                    rspFile.Add($"--{option.Name}:{optInList}");
+                                    if (!string.IsNullOrEmpty(optInList))
+                                        rspFile.Add($"--{option.Name}:{optInList}");
                                 }
                             }
                         }
                         else
                         {
-                            rspFile.Add($"--{option.Name}:{val}");
+                            if (val is string stringVal && !string.IsNullOrEmpty(stringVal))
+                            {
+                                if (outputOptionNames.Contains(option.Name))
+                                {
+                                    // if output option is used, overwrite the path to the repro package
+                                    stringVal = ConvertFromOriginalPathToReproPackagePath(input: false, stringVal);
+                                }
+                                rspFile.Add($"--{option.Name}:{stringVal}");
+                            }
+                            else
+                            {
+                                rspFile.Add($"--{option.Name}:{val}");
+                            }
                         }
                     }
                 }
 
                 foreach (var argument in res.CommandResult.Command.Arguments)
                 {
-                    object val = res.CommandResult.GetValueForArgument(argument);
-                    if (val is IEnumerable<string> values)
+                    object val = res.CommandResult.GetValue(argument);
+                    if (val is IEnumerable<string> || val is IDictionary<string, string>)
                     {
+                        if (val is not IEnumerable<string> values)
+                            values = ((IDictionary<string, string>)val).Values;
+
                         foreach (string optInList in values)
                         {
-                            rspFile.Add($"{ConvertFromInputPathToReproPackagePath((string)optInList)}");
+                            rspFile.Add($"{ConvertFromOriginalPathToReproPackagePath(input: true, optInList)}");
                         }
                     }
                     else
                     {
-                        rspFile.Add($"{ConvertFromInputPathToReproPackagePath((string)val)}");
+                        rspFile.Add($"{ConvertFromOriginalPathToReproPackagePath(input: true, (string)val)}");
                     }
                 }
 
@@ -234,25 +260,30 @@ namespace System.CommandLine
                         writer.WriteLine(s);
                 }
 
-                string ConvertFromInputPathToReproPackagePath(string inputPath)
+                string ConvertFromOriginalPathToReproPackagePath(bool input, string originalPath)
                 {
-                    if (inputToReproPackageFileName.TryGetValue(inputPath, out string reproPackagePath))
+                    var originalToReproPackageFileName = input ? inputToReproPackageFileName : outputToReproPackageFileName;
+                    if (originalToReproPackageFileName.TryGetValue(originalPath, out string reproPackagePath))
                     {
                         return reproPackagePath;
                     }
 
                     try
                     {
-                        string inputFileDir = inputToReproPackageFileName.Count.ToString();
-                        reproPackagePath = Path.Combine(inputFileDir, Path.GetFileName(inputPath));
-                        archive.CreateEntryFromFile(inputPath, reproPackagePath);
-                        inputToReproPackageFileName.Add(inputPath, reproPackagePath);
+                        string prefix = input ? string.Empty : "out_"; // prefix output directories for clarity
+                        string reproFileDir = prefix + originalToReproPackageFileName.Count.ToString() + Path.DirectorySeparatorChar;
+                        reproPackagePath = Path.Combine(reproFileDir, Path.GetFileName(originalPath));
+                        if (!input)
+                            archive.CreateEntry(reproFileDir); // for outputs just create output directory
+                        else
+                            archive.CreateEntryFromFile(originalPath, reproPackagePath);
+                        originalToReproPackageFileName.Add(originalPath, reproPackagePath);
 
                         return reproPackagePath;
                     }
                     catch
                     {
-                        return inputPath;
+                        return originalPath;
                     }
                 }
             }
@@ -276,12 +307,12 @@ namespace System.CommandLine
 
                     string simpleName = Path.GetFileNameWithoutExtension(fileName);
 
-                    if (dictionary.ContainsKey(simpleName))
+                    if (dictionary.TryGetValue(simpleName, out string otherFullFileName))
                     {
                         if (strict)
                         {
                             throw new CommandLineException("Multiple input files matching same simple name " +
-                                fullFileName + " " + dictionary[simpleName]);
+                                fullFileName + " " + otherFullFileName);
                         }
                     }
                     else

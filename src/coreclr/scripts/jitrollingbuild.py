@@ -66,7 +66,7 @@ arch_help = "Architecture (x64, x86, arm, arm64). Default: current architecture.
 
 build_type_help = "Build type (Debug, Checked, Release). Default: Checked."
 
-host_os_help = "OS (windows, OSX, Linux). Default: current OS."
+host_os_help = "OS (windows, osx, linux). Default: current OS."
 
 spmi_location_help = """\
 Directory in which to put SuperPMI files, such as downloaded MCH files, asm diffs, and repro .MC files.
@@ -183,9 +183,9 @@ def determine_jit_name(coreclr_args):
     """
 
     jit_base_name = "clrjit"
-    if coreclr_args.host_os == "OSX":
+    if coreclr_args.host_os == "osx":
         return "lib" + jit_base_name + ".dylib"
-    elif coreclr_args.host_os == "Linux":
+    elif coreclr_args.host_os == "linux":
         return "lib" + jit_base_name + ".so"
     elif coreclr_args.host_os == "windows":
         return jit_base_name + ".dll"
@@ -468,10 +468,10 @@ def upload_command(coreclr_args):
     # We don't do a recursive walk because the JIT is also copied to the "sharedFramework" subdirectory,
     # so we don't want to pick that up.
 
-    if coreclr_args.host_os == "OSX":
+    if coreclr_args.host_os == "osx":
         allowed_extensions = [ ".dylib" ]
         # Add .dwarf for debug info
-    elif coreclr_args.host_os == "Linux":
+    elif coreclr_args.host_os == "linux":
         allowed_extensions = [ ".so" ]
         # Add .dbg for debug info
     elif coreclr_args.host_os == "windows":

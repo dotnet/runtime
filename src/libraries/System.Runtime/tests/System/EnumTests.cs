@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Xunit;
@@ -77,27 +76,24 @@ namespace System.Tests
             yield return new object[] { ulong.MinValue.ToString(), false, (UInt64Enum)ulong.MinValue };
             yield return new object[] { ulong.MaxValue.ToString(), false, (UInt64Enum)ulong.MaxValue };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // Char
                 yield return new object[] { "Value1", false, Enum.ToObject(s_charEnumType, (char)1) };
                 yield return new object[] { "vaLue2", true, Enum.ToObject(s_charEnumType, (char)2) };
                 yield return new object[] { "1", false, Enum.ToObject(s_charEnumType, '1') };
 
-                // Bool
-                yield return new object[] { "Value1", false, Enum.ToObject(s_boolEnumType, true) };
-                yield return new object[] { "vaLue2", true, Enum.ToObject(s_boolEnumType, false) };
+                // Single
+                yield return new object[] { "Value1", false, Enum.GetValues(s_floatEnumType).GetValue(1) };
+                yield return new object[] { "vaLue2", true, Enum.GetValues(s_floatEnumType).GetValue(2) };
+                yield return new object[] { "1", false, Enum.GetValues(s_floatEnumType).GetValue(1) };
+                yield return new object[] { "1.0", false, Enum.GetValues(s_floatEnumType).GetValue(1) };
 
-                if (!PlatformDetection.IsMonoRuntime) // [ActiveIssue("https://github.com/dotnet/runtime/issues/29266")]
-                {
-                    // Single - parses successfully, but doesn't properly represent the underlying value
-                    yield return new object[] { "Value1", false, Enum.GetValues(s_floatEnumType).GetValue(0) };
-                    yield return new object[] { "vaLue2", true, Enum.GetValues(s_floatEnumType).GetValue(0) };
-
-                    // Double - parses successfully, but doesn't properly represent the underlying value
-                    yield return new object[] { "Value1", false, Enum.GetValues(s_doubleEnumType).GetValue(0) };
-                    yield return new object[] { "vaLue2", true, Enum.GetValues(s_doubleEnumType).GetValue(0) };
-                }
+                // Double
+                yield return new object[] { "Value1", false, Enum.GetValues(s_doubleEnumType).GetValue(1) };
+                yield return new object[] { "vaLue2", true, Enum.GetValues(s_doubleEnumType).GetValue(2) };
+                yield return new object[] { "1", false, Enum.GetValues(s_doubleEnumType).GetValue(1) };
+                yield return new object[] { "1.0", false, Enum.GetValues(s_doubleEnumType).GetValue(1) };
             }
 
             // SimpleEnum
@@ -203,25 +199,11 @@ namespace System.Tests
             yield return new object[] { typeof(UInt64Enum), "-1", false, typeof(OverflowException) };
             yield return new object[] { typeof(UInt64Enum), "18446744073709551616", false, typeof(OverflowException) };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // Char
                 yield return new object[] { s_charEnumType, ((char)1).ToString(), false, typeof(ArgumentException) };
                 yield return new object[] { s_charEnumType, ((char)5).ToString(), false, typeof(ArgumentException) };
-
-                // Bool
-                yield return new object[] { s_boolEnumType, bool.TrueString, false, typeof(ArgumentException) };
-                yield return new object[] { s_boolEnumType, bool.FalseString, false, typeof(ArgumentException) };
-
-                // Single
-                yield return new object[] { s_floatEnumType, "1", false, typeof(ArgumentException) };
-                yield return new object[] { s_floatEnumType, "5", false, typeof(ArgumentException) };
-                yield return new object[] { s_floatEnumType, "1.0", false, typeof(ArgumentException) };
-
-                // Double
-                yield return new object[] { s_doubleEnumType, "1", false, typeof(ArgumentException) };
-                yield return new object[] { s_doubleEnumType, "5", false, typeof(ArgumentException) };
-                yield return new object[] { s_doubleEnumType, "1.0", false, typeof(ArgumentException) };
 
                 // IntPtr
                 yield return new object[] { s_intPtrEnumType, "1", false, typeof(InvalidCastException) };
@@ -465,26 +447,11 @@ namespace System.Tests
             yield return new object[] { (char)4, null };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         [MemberData(nameof(GetName_CharEnum_TestData))]
         public void GetName_InvokeCharEnum_ReturnsExpected(object value, string expected)
         {
             TestGetName(s_charEnumType, value, expected);
-        }
-
-        public static IEnumerable<object[]> GetName_BoolEnum_TestData()
-        {
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), "Value1" };
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value2"), "Value2" };
-            yield return new object[] { true, "Value1" };
-            yield return new object[] { false, "Value2" };
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        [MemberData(nameof(GetName_BoolEnum_TestData))]
-        public void GetName_InvokeBoolEnum_ReturnsExpected(object value, string expected)
-        {
-            TestGetName(s_boolEnumType, value, expected);
         }
 
         private void TestGetName(Type enumType, object value, string expected)
@@ -523,7 +490,7 @@ namespace System.Tests
         [InlineData(typeof(Enum))]
         public void GetName_EnumTypeNotEnum_ThrowsArgumentException(Type enumType)
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => Enum.GetName(enumType, 1));
+            AssertExtensions.Throws<ArgumentException>("enumType", () => Enum.GetName(enumType, 1));
         }
 
         [Fact]
@@ -549,7 +516,6 @@ namespace System.Tests
         [InlineData(typeof(SByteEnum), 0xffffffffffffff80LU, "Min")]
         [InlineData(typeof(SByteEnum), 0xffffff80u, null)]
         [InlineData(typeof(SByteEnum), unchecked((int)(0xffffff80u)), "Min")]
-        [InlineData(typeof(SByteEnum), true, "One")]
         [InlineData(typeof(SByteEnum), (char)1, "One")]
         [InlineData(typeof(SByteEnum), SimpleEnum.Red, "One")] // API doesn't care if you pass in a completely different enum
         public static void GetName_NonIntegralTypes_ReturnsExpected(Type enumType, object value, string expected)
@@ -721,28 +687,11 @@ namespace System.Tests
             yield return new object[] { (char)99, false };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         [MemberData(nameof(IsDefined_CharEnum_TestData))]
         public void IsDefined_InvokeCharEnum_ReturnsExpected(object value, bool expected)
         {
             Assert.Equal(expected, Enum.IsDefined(s_charEnumType, value));
-        }
-
-        public static IEnumerable<object[]> IsDefined_BoolEnum_TestData()
-        {
-            yield return new object[] { "Value1", true };
-            yield return new object[] { "None", false };
-            yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), true };
-            yield return new object[] { "Value1", true };
-            yield return new object[] { true, true };
-            yield return new object[] { false, true };
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        [MemberData(nameof(IsDefined_BoolEnum_TestData))]
-        public void IsDefined_InvokeBoolEnum_ReturnsExpected(object value, bool expected)
-        {
-            Assert.Equal(expected, Enum.IsDefined(s_boolEnumType, value));
         }
 
         [Fact]
@@ -759,7 +708,6 @@ namespace System.Tests
 
         [Theory]
         [InlineData(Int32Enum.One)]
-        [InlineData(true)]
         [InlineData('a')]
         public void IsDefined_InvalidValue_ThrowsArgumentException(object value)
         {
@@ -778,6 +726,19 @@ namespace System.Tests
         public void IsDefined_NonIntegerValue_ThrowsThrowsInvalidOperationException(object value)
         {
             Assert.Throws<InvalidOperationException>(() => Enum.IsDefined(typeof(SimpleEnum), value));
+        }
+
+        [Fact]
+        public void IsDefined_LargeEnum_AllValuesFound()
+        {
+            for (int i = 0; i < 256; i++)
+            {
+                Assert.True(Enum.IsDefined(typeof(CompleteSByteEnum), (CompleteSByteEnum)i));
+                Assert.True(Enum.IsDefined((CompleteSByteEnum)i));
+
+                Assert.True(Enum.IsDefined(typeof(CompleteSByteRandomOrderEnum), (CompleteSByteRandomOrderEnum)i));
+                Assert.True(Enum.IsDefined((CompleteSByteRandomOrderEnum)i));
+            }
         }
 
         public static IEnumerable<object[]> HasFlag_TestData()
@@ -854,7 +815,7 @@ namespace System.Tests
             yield return new object[] { (UInt64Enum)0x3f06, (UInt64Enum)0x0010, false };
             yield return new object[] { (UInt64Enum)0x3f06, (UInt64Enum)0x3f16, false };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // Char
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3000"), true };
@@ -864,12 +825,6 @@ namespace System.Tests
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3f06"), true };
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x0010"), false };
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3f16"), false };
-
-                // Bool
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value1"), true };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value2"), true };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value2"), true };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value1"), false };
 
                 // Single
                 yield return new object[] { Enum.ToObject(s_floatEnumType, 0x3f06), Enum.ToObject(s_floatEnumType, 0x0000), true };
@@ -971,15 +926,19 @@ namespace System.Tests
             yield return new object[] { typeof(UInt64Enum), (ulong)77, (UInt64Enum)77 };
             yield return new object[] { typeof(UInt64Enum), (ulong)0x0123456789abcdefL, (UInt64Enum)0x0123456789abcdefL };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // Char
                 yield return new object[] { s_charEnumType, (char)1, Enum.Parse(s_charEnumType, "Value1") };
                 yield return new object[] { s_charEnumType, (char)2, Enum.Parse(s_charEnumType, "Value2") };
 
-                // Bool
-                yield return new object[] { s_boolEnumType, true, Enum.Parse(s_boolEnumType, "Value1") };
-                yield return new object[] { s_boolEnumType, false, Enum.Parse(s_boolEnumType, "Value2") };
+                // Float
+                yield return new object[] { s_floatEnumType, 1.0f, Enum.Parse(s_floatEnumType, "Value1") };
+                yield return new object[] { s_floatEnumType, 2.0f, Enum.Parse(s_floatEnumType, "Value2") };
+
+                // Double
+                yield return new object[] { s_doubleEnumType, 1.0, Enum.Parse(s_doubleEnumType, "Value1") };
+                yield return new object[] { s_doubleEnumType, 2.0, Enum.Parse(s_doubleEnumType, "Value2") };
             }
         }
 
@@ -996,7 +955,7 @@ namespace System.Tests
             yield return new object[] { typeof(Enum), typeof(ArgumentException) };
             yield return new object[] { typeof(object), typeof(ArgumentException) };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
                 yield return new object[] { GetNonRuntimeEnumTypeBuilder(typeof(int)), typeof(ArgumentException) };
         }
 
@@ -1021,10 +980,8 @@ namespace System.Tests
             yield return new object[] { typeof(SimpleEnum), null, typeof(ArgumentNullException) };
             yield return new object[] { typeof(SimpleEnum), "Hello", typeof(ArgumentException) };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
-                yield return new object[] { s_floatEnumType, 1.0f, typeof(ArgumentException) };
-                yield return new object[] { s_doubleEnumType, 1.0, typeof(ArgumentException) };
                 yield return new object[] { s_intPtrEnumType, (IntPtr)1, typeof(ArgumentException) };
                 yield return new object[] { s_uintPtrEnumType, (UIntPtr)1, typeof(ArgumentException) };
             }
@@ -1108,7 +1065,7 @@ namespace System.Tests
             yield return new object[] { UInt64Enum.One, new object(), false };
             yield return new object[] { UInt64Enum.One, null, false };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // Char
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), Enum.Parse(s_charEnumType, "Value1"), true };
@@ -1117,14 +1074,6 @@ namespace System.Tests
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), (char)1, false };
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), new object(), false };
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), null, false };
-
-                // Bool
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value1"), true };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value2"), false };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), UInt16Enum.One, false };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), true, false };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), new object(), false };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), null, false };
 
                 // Single
                 yield return new object[] { Enum.ToObject(s_floatEnumType, 1), Enum.ToObject(s_floatEnumType, 1), true };
@@ -1219,19 +1168,13 @@ namespace System.Tests
             yield return new object[] { UInt64Enum.One, UInt64Enum.Max, -1 };
             yield return new object[] { UInt64Enum.One, null, 1 };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // Char
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value2"), Enum.Parse(s_charEnumType, "Value2"), 0 };
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value2"), Enum.Parse(s_charEnumType, "Value1"), 1 };
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value1"), Enum.Parse(s_charEnumType, "Value2"), -1 };
                 yield return new object[] { Enum.Parse(s_charEnumType, "Value2"), null, 1 };
-
-                // Bool
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value1"), 0 };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), Enum.Parse(s_boolEnumType, "Value2"), 1 };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value1"), -1 };
-                yield return new object[] { Enum.Parse(s_boolEnumType, "Value1"), null, 1 };
 
                 // Single
                 yield return new object[] { Enum.ToObject(s_floatEnumType, 1), Enum.ToObject(s_floatEnumType, 1), 0 };
@@ -1284,7 +1227,7 @@ namespace System.Tests
             yield return new object[] { typeof(Int64Enum), typeof(long) };
             yield return new object[] { typeof(UInt64Enum), typeof(ulong) };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 yield return new object[] { s_charEnumType, typeof(char) };
                 yield return new object[] { s_boolEnumType, typeof(bool) };
@@ -1390,7 +1333,7 @@ namespace System.Tests
             Assert.Equal(expected, Enum.GetNames<UInt64Enum>());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetNames_InvokeCharEnum_ReturnsExpected()
         {
             var expected = new string[] { "Value0x0000", "Value1", "Value2", "Value0x0010", "Value0x0f06", "Value0x1000", "Value0x3000", "Value0x3f06", "Value0x3f16" };
@@ -1398,31 +1341,23 @@ namespace System.Tests
             Assert.NotSame(Enum.GetNames(s_charEnumType), Enum.GetNames(s_charEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        public void GetNames_InvokeBoolEnum_ReturnsExpected()
-        {
-            var expected = new string[] { "Value2", "Value1" };
-            Assert.Equal(expected, Enum.GetNames(s_boolEnumType));
-            Assert.NotSame(Enum.GetNames(s_boolEnumType), Enum.GetNames(s_boolEnumType));
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetNames_InvokeSingleEnum_ReturnsExpected()
         {
-            var expected = new string[] { "Value1", "Value2", "Value0x3f06", "Value0x3000", "Value0x0f06", "Value0x1000", "Value0x0000", "Value0x0010", "Value0x3f16" };
+            var expected = new string[] { "Value0x0000", "Value1", "Value2", "Value0x0010", "Value0x0f06", "Value0x1000", "Value0x3000", "Value0x3f06", "Value0x3f16" };
             Assert.Equal(expected, Enum.GetNames(s_floatEnumType));
             Assert.NotSame(Enum.GetNames(s_floatEnumType), Enum.GetNames(s_floatEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetNames_InvokeDoubleEnum_ReturnsExpected()
         {
-            var expected = new string[] { "Value1", "Value2", "Value0x3f06", "Value0x3000", "Value0x0f06", "Value0x1000", "Value0x0000", "Value0x0010", "Value0x3f16" };
+            var expected = new string[] { "Value0x0000", "Value1", "Value2", "Value0x0010", "Value0x0f06", "Value0x1000", "Value0x3000", "Value0x3f06", "Value0x3f16" };
             Assert.Equal(expected, Enum.GetNames(s_doubleEnumType));
             Assert.NotSame(Enum.GetNames(s_doubleEnumType), Enum.GetNames(s_doubleEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetNames_InvokeIntPtrEnum_ReturnsExpected()
         {
             var expected = new string[0];
@@ -1430,7 +1365,7 @@ namespace System.Tests
             Assert.Same(Enum.GetNames(s_intPtrEnumType), Enum.GetNames(s_intPtrEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetNames_InvokeUIntPtrEnum_ReturnsExpected()
         {
             var expected = new string[0];
@@ -1535,7 +1470,7 @@ namespace System.Tests
             Assert.Equal(expected, Enum.GetValues<UInt64Enum>());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetValues_InvokeCharEnum_ReturnsExpected()
         {
             var expected = new object[] { Enum.Parse(s_charEnumType, "Value0x0000"), Enum.Parse(s_charEnumType, "Value1"), Enum.Parse(s_charEnumType, "Value2"), Enum.Parse(s_charEnumType, "Value0x0010"), Enum.Parse(s_charEnumType, "Value0x0f06"), Enum.Parse(s_charEnumType, "Value0x1000"), Enum.Parse(s_charEnumType, "Value0x3000"), Enum.Parse(s_charEnumType, "Value0x3f06"), Enum.Parse(s_charEnumType, "Value0x3f16") };
@@ -1543,31 +1478,23 @@ namespace System.Tests
             Assert.NotSame(Enum.GetValues(s_charEnumType), Enum.GetValues(s_charEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        public void GetValues_InvokeBoolEnum_ReturnsExpected()
-        {
-            var expected = new object[] { Enum.Parse(s_boolEnumType, "Value2"), Enum.Parse(s_boolEnumType, "Value1") };
-            Assert.Equal(expected, Enum.GetValues(s_boolEnumType));
-            Assert.NotSame(Enum.GetValues(s_boolEnumType), Enum.GetValues(s_boolEnumType));
-        }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetValues_InvokeSingleEnum_ReturnsExpected()
         {
-            var expected = new object[] { Enum.Parse(s_floatEnumType, "Value1"), Enum.Parse(s_floatEnumType, "Value2"), Enum.Parse(s_floatEnumType, "Value0x3f06"), Enum.Parse(s_floatEnumType, "Value0x3000"), Enum.Parse(s_floatEnumType, "Value0x0f06"), Enum.Parse(s_floatEnumType, "Value0x1000"), Enum.Parse(s_floatEnumType, "Value0x0000"), Enum.Parse(s_floatEnumType, "Value0x0010"), Enum.Parse(s_floatEnumType, "Value0x3f16") };
+            var expected = new object[] { Enum.Parse(s_floatEnumType, "Value0x0000"), Enum.Parse(s_floatEnumType, "Value1"), Enum.Parse(s_floatEnumType, "Value2"), Enum.Parse(s_floatEnumType, "Value0x0010"), Enum.Parse(s_floatEnumType, "Value0x0f06"), Enum.Parse(s_floatEnumType, "Value0x1000"), Enum.Parse(s_floatEnumType, "Value0x3000"), Enum.Parse(s_floatEnumType, "Value0x3f06"), Enum.Parse(s_floatEnumType, "Value0x3f16") };
             Assert.Equal(expected, Enum.GetValues(s_floatEnumType));
             Assert.NotSame(Enum.GetValues(s_floatEnumType), Enum.GetValues(s_floatEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetValues_InvokeDoubleEnum_ReturnsExpected()
         {
-            var expected = new object[] { Enum.Parse(s_doubleEnumType, "Value1"), Enum.Parse(s_doubleEnumType, "Value2"), Enum.Parse(s_doubleEnumType, "Value0x3f06"), Enum.Parse(s_doubleEnumType, "Value0x3000"), Enum.Parse(s_doubleEnumType, "Value0x0f06"), Enum.Parse(s_doubleEnumType, "Value0x1000"), Enum.Parse(s_doubleEnumType, "Value0x0000"), Enum.Parse(s_doubleEnumType, "Value0x0010"), Enum.Parse(s_doubleEnumType, "Value0x3f16") };
+            var expected = new object[] { Enum.Parse(s_doubleEnumType, "Value0x0000"), Enum.Parse(s_doubleEnumType, "Value1"), Enum.Parse(s_doubleEnumType, "Value2"), Enum.Parse(s_doubleEnumType, "Value0x0010"), Enum.Parse(s_doubleEnumType, "Value0x0f06"), Enum.Parse(s_doubleEnumType, "Value0x1000"), Enum.Parse(s_doubleEnumType, "Value0x3000"), Enum.Parse(s_doubleEnumType, "Value0x3f06"), Enum.Parse(s_doubleEnumType, "Value0x3f16") };
             Assert.Equal(expected, Enum.GetValues(s_doubleEnumType));
             Assert.NotSame(Enum.GetValues(s_doubleEnumType), Enum.GetValues(s_doubleEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetValues_InvokeIntPtrEnum_ReturnsExpected()
         {
             var expected = new object[0];
@@ -1575,7 +1502,7 @@ namespace System.Tests
             Assert.NotSame(Enum.GetValues(s_intPtrEnumType), Enum.GetValues(s_intPtrEnumType));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         public void GetValues_InvokeUIntPtrEnum_ReturnsExpected()
         {
             var expected = new object[0];
@@ -1592,7 +1519,7 @@ namespace System.Tests
         [Fact]
         public void GetValuesAsUnderlyingType_InvokeSByteEnum_ReturnsExpected()
         {
-            Array expected = new sbyte[] { 1, 2, sbyte.MaxValue, sbyte.MinValue };
+            Array expected = new sbyte[] { 1, 2, sbyte.MaxValue, sbyte.MinValue};
             Assert.Equal(expected, Enum.GetValuesAsUnderlyingType(typeof(SByteEnum)));
             Assert.Equal(expected, Enum.GetValuesAsUnderlyingType<SByteEnum>());
         }
@@ -1754,18 +1681,13 @@ namespace System.Tests
             yield return new object[] { (UInt64Enum)99, "D", "99" };
             yield return new object[] { UInt64Enum.Max, "D", "18446744073709551615" };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // "D": Char
                 yield return new object[] { Enum.ToObject(s_charEnumType, (char)0), "D", ((char)0).ToString() };
                 yield return new object[] { Enum.ToObject(s_charEnumType, (char)1), "D", ((char)1).ToString() };
                 yield return new object[] { Enum.ToObject(s_charEnumType, (char)2), "D", ((char)2).ToString() };
                 yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "D", char.MaxValue.ToString() };
-
-                // "D:" Bool
-                yield return new object[] { Enum.ToObject(s_boolEnumType, true), "D", bool.TrueString };
-                yield return new object[] { Enum.ToObject(s_boolEnumType, false), "D", bool.FalseString };
-                yield return new object[] { Enum.ToObject(s_boolEnumType, 123), "D", bool.TrueString };
 
                 // "D": Single
                 yield return new object[] { Enum.ToObject(s_floatEnumType, 0), "D", "0" };
@@ -1837,19 +1759,13 @@ namespace System.Tests
             yield return new object[] { (UInt64Enum)99, "X", "0000000000000063" };
             yield return new object[] { UInt64Enum.Max, "X", "FFFFFFFFFFFFFFFF" };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // "X": Char
                 yield return new object[] { Enum.ToObject(s_charEnumType, (char)0), "X", "0000" };
                 yield return new object[] { Enum.ToObject(s_charEnumType, (char)1), "X", "0001" };
                 yield return new object[] { Enum.ToObject(s_charEnumType, (char)2), "X", "0002" };
                 yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "X", "FFFF" };
-
-
-                // "X": Bool
-                yield return new object[] { Enum.ToObject(s_boolEnumType, false), "X", "00" };
-                yield return new object[] { Enum.ToObject(s_boolEnumType, true), "X", "01" };
-                yield return new object[] { Enum.ToObject(s_boolEnumType, 123), "X", "01" };
             }
 
             // "X": SimpleEnum
@@ -1903,17 +1819,13 @@ namespace System.Tests
             yield return new object[] { (UInt64Enum)5, "F", "5" };
             yield return new object[] { UInt64Enum.Max, "F", "Max" };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // "F": Char
                 yield return new object[] { Enum.ToObject(s_charEnumType, (char)1), "F", "Value1" };
                 yield return new object[] { Enum.ToObject(s_charEnumType, (char)(1 | 2)), "F", "Value1, Value2" };
                 yield return new object[] { Enum.ToObject(s_charEnumType, (char)5), "F", ((char)5).ToString() };
                 yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "F", char.MaxValue.ToString() };
-
-                // "F": Bool
-                yield return new object[] { Enum.ToObject(s_boolEnumType, true), "F", "Value1" };
-                yield return new object[] { Enum.ToObject(s_boolEnumType, false), "F", "Value2" };
 
                 // "F": IntPtr
                 yield return new object[] { Enum.ToObject(s_intPtrEnumType, 5), "F", "5" };
@@ -1931,7 +1843,7 @@ namespace System.Tests
             // "F": Flags Attribute
             yield return new object[] { AttributeTargets.Class | AttributeTargets.Delegate, "F", "Class, Delegate" };
 
-            if (PlatformDetection.IsReflectionEmitSupported)
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
             {
                 // "G": Char
                 yield return new object[] { Enum.ToObject(s_charEnumType, char.MaxValue), "G", char.MaxValue.ToString() };
@@ -1984,6 +1896,264 @@ namespace System.Tests
 
             // "G": Flags Attribute
             yield return new object[] { AttributeTargets.Class | AttributeTargets.Delegate, "G", "Class, Delegate" };
+
+            yield return new object[] { FlagsSByteEnumWithNegativeValues.A, "G", "A" };
+            yield return new object[] { FlagsSByteEnumWithNegativeValues.C, "G", "C" };
+            yield return new object[] { FlagsSByteEnumWithNegativeValues.I, "G", "I" };
+            yield return new object[] { FlagsSByteEnumWithNegativeValues.C | FlagsSByteEnumWithNegativeValues.D, "G", "C, D" };
+            yield return new object[] { FlagsSByteEnumWithNegativeValues.A | FlagsSByteEnumWithNegativeValues.C | FlagsSByteEnumWithNegativeValues.D, "G", "C, D" };
+
+            yield return new object[] { FlagsInt32EnumWithOverlappingNegativeValues.A, "G", "A" };
+            yield return new object[] { FlagsInt32EnumWithOverlappingNegativeValues.B, "G", "B" };
+            yield return new object[] { FlagsInt32EnumWithOverlappingNegativeValues.C, "G", "C" };
+            yield return new object[] { FlagsInt32EnumWithOverlappingNegativeValues.A | FlagsInt32EnumWithOverlappingNegativeValues.B, "G", "B, A" };
+            yield return new object[] { (FlagsInt32EnumWithOverlappingNegativeValues)(-1), "G", "B, C" };
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        public static void ToString_TryFormat(bool validateDestinationSpanSizeCheck, bool validateExtraSpanSpaceNotFilled)
+        {
+            // Format "D": the decimal equivalent of the value is returned.
+            // Format "X": value in hex form without a leading "0x"
+            // Format "F": value is treated as a bit field that contains one or more flags that consist of one or more bits.
+            // If value is equal to a combination of named enumerated constants, a delimiter-separated list of the names
+            // of those constants is returned. value is searched for flags, going from the flag with the largest value
+            // to the smallest value. For each flag that corresponds to a bit field in value, the name of the constant
+            // is concatenated to the delimiter-separated list. The value of that flag is then excluded from further
+            // consideration, and the search continues for the next flag.
+            // If value is not equal to a combination of named enumerated constants, the decimal equivalent of value is returned.
+            // Format "G": if value is equal to a named enumerated constant, the name of that constant is returned.
+            // Otherwise, if "[Flags]" present, do as Format "F" - else return the decimal value of "value".
+
+            // "D": SByte
+            TryFormat(SByteEnum.Min, "D", "-128", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(SByteEnum.One, "D", "1", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(SByteEnum.Two, "D", "2", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((SByteEnum)99, "D", "99", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(SByteEnum.Max, "D", "127", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "D": Byte
+            TryFormat(ByteEnum.Min, "D", "0", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(ByteEnum.One, "D", "1", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(ByteEnum.Two, "D", "2", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((ByteEnum)99, "D", "99", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(ByteEnum.Max, "D", "255", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "D": Int16
+            TryFormat(Int16Enum.Min, "D", "-32768", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int16Enum.One, "D", "1", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int16Enum.Two, "D", "2", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((Int16Enum)99, "D", "99", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int16Enum.Max, "D", "32767", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "D": UInt16
+            TryFormat(UInt16Enum.Min, "D", "0", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt16Enum.One, "D", "1", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt16Enum.Two, "D", "2", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((UInt16Enum)99, "D", "99", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt16Enum.Max, "D", "65535", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "D": Int32
+            TryFormat(Int32Enum.Min, "D", "-2147483648", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int32Enum.One, "D", "1", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int32Enum.Two, "D", "2", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((Int32Enum)99, "D", "99", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int32Enum.Max, "D", "2147483647", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "D": UInt32
+            TryFormat(UInt32Enum.Min, "D", "0", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt32Enum.One, "D", "1", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt32Enum.Two, "D", "2", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((UInt32Enum)99, "D", "99", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt32Enum.Max, "D", "4294967295", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "D": Int64
+            TryFormat(Int64Enum.Min, "D", "-9223372036854775808", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int64Enum.One, "D", "1", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int64Enum.Two, "D", "2", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((Int64Enum)99, "D", "99", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int64Enum.Max, "D", "9223372036854775807", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "D": UInt64
+            TryFormat(UInt64Enum.Min, "D", "0", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt64Enum.One, "D", "1", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt64Enum.Two, "D", "2", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((UInt64Enum)99, "D", "99", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt64Enum.Max, "D", "18446744073709551615", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "D": SimpleEnum
+            TryFormat(SimpleEnum.Red, "D", "1", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "X": SByte
+            TryFormat(SByteEnum.Min, "X", "80", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(SByteEnum.One, "X", "01", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(SByteEnum.Two, "X", "02", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((SByteEnum)99, "X", "63", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(SByteEnum.Max, "X", "7F", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "X": Byte
+            TryFormat(ByteEnum.Min, "X", "00", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(ByteEnum.One, "X", "01", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(ByteEnum.Two, "X", "02", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((ByteEnum)99, "X", "63", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(ByteEnum.Max, "X", "FF", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "X": Int16
+            TryFormat(Int16Enum.Min, "X", "8000", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int16Enum.One, "X", "0001", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int16Enum.Two, "X", "0002", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((Int16Enum)99, "X", "0063", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int16Enum.Max, "X", "7FFF", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "X": UInt16
+            TryFormat(UInt16Enum.Min, "X", "0000", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt16Enum.One, "X", "0001", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt16Enum.Two, "X", "0002", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((UInt16Enum)99, "X", "0063", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt16Enum.Max, "X", "FFFF", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "X": UInt32
+            TryFormat(UInt32Enum.Min, "X", "00000000", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt32Enum.One, "X", "00000001", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt32Enum.Two, "X", "00000002", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((UInt32Enum)99, "X", "00000063", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt32Enum.Max, "X", "FFFFFFFF", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "X": Int32
+            TryFormat(Int32Enum.Min, "X", "80000000", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int32Enum.One, "X", "00000001", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int32Enum.Two, "X", "00000002", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((Int32Enum)99, "X", "00000063", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int32Enum.Max, "X", "7FFFFFFF", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "X:" Int64
+            TryFormat(Int64Enum.Min, "X", "8000000000000000", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int64Enum.One, "X", "0000000000000001", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int64Enum.Two, "X", "0000000000000002", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((Int64Enum)99, "X", "0000000000000063", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int64Enum.Max, "X", "7FFFFFFFFFFFFFFF", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "X": UInt64
+            TryFormat(UInt64Enum.Min, "X", "0000000000000000", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt64Enum.One, "X", "0000000000000001", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt64Enum.Two, "X", "0000000000000002", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((UInt64Enum)99, "X", "0000000000000063", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt64Enum.Max, "X", "FFFFFFFFFFFFFFFF", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "X": SimpleEnum
+            TryFormat(SimpleEnum.Red, "X", "00000001", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "F": SByte
+            TryFormat(SByteEnum.Min, "F", "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(SByteEnum.One | SByteEnum.Two, "F", "One, Two", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((SByteEnum)5, "F", "5", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(SByteEnum.Max, "F", "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "F": Byte
+            TryFormat(ByteEnum.Min, "F", "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(ByteEnum.One | ByteEnum.Two, "F", "One, Two", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((ByteEnum)5, "F", "5", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(ByteEnum.Max, "F", "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "F": Int16
+            TryFormat(Int16Enum.Min, "F", "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int16Enum.One | Int16Enum.Two, "F", "One, Two", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((Int16Enum)5, "F", "5", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int16Enum.Max, "F", "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "F": UInt16
+            TryFormat(UInt16Enum.Min, "F", "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt16Enum.One | UInt16Enum.Two, "F", "One, Two", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((UInt16Enum)5, "F", "5", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt16Enum.Max, "F", "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "F": Int32
+            TryFormat(Int32Enum.Min, "F", "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int32Enum.One | Int32Enum.Two, "F", "One, Two", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((Int32Enum)5, "F", "5", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int32Enum.Max, "F", "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "F": UInt32
+            TryFormat(UInt32Enum.Min, "F", "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt32Enum.One | UInt32Enum.Two, "F", "One, Two", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((UInt32Enum)5, "F", "5", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt32Enum.Max, "F", "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "F": Int64
+            TryFormat(Int64Enum.Min, "F", "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int64Enum.One | Int64Enum.Two, "F", "One, Two", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((Int64Enum)5, "F", "5", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(Int64Enum.Max, "F", "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "F": UInt64
+            TryFormat(UInt64Enum.Min, "F", "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt64Enum.One | UInt64Enum.Two, "F", "One, Two", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((UInt64Enum)5, "F", "5", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(UInt64Enum.Max, "F", "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            // "F": SimpleEnum
+            TryFormat(SimpleEnum.Red, "F", "Red", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat(SimpleEnum.Blue, "F", "Blue", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((SimpleEnum)99, "F", "99", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            TryFormat((SimpleEnum)0, "F", "0", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // Not found
+
+            // "F": Flags Attribute
+            TryFormat(AttributeTargets.Class | AttributeTargets.Delegate, "F", "Class, Delegate", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+            foreach (string defaultFormatSpecifier in new[] { "G", null, "" })
+            {
+                // "G": SByte
+                TryFormat(SByteEnum.Min, defaultFormatSpecifier, "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((SByteEnum)3, defaultFormatSpecifier, "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
+                TryFormat(SByteEnum.Max, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+                // "G": Byte
+                TryFormat(ByteEnum.Min, defaultFormatSpecifier, "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((ByteEnum)0xff, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((ByteEnum)3, defaultFormatSpecifier, "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
+                TryFormat(ByteEnum.Max, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+                // "G": Int16
+                TryFormat(Int16Enum.Min, defaultFormatSpecifier, "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((Int16Enum)3, defaultFormatSpecifier, "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
+                TryFormat(Int16Enum.Max, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+                // "G": UInt16
+                TryFormat(UInt16Enum.Min, defaultFormatSpecifier, "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((UInt16Enum)3, defaultFormatSpecifier, "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
+                TryFormat(UInt16Enum.Max, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+                // "G": Int32
+                TryFormat(Int32Enum.Min, defaultFormatSpecifier, "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((Int32Enum)3, defaultFormatSpecifier, "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
+                TryFormat(Int32Enum.Max, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+                // "G": UInt32
+                TryFormat(UInt32Enum.Min, defaultFormatSpecifier, "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((UInt32Enum)3, defaultFormatSpecifier, "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
+                TryFormat(UInt32Enum.Max, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+                // "G": Int64
+                TryFormat(Int64Enum.Min, defaultFormatSpecifier, "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((Int64Enum)3, defaultFormatSpecifier, "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
+                TryFormat(Int64Enum.Max, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+                // "G": UInt64
+                TryFormat(UInt64Enum.Min, defaultFormatSpecifier, "Min", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((UInt64Enum)3, defaultFormatSpecifier, "3", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // No [Flags] attribute
+                TryFormat(UInt64Enum.Max, defaultFormatSpecifier, "Max", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+
+                // "G": SimpleEnum
+                TryFormat((SimpleEnum)99, defaultFormatSpecifier, "99", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((SimpleEnum)99, defaultFormatSpecifier, "99", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+                TryFormat((SimpleEnum)0, defaultFormatSpecifier, "0", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled); // Not found
+
+                // "G": Flags Attribute
+                TryFormat(AttributeTargets.Class | AttributeTargets.Delegate, defaultFormatSpecifier, "Class, Delegate", validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            }
         }
 
 #pragma warning disable 618 // ToString with IFormatProvider is marked as Obsolete.
@@ -2044,6 +2214,15 @@ namespace System.Tests
 
             // Format: G with Flags Attribute
             yield return new object[] { typeof(AttributeTargets), (int)(AttributeTargets.Class | AttributeTargets.Delegate), "G", "Class, Delegate" };
+
+            // nint/nuint types
+            if (PlatformDetection.IsReflectionEmitSupported && PlatformDetection.IsRareEnumsSupported)
+            {
+                yield return new object[] { s_intPtrEnumType, (nint)1, "G", "1" };
+                yield return new object[] { s_uintPtrEnumType, (nuint)2, "F", "2" };
+                yield return new object[] { s_floatEnumType, 1.4f, "G", (1.4f).ToString() };
+                yield return new object[] { s_doubleEnumType, 2.5, "F", (2.5).ToString() };
+            }
         }
 
         [Theory]
@@ -2053,6 +2232,90 @@ namespace System.Tests
             // Format string is case insensitive
             Assert.Equal(expected, Enum.Format(enumType, value, format.ToUpperInvariant()));
             Assert.Equal(expected, Enum.Format(enumType, value, format.ToLowerInvariant()));
+        }
+
+        // Select test here, to avoid rewriting input params, as MemberData will does work for generic methods
+        private static void TryFormat<TEnum>(TEnum value, ReadOnlySpan<char> format, string expected, bool validateDestinationSpanSizeCheck, bool validateExtraSpanSpaceNotFilled) where TEnum : struct, Enum
+        {
+            if (validateDestinationSpanSizeCheck)
+            {
+                TryFormat_WithDestinationSpanSizeTooSmall_ReturnsFalseWithNoCharsWritten(value, format, expected);
+            }
+            if (validateExtraSpanSpaceNotFilled)
+            {
+                TryFormat_WithDestinationSpanLargerThanExpected_ReturnsTrueWithExpectedAndExtraSpaceNotFilled(value, format, expected);
+            }
+            else
+            {
+                TryFormat_WithValidParameters_ReturnsTrueWithExpected(value, format, expected);
+            }
+
+            if (format.Length == 1 && char.IsAsciiLetterUpper(format[0]))
+            {
+                TryFormat(value, (ReadOnlySpan<char>)new char[1] { char.ToLowerInvariant(format[0]) }, expected, validateDestinationSpanSizeCheck, validateExtraSpanSpaceNotFilled);
+            }
+        }
+
+        private static void TryFormat_WithValidParameters_ReturnsTrueWithExpected<TEnum>(TEnum value, ReadOnlySpan<char> format, string expected) where TEnum : struct, Enum
+        {
+            Span<char> destination = new char[expected.Length];
+
+            Assert.True(Enum.TryFormat(value, destination, out int charsWritten, format));
+            Assert.Equal(expected, destination.ToString());
+            Assert.Equal(expected.Length, charsWritten);
+        }
+
+        private static void TryFormat_WithDestinationSpanSizeTooSmall_ReturnsFalseWithNoCharsWritten<TEnum>(TEnum value, ReadOnlySpan<char> format, string expected) where TEnum : struct, Enum
+        {
+            int oneLessThanExpectedLength = expected.Length - 1;
+            Span<char> destination = new char[oneLessThanExpectedLength];
+
+            Assert.False(Enum.TryFormat(value, destination, out int charsWritten, format));
+            Assert.Equal(new string('\0', oneLessThanExpectedLength), destination.ToString());
+            Assert.Equal(0, charsWritten);
+        }
+
+        private static void TryFormat_WithDestinationSpanLargerThanExpected_ReturnsTrueWithExpectedAndExtraSpaceNotFilled<TEnum>(TEnum value, ReadOnlySpan<char> format, string expected) where TEnum : struct, Enum
+        {
+            int oneMoreThanExpectedLength = expected.Length + 1;
+            Span<char> destination = new char[oneMoreThanExpectedLength];
+
+            Assert.True(Enum.TryFormat(value, destination, out int charsWritten, format));
+            Assert.Equal(expected + '\0', destination.ToString());
+            Assert.Equal(expected.Length, charsWritten);
+        }
+
+        [Fact]
+        private static void TryFormat_WithEmptySpan_ReturnsFalseWithNoCharsWritten()
+        {
+            Span<char> destination = new char[0];
+
+            Assert.False(Enum.TryFormat(SimpleEnum.Green, destination, out int charsWritten, "G"));
+            Assert.Equal("", destination.ToString());
+            Assert.Equal(0, charsWritten);
+        }
+
+        [Theory]
+        [InlineData(" ")]
+        [InlineData("  ")]
+        [InlineData("   \t")]
+        [InlineData("a")]
+        [InlineData("ab")]
+        [InlineData("abc")]
+        [InlineData("gg")]
+        [InlineData("dd")]
+        [InlineData("xx")]
+        [InlineData("ff")]
+        private static void TryFormat_WithInvalidFormat_ThrowsWithNoCharsWritten(string format)
+        {
+            SimpleEnum expecedEnum = SimpleEnum.Green;
+            string expected = nameof(expecedEnum);
+            int charsWritten = 0;
+            char[] destination = new char[expected.Length];
+
+            Assert.Throws<FormatException>(() => Enum.TryFormat(expecedEnum, destination, out charsWritten, format));
+            Assert.Equal(new string('\0', expected.Length), new string(destination));
+            Assert.Equal(0, charsWritten);
         }
 
         [Fact]
@@ -2074,39 +2337,13 @@ namespace System.Tests
             Assert.Throws<FormatException>(() => Enum.Format(typeof(SimpleEnum), SimpleEnum.Red, "t")); // No such format
         }
 
-        public static IEnumerable<object[]> UnsupportedEnumType_TestData()
-        {
-            yield return new object[] { s_floatEnumType, 1.0f };
-            yield return new object[] { s_doubleEnumType, 1.0 };
-            yield return new object[] { s_intPtrEnumType, (IntPtr)1 };
-            yield return new object[] { s_uintPtrEnumType, (UIntPtr)1 };
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        [MemberData(nameof(UnsupportedEnumType_TestData))]
-        public static void GetName_Unsupported_ThrowsArgumentException(Type enumType, object value)
-        {
-            AssertExtensions.Throws<ArgumentException>("value", () => Enum.GetName(enumType, value));
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        [MemberData(nameof(UnsupportedEnumType_TestData))]
-        public static void IsDefined_UnsupportedEnumType_ThrowsInvalidOperationException(Type enumType, object value)
-        {
-            Exception ex = Assert.ThrowsAny<Exception>(() => Enum.IsDefined(enumType, value));
-            string exName = ex.GetType().Name;
-            Assert.True(exName == nameof(InvalidOperationException) || exName == "ContractException");
-        }
-
         public static IEnumerable<object[]> UnsupportedEnum_TestData()
         {
             yield return new object[] { Enum.ToObject(s_floatEnumType, 1) };
             yield return new object[] { Enum.ToObject(s_doubleEnumType, 2) };
-            yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1) };
-            yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 2) };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported), nameof(PlatformDetection.IsRareEnumsSupported))]
         [MemberData(nameof(UnsupportedEnum_TestData))]
         public static void ToString_UnsupportedEnumType_ThrowsArgumentException(Enum e)
         {
@@ -2115,26 +2352,9 @@ namespace System.Tests
             Assert.True(formatXExceptionName == nameof(InvalidOperationException) || formatXExceptionName == "ContractException");
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
-        [MemberData(nameof(UnsupportedEnumType_TestData))]
-        public static void Format_UnsupportedEnumType_ThrowsArgumentException(Type enumType, object value)
-        {
-            Exception formatGException = Assert.ThrowsAny<Exception>(() => Enum.Format(enumType, value, "G"));
-            string formatGExceptionName = formatGException.GetType().Name;
-            Assert.True(formatGExceptionName == nameof(InvalidOperationException) || formatGExceptionName == "ContractException");
-
-            Exception formatXException = Assert.ThrowsAny<Exception>(() => Enum.Format(enumType, value, "X"));
-            string formatXExceptionName = formatXException.GetType().Name;
-            Assert.True(formatXExceptionName == nameof(InvalidOperationException) || formatXExceptionName == "ContractException");
-
-            Exception formatFException = Assert.ThrowsAny<Exception>(() => Enum.Format(enumType, value, "F"));
-            string formatFExceptionName = formatFException.GetType().Name;
-            Assert.True(formatFExceptionName == nameof(InvalidOperationException) || formatFExceptionName == "ContractException");
-        }
-
         private static EnumBuilder GetNonRuntimeEnumTypeBuilder(Type underlyingType)
         {
-            if (!PlatformDetection.IsReflectionEmitSupported)
+            if (!PlatformDetection.IsReflectionEmitSupported || !PlatformDetection.IsRareEnumsSupported)
                 return null;
 
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);

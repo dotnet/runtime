@@ -23,7 +23,7 @@ namespace Tracing.Tests.BufferValidation
 
     public class BufferValidation
     {
-        public static int Main(string[] args)
+        public static int Main()
         {
             // This tests the resilience of message sending with
             // smaller buffers, specifically 1MB and 4MB

@@ -6,8 +6,45 @@ using Microsoft.Interop.UnitTests;
 
 namespace LibraryImportGenerator.UnitTests
 {
-    internal partial class CodeSnippets : ICustomMarshallingSignatureTestProvider
+    internal class CodeSnippets : ICustomMarshallingSignatureTestProvider
     {
+        public CodeSnippets() { }
+        string ICustomMarshallingSignatureTestProvider.BasicParameterByValue(string type, string preDeclaration)
+            => BasicParameterByValue(type, preDeclaration);
+
+        string ICustomMarshallingSignatureTestProvider.BasicParameterWithByRefModifier(string byRefModifier, string type, string preDeclaration)
+            => BasicParameterWithByRefModifier(byRefModifier, type, preDeclaration);
+
+        string ICustomMarshallingSignatureTestProvider.BasicReturnType(string type, string preDeclaration)
+            => BasicReturnType(type, preDeclaration);
+
+        string ICustomMarshallingSignatureTestProvider.BasicParametersAndModifiers(string typeName, string preDeclaration)
+            => BasicParametersAndModifiers(typeName, preDeclaration);
+
+        string ICustomMarshallingSignatureTestProvider.BasicParametersAndModifiersNoRef(string typeName, string preDeclaration)
+            => BasicParametersAndModifiersNoRef(typeName, preDeclaration);
+
+        string ICustomMarshallingSignatureTestProvider.MarshalUsingParametersAndModifiers(string type, string marshallerType, string preDeclaration)
+            => MarshalUsingParametersAndModifiers(type, marshallerType, preDeclaration);
+
+        string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionCountInfoParametersAndModifiers(string collectionType)
+            => MarshalUsingCollectionCountInfoParametersAndModifiers(collectionType);
+
+        string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionParametersAndModifiers(string type, string marshallerType)
+            => MarshalUsingCollectionParametersAndModifiers(type, marshallerType);
+
+        string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionOutConstantLength(string type, string predeclaration)
+            => MarshalUsingCollectionOutConstantLength(type, predeclaration);
+
+        string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionReturnConstantLength(string type, string predeclaration)
+            => MarshalUsingCollectionReturnConstantLength(type, predeclaration);
+
+        string ICustomMarshallingSignatureTestProvider.MarshalUsingCollectionReturnValueLength(string type, string marshallerType)
+            => MarshalUsingCollectionReturnValueLength(type, marshallerType);
+
+        string ICustomMarshallingSignatureTestProvider.CustomElementMarshalling(string type, string marshallerType, string preDeclaration)
+            => CustomElementMarshalling(type, marshallerType, preDeclaration);
+
         /// <summary>
         /// Partially define attribute for pre-.NET 7.0
         /// </summary>
@@ -945,9 +982,9 @@ partial class Test
         [MarshalUsing(typeof(CustomIntMarshaller), ElementIndirectionDepth = 1)] [MarshalUsing(typeof(CustomIntMarshaller), ElementIndirectionDepth = 1)] TestCollection<int> p);
 }}
 "
-                    + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.TestCollection()
-                    + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.Stateless.In
-                    + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.CustomIntMarshaller;
+                    + CustomCollectionMarshallingCodeSnippets.TestCollection()
+                    + CustomCollectionMarshallingCodeSnippets.StatelessSnippets.In
+                    + CustomCollectionMarshallingCodeSnippets.CustomIntMarshaller;
 
         public static string CustomElementMarshallingUnusedElementIndirectionDepth => $@"
 using System.Runtime.InteropServices;
@@ -960,11 +997,11 @@ partial class Test
         [MarshalUsing(typeof(CustomIntMarshaller), ElementIndirectionDepth = 2)] TestCollection<int> p);
 }}
 "
-            + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.TestCollection()
-            + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.Stateless.In
-            + CustomCollectionMarshallingCodeSnippets<CodeSnippets>.CustomIntMarshaller;
+            + CustomCollectionMarshallingCodeSnippets.TestCollection()
+            + CustomCollectionMarshallingCodeSnippets.StatelessSnippets.In
+            + CustomCollectionMarshallingCodeSnippets.CustomIntMarshaller;
 
-    public static string RecursiveCountElementNameOnReturnValue => $@"
+        public static string RecursiveCountElementNameOnReturnValue => $@"
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 {DisableRuntimeMarshalling}

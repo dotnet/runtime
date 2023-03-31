@@ -30,12 +30,15 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
+            => CreateUnsupportedConverterForType(type);
+
+        internal static JsonConverter CreateUnsupportedConverterForType(Type type, string? errorMessage = null)
         {
             JsonConverter converter = (JsonConverter)Activator.CreateInstance(
                 typeof(UnsupportedTypeConverter<>).MakeGenericType(type),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
-                args: null,
+                args: new object?[] { errorMessage },
                 culture: null)!;
 
             return converter;

@@ -64,7 +64,7 @@ namespace GitHub_21546
             );
         }
 
-        static int Main()
+        public static int Main()
         {
             returnVal     = 100;
             Random random = new Random(Seed);

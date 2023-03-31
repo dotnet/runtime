@@ -6,7 +6,7 @@
 
 .assembly Runtime_71638.dll { }
 
-.class Runtime_71638 extends [System.Runtime]System.Object
+.class public Runtime_71638 extends [System.Runtime]System.Object
 {
   .method public static int32 Main()
   {

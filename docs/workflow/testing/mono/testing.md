@@ -26,7 +26,7 @@ For example: `./build.sh mono release -test:JIT/opt/InstructionCombining/DivToMu
 
 Run individual test:
 ```
-bash ./artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh -coreroot=`pwd`/artifacts/tests/coreclr/OSX.x64.Release/Tests/Core_Root
+bash ./artifacts/tests/coreclr/osx.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh -coreroot=`pwd`/artifacts/tests/coreclr/osx.x64.Release/Tests/Core_Root
 ```
 
 Run all built tests:
@@ -38,7 +38,7 @@ To debug a single test with `lldb`:
 
 1. Run the shell script for the test case manually with the `-debug` option:
 ```
-bash ./artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh -coreroot=`pwd`/artifacts/tests/coreclr/OSX.x64.Release/Tests/Core_Root -debug=/usr/bin/lldb
+bash ./artifacts/tests/coreclr/osx.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh -coreroot=`pwd`/artifacts/tests/coreclr/osx.x64.Release/Tests/Core_Root -debug=/usr/bin/lldb
 ```
 2. In LLDB add the debug symbols for mono: `add-dsym <CORE_ROOT>/libcoreclr.dylib.dwarf`
 3. Run/debug the test
@@ -47,7 +47,7 @@ bash ./artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivT
 ### WebAssembly:
 Build the runtime tests for WebAssembly
 ```
-$(REPO_ROOT)/src/tests/build.sh -mono os Browser wasm <Release/Debug>
+$(REPO_ROOT)/src/tests/build.sh -mono os browser wasm <Release/Debug>
 ```
 
 The last few lines of the build log should contain something like this:
@@ -62,7 +62,7 @@ The last few lines of the build log should contain something like this:
 ### Android:
 Build the runtime tests for Android x64/ARM64
 ```
-$(REPO_ROOT)/src/tests/build.sh -mono os Android <x64/arm64> <Release/Debug>
+$(REPO_ROOT)/src/tests/build.sh -mono os android <x64/arm64> <Release/Debug>
 ```
 
 Run one test wrapper from repo root
@@ -102,7 +102,7 @@ There are the [functional tests](https://github.com/dotnet/runtime/tree/main/src
 
 A functional test can be run the same way as any library test suite, e.g.:
 ```
-./dotnet.sh build /t:Test -c Release /p:TargetOS=Android /p:TargetArchitecture=x64 src/tests/FunctionalTests/Android/Device_Emulator/PInvoke/Android.Device_Emulator.PInvoke.Test.csproj
+./dotnet.sh build /t:Test -c Release /p:TargetOS=android /p:TargetArchitecture=x64 src/tests/FunctionalTests/Android/Device_Emulator/PInvoke/Android.Device_Emulator.PInvoke.Test.csproj
 ```
 
 Currently the functional tests are expected to return `42` as a success code so please be careful when adding a new one.

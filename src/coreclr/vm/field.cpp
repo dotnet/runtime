@@ -69,7 +69,6 @@ VOID FieldDesc::Init(mdFieldDef mb, CorElementType FieldType, DWORD dwMemberAttr
     _ASSERTE(fIsStatic || (!fIsRVA && !fIsThreadLocal));
     _ASSERTE(fIsRVA + fIsThreadLocal <= 1);
 
-    m_requiresFullMbValue = 0;
     SetMemberDef(mb);
 
     // A TypedByRef should be treated like a regular value type.
@@ -103,30 +102,6 @@ BOOL FieldDesc::IsByRef()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
     return CorTypeInfo::IsByRef_NoThrow(GetFieldType());
-}
-
-BOOL FieldDesc::MightHaveName(ULONG nameHashValue)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // We only have space for a name hash when we are using the packed mb layout
-    if (m_requiresFullMbValue)
-    {
-        return TRUE;
-    }
-
-    ULONG thisHashValue = m_mb & enum_packedMbLayout_NameHashMask;
-
-    // A zero value might mean no hash has ever been set
-    // (checking this way is better than dedicating a bit to tell us)
-    if (thisHashValue == 0)
-    {
-        return TRUE;
-    }
-
-    ULONG testHashValue = nameHashValue & enum_packedMbLayout_NameHashMask;
-
-    return (thisHashValue == testHashValue);
 }
 
 #ifndef DACCESS_COMPILE //we don't require DAC to special case simple types

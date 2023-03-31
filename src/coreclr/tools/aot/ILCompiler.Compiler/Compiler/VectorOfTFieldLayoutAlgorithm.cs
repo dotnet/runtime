@@ -36,6 +36,10 @@ namespace ILCompiler
             {
                 instanceFieldSize = new LayoutInt(32);
             }
+            else if (targetDetails.MaximumSimdVectorLength == SimdVectorLength.Vector512Bit)
+            {
+                instanceFieldSize = new LayoutInt(64);
+            }
             else
             {
                 Debug.Assert(targetDetails.MaximumSimdVectorLength == SimdVectorLength.None);

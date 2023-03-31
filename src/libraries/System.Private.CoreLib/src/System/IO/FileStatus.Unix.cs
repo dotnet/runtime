@@ -57,7 +57,7 @@ namespace System.IO
                     return false;
                 }
 
-#if TARGET_BROWSER
+#if TARGET_BROWSER || TARGET_WASI
                 var mode = ((UnixFileMode)_fileCache.Mode & FileSystem.ValidUnixFileModes);
                 bool isUserReadOnly = (mode & UnixFileMode.UserRead) != 0 && // has read permission
                                       (mode & UnixFileMode.UserWrite) == 0;  // but not write permission
@@ -81,7 +81,7 @@ namespace System.IO
             }
         }
 
-#if !TARGET_BROWSER
+#if !TARGET_BROWSER && !TARGET_WASI
         // HasReadOnlyFlag cache.
         // Must only be used after calling EnsureCachesInitialized.
         private int _isReadOnlyCache;
@@ -394,7 +394,7 @@ namespace System.IO
             long seconds = time.ToUnixTimeSeconds();
             long nanoseconds = UnixTimeSecondsToNanoseconds(time, seconds);
 
-#if TARGET_BROWSER
+#if TARGET_BROWSER || TARGET_WASI
             buf[0].TvSec = seconds;
             buf[0].TvNsec = nanoseconds;
             buf[1].TvSec = seconds;
@@ -499,7 +499,7 @@ namespace System.IO
         {
             Debug.Assert(handle is not null || path.Length > 0);
 
-#if !TARGET_BROWSER
+#if !TARGET_BROWSER && !TARGET_WASI
             _isReadOnlyCache = -1;
 #endif
             int rv = handle is not null ?

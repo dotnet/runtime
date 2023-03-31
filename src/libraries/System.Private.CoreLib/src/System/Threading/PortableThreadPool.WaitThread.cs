@@ -12,8 +12,8 @@ namespace System.Threading
     /// </summary>
     internal sealed partial class CompleteWaitThreadPoolWorkItem : IThreadPoolWorkItem
     {
-        private RegisteredWaitHandle _registeredWaitHandle;
-        private bool _timedOut;
+        private readonly RegisteredWaitHandle _registeredWaitHandle;
+        private readonly bool _timedOut;
 
         public CompleteWaitThreadPoolWorkItem(RegisteredWaitHandle registeredWaitHandle, bool timedOut)
         {

@@ -190,7 +190,7 @@ namespace System.Xml
         {
             if (_stream == null)
                 return false;
-            DiagnosticUtility.DebugAssert(_offsetMax < _windowOffsetMax, "");
+            Debug.Assert(_offsetMax < _windowOffsetMax);
             if (_offsetMax >= _buffer.Length)
                 return TryEnsureBytes(1);
             int b = _stream.ReadByte();
@@ -211,7 +211,7 @@ namespace System.Xml
             if (_stream == null)
                 return false;
 
-            DiagnosticUtility.DebugAssert(_offset <= int.MaxValue - count, "");
+            Debug.Assert(_offset <= int.MaxValue - count);
 
             // The data could be coming from an untrusted source, so we use a standard
             // "multiply by 2" growth algorithm to avoid overly large memory utilization.
@@ -222,7 +222,7 @@ namespace System.Xml
                 int newOffsetMax = _offset + count;
                 if (newOffsetMax <= _offsetMax)
                     return true;
-                DiagnosticUtility.DebugAssert(newOffsetMax <= _windowOffsetMax, "");
+                Debug.Assert(newOffsetMax <= _windowOffsetMax);
                 if (newOffsetMax > _buffer.Length)
                 {
                     byte[] newBuffer = new byte[Math.Max(256, _buffer.Length * 2)];
@@ -232,7 +232,7 @@ namespace System.Xml
                     _streamBuffer = newBuffer;
                 }
                 int needed = newOffsetMax - _offsetMax;
-                DiagnosticUtility.DebugAssert(needed > 0, "");
+                Debug.Assert(needed > 0);
                 int read = _stream.ReadAtLeast(_buffer.AsSpan(_offsetMax, needed), needed, throwOnEndOfStream: false);
                 _offsetMax += read;
 
@@ -245,13 +245,13 @@ namespace System.Xml
 
         public void Advance(int count)
         {
-            DiagnosticUtility.DebugAssert(_offset + count <= _offsetMax, "");
+            Debug.Assert(_offset + count <= _offsetMax);
             _offset += count;
         }
 
         public void InsertBytes(byte[] buffer, int offset, int count)
         {
-            DiagnosticUtility.DebugAssert(_stream != null, "");
+            Debug.Assert(_stream != null);
             if (_offsetMax > buffer.Length - count)
             {
                 byte[] newBuffer = new byte[_offsetMax + count];
@@ -292,14 +292,14 @@ namespace System.Xml
             }
             set
             {
-                DiagnosticUtility.DebugAssert(value >= _offsetMin && value <= _offsetMax, "");
+                Debug.Assert(value >= _offsetMin && value <= _offsetMax);
                 _offset = value;
             }
         }
 
         public int ReadBytes(int count)
         {
-            DiagnosticUtility.DebugAssert(count >= 0, "");
+            Debug.Assert(count >= 0);
             int offset = _offset;
             if (offset > _offsetMax - count)
                 EnsureBytes(count);
@@ -373,10 +373,18 @@ namespace System.Xml
             => BitConverter.IsLittleEndian ? ReadRawBytes<long>() : BinaryPrimitives.ReverseEndianness(ReadRawBytes<long>());
 
         public float ReadSingle()
-            => BinaryPrimitives.ReadSingleLittleEndian(GetBuffer(sizeof(float), out int offset).AsSpan(offset, sizeof(float)));
+        {
+            float f = BinaryPrimitives.ReadSingleLittleEndian(GetBuffer(sizeof(float), out int offset).AsSpan(offset, sizeof(float)));
+            Advance(sizeof(float));
+            return f;
+        }
 
         public double ReadDouble()
-            => BinaryPrimitives.ReadDoubleLittleEndian(GetBuffer(sizeof(double), out int offset).AsSpan(offset, sizeof(double)));
+        {
+            double d = BinaryPrimitives.ReadDoubleLittleEndian(GetBuffer(sizeof(double), out int offset).AsSpan(offset, sizeof(double)));
+            Advance(sizeof(double));
+            return d;
+        }
 
         public decimal ReadDecimal()
         {
@@ -420,15 +428,15 @@ namespace System.Xml
             }
             catch (ArgumentException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value.ToString(CultureInfo.InvariantCulture), "DateTime", exception));
+                throw XmlExceptionHelper.CreateConversionException(value.ToString(CultureInfo.InvariantCulture), "DateTime", exception);
             }
             catch (FormatException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value.ToString(CultureInfo.InvariantCulture), "DateTime", exception));
+                throw XmlExceptionHelper.CreateConversionException(value.ToString(CultureInfo.InvariantCulture), "DateTime", exception);
             }
             catch (OverflowException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value.ToString(CultureInfo.InvariantCulture), "DateTime", exception));
+                throw XmlExceptionHelper.CreateConversionException(value.ToString(CultureInfo.InvariantCulture), "DateTime", exception);
             }
         }
 
@@ -442,15 +450,15 @@ namespace System.Xml
             }
             catch (ArgumentException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value.ToString(CultureInfo.InvariantCulture), "TimeSpan", exception));
+                throw XmlExceptionHelper.CreateConversionException(value.ToString(CultureInfo.InvariantCulture), "TimeSpan", exception);
             }
             catch (FormatException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value.ToString(CultureInfo.InvariantCulture), "TimeSpan", exception));
+                throw XmlExceptionHelper.CreateConversionException(value.ToString(CultureInfo.InvariantCulture), "TimeSpan", exception);
             }
             catch (OverflowException exception)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlExceptionHelper.CreateConversionException(value.ToString(CultureInfo.InvariantCulture), "TimeSpan", exception));
+                throw XmlExceptionHelper.CreateConversionException(value.ToString(CultureInfo.InvariantCulture), "TimeSpan", exception);
             }
         }
 
@@ -695,9 +703,9 @@ namespace System.Xml
         private int GetDecimalCharEntity(int offset, int length)
         {
             byte[] buffer = _buffer;
-            DiagnosticUtility.DebugAssert(buffer[offset + 0] == '&', "");
-            DiagnosticUtility.DebugAssert(buffer[offset + 1] == '#', "");
-            DiagnosticUtility.DebugAssert(buffer[offset + length - 1] == ';', "");
+            Debug.Assert(buffer[offset + 0] == '&');
+            Debug.Assert(buffer[offset + 1] == '#');
+            Debug.Assert(buffer[offset + length - 1] == ';');
             int value = 0;
             for (int i = 2; i < length - 1; i++)
             {
@@ -714,10 +722,10 @@ namespace System.Xml
         private int GetHexCharEntity(int offset, int length)
         {
             byte[] buffer = _buffer;
-            DiagnosticUtility.DebugAssert(buffer[offset + 0] == '&', "");
-            DiagnosticUtility.DebugAssert(buffer[offset + 1] == '#', "");
-            DiagnosticUtility.DebugAssert(buffer[offset + 2] == 'x', "");
-            DiagnosticUtility.DebugAssert(buffer[offset + length - 1] == ';', "");
+            Debug.Assert(buffer[offset + 0] == '&');
+            Debug.Assert(buffer[offset + 1] == '#');
+            Debug.Assert(buffer[offset + 2] == 'x');
+            Debug.Assert(buffer[offset + length - 1] == ';');
             int value = 0;
             for (int i = 3; i < length - 1; i++)
             {
@@ -725,7 +733,7 @@ namespace System.Xml
                 int digit = HexConverter.FromChar(ch);
                 if (digit == 0xFF)
                     XmlExceptionHelper.ThrowInvalidCharRef(_reader);
-                DiagnosticUtility.DebugAssert(digit >= 0 && digit < 16, "");
+                Debug.Assert(digit >= 0 && digit < 16);
                 value = value * 16 + digit;
                 if (value > SurrogateChar.MaxValue)
                     XmlExceptionHelper.ThrowInvalidCharRef(_reader);
@@ -738,8 +746,8 @@ namespace System.Xml
             if (length < 3)
                 XmlExceptionHelper.ThrowInvalidCharRef(_reader);
             byte[] buffer = _buffer;
-            DiagnosticUtility.DebugAssert(buffer[offset] == '&', "");
-            DiagnosticUtility.DebugAssert(buffer[offset + length - 1] == ';', "");
+            Debug.Assert(buffer[offset] == '&');
+            Debug.Assert(buffer[offset + length - 1] == ';');
             switch (buffer[offset + 1])
             {
                 case (byte)'l':
@@ -768,23 +776,12 @@ namespace System.Xml
         public bool IsWhitespaceKey(int key)
         {
             string s = GetDictionaryString(key).Value;
-            for (int i = 0; i < s.Length; i++)
-            {
-                if (!XmlConverter.IsWhitespace(s[i]))
-                    return false;
-            }
-            return true;
+            return XmlConverter.IsWhitespace(s);
         }
 
         public bool IsWhitespaceUTF8(int offset, int length)
         {
-            byte[] buffer = _buffer;
-            for (int i = 0; i < length; i++)
-            {
-                if (!XmlConverter.IsWhitespace((char)buffer[offset + i]))
-                    return false;
-            }
-            return true;
+            return XmlConverter.IsWhitespace(_buffer.AsSpan(offset, length));
         }
 
         public bool IsWhitespaceUnicode(int offset, int length)
@@ -938,18 +935,20 @@ namespace System.Xml
             return (sbyte)GetByte(offset);
         }
 
-        private T ReadRawBytes<T>() where T : unmanaged
+#pragma warning disable 8500 // sizeof of managed types
+        private unsafe T ReadRawBytes<T>() where T : unmanaged
         {
-            ReadOnlySpan<byte> buffer = GetBuffer(Unsafe.SizeOf<T>(), out int offset)
-                .AsSpan(offset, Unsafe.SizeOf<T>());
+            ReadOnlySpan<byte> buffer = GetBuffer(sizeof(T), out int offset)
+                .AsSpan(offset, sizeof(T));
             T value = MemoryMarshal.Read<T>(buffer);
 
-            Advance(Unsafe.SizeOf<T>());
+            Advance(sizeof(T));
             return value;
         }
 
-        private T ReadRawBytes<T>(int offset) where T : unmanaged
-            => MemoryMarshal.Read<T>(_buffer.AsSpan(offset, Unsafe.SizeOf<T>()));
+        private unsafe T ReadRawBytes<T>(int offset) where T : unmanaged
+            => MemoryMarshal.Read<T>(_buffer.AsSpan(offset, sizeof(T)));
+#pragma warning restore 8500
 
         public int GetInt16(int offset)
             => BitConverter.IsLittleEndian ? ReadRawBytes<short>(offset) : BinaryPrimitives.ReverseEndianness(ReadRawBytes<short>(offset));
@@ -1023,7 +1022,7 @@ namespace System.Xml
                 {
                     XmlBinaryNodeType nodeType = GetNodeType();
                     SkipNodeType();
-                    DiagnosticUtility.DebugAssert(nodeType != XmlBinaryNodeType.StartListText, "");
+                    Debug.Assert(nodeType != XmlBinaryNodeType.StartListText);
                     ReadValue(nodeType, _listValue!);
                     objects[i] = _listValue!.ToObject();
                 }

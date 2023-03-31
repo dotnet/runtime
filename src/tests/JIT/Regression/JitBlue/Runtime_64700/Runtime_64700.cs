@@ -5,11 +5,11 @@ using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-class Runtime_64700
+public class Runtime_64700
 {
     private static StructWithVtors _structWithVtorsStatic;
 
-    static int Main()
+    public static int Main()
     {
         _structWithVtorsStatic = new StructWithVtors { StructWithOneVtor = { OneVtor = new Vector2(1, 0) } };
 

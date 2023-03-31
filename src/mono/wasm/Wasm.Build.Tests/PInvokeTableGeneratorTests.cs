@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -465,14 +466,28 @@ namespace Wasm.Build.Tests
             string tasksDir = Path.Combine(s_buildEnv.WorkloadPacksDir,
                                                               "Microsoft.NET.Runtime.WebAssembly.Sdk",
                                                               s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework),
-                                                              "tasks");
-            if (!Directory.Exists(tasksDir))
+                                                              "tasks",
+                                                              BuildTestBase.DefaultTargetFramework); // not net472!
+            if (!Directory.Exists(tasksDir)) {
+                string? tasksDirParent = Path.GetDirectoryName (tasksDir);
+                if (!string.IsNullOrEmpty (tasksDirParent)) {
+                    if (!Directory.Exists(tasksDirParent)) {
+                        _testOutput.WriteLine($"Expected {tasksDirParent} to exist and contain TFM subdirectories");
+                    }
+                    _testOutput.WriteLine($"runtime pack tasks dir {tasksDir} contains subdirectories:");
+                    foreach (string subdir in Directory.EnumerateDirectories(tasksDirParent)) {
+                        _testOutput.WriteLine($"  - {subdir}");
+                    }
+                }
                 throw new DirectoryNotFoundException($"Could not find tasks directory {tasksDir}");
+            }
 
             string? taskPath = Directory.EnumerateFiles(tasksDir, "WasmAppBuilder.dll", SearchOption.AllDirectories)
                                             .FirstOrDefault();
             if (string.IsNullOrEmpty(taskPath))
                 throw new FileNotFoundException($"Could not find WasmAppBuilder.dll in {tasksDir}");
+
+            _testOutput.WriteLine ("Using WasmAppBuilder.dll from {0}", taskPath);
 
             projectCode = projectCode
                 .Replace("###WasmPInvokeModule###", AddAssembly("System.Private.CoreLib") + AddAssembly("System.Runtime") + AddAssembly(libraryBuildArgs.ProjectName))
@@ -549,6 +564,72 @@ namespace Wasm.Build.Tests
                                        id: id,
                                        envVars: extraEnvVars);
             Assert.Contains("square: 25", output);
+        }
+
+        [Theory]
+        [BuildAndRun(host: RunHost.Chrome, parameters: new object[] { new object[] {
+                "with-hyphen",
+                "with#hash-and-hyphen",
+                "with.per.iod",
+                "with🚀unicode#"
+            } })]
+
+        public void CallIntoLibrariesWithNonAlphanumericCharactersInTheirNames(BuildArgs buildArgs, string[] libraryNames, RunHost host, string id)
+        {
+            buildArgs = ExpandBuildArgs(buildArgs,
+                                        extraItems: @$"<NativeFileReference Include=""*.c"" />",
+                                        extraProperties: buildArgs.AOT
+                                                            ? string.Empty
+                                                            : "<WasmBuildNative>true</WasmBuildNative>");
+
+            int baseArg = 10;
+            (_, string output) = BuildProject(buildArgs,
+                                        id: id,
+                                        new BuildProjectOptions(
+                                            InitProject: () => GenerateSourceFiles(_projectDir!, baseArg),
+                                            Publish: buildArgs.AOT,
+                                            DotnetWasmFromRuntimePack: false
+                                            ));
+
+            output = RunAndTestWasmApp(buildArgs,
+                                       buildDir: _projectDir,
+                                       expectedExitCode: 42,
+                                       host: host,
+                                       id: id);
+
+            for (int i = 0; i < libraryNames.Length; i ++)
+            {
+                Assert.Contains($"square_{i}: {(i + baseArg) * (i + baseArg)}", output);
+            }
+
+            void GenerateSourceFiles(string outputPath, int baseArg)
+            {
+                StringBuilder csBuilder = new($@"
+                    using System;
+                    using System.Runtime.InteropServices;
+                ");
+
+                StringBuilder dllImportsBuilder = new();
+                for (int i = 0; i < libraryNames.Length; i ++)
+                {
+                    dllImportsBuilder.AppendLine($"[DllImport(\"{libraryNames[i]}\")] static extern int square_{i}(int x);");
+                    csBuilder.AppendLine($@"Console.WriteLine($""square_{i}: {{square_{i}({i + baseArg})}}"");");
+
+                    string nativeCode = $@"
+                        #include <stdarg.h>
+
+                        int square_{i}(int x)
+                        {{
+                            return x * x;
+                        }}";
+                    File.WriteAllText(Path.Combine(outputPath, $"{libraryNames[i]}.c"), nativeCode);
+                }
+
+                csBuilder.AppendLine("return 42;");
+                csBuilder.Append(dllImportsBuilder);
+
+                File.WriteAllText(Path.Combine(outputPath, "Program.cs"), csBuilder.ToString());
+            }
         }
 
         private (BuildArgs, string) BuildForVariadicFunctionTests(string programText, BuildArgs buildArgs, string id, string? verbosity = null, string extraProperties = "")

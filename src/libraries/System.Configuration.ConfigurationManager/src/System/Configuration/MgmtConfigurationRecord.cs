@@ -2148,7 +2148,7 @@ namespace System.Configuration
         private static void CheckPreamble(byte[] preamble, XmlUtilWriter utilWriter, byte[] buffer)
         {
             bool hasByteOrderMark = false;
-            using (Stream preambleStream = new MemoryStream(buffer))
+            using (var preambleStream = new MemoryStream(buffer))
             {
                 byte[] streamStart = new byte[preamble.Length];
                 if (preambleStream.Read(streamStart, 0, streamStart.Length) == streamStart.Length)

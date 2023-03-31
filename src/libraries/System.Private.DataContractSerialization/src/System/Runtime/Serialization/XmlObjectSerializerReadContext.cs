@@ -57,13 +57,13 @@ namespace System.Runtime.Serialization
         [DoesNotReturn]
         internal static void ThrowNullValueReturnedForGetOnlyCollectionException(Type type)
         {
-            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.NullValueReturnedForGetOnlyCollection, DataContract.GetClrTypeFullName(type))));
+            throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.NullValueReturnedForGetOnlyCollection, DataContract.GetClrTypeFullName(type)));
         }
 
         [DoesNotReturn]
         internal static void ThrowArrayExceededSizeException(int arraySize, Type type)
         {
-            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayExceededSize, arraySize, DataContract.GetClrTypeFullName(type))));
+            throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayExceededSize, arraySize, DataContract.GetClrTypeFullName(type)));
         }
 
         internal static XmlObjectSerializerReadContext CreateContext(DataContractSerializer serializer, DataContract rootTypeDataContract, DataContractResolver? dataContractResolver)
@@ -118,7 +118,7 @@ namespace System.Runtime.Serialization
             {
                 if (_isGetOnlyCollection)
                 {
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ErrorDeserializing, SR.Format(SR.ErrorTypeInfo, DataContract.GetClrTypeFullName(declaredType)), SR.Format(SR.XmlStartElementExpected, Globals.RefLocalName))));
+                    throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ErrorDeserializing, SR.Format(SR.ErrorTypeInfo, DataContract.GetClrTypeFullName(declaredType)), SR.Format(SR.XmlStartElementExpected, Globals.RefLocalName)));
                 }
                 else
                 {
@@ -159,9 +159,9 @@ namespace System.Runtime.Serialization
                 {
                     if (DataContractResolver == null)
                     {
-                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(XmlObjectSerializer.TryAddLineInfo(reader, SR.Format(SR.DcTypeNotFoundOnDeserialize, attributes.XsiTypeNamespace, attributes.XsiTypeName, reader.NamespaceURI, reader.LocalName))));
+                        throw XmlObjectSerializer.CreateSerializationException(XmlObjectSerializer.TryAddLineInfo(reader, SR.Format(SR.DcTypeNotFoundOnDeserialize, attributes.XsiTypeNamespace, attributes.XsiTypeName, reader.NamespaceURI, reader.LocalName)));
                     }
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(XmlObjectSerializer.TryAddLineInfo(reader, SR.Format(SR.DcTypeNotResolvedOnDeserialize, attributes.XsiTypeNamespace, attributes.XsiTypeName, reader.NamespaceURI, reader.LocalName))));
+                    throw XmlObjectSerializer.CreateSerializationException(XmlObjectSerializer.TryAddLineInfo(reader, SR.Format(SR.DcTypeNotResolvedOnDeserialize, attributes.XsiTypeNamespace, attributes.XsiTypeName, reader.NamespaceURI, reader.LocalName)));
                 }
                 dataContract = tempDataContract;
                 knownTypesAddedInCurrentScope = ReplaceScopedKnownTypesTop(dataContract.KnownDataContracts, knownTypesAddedInCurrentScope);
@@ -179,7 +179,7 @@ namespace System.Runtime.Serialization
                     }
                     else
                     {
-                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.FactoryTypeNotISerializable, DataContract.GetClrTypeFullName(factoryDataContract.UnderlyingType), DataContract.GetClrTypeFullName(dataContract.UnderlyingType))));
+                        throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.FactoryTypeNotISerializable, DataContract.GetClrTypeFullName(factoryDataContract.UnderlyingType), DataContract.GetClrTypeFullName(dataContract.UnderlyingType)));
                     }
                 }
             }
@@ -258,7 +258,7 @@ namespace System.Runtime.Serialization
                     stringBuilder.Append(" | ");
                 stringBuilder.Append(memberNames[i].Value);
             }
-            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(XmlObjectSerializer.TryAddLineInfo(xmlReader, SR.Format(SR.UnexpectedElementExpectingElements, xmlReader.NodeType, xmlReader.LocalName, xmlReader.NamespaceURI, stringBuilder.ToString()))));
+            throw XmlObjectSerializer.CreateSerializationException(XmlObjectSerializer.TryAddLineInfo(xmlReader, SR.Format(SR.UnexpectedElementExpectingElements, xmlReader.NodeType, xmlReader.LocalName, xmlReader.NamespaceURI, stringBuilder.ToString())));
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -267,7 +267,7 @@ namespace System.Runtime.Serialization
         {
             xmlReader.MoveToContent();
             if (xmlReader.NodeType != XmlNodeType.Element)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateUnexpectedStateException(XmlNodeType.Element, xmlReader));
+                throw CreateUnexpectedStateException(XmlNodeType.Element, xmlReader);
 
             if (IgnoreExtensionDataObject || extensionData == null)
                 SkipUnknownElement(xmlReader);
@@ -366,7 +366,7 @@ namespace System.Runtime.Serialization
                 {
                     string oldType = (oldObj != null) ? DataContract.GetClrTypeFullName(oldObj.GetType()) : SR.UnknownNullType;
                     string newType = (newObj != null) ? DataContract.GetClrTypeFullName(newObj.GetType()) : SR.UnknownNullType;
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.FactoryObjectContainsSelfReference, oldType, newType, id)));
+                    throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.FactoryObjectContainsSelfReference, oldType, newType, id));
                 }
                 DeserializedObjects.Remove(id);
                 DeserializedObjects.Add(id, newObj);
@@ -382,7 +382,7 @@ namespace System.Runtime.Serialization
             object? retObj = DeserializedObjects.GetObject(id);
 
             if (retObj == null)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.DeserializedObjectWithIdNotFound, id)));
+                throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.DeserializedObjectWithIdNotFound, id));
 
             if (retObj is IDataNode dataNode)
             {
@@ -396,8 +396,7 @@ namespace System.Runtime.Serialization
             object? retObj = DeserializedObjects.GetObject(id);
             if (retObj == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                    XmlObjectSerializer.CreateSerializationException(SR.Format(SR.DeserializedObjectWithIdNotFound, id)));
+                throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.DeserializedObjectWithIdNotFound, id));
             }
 
             return retObj;
@@ -413,7 +412,7 @@ namespace System.Runtime.Serialization
             // forward references. However, we throw for this case since it allows us to add fix-up support
             // in the future if we need to.
             if (realObj == null)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException("error"));
+                throw XmlObjectSerializer.CreateSerializationException("error");
             ReplaceDeserializedObject(id, obj, realObj);
             return realObj;
         }
@@ -434,7 +433,7 @@ namespace System.Runtime.Serialization
         internal static void Read(XmlReaderDelegator xmlReader)
         {
             if (!xmlReader.Read())
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile));
+                throw XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile);
         }
 
         internal static void ParseQualifiedName(string qname, XmlReaderDelegator xmlReader, out string name, out string? ns, out string prefix)
@@ -453,10 +452,9 @@ namespace System.Runtime.Serialization
             {
                 if (index == int.MaxValue)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                        XmlObjectSerializer.CreateSerializationException(
+                    throw XmlObjectSerializer.CreateSerializationException(
                         SR.Format(SR.MaxArrayLengthExceeded, int.MaxValue,
-                        DataContract.GetClrTypeFullName(typeof(T)))));
+                        DataContract.GetClrTypeFullName(typeof(T))));
                 }
                 int newSize = (index < int.MaxValue / 2) ? index * 2 : int.MaxValue;
                 T[] newArray = new T[newSize];
@@ -484,11 +482,11 @@ namespace System.Runtime.Serialization
             while (xmlReader.IsStartElement())
             {
                 if (xmlReader.IsStartElement(itemName, itemNamespace))
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayExceededSizeAttribute, arraySize, itemName.Value, itemNamespace.Value)));
+                    throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArrayExceededSizeAttribute, arraySize, itemName.Value, itemNamespace.Value));
                 SkipUnknownElement(xmlReader);
             }
             if (xmlReader.NodeType != XmlNodeType.EndElement)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateUnexpectedStateException(XmlNodeType.EndElement, xmlReader));
+                throw CreateUnexpectedStateException(XmlNodeType.EndElement, xmlReader);
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -520,7 +518,7 @@ namespace System.Runtime.Serialization
             if (xmlDataContract.UnderlyingType == Globals.TypeOfXmlElement)
             {
                 if (!xmlReader.IsStartElement())
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateUnexpectedStateException(XmlNodeType.Element, xmlReader));
+                    throw CreateUnexpectedStateException(XmlNodeType.Element, xmlReader);
                 XmlDocument xmlDoc = new XmlDocument();
                 obj = (XmlElement?)xmlDoc.ReadNode(xmlSerializableReader);
             }
@@ -548,7 +546,7 @@ namespace System.Runtime.Serialization
             {
                 if (nodeType != XmlNodeType.Element)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateUnexpectedStateException(XmlNodeType.Element, xmlReader));
+                    throw CreateUnexpectedStateException(XmlNodeType.Element, xmlReader);
                 }
 
                 if (xmlReader.NamespaceURI.Length != 0)
@@ -738,7 +736,7 @@ namespace System.Runtime.Serialization
                         return objNode;
                     }
                 default:
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateUnexpectedStateException(XmlNodeType.Element, xmlReader));
+                    throw CreateUnexpectedStateException(XmlNodeType.Element, xmlReader);
             }
         }
 
@@ -791,7 +789,7 @@ namespace System.Runtime.Serialization
             while ((nodeType = xmlReader.MoveToContent()) != XmlNodeType.EndElement)
             {
                 if (nodeType != XmlNodeType.Element)
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateUnexpectedStateException(XmlNodeType.Element, xmlReader));
+                    throw CreateUnexpectedStateException(XmlNodeType.Element, xmlReader);
 
                 dataNode.Members ??= new List<ExtensionDataMember>();
                 dataNode.Members.Add(ReadExtensionDataMember(xmlReader, memberIndex++));
@@ -814,7 +812,7 @@ namespace System.Runtime.Serialization
             while ((nodeType = xmlReader.MoveToContent()) != XmlNodeType.EndElement)
             {
                 if (nodeType != XmlNodeType.Element)
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateUnexpectedStateException(XmlNodeType.Element, xmlReader));
+                    throw CreateUnexpectedStateException(XmlNodeType.Element, xmlReader);
 
                 if (dataNode.ItemName == null)
                 {
@@ -837,10 +835,10 @@ namespace System.Runtime.Serialization
                 if (dataNode.Items == null)
                 {
                     if (dataNode.Size > 0)
-                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArraySizeAttributeIncorrect, arraySize, 0)));
+                        throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArraySizeAttributeIncorrect, arraySize, 0));
                 }
                 else if (dataNode.Size != dataNode.Items.Count)
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArraySizeAttributeIncorrect, arraySize, dataNode.Items.Count)));
+                    throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ArraySizeAttributeIncorrect, arraySize, dataNode.Items.Count));
             }
             else
             {
@@ -873,7 +871,7 @@ namespace System.Runtime.Serialization
             while ((nodeType = xmlReader.MoveToContent()) != XmlNodeType.EndElement)
             {
                 if (nodeType != XmlNodeType.Element)
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateUnexpectedStateException(XmlNodeType.Element, xmlReader));
+                    throw CreateUnexpectedStateException(XmlNodeType.Element, xmlReader);
 
                 if (xmlReader.NamespaceURI.Length != 0)
                 {
@@ -890,7 +888,7 @@ namespace System.Runtime.Serialization
             return dataNode;
         }
 
-        private IDataNode ReadUnknownXmlData(XmlReaderDelegator xmlReader, string? dataContractName, string? dataContractNamespace)
+        private XmlDataNode ReadUnknownXmlData(XmlReaderDelegator xmlReader, string? dataContractName, string? dataContractNamespace)
         {
             XmlDataNode dataNode = new XmlDataNode()
             {
@@ -901,8 +899,8 @@ namespace System.Runtime.Serialization
             if (xmlReader.NodeType == XmlNodeType.EndElement)
                 return dataNode;
 
-            IList<XmlAttribute>? xmlAttributes = null;
-            IList<XmlNode>? xmlChildNodes = null;
+            List<XmlAttribute>? xmlAttributes = null;
+            List<XmlNode>? xmlChildNodes = null;
 
             XmlNodeType nodeType = xmlReader.MoveToContent();
             if (nodeType != XmlNodeType.Text)
@@ -922,7 +920,7 @@ namespace System.Runtime.Serialization
             while (xmlReader.MoveToContent() != XmlNodeType.EndElement)
             {
                 if (xmlReader.EOF)
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile));
+                    throw XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile);
 
                 xmlChildNodes ??= new List<XmlNode>();
                 xmlChildNodes.Add(Document.ReadNode(xmlReader.UnderlyingReader)!);
@@ -948,7 +946,7 @@ namespace System.Runtime.Serialization
             bool couldBeClassData = true;
             string? elementNs = null, elementName = null;
             var xmlChildNodes = new List<XmlNode>();
-            IList<XmlAttribute>? xmlAttributes = null;
+            List<XmlAttribute>? xmlAttributes = null;
             if (namespaces != null)
             {
                 xmlAttributes = new List<XmlAttribute>();
@@ -976,13 +974,12 @@ namespace System.Runtime.Serialization
                         }
                         else
                         {
-                            couldBeCollectionData = (string.CompareOrdinal(elementName, name) == 0) &&
-                                (string.CompareOrdinal(elementNs, ns) == 0);
+                            couldBeCollectionData = elementName == name && elementNs == ns;
                         }
                     }
                 }
                 else if (xmlReader.EOF)
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile));
+                    throw XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile);
                 else if (IsContentNode(xmlReader.NodeType))
                     couldBeClassData = couldBeISerializableData = couldBeCollectionData = false;
 

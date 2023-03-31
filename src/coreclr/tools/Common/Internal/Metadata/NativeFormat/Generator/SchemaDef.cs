@@ -274,7 +274,7 @@ class SchemaDef
         (
             from primitiveType in PrimitiveTypes select
                 new RecordDef(
-                    name: "Constant" + primitiveType.Name + "Value",
+                    name: "Constant" + primitiveType.TypeName + "Value",
                     members: new MemberDef[] {
                         new MemberDef(name: "Value", typeName: primitiveType.Name,
                             flags: primitiveType.CustomCompare ? MemberDefFlags.CustomCompare : 0)
@@ -309,9 +309,9 @@ class SchemaDef
         (
             from primitiveType in PrimitiveTypes select
                 new RecordDef(
-                    name: "Constant" + primitiveType.Name + "Array",
+                    name: "Constant" + primitiveType.TypeName + "Array",
                     members: new MemberDef[] {
-                        new MemberDef(name: "Value", typeName: primitiveType.Name,
+                        new MemberDef(name: "Value", typeName: primitiveType.TypeName,
                             flags: MemberDefFlags.Array | (primitiveType.CustomCompare ? MemberDefFlags.CustomCompare : 0))
                     }
                 )
@@ -759,10 +759,10 @@ class SchemaDef
     public static readonly string[] TypeNamesWithCollectionTypes =
         RecordSchema.SelectMany(r =>
             from member in r.Members
-            let memberName = member.Name as string
-            where memberName != null &&
+            let memberTypeName = member.TypeName as string
+            where memberTypeName != null &&
                 (member.Flags & MemberDefFlags.Collection) != 0 &&
-                !PrimitiveTypes.Any(pt => pt.Name == memberName)
-            select memberName
+                !PrimitiveTypes.Any(pt => pt.TypeName == memberTypeName)
+            select memberTypeName
         ).Concat(new[] { "ScopeDefinition" }).Distinct().ToArray();
 }

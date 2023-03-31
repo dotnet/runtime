@@ -154,7 +154,7 @@ void JitTelemetry::Initialize(Compiler* c)
 // IsTelemetryEnabled: Can we perform JIT telemetry
 //
 //  Return Value:
-//      Returns "true" if COMPlus_JitTelemetry environment flag is
+//      Returns "true" if DOTNET_JitTelemetry environment flag is
 //      non-zero. Else returns "false".
 //
 //

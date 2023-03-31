@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
-    <!-- Workaround before https://github.com/dotnet/runtime/issues/63465 is solved. -->
-    <WasmMainJSPath>tsconfig.json</WasmMainJSPath>
   </PropertyGroup>
 
   <!-- 

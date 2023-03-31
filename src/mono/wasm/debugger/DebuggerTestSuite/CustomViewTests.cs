@@ -35,7 +35,7 @@ namespace DebuggerTests
             await CheckObject(locals, "c", "DebuggerTests.DebuggerDisplayMethodTest", description: "First Int:32 Second Int:43");
             await CheckObject(locals, "myList", "System.Collections.Generic.List<int>", description: "Count = 4");
             await CheckObject(locals, "person1", "DebuggerTests.Person", description: "FirstName: Anton, SurName: Mueller, Age: 44");
-            await CheckObject(locals, "person2", "DebuggerTests.Person", description: "FirstName: Lisa, SurName: Müller, Age: 41");
+            await CheckObject(locals, "person2", "DebuggerTests.Person", description: "FirstName: Lisa, SurName: M\u00FCller, Age: 41");
         }
 
         [ConditionalFact(nameof(RunningOnChrome))]
@@ -118,7 +118,7 @@ namespace DebuggerTests
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 1505, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 1561, 8,
                 "ToStringOverriden.Run",
                 wait_for_event_fn: async (pause_location) =>
                 {

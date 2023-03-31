@@ -11,8 +11,8 @@ namespace System.Net.NetworkInformation
     {
         private readonly LinuxNetworkInterface _linuxNetworkInterface;
         private readonly GatewayIPAddressInformationCollection _gatewayAddresses;
-        private readonly IPAddressCollection _dhcpServerAddresses;
-        private readonly IPAddressCollection _winsServerAddresses;
+        private readonly InternalIPAddressCollection _dhcpServerAddresses;
+        private readonly InternalIPAddressCollection _winsServerAddresses;
         private readonly LinuxIPv4InterfaceProperties _ipv4Properties;
         private readonly LinuxIPv6InterfaceProperties _ipv6Properties;
 
@@ -70,7 +70,7 @@ namespace System.Net.NetworkInformation
             return new GatewayIPAddressInformationCollection(collection);
         }
 
-        private IPAddressCollection GetDhcpServerAddresses()
+        private InternalIPAddressCollection GetDhcpServerAddresses()
         {
             List<IPAddress> internalCollection = new List<IPAddress>();
 
@@ -81,7 +81,7 @@ namespace System.Net.NetworkInformation
             return new InternalIPAddressCollection(internalCollection);
         }
 
-        private static IPAddressCollection GetWinsServerAddresses()
+        private static InternalIPAddressCollection GetWinsServerAddresses()
         {
             List<IPAddress> internalCollection
                 = StringParsingHelpers.ParseWinsServerAddressesFromSmbConfFile(NetworkFiles.SmbConfFile);

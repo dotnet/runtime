@@ -46,7 +46,7 @@ namespace Tracing.Tests
 
     class EventListenerThreadPool
     {
-        static int Main(string[] args)
+        static int Main()
         {
             using (RuntimeEventListener listener = new RuntimeEventListener())
             {

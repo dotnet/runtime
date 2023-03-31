@@ -30,14 +30,8 @@ namespace System.Net.Sockets
             ArgumentNullException.ThrowIfNull(filepath);
 
             // The native API will validate the file length on send.
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             Initialize(filepath, null, null, null, offset, count, endOfPacket);
         }
@@ -60,14 +54,8 @@ namespace System.Net.Sockets
                 throw new ArgumentException(SR.net_sockets_sendpackelement_FileStreamMustBeAsync, nameof(fileStream));
             }
             // The native API will validate the file length on send.
-            if (offset < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
 
             Initialize(null, fileStream, null, null, offset, count, endOfPacket);
         }
@@ -85,14 +73,8 @@ namespace System.Net.Sockets
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if ((uint)offset > (uint)buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if ((uint)count > (uint)(buffer.Length - offset))
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)offset, (uint)buffer.Length, nameof(offset));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)count, (uint)(buffer.Length - offset), nameof(count));
 
             Initialize(null, null, buffer, buffer.AsMemory(offset, count), offset, count, endOfPacket);
         }
