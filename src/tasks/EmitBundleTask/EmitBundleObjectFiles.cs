@@ -6,9 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using Microsoft.Build.Framework;
 
-namespace Microsoft.WebAssembly.Build.Tasks;
-
-public class EmitWasmBundleObjectFiles : EmitWasmBundleBase
+public class EmitBundleObjectFiles : EmitBundleBase
 {
     [Required]
     public string ClangExecutable { get; set; } = default!;

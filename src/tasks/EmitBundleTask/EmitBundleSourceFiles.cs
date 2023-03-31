@@ -5,12 +5,10 @@ using System;
 using System.IO;
 using Microsoft.Build.Framework;
 
-namespace Microsoft.WebAssembly.Build.Tasks;
-
-// It would be ideal that this Task would always produce object files as EmitWasmBundleObjectFiles does.
-// EmitWasmBundleObjectFiles could do it with clang by streaming code directly to clang input stream.
+// It would be ideal that this Task would always produce object files as EmitBundleObjectFiles does.
+// EmitBundleObjectFiles could do it with clang by streaming code directly to clang input stream.
 // For emcc it's not possible, so we need to write the code to disk first and then compile it in MSBuild.
-public class EmitWasmBundleSourceFiles : EmitWasmBundleBase
+public class EmitBundleSourceFiles : EmitBundleBase
 {
     public override bool Emit(string destinationFile, Action<Stream> inputProvider)
     {

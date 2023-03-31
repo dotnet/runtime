@@ -11,9 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 
-namespace Microsoft.WebAssembly.Build.Tasks;
-
-public abstract class EmitWasmBundleBase : Microsoft.Build.Utilities.Task, ICancelableTask
+public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelableTask
 {
     private CancellationTokenSource BuildTaskCancelled { get; } = new();
 
@@ -65,7 +63,7 @@ public abstract class EmitWasmBundleBase : Microsoft.Build.Utilities.Task, ICanc
             return (registeredName, symbolName);
         }).ToList();
 
-        Log.LogMessage(MessageImportance.Low, "Bundling {numFiles} files for {bundleName}", files.Count, BundleName);
+        Log.LogMessage(MessageImportance.Low, "Bundling {0} files for {1}", files.Count, BundleName);
 
         if (remainingDestinationFilesToBundle.Length > 0)
         {
@@ -109,7 +107,7 @@ public abstract class EmitWasmBundleBase : Microsoft.Build.Utilities.Task, ICanc
         return Emit(BundleFile, (inputStream) =>
         {
             using var outputUtf8Writer = new StreamWriter(inputStream, Utf8NoBom);
-            GenerateRegisteredBundledObjects($"mono_wasm_register_{BundleName}_bundle", RegistrationCallbackFunctionName, files, outputUtf8Writer);
+            GenerateRegisteredBundledObjects($"mono_register_{BundleName}_bundle", RegistrationCallbackFunctionName, files, outputUtf8Writer);
         }) && !Log.HasLoggedErrors;
     }
 
