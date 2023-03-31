@@ -128,11 +128,7 @@ private:
     static int g_cachedMappingSize;
     BlockRW* m_cachedMapping[16] = { 0 };
 #else
-#if defined(HOST_OSX) && defined(HOST_AMD64)
-    BlockRW* m_cachedMapping[1] = { 0 }; // OSX Amd64 doesn't behave correctly with more than one cached mapping.
-#else
     BlockRW* m_cachedMapping[3] = { 0 };
-#endif
 #endif
 
     // Synchronization of the public allocator methods
