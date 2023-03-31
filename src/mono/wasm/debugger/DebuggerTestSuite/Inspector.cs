@@ -372,7 +372,10 @@ namespace DebuggerTests
                     string cmd_name = init_cmds[cmdIdx].Item1;
 
                     if (_isFailingWithException is not null)
+                    {
+                        _logger.LogError($"_isFailingWithException. {_isFailingWithException}.");
                         throw _isFailingWithException;
+                    }
 
                     if (completedTask.IsCanceled)
                     {
