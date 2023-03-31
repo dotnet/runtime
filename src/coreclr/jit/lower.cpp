@@ -8006,11 +8006,8 @@ void Lowering::LowerLclHeap(GenTree* node)
                 // Replace with null for LCLHEAP(0)
                 if (size == 0)
                 {
-                    GenTree* nullNode = comp->gtNewIconNode(0, node->TypeGet());
-                    use.ReplaceWith(nullNode);
+                    node->BashToZeroConst(TYP_I_IMPL);
                     BlockRange().Remove(sizeNode);
-                    BlockRange().Remove(node);
-                    BlockRange().InsertAfter(node, nullNode);
                     return;
                 }
 
