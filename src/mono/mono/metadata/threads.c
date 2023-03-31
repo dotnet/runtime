@@ -5005,8 +5005,8 @@ ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal (int32_t kind)
 	case LIFO_SEMAPHORE_NORMAL:
 		return (gpointer)mono_lifo_semaphore_init ();
 #if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	case LIFO_SEMAPHORE_ASYNC_JS:
-		return (gpointer)mono_lifo_js_semaphore_init ();
+	case LIFO_SEMAPHORE_ASYNCWAIT:
+		return (gpointer)mono_lifo_semaphore_asyncwait_init ();
 #endif
 	default:
 		g_error ("Invalid LowLevelLifoSemaphore kind %d\n", kind);
@@ -5023,8 +5023,8 @@ ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal (gpointer sem_pt
 		mono_lifo_semaphore_delete ((LifoSemaphore*)sem);
 		break;
 #if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	case LIFO_SEMAPHORE_ASYNC_JS:
-		mono_lifo_js_semaphore_delete ((LifoJSSemaphore*)sem);
+	case LIFO_SEMAPHORE_ASYNCWAIT:
+		mono_lifo_semaphore_asyncwait_delete ((LifoSemaphoreAsyncWait*)sem);
 		break;
 #endif
 	default:
@@ -5049,8 +5049,8 @@ ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_p
 		mono_lifo_semaphore_release ((LifoSemaphore*)sem, count);
 		break;
 #if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	case LIFO_SEMAPHORE_ASYNC_JS:
-		mono_lifo_js_semaphore_release ((LifoJSSemaphore*)sem, count);
+	case LIFO_SEMAPHORE_ASYNCWAIT:
+		mono_lifo_semaphore_asyncwait_release ((LifoSemaphoreAsyncWait*)sem, count);
 		break;
 #endif
 	default:
@@ -5062,9 +5062,9 @@ ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_p
 void
 ves_icall_System_Threading_LowLevelLifoSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, intptr_t user_data)
 {
-	LifoJSSemaphore *sem = (LifoJSSemaphore *)sem_ptr;
-	g_assert (sem->base.kind == LIFO_SEMAPHORE_ASYNC_JS);
-	mono_lifo_js_semaphore_prepare_wait (sem, timeout_ms, (LifoJSSemaphoreCallbackFn)success_cb, (LifoJSSemaphoreCallbackFn)timedout_cb, user_data);
+	LifoSemaphoreAsyncWait *sem = (LifoSemaphoreAsyncWait *)sem_ptr;
+	g_assert (sem->base.kind == LIFO_SEMAPHORE_ASYNCWAIT);
+	mono_lifo_semaphore_asyncwait_prepare_wait (sem, timeout_ms, (LifoSemaphoreAsyncWaitCallbackFn)success_cb, (LifoSemaphoreAsyncWaitCallbackFn)timedout_cb, user_data);
 }
 
 void

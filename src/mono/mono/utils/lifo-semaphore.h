@@ -8,13 +8,14 @@ typedef struct _LifoSemaphoreBase LifoSemaphoreBase;
 struct _LifoSemaphoreBase
 {
 	MonoCoopMutex mutex;
+	uint32_t pending_signals;
 	uint8_t       kind;
 };
 
 enum {
 	LIFO_SEMAPHORE_NORMAL = 1,
 #if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
-	LIFO_SEMAPHORE_ASYNC_JS,
+	LIFO_SEMAPHORE_ASYNCWAIT,
 #endif
 };
 	
@@ -31,7 +32,6 @@ struct _LifoSemaphoreWaitEntry {
 struct _LifoSemaphore {
 	LifoSemaphoreBase base;
 	LifoSemaphoreWaitEntry *head;
-	uint32_t pending_signals;
 };
 
 LifoSemaphore *
@@ -53,22 +53,22 @@ mono_lifo_semaphore_release (LifoSemaphore *semaphore, uint32_t count);
  * timeout callback.  The wait function returns immediately and the callbacks will fire on the JS
  * event loop when the semaphore is released or the timeout expires.
  */
-typedef struct _LifoJSSemaphore LifoJSSemaphore;
+typedef struct _LifoSemaphoreAsyncWait LifoSemaphoreAsyncWait;
 /*
  * Because the callbacks are asynchronous, it's possible for the same thread to attempt to wait
  * multiple times for the same semaphore.  For simplicity of reasoning, we dissallow that and
  * assert.  In principle we could support it, but we haven't implemented that.
  */
-typedef struct _LifoJSSemaphoreWaitEntry LifoJSSemaphoreWaitEntry;
+typedef struct _LifoSemaphoreAsyncWaitWaitEntry LifoSemaphoreAsyncWaitWaitEntry;
 
-typedef void (*LifoJSSemaphoreCallbackFn)(LifoJSSemaphore *semaphore, intptr_t user_data);
+typedef void (*LifoSemaphoreAsyncWaitCallbackFn)(LifoSemaphoreAsyncWait *semaphore, intptr_t user_data);
 
-struct _LifoJSSemaphoreWaitEntry {
-	LifoJSSemaphoreWaitEntry *previous;
-	LifoJSSemaphoreWaitEntry *next;
-	LifoJSSemaphoreCallbackFn success_cb;
-	LifoJSSemaphoreCallbackFn timeout_cb;
-	LifoJSSemaphore *sem;
+struct _LifoSemaphoreAsyncWaitWaitEntry {
+	LifoSemaphoreAsyncWaitWaitEntry *previous;
+	LifoSemaphoreAsyncWaitWaitEntry *next;
+	LifoSemaphoreAsyncWaitCallbackFn success_cb;
+	LifoSemaphoreAsyncWaitCallbackFn timeout_cb;
+	LifoSemaphoreAsyncWait *sem;
 	intptr_t user_data;
 	pthread_t thread;
 	int32_t js_timeout_id; // only valid to access from the waiting thread
@@ -77,20 +77,19 @@ struct _LifoJSSemaphoreWaitEntry {
 	uint16_t refcount; /* 1 if waiting, 2 if signaled, 1 if timeout fired while signaled and we're ignoring the timeout */
 };
 	
-struct _LifoJSSemaphore {
+struct _LifoSemaphoreAsyncWait {
 	LifoSemaphoreBase base;
-	LifoJSSemaphoreWaitEntry *head;
-	uint32_t pending_signals;
+	LifoSemaphoreAsyncWaitWaitEntry *head;
 };
 
-LifoJSSemaphore *
-mono_lifo_js_semaphore_init (void);
+LifoSemaphoreAsyncWait *
+mono_lifo_semaphore_asyncwait_init (void);
 
 /* what to do with waiters?
  * might be kind of academic - we don't expect to destroy these
  */
 void
-mono_lifo_js_semaphore_delete (LifoJSSemaphore *semaphore);
+mono_lifo_semaphore_asyncwait_delete (LifoSemaphoreAsyncWait *semaphore);
 
 /*
  * the timeout_cb is triggered by a JS setTimeout callback
@@ -127,13 +126,13 @@ mono_lifo_js_semaphore_delete (LifoJSSemaphore *semaphore);
  * popped when the timeout runs.  But emscripten_clear_timeout doesn't pop - we need to pop ourselves
  */
 void
-mono_lifo_js_semaphore_prepare_wait (LifoJSSemaphore *semaphore, int32_t timeout_ms,
-				     LifoJSSemaphoreCallbackFn success_cb,
-				     LifoJSSemaphoreCallbackFn timeout_cb,
+mono_lifo_semaphore_asyncwait_prepare_wait (LifoSemaphoreAsyncWait *semaphore, int32_t timeout_ms,
+				     LifoSemaphoreAsyncWaitCallbackFn success_cb,
+				     LifoSemaphoreAsyncWaitCallbackFn timeout_cb,
 				     intptr_t user_data);
 
 void
-mono_lifo_js_semaphore_release (LifoJSSemaphore *semaphore, uint32_t count);
+mono_lifo_semaphore_asyncwait_release (LifoSemaphoreAsyncWait *semaphore, uint32_t count);
 
 #endif /* HOST_BROWSER && !DISABLE_THREADS */
 
