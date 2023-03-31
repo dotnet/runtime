@@ -2745,14 +2745,10 @@ void CodeGen::genLclHeap(GenTree* tree)
 
     // compute the amount of memory to allocate to properly STACK_ALIGN.
     size_t amount = 0;
-    if (size->IsCnsIntOrI())
+    if (size->IsCnsIntOrI() && size->isContained())
     {
-        // If size is a constant, then it must be contained.
-        assert(size->isContained());
-        assert(!compiler->info.compInitMem || (tree->gtFlags & GTF_LCLHEAP_ZEROED));
-
         amount = size->AsIntCon()->gtIconVal;
-        assert(amount > 0);
+        assert((amount > 0) && (amount <= UINT_MAX));
         assert((amount % STACK_ALIGN) == 0);
     }
     else
@@ -2845,7 +2841,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             goto ALLOC_DONE;
         }
 
-        if (!size->IsCnsIntOrI())
+        if (!size->IsCnsIntOrI() || !size->isContained())
         {
             inst_RV_IV(INS_add, REG_SPBASE, compiler->lvaOutgoingArgSpaceSize, EA_PTRSIZE);
             stackAdjustment += (target_size_t)compiler->lvaOutgoingArgSpaceSize;
@@ -2859,14 +2855,11 @@ void CodeGen::genLclHeap(GenTree* tree)
     }
 #endif
 
-    if (size->IsCnsIntOrI())
+    if (size->IsCnsIntOrI() && size->isContained())
     {
         // We should reach here only for non-zero, constant size allocations which we zero
         // via BLK explicitly, so just bump the stack pointer.
-        assert((amount % STACK_ALIGN) == 0);
-        const bool largePage = amount >= compiler->eeGetPageSize();
-        assert(regCnt == REG_NA);
-        if (largePage || (TARGET_POINTER_SIZE == 4))
+        if ((amount >= compiler->eeGetPageSize()) || (TARGET_POINTER_SIZE == 4))
         {
             regCnt = tree->GetSingleTempReg();
             instGen_Set_Reg_To_Imm(EA_PTRSIZE, regCnt, -(ssize_t)amount);

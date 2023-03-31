@@ -1844,10 +1844,8 @@ int LinearScan::BuildLclHeap(GenTree* tree)
     int srcCount = 1;
 
     GenTree* size = tree->gtGetOp1();
-    if (size->IsCnsIntOrI())
+    if (size->IsCnsIntOrI() && size->isContained())
     {
-        assert(!compiler->info.compInitMem || (tree->gtFlags & GTF_LCLHEAP_ZEROED));
-        assert(size->isContained());
         srcCount       = 0;
         size_t sizeVal = size->AsIntCon()->gtIconVal;
         assert(sizeVal != 0);
@@ -1866,7 +1864,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
             // For regCnt
             buildInternalIntRegisterDefForNode(tree);
         }
-        BuildUse(size);
+        BuildUse(size); // could be a non-contained constant
     }
     buildInternalRegisterUses();
     BuildDef(tree);

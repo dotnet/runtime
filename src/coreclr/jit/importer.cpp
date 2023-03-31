@@ -9836,10 +9836,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     if (op2->IsIntegralConst())
                     {
                         const ssize_t allocSize = op2->AsIntCon()->IconValue();
-                        if ((unsigned)allocSize > UINT_MAX)
-                        {
-                            BADCODE("Localloc size is negative or too big");
-                        }
 
                         bool bbInALoop = impBlockIsInALoop(block);
 
