@@ -977,9 +977,9 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
             {
                 assert(putArgChild->isContained());
                 GenTree* objChild = putArgChild->gtGetOp1();
-                if (objChild->OperGet() == GT_LCL_VAR_ADDR)
+                if (objChild->IsLclVarAddr())
                 {
-                    // We will generate all of the code for the GT_PUTARG_STK, the GT_OBJ and the GT_LCL_VAR_ADDR
+                    // We will generate all of the code for the GT_PUTARG_STK, the GT_OBJ and the GT_LCL_ADDR<0>
                     // as one contained operation, and there are no source registers.
                     //
                     assert(objChild->isContained());
@@ -1079,9 +1079,9 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
         buildInternalIntRegisterDefForNode(argNode, allRegs(TYP_INT) & ~argMask);
 
         GenTree* objChild = putArgChild->gtGetOp1();
-        if (objChild->OperGet() == GT_LCL_VAR_ADDR)
+        if (objChild->IsLclVarAddr())
         {
-            // We will generate all of the code for the GT_PUTARG_SPLIT, the GT_OBJ and the GT_LCL_VAR_ADDR
+            // We will generate all of the code for the GT_PUTARG_SPLIT, the GT_OBJ and the GT_LCL_ADDR<0>
             // as one contained operation
             //
             assert(objChild->isContained());

@@ -3993,16 +3993,8 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
                 else
                 {
                     uint16_t offs = lcl->GetLclOffs();
-                    if (offs == 0)
-                    {
-                        lcl->ChangeOper(GT_LCL_VAR_ADDR);
-                    }
-                    else
-                    {
-                        lcl->ChangeOper(GT_LCL_FLD_ADDR);
-                        lcl->AsLclFld()->SetLclOffs(offs);
-                    }
-
+                    lcl->ChangeOper(GT_LCL_FLD_ADDR);
+                    lcl->AsLclFld()->SetLclOffs(offs);
                     lcl->gtType = TYP_I_IMPL;
                     lvaSetVarAddrExposed(varNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
 
@@ -6667,9 +6659,9 @@ void Compiler::fgValidateIRForTailCall(GenTreeCall* call)
 //         {args}
 //       GT_COMMA
 //         GT_CALL Dispatcher
-//           GT_LCL_VAR_ADDR ReturnAddress
+//           GT_LCL_ADDR ReturnAddress
 //           {CallTargetStub}
-//           GT_LCL_VAR_ADDR ReturnValue
+//           GT_LCL_ADDR ReturnValue
 //         GT_LCL ReturnValue
 // whenever the call node returns a value. If the call node does not return a
 // value the last comma will not be there.
@@ -8363,7 +8355,7 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
     if (tree->OperIs(GT_FIELD) && tree->AsField()->IsInstance())
     {
         GenTree* objRef = tree->AsField()->GetFldObj();
-        if (objRef->OperIs(GT_LCL_VAR_ADDR))
+        if (objRef->IsLclVarAddr())
         {
             LclVarDsc* varDsc = lvaGetDesc(objRef->AsLclVarCommon());
             if (varTypeIsSIMD(varDsc) && (varDsc->lvIsUsedInSIMDIntrinsic() || ignoreUsedInSIMDIntrinsic))

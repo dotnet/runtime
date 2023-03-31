@@ -486,9 +486,9 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
         }
 
         // Codegen supports containment of local addresses under OBJs.
-        if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIs(GT_LCL_VAR_ADDR))
+        if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->IsLclVarAddr())
         {
-            // TODO-LOONGARCH64-CQ: support containment of LCL_FLD_ADDR too.
+            // TODO-LOONGARCH64-CQ: support containment of LCL_ADDR with non-zero offset too.
             MakeSrcContained(src, src->AsObj()->Addr());
         }
     }
@@ -705,10 +705,10 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     {
         MakeSrcContained(indirNode, addr);
     }
-    else if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+    else if (addr->OperIs(GT_LCL_FLD_ADDR))
     {
         // These nodes go into an addr mode:
-        // - GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR is a stack addr mode.
+        // - GT_LCL_ADDR is a stack addr mode.
         MakeSrcContained(indirNode, addr);
     }
     else if (addr->OperIs(GT_CLS_VAR_ADDR))

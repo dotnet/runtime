@@ -5001,8 +5001,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_LCL_FLD_ADDR:
-        case GT_LCL_VAR_ADDR:
-            genCodeForLclAddr(treeNode->AsLclVarCommon());
+            genCodeForLclAddr(treeNode->AsLclFld());
             break;
 
         case GT_LCL_FLD:
@@ -5503,15 +5502,15 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
                 addrNode = source->AsOp()->gtOp1;
 
-                // addrNode can either be a GT_LCL_VAR_ADDR or an address expression
+                // addrNode can either be a GT_LCL_ADDR<0> or an address expression
                 //
-                if (addrNode->OperGet() == GT_LCL_VAR_ADDR)
+                if (addrNode->IsLclVarAddr())
                 {
-                    // We have a GT_OBJ(GT_LCL_VAR_ADDR)
+                    // We have a GT_OBJ(GT_LCL_ADDR<0>)
                     //
                     // We will treat this case the same as above
                     // (i.e if we just had this GT_LCL_VAR directly as the source)
-                    // so update 'source' to point this GT_LCL_VAR_ADDR node
+                    // so update 'source' to point this GT_LCL_ADDR node
                     // and continue to the codegen for the LCL_VAR node below
                     //
                     varNode  = addrNode->AsLclVarCommon();
@@ -5778,15 +5777,15 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
         addrNode = source->AsOp()->gtOp1;
 
-        // addrNode can either be a GT_LCL_VAR_ADDR or an address expression
+        // addrNode can either be a GT_LCL_ADDR<0> or an address expression
         //
-        if (addrNode->OperGet() == GT_LCL_VAR_ADDR)
+        if (addrNode->IsLclVarAddr())
         {
-            // We have a GT_OBJ(GT_LCL_VAR_ADDR)
+            // We have a GT_OBJ(GT_LCL_ADDR<0>)
             //
             // We will treat this case the same as above
             // (i.e if we just had this GT_LCL_VAR directly as the source)
-            // so update 'source' to point this GT_LCL_VAR_ADDR node
+            // so update 'source' to point this GT_LCL_ADDR node
             // and continue to the codegen for the LCL_VAR node below
             //
             varNode  = addrNode->AsLclVarCommon();
@@ -6185,14 +6184,14 @@ void CodeGen::genCodeForShift(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// genCodeForLclAddr: Generates the code for GT_LCL_FLD_ADDR/GT_LCL_VAR_ADDR.
+// genCodeForLclAddr: Generates the code for GT_LCL_ADDR.
 //
 // Arguments:
 //    tree - the node.
 //
-void CodeGen::genCodeForLclAddr(GenTreeLclVarCommon* lclAddrNode)
+void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 {
-    assert(lclAddrNode->OperIs(GT_LCL_FLD_ADDR, GT_LCL_VAR_ADDR));
+    assert(lclAddrNode->OperIs(GT_LCL_FLD_ADDR));
 
     var_types targetType = lclAddrNode->TypeGet();
     emitAttr  size       = emitTypeSize(targetType);

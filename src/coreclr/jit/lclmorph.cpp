@@ -310,26 +310,6 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         }
 
         //------------------------------------------------------------------------
-        // Address: Produce an address value from a GT_LCL_VAR_ADDR node.
-        //
-        // Arguments:
-        //    lclVar - a GT_LCL_VAR_ADDR node that defines the address
-        //
-        // Notes:
-        //   - (lclnum) => ADDRESS(lclNum, 0)
-        //
-        void Address(GenTreeLclVar* lclVar)
-        {
-            assert(lclVar->OperIs(GT_LCL_VAR_ADDR));
-            assert(!IsLocation() && !IsAddress());
-
-            m_lclNum  = lclVar->GetLclNum();
-            m_address = true;
-
-            assert(m_offset == 0);
-        }
-
-        //------------------------------------------------------------------------
         // Location: Produce a location value.
         //
         // Arguments:
@@ -348,21 +328,21 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         }
 
         //------------------------------------------------------------------------
-        // Address: Produce an address value from a LCL_FLD_ADDR node.
+        // Address: Produce an address value from a LCL_ADDR node.
         //
         // Arguments:
-        //    lclFld - a GT_LCL_FLD_ADDR node that defines the address
+        //    lclAddr - a GT_LCL_ADDR node that defines the address
         //
         // Notes:
         //   - (lclnum, lclOffs) => ADDRESS(lclNum, offset)
         //
-        void Address(GenTreeLclFld* lclFld)
+        void Address(GenTreeLclFld* lclAddr)
         {
-            assert(lclFld->OperIs(GT_LCL_FLD_ADDR));
+            assert(lclAddr->OperIs(GT_LCL_FLD_ADDR));
             assert(!IsLocation() && !IsAddress());
 
-            m_lclNum  = lclFld->GetLclNum();
-            m_offset  = lclFld->GetLclOffs();
+            m_lclNum  = lclAddr->GetLclNum();
+            m_offset  = lclAddr->GetLclOffs();
             m_address = true;
         }
 
@@ -630,13 +610,6 @@ public:
                 assert(TopValue(0).Node() == node);
 
                 TopValue(0).Location(node->AsLclVar());
-                SequenceLocal(node->AsLclVarCommon());
-                break;
-
-            case GT_LCL_VAR_ADDR:
-                assert(TopValue(0).Node() == node);
-
-                TopValue(0).Address(node->AsLclVar());
                 SequenceLocal(node->AsLclVarCommon());
                 break;
 
@@ -1057,17 +1030,11 @@ private:
         assert(addr->TypeIs(TYP_BYREF, TYP_I_IMPL));
         assert(m_compiler->lvaVarAddrExposed(lclNum) || m_compiler->lvaGetDesc(lclNum)->IsHiddenBufferStructArg());
 
-        if (offset == 0)
-        {
-            addr->ChangeOper(GT_LCL_VAR_ADDR);
-            addr->AsLclVar()->SetLclNum(lclNum);
-        }
-        else if (IsValidLclAddr(lclNum, offset))
+        if (IsValidLclAddr(lclNum, offset))
         {
             addr->ChangeOper(GT_LCL_FLD_ADDR);
             addr->AsLclFld()->SetLclNum(lclNum);
             addr->AsLclFld()->SetLclOffs(offset);
-            addr->AsLclFld()->SetLayout(nullptr);
         }
         else
         {
@@ -1440,7 +1407,7 @@ private:
         GenTree* objRef = node->AsUnOp()->gtOp1;
 
         // TODO-Bug: this code does not pay attention to "GTF_IND_VOLATILE".
-        if ((objRef != nullptr) && objRef->OperIs(GT_LCL_VAR_ADDR))
+        if ((objRef != nullptr) && objRef->IsLclVarAddr())
         {
             const LclVarDsc* varDsc = m_compiler->lvaGetDesc(objRef->AsLclVarCommon());
 
@@ -1462,8 +1429,9 @@ private:
 
                 if (node->OperIs(GT_FIELD_ADDR))
                 {
-                    node->ChangeOper(GT_LCL_VAR_ADDR);
-                    node->AsLclVar()->SetLclNum(fieldLclNum);
+                    node->ChangeOper(GT_LCL_FLD_ADDR);
+                    node->AsLclFld()->SetLclNum(fieldLclNum);
+                    node->AsLclFld()->SetLclOffs(0);
                 }
                 else if (node->TypeGet() == fieldType)
                 {
@@ -1516,7 +1484,7 @@ private:
                         node->SetOper(GT_IND);
                     }
 
-                    objRef->AsLclVar()->SetLclNum(fieldLclNum);
+                    objRef->AsLclFld()->SetLclNum(fieldLclNum);
                 }
 
                 JITDUMP("Replacing the field in promoted struct with local var V%02u\n", fieldLclNum);
@@ -1604,7 +1572,7 @@ public:
         {
             node = m_ancestors.Top(1);
         }
-        else if (node->OperIs(GT_LCL_VAR_ADDR))
+        else if (node->IsLclVarAddr())
         {
             if (m_ancestors.Height() < 3)
             {

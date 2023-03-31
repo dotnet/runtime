@@ -1842,8 +1842,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_LCL_FLD_ADDR:
-        case GT_LCL_VAR_ADDR:
-            genCodeForLclAddr(treeNode->AsLclVarCommon());
+            genCodeForLclAddr(treeNode->AsLclFld());
             break;
 
         case GT_LCL_FLD:
@@ -5078,14 +5077,14 @@ void CodeGen::genCodeForShiftRMW(GenTreeStoreInd* storeInd)
 }
 
 //------------------------------------------------------------------------
-// genCodeForLclAddr: Generates the code for GT_LCL_FLD_ADDR/GT_LCL_VAR_ADDR.
+// genCodeForLclAddr: Generates the code for GT_LCL_ADDR.
 //
 // Arguments:
 //    lclAddrNode - the node.
 //
-void CodeGen::genCodeForLclAddr(GenTreeLclVarCommon* lclAddrNode)
+void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 {
-    assert(lclAddrNode->OperIs(GT_LCL_FLD_ADDR, GT_LCL_VAR_ADDR));
+    assert(lclAddrNode->OperIs(GT_LCL_FLD_ADDR));
 
     var_types targetType = lclAddrNode->TypeGet();
     emitAttr  size       = emitTypeSize(targetType);
@@ -7470,13 +7469,13 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
 
     // Since xarch emitter doesn't handle reporting gc-info correctly while casting away gc-ness we
     // ensure srcType of a cast is non gc-type.  Codegen should never see BYREF as source type except
-    // for GT_LCL_VAR_ADDR and GT_LCL_FLD_ADDR that represent stack addresses and can be considered
-    // as TYP_I_IMPL. In all other cases where src operand is a gc-type and not known to be on stack,
-    // Front-end (see fgMorphCast()) ensures this by assigning gc-type local to a non gc-type
-    // temp and using temp as operand of cast operation.
+    // for GT_LCL_ADDR that represent stack addresses and can be considered as TYP_I_IMPL. In all other
+    // cases where src operand is a gc-type and not known to be on stack, Front-end (see fgMorphCast())
+    // ensures this by assigning gc-type local to a non gc-type temp and using temp as operand of cast
+    // operation.
     if (srcType == TYP_BYREF)
     {
-        noway_assert(op1->OperGet() == GT_LCL_VAR_ADDR || op1->OperGet() == GT_LCL_FLD_ADDR);
+        noway_assert(op1->OperGet() == GT_LCL_FLD_ADDR);
         srcType = TYP_I_IMPL;
     }
 
@@ -8011,12 +8010,11 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 
             switch (memBase->OperGet())
             {
-                case GT_LCL_VAR_ADDR:
                 case GT_LCL_FLD_ADDR:
                 {
                     assert(memBase->isContained());
-                    varNum = memBase->AsLclVarCommon()->GetLclNum();
-                    offset = memBase->AsLclVarCommon()->GetLclOffs();
+                    varNum = memBase->AsLclFld()->GetLclNum();
+                    offset = memBase->AsLclFld()->GetLclOffs();
 
                     // Ensure that all the GenTreeIndir values are set to their defaults.
                     assert(memBase->GetRegNum() == REG_NA);

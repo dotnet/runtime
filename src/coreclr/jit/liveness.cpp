@@ -214,7 +214,6 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
 
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-        case GT_LCL_VAR_ADDR:
         case GT_LCL_FLD_ADDR:
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
@@ -1992,7 +1991,6 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 break;
             }
 
-            case GT_LCL_VAR_ADDR:
             case GT_LCL_FLD_ADDR:
                 if (node->IsUnusedValue())
                 {

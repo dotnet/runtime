@@ -4708,7 +4708,6 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
                 {
                     case GT_LCL_VAR:
                     case GT_LCL_FLD:
-                    case GT_LCL_VAR_ADDR:
                     case GT_LCL_FLD_ADDR:
                     case GT_STORE_LCL_VAR:
                     case GT_STORE_LCL_FLD:
@@ -8194,7 +8193,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     GenTree* const       tree = *pTree;
     GenTreeLclVarCommon* lcl  = nullptr;
 
-    if (tree->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_LCL_FLD, GT_LCL_FLD_ADDR))
+    if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_LCL_FLD_ADDR))
     {
         lcl = tree->AsLclVarCommon();
     }
@@ -8220,7 +8219,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     if (bFirstPass)
     {
         // Ignore locals that already have field appearances
-        if (lcl->OperIs(GT_LCL_FLD, GT_LCL_FLD_ADDR))
+        if (lcl->OperIs(GT_LCL_FLD) || (lcl->OperIs(GT_LCL_FLD_ADDR) && (lcl->AsLclFld()->GetLclOffs() != 0)))
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_SKIP_SUBTREES;
@@ -8338,13 +8337,9 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (tree->OperIs(GT_LCL_VAR))
         {
             tree->ChangeOper(GT_LCL_FLD);
-            tree->AsLclFld()->SetLclOffs(padding);
         }
-        else if (tree->OperIs(GT_LCL_VAR_ADDR))
-        {
-            tree->ChangeOper(GT_LCL_FLD_ADDR);
-            tree->AsLclFld()->SetLclOffs(padding);
-        }
+
+        tree->AsLclFld()->SetLclOffs(padding);
     }
 
     return WALK_SKIP_SUBTREES;

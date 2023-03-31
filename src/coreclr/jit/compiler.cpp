@@ -9596,7 +9596,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
         switch (op)
         {
             case GT_LCL_VAR:
-            case GT_LCL_VAR_ADDR:
             case GT_LCL_FLD:
             case GT_LCL_FLD_ADDR:
             case GT_STORE_LCL_FLD:
