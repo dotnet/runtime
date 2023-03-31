@@ -256,6 +256,7 @@ typedef struct MonoAotOptions {
 	char *clangxx;
 	char *depfile;
 	char *runtime_init_callback;
+	gboolean wrappers_only;
 } MonoAotOptions;
 
 typedef enum {
@@ -492,6 +493,15 @@ static void
 encode_signature (MonoAotCompile *acfg, MonoMethodSignature *sig, guint8 *buf, guint8 **endbuf);
 
 static gboolean
+get_direct_pinvoke_entrypoint_for_method (MonoAotCompile *acfg, MonoMethod *method, const char **entrypoint);
+
+static gboolean
+is_direct_pinvoke_specified_for_method (MonoAotCompile *acfg, MonoMethod *method);
+
+static inline const char*
+lookup_direct_pinvoke_symbol_name_aot (MonoAotCompile *acfg, MonoMethod *method);
+
+static gboolean
 mono_aot_mode_is_full (MonoAotOptions *opts)
 {
 	return opts->mode == MONO_AOT_MODE_FULL;
@@ -585,6 +595,12 @@ report_loader_error (MonoAotCompile *acfg, MonoError *error, gboolean fatal, con
 		fprintf (output, "FullAOT cannot continue if there are loader errors.\n");
 		exit (1);
 	}
+}
+
+static gboolean
+is_direct_pinvoke_enabled (const MonoAotCompile *acfg)
+{
+	return acfg->aot_opts.direct_pinvoke || acfg->aot_opts.direct_pinvokes || acfg->aot_opts.direct_pinvoke_lists;
 }
 
 /* Wrappers around the image writer functions */
@@ -4762,7 +4778,7 @@ add_wrappers (MonoAotCompile *acfg)
 			//printf ("%s\n", mono_method_full_name (method, TRUE));
 			add_method (acfg, get_runtime_invoke (acfg, method, FALSE));
 		}
- 	}
+	}
 
 	if (mono_is_corlib_image (acfg->image->assembly->image)) {
 		/* Runtime invoke wrappers */
@@ -5156,6 +5172,37 @@ add_wrappers (MonoAotCompile *acfg)
 		if (m_class_is_ginst (klass) && !mono_class_is_open_constructed_type (m_class_get_byval_arg (klass)) && can_marshal_struct (klass)) {
 			add_method (acfg, mono_marshal_get_struct_to_ptr (klass));
 			add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
+		}
+	}
+}
+
+static void
+add_managed_to_native_wrappers (MonoAotCompile *acfg)
+{
+	MonoMethod *method;
+	guint32 token;
+
+	if (!mono_aot_mode_is_full (&acfg->aot_opts) && !is_direct_pinvoke_enabled (acfg))
+		return;
+
+	/* pinvoke wrappers */
+	int rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
+	for (int i = 0; i < rows; ++i) {
+		ERROR_DECL (error);
+		token = MONO_TOKEN_METHOD_DEF | (i + 1);
+		method = mono_get_method_checked (acfg->image, token, NULL, NULL, error);
+		report_loader_error (acfg, error, TRUE, "Failed to load method token 0x%x due to %s\n", i, mono_error_get_message (error));
+
+		if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
+			if (mono_aot_mode_is_full (&acfg->aot_opts) || is_direct_pinvoke_specified_for_method (acfg, method))
+				add_method (acfg, mono_marshal_get_native_wrapper (method, TRUE, TRUE));
+		}
+
+		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+			if (mono_aot_mode_is_full (&acfg->aot_opts) && acfg->aot_opts.llvm_only) {
+				/* The wrappers have a different signature (hasthis is not set) so need to add this too */
+				add_gsharedvt_wrappers (acfg, mono_method_signature_internal (method), FALSE, TRUE, FALSE);
+			}
 		}
 	}
 }
@@ -8853,6 +8900,11 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			}
 		} else if (str_begins_with (arg, "runtime-init-callback")) {
 			opts->runtime_init_callback = g_strdup ("mono_invoke_runtime_init_callback");
+		// Intentionally undocumented -- used by library mode minimal partial AOT use case.
+		// Library mode minimal partial AOT use case supports UnmanagedCallersOnly (native-to-managed wrapper),
+		// direct pinvokes (managed-to-native wrappers) and fallbacks to JIT for majority of managed methods.
+		} else if (str_begins_with (arg, "wrappers-only")) {
+			opts->wrappers_only = TRUE;
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
 			printf ("Supported options for --aot:\n");
 			printf ("    asmonly                              - \n");
@@ -9279,12 +9331,6 @@ add_referenced_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, int depth)
 	}
 }
 
-static inline gboolean
-is_direct_pinvoke_enabled (const MonoAotCompile *acfg)
-{
-	return acfg->aot_opts.direct_pinvoke || acfg->aot_opts.direct_pinvokes || acfg->aot_opts.direct_pinvoke_lists;
-}
-
 /*
  * compile_method:
  *
@@ -9303,6 +9349,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	JitFlags flags;
 
 	if (acfg->aot_opts.metadata_only)
+		return;
+
+	if (acfg->aot_opts.wrappers_only && method->wrapper_type == MONO_WRAPPER_NONE)
 		return;
 
 	mono_acfg_lock (acfg);
@@ -9356,7 +9405,19 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			if (!keep)
 				return;
 		} else {
-			if (!method->is_inflated)
+			gboolean keep = method->is_inflated;
+
+			/* Keep managed-to-native and native-to-managed wrappers */
+			switch (method->wrapper_type) {
+				case MONO_WRAPPER_MANAGED_TO_NATIVE:
+				case MONO_WRAPPER_NATIVE_TO_MANAGED:
+					keep = TRUE;
+					break;
+				default:
+					break;
+			}
+
+			if (!keep)
 				return;
 		}
 	}
@@ -12879,7 +12940,10 @@ collect_methods (MonoAotCompile *acfg)
 
 	if (mono_aot_mode_is_full (&acfg->aot_opts))
 		add_wrappers (acfg);
+
+	add_managed_to_native_wrappers (acfg);
 	add_native_to_managed_wrappers (acfg);
+
 	return TRUE;
 }
 
