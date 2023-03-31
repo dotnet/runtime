@@ -131,13 +131,16 @@
                         '$(DotNetBuildFromSource)' != 'true'">
 
     <!-- Project references -->
-    <PackageReference Include="runtime.windows-$(TargetArchitecture).runtime.native.System.Net.MsQuic.Transport"
+    <PackageReference Include="runtime.win-$(TargetArchitecture).runtime.native.System.Net.MsQuic.Transport"
                       Version="$(SystemNetMsQuicTransportVersion)"
                       PrivateAssets="all"
+                      Condition="'$(UseQuicTransportPackage)' == 'true'"
                       GeneratePathProperty="true" />
+
     <PackageReference Include="Microsoft.Native.Quic.MsQuic.Schannel"
                       Version="$(MicrosoftNativeQuicMsQuicVersion)"
                       PrivateAssets="all"
+                      Condition="'$(UseQuicTransportPackage)' != 'true'"
                       GeneratePathProperty="true" />
 
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
@@ -146,7 +149,11 @@
     <BinPlaceDir Include="$(LibrariesNativeArtifactsPath)" ItemName="NativeBinPlaceItem" />
     <NativeBinPlaceItem Include="$(PkgSystem_Net_MsQuic_Transport)\runtimes\win10-$(TargetArchitecture)\native\*"
                         Condition="'$(UseQuicTransportPackage)' == 'true'" />
-    <NativeBinPlaceItem Include="$(PkgRuntime_windows-$(TargetArchitecture)_runtime_native_System_Net_MsQuic_Transport)\runtimes\win-$(TargetArchitecture)\native\*"
+    <NativeBinPlaceItem Include="$(PkgRuntime_win-x64_runtime_native_System_Net_MsQuic_Transport)\runtimes\win-$(TargetArchitecture)\native\*"
+                        Condition="'$(UseQuicTransportPackage)' != 'true'" />
+    <NativeBinPlaceItem Include="$(PkgRuntime_win-x86_runtime_native_System_Net_MsQuic_Transport)\runtimes\win-$(TargetArchitecture)\native\*"
+                        Condition="'$(UseQuicTransportPackage)' != 'true'" />
+    <NativeBinPlaceItem Include="$(PkgRuntime_win-arm64_runtime_native_System_Net_MsQuic_Transport)\runtimes\win-$(TargetArchitecture)\native\*"
                         Condition="'$(UseQuicTransportPackage)' != 'true'" />
   </ItemGroup>
 
@@ -165,7 +172,7 @@
       <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
       <BinPlaceDir Include="$(LibrariesAllBinArtifactsPath)" ItemName="NativeBinPlaceItem" />
       <BinPlaceDir Include="$(LibrariesNativeArtifactsPath)" ItemName="NativeBinPlaceItem" />
-      <NativeBinPlaceItem Include="$(PkgRuntime_osx-$(TargetArchitecture)_runtime_native_System_Net_MsQuic_Transport)\runtimes\osx-$(TargetArchitecture)\native\*" />
+      <NativeBinPlaceItem Include="$(PkgRuntime_osx-x64_runtime_native_System_Net_MsQuic_Transport)\runtimes\osx-$(TargetArchitecture)\native\*" />
   </ItemGroup>
   <!-- Local builds - developers only -->
   <ItemGroup>
