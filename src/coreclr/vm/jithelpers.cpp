@@ -1761,12 +1761,12 @@ HCIMPLEND
 
 
 #ifdef _MSC_VER
-__declspec(selectany) __declspec(thread) uint32_t t_maxThreadStaticBlocks/*Index*/ = 0;
-__declspec(selectany) __declspec(thread) uint32_t t_threadStaticBlocksSize = 0;
+__declspec(selectany) __declspec(thread) uint32_t t_maxThreadStaticBlocks;
+__declspec(selectany) __declspec(thread) uint32_t t_threadStaticBlocksSize;
 __declspec(selectany) __declspec(thread) void** t_threadStaticBlocks;
 #else
-EXTERN_C __thread uint32_t t_maxThreadStaticBlocks = 0;
-EXTERN_C __thread uint32_t t_threadStaticBlocksSize = 0;
+EXTERN_C __thread uint32_t t_maxThreadStaticBlocks;
+EXTERN_C __thread uint32_t t_threadStaticBlocksSize;
 EXTERN_C __thread void** t_threadStaticBlocks;
 #endif
 
