@@ -5,6 +5,7 @@
 #define __MONO_LIBRARY_BUILDER_H__
 
 #include <stdlib.h>
+#include <string.h>
 
 #if defined(HOST_ANDROID)
 

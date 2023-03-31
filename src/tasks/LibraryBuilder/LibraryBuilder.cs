@@ -179,7 +179,7 @@ public class LibraryBuilderTask : AppBuilderTask
 
                 if (symbolsAdded > 0)
                 {
-                    exportedAssemblies.Add(Path.GetFileNameWithoutExtension(compiledAssembly.Path));
+                    exportedAssemblies.Add(Path.GetFileName(compiledAssembly.Path));
                 }
             }
         }
