@@ -64,7 +64,7 @@ namespace DebuggerTests
         static string s_debuggerTestAppPath;
         static int s_idCounter = -1;
 
-        public int Id { get; init; }
+        public int Id { get; init; set; }
         public string driver;
         public static string DebuggerTestAppPath
         {
