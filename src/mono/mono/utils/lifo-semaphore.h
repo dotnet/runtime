@@ -61,7 +61,7 @@ typedef struct _LifoJSSemaphore LifoJSSemaphore;
  */
 typedef struct _LifoJSSemaphoreWaitEntry LifoJSSemaphoreWaitEntry;
 
-typedef void (*LifoJSSemaphoreCallbackFn)(LifoJSSemaphore *semaphore, uint32_t gch, void *user_data);
+typedef void (*LifoJSSemaphoreCallbackFn)(LifoJSSemaphore *semaphore, intptr_t user_data);
 
 struct _LifoJSSemaphoreWaitEntry {
 	LifoJSSemaphoreWaitEntry *previous;
@@ -69,9 +69,8 @@ struct _LifoJSSemaphoreWaitEntry {
 	LifoJSSemaphoreCallbackFn success_cb;
 	LifoJSSemaphoreCallbackFn timeout_cb;
 	LifoJSSemaphore *sem;
-	void *user_data;
+	intptr_t user_data;
 	pthread_t thread;
-	uint32_t gchandle; // what do we want in here?
 	int32_t js_timeout_id; // only valid to access from the waiting thread
 	/* state and refcount are protected by the semaphore mutex */
 	uint16_t state; /* 0 waiting, 1 signaled, 2 signaled - timeout ignored */
@@ -131,8 +130,7 @@ void
 mono_lifo_js_semaphore_prepare_wait (LifoJSSemaphore *semaphore, int32_t timeout_ms,
 				     LifoJSSemaphoreCallbackFn success_cb,
 				     LifoJSSemaphoreCallbackFn timeout_cb,
-				     uint32_t gchandle,
-				     void *user_data);
+				     intptr_t user_data);
 
 void
 mono_lifo_js_semaphore_release (LifoJSSemaphore *semaphore, uint32_t count);

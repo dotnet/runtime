@@ -48,9 +48,8 @@ internal sealed partial class LowLevelLifoSemaphore : IDisposable
     [MethodImpl(MethodImplOptions.InternalCall)]
     private static extern unsafe void PrepareAsyncWaitInternal(IntPtr semaphore,
                                                                int timeoutMs,
-                                                               /*delegate* unmanaged<IntPtr, GCHandle, IntPtr, void> successCallback*/ void* successCallback,
-                                                               /*delegate* unmanaged<IntPtr, GCHandle, IntPtr, void> timeoutCallback*/ void* timeoutCallback,
-                                                               GCHandle handle,
+                                                               /*delegate* unmanaged<IntPtr, IntPtr, void> successCallback*/ void* successCallback,
+                                                               /*delegate* unmanaged<IntPtr, IntPtr, void> timeoutCallback*/ void* timeoutCallback,
                                                                IntPtr userData);
 
     private sealed record WaitEntry (LowLevelLifoSemaphore Semaphore, Action<LowLevelLifoSemaphore, object?> OnSuccess, Action<LowLevelLifoSemaphore, object?> OnTimeout, object? State);
@@ -201,23 +200,25 @@ internal sealed partial class LowLevelLifoSemaphore : IDisposable
         WaitEntry entry = new (this, onSuccess, onTimeout, state);
         GCHandle gchandle = GCHandle.Alloc (entry);
         unsafe {
-            delegate* unmanaged<IntPtr, GCHandle, IntPtr, void> successCallback = &SuccessCallback;
-            delegate* unmanaged<IntPtr, GCHandle, IntPtr, void> timeoutCallback = &TimeoutCallback;
-            PrepareAsyncWaitInternal (lifo_semaphore, timeout_ms, successCallback, timeoutCallback, gchandle, IntPtr.Zero);
+            delegate* unmanaged<IntPtr, IntPtr, void> successCallback = &SuccessCallback;
+            delegate* unmanaged<IntPtr, IntPtr, void> timeoutCallback = &TimeoutCallback;
+            PrepareAsyncWaitInternal (lifo_semaphore, timeout_ms, successCallback, timeoutCallback, GCHandle.ToIntPtr(gchandle));
         }
     }
 
     [UnmanagedCallersOnly]
-    private static void SuccessCallback(IntPtr lifo_semaphore, GCHandle gchandle, IntPtr user_data)
+    private static void SuccessCallback(IntPtr lifoSemaphore, IntPtr userData)
     {
+        GCHandle gchandle = GCHandle.FromIntPtr(userData);
         WaitEntry entry = (WaitEntry)gchandle.Target!;
         gchandle.Free();
         entry.OnSuccess(entry.Semaphore, entry.State);
     }
 
     [UnmanagedCallersOnly]
-    private static void TimeoutCallback(IntPtr lifo_semaphore, GCHandle gchandle, IntPtr user_data)
+    private static void TimeoutCallback(IntPtr lifoSemaphore, IntPtr userData)
     {
+        GCHandle gchandle = GCHandle.FromIntPtr(userData);
         WaitEntry entry = (WaitEntry)gchandle.Target!;
         gchandle.Free();
         entry.OnTimeout(entry.Semaphore, entry.State);

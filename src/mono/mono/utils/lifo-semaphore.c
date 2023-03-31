@@ -187,14 +187,13 @@ mono_lifo_js_semaphore_prepare_wait (LifoJSSemaphore *sem,
 				     int32_t timeout_ms,
 				     LifoJSSemaphoreCallbackFn success_cb,
 				     LifoJSSemaphoreCallbackFn timeout_cb,
-				     uint32_t gchandle,
-				     void *user_data)
+				     intptr_t user_data)
 {
 	mono_coop_mutex_lock (&sem->base.mutex);
 	if (sem->pending_signals > 0) {
 		sem->pending_signals--;
 		mono_coop_mutex_unlock (&sem->base.mutex);
-		success_cb (sem, gchandle, user_data); // FIXME: queue microtask
+		success_cb (sem, user_data); // FIXME: queue microtask
 		return;
 	}
 
@@ -210,7 +209,6 @@ mono_lifo_js_semaphore_prepare_wait (LifoJSSemaphore *sem,
 	wait_entry->success_cb = success_cb;
 	wait_entry->timeout_cb = timeout_cb;
 	wait_entry->sem = sem;
-	wait_entry->gchandle = gchandle;
 	wait_entry->user_data = user_data;
 	wait_entry->thread = pthread_self();
 	wait_entry->state = LIFO_JS_WAITING;
@@ -257,8 +255,7 @@ lifo_js_wait_entry_on_timeout (void *wait_entry_as_user_data)
 	LifoJSSemaphore *sem = wait_entry->sem;
 	gboolean call_timeout_cb = FALSE;
 	LifoJSSemaphoreCallbackFn timeout_cb = NULL;
-	uint32_t gchandle = 0;
-	void *user_data = NULL;
+	intptr_t user_data = 0;
 	mono_coop_mutex_lock (&sem->base.mutex);
 	switch (wait_entry->state) {
 	case LIFO_JS_WAITING:
@@ -267,7 +264,6 @@ lifo_js_wait_entry_on_timeout (void *wait_entry_as_user_data)
 		/* unlink and free the wait entry, run the user timeout_cb. */
 		lifo_js_wait_entry_unlink (&sem->head, wait_entry);
 		timeout_cb = wait_entry->timeout_cb;
-		gchandle = wait_entry->gchandle;
 		user_data = wait_entry->user_data;
 		g_free (wait_entry);
 		call_timeout_cb = TRUE;
@@ -285,7 +281,7 @@ lifo_js_wait_entry_on_timeout (void *wait_entry_as_user_data)
 	}
 	mono_coop_mutex_unlock (&sem->base.mutex);
 	if (call_timeout_cb) {
-		timeout_cb (sem, gchandle, user_data);
+		timeout_cb (sem, user_data);
 	}
 }
 
@@ -298,8 +294,7 @@ lifo_js_wait_entry_on_success (void *wait_entry_as_user_data)
 	LifoJSSemaphore *sem = wait_entry->sem;
 	gboolean call_success_cb = FALSE;
 	LifoJSSemaphoreCallbackFn success_cb = NULL;
-	uint32_t gchandle = 0;
-	void *user_data = NULL;
+	intptr_t user_data = 0;
 	mono_coop_mutex_lock (&sem->base.mutex);
 	switch (wait_entry->state) {
 	case LIFO_JS_SIGNALED:
@@ -314,7 +309,6 @@ lifo_js_wait_entry_on_success (void *wait_entry_as_user_data)
 		g_assert (wait_entry->refcount == 1);
 		lifo_js_wait_entry_unlink (&sem->head, wait_entry);
 		success_cb = wait_entry->success_cb;
-		gchandle = wait_entry->gchandle;
 		user_data = wait_entry->user_data;
 		g_free (wait_entry);
 		call_success_cb = TRUE;
@@ -325,7 +319,7 @@ lifo_js_wait_entry_on_success (void *wait_entry_as_user_data)
 	}
 	mono_coop_mutex_unlock (&sem->base.mutex);
 	g_assert (call_success_cb);
-	success_cb (sem, gchandle, user_data);
+	success_cb (sem, user_data);
 }
 
 #endif /* HOST_BROWSER && !DISABLE_THREADS */

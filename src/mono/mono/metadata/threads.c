@@ -5060,11 +5060,11 @@ ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_p
 
 #if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
 void
-ves_icall_System_Threading_LowLevelLifoSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, gpointer gchandle, gpointer user_data)
+ves_icall_System_Threading_LowLevelLifoSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, intptr_t user_data)
 {
 	LifoJSSemaphore *sem = (LifoJSSemaphore *)sem_ptr;
 	g_assert (sem->base.kind == LIFO_SEMAPHORE_ASYNC_JS);
-	mono_lifo_js_semaphore_prepare_wait (sem, timeout_ms, (LifoJSSemaphoreCallbackFn)success_cb, (LifoJSSemaphoreCallbackFn)timedout_cb, (uint32_t)(MonoGCHandle)gchandle, user_data);
+	mono_lifo_js_semaphore_prepare_wait (sem, timeout_ms, (LifoJSSemaphoreCallbackFn)success_cb, (LifoJSSemaphoreCallbackFn)timedout_cb, user_data);
 }
 
 void
@@ -5106,7 +5106,7 @@ ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
  * need to be defined */
 #if defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP)
 void
-ves_icall_System_Threading_LowLevelLifoSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, gpointer gchandle, gpointer user_data)
+ves_icall_System_Threading_LowLevelLifoSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, intptr_t user_data)
 {
 	g_assert_not_reached();
 }
