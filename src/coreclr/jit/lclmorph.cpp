@@ -461,7 +461,6 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 
     enum class IndirTransform
     {
-        None,
         Nop,
         BitCast,
         NarrowCast,
@@ -1143,10 +1142,6 @@ private:
 
         switch (transform)
         {
-            case IndirTransform::None:
-                // TODO-ADDR: eliminate all such cases.
-                return;
-
             case IndirTransform::Nop:
                 indir->gtBashToNOP();
                 m_stmtModified = true;

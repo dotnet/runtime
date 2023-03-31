@@ -192,28 +192,29 @@ LEAF_ENTRY RhpGetThreadStaticBaseForType, _TEXT
         INLINE_GETTHREAD rax, r8
 
         mov     r8d, [rcx + 8]         ; Get ModuleIndex out of the TypeManagerSlot
-        cmp     r8d, [rax + OFFSETOF__Thread__m_numThreadLocalModuleStatics]
-        jae     RhpGetThreadStaticBaseForType_RarePath
 
-        mov     r9, [rax + OFFSETOF__Thread__m_pThreadLocalModuleStatics]
-        mov     rax, [r9 + r8 * 8]     ; Index into the array of modules
+        ;; get per-thread storage
+        mov     rax, [rax + OFFSETOF__Thread__m_pThreadLocalModuleStatics]
+
+        ;; get per-module storage
         test    rax, rax
-        jz      RhpGetThreadStaticBaseForType_RarePath
+        jz      RhpGetThreadStaticBaseForTypeSlow
+        cmp     r8d, [rax + OFFSETOF__Array__m_Length]
+        jae     RhpGetThreadStaticBaseForTypeSlow
+        mov     rax, [rax + r8 * 8 + 10h]
 
-        mov     r8, [rax]              ; Get the managed array from the handle
-        cmp     edx, [r8 + OFFSETOF__Array__m_Length]
-        jae     RhpGetThreadStaticBaseForType_RarePath
-        mov     rax, [r8 + rdx * 8 + 10h]
-
+        ;; get the actual per-type storage
         test    rax, rax
-        jz      RhpGetThreadStaticBaseForType_RarePath
+        jz      RhpGetThreadStaticBaseForTypeSlow
+        cmp     edx, [rax + OFFSETOF__Array__m_Length]
+        jae     RhpGetThreadStaticBaseForTypeSlow
+        mov     rax, [rax + rdx * 8 + 10h]
+
+        ;; if have storage, return it
+        test    rax, rax
+        jz      RhpGetThreadStaticBaseForTypeSlow
 
         ret
-
-RhpGetThreadStaticBaseForType_RarePath:
-        ;; We kept the arguments in their appropriate registers
-        ;; and we can tailcall right away.
-        jmp     RhpGetThreadStaticBaseForTypeSlow
 
 LEAF_END RhpGetThreadStaticBaseForType, _TEXT
 

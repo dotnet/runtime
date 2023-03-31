@@ -663,40 +663,8 @@ namespace ILCompiler
                 AddDataflowDependency(ref dependencies, factory, methodIL, "Access to interesting field");
             }
 
-            string reason = "Use of a field";
-
-            bool generatesMetadata = false;
-            if (!IsReflectionBlocked(writtenField))
-            {
-                if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0)
-                {
-                    // If access to the field should trigger metadata generation, we should generate the field
-                    generatesMetadata = true;
-                }
-                else
-                {
-                    // There's an invalid suppression in the CoreLib that assumes used fields on attributes will be kept.
-                    // It's used in the reflection-based implementation of Attribute.Equals and Attribute.GetHashCode.
-                    // .NET Native used to have a non-reflection based implementation of Equals/GetHashCode to get around
-                    // this problem. We could explore that as well, but for now, emulate the fact that accessed fields
-                    // on custom attributes will be visible in reflection metadata.
-                    MetadataType currentType = (MetadataType)writtenField.OwningType.BaseType;
-                    while (currentType != null)
-                    {
-                        if (currentType.Module == factory.TypeSystemContext.SystemModule
-                            && currentType.Name == "Attribute" && currentType.Namespace == "System")
-                        {
-                            generatesMetadata = true;
-                            reason = "Field of an attribute";
-                            break;
-                        }
-
-                        currentType = currentType.MetadataBaseType;
-                    }
-                }
-            }
-
-            if (generatesMetadata)
+            if ((_generationOptions & UsageBasedMetadataGenerationOptions.CreateReflectableArtifacts) != 0
+                && !IsReflectionBlocked(writtenField))
             {
                 FieldDesc fieldToReport = writtenField;
 
@@ -714,7 +682,7 @@ namespace ILCompiler
                 }
 
                 dependencies ??= new DependencyList();
-                dependencies.Add(factory.ReflectedField(fieldToReport), reason);
+                dependencies.Add(factory.ReflectedField(fieldToReport), "Use of a field");
             }
 
             if (writtenField.GetTypicalFieldDefinition() is EcmaField ecmaField)

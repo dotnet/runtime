@@ -6391,7 +6391,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         lvaIncrementFrameSize(extraSlotSize);
     }
 
-    // In case of Amd64 compCalleeRegsPushed does not include float regs (Xmm6-xmm15) that
+    // In case of Amd64 compCalleeRegsPushed does not include float regs (xmm6-xmm31) that
     // need to be pushed.  But Amd64 doesn't support push/pop of xmm registers.
     // Instead we need to allocate space for them on the stack and save them in prolog.
     // Therefore, we consider xmm registers being saved while computing stack offsets

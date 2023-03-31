@@ -1081,7 +1081,7 @@ public:
 
     bool IsNotGcDef() const
     {
-        return IsIntegralConst(0) || IsLocalAddrExpr();
+        return IsIntegralConst(0) || OperIsLocalAddr();
     }
 
     // LIR flags
@@ -1976,14 +1976,6 @@ public:
                       bool*                 pIsEntire = nullptr,
                       ssize_t*              pOffset   = nullptr,
                       unsigned*             pSize     = nullptr);
-
-    bool DefinesLocalAddr(GenTreeLclVarCommon** pLclVarTree, ssize_t* pOffset = nullptr);
-
-    const GenTreeLclVarCommon* IsLocalAddrExpr() const;
-    GenTreeLclVarCommon*       IsLocalAddrExpr()
-    {
-        return const_cast<GenTreeLclVarCommon*>(static_cast<const GenTree*>(this)->IsLocalAddrExpr());
-    }
 
     GenTreeLclVarCommon* IsImplicitByrefParameterValuePreMorph(Compiler* compiler);
     GenTreeLclVar* IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr);
@@ -7379,26 +7371,15 @@ protected:
 
 struct GenTreeObj : public GenTreeBlk
 {
-    void Init()
-    {
-        // By default, an OBJ is assumed to be a global reference, unless it is local.
-        GenTreeLclVarCommon* lcl = Addr()->IsLocalAddrExpr();
-        if ((lcl == nullptr) || ((lcl->gtFlags & GTF_GLOB_EFFECT) != 0))
-        {
-            gtFlags |= GTF_GLOB_REF;
-        }
-        noway_assert(GetLayout()->GetClassHandle() != NO_CLASS_HANDLE);
-    }
-
     GenTreeObj(var_types type, GenTree* addr, ClassLayout* layout) : GenTreeBlk(GT_OBJ, type, addr, layout)
     {
-        Init();
+        noway_assert(GetLayout()->GetClassHandle() != NO_CLASS_HANDLE);
     }
 
     GenTreeObj(var_types type, GenTree* addr, GenTree* data, ClassLayout* layout)
         : GenTreeBlk(GT_STORE_OBJ, type, addr, data, layout)
     {
-        Init();
+        noway_assert(GetLayout()->GetClassHandle() != NO_CLASS_HANDLE);
     }
 
 #if DEBUGGABLE_GENTREE
