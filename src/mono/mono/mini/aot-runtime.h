@@ -248,6 +248,8 @@ typedef struct MonoAotFileInfo
 /* Number of symbols in the MonoAotFileInfo structure */
 #define MONO_AOT_FILE_INFO_NUM_SYMBOLS (((G_STRUCT_OFFSET (MonoAotFileInfo, MONO_AOT_FILE_INFO_LAST_SYMBOL) - G_STRUCT_OFFSET (MonoAotFileInfo, MONO_AOT_FILE_INFO_FIRST_SYMBOL)) / sizeof (gpointer)) + 1)
 
+void      mono_add_bundled_assembly         (const char* name, const unsigned char* data, unsigned int size);
+void      mono_register_bundle              (void);
 void      mono_aot_init                     (void);
 gpointer  mono_aot_get_method               (MonoMethod *method, MonoError *error);
 gpointer  mono_aot_get_method_from_token    (MonoImage *image, guint32 token, MonoError *error);

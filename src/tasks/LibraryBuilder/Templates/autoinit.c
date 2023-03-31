@@ -105,7 +105,7 @@ free_aot_data (MonoAssembly *assembly, int size, void *user_data, void *handle)
 {
     munmap (handle, size);
 }
-#endif
+#endif // USES_AOT_DATA
 
 static void
 runtime_init_callback ()
@@ -124,6 +124,11 @@ runtime_init_callback ()
     initialize_appctx_env_variables (bundle_path);
 
     register_aot_modules ();
+
+#if defined(BUNDLED_ASSEMBLIES)
+    mono_register_assemblies_bundle ();
+    mono_register_bundle ();
+#endif
 
     mono_set_assemblies_path (bundle_path);
 

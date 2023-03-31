@@ -33,9 +33,13 @@
 
 #error Unsupported Host Platform. Ensure the hosting platform is supported by the LibraryBuilder and the appropriate logging functions are added.
 
-#endif
+#endif // HOST_ANDROID ^ HOST_APPLE_MOBILE
 
 void register_aot_modules (void);
+#if defined(BUNDLED_ASSEMBLIES)
+void mono_register_assemblies_bundle (void);
+void mono_register_bundle (void);
+#endif // BUNDLED_ASSEMBLIES
 void preload_assemblies_with_exported_symbols ();
 typedef void (*MonoRuntimeInitCallback) (void);
 void mono_set_runtime_init_callback (MonoRuntimeInitCallback callback);

@@ -2413,6 +2413,42 @@ mono_aot_register_module (gpointer *aot_info)
 		mono_aot_unlock ();
 }
 
+typedef struct BundleAssembly_ BundleAssembly;
+
+struct BundleAssembly_ {
+    MonoBundledAssembly assembly;
+    BundleAssembly *next;
+};
+
+static BundleAssembly *bundle_assembly_start;
+static int bundle_assembly_count;
+
+void
+mono_add_bundled_assembly (const char* name, const unsigned char* data, unsigned int size)
+{
+    BundleAssembly *entry = g_new0 (BundleAssembly, 1);
+    entry->assembly.name = g_strdup (name);
+    g_assert (entry->assembly.name);
+    entry->assembly.data = data;
+    entry->assembly.size = size;
+    entry->next = bundle_assembly_start;
+    bundle_assembly_start = entry;
+    ++bundle_assembly_count;
+}
+
+void
+mono_register_bundle (void)
+{
+    MonoBundledAssembly **bundle = g_new0 (MonoBundledAssembly*, bundle_assembly_count + 1);
+    BundleAssembly *bundle_assembly = bundle_assembly_start;
+    for (int i = 0; i < bundle_assembly_count; ++i) {
+        g_assert (bundle_assembly);
+        bundle [i] = &bundle_assembly->assembly;
+        bundle_assembly = bundle_assembly->next;
+    }
+    mono_register_bundled_assemblies ((const MonoBundledAssembly **)bundle);
+}
+
 void
 mono_aot_init (void)
 {

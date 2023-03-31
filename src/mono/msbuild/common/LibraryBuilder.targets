@@ -1,4 +1,6 @@
 <Project>
+  <UsingTask TaskName="EmitBundleSourceFiles"
+             AssemblyFile="$(EmitBundleTasksAssemblyPath)" />
   <UsingTask TaskName="LibraryBuilderTask" 
              AssemblyFile="$(LibraryBuilderTasksAssemblyPath)" />
 
@@ -17,9 +19,36 @@
       <_ExtraLinkerArgs Include="@(_CommonLinkerArgs)" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <_AssembliesToBundleSourceFile>$(BundleDir)bundled_assemblies.c</_AssembliesToBundleSourceFile>
+    </PropertyGroup>
+
+    <GetFileHash Files="@(_AssembliesToBundleInternal)">
+      <Output TaskParameter="Items" ItemName="_AssembliesToBundleInternalWithHashes" />
+    </GetFileHash>
+
+    <ItemGroup>
+      <_AssembliesToBundleInternalWithHashes Update="@(_AssembliesToBundleInternalWithHashes)">
+        <DestinationFile>$(BundleDir)%(_AssembliesToBundleInternalWithHashes.Filename)%(_AssembliesToBundleInternalWithHashes.Extension).$([System.String]::Copy(%(_AssembliesToBundleInternalWithHashes.FileHash)).Substring(0, 8)).c</DestinationFile>
+      </_AssembliesToBundleInternalWithHashes>
+    </ItemGroup>
+
+    <EmitBundleSourceFiles
+      FilesToBundle="@(_AssembliesToBundleInternalWithHashes)"
+      BundleName="assemblies"
+      BundleFile="$(_AssembliesToBundleSourceFile)"
+      RegistrationCallbackFunctionName="mono_add_bundled_assembly"
+      />
+
+    <ItemGroup>
+      <_ExtraLibrarySources Include="$(_AssembliesToBundleSourceFile)" />
+      <_ExtraLibrarySources Include="%(_AssembliesToBundleInternalWithHashes.DestinationFile)" />
+    </ItemGroup>
+
     <LibraryBuilderTask
       Assemblies="@(_AssembliesToBundleInternal)"
       AssembliesLocation="$(AssembliesLocation)"
+      BundlesAssemblies="$(BundlesAssemblies)"
       ExtraLinkerArguments="@(_ExtraLinkerArgs)"
       ExtraSources="@(_ExtraLibrarySources)"
       IsSharedLibrary="$(_IsSharedLibrary)"

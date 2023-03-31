@@ -85,6 +85,11 @@ public class LibraryBuilderTask : AppBuilderTask
     /// </summary>
     public string? AssembliesLocation { get; set; }
 
+    /// <summary>
+    /// Determines whether or not assemblies are bundled into the library
+    /// </summary>
+    public bool BundlesAssemblies { get; set; }
+
     public bool StripDebugSymbols { get; set; }
 
     /// <summary>
@@ -307,6 +312,11 @@ public class LibraryBuilderTask : AppBuilderTask
         if (usesAOTDataFile)
         {
             extraDefinitions.AppendLine("add_definitions(-DUSES_AOT_DATA=1)");
+        }
+
+        if (BundlesAssemblies)
+        {
+            extraDefinitions.AppendLine("add_definitions(-DBUNDLED_ASSEMBLIES=1)");
         }
 
         return extraDefinitions.ToString();
