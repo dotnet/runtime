@@ -664,7 +664,7 @@
     <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
 
-    <LinkerFlavor>lld</LinkerFlavor>
+    <LinkerFlavor Condition="'$(TargetOS)' == 'linux'">lld</LinkerFlavor>
     <SysRoot Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <BuildNativeAotFrameworkObjects Condition="'$(IlcMultiModule)' == 'true'">true</BuildNativeAotFrameworkObjects>
     <DisableFrameworkLibGeneration Condition="'$(BuildNativeAotFrameworkObjects)' == 'true'">true</DisableFrameworkLibGeneration>
