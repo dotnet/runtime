@@ -8031,9 +8031,8 @@ void Lowering::LowerLclHeap(GenTree* node)
             }
             else
             {
-                // LCLHEAP is unused or empty, we can remove it (assuming we can ignore potential SO side-effect)
-                BlockRange().Remove(sizeNode);
-                BlockRange().Remove(node);
+                // LCLHEAP is unused - don't bother zeroing it
+                node->gtFlags |= GTF_LCLHEAP_ZEROED;
             }
         }
     }
