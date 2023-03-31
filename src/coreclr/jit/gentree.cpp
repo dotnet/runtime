@@ -19498,6 +19498,19 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
                     intrinsic = NI_AVX2_Add;
                 }
             }
+           else if (simdSize == 64)
+           {
+               if (varTypeIsByte(simdBaseType) || varTypeIsShort(simdBaseType))
+               {
+                   assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+                   intrinsic = NI_AVX512BW_Add;
+               }
+               else
+               {
+                   assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                   intrinsic = NI_AVX512F_Add;
+               }
+            }
             else if (simdBaseType == TYP_FLOAT)
             {
                 intrinsic = NI_SSE_Add;
@@ -19872,6 +19885,19 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
                     assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
                     intrinsic = NI_AVX2_Subtract;
                 }
+            }
+            else if (simdSize == 64)
+            {
+               if (varTypeIsByte(simdBaseType) || varTypeIsShort(simdBaseType))
+               {
+                   assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+                   intrinsic = NI_AVX512BW_Subtract;
+               }
+               else
+               {
+                   assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                   intrinsic = NI_AVX512F_Subtract;
+               }
             }
             else if (simdBaseType == TYP_FLOAT)
             {
