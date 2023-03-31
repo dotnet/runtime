@@ -1159,6 +1159,13 @@ public:
         return (GT_PHI_ARG <= gtOper) && (gtOper <= GT_STORE_LCL_FLD);
     }
 
+    static bool OperIsAnyLocal(genTreeOps gtOper)
+    {
+        static_assert_no_msg(
+            AreContiguous(GT_PHI_ARG, GT_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_LCL_ADDR));
+        return (GT_PHI_ARG <= gtOper) && (gtOper <= GT_LCL_ADDR);
+    }
+
     static bool OperIsLocalField(genTreeOps gtOper)
     {
         return (gtOper == GT_LCL_FLD || gtOper == GT_LCL_ADDR || gtOper == GT_STORE_LCL_FLD);
@@ -1293,6 +1300,11 @@ public:
     bool OperIsLocal() const
     {
         return OperIsLocal(OperGet());
+    }
+
+    bool OperIsAnyLocal() const
+    {
+        return OperIsAnyLocal(OperGet());
     }
 
     bool OperIsScalarLocal() const
