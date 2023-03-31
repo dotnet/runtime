@@ -214,82 +214,179 @@ namespace ILCompiler.Dataflow
             if (!_enabled)
                 return;
 
+            if (_typeHierarchyDataFlowOrigin is not null)
+            {
+                ReportWarningsForTypeHierarchyReflectionAccess(origin, entity);
+            }
+            else
+            {
+                ReportWarningsForReflectionAccess(origin, entity);
+            }
+        }
+
+        private void ReportWarningsForReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity)
+        {
             // Note that we're using `ShouldSuppressAnalysisWarningsForRequires` instead of `DoesMemberRequire`.
             // This is because reflection access is actually problematic on all members which are in a "requires" scope
             // so for example even instance methods. See for example https://github.com/dotnet/linker/issues/3140 - it's possible
             // to call a method on a "null" instance via reflection.
             if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute))
             {
-                if (_typeHierarchyDataFlowOrigin is not null)
-                {
-                    _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode,
-                        _typeHierarchyDataFlowOrigin.GetDisplayName(),
-                        entity.GetDisplayName(),
-                        MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresAttribute.Value)),
-                        MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresAttribute.Value)));
-                }
-                else
-                {
-                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, requiresAttribute.Value);
-                }
+                ReportRequires(origin, entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, requiresAttribute.Value);
             }
 
             if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, out requiresAttribute))
             {
-                if (_typeHierarchyDataFlowOrigin is not null)
-                {
-                    // For now we decided to not report single-file warnings due to type hierarchy marking.
-                    // It is considered too complex to figure out for the user and the likelihood of this
-                    // causing problems is pretty low.
-                }
-                else
-                {
-                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, requiresAttribute.Value);
-                }
+                ReportRequires(origin, entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, requiresAttribute.Value);
             }
 
             if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, out requiresAttribute))
             {
-                if (_typeHierarchyDataFlowOrigin is not null)
-                {
-                    // For now we decided to not report dynamic code warnings due to type hierarchy marking.
-                    // It is considered too complex to figure out for the user and the likelihood of this
-                    // causing problems is pretty low.
-                }
-                else
-                {
-                    ReportRequires(origin, entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, requiresAttribute.Value);
-                }
+                ReportRequires(origin, entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, requiresAttribute.Value);
             }
 
             if (!Annotations.ShouldWarnWhenAccessedForReflection(entity))
                 return;
 
-            if (_typeHierarchyDataFlowOrigin is not null)
+            if (!_logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute))
             {
-                // Don't check whether the current scope is a RUC type or RUC method because these warnings
-                // are not suppressed in RUC scopes. Here the scope represents the DynamicallyAccessedMembers
-                // annotation on a type, not a callsite which uses the annotation. We always want to warn about
-                // possible reflection access indicated by these annotations.
-                _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers,
-                    _typeHierarchyDataFlowOrigin.GetDisplayName(), entity.GetDisplayName());
-            }
-            else
-            {
-                if (!_logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute))
+                if (entity is FieldDesc)
                 {
-                    if (entity is FieldDesc)
-                    {
-                        _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, entity.GetDisplayName());
-                    }
-                    else
-                    {
-                        Debug.Assert(entity is MethodDesc);
+                    _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, entity.GetDisplayName());
+                }
+                else
+                {
+                    Debug.Assert(entity is MethodDesc);
 
-                        _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, entity.GetDisplayName());
-                    }
+                    _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, entity.GetDisplayName());
                 }
             }
+        }
+
+        private void ReportWarningsForTypeHierarchyReflectionAccess(MessageOrigin origin, TypeSystemEntity entity)
+        {
+            Debug.Assert(entity is MethodDesc or FieldDesc);
+
+            // Don't check whether the current scope is a RUC type or RUC method because these warnings
+            // are not suppressed in RUC scopes. Here the scope represents the DynamicallyAccessedMembers
+            // annotation on a type, not a callsite which uses the annotation. We always want to warn about
+            // possible reflection access indicated by these annotations.
+
+            Debug.Assert(_typeHierarchyDataFlowOrigin != null);
+
+            static bool IsDeclaredWithinType(TypeSystemEntity member, TypeDesc type)
+            {
+                TypeDesc owningType = member.GetOwningType();
+                while (owningType != null)
+                {
+                    if (owningType == type)
+                        return true;
+
+                    owningType = owningType.GetOwningType();
+                }
+                return false;
+            }
+
+            var reportOnMember = IsDeclaredWithinType(entity, _typeHierarchyDataFlowOrigin);
+            if (reportOnMember)
+                origin = new MessageOrigin(entity);
+
+            // All override methods should have the same annotations as their base methods
+            // (else we will produce warning IL2046 or IL2092 or some other warning).
+            // When marking override methods via DynamicallyAccessedMembers, we should only issue a warning for the base method.
+
+            // TODO: This feels very expensive - can we do better?
+            // At the very least - move this such that it's only computed if we do find some annotation
+            // currently we compute it on every virtual method.
+            static bool IsVirtualSlotMethod(MethodDesc m)
+            {
+                foreach (MethodDesc virtualSlotMethod in m.OwningType.EnumAllVirtualSlots())
+                {
+                    if (m == virtualSlotMethod)
+                        return true;
+                }
+
+                return false;
+            }
+            bool skipWarningsForOverride = entity is MethodDesc m && m.IsVirtual && !IsVirtualSlotMethod(m);
+
+            // For now we decided to not report single-file or dynamic-code warnings due to type hierarchy marking.
+            // It is considered too complex to figure out for the user and the likelihood of this
+            // causing problems is pretty low.
+
+            bool isReflectionAccessCoveredByRUC = _logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresUnreferencedCodeAttribute);
+            if (isReflectionAccessCoveredByRUC && !skipWarningsForOverride)
+            {
+                var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithRequiresUnreferencedCode : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode;
+                _logger.LogWarning(origin, id, _typeHierarchyDataFlowOrigin.GetDisplayName(),
+                entity.GetDisplayName(),
+                    MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(requiresUnreferencedCodeAttribute!.Value)),
+                    MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeUrl(requiresUnreferencedCodeAttribute!.Value)));
+            }
+
+            bool isReflectionAccessCoveredByDAM = Annotations.ShouldWarnWhenAccessedForReflection(entity);
+            if (isReflectionAccessCoveredByDAM && !skipWarningsForOverride)
+            {
+                var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers;
+                _logger.LogWarning(origin, id, _typeHierarchyDataFlowOrigin.GetDisplayName(), entity.GetDisplayName());
+            }
+
+            // Warn on reflection access to compiler-generated methods, if the method isn't already unsafe to access via reflection
+            // due to annotations. For the annotation-based warnings, we skip virtual overrides since those will produce warnings on
+            // the base, but for unannotated compiler-generated methods this is not the case, so we must produce these warnings even
+            // for virtual overrides. This ensures that we include the unannotated MoveNext state machine method. Lambdas and local
+            // functions should never be virtual overrides in the first place.
+            bool isCoveredByAnnotations = isReflectionAccessCoveredByRUC || isReflectionAccessCoveredByDAM;
+            if (entity is MethodDesc method && ShouldWarnForReflectionAccessToCompilerGeneratedCode(method, isCoveredByAnnotations))
+            {
+                var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase;
+                _logger.LogWarning(origin, id, _typeHierarchyDataFlowOrigin.GetDisplayName(), method.GetDisplayName());
+            }
+
+            // Warn on reflection access to compiler-generated fields.
+            if (entity is FieldDesc field && ShouldWarnForReflectionAccessToCompilerGeneratedCode(field, isCoveredByAnnotations))
+            {
+                var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase;
+                _logger.LogWarning(origin, id, _typeHierarchyDataFlowOrigin.GetDisplayName(), field.GetDisplayName());
+            }
+        }
+
+        private static bool ShouldWarnForReflectionAccessToCompilerGeneratedCode(MethodDesc method, bool isCoveredByAnnotations)
+        {
+            // No need to warn if it's already covered by the Requires attribute or explicit annotations on the method.
+            if (isCoveredByAnnotations)
+                return false;
+
+            if (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(method))
+                return false;
+
+            // Warn only if it has potential dataflow issues, as approximated by our check to see if it requires
+            // the reflection scanner. Checking this will also mark direct dependencies of the method body, if it
+            // hasn't been marked already. A cache ensures this only happens once for the method, whether or not
+            // it is accessed via reflection.
+
+            // TODO: Basically we want to warn if the method in question undergoes DataFlow - so ideally we need to add a conditional dependency
+            // to the dataflow node for the method - but that's really hard from here.
+            // return CheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(method));
+            return false;
+        }
+
+        private static bool ShouldWarnForReflectionAccessToCompilerGeneratedCode(FieldDesc field, bool isCoveredByAnnotations)
+        {
+            // No need to warn if it's already covered by the Requires attribute or explicit annotations on the field.
+            if (isCoveredByAnnotations)
+                return false;
+
+            if (!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(field))
+                return false;
+
+            // Only warn for types which are interesting for dataflow. Note that this does
+            // not include integer types, even though we track integers in the dataflow analysis.
+            // Technically we should also warn for integer types, but this leads to more warnings
+            // for example about the compiler-generated "state" field for state machine methods.
+            // This should be ok because in most cases the state machine types will also have other
+            // hoisted locals that produce warnings anyway when accessed via reflection.
+            return FlowAnnotations.IsTypeInterestingForDataflow(field.FieldType);
         }
 
         private void ReportRequires(in MessageOrigin origin, TypeSystemEntity entity, string requiresAttributeName, in CustomAttributeValue<TypeDesc> requiresAttribute)
