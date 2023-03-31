@@ -2,6 +2,9 @@ name: DNMD
 
 on:
   push:
+    branches: [ master ]
+    paths-ignore:
+      - '**/*.md'
   pull_request:
     branches: [ master ]
     paths-ignore:
@@ -40,9 +43,9 @@ jobs:
       run: dotnet test --configuration ${{ matrix.flavor }} --logger trx --results-directory "TestResults-${{ matrix.os }}-${{ matrix.flavor }}"
       working-directory: ./test/Regression.UnitTests
 
-    - name: Upload Test Results
-      if: always()
-      uses: actions/upload-artifact@v3
-      with:
-        name: TestResults-${{ matrix.os }}-${{ matrix.flavor }}
-        path: ./test/Regression.UnitTests/TestResults-${{ matrix.os }}-${{ matrix.flavor }}
+    # - name: Upload Test Results
+    #   if: always()
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: TestResults-${{ matrix.os }}-${{ matrix.flavor }}
+    #     path: ./test/Regression.UnitTests/TestResults-${{ matrix.os }}-${{ matrix.flavor }}
