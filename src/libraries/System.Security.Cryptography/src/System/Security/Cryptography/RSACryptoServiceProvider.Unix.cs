@@ -183,6 +183,8 @@ namespace System.Security.Cryptography
                 throw PaddingModeNotSupported();
             }
 
+            CheckSHA3HashAlgorithm(hashAlgorithm);
+
             return _impl.SignData(data, hashAlgorithm, padding);
         }
 
@@ -195,6 +197,8 @@ namespace System.Security.Cryptography
                 throw PaddingModeNotSupported();
             }
 
+            CheckSHA3HashAlgorithm(hashAlgorithm);
+
             return _impl.SignData(data, offset, count, hashAlgorithm, padding);
         }
 
@@ -206,6 +210,8 @@ namespace System.Security.Cryptography
             {
                 throw PaddingModeNotSupported();
             }
+
+            CheckSHA3HashAlgorithm(hashAlgorithm);
 
             return _impl.TrySignData(data, destination, hashAlgorithm, padding, out bytesWritten);
         }
@@ -228,6 +234,8 @@ namespace System.Security.Cryptography
                 throw PaddingModeNotSupported();
             }
 
+            CheckSHA3HashAlgorithm(hashAlgorithm);
+
             return _impl.SignHash(hash, hashAlgorithm, padding);
         }
 
@@ -239,6 +247,8 @@ namespace System.Security.Cryptography
             {
                 throw PaddingModeNotSupported();
             }
+
+            CheckSHA3HashAlgorithm(hashAlgorithm);
 
             return _impl.TrySignHash(hash, destination, hashAlgorithm, padding, out bytesWritten);
         }
@@ -344,6 +354,17 @@ namespace System.Security.Cryptography
             }
 
             return true;
+        }
+
+        private static void CheckSHA3HashAlgorithm(HashAlgorithmName hashAlgorithm)
+        {
+            if (hashAlgorithm == HashAlgorithmName.SHA3_256 ||
+                hashAlgorithm == HashAlgorithmName.SHA3_384 ||
+                hashAlgorithm == HashAlgorithmName.SHA3_512)
+            {
+                // Compat: Windows throws CryptographicException for SHA-3 HashAlgorithmName. So we will here, too.
+                throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+            }
         }
     }
 }
