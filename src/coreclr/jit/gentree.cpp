@@ -15895,8 +15895,6 @@ GenTree* Compiler::gtNewTempAssign(
     }
     else if (varTypeIsStruct(varDsc))
     {
-        GenTree* valx = val->gtEffectiveVal(/*commaOnly*/ true);
-        valx->gtFlags |= GTF_DONT_CSE;
         asg = impAssignStruct(dest, val, CHECK_SPILL_NONE, pAfterStmt, di, block);
     }
     else
