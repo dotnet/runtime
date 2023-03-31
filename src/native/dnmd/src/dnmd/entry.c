@@ -99,6 +99,8 @@ bool md_create_handle(void const* data, size_t data_len, mdhandle_t* handle)
 
     // The version count is aligned to 4-bytes
     ver_buf_count = align_to(ver_buf_count, 4);
+    if (ver_buf_count > curr_len)
+        return false;
 
     // Confirm terminator and consume the version/aligned length
     cxt.version = (char const*)curr;
@@ -128,6 +130,14 @@ bool md_create_handle(void const* data, size_t data_len, mdhandle_t* handle)
         {
             return false;
         }
+
+        // Verify the offset is valid for our data size
+        if (offset > data_len)
+            return false;
+
+        // Verify the stream size can fit into available size
+        if (stream_size > data_len - offset)
+            return false;
 
         // Find the terminating null.
         name_end = memchr(curr, 0, curr_len);
@@ -160,12 +170,13 @@ bool md_create_handle(void const* data, size_t data_len, mdhandle_t* handle)
         {
             cxt.strings_heap.ptr = base + offset;
             cxt.strings_heap.size = stream_size;
+
             // Compute the precise size of the string heap by walking back over the trailing null padding.
             // There may be up to three extra '\0' characters appended for padding.
             // ENC minimal delta images require the precise size of the base image string heap to be known,
             // so we trim the trailing padding.
             uint8_t const* p = cxt.strings_heap.ptr + cxt.strings_heap.size - 1;
-            while (p [0] == 0 && p [-1] == 0)
+            while (cxt.strings_heap.size >= 2 && p[0] == 0 && p[-1] == 0)
             {
                 p--;
                 cxt.strings_heap.size--;

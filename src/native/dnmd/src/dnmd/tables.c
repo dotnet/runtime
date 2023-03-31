@@ -279,7 +279,7 @@ bool initialize_table_details(
     mdtcol_t const string_index = mdtc_idx_heap | mdtc_hstring | (context_flags & mdc_large_string_heap ? mdtc_b4 : mdtc_b2);
     mdtcol_t const guid_index = mdtc_idx_heap | mdtc_hguid | (context_flags & mdc_large_guid_heap ? mdtc_b4 : mdtc_b2);
     mdtcol_t const blob_index = mdtc_idx_heap | mdtc_hblob | (context_flags & mdc_large_blob_heap ? mdtc_b4 : mdtc_b2);
-    
+
     bool is_minimal_delta = (context_flags & mdc_minimal_delta) == mdc_minimal_delta;
 
     table->row_count = all_table_row_counts[id];
@@ -632,7 +632,7 @@ bool consume_table_rows(mdtable_t* table, uint8_t const** data, size_t* data_len
         return true;
 
     uint8_t const* rows = *data;
-    size_t rows_len = table->row_size_bytes * table->row_count;
+    size_t rows_len = table->row_size_bytes * (size_t)table->row_count;
     if (!advance_stream(data, data_len, rows_len))
         return false;
 

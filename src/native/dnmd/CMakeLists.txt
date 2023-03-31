@@ -1,6 +1,6 @@
+cmake_minimum_required(VERSION 3.10)
 project(dnmd
     LANGUAGES C CXX)
-cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 

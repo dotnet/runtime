@@ -55,6 +55,9 @@ typedef struct _IMAGE_SECTION_HEADER {
 } IMAGE_SECTION_HEADER, * PIMAGE_SECTION_HEADER;
 
 #define IMAGE_FILE_MACHINE_AMD64             0x8664  // AMD64 (K8)
+#define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
+#define IMAGE_FILE_MACHINE_I386              0x014c  // Intel 386.
+#define IMAGE_FILE_MACHINE_ARM               0x01c0  // ARM Little-Endian
 
 typedef struct _IMAGE_FILE_HEADER {
     uint16_t  Machine;

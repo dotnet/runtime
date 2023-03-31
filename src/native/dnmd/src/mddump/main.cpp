@@ -288,24 +288,45 @@ bool get_metadata_from_pe(malloc_span<uint8_t>& b)
         return false;
 
     // Handle headers that are 32 or 64
-    PIMAGE_DATA_DIRECTORY dotnet_dir;
     PIMAGE_SECTION_HEADER tgt_header;
+    PIMAGE_DATA_DIRECTORY dotnet_dir;
 
     // Section headers begin immediately after the NT_HEADERS.
     span<IMAGE_SECTION_HEADER> section_headers;
 
+    if ((size_t)dos_header->e_lfanew > b.size())
+        return false;
+
+    size_t remaining_pe_size = b.size() - dos_header->e_lfanew;
+    uint16_t section_header_count;
+    uint8_t* section_header_begin;
     PIMAGE_NT_HEADERS nt_header_any = (PIMAGE_NT_HEADERS)(b + dos_header->e_lfanew);
-    if (nt_header_any->FileHeader.Machine == IMAGE_FILE_MACHINE_AMD64)
+    if (nt_header_any->FileHeader.Machine == IMAGE_FILE_MACHINE_AMD64
+        || nt_header_any->FileHeader.Machine == IMAGE_FILE_MACHINE_ARM64)
     {
         PIMAGE_NT_HEADERS64 nt_header64 = (PIMAGE_NT_HEADERS64)nt_header_any;
+        if (remaining_pe_size < sizeof(*nt_header64))
+            return false;
+        remaining_pe_size -= sizeof(*nt_header64);
+        section_header_count = nt_header64->FileHeader.NumberOfSections;
+        section_header_begin = (uint8_t*)&nt_header64[1];
         dotnet_dir = &nt_header64->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
-        section_headers = { (PIMAGE_SECTION_HEADER)&nt_header64[1], nt_header64->FileHeader.NumberOfSections };
+    }
+    else if (nt_header_any->FileHeader.Machine == IMAGE_FILE_MACHINE_I386
+            || nt_header_any->FileHeader.Machine == IMAGE_FILE_MACHINE_ARM)
+    {
+        PIMAGE_NT_HEADERS32 nt_header32 = (PIMAGE_NT_HEADERS32)nt_header_any;
+        if (remaining_pe_size < sizeof(*nt_header32))
+            return false;
+        remaining_pe_size -= sizeof(*nt_header32);
+        section_header_count = nt_header32->FileHeader.NumberOfSections;
+        section_header_begin = (uint8_t*)&nt_header32[1];
+        dotnet_dir = &nt_header32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
     }
     else
     {
-        PIMAGE_NT_HEADERS32 nt_header32 = (PIMAGE_NT_HEADERS32)nt_header_any;
-        dotnet_dir = &nt_header32->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
-        section_headers = { (PIMAGE_SECTION_HEADER)&nt_header32[1], nt_header32->FileHeader.NumberOfSections };
+        // Unknown machine type
+        return false;
     }
 
     // Doesn't contain a .NET header
@@ -313,17 +334,44 @@ bool get_metadata_from_pe(malloc_span<uint8_t>& b)
     if (!is_dotnet)
         return false;
 
+    // Compute the maximum space in the PE to validate section header count.
+    if (section_header_count > (remaining_pe_size / sizeof(IMAGE_SECTION_HEADER)))
+        return false;
+
+    remaining_pe_size -= section_header_count * sizeof(IMAGE_SECTION_HEADER);
+
+    section_headers = { (PIMAGE_SECTION_HEADER)section_header_begin, section_header_count };
+
     tgt_header = find_section_header(section_headers, dotnet_dir->VirtualAddress);
     if (tgt_header == nullptr)
         return false;
 
-    PIMAGE_COR20_HEADER cor_header = (PIMAGE_COR20_HEADER)(b + (dotnet_dir->VirtualAddress - tgt_header->VirtualAddress) + tgt_header->PointerToRawData);
+    // Sanity check
+    if (dotnet_dir->VirtualAddress < tgt_header->VirtualAddress)
+        return false;
+
+    DWORD cor_header_offset = (DWORD)(dotnet_dir->VirtualAddress - tgt_header->VirtualAddress) + tgt_header->PointerToRawData;
+    if (cor_header_offset > b.size() - sizeof(IMAGE_COR20_HEADER))
+        return false;
+
+    PIMAGE_COR20_HEADER cor_header = (PIMAGE_COR20_HEADER)(b + cor_header_offset);
     tgt_header = find_section_header(section_headers, cor_header->MetaData.VirtualAddress);
     if (tgt_header == nullptr)
         return false;
 
-    void* ptr = (void*)(b + (cor_header->MetaData.VirtualAddress - tgt_header->VirtualAddress) + tgt_header->PointerToRawData);
+    // Sanity check
+    if (cor_header->MetaData.VirtualAddress < tgt_header->VirtualAddress)
+        return false;
+
+    DWORD metadata_offset = (DWORD)(cor_header->MetaData.VirtualAddress - tgt_header->VirtualAddress) + tgt_header->PointerToRawData;
+    if (metadata_offset > b.size())
+        return false;
+
+    void* ptr = (void*)(b + metadata_offset);
+
     size_t metadata_length = cor_header->MetaData.Size;
+    if (metadata_length > b.size() - metadata_offset)
+        return false;
 
     // Capture the metadata portion of the image.
     malloc_span<uint8_t> metadata = { (uint8_t*)std::malloc(metadata_length), metadata_length };
