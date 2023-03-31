@@ -918,7 +918,7 @@ emit_hardware_intrinsics (
 			goto support_probe_complete;
 		id = info->id;
 
-#ifdef TARGET_ARM6400
+#ifdef TARGET_ARM64
 		if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp) && !intrin_group->jit_supported) {
 			goto support_probe_complete;
 		}
@@ -1212,7 +1212,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 #endif
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
-#ifdef TARGET_ARM6400
+#ifdef TARGET_ARM64
 	if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp))
 		return NULL;
 #endif
