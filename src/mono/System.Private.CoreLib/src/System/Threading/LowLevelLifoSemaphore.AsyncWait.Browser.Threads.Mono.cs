@@ -40,8 +40,8 @@ internal sealed partial class LowLevelLifoSemaphore : IDisposable
 #pragma warning disable IDE0060
     private void CreateAsyncWait(int maximumSignalCount)
     {
-        _kind = LifoSemaphoreKind.AsyncWait;
-        lifo_semaphore = InitInternal((int)_kind);
+        Kind = LifoSemaphoreKind.AsyncWait;
+        lifo_semaphore = InitInternal((int)Kind);
     }
 #pragma warning restore IDE0060
 
