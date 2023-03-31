@@ -4473,6 +4473,16 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                         return add.m_args[1];
                     if (add.m_args[1] == arg1VN)
                         return add.m_args[0];
+
+                    // (x + a) - (x + b) == a - b
+                    VNFuncApp add2;
+                    if (GetVNFunc(arg1VN, &add2) && (add2.m_func == (VNFunc)GT_ADD))
+                    {
+                        if (add2.m_args[0] == add.m_args[0])
+                        {
+                            return VNForFunc(typ, (VNFunc)GT_SUB, add.m_args[1], add2.m_args[1]);
+                        }
+                    }
                 }
             }
         }
