@@ -165,6 +165,7 @@
     <PlatformManifestFileEntry Include="API-MS-Win-core-xstate-l2-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="ucrtbase.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="msquic.dll" IsNative="true" FallbackFileVersion="$(MsQuicFileVersion)" />
+    <PlatformManifestFileEntry Include="msquic.dylib" IsNative="true" FallbackFileVersion="$(MsQuicFileVersion)" />
     <PlatformManifestFileEntry Include="System.IO.Compression.Native.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump" IsNative="true" />
@@ -240,7 +241,7 @@
     <PlatformManifestFileEntry Include="dotnet.es6.pre.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.lib.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.es6.post.js" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.es6.extpost.js" IsNative="true" />
+    <latformManifestFileEntry Include="dotnet.es6.extpost.js" IsNative="true" />
     <PlatformManifestFileEntry Include="corebindings.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.c" IsNative="true" />
     <PlatformManifestFileEntry Include="pinvoke.c" IsNative="true" />

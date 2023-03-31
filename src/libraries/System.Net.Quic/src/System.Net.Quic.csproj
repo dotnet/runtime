@@ -128,6 +128,7 @@
   <!-- Support for deploying msquic on Windows. We make msquic.dll part of runtime binaries: either from official releases or our transport feed. -->
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' and
                         '$(TargetOS)' == 'windows' and
+                        ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm64') and
                         '$(DotNetBuildFromSource)' != 'true'">
 
     <!-- Project references -->
