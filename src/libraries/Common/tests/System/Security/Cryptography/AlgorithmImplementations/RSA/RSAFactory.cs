@@ -45,5 +45,6 @@ namespace System.Security.Cryptography.Rsa.Tests
         public static bool SupportsSha1Signatures => s_provider.SupportsSha1Signatures;
 
         public static bool SupportsSha3 => s_provider.SupportsSha3;
+        public static bool NoSupportsSha3 => !SupportsSha3;
     }
 }

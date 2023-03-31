@@ -877,19 +877,10 @@ namespace System.Security.Cryptography.Rsa.Tests
             VerifyHashSignature(hashSignature, dataHash, "SHA256", TestData.RSA2048Params);
         }
 
-        [ConditionalTheory]
-        [InlineData("SHA256")]
-        [InlineData("SHA384")]
-        [InlineData("SHA512")]
-        [InlineData("MD5")]
-        [InlineData("SHA1")]
+        [Theory]
+        [MemberData(nameof(HashAlgorithmNames))]
         public void PssRoundtrip(string hashAlgorithmName)
         {
-            if (!RSAFactory.SupportsSha1Signatures && hashAlgorithmName == "SHA1")
-            {
-                throw new SkipTestException("Platform does not support RSA with SHA1 signatures.");
-            }
-
             RSAParameters privateParameters = TestData.RSA2048Params;
             RSAParameters publicParameters = new RSAParameters
             {
@@ -1060,6 +1051,38 @@ namespace System.Security.Cryptography.Rsa.Tests
                 HashAlgorithmName.SHA512,
                 TestData.HelloBytes,
                 helloSignature);
+        }
+
+        [ConditionalTheory(typeof(RSAFactory), nameof(RSAFactory.NoSupportsSha3))]
+        [InlineData("SHA3-256")]
+        [InlineData("SHA3-384")]
+        [InlineData("SHA3-512")]
+        public void Pkcs1UnsupportedHashAlgorithm(string hashAlgorithm)
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    SignData(rsa, new byte[] { 1 }, new HashAlgorithmName(hashAlgorithm), RSASignaturePadding.Pkcs1));
+
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    VerifyData(rsa, new byte[] { 1 }, new byte[] { 1 }, new HashAlgorithmName(hashAlgorithm), RSASignaturePadding.Pkcs1));
+            }
+        }
+
+        [ConditionalTheory(typeof(RSAFactory), nameof(RSAFactory.NoSupportsSha3))]
+        [InlineData("SHA3-256")]
+        [InlineData("SHA3-384")]
+        [InlineData("SHA3-512")]
+        public void PssUnsupportedHashAlgorithm(string hashAlgorithm)
+        {
+            using (RSA rsa = RSAFactory.Create())
+            {
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    SignData(rsa, new byte[] { 1 }, new HashAlgorithmName(hashAlgorithm), RSASignaturePadding.Pss));
+
+                Assert.Throws<PlatformNotSupportedException>(() =>
+                    VerifyData(rsa, new byte[] { 1 }, new byte[] { 1 }, new HashAlgorithmName(hashAlgorithm), RSASignaturePadding.Pss));
+            }
         }
 
         private void VerifyExpectedSignature_Pss(
@@ -1312,6 +1335,29 @@ namespace System.Security.Cryptography.Rsa.Tests
                 byte[] signature = SignData(rsa, data, new HashAlgorithmName(hashAlgorithmName), RSASignaturePadding.Pkcs1);
                 bool signatureMatched = VerifyData(rsa, data, signature, new HashAlgorithmName(hashAlgorithmName), RSASignaturePadding.Pkcs1);
                 Assert.True(signatureMatched);
+            }
+        }
+
+        public static IEnumerable<object[]> HashAlgorithmNames
+        {
+            get
+            {
+                yield return new object[] { HashAlgorithmName.SHA256.Name };
+                yield return new object[] { HashAlgorithmName.SHA384.Name };
+                yield return new object[] { HashAlgorithmName.SHA512.Name };
+                yield return new object[] { HashAlgorithmName.MD5.Name };
+
+                if (RSAFactory.SupportsSha1Signatures)
+                {
+                    yield return new object[] { HashAlgorithmName.SHA1.Name };
+                }
+
+                if (RSAFactory.SupportsSha3)
+                {
+                    yield return new object[] { HashAlgorithmName.SHA3_256.Name };
+                    yield return new object[] { HashAlgorithmName.SHA3_384.Name };
+                    yield return new object[] { HashAlgorithmName.SHA3_512.Name };
+                }
             }
         }
     }
