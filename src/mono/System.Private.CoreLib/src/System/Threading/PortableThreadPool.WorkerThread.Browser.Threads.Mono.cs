@@ -19,7 +19,7 @@ namespace System.Threading
             /// Semaphore for controlling how many threads are currently working.
             /// </summary>
             private static readonly LowLevelLifoSemaphore s_semaphore =
-                LowLevelLifoSemaphore.CreateAsyncJS(
+                LowLevelLifoSemaphore.CreateAsyncWaitSemaphore(
                     0,
                     MaxPossibleThreadCount,
                     AppContextConfigHelper.GetInt32Config(

@@ -14,7 +14,7 @@ namespace System.Threading
         // Keep in sync with lifo-semaphore.h
         private enum LifoSemaphoreKind : int {
             Normal = 1,
-            AsyncJS = 2,
+            AsyncWait = 2,
         }
 #endif
 
