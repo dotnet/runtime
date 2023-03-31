@@ -1,0 +1,17 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <PropertyGroup>
+    <PackageDescription>SDK for building and publishing WebAssembly applications.</PackageDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(RepoTasksDir)Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
+
+    <PackageFile Include="build\*.props;build\*.targets;build\*.web.config" TargetPath="build" />
+    <PackageFile Include="$(RepoRoot)artifacts\bin\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(Configuration)\net472\*.dll" TargetPath="tools\net472" />
+    <PackageFile Include="$(RepoRoot)artifacts\bin\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(Configuration)\net8.0\*.dll" TargetPath="tools\net8.0" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

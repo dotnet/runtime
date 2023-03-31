@@ -7,16 +7,8 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
-    <PackageId>Microsoft.NET.Sdk.WebAssembly.Pack</PackageId>
-    <IsPackable>true</IsPackable>
-    <EnablePackageValidation>false</EnablePackageValidation>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <BuildOutputTargetFolder>tools\$(TargetFramework)</BuildOutputTargetFolder>
   </PropertyGroup>
-
-  <ItemGroup>
-    <None Include="..\build\*.props;..\build\*.targets;..\build\*.web.config" Pack="true" PackagePath="build\%(Filename)%(Extension)" />
-  </ItemGroup>
 
   <ItemDefinitionGroup>
     <PackageReference>
@@ -29,4 +21,6 @@
     <PackageReference Include="Microsoft.Build.Framework" Version="$(MicrosoftBuildFrameworkVersion)" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(MicrosoftBuildUtilitiesCoreVersion)" ExcludeAssets="runtime" />
   </ItemGroup>
+
+  <Target Name="GetFilesToPackage" />
 </Project>
