@@ -318,6 +318,28 @@ jobs:
         isNonPortableSourceBuild: false
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# GCC Linux x64 Build
+
+- ${{ if or(containsValue(parameters.platforms, 'gcc_linux_x64')) }}
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: linux
+      archType: x64
+      targetRid: linux-x64
+      platform: linux_x64
+      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      container: debian-11-gcc12-amd64
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        buildConfig: ${{ parameters.buildConfig }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        compilerName: gcc
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+
 # Linux s390x
 
 - ${{ if containsValue(parameters.platforms, 'linux_s390x') }}:

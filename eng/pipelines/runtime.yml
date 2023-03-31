@@ -100,11 +100,10 @@ extends:
           jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
           buildConfig: checked
           platforms:
-          - linux_x64
-          container: debian-11-gcc12-amd64
+          - gcc_linux_x64
+          container:
           jobParameters:
             testGroup: innerloop
-            compilerName: gcc
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
