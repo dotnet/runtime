@@ -100,9 +100,11 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
 
         public async Task StopAsync(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (!_serviceStopped)
             {
-                await Task.Run(Stop, CancellationToken.None).ConfigureAwait(false);
+                await Task.Run(Stop, cancellationToken).ConfigureAwait(false);
             }
 
             // When the underlying service is stopped this will cause the ServiceBase.Run method to complete and return, which completes _serviceStopped.

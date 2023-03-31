@@ -101,10 +101,38 @@ namespace Microsoft.Extensions.Hosting
 
             serviceTester.Start();
 
-            // service will proceed to stopped without any error
             serviceTester.WaitForStatus(ServiceControllerStatus.Stopped);
             var status = serviceTester.QueryServiceStatus();
             Assert.Equal(1067, status.win32ExitCode);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        public void CancelStopAsync()
+        {
+            using var serviceTester = WindowsServiceTester.Create(() =>
+            {
+                var applicationLifetime = new ApplicationLifetime(NullLogger<ApplicationLifetime>.Instance);
+                using var lifetime = new WindowsServiceLifetime(
+                    new HostingEnvironment(), 
+                    applicationLifetime,
+                    NullLoggerFactory.Instance,
+                    new OptionsWrapper<HostOptions>(new HostOptions()));
+                {
+                    lifetime.WaitForStartAsync(CancellationToken.None).GetAwaiter().GetResult();
+                    
+                    applicationLifetime.NotifyStopped();
+
+                    Assert.ThrowsAsync<OperationCanceledException>(async () => await lifetime.StopAsync(new CancellationToken(true)));
+                    lifetime.StopAsync(CancellationToken.None).GetAwaiter().GetResult();                    
+                }
+            });
+
+            serviceTester.Start();
+
+            // service will proceed to stopped without any error
+            serviceTester.WaitForStatus(ServiceControllerStatus.Stopped);        
+            var status = serviceTester.QueryServiceStatus();
+            Assert.Equal(0, status.win32ExitCode);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]

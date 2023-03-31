@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.Hosting
             {
                 if (serviceManagerHandle.IsInvalid)
                 {
-                    throw new InvalidOperationException("Cannot open Service Control Manager");
+                    throw new InvalidOperationException();
                 }
 
                 // delete existing service if it exists
@@ -87,7 +87,7 @@ namespace Microsoft.Extensions.Hosting
 
                 if (serviceHandle.IsInvalid)
                 {
-                    throw new Win32Exception("Could not create service");
+                    throw new Win32Exception();
                 }
 
                 return new WindowsServiceTester(serviceHandle, remoteInvokeHandle, serviceName);
