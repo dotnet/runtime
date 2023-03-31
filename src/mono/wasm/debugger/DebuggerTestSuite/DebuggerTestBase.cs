@@ -148,6 +148,7 @@ namespace DebuggerTests
 
         public virtual async Task InitializeAsync()
         {
+            bool retry = true;
             Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> fn = (client, token) =>
              {
                  Func<string, JObject, (string, Task<Result>)> getInitCmdFn = (cmd, args) => (cmd, client.SendCommand(cmd, args, token));
@@ -170,8 +171,11 @@ namespace DebuggerTests
             }
             catch (TaskCanceledException exc) //if timed out for some reason let's try again
             {
+                if (!retry)
+                    throw exc;
+                retry = false;
                 _testOutput.WriteLine($"Let's retry: {exc.ToString()}");
-                insp = new Inspector(Id, _testOutput);
+                insp = new Inspector(Id + "_retry", _testOutput);
                 cli = insp.Client;
                 scripts = SubscribeToScripts(insp);
                 await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
