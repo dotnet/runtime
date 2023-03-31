@@ -4302,11 +4302,6 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo);
 
-    if (threadStaticBlocksInfo.tlsIndex == 0)
-    {
-        noway_assert(!"_tls_index should be > 0");
-    }
-
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
     SCAN_BLOCK_AGAIN:
@@ -4397,11 +4392,15 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                 void**   pIdAddr       = nullptr;
                 unsigned tlsIndexValue = threadStaticBlocksInfo.tlsIndex;
                 GenTree* dllRef        = nullptr;
+
+                if (tlsIndexValue == 0)
+                {
 #ifdef TARGET_64BIT
-                dllRef = gtNewIconNode(tlsIndexValue * 8, TYP_I_IMPL);
+                    dllRef = gtNewIconNode(tlsIndexValue * 8, TYP_I_IMPL);
 #else
-                dllRef                         = gtNewIconNode(tlsIndexValue * 4, TYP_I_IMPL);
+                    dllRef                     = gtNewIconNode(tlsIndexValue * 4, TYP_I_IMPL);
 #endif
+                }
 
                 // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
                 GenTree* tlsRef =
@@ -4409,8 +4408,11 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
                 tlsRef = gtNewIndir(TYP_I_IMPL, tlsRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
-                // Add the dllRef to produce thread local storage reference for coreclr
-                tlsRef = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsRef, dllRef);
+                if (dllRef != nullptr)
+                {
+                    // Add the dllRef to produce thread local storage reference for coreclr
+                    tlsRef = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsRef, dllRef);
+                }
 
                 // Base of coreclr's thread local storage
                 GenTree* tlsValue = gtNewIndir(TYP_I_IMPL, tlsRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
