@@ -1,0 +1,8 @@
+﻿<linker>
+  <assembly fullname="System.Private.Xml">
+    <type fullname="System.Xml.AppContextSwitchHelper">
+      <method signature="System.Boolean get_AllowResolvingUrlsByDefault()" body="stub" value="false"
+              feature="System.Xml.AllowResolvingUrlsByDefault" featurevalue="false" />
+    </type>
+  </assembly>
+</linker>
