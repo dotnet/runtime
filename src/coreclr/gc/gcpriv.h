@@ -888,6 +888,7 @@ public:
                          size_t* num_total_fl_items_rethread, 
                          gc_heap* current_heap,
                          min_fl_list_info* min_fl_list,
+                         size_t* free_list_space_per_heap,
                          int num_heap);
     void merge_items (gc_heap* current_heap, int to_num_heaps, int from_num_heaps);
 #endif //MULTIPLE_HEAPS && USE_REGIONS
@@ -984,6 +985,8 @@ struct static_data
     size_t gc_clock; // number of gcs after which to collect generation
 };
 
+// dynamic data is maintained per generation, so we have total_generation_count number of them.
+// 
 // The dynamic data fields are grouped into 3 categories:
 //
 // calculated logical data (like desired_allocation)
@@ -992,8 +995,19 @@ struct static_data
 class dynamic_data
 {
 public:
+    // Updated if the generation (the dynamic data is for) is condemned or if there's anything
+    // allocated into this generation.
+    // If the generation is condemned, we will calculate its new desired_allocation and re-init this field with that value.
+    // If there's anything allocated into this generation, it will be updated, ie, decreased by
+    // the amount that was allocated into this generation.
     ptrdiff_t new_allocation;
-    ptrdiff_t gc_new_allocation; // new allocation at beginning of gc
+
+    //
+    // The next group of fields are updated during a GC if that GC condemns this generation.
+    // 
+    // Same as new_allocation but only updated during a GC if the generation is condemned.
+    // We should really just get rid of this.
+    ptrdiff_t gc_new_allocation;
     float     surv;
     size_t    desired_allocation;
 
@@ -1019,12 +1033,27 @@ public:
     size_t    collection_count;
     size_t    promoted_size;
     size_t    freach_previous_promotion;
-    size_t    fragmentation;    //fragmentation when we don't compact
-    size_t    gc_clock;         //gc# when last GC happened
-    uint64_t  time_clock;       //time when last gc started
+
+    // Updated in each GC. For a generation that's not condemned during that GC, its free list could be used so
+    // we also update this.
+    size_t    fragmentation;
+
+    //
+    // The following 3 fields are updated at the beginning of each GC, if that GC condemns this generation.
+    //
+    // The number of GC that condemned this generation. The only difference between this
+    // and collection_count is just that collection_count is maintained for all physical generations
+    // (currently there are 5) whereas this is only updated for logical generations (there are 3).
+    size_t    gc_clock;
+    uint64_t  time_clock;       //time when this gc started
     uint64_t  previous_time_clock; // time when previous gc started
+
+    // Updated at the end of a GC, if that GC condemns this generation.
     size_t    gc_elapsed_time;  // Time it took for the gc to complete
 
+    //
+    // The following fields (and fields in sdata) are initialized during GC init time and do not change.
+    //
     size_t    min_size;
 
     static_data* sdata;
@@ -2184,6 +2213,10 @@ private:
     PER_HEAP_ISOLATED_METHOD void destroy_semi_shared();
     PER_HEAP_METHOD void repair_allocation_contexts (BOOL repair_p);
     PER_HEAP_METHOD void fix_allocation_contexts (BOOL for_gc_p);
+#ifdef MULTIPLE_HEAPS
+    PER_HEAP_ISOLATED_METHOD void fix_allocation_contexts_heaps ();
+    PER_HEAP_ISOLATED_METHOD void fix_allocation_context_heaps (gc_alloc_context* acontext, void*);
+#endif //MULTIPLE_HEAPS
     PER_HEAP_METHOD void fix_youngest_allocation_area();
     PER_HEAP_METHOD void fix_allocation_context (alloc_context* acontext, BOOL for_gc_p,
                                  BOOL record_ac_p);
@@ -2405,7 +2438,7 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void equalize_promoted_bytes(int condemned_gen_number);
 
-    PER_HEAP_ISOLATED_METHOD void redistribute_regions(int new_n_heaps);
+    PER_HEAP_ISOLATED_METHOD bool redistribute_regions(int new_n_heaps);
 #endif //USE_REGIONS
 
 #if !defined(USE_REGIONS) || defined(_DEBUG)
@@ -3250,6 +3283,7 @@ private:
 #ifdef USE_REGIONS
     PER_HEAP_FIELD_SINGLE_GC min_fl_list_info* min_fl_list;
     PER_HEAP_FIELD_SINGLE_GC size_t num_fl_items_rethreaded_stage2;
+    PER_HEAP_FIELD_SINGLE_GC size_t* free_list_space_per_heap;
 #else //USE_REGIONS
     PER_HEAP_FIELD_SINGLE_GC heap_segment* new_heap_segment;
 #endif //USE_REGIONS
@@ -4452,6 +4486,10 @@ public:
     void GcScanRoots (promote_func* fn, int hn, ScanContext *pSC);
     void UpdatePromotedGenerations (int gen, BOOL gen_0_empty_p);
     size_t GetPromotedCount();
+
+    // Methods used to move finalization data between heaps
+    bool MergeFinalizationData (CFinalize* other_fq);
+    bool SplitFinalizationData (CFinalize* other_fq);
 
     //Methods used by the shutdown code to call every finalizer
     size_t GetNumberFinalizableObjects();
