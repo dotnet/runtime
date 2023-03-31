@@ -84,7 +84,7 @@ namespace Microsoft.Extensions.Hosting
                 var serviceHandle = new SafeServiceHandle(
                     Interop.Advapi32.CreateService(serviceManagerHandle,
                     serviceName,
-                    $"{nameof(WindowsServiceTester)} test service",
+                    $"{nameof(WindowsServiceTester)} {serviceName} test service",
                     Interop.Advapi32.ServiceAccessOptions.ACCESS_TYPE_ALL,
                     Interop.Advapi32.ServiceTypeOptions.SERVICE_WIN32_OWN_PROCESS,
                     (int)ServiceStartMode.Manual,
