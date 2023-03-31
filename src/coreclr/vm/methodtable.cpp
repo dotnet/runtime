@@ -2177,16 +2177,16 @@ const char* GetSystemVClassificationTypeName(SystemVClassificationType t)
 #endif // _DEBUG && LOGGING
 
 // Returns 'true' if the struct is passed in registers, 'false' otherwise.
-bool MethodTable::ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool useNativeLayout, MethodTable** pValueClassCache)
+bool MethodTable::ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool useNativeLayout, MethodTable** pByValueClassCache)
 {
     if (useNativeLayout)
     {
-        _ASSERTE(pValueClassCache == NULL);
+        _ASSERTE(pByValueClassCache == NULL);
         return ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel, startOffsetOfStruct, GetNativeLayoutInfo());
     }
     else
     {
-        return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, useNativeLayout, pValueClassCache);
+        return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, useNativeLayout, pByValueClassCache);
     }
 }
 
@@ -2239,12 +2239,20 @@ static SystemVClassificationType ReClassifyField(SystemVClassificationType origi
     }
 }
 
+MethodTable* ByValueClassCacheLookup(MethodTable** pByValueClassCache, unsigned index)
+{
+    if (pByValueClassCache == NULL)
+        return NULL;
+    else
+        return pByValueClassCache[index];
+}
+
 // Returns 'true' if the struct is passed in registers, 'false' otherwise.
 bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassingHelperPtr helperPtr,
                                                      unsigned int nestingLevel,
                                                      unsigned int startOffsetOfStruct,
                                                      bool useNativeLayout,
-                                                     MethodTable** pValueClassCache)
+                                                     MethodTable** pByValueClassCache)
 {
     CONTRACTL
     {
@@ -2310,22 +2318,24 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
                                     || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
                                 && (pFieldStart->GetOffset() == 0)
                                 && HasLayout()
-                                && (GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+                                && (GetNumInstanceFieldBytes() % pFieldStart->GetSize(ByValueClassCacheLookup(pByValueClassCache, 0)) == 0);
 
     if (isFixedBuffer)
     {
-        numIntroducedFields = GetNumInstanceFieldBytes() / pFieldStart->GetSize();
+        numIntroducedFields = GetNumInstanceFieldBytes() / pFieldStart->GetSize(ByValueClassCacheLookup(pByValueClassCache, 0));
     }
 
     for (unsigned int fieldIndex = 0; fieldIndex < numIntroducedFields; fieldIndex++)
     {
         FieldDesc* pField;
         DWORD fieldOffset;
+        unsigned int fieldIndexForSize = fieldIndex;
 
         if (isFixedBuffer)
         {
             pField = pFieldStart;
-            fieldOffset = fieldIndex * pField->GetSize();
+            fieldIndexForSize = 0;
+            fieldOffset = fieldIndex * pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForSize));
         }
         else
         {
@@ -2335,7 +2345,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
         unsigned int normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
 
-        unsigned int fieldSize = pField->GetSize();
+        unsigned int fieldSize = pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForSize));
         _ASSERTE(fieldSize != (unsigned int)-1);
 
         // The field can't span past the end of the struct.
@@ -2355,8 +2365,8 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         if (fieldClassificationType == SystemVClassificationTypeStruct)
         {
             TypeHandle th;
-            if (pValueClassCache != NULL)
-                th = TypeHandle(pValueClassCache[fieldIndex]);
+            if (pByValueClassCache != NULL)
+                th = TypeHandle(pByValueClassCache[fieldIndex]);
             else
                 th = pField->GetApproxFieldTypeHandleThrowing();
             _ASSERTE(!th.IsNull());

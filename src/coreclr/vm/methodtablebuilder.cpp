@@ -8450,7 +8450,7 @@ DWORD MethodTableBuilder::GetFieldSize(FieldDesc *pFD)
 
 #ifdef UNIX_AMD64_ABI
 // checks whether the struct is enregisterable.
-void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister(MethodTable** pValueClassCache)
+void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister(MethodTable** pByValueClassCache)
 {
     STANDARD_VM_CONTRACT;
 
@@ -8479,7 +8479,7 @@ void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister(MethodTable** 
     const bool useNativeLayout = false;
     // Iterate through the fields and make sure they meet requirements to pass in registers
     SystemVStructRegisterPassingHelper helper((unsigned int)totalStructSize);
-    if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, 0, 0, useNativeLayout, pValueClassCache))
+    if (GetHalfBakedMethodTable()->ClassifyEightBytes(&helper, 0, 0, useNativeLayout, pByValueClassCache))
     {
         LOG((LF_JIT, LL_EVERYTHING, "**** SystemVAmd64CheckForPassStructInRegister: struct %s is enregisterable\n",
                this->GetDebugClassName()));
