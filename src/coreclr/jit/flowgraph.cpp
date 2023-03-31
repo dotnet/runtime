@@ -4293,6 +4293,12 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
 
+    if (!doesMethodHaveTlsFieldAccess())
+    {
+        // The method doesn't have any TLS field
+        return result;
+    }
+
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo);
 

@@ -7005,6 +7005,7 @@ public:
 #define OMF_HAS_TAILCALL_SUCCESSOR             0x00001000 // Method has potential tail call in a non BBJ_RETURN block
 #define OMF_HAS_MDNEWARRAY                     0x00002000 // Method contains 'new' of an MD array
 #define OMF_HAS_MDARRAYREF                     0x00004000 // Method contains multi-dimensional intrinsic array element loads or stores.
+#define OMF_HAS_TLS_FIELD                      0x00008000 // Method contains TLS field access
 
     // clang-format on
 
@@ -7043,6 +7044,16 @@ public:
     void setMethodHasGuardedDevirtualization()
     {
         optMethodFlags |= OMF_HAS_GUARDEDDEVIRT;
+    }
+
+    bool doesMethodHaveTlsFieldAccess()
+    {
+        return (optMethodFlags & OMF_HAS_TLS_FIELD) != 0;
+    }
+
+    void setMethodHaveTlsFieldAccess()
+    {
+        optMethodFlags |= OMF_HAS_TLS_FIELD;
     }
 
     void pickGDV(GenTreeCall*           call,
