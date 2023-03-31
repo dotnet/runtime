@@ -203,16 +203,15 @@ namespace System.Text.RegularExpressions
                 result.Negated = RegexCharClass.IsNegated(result.Set);
 
                 int count = RegexCharClass.GetSetChars(result.Set, scratch);
-
-                if (!result.Negated && count > 0)
+                if (count > 0)
                 {
                     result.Chars = scratch.Slice(0, count).ToArray();
                 }
 
                 if (thorough)
                 {
-                    // Prefer IndexOfAnyInRange over IndexOfAny for sets of 3-5 values that fit in a single range.
-                    if ((result.Chars is null || count > 2) && RegexCharClass.TryGetSingleRange(result.Set, out char lowInclusive, out char highInclusive))
+                    // Prefer IndexOfAnyInRange over IndexOfAny for sets of more than 2 values that fit in a single range.
+                    if ((result.Chars is null || result.Chars.Length > 2) && RegexCharClass.TryGetSingleRange(result.Set, out char lowInclusive, out char highInclusive))
                     {
                         result.Chars = null;
                         result.Range = (lowInclusive, highInclusive);
@@ -450,64 +449,76 @@ namespace System.Text.RegularExpressions
                 int s1RangeLength = s1.Range is not null ? GetRangeLength(s1.Range.Value, s1Negated) : 0;
                 int s2RangeLength = s2.Range is not null ? GetRangeLength(s2.Range.Value, s2Negated) : 0;
 
-                Debug.Assert(!s1Negated || s1Chars is null);
-                Debug.Assert(!s2Negated || s2Chars is null);
-
-                // If both have chars, prioritize the one with the smaller frequency for those chars.
-                if (s1Chars is not null && s2Chars is not null)
+                // If one set is negated and the other isn't, prefer the non-negated set.
+                if (s1Negated != s2Negated)
                 {
-                    // Prefer sets with less frequent values.  The frequency is only an approximation,
-                    // used as a tie-breaker when we'd otherwise effectively be picking randomly.
-                    // True frequencies will vary widely based on the actual data being searched, the language of the data, etc.
-                    float s1Frequency = SumFrequencies(s1Chars);
-                    float s2Frequency = SumFrequencies(s2Chars);
+                    return s2Negated ? -1 : 1;
+                }
 
-                    if (s1Frequency != s2Frequency)
-                    {
-                        return s1Frequency.CompareTo(s2Frequency);
-                    }
+                // If we extracted only a few chars and the sets are negated, they both represent very large
+                // sets that are difficult to compare for quality.
+                if (!s1Negated)
+                {
+                    Debug.Assert(!s2Negated);
 
-                    if (!RegexCharClass.IsAscii(s1Chars) && !RegexCharClass.IsAscii(s2Chars))
+                    // If both have chars, prioritize the one with the smaller frequency for those chars.
+                    if (s1Chars is not null && s2Chars is not null)
                     {
-                        // Prefer the set with fewer values.
-                        return s1CharsLength.CompareTo(s2CharsLength);
-                    }
+                        Debug.Assert(!s2Negated);
 
-                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                    static float SumFrequencies(char[] chars)
-                    {
-                        float sum = 0;
-                        foreach (char c in chars)
+                        // Prefer sets with less frequent values.  The frequency is only an approximation,
+                        // used as a tie-breaker when we'd otherwise effectively be picking randomly.
+                        // True frequencies will vary widely based on the actual data being searched, the language of the data, etc.
+                        float s1Frequency = SumFrequencies(s1Chars);
+                        float s2Frequency = SumFrequencies(s2Chars);
+
+                        if (s1Frequency != s2Frequency)
                         {
-                            // Lookup each character in the table.  Values >= 128 are ignored
-                            // and thus we'll get skew in the data.  It's already a gross approximation, though,
-                            // and it is primarily meant for disambiguation of ASCII letters.
-                            if (c < 128)
-                            {
-                                sum += Frequency[c];
-                            }
+                            return s1Frequency.CompareTo(s2Frequency);
                         }
-                        return sum;
-                    }
-                }
 
-                // If one has chars and the other has a range, prefer the shorter set.
-                if ((s1CharsLength > 0 && s2RangeLength > 0) || (s1RangeLength > 0 && s2CharsLength > 0))
-                {
-                    int c = Math.Max(s1CharsLength, s1RangeLength).CompareTo(Math.Max(s2CharsLength, s2RangeLength));
-                    if (c != 0)
+                        if (!RegexCharClass.IsAscii(s1Chars) && !RegexCharClass.IsAscii(s2Chars))
+                        {
+                            // Prefer the set with fewer values.
+                            return s1CharsLength.CompareTo(s2CharsLength);
+                        }
+
+                        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                        static float SumFrequencies(char[] chars)
+                        {
+                            float sum = 0;
+                            foreach (char c in chars)
+                            {
+                                // Lookup each character in the table.  Values >= 128 are ignored
+                                // and thus we'll get skew in the data.  It's already a gross approximation, though,
+                                // and it is primarily meant for disambiguation of ASCII letters.
+                                if (c < 128)
+                                {
+                                    sum += Frequency[c];
+                                }
+                            }
+                            return sum;
+                        }
+                    }
+
+                    // If one has chars and the other has a range, prefer the shorter set.
+                    if ((s1CharsLength > 0 && s2RangeLength > 0) || (s1RangeLength > 0 && s2CharsLength > 0))
                     {
-                        return c;
+                        int c = Math.Max(s1CharsLength, s1RangeLength).CompareTo(Math.Max(s2CharsLength, s2RangeLength));
+                        if (c != 0)
+                        {
+                            return c;
+                        }
+
+                        // If lengths are the same, prefer the chars.
+                        return s1CharsLength > 0 ? -1 : 1;
                     }
 
-                    // If lengths are the same, prefer the chars.
-                    return s1CharsLength > 0 ? -1 : 1;
-                }
-
-                // If one has chars and the other doesn't, prioritize the one with chars.
-                if ((s1CharsLength > 0) != (s2CharsLength > 0))
-                {
-                    return s1CharsLength > 0 ? -1 : 1;
+                    // If one has chars and the other doesn't, prioritize the one with chars.
+                    if ((s1CharsLength > 0) != (s2CharsLength > 0))
+                    {
+                        return s1CharsLength > 0 ? -1 : 1;
+                    }
                 }
 
                 // If one has a range and the other doesn't, prioritize the one with a range.

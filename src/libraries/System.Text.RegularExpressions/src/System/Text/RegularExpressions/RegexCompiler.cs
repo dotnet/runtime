@@ -884,8 +884,6 @@ namespace System.Text.RegularExpressions
                         Ldloc(textSpanLocal);
                     }
 
-                    Debug.Assert(!primarySet.Negated || (primarySet.Chars is null && primarySet.AsciiSet is null));
-
                     if (primarySet.Chars is not null)
                     {
                         switch (primarySet.Chars.Length)
@@ -893,14 +891,28 @@ namespace System.Text.RegularExpressions
                             case 1:
                                 // tmp = ...IndexOf(setChars[0]);
                                 Ldc(primarySet.Chars[0]);
-                                Call(s_spanIndexOfChar);
+                                if (primarySet.Negated)
+                                {
+                                    Call(s_spanIndexOfAnyExceptChar);
+                                }
+                                else
+                                {
+                                    Call(s_spanIndexOfChar);
+                                }
                                 break;
 
                             case 2:
                                 // tmp = ...IndexOfAny(setChars[0], setChars[1]);
                                 Ldc(primarySet.Chars[0]);
                                 Ldc(primarySet.Chars[1]);
-                                Call(s_spanIndexOfAnyCharChar);
+                                if (primarySet.Negated)
+                                {
+                                    Call(s_spanIndexOfAnyExceptCharChar);
+                                }
+                                else
+                                {
+                                    Call(s_spanIndexOfAnyCharChar);
+                                }
                                 break;
 
                             case 3:
@@ -908,13 +920,27 @@ namespace System.Text.RegularExpressions
                                 Ldc(primarySet.Chars[0]);
                                 Ldc(primarySet.Chars[1]);
                                 Ldc(primarySet.Chars[2]);
-                                Call(s_spanIndexOfAnyCharCharChar);
+                                if (primarySet.Negated)
+                                {
+                                    Call(s_spanIndexOfAnyExceptCharCharChar);
+                                }
+                                else
+                                {
+                                    Call(s_spanIndexOfAnyCharCharChar);
+                                }
                                 break;
 
                             default:
                                 Ldstr(new string(primarySet.Chars));
                                 Call(s_stringAsSpanMethod);
-                                Call(s_spanIndexOfAnySpan);
+                                if (primarySet.Negated)
+                                {
+                                    Call(s_spanIndexOfAnyExceptSpan);
+                                }
+                                else
+                                {
+                                    Call(s_spanIndexOfAnySpan);
+                                }
                                 break;
                         }
                     }
@@ -947,14 +973,17 @@ namespace System.Text.RegularExpressions
                         // a sequential walk).  In order to do that search, we actually build up a set for all of the ASCII
                         // characters _not_ contained in the set, and then do a search for the inverse of that, which will be
                         // all of the target ASCII characters and all of non-ASCII.
-                        var asciiChars = new List<char>();
+                        var excludedAsciiChars = new List<char>();
                         for (int i = 0; i <= 0x7f; i++)
                         {
                             if (!RegexCharClass.CharInClass((char)i, primarySet.Set))
                             {
-                                asciiChars.Add((char)i);
+                                excludedAsciiChars.Add((char)i);
                             }
                         }
+
+                        // Because we're using CharInClass here, and CharInClass already factors in any negation
+                        // inside of the set description, we don't do anything special with primarySet.Negative below.
 
                         using (RentedLocalBuilder span = RentReadOnlySpanCharLocal())
                         using (RentedLocalBuilder i = RentInt32Local())
@@ -964,18 +993,48 @@ namespace System.Text.RegularExpressions
 
                             // int i = span.
                             Ldloc(span);
-                            if (asciiChars.Count == 128)
+                            switch (excludedAsciiChars.Count)
                             {
-                                // IndexOfAnyExceptInRange('\0', '\u007f');
-                                Ldc(0);
-                                Ldc(127);
-                                Call(s_spanIndexOfAnyExceptInRange);
-                            }
-                            else
-                            {
-                                // IndexOfAnyExcept(indexOfAnyValuesArray[...]);
-                                LoadIndexOfAnyValues(CollectionsMarshal.AsSpan(asciiChars));
-                                Call(s_spanIndexOfAnyExceptIndexOfAnyValues);
+                                case 0:
+                                    // 0
+                                    Pop();
+                                    Ldc(0);
+                                    break;
+                                case 1:
+                                    // IndexOfAnyExcept('c1')
+                                    Ldc(excludedAsciiChars[0]);
+                                    Call(s_spanIndexOfAnyExceptChar);
+                                    break;
+                                case 2:
+                                    // IndexOfAnyExcept('c1', 'c2')
+                                    Ldc(excludedAsciiChars[0]);
+                                    Ldc(excludedAsciiChars[1]);
+                                    Call(s_spanIndexOfAnyExceptCharChar);
+                                    break;
+                                case 3:
+                                    // IndexOfAnyExcept('c1', 'c2', 'c3')
+                                    Ldc(excludedAsciiChars[0]);
+                                    Ldc(excludedAsciiChars[1]);
+                                    Ldc(excludedAsciiChars[2]);
+                                    Call(s_spanIndexOfAnyExceptCharCharChar);
+                                    break;
+                                case 4 or 5:
+                                    // IndexOfAnyExcept("c1c2c3c4c5")
+                                    Ldstr(CollectionsMarshal.AsSpan(excludedAsciiChars).ToString());
+                                    Call(s_stringAsSpanMethod);
+                                    Call(s_spanIndexOfAnyExceptSpan);
+                                    break;
+                                case 128:
+                                    // IndexOfAnyExceptInRange('\0', '\u007f');
+                                    Ldc(0);
+                                    Ldc(127);
+                                    Call(s_spanIndexOfAnyExceptInRange);
+                                    break;
+                                default:
+                                    // IndexOfAnyExcept(indexOfAnyValuesArray[...]);
+                                    LoadIndexOfAnyValues(CollectionsMarshal.AsSpan(excludedAsciiChars));
+                                    Call(s_spanIndexOfAnyExceptIndexOfAnyValues);
+                                    break;
                             }
                             Stloc(i);
 
@@ -1155,7 +1214,14 @@ namespace System.Text.RegularExpressions
                     Ldloc(pos);
                     Call(s_spanSliceIntIntMethod);
                     Ldc(set.Chars[0]);
-                    Call(s_spanLastIndexOfChar);
+                    if (set.Negated)
+                    {
+                        Call(s_spanLastIndexOfAnyExceptChar);
+                    }
+                    else
+                    {
+                        Call(s_spanLastIndexOfChar);
+                    }
                     Stloc(pos);
 
                     // if (pos < 0) goto returnFalse;

@@ -159,6 +159,7 @@ namespace System.Text.RegularExpressions
                     // the set's characteristics.
                     if (!compiled &&
                         fixedDistanceSets.Count == 1 &&
+                        !fixedDistanceSets[0].Negated &&
                         fixedDistanceSets[0].Chars is { Length: 1 })
                     {
                         FixedDistanceLiteral = (fixedDistanceSets[0].Chars![0], null, fixedDistanceSets[0].Distance);
@@ -176,8 +177,9 @@ namespace System.Text.RegularExpressions
 
                         // Store the sets, and compute which mode to use.
                         FixedDistanceSets = fixedDistanceSets;
-                        FindMode = (fixedDistanceSets.Count == 1 && fixedDistanceSets[0].Distance == 0) ? FindNextStartingPositionMode.LeadingSet_LeftToRight
-                            : FindNextStartingPositionMode.FixedDistanceSets_LeftToRight;
+                        FindMode = (fixedDistanceSets.Count == 1 && fixedDistanceSets[0].Distance == 0) ?
+                            FindNextStartingPositionMode.LeadingSet_LeftToRight :
+                            FindNextStartingPositionMode.FixedDistanceSets_LeftToRight;
                         _asciiLookups = new uint[fixedDistanceSets.Count][];
                     }
                     return;
@@ -434,6 +436,7 @@ namespace System.Text.RegularExpressions
             }
         }
 
+#if SYSTEM_TEXT_REGULAREXPRESSIONS
         /// <summary>Try to advance to the next starting position that might be a location for a match.</summary>
         /// <param name="textSpan">The text to search.</param>
         /// <param name="pos">The position in <paramref name="textSpan"/>.  This is updated with the found position.</param>
@@ -553,12 +556,13 @@ namespace System.Text.RegularExpressions
                     {
                         FixedDistanceSet primarySet = FixedDistanceSets![0];
                         char[]? chars = primarySet.Chars;
-                        string set = primarySet.Set;
 
                         ReadOnlySpan<char> span = textSpan.Slice(pos);
                         if (chars is not null)
                         {
-                            int i = span.IndexOfAny(chars);
+                            int i = primarySet.Negated ?
+                                span.IndexOfAnyExcept(chars) :
+                                span.IndexOfAny(chars);
                             if (i >= 0)
                             {
                                 pos += i;
@@ -570,7 +574,7 @@ namespace System.Text.RegularExpressions
                             ref uint[]? startingAsciiLookup = ref _asciiLookups![0];
                             for (int i = 0; i < span.Length; i++)
                             {
-                                if (RegexCharClass.CharInClass(span[i], set, ref startingAsciiLookup))
+                                if (RegexCharClass.CharInClass(span[i], primarySet.Set, ref startingAsciiLookup))
                                 {
                                     pos += i;
                                     return true;
@@ -628,7 +632,9 @@ namespace System.Text.RegularExpressions
                             for (int inputPosition = pos; inputPosition <= endMinusRequiredLength; inputPosition++)
                             {
                                 int offset = inputPosition + primarySet.Distance;
-                                int index = textSpan.Slice(offset).IndexOfAny(primarySet.Chars);
+                                int index = primarySet.Negated ?
+                                    textSpan.Slice(offset).IndexOfAnyExcept(primarySet.Chars) :
+                                    textSpan.Slice(offset).IndexOfAny(primarySet.Chars);
                                 if (index < 0)
                                 {
                                     break;
@@ -738,12 +744,12 @@ namespace System.Text.RegularExpressions
                     }
 
                 // Nothing special to look for.  Just return true indicating this is a valid position to try to match.
-
                 default:
                     Debug.Assert(FindMode == FindNextStartingPositionMode.NoSearch);
                     return true;
             }
         }
+#endif
     }
 
     /// <summary>Mode to use for searching for the next location of a possible match.</summary>

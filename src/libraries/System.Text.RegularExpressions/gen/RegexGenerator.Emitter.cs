@@ -452,20 +452,6 @@ namespace System.Text.RegularExpressions.Generator
 
         private static string EmitIndexOfAnyCustomHelper(string set, Dictionary<string, string[]> requiredHelpers, bool checkOverflow)
         {
-            // In order to optimize the search for ASCII characters, we use IndexOfAnyValues to vectorize a search
-            // for those characters plus anything non-ASCII (if we find something non-ASCII, we'll fall back to
-            // a sequential walk).  In order to do that search, we actually build up a set for all of the ASCII
-            // characters _not_ contained in the set, and then do a search for the inverse of that, which will be
-            // all of the target ASCII characters and all of non-ASCII.
-            var asciiChars = new List<char>();
-            for (int i = 0; i <= 0x7f; i++)
-            {
-                if (!RegexCharClass.CharInClass((char)i, set))
-                {
-                    asciiChars.Add((char)i);
-                }
-            }
-
             string? helperName = set switch
             {
                 RegexCharClass.DigitClass => "IndexOfAnyDigit",
@@ -508,6 +494,20 @@ namespace System.Text.RegularExpressions.Generator
 
             if (!requiredHelpers.ContainsKey(helperName))
             {
+                // In order to optimize the search for ASCII characters, we use IndexOfAnyValues to vectorize a search
+                // for those characters plus anything non-ASCII (if we find something non-ASCII, we'll fall back to
+                // a sequential walk).  In order to do that search, we actually build up a set for all of the ASCII
+                // characters _not_ contained in the set, and then do a search for the inverse of that, which will be
+                // all of the target ASCII characters and all of non-ASCII.
+                var excludedAsciiChars = new List<char>();
+                for (int i = 0; i <= 0x7f; i++)
+                {
+                    if (!RegexCharClass.CharInClass((char)i, set))
+                    {
+                        excludedAsciiChars.Add((char)i);
+                    }
+                }
+
                 var additionalDeclarations = new HashSet<string>();
                 string matchExpr = MatchCharacterClass("span[i]", set, negate: false, additionalDeclarations, requiredHelpers);
 
@@ -517,9 +517,16 @@ namespace System.Text.RegularExpressions.Generator
                 lines.Add($"internal static int {helperName}(this ReadOnlySpan<char> span)");
                 lines.Add($"{{");
                 int uncheckedStart = lines.Count;
-                lines.Add(asciiChars.Count == 128 ?
-                          $"    int i = span.IndexOfAnyExceptInRange('\0', '\u007f');" :
-                          $"    int i = span.IndexOfAnyExcept({EmitIndexOfAnyValues(asciiChars.ToArray(), requiredHelpers)});");
+                lines.Add("    int i = " + (excludedAsciiChars.Count switch
+                {
+                    0 => $"0;",
+                    1 => $"span.IndexOfAnyExcept({Literal(excludedAsciiChars[0])});",
+                    2 => $"span.IndexOfAnyExcept({Literal(excludedAsciiChars[0])}, {Literal(excludedAsciiChars[1])});",
+                    3 => $"span.IndexOfAnyExcept({Literal(excludedAsciiChars[0])}, {Literal(excludedAsciiChars[1])}, {Literal(excludedAsciiChars[2])});",
+                    4 or 5 => $"span.IndexOfAnyExcept({Literal(new string(excludedAsciiChars.ToArray()))});",
+                    128 => $"span.IndexOfAnyExceptInRange('\0', '\u007f');",
+                    _ => $"span.IndexOfAnyExcept({EmitIndexOfAnyValues(excludedAsciiChars.ToArray(), requiredHelpers)});",
+                }));
                 lines.Add($"    if ((uint)i < (uint)span.Length)");
                 lines.Add($"    {{");
                 lines.Add($"        if (span[i] <= 0x7f)");
@@ -1031,15 +1038,20 @@ namespace System.Text.RegularExpressions.Generator
                         (true, _) => $"{span}.Slice(i + {primarySet.Distance})",
                     };
 
-                    Debug.Assert(!primarySet.Negated || (primarySet.Chars is null && primarySet.AsciiSet is null));
+                    Debug.Assert(!primarySet.Negated || primarySet.AsciiSet is null);
 
                     string indexOf =
-                        primarySet.Chars is not null ? primarySet.Chars.Length switch
+                        primarySet.Chars is not null ? (primarySet.Chars.Length, primarySet.Negated) switch
                         {
-                            1 => $"{span}.IndexOf({Literal(primarySet.Chars[0])})",
-                            2 => $"{span}.IndexOfAny({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])})",
-                            3 => $"{span}.IndexOfAny({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])}, {Literal(primarySet.Chars[2])})",
-                            _ => $"{span}.IndexOfAny({EmitIndexOfAnyValuesOrLiteral(primarySet.Chars, requiredHelpers)})",
+                            (1, false) => $"{span}.IndexOf({Literal(primarySet.Chars[0])})",
+                            (2, false) => $"{span}.IndexOfAny({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])})",
+                            (3, false) => $"{span}.IndexOfAny({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])}, {Literal(primarySet.Chars[2])})",
+                            (_, false) => $"{span}.IndexOfAny({EmitIndexOfAnyValuesOrLiteral(primarySet.Chars, requiredHelpers)})",
+
+                            (1, true) => $"{span}.IndexOfAnyExcept({Literal(primarySet.Chars[0])})",
+                            (2, true) => $"{span}.IndexOfAnyExcept({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])})",
+                            (3, true) => $"{span}.IndexOfAnyExcept({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])}, {Literal(primarySet.Chars[2])})",
+                            (_, true) => $"{span}.IndexOfAnyExcept({EmitIndexOfAnyValuesOrLiteral(primarySet.Chars, requiredHelpers)})",
                         } :
                         primarySet.AsciiSet is not null ? $"{span}.IndexOfAny({EmitIndexOfAnyValues(primarySet.AsciiSet, requiredHelpers)})" :
                         primarySet.Range is not null ? (primarySet.Range.Value.LowInclusive == primarySet.Range.Value.HighInclusive, primarySet.Negated) switch
@@ -1152,7 +1164,8 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (set.Chars is { Length: 1 })
                 {
-                    writer.WriteLine($"pos = inputSpan.Slice(0, pos).LastIndexOf({Literal(set.Chars[0])});");
+                    string indexOfMethod = set.Negated ? "LastIndexOfAnyExcept" : "LastIndexOf";
+                    writer.WriteLine($"pos = inputSpan.Slice(0, pos).{indexOfMethod}({Literal(set.Chars[0])});");
                     using (EmitBlock(writer, "if (pos >= 0)"))
                     {
                         writer.WriteLine("base.runtextpos = pos + 1;");
