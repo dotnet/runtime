@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Regression tests for bugs in fgMorphCast and optNarrowTree.
 
@@ -32,7 +33,8 @@ struct S1
 
 public static class GitHub_18238
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool passed = true;
 

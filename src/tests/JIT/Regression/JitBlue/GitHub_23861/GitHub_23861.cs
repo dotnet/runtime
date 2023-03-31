@@ -4,13 +4,15 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
+using Xunit;
 
 namespace GitHub_23861
 {
     public class Program
     {
         static int returnVal = 100;
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             LessThanAllDouble();
 
@@ -25,7 +27,7 @@ namespace GitHub_23861
             return returnVal;
         }
 
-        public static void LessThanAllDouble() { TestVectorLessThanAll<double>(); }
+        internal static void LessThanAllDouble() { TestVectorLessThanAll<double>(); }
 
         private static void TestVectorLessThanAll<T>() where T : struct, INumber<T>
         {

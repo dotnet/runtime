@@ -2,9 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 public class ReproBoxProblem
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine(DoOp(77.5, 77.5));
         return 100;
