@@ -4711,8 +4711,8 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Bitmask, OP_WASM_SIMD_BITMASK},
 	{SN_CompareEqual},
 	{SN_CompareNotEqual},
-	{SN_ConvertNarrowingSignedSaturate, OP_XOP_X_X_X},
-	{SN_ConvertNarrowingUnsignedSaturate, OP_XOP_X_X_X},
+	{SN_ConvertNarrowingSignedSaturate, OP_XOP_X_X_X, 0},
+	{SN_ConvertNarrowingUnsignedSaturate, OP_XOP_X_X_X, 0},
 	{SN_Dot, OP_XOP_X_X_X, INTRINS_WASM_DOT},
 	{SN_ExtractLane},
 	{SN_Multiply},
@@ -4819,7 +4819,7 @@ emit_wasm_supported_intrinsics (
 						c0 = INTRINS_WASM_NARROW_SIGNED_V8;
 						break;
 				}
-				if (c0 != -1)
+				if (c0 != 0)
 						break;
 
 				return NULL;
@@ -4833,7 +4833,7 @@ emit_wasm_supported_intrinsics (
 						c0 = INTRINS_WASM_NARROW_UNSIGNED_V8;
 						break;
 				}
-				if (c0 != -1)
+				if (c0 != 0)
 						break;
 
 				return NULL;
