@@ -7997,7 +7997,7 @@ void Lowering::LowerLclHeap(GenTree* node)
             ssize_t size = node->gtGetOp1()->AsIntCon()->IconValue();
             if ((unsigned)size > UINT_MAX)
             {
-                BADCODE("Localloc size is negative or too big")
+                BADCODE("Localloc size is negative or too big");
             }
 
             LIR::Use use;
