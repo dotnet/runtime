@@ -7987,7 +7987,7 @@ void Lowering::LowerLclHeap(GenTree* node)
     assert(node->OperIs(GT_LCLHEAP));
 
 #if defined(TARGET_XARCH)
-    if (node->gtGetOp1()->IsCnsIntOrI())
+    if (node->gtGetOp1()->IsCnsIntOrI() && comp->info.compInitMem)
     {
         ssize_t  size = node->gtGetOp1()->AsIntCon()->IconValue();
         LIR::Use use;
@@ -8015,7 +8015,7 @@ void Lowering::LowerLclHeap(GenTree* node)
             GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
                 GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, heapLcl, zero, comp->typGetBlkLayout((unsigned)size));
             storeBlk->gtFlags |= (GTF_BLK_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
-            BlockRange().InsertAfter(node, heapLcl, zero, storeBlk);
+            BlockRange().InsertAfter(use.Def(), heapLcl, zero, storeBlk);
             LowerNode(storeBlk);
             node->gtFlags |= GTF_LCLHEAP_ZEROED;
         }

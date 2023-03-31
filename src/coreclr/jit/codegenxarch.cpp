@@ -2749,7 +2749,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     {
         // If size is a constant, then it must be contained.
         assert(size->isContained());
-        assert(tree->gtFlags & GTF_LCLHEAP_ZEROED);
+        assert(!compiler->info.compInitMem || (tree->gtFlags & GTF_LCLHEAP_ZEROED));
 
         amount = size->AsIntCon()->gtIconVal;
         assert(amount > 0);
@@ -2864,7 +2864,6 @@ void CodeGen::genLclHeap(GenTree* tree)
         // We should reach here only for non-zero, constant size allocations which we zero
         // via BLK explicitly, so just bump the stack pointer.
         assert((amount % STACK_ALIGN) == 0);
-        assert(compiler->info.compInitMem); // why would we zero it with !compInitMem
         const bool largePage = amount >= compiler->eeGetPageSize();
         assert(regCnt == REG_NA);
         if (largePage || (TARGET_POINTER_SIZE == 4))

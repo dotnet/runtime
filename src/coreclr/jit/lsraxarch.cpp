@@ -1846,7 +1846,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
     GenTree* size = tree->gtGetOp1();
     if (size->IsCnsIntOrI())
     {
-        assert(tree->gtFlags & GTF_LCLHEAP_ZEROED);
+        assert(!compiler->info.compInitMem || (tree->gtFlags & GTF_LCLHEAP_ZEROED));
         assert(size->isContained());
         srcCount       = 0;
         size_t sizeVal = size->AsIntCon()->gtIconVal;
