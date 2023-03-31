@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- See https://github.com/dotnet/runtime/issues/68529 -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
