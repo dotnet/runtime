@@ -1295,48 +1295,6 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoTyp
 }
 
 //------------------------------------------------------------------------
-//  Compiler::impFoldSubOfLocalOffsets: Recognize and fold an offset
-//  computation for a local's field.
-//
-//  Arguments:
-//     op1 - The first op being subtracted
-//     op2 - The second op being subtracted
-//
-//  Returns:
-//     Null if the pattern was not recognized; otherwise a constant
-//     representing the offset.
-//
-GenTree* Compiler::impFoldSubOfLocalOffsets(GenTree* op1, GenTree* op2)
-{
-    if (!op1->TypeIs(TYP_I_IMPL, TYP_BYREF) || !op2->TypeIs(TYP_I_IMPL, TYP_BYREF) ||
-        (op1->TypeGet() != op2->TypeGet()))
-    {
-        return nullptr;
-    }
-
-    unsigned op1Lcl;
-    unsigned op1Offs;
-    if (!impIsAddressInLocal(op1, &op1Lcl, &op1Offs))
-    {
-        return nullptr;
-    }
-
-    unsigned op2Lcl;
-    unsigned op2Offs;
-    if (!impIsAddressInLocal(op2, &op2Lcl, &op2Offs))
-    {
-        return nullptr;
-    }
-
-    if (op1Lcl != op2Lcl)
-    {
-        return nullptr;
-    }
-
-    return gtNewIconNode((ssize_t)op1Offs - (ssize_t)op2Offs, TYP_I_IMPL);
-}
-
-//------------------------------------------------------------------------
 //  Compiler::impNormStructVal: Normalize a struct value
 //
 //  Arguments:
@@ -6927,7 +6885,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     lclNum = impInlineFetchLocal(lclNum DEBUGARG("Inline ldloca(s) first use temp"));
 
                     assert(!lvaGetDesc(lclNum)->lvNormalizeOnLoad());
-                    op1 = gtNewLclVarAddrNode(lclNum, lvaIsImplicitByRefLocal(lclNum) ? TYP_BYREF : TYP_I_IMPL);
+                    op1 = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
                     goto _PUSH_ADRVAR;
                 }
 
@@ -6980,7 +6938,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // where it was not absolutely needed, but doing otherwise would
                 // require careful rethinking of the importer routines which use
                 // the IL validity model (e. g. "impGetByRefResultType").
-                op1 = gtNewLclVarAddrNode(lclNum, lvaIsImplicitByRefLocal(lclNum) ? TYP_BYREF : TYP_I_IMPL);
+                op1 = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
 
             _PUSH_ADRVAR:
                 assert(op1->OperIs(GT_LCL_VAR_ADDR));
@@ -7380,31 +7338,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 goto MATH_OP2_FLAGS;
 
             case CEE_SUB:
-                if (opts.OptimizationEnabled())
-                {
-                    op2 = impPopStack().val;
-                    op1 = impPopStack().val;
-
-                    GenTree* folded = impFoldSubOfLocalOffsets(op1, op2);
-
-                    if (folded != nullptr)
-                    {
-                        impPushOnStack(folded, tiRetVal);
-                        break;
-                    }
-                    else
-                    {
-                        oper     = GT_SUB;
-                        ovfl     = false;
-                        callNode = false;
-                        goto MATH_OP2_WITH_OPS;
-                    }
-                }
-                else
-                {
-                    oper = GT_SUB;
-                    goto MATH_OP2;
-                }
+                oper = GT_SUB;
+                goto MATH_OP2;
 
             case CEE_SUB_OVF:
                 uns = false;
@@ -7486,8 +7421,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op2 = impPopStack().val;
                 op1 = impPopStack().val;
-
-            MATH_OP2_WITH_OPS:
 
                 /* Can't do arithmetic with references */
                 assertImp(genActualType(op1->TypeGet()) != TYP_REF && genActualType(op2->TypeGet()) != TYP_REF);
@@ -12841,36 +12774,26 @@ bool Compiler::impIsInvariant(const GenTree* tree)
 //   the address of a field in a local.
 // Arguments:
 //     tree -- The tree
-//     lclNum -- [out, optional] the local that this points into
-//     lclOffs -- [out, optional] the offset into the local
+//     lclVarTreeOut -- [out] the local that this points into
 //
 // Returns:
 //     true if it points into a local
 //
-bool Compiler::impIsAddressInLocal(const GenTree* tree, unsigned* lclNum, unsigned* lclOffs)
+bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
 {
-    unsigned       offs = 0;
-    const GenTree* op   = tree;
+    const GenTree* op = tree;
     while (op->OperIs(GT_FIELD_ADDR) && op->AsField()->IsInstance())
     {
-        offs += op->AsField()->gtFldOffset;
         op = op->AsField()->GetFldObj();
     }
 
-    // Unexpected to see this during import
-    assert(!op->OperIs(GT_LCL_FLD_ADDR));
-
     if (op->OperIs(GT_LCL_VAR_ADDR))
     {
-        if (lclNum != nullptr)
+        if (lclVarTreeOut != nullptr)
         {
-            *lclNum = op->AsLclVarCommon()->GetLclNum();
+            *lclVarTreeOut = const_cast<GenTree*>(op);
         }
 
-        if (lclOffs != nullptr)
-        {
-            *lclOffs = offs + op->AsLclVarCommon()->GetLclOffs();
-        }
         return true;
     }
 
@@ -13245,10 +13168,11 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
         return;
     }
 
-    unsigned lclNum;
-    if (impIsAddressInLocal(curArgVal, &lclNum))
+    GenTree*   lclVarTree;
+    const bool isAddressInLocal = impIsAddressInLocal(curArgVal, &lclVarTree);
+    if (isAddressInLocal)
     {
-        LclVarDsc* varDsc = lvaGetDesc(lclNum);
+        LclVarDsc* varDsc = lvaGetDesc(lclVarTree->AsLclVarCommon());
 
         if (varTypeIsStruct(varDsc))
         {

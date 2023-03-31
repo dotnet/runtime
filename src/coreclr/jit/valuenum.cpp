@@ -4467,7 +4467,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
             {
                 // (x + a) - x == a
                 VNFuncApp add;
-                if ((resultVN == NoVN) && GetVNFunc(arg0VN, &add) && (add.m_func == (VNFunc)GT_ADD))
+                if (GetVNFunc(arg0VN, &add) && (add.m_func == (VNFunc)GT_ADD))
                 {
                     if (add.m_args[0] == arg1VN)
                         return add.m_args[1];
