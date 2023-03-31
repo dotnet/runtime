@@ -76,7 +76,9 @@ namespace System.Reflection.Emit
             if (parent != null)
             {
                 if (parent.IsInterface)
+                {
                     throw new ArgumentException(SR.Argument_CannotSetParentToInterface);
+                }
 
                 _typeParent = parent;
             }
@@ -91,7 +93,9 @@ namespace System.Reflection.Emit
                 else
                 {
                     if ((_attributes & TypeAttributes.Abstract) == 0)
+                    {
                         throw new InvalidOperationException(SR.InvalidOperation_BadInterfaceNotAbstract);
+                    }
 
                     // There is no extends for interface class.
                     _typeParent = null;

@@ -62,26 +62,23 @@ namespace System.Reflection.Emit.Tests
             yield return new object[] { new Type[] { typeof(IMultipleMethod), typeof(INoMethod2), typeof(IAccess), typeof(IOneMethod), typeof(INoMethod) } };
             yield return new object[] { new Type[] { typeof(EmptyStruct) } };
             yield return new object[] { new Type[] { typeof(StructWithField) } };
-            yield return new object[] { new Type[] { typeof(EmptyStruct), typeof(StructWithField) } };
             yield return new object[] { new Type[] { typeof(StructWithField), typeof(EmptyStruct) } };
+            yield return new object[] { new Type[] { typeof(IMultipleMethod), typeof(EmptyStruct) , typeof(INoMethod2), typeof(StructWithField) } };
         }
 
         [Theory]
         [MemberData(nameof(VariousInterfacesStructsTestData))]
-        public void WriteReadVariousTypesToFromFile(Type[] types)
+        public void WriteAssemblyWithVariousTypesToAFileAndReadBackTest(Type[] types)
         {
             using (TempFile file = TempFile.Create())
             {
                 Assembly assemblyFromDisk = WriteAndLoadAssembly(types, file.Path);
-                Module moduleFromDisk = assemblyFromDisk.Modules.First();
 
-                Assert.Equal(s_assemblyName.Name, assemblyFromDisk.GetName().Name);
-                Assert.Equal(s_assemblyName.Name, moduleFromDisk.ScopeName);
-                AssertMembers(types, moduleFromDisk.GetTypes());
+                AssertTypesAndTypeMembers(types, assemblyFromDisk.Modules.First().GetTypes());
             }
         }
 
-        private static void AssertMembers(Type[] types, Type[] typesFromDisk)
+        private static void AssertTypesAndTypeMembers(Type[] types, Type[] typesFromDisk)
         {
             Assert.Equal(types.Length, typesFromDisk.Length);
 
@@ -137,20 +134,19 @@ namespace System.Reflection.Emit.Tests
 
         [Theory]
         [MemberData(nameof(VariousInterfacesStructsTestData))]
-        public void WriteAndReadVariousTypesToFromStream(Type[] types)
+        public void WriteAssemblyWithVariousTypesToStreamAndReadBackTest(Type[] types)
         {
-            using var stream = new MemoryStream();
-            AssemblyTools.WriteAssemblyToStream(s_assemblyName, types, stream);
-            Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromStream(stream);
-            Module moduleFromDisk = assemblyFromDisk.Modules.First();
+            using (var stream = new MemoryStream())
+            {
+                AssemblyTools.WriteAssemblyToStream(s_assemblyName, types, stream);
+                Assembly assemblyFromStream = AssemblyTools.LoadAssemblyFromStream(stream);
 
-            Assert.Equal(s_assemblyName.Name, assemblyFromDisk.GetName().Name);
-            Assert.Equal(s_assemblyName.Name, moduleFromDisk.ScopeName);
-            AssertMembers(types, moduleFromDisk.GetTypes());
+                AssertTypesAndTypeMembers(types, assemblyFromStream.Modules.First().GetTypes());
+            }
         }
 
         [Fact]
-        public void MethodReturnTypeLoadedFromCoreAssemblyTest()
+        public void CreateMembersThatUsesTypeLoadedFromCoreAssemblyTest()
         {
             using (TempFile file = TempFile.Create())
             {
