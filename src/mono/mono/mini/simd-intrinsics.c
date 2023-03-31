@@ -1944,32 +1944,10 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return NULL;
 #endif
 
-// FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
+// FIXME: Support Vector64 for mini JIT on arm64
 #ifdef TARGET_ARM64
-	if (!COMPILE_LLVM (cfg)) {
+	if (!COMPILE_LLVM (cfg) && (size != 16))
 		return NULL;
-		if (size != 16)
-			return NULL;
-		switch (id) {
-		case SN_get_One:
-		case SN_get_Zero:
-		case SN_op_OnesComplement:
-		case SN_op_UnaryNegation:
-		case SN_op_UnaryPlus:
-		case SN_op_Addition:
-		case SN_op_Subtraction:
-		case SN_op_BitwiseAnd:
-		case SN_op_BitwiseOr:
-		case SN_op_ExclusiveOr:
-		case SN_op_Equality:
-		case SN_op_Inequality:
-		case SN_op_Division:
-		case SN_op_Multiply:
-			break;
-		default:
-			return NULL;
-		}
-	}
 #endif
 
 	switch (id) {
