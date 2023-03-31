@@ -23,10 +23,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         public bool SupportsSha1Signatures => _supportsSha1Signatures ??= SignatureSupport.CanProduceSha1Signature(Create());
 
-        // We specifically need to ask OpenSSL about support, not the platform, since OpenSSL may be used on platforms
-        // which is not the native crypto implementation, such as macOS.
-        private const int OpenSslSha3Minimum = 0x1_01_01_00_F; //major_minor_fix_patch_status
-        public bool SupportsSha3 => SafeEvpPKeyHandle.OpenSslVersion >= OpenSslSha3Minimum;
+        public bool SupportsSha3 => SHA3_256.IsSupported; // If SHA3_256 is supported, assume 384 and 512 are, too.
     }
 
     public partial class RSAFactory
