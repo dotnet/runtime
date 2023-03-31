@@ -4443,8 +4443,8 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
                 // Create tree to "threadStaticBlockValue = threadStaticBlockBase[typeIndex]"
                 typeThreadStaticBlockIndexValue =
-                    gtNewOperNode(GT_MUL, TYP_I_IMPL, gtCloneExpr(typeThreadStaticBlockIndexValue),
-                                  gtNewIconNode(8, TYP_I_IMPL));
+                    gtNewOperNode(GT_MUL, TYP_UINT, gtCloneExpr(typeThreadStaticBlockIndexValue),
+                                  gtNewIconNode(TARGET_POINTER_SIZE, TYP_UINT));
                 GenTree* typeThreadStaticBlockRef =
                     gtNewOperNode(GT_ADD, TYP_I_IMPL, threadStaticBlocksValue, typeThreadStaticBlockIndexValue);
                 GenTree* typeThreadStaticBlockValue =
