@@ -5660,19 +5660,18 @@ bool ValueNumStore::IsVNInt32Constant(ValueNum vn)
 
 bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
 {
+    assert(varTypeIsIntegral(TypeOfVN(vn)));
+
     if (IsVNConstant(vn))
     {
         var_types vnTy = TypeOfVN(vn);
-        if (varTypeIsIntegral(vnTy))
+        if (vnTy == TYP_INT)
         {
-            if (vnTy == TYP_INT)
-            {
-                return GetConstantInt32(vn) >= 0;
-            }
-            else if (vnTy == TYP_LONG)
-            {
-                return GetConstantInt64(vn) >= 0;
-            }
+            return GetConstantInt32(vn) >= 0;
+        }
+        else if (vnTy == TYP_LONG)
+        {
+            return GetConstantInt64(vn) >= 0;
         }
 
         return false;
