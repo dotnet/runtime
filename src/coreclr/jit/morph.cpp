@@ -2228,7 +2228,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         // TODO-Cleanup: this is duplicative with the code in args morphing, however, also kicks in for
         // "non-standard" (return buffer on ARM64) arguments. Fix args morphing and delete this code.
-        if (argx->OperIs(GT_LCL_FLD_ADDR))
+        if (argx->OperIs(GT_LCL_ADDR))
         {
             argx->gtType = TYP_I_IMPL;
         }
@@ -3179,7 +3179,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
         // For pointers to locals we can skip reporting GC info and also skip zero initialization.
         // NOTE: We deferred this from the importer because of the inliner.
-        if (argx->OperIs(GT_LCL_FLD_ADDR))
+        if (argx->OperIs(GT_LCL_ADDR))
         {
             argx->gtType = TYP_I_IMPL;
         }
@@ -3993,7 +3993,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
                 else
                 {
                     uint16_t offs = lcl->GetLclOffs();
-                    lcl->ChangeOper(GT_LCL_FLD_ADDR);
+                    lcl->ChangeOper(GT_LCL_ADDR);
                     lcl->AsLclFld()->SetLclOffs(offs);
                     lcl->gtType = TYP_I_IMPL;
                     lvaSetVarAddrExposed(varNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
@@ -4666,7 +4666,7 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
 //
 GenTree* Compiler::fgMorphLocal(GenTreeLclVarCommon* lclNode)
 {
-    assert(lclNode->OperIs(GT_LCL_VAR, GT_LCL_FLD) || lclNode->OperIs(GT_LCL_FLD_ADDR));
+    assert(lclNode->OperIs(GT_LCL_VAR, GT_LCL_FLD) || lclNode->OperIs(GT_LCL_ADDR));
 
     GenTree* expandedTree = nullptr;
 #ifdef TARGET_X86
@@ -4682,7 +4682,7 @@ GenTree* Compiler::fgMorphLocal(GenTreeLclVarCommon* lclNode)
         return expandedTree;
     }
 
-    if (lclNode->OperIs(GT_LCL_FLD_ADDR))
+    if (lclNode->OperIs(GT_LCL_ADDR))
     {
         // No further morphing necessary.
         return lclNode;
@@ -4732,7 +4732,7 @@ GenTree* Compiler::fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode)
     GenTree* offsetNode = gtNewIconNode(offset, TYP_I_IMPL);
     GenTree* argAddr    = gtNewOperNode(GT_SUB, TYP_I_IMPL, argsBaseAddr, offsetNode);
 
-    if (lclNode->OperIs(GT_LCL_FLD_ADDR))
+    if (lclNode->OperIs(GT_LCL_ADDR))
     {
         return argAddr;
     }
@@ -4842,7 +4842,7 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
 
     // Add a level of indirection to this node. The "base" will be a local node referring to "newLclNum".
     // We will also add an offset, and, if the original "lclNode" represents a location, a dereference.
-    bool         isAddress     = lclNode->OperIs(GT_LCL_FLD_ADDR);
+    bool         isAddress     = lclNode->OperIs(GT_LCL_ADDR);
     unsigned     offset        = lclNode->GetLclOffs() + fieldOffset;
     var_types    argNodeType   = lclNode->TypeGet();
     ClassLayout* argNodeLayout = nullptr;
@@ -5039,7 +5039,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
     if (tree->OperIs(GT_FIELD))
     {
-        noway_assert(((objRef != nullptr) && objRef->OperIs(GT_LCL_FLD_ADDR)) || ((tree->gtFlags & GTF_GLOB_REF) != 0));
+        noway_assert(((objRef != nullptr) && objRef->OperIs(GT_LCL_ADDR)) || ((tree->gtFlags & GTF_GLOB_REF) != 0));
     }
 
     if (fieldNode->IsInstance())
@@ -8230,7 +8230,7 @@ GenTree* Compiler::fgMorphLeaf(GenTree* tree)
 {
     assert(tree->OperIsLeaf());
 
-    if (tree->OperIsNonPhiLocal() || tree->OperIs(GT_LCL_FLD_ADDR))
+    if (tree->OperIsNonPhiLocal() || tree->OperIs(GT_LCL_ADDR))
     {
         tree = fgMorphLocal(tree->AsLclVarCommon());
     }
@@ -9819,7 +9819,7 @@ DONE_MORPHING_CHILDREN:
                 tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
             }
 
-            if (!tree->AsIndir()->IsVolatile() && !tree->TypeIs(TYP_STRUCT) && op1->OperIs(GT_LCL_FLD_ADDR) &&
+            if (!tree->AsIndir()->IsVolatile() && !tree->TypeIs(TYP_STRUCT) && op1->OperIs(GT_LCL_ADDR) &&
                 !optValnumCSE_phase)
             {
                 unsigned loadSize   = tree->AsIndir()->Size();
@@ -11068,7 +11068,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
     {
         // Reduce local addresses: "ADD(LCL_ADDR, OFFSET)" => "LCL_FLD_ADDR".
         //
-        if (op1->OperIs(GT_LCL_FLD_ADDR) && op2->IsCnsIntOrI())
+        if (op1->OperIs(GT_LCL_ADDR) && op2->IsCnsIntOrI())
         {
             GenTreeLclVarCommon* lclAddrNode = op1->AsLclVarCommon();
             GenTreeIntCon*       offsetNode  = op2->AsIntCon();
@@ -11079,7 +11079,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
                 // Note: the emitter does not expect out-of-bounds access for LCL_FLD_ADDR.
                 if (FitsIn<uint16_t>(offset) && (offset < lvaLclExactSize(lclAddrNode->GetLclNum())))
                 {
-                    lclAddrNode->SetOper(GT_LCL_FLD_ADDR);
+                    lclAddrNode->SetOper(GT_LCL_ADDR);
                     lclAddrNode->AsLclFld()->SetLclOffs(offset);
                     assert(lvaGetDesc(lclAddrNode)->lvDoNotEnregister);
 

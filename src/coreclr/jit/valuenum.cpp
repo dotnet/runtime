@@ -10322,7 +10322,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
     {
         switch (oper)
         {
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
             {
                 unsigned lclNum  = tree->AsLclFld()->GetLclNum();
                 unsigned lclOffs = tree->AsLclFld()->GetLclOffs();

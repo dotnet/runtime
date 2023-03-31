@@ -1139,7 +1139,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     buildInternalIntRegisterDefForNode(blkNode);
                 }
 
-                const bool isDstRegAddrAlignmentKnown = dstAddr->OperIs(GT_LCL_FLD_ADDR);
+                const bool isDstRegAddrAlignmentKnown = dstAddr->OperIs(GT_LCL_ADDR);
 
                 if (isDstRegAddrAlignmentKnown && (size > FP_REGSIZE_BYTES))
                 {

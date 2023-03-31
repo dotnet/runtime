@@ -356,7 +356,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             {
                 blkNode->SetOper(GT_STORE_BLK);
             }
-            else if (dstAddr->OperIs(GT_LCL_FLD_ADDR) && (size <= copyBlockUnrollLimit))
+            else if (dstAddr->OperIs(GT_LCL_ADDR) && (size <= copyBlockUnrollLimit))
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the
@@ -408,7 +408,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIs(GT_LCL_FLD_ADDR))
+    if (addr->OperIs(GT_LCL_ADDR))
     {
         addr->SetContained();
         return;
@@ -705,7 +705,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     {
         MakeSrcContained(indirNode, addr);
     }
-    else if (addr->OperIs(GT_LCL_FLD_ADDR))
+    else if (addr->OperIs(GT_LCL_ADDR))
     {
         // These nodes go into an addr mode:
         // - GT_LCL_ADDR is a stack addr mode.

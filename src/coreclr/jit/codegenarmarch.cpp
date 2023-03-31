@@ -259,7 +259,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForBitCast(treeNode->AsOp());
             break;
 
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
             genCodeForLclAddr(treeNode->AsLclFld());
             break;
 
@@ -1682,7 +1682,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
 //
 void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 {
-    assert(lclAddrNode->OperIs(GT_LCL_FLD_ADDR));
+    assert(lclAddrNode->OperIs(GT_LCL_ADDR));
 
     var_types targetType = lclAddrNode->TypeGet();
     emitAttr  size       = emitTypeSize(targetType);
@@ -2567,7 +2567,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     }
     else
     {
-        assert(dstAddr->OperIs(GT_LCL_FLD_ADDR));
+        assert(dstAddr->OperIs(GT_LCL_ADDR));
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
@@ -2734,7 +2734,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     }
     else
     {
-        assert(dstAddr->OperIs(GT_LCL_FLD_ADDR));
+        assert(dstAddr->OperIs(GT_LCL_ADDR));
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
@@ -2767,7 +2767,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         }
         else
         {
-            assert(srcAddr->OperIs(GT_LCL_FLD_ADDR));
+            assert(srcAddr->OperIs(GT_LCL_ADDR));
             srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
             srcOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
         }

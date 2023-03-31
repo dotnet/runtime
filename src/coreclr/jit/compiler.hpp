@@ -1348,7 +1348,7 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
             AsLclFld()->SetLayout(nullptr);
             break;
 
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
             AsLclFld()->SetLayout(nullptr);
             break;
 
@@ -4012,7 +4012,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         // Leaf nodes
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
         case GT_CATCH_ARG:
         case GT_LABEL:
         case GT_FTN_ADDR:

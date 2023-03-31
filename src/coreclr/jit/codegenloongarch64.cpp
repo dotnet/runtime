@@ -2788,7 +2788,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     }
     else
     {
-        assert(dstAddr->OperIs(GT_LCL_FLD_ADDR));
+        assert(dstAddr->OperIs(GT_LCL_ADDR));
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
@@ -2921,7 +2921,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_FLD_ADDR);
+    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -5000,7 +5000,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForBitCast(treeNode->AsOp());
             break;
 
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
             genCodeForLclAddr(treeNode->AsLclFld());
             break;
 
@@ -6191,7 +6191,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
 //
 void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 {
-    assert(lclAddrNode->OperIs(GT_LCL_FLD_ADDR));
+    assert(lclAddrNode->OperIs(GT_LCL_ADDR));
 
     var_types targetType = lclAddrNode->TypeGet();
     emitAttr  size       = emitTypeSize(targetType);
@@ -6480,7 +6480,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
     }
     else
     {
-        assert(dstAddr->OperIs(GT_LCL_FLD_ADDR));
+        assert(dstAddr->OperIs(GT_LCL_ADDR));
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
@@ -6513,7 +6513,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
         }
         else
         {
-            assert(srcAddr->OperIs(GT_LCL_FLD_ADDR));
+            assert(srcAddr->OperIs(GT_LCL_ADDR));
             srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
             srcOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
         }
@@ -6660,9 +6660,9 @@ void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst
 {
     emitter* emit = GetEmitter();
 
-    if (base->OperIs(GT_LCL_FLD_ADDR))
+    if (base->OperIs(GT_LCL_ADDR))
     {
-        if (base->gtOper == GT_LCL_FLD_ADDR)
+        if (base->gtOper == GT_LCL_ADDR)
         {
             offset += base->AsLclFld()->GetLclOffs();
         }

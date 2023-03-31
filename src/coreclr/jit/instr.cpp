@@ -804,7 +804,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 
         switch (addr->OperGet())
         {
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
             {
                 assert(addr->isContained());
                 varNum = addr->AsLclFld()->GetLclNum();

@@ -665,7 +665,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             node->gtGetOp1()->SetRegOptional();
             break;
 
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
         {
             const GenTreeLclVarCommon* lclAddr = node->AsLclVarCommon();
             const LclVarDsc*           varDsc  = comp->lvaGetDesc(lclAddr);
@@ -2613,7 +2613,7 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
     unsigned int tmpLclNum = BAD_VAR_NUM;
     for (GenTree* treeNode = lookForUsesStart; treeNode != callNode; treeNode = treeNode->gtNext)
     {
-        if (!treeNode->OperIsLocal() && !treeNode->OperIs(GT_LCL_FLD_ADDR))
+        if (!treeNode->OperIsLocal() && !treeNode->OperIs(GT_LCL_ADDR))
         {
             continue;
         }
@@ -5018,8 +5018,8 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
     if (action == PushFrame)
     {
         // Thread->m_pFrame = &inlinedCallFrame;
-        data = new (comp, GT_LCL_FLD_ADDR)
-            GenTreeLclFld(GT_LCL_FLD_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
+        data = new (comp, GT_LCL_ADDR)
+            GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
     }
     else
     {
@@ -5099,8 +5099,8 @@ void Lowering::InsertPInvokeMethodProlog()
     const LclVarDsc* inlinedPInvokeDsc = comp->lvaGetDesc(comp->lvaInlinedPInvokeFrameVar);
     assert(inlinedPInvokeDsc->IsAddressExposed());
 #endif // DEBUG
-    GenTree* frameAddr = new (comp, GT_LCL_FLD_ADDR)
-        GenTreeLclFld(GT_LCL_FLD_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
+    GenTree* frameAddr = new (comp, GT_LCL_ADDR)
+        GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
 
     // Call runtime helper to fill in our InlinedCallFrame and push it on the Frame list:
     //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart, secretArg);
@@ -7291,7 +7291,7 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
         }
         break;
 
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
         {
             const GenTreeLclVarCommon* lclVarAddr = node->AsLclVarCommon();
             const LclVarDsc*           varDsc     = compiler->lvaGetDesc(lclVarAddr);
@@ -7432,7 +7432,7 @@ bool Lowering::IndirsAreEquivalent(GenTree* candidate, GenTree* storeInd)
     oper = pTreeA->OperGet();
     switch (oper)
     {
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
             if (pTreeA->AsLclFld()->GetLclOffs() != 0)
             {
                 // TODO-CQ: support arbitrary local addresses here.
@@ -7503,7 +7503,7 @@ bool Lowering::NodesAreEquivalentLeaves(GenTree* tree1, GenTree* tree2)
         case GT_CNS_INT:
             return tree1->AsIntCon()->IconValue() == tree2->AsIntCon()->IconValue() &&
                    tree1->IsIconHandle() == tree2->IsIconHandle();
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
             if (tree1->AsLclFld()->GetLclOffs() != tree2->AsLclFld()->GetLclOffs())
             {
                 return false;

@@ -1841,7 +1841,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForBitCast(treeNode->AsOp());
             break;
 
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
             genCodeForLclAddr(treeNode->AsLclFld());
             break;
 
@@ -3158,7 +3158,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     }
     else
     {
-        assert(dstAddr->OperIs(GT_LCL_FLD_ADDR));
+        assert(dstAddr->OperIs(GT_LCL_ADDR));
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
@@ -3445,7 +3445,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     }
     else
     {
-        assert(dstAddr->OperIs(GT_LCL_FLD_ADDR));
+        assert(dstAddr->OperIs(GT_LCL_ADDR));
         const GenTreeLclVarCommon* lclVar = dstAddr->AsLclVarCommon();
         dstLclNum                         = lclVar->GetLclNum();
         dstOffset                         = lclVar->GetLclOffs();
@@ -3493,7 +3493,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         }
         else
         {
-            assert(srcAddr->OperIs(GT_LCL_FLD_ADDR));
+            assert(srcAddr->OperIs(GT_LCL_ADDR));
             srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
             srcOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
         }
@@ -4144,7 +4144,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     GenTree*  dstAddr     = cpObjNode->Addr();
     GenTree*  source      = cpObjNode->Data();
     var_types srcAddrType = TYP_BYREF;
-    bool      dstOnStack  = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_FLD_ADDR);
+    bool      dstOnStack  = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR);
 
     // If the GenTree node has data about GC pointers, this means we're dealing
     // with CpObj, so this requires special logic.
@@ -5084,7 +5084,7 @@ void CodeGen::genCodeForShiftRMW(GenTreeStoreInd* storeInd)
 //
 void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 {
-    assert(lclAddrNode->OperIs(GT_LCL_FLD_ADDR));
+    assert(lclAddrNode->OperIs(GT_LCL_ADDR));
 
     var_types targetType = lclAddrNode->TypeGet();
     emitAttr  size       = emitTypeSize(targetType);
@@ -7475,7 +7475,7 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // operation.
     if (srcType == TYP_BYREF)
     {
-        noway_assert(op1->OperGet() == GT_LCL_FLD_ADDR);
+        noway_assert(op1->OperGet() == GT_LCL_ADDR);
         srcType = TYP_I_IMPL;
     }
 
@@ -8010,7 +8010,7 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 
             switch (memBase->OperGet())
             {
-                case GT_LCL_FLD_ADDR:
+                case GT_LCL_ADDR:
                 {
                     assert(memBase->isContained());
                     varNum = memBase->AsLclFld()->GetLclNum();

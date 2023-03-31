@@ -65,7 +65,7 @@ public:
             else
             {
                 assert(lastNode->gtNext == nullptr);
-                assert(lastNode->OperIsLocal() || lastNode->OperIs(GT_LCL_FLD_ADDR));
+                assert(lastNode->OperIsLocal() || lastNode->OperIs(GT_LCL_ADDR));
             }
 
             firstNode->gtPrev = nullptr;
@@ -78,7 +78,7 @@ public:
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
         GenTree* node = *use;
-        if (node->OperIsLocal() || node->OperIs(GT_LCL_FLD_ADDR))
+        if (node->OperIsLocal() || node->OperIs(GT_LCL_ADDR))
         {
             SequenceLocal(node->AsLclVarCommon());
         }
@@ -338,7 +338,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         //
         void Address(GenTreeLclFld* lclAddr)
         {
-            assert(lclAddr->OperIs(GT_LCL_FLD_ADDR));
+            assert(lclAddr->OperIs(GT_LCL_ADDR));
             assert(!IsLocation() && !IsAddress());
 
             m_lclNum  = lclAddr->GetLclNum();
@@ -564,7 +564,7 @@ public:
             MorphLocalField(node, user);
         }
 
-        if (node->OperIsLocal() || node->OperIs(GT_LCL_FLD_ADDR))
+        if (node->OperIsLocal() || node->OperIs(GT_LCL_ADDR))
         {
             unsigned const   lclNum = node->AsLclVarCommon()->GetLclNum();
             LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
@@ -620,7 +620,7 @@ public:
                 SequenceLocal(node->AsLclVarCommon());
                 break;
 
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
                 assert(TopValue(0).Node() == node);
 
                 TopValue(0).Address(node->AsLclFld());
@@ -1032,7 +1032,7 @@ private:
 
         if (IsValidLclAddr(lclNum, offset))
         {
-            addr->ChangeOper(GT_LCL_FLD_ADDR);
+            addr->ChangeOper(GT_LCL_ADDR);
             addr->AsLclFld()->SetLclNum(lclNum);
             addr->AsLclFld()->SetLclOffs(offset);
         }
@@ -1429,7 +1429,7 @@ private:
 
                 if (node->OperIs(GT_FIELD_ADDR))
                 {
-                    node->ChangeOper(GT_LCL_FLD_ADDR);
+                    node->ChangeOper(GT_LCL_ADDR);
                     node->AsLclFld()->SetLclNum(fieldLclNum);
                     node->AsLclFld()->SetLclOffs(0);
                 }

@@ -430,7 +430,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 blkNode->SetOper(GT_STORE_BLK);
             }
 #ifndef JIT32_GCENCODER
-            else if (dstAddr->OperIs(GT_LCL_FLD_ADDR) &&
+            else if (dstAddr->OperIs(GT_LCL_ADDR) &&
                      (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, false)))
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
@@ -453,7 +453,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // the entire operation takes 20 cycles and encodes in 5 bytes (loading RCX and REP MOVSD/Q).
             unsigned nonGCSlots = 0;
 
-            if (dstAddr->OperIs(GT_LCL_FLD_ADDR))
+            if (dstAddr->OperIs(GT_LCL_ADDR))
             {
                 // If the destination is on the stack then no write barriers are needed.
                 nonGCSlots = blkNode->GetLayout()->GetSlotCount();
@@ -531,7 +531,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIs(GT_LCL_FLD_ADDR))
+    if (addr->OperIs(GT_LCL_ADDR))
     {
         addr->SetContained();
         return;
@@ -5440,7 +5440,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         // The address of an indirection that requires its address in a reg.
         // Skip any further processing that might otherwise make it contained.
     }
-    else if (addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_FLD_ADDR))
+    else if (addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_ADDR))
     {
         // These nodes go into an addr mode:
         // - GT_CLS_VAR_ADDR turns into a constant.
@@ -6255,7 +6255,7 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
         // We would still need a reg for GT_CNS_INT if it doesn't fit within addressing mode base.
         // For GT_CLS_VAR_ADDR, we don't need a reg to hold the address, because field address value is known at jit
         // time. Also, we don't need a reg for GT_CLS_VAR_ADDR.
-        if (indirCandidateChild->OperIs(GT_LCL_FLD_ADDR, GT_CLS_VAR_ADDR))
+        if (indirCandidateChild->OperIs(GT_LCL_ADDR, GT_CLS_VAR_ADDR))
         {
             indirDst->SetContained();
         }
@@ -6983,7 +6983,7 @@ void Lowering::ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree* ad
 {
     assert((addr->TypeGet() == TYP_I_IMPL) || (addr->TypeGet() == TYP_BYREF));
     TryCreateAddrMode(addr, true, node);
-    if ((addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_FLD_ADDR, GT_LEA) ||
+    if ((addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_ADDR, GT_LEA) ||
          (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(comp))) &&
         IsInvariantInRange(addr, node))
     {

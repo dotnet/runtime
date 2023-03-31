@@ -568,7 +568,7 @@ void GenTree::DumpNodeSizes(FILE* fp)
 LocalsGenTreeList::iterator LocalsGenTreeList::begin() const
 {
     GenTree* first = m_stmt->GetTreeList();
-    assert((first == nullptr) || first->OperIsLocal() || first->OperIs(GT_LCL_FLD_ADDR));
+    assert((first == nullptr) || first->OperIsLocal() || first->OperIs(GT_LCL_ADDR));
     return iterator(static_cast<GenTreeLclVarCommon*>(first));
 }
 
@@ -2646,7 +2646,7 @@ AGAIN:
                 }
                 FALLTHROUGH;
 
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
                 if (op1->AsLclFld()->GetLclOffs() != op2->AsLclFld()->GetLclOffs())
                 {
                     break;
@@ -2926,7 +2926,7 @@ AGAIN:
 
     if (tree->OperIsLeaf())
     {
-        if ((tree->OperIsLocal() || tree->OperIs(GT_LCL_FLD_ADDR)) && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
+        if ((tree->OperIsLocal() || tree->OperIs(GT_LCL_ADDR)) && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
         {
             return true;
         }
@@ -4998,7 +4998,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
                 break;
 
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
                 level  = 1;
                 costEx = 3;
                 costSz = 3;
@@ -6183,7 +6183,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         // Leaf nodes
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
         case GT_CATCH_ARG:
         case GT_LABEL:
         case GT_FTN_ADDR:
@@ -7636,7 +7636,7 @@ GenTreeLclFld* Compiler::gtNewLclVarAddrNode(unsigned lclNum, var_types type)
 
 GenTreeLclFld* Compiler::gtNewLclFldAddrNode(unsigned lclNum, unsigned lclOffs, var_types type)
 {
-    GenTreeLclFld* node = new (this, GT_LCL_FLD_ADDR) GenTreeLclFld(GT_LCL_FLD_ADDR, type, lclNum, lclOffs);
+    GenTreeLclFld* node = new (this, GT_LCL_ADDR) GenTreeLclFld(GT_LCL_ADDR, type, lclNum, lclOffs);
     return node;
 }
 
@@ -7842,7 +7842,7 @@ GenTreeObj* Compiler::gtNewObjNode(ClassLayout* layout, GenTree* addr)
     {
         // TODO-Bug: this method does not have enough information to make this determination.
         // The local may end up (or already is) address-exposed.
-        if (addr->OperIs(GT_LCL_FLD_ADDR))
+        if (addr->OperIs(GT_LCL_ADDR))
         {
             objNode->gtFlags |= GTF_IND_NONFAULTING;
             if (lvaIsImplicitByRefLocal(addr->AsLclVarCommon()->GetLclNum()))
@@ -8455,7 +8455,7 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
                 GenTreeLclVar(tree->OperGet(), tree->TypeGet(), tree->AsLclVar()->GetLclNum());
             goto FINISH_CLONING_LCL_NODE;
 
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
             if (!complexOK && (tree->AsLclFld()->GetLclOffs() == 0))
             {
                 return nullptr;
@@ -8698,7 +8698,7 @@ GenTree* Compiler::gtCloneExpr(
                 copy = new (this, oper) GenTreeVal(oper, tree->gtType, tree->AsVal()->gtVal1);
                 goto DONE;
 
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
             {
                 copy = new (this, oper)
                     GenTreeLclFld(oper, tree->TypeGet(), tree->AsLclFld()->GetLclNum(), tree->AsLclFld()->GetLclOffs());
@@ -9555,7 +9555,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         // Leaf nodes
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
         case GT_CATCH_ARG:
         case GT_LABEL:
         case GT_FTN_ADDR:
@@ -10701,7 +10701,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
 
             case GT_LCL_FLD:
             case GT_LCL_VAR:
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
             case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
                 if (tree->gtFlags & GTF_VAR_USEASG)
@@ -11661,7 +11661,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
     {
 
         case GT_LCL_FLD:
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
         case GT_STORE_LCL_FLD:
             isLclFld = true;
             FALLTHROUGH;
@@ -17135,7 +17135,7 @@ bool GenTree::IsPhiDefn()
 
 bool GenTree::IsLclVarAddr() const
 {
-    return OperIs(GT_LCL_FLD_ADDR) && (AsLclFld()->GetLclOffs() == 0);
+    return OperIs(GT_LCL_ADDR) && (AsLclFld()->GetLclOffs() == 0);
 }
 
 // IsPartialLclFld: Check for a GT_LCL_FLD whose type is a different size than the lclVar.
@@ -18551,7 +18551,7 @@ GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
     // This may be called very late to check validity of LIR.
     node = node->gtSkipReloadOrCopy();
 
-    assert(node->OperIs(GT_LCL_FLD_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsHiddenBufferStructArg());
+    assert(node->OperIs(GT_LCL_ADDR) && lvaGetDesc(node->AsLclVarCommon())->IsHiddenBufferStructArg());
 
     return node->AsLclVarCommon();
 }
@@ -25077,7 +25077,7 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
 
 bool GenTree::IsInvariant() const
 {
-    return OperIsConst() || OperIs(GT_LCL_FLD_ADDR);
+    return OperIsConst() || OperIs(GT_LCL_ADDR);
 }
 
 //------------------------------------------------------------------------
