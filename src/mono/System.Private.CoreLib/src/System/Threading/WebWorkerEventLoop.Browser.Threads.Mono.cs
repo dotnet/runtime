@@ -17,15 +17,12 @@ internal static class WebWorkerEventLoop
     private static extern void KeepalivePushInternal();
     [MethodImpl(MethodImplOptions.InternalCall)]
     private static extern void KeepalivePopInternal();
-#if false
-    [DoesNotReturn]
-    [MethodImpl(MethodImplOptions.InternalCall)]
-    private static extern void UnwindToJsInternal();
-    [DoesNotReturn]
-    [MethodImpl(MethodImplOptions.InternalCall)]
-    private static extern void ThreadExitInternal();
-#endif
 
+    /// <summary>
+    /// A keepalive token prevents a thread from shutting down even if it returns to the JS event
+    /// loop.  A thread may want a keepalive token if it needs to allow JS code to run to settle JS
+    /// promises or execute JS timeout callbacks.
+    /// </summary>
     internal sealed class KeepaliveToken
     {
         public bool Valid {get; private set; }
@@ -33,10 +30,9 @@ internal static class WebWorkerEventLoop
         private KeepaliveToken() { Valid = true; }
 
         /// <summary>
-        ///  Decrement the Emscripten keepalive count.  A thread with
-        ///  a zero keepalive count will terminate when it returns
-        ///  from its start function or from an async invocation from
-        ///  the JS event loop.
+        ///  Decrement the Emscripten keepalive count.  A thread with a zero keepalive count will
+        ///  terminate when it returns from its start function or from an async invocation from the
+        ///  JS event loop.
         /// </summary>
         internal void Pop() {
             if (!Valid)
@@ -59,25 +55,12 @@ internal static class WebWorkerEventLoop
     /// </summary>
     internal static KeepaliveToken KeepalivePush() => KeepaliveToken.Create();
 
-    // FIXME: these are dangerous they will not unwind managad frames (so finally clauses wont' run) and maybe leak in the interpreter memory
-#if false
     /// <summary>
-    ///   Abort the current execution and unwind to the JS event loop
+    ///   Start a thread that may be kept alive on its webworker after the start function returns,
+    ///   if the emscripten keepalive count is positive.  Once the thread returns to the JS event
+    ///   loop it will be able to settle JS promises as well as run any queued managed async
+    ///   callbacks.
     /// </summary>
-    ///
-    // FIXME: we should probably setup some managed exception to
-    // unwind the managed stack before calling the emscripten
-    // unwind_to_js to unwind the native stack.
-    [DoesNotReturn]
-    internal static void UnwindToJs() => UnwindToJsInternal();
-
-    /// <summary>
-    /// Terminate the current thread, even if the thread was kept alive with KeepalivePush
-    /// </summary>
-    internal static void ThreadExit() => ThreadExitInternal();
-#endif
-
-
     internal static void StartExitable(Thread thread, bool captureContext)
     {
         // don't support captureContext == true, for now, since it's
