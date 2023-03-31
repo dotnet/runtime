@@ -210,6 +210,7 @@ public:
     void                Hijack();
     void                Unhijack();
     bool                IsHijacked();
+    void*               GetHijackedReturnAddress();
 
 #ifdef FEATURE_GC_STRESS
     static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx);

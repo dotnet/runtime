@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Regression test case for importer bug.
 // If Release is inlined into Main, the importer may unsafely re-order trees.
@@ -26,7 +27,8 @@ public struct Ptr<T> where T: class
 
 public class Runtime_764
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Ptr<string> ptr = new Ptr<string>("Hello, world");
         

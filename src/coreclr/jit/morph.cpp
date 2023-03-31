@@ -2226,10 +2226,9 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         assert(arg.GetEarlyNode() != nullptr);
         GenTree* argx = arg.GetEarlyNode();
 
-        // Change the node to TYP_I_IMPL so we don't report GC info
-        // NOTE: We deferred this from the importer because of the inliner.
-
-        if (argx->IsLocalAddrExpr() != nullptr)
+        // TODO-Cleanup: this is duplicative with the code in args morphing, however, also kicks in for
+        // "non-standard" (return buffer on ARM64) arguments. Fix args morphing and delete this code.
+        if (argx->OperIsLocalAddr())
         {
             argx->gtType = TYP_I_IMPL;
         }
@@ -3178,9 +3177,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         }
         assert(arg.AbiInfo.ByteSize > 0);
 
-        // For pointers to locals we can skip reporting GC info and also skip
-        // zero initialization.
-        if (argx->IsLocalAddrExpr() != nullptr)
+        // For pointers to locals we can skip reporting GC info and also skip zero initialization.
+        // NOTE: We deferred this from the importer because of the inliner.
+        if (argx->OperIsLocalAddr())
         {
             argx->gtType = TYP_I_IMPL;
         }
@@ -5048,8 +5047,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
     if (tree->OperIs(GT_FIELD))
     {
-        noway_assert(((objRef != nullptr) && (objRef->IsLocalAddrExpr() != nullptr)) ||
-                     ((tree->gtFlags & GTF_GLOB_REF) != 0));
+        noway_assert(((objRef != nullptr) && objRef->OperIsLocalAddr()) || ((tree->gtFlags & GTF_GLOB_REF) != 0));
     }
 
     if (fieldNode->IsInstance())
@@ -9827,6 +9825,26 @@ DONE_MORPHING_CHILDREN:
             if (op1->IsIconHandle(GTF_ICON_OBJ_HDL))
             {
                 tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
+            }
+
+            if (!tree->AsIndir()->IsVolatile() && !tree->TypeIs(TYP_STRUCT) && op1->OperIsLocalAddr() &&
+                !optValnumCSE_phase)
+            {
+                unsigned loadSize   = tree->AsIndir()->Size();
+                unsigned offset     = op1->AsLclVarCommon()->GetLclOffs();
+                unsigned loadExtent = offset + loadSize;
+                unsigned lclSize    = lvaLclExactSize(op1->AsLclVarCommon()->GetLclNum());
+
+                if ((loadExtent <= lclSize) && (loadExtent < UINT16_MAX))
+                {
+                    op1->ChangeType(tree->TypeGet());
+                    op1->SetOper(GT_LCL_FLD);
+                    op1->AsLclFld()->SetLclOffs(offset);
+                    op1->SetVNsFromNode(tree);
+                    op1->AddAllEffectsFlags(tree->gtFlags & GTF_GLOB_REF);
+
+                    return op1;
+                }
             }
 
 #ifdef TARGET_ARM

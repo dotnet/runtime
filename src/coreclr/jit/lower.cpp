@@ -2018,6 +2018,10 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                 {
                     use.ReplaceWith(result);
                 }
+                else
+                {
+                    result->SetUnusedValue();
+                }
                 BlockRange().Remove(lengthArg);
                 BlockRange().Remove(call);
 

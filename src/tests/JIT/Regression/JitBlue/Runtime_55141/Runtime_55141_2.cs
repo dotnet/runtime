@@ -8,6 +8,7 @@
 // Release: Outputs 0
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct S2
 {
@@ -26,7 +27,8 @@ struct S2
 public class Runtime_55141_2
 {
     static int s_1;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int vr23 = s_1;
         S2 vr29 = new S2(1, (uint)vr23 / 40319);
