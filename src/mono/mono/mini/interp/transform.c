@@ -10315,7 +10315,6 @@ initialize_global_vars (TransformData *td)
 					alloc_global_var_offset (td, var);
 					td->locals [var].flags |= INTERP_LOCAL_FLAG_GLOBAL;
 				}
-				td->locals [var].flags |= INTERP_LOCAL_FLAG_ADDRESS_TAKEN;
 			}
 			foreach_local_var (td, ins, (gpointer)(gsize)bb->index, initialize_global_var_cb);
 		}
