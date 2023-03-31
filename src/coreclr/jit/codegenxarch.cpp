@@ -2749,7 +2749,9 @@ void CodeGen::genLclHeap(GenTree* tree)
     {
         amount = size->AsIntCon()->gtIconVal;
         assert((amount > 0) && (amount <= UINT_MAX));
-        assert((amount % STACK_ALIGN) == 0);
+
+        // 'amount' is the total number of bytes to localloc to properly STACK_ALIGN
+        amount = AlignUp(amount, STACK_ALIGN);
     }
     else
     {
@@ -2857,6 +2859,10 @@ void CodeGen::genLclHeap(GenTree* tree)
 
     if (size->IsCnsIntOrI() && size->isContained())
     {
+        // We should reach here only for non-zero, constant size allocations.
+        assert(amount > 0);
+        assert((amount % STACK_ALIGN) == 0);
+
         // We should reach here only for non-zero, constant size allocations which we zero
         // via BLK explicitly, so just bump the stack pointer.
         if ((amount >= compiler->eeGetPageSize()) || (TARGET_POINTER_SIZE == 4))

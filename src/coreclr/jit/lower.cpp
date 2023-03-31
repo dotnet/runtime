@@ -7990,30 +7990,30 @@ void Lowering::LowerLclHeap(GenTree* node)
     if (node->gtGetOp1()->IsCnsIntOrI())
     {
         GenTreeIntCon* sizeNode = node->gtGetOp1()->AsIntCon();
+        ssize_t        size     = sizeNode->IconValue();
+
+        if (size == 0)
+        {
+            // Replace with null for LCLHEAP(0)
+            node->BashToZeroConst(TYP_I_IMPL);
+            BlockRange().Remove(sizeNode);
+            return;
+        }
+
         if (comp->info.compInitMem)
         {
-            ssize_t size        = sizeNode->IconValue();
-            ssize_t alignedSize = ALIGN_UP(sizeNode->IconValue(), STACK_ALIGN);
-
+            ssize_t alignedSize = ALIGN_UP(size, STACK_ALIGN);
             if (max((unsigned)size, (unsigned)alignedSize) > UINT_MAX)
             {
                 // Size is too big - don't mark sizeNode as contained
                 return;
             }
 
-            // Align LCLHEAP size for more efficient zeroing via BLK
-            sizeNode->SetIconValue(alignedSize);
-
             LIR::Use use;
             if (BlockRange().TryGetUse(node, &use))
             {
-                if (size == 0)
-                {
-                    // Replace with null for LCLHEAP(0)
-                    node->BashToZeroConst(TYP_I_IMPL);
-                    BlockRange().Remove(sizeNode);
-                    return;
-                }
+                // Align LCLHEAP size for more efficient zeroing via BLK
+                sizeNode->SetIconValue(alignedSize);
 
                 // Emit STORE_BLK to zero it
                 //
