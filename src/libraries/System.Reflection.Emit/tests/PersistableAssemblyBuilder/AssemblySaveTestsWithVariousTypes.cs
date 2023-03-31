@@ -52,7 +52,7 @@ namespace System.Reflection.Emit.Tests
             return AssemblyTools.LoadAssemblyFromPath(filePath);
         }
 
-        public static IEnumerable<object[]> VariousInterfacesTestData()
+        public static IEnumerable<object[]> VariousInterfacesStructsTestData()
         {
             yield return new object[] { new Type[] { typeof(INoMethod) } };
             yield return new object[] { new Type[] { typeof(IMultipleMethod) } };
@@ -60,60 +60,6 @@ namespace System.Reflection.Emit.Tests
             yield return new object[] { new Type[] { typeof(INoMethod), typeof(IOneMethod) } };
             yield return new object[] { new Type[] { typeof(IMultipleMethod), typeof(INoMethod2) } };
             yield return new object[] { new Type[] { typeof(IMultipleMethod), typeof(INoMethod2), typeof(IAccess), typeof(IOneMethod), typeof(INoMethod) } };
-        }
-
-        [Theory]
-        [MemberData(nameof(VariousInterfacesTestData))]
-        public void WriteVariousInterfacesToFileTest(Type[] types)
-        {
-            using (TempFile file = TempFile.Create())
-            {
-                Assembly assemblyFromDisk = WriteAndLoadAssembly(types, file.Path);
-
-                Module moduleFromDisk = assemblyFromDisk.Modules.First();
-                Type[] typesFromDisk = moduleFromDisk.GetTypes();
-
-                Assert.Equal(types.Length, typesFromDisk.Length);
-
-                // Type comparisons
-                for (int i = 0; i < types.Length; i++)
-                {
-                    Type sourceType = types[i];
-                    Type typeFromDisk = typesFromDisk[i];
-
-                    Assert.True(typeFromDisk.IsInterface);
-                    AssertTypeProperties(sourceType, typeFromDisk);
-                    AssertMethods(sourceType.GetMethods(), typeFromDisk.GetMethods());
-                    AssertFields(sourceType.GetFields(), typeFromDisk.GetFields());
-                }
-            }
-        }
-
-        private static void AssertMethods(MethodInfo[] sourceMethods, MethodInfo[] methodsFromDisk)
-        {
-            Assert.Equal(sourceMethods.Length, methodsFromDisk.Length);
-
-            // Method comparisons
-            for (int j = 0; j < sourceMethods.Length; j++)
-            {
-                MethodInfo sourceMethod = sourceMethods[j];
-                MethodInfo methodFromDisk = methodsFromDisk[j];
-
-                Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
-                Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
-                Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
-            }
-        }
-
-        private static void AssertTypeProperties(Type sourceType, Type typeFromDisk)
-        {
-            Assert.Equal(sourceType.Name, typeFromDisk.Name);
-            Assert.Equal(sourceType.Namespace, typeFromDisk.Namespace);
-            Assert.Equal(sourceType.Attributes, typeFromDisk.Attributes);
-        }
-
-        public static IEnumerable<object[]> VariousStructsTestData()
-        {
             yield return new object[] { new Type[] { typeof(EmptyStruct) } };
             yield return new object[] { new Type[] { typeof(StructWithField) } };
             yield return new object[] { new Type[] { typeof(EmptyStruct), typeof(StructWithField) } };
@@ -121,19 +67,22 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Theory]
-        [MemberData(nameof(VariousStructsTestData))]
-        public void WriteVariousStructsToStream(Type[] types)
+        [MemberData(nameof(VariousInterfacesStructsTestData))]
+        public void WriteReadVariousTypesToFromFile(Type[] types)
         {
-            using var stream = new MemoryStream();
-            AssemblyTools.WriteAssemblyToStream(s_assemblyName, types, stream);
+            using (TempFile file = TempFile.Create())
+            {
+                Assembly assemblyFromDisk = WriteAndLoadAssembly(types, file.Path);
+                Module moduleFromDisk = assemblyFromDisk.Modules.First();
 
-            Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromStream(stream);
+                Assert.Equal(s_assemblyName.Name, assemblyFromDisk.GetName().Name);
+                Assert.Equal(s_assemblyName.Name, moduleFromDisk.ScopeName);
+                AssertMembers(types, moduleFromDisk.GetTypes());
+            }
+        }
 
-            Assert.Equal(s_assemblyName.Name, assemblyFromDisk.GetName().Name);
-
-            Module moduleFromDisk = assemblyFromDisk.Modules.First();
-            Type[] typesFromDisk = moduleFromDisk.GetTypes();
-
+        private static void AssertMembers(Type[] types, Type[] typesFromDisk)
+        {
             Assert.Equal(types.Length, typesFromDisk.Length);
 
             for (int i = 0; i < types.Length; i++)
@@ -141,7 +90,6 @@ namespace System.Reflection.Emit.Tests
                 Type sourceType = types[i];
                 Type typeFromDisk = typesFromDisk[i];
 
-                Assert.True(sourceType.IsValueType);
                 AssertTypeProperties(sourceType, typeFromDisk);
                 AssertMethods(sourceType.GetMethods(), typeFromDisk.GetMethods());
                 AssertFields(sourceType.GetFields(), typeFromDisk.GetFields());
@@ -161,6 +109,44 @@ namespace System.Reflection.Emit.Tests
                 Assert.Equal(sourceField.Attributes, fieldFromDisk.Attributes);
                 Assert.Equal(sourceField.FieldType.FullName, fieldFromDisk.FieldType.FullName);
             }
+        }
+
+        private static void AssertMethods(MethodInfo[] sourceMethods, MethodInfo[] methodsFromDisk)
+        {
+            Assert.Equal(sourceMethods.Length, methodsFromDisk.Length);
+
+            for (int j = 0; j < sourceMethods.Length; j++)
+            {
+                MethodInfo sourceMethod = sourceMethods[j];
+                MethodInfo methodFromDisk = methodsFromDisk[j];
+
+                Assert.Equal(sourceMethod.Name, methodFromDisk.Name);
+                Assert.Equal(sourceMethod.Attributes, methodFromDisk.Attributes);
+                Assert.Equal(sourceMethod.ReturnType.FullName, methodFromDisk.ReturnType.FullName);
+            }
+        }
+
+        private static void AssertTypeProperties(Type sourceType, Type typeFromDisk)
+        {
+            Assert.Equal(sourceType.Name, typeFromDisk.Name);
+            Assert.Equal(sourceType.Namespace, typeFromDisk.Namespace);
+            Assert.Equal(sourceType.Attributes, typeFromDisk.Attributes);
+            Assert.Equal(sourceType.IsInterface, typeFromDisk.IsInterface);
+            Assert.Equal(sourceType.IsValueType, typeFromDisk.IsValueType);
+        }
+
+        [Theory]
+        [MemberData(nameof(VariousInterfacesStructsTestData))]
+        public void WriteAndReadVariousTypesToFromStream(Type[] types)
+        {
+            using var stream = new MemoryStream();
+            AssemblyTools.WriteAssemblyToStream(s_assemblyName, types, stream);
+            Assembly assemblyFromDisk = AssemblyTools.LoadAssemblyFromStream(stream);
+            Module moduleFromDisk = assemblyFromDisk.Modules.First();
+
+            Assert.Equal(s_assemblyName.Name, assemblyFromDisk.GetName().Name);
+            Assert.Equal(s_assemblyName.Name, moduleFromDisk.ScopeName);
+            AssertMembers(types, moduleFromDisk.GetTypes());
         }
 
         [Fact]
