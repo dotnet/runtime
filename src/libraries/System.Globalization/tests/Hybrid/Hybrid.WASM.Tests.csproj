@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TestRuntime>true</TestRuntime>
+    <HybridGlobalization>true</HybridGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\System\Globalization\TextInfoTests.cs" />
+  </ItemGroup>
+</Project>
