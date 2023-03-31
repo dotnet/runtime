@@ -11373,7 +11373,7 @@ MONO_RESTORE_WARNING
 					break;
 				}
 			}
-			llvm_ovr_tag_t ovr_tag = INTRIN_vector128 | INTRIN_int8;
+			llvm_ovr_tag_t ovr_tag = (LLVMGetVectorSize (LLVMTypeOf (indexes_val)) == 8 ? INTRIN_vector64 : INTRIN_vector128) | INTRIN_int8;
 			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
 			break;
 		}
