@@ -94,7 +94,7 @@ jobs:
         displayName: Install native dependencies
 
     # Build core/libraries dependencies of test build
-    - script: $(Build.SourcesDirectory)/build$(scriptExt) $(liveRuntimeBuildParams) $(compilerArg)
+    - script: $(Build.SourcesDirectory)/build$(scriptExt) $(crossArg) $(liveRuntimeBuildParams) $(compilerArg)
       displayName: Build coreclr/libs components needed by test build
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:
