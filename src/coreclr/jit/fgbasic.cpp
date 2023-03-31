@@ -62,7 +62,6 @@ void Compiler::fgInit()
     fgBBOrder          = nullptr;
 #endif // DEBUG
 
-    fgBBNumMin        = compIsForInlining() ? impInlineRoot()->fgBBNumMax + 1 : 1;
     fgBBNumMax        = 0;
     fgEdgeCount       = 0;
     fgDomBBcount      = 0;
@@ -5440,7 +5439,7 @@ bool Compiler::fgRenumberBlocks()
 
     bool     renumbered  = false;
     bool     newMaxBBNum = false;
-    unsigned num         = fgBBNumMin;
+    unsigned num         = 1;
 
     for (BasicBlock* block : Blocks())
     {
@@ -5456,7 +5455,7 @@ bool Compiler::fgRenumberBlocks()
         if (block->bbNext == nullptr)
         {
             fgLastBB  = block;
-            fgBBcount = num - fgBBNumMin + 1;
+            fgBBcount = num;
             if (fgBBNumMax != num)
             {
                 fgBBNumMax  = num;

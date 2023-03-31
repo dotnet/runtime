@@ -2083,6 +2083,11 @@ namespace System.Tests
             yield return new object[] { s_strPacific + "\\Display" };
             yield return new object[] { s_strPacific + "\n" }; // no trailing newline
             yield return new object[] { new string('a', 100) }; // long string
+            yield return new object[] { "/dev/random" };
+            yield return new object[] { "Invalid Id" };
+            yield return new object[] { "Invalid/Invalid" };
+            yield return new object[] { $"./{s_strPacific}" };
+            yield return new object[] { $"{s_strPacific}/../{s_strPacific}" };
         }
 
         [Theory]

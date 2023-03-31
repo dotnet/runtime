@@ -3,7 +3,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -61,7 +60,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             public const string Get = nameof(Get);
             public const string GetChildren = nameof(GetChildren);
             public const string GetSection = nameof(GetSection);
+            public const string HasChildren = nameof(HasChildren);
             public const string HasValue = nameof(HasValue);
+            public const string IConfiguration = nameof(IConfiguration);
+            public const string IConfigurationSection = nameof(IConfigurationSection);
             public const string Length = nameof(Length);
             public const string Parse = nameof(Parse);
             public const string Resize = nameof(Resize);

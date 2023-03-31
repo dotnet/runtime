@@ -31,7 +31,7 @@ namespace Wasm.Build.Tests
         public const string DefaultTargetFramework = "net8.0";
         public const string DefaultTargetFrameworkForBlazor = "net8.0";
         private const string DefaultEnvironmentLocale = "en-US";
-        protected static readonly char s_unicodeChar = '煉';
+        protected static readonly char s_unicodeChar = '\u7149';
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;

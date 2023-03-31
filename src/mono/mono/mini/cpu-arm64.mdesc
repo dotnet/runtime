@@ -503,6 +503,7 @@ xcompare: dest:x src1:x src2:x len:4
 xcompare_fp: dest:x src1:x src2:x len:4
 negate: dest:x src1:x len:4
 ones_complement: dest:x src1:x len:4
+xextract: dest:i src1:x len:12
 xbinop_forceint: dest:x src1:x src2:x len:4
 xcast: dest:x src1:x len:4 clob:1
 

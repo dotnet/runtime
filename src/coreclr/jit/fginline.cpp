@@ -1305,8 +1305,9 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
     }
 #endif // DEBUG
 
-    BasicBlock* topBlock    = iciBlock;
-    BasicBlock* bottomBlock = nullptr;
+    BasicBlock* topBlock            = iciBlock;
+    BasicBlock* bottomBlock         = nullptr;
+    bool        insertInlineeBlocks = true;
 
     if (InlineeCompiler->fgBBcount == 1)
     {
@@ -1356,85 +1357,85 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
             // Append statements to null out gc ref locals, if necessary.
             fgInlineAppendStatements(pInlineInfo, iciBlock, stmtAfter);
-
-            goto _Done;
+            insertInlineeBlocks = false;
         }
     }
 
     //
     // ======= Inserting inlinee's basic blocks ===============
     //
-    bottomBlock = fgSplitBlockAfterStatement(topBlock, stmtAfter);
-
-    //
-    // Set the try and handler index and fix the jump types of inlinee's blocks.
-    //
-    for (BasicBlock* const block : InlineeCompiler->Blocks())
+    if (insertInlineeBlocks)
     {
-        noway_assert(!block->hasTryIndex());
-        noway_assert(!block->hasHndIndex());
-        block->copyEHRegion(iciBlock);
-        block->bbFlags |= iciBlock->bbFlags & BBF_BACKWARD_JUMP;
+        bottomBlock              = fgSplitBlockAfterStatement(topBlock, stmtAfter);
+        unsigned const baseBBNum = fgBBNumMax;
 
-        DebugInfo di = iciStmt->GetDebugInfo().GetRoot();
-        if (di.IsValid())
+        //
+        // Set the try and handler index and fix the jump types of inlinee's blocks.
+        //
+        for (BasicBlock* const block : InlineeCompiler->Blocks())
         {
-            block->bbCodeOffs    = di.GetLocation().GetOffset();
-            block->bbCodeOffsEnd = block->bbCodeOffs + 1; // TODO: is code size of 1 some magic number for inlining?
-        }
-        else
-        {
-            block->bbCodeOffs    = 0; // TODO: why not BAD_IL_OFFSET?
-            block->bbCodeOffsEnd = 0;
-            block->bbFlags |= BBF_INTERNAL;
-        }
+            noway_assert(!block->hasTryIndex());
+            noway_assert(!block->hasHndIndex());
+            block->copyEHRegion(iciBlock);
+            block->bbFlags |= iciBlock->bbFlags & BBF_BACKWARD_JUMP;
 
-        if (block->bbJumpKind == BBJ_RETURN)
-        {
-            noway_assert((block->bbFlags & BBF_HAS_JMP) == 0);
-            if (block->bbNext)
+            // Update block nums appropriately
+            //
+            block->bbNum += baseBBNum;
+            fgBBNumMax = max(block->bbNum, fgBBNumMax);
+
+            DebugInfo di = iciStmt->GetDebugInfo().GetRoot();
+            if (di.IsValid())
             {
-                JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n", block->bbNum,
-                        bottomBlock->bbNum);
-                block->bbJumpKind = BBJ_ALWAYS;
-                block->bbJumpDest = bottomBlock;
+                block->bbCodeOffs    = di.GetLocation().GetOffset();
+                block->bbCodeOffsEnd = block->bbCodeOffs + 1; // TODO: is code size of 1 some magic number for inlining?
             }
             else
             {
-                JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
-                block->bbJumpKind = BBJ_NONE;
+                block->bbCodeOffs    = 0; // TODO: why not BAD_IL_OFFSET?
+                block->bbCodeOffsEnd = 0;
+                block->bbFlags |= BBF_INTERNAL;
             }
 
-            fgAddRefPred(bottomBlock, block);
+            if (block->bbJumpKind == BBJ_RETURN)
+            {
+                noway_assert((block->bbFlags & BBF_HAS_JMP) == 0);
+                if (block->bbNext)
+                {
+                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_ALWAYS to bottomBlock " FMT_BB "\n",
+                            block->bbNum, bottomBlock->bbNum);
+                    block->bbJumpKind = BBJ_ALWAYS;
+                    block->bbJumpDest = bottomBlock;
+                }
+                else
+                {
+                    JITDUMP("\nConvert bbJumpKind of " FMT_BB " to BBJ_NONE\n", block->bbNum);
+                    block->bbJumpKind = BBJ_NONE;
+                }
+
+                fgAddRefPred(bottomBlock, block);
+            }
         }
+
+        // Inlinee's top block will have an artificial ref count. Remove.
+        assert(InlineeCompiler->fgFirstBB->bbRefs > 0);
+        InlineeCompiler->fgFirstBB->bbRefs--;
+
+        // Insert inlinee's blocks into inliner's block list.
+        topBlock->setNext(InlineeCompiler->fgFirstBB);
+        fgRemoveRefPred(bottomBlock, topBlock);
+        fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock);
+        InlineeCompiler->fgLastBB->setNext(bottomBlock);
+
+        //
+        // Add inlinee's block count to inliner's.
+        //
+        fgBBcount += InlineeCompiler->fgBBcount;
+
+        // Append statements to null out gc ref locals, if necessary.
+        fgInlineAppendStatements(pInlineInfo, bottomBlock, nullptr);
+        JITDUMPEXEC(fgDispBasicBlocks(InlineeCompiler->fgFirstBB, InlineeCompiler->fgLastBB, true));
     }
-
-    // Inlinee's top block will have an artificial ref count. Remove.
-    assert(InlineeCompiler->fgFirstBB->bbRefs > 0);
-    InlineeCompiler->fgFirstBB->bbRefs--;
-
-    // Insert inlinee's blocks into inliner's block list.
-    topBlock->setNext(InlineeCompiler->fgFirstBB);
-    fgRemoveRefPred(bottomBlock, topBlock);
-    fgAddRefPred(InlineeCompiler->fgFirstBB, topBlock);
-    InlineeCompiler->fgLastBB->setNext(bottomBlock);
-
-    //
-    // Add inlinee's block count to inliner's.
-    //
-    fgBBcount += InlineeCompiler->fgBBcount;
-
-    // Append statements to null out gc ref locals, if necessary.
-    fgInlineAppendStatements(pInlineInfo, bottomBlock, nullptr);
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        fgDispBasicBlocks(InlineeCompiler->fgFirstBB, InlineeCompiler->fgLastBB, true);
-    }
-#endif // DEBUG
-
-_Done:
 
     //
     // At this point, we have successully inserted inlinee's code.
