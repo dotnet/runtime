@@ -4582,6 +4582,7 @@ mini_init (const char *filename)
 	callbacks.init_class = init_class;
 	callbacks.get_trace = mono_get_trace;
 	callbacks.get_frame_info = mono_get_frame_info;
+	callbacks.add_delegate_trampolines = mono_add_delegate_trampolines;
 
 	mono_install_callbacks (&callbacks);
 

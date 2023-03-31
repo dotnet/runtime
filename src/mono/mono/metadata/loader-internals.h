@@ -61,11 +61,11 @@ typedef struct {
 	GHashTable *delegate_end_invoke_cache;
 	GHashTable *runtime_invoke_signature_cache;
 	GHashTable *runtime_invoke_sig_cache;
+	GHashTable *delegate_abstract_invoke_cache;
 
 	/*
 	 * indexed by SignaturePointerPair
 	 */
-	GHashTable *delegate_abstract_invoke_cache;
 	GHashTable *delegate_bound_static_invoke_cache;
 
 	/*

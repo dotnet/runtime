@@ -2194,17 +2194,16 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 
 		cache_ptr = &mono_method_get_wrapper_cache (method)->delegate_abstract_invoke_cache;
 
-		/* We need to cache the signature+method pair */
+		/* We need to cache the signature */
 		mono_marshal_lock ();
-		if (!*cache_ptr)
-			*cache_ptr = g_hash_table_new_full (signature_pointer_pair_hash, (GEqualFunc)signature_pointer_pair_equal, (GDestroyNotify)free_signature_pointer_pair, NULL);
-		cache = *cache_ptr;
-		key.sig = invoke_sig;
-		key.pointer = target_method;
-		res = (MonoMethod *)g_hash_table_lookup (cache, &key);
+		cache = get_cache (cache_ptr,
+						   (GHashFunc)mono_signature_hash,
+						   (GCompareFunc)mono_metadata_signature_equal);
+		res = (MonoMethod *)g_hash_table_lookup (cache, invoke_sig);
 		mono_marshal_unlock ();
 		if (res)
 			return res;
+		cache_key = invoke_sig;
 	} else {
 		// Inflated methods should not be in this cache because it's not stored on the imageset.
 		g_assert (!method->is_inflated);
@@ -2257,13 +2256,6 @@ mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt
 
 		def = mono_mb_create_and_cache_full (cache, cache_key, mb, sig, sig->param_count + 16, info, NULL);
 		res = cache_generic_delegate_wrapper (cache, orig_method, def, ctx);
-	} else if (callvirt) {
-		new_key = g_new0 (SignaturePointerPair, 1);
-		*new_key = key;
-
-		res = mono_mb_create_and_cache_full (cache, new_key, mb, sig, sig->param_count + 16, info, &found);
-		if (found)
-			g_free (new_key);
 	} else {
 		res = mono_mb_create_and_cache_full (cache, cache_key, mb, sig, sig->param_count + 16, info, NULL);
 	}
@@ -5493,6 +5485,7 @@ mono_get_addr_compiled_method (MonoObject *object, MonoDelegate *del)
 	ERROR_DECL (error);
 	MonoMethod *res, *method = del->method;
 	gpointer addr;
+	gboolean need_unbox = FALSE;
 
 	if (object == NULL) {
 		mono_error_set_null_reference (error);
@@ -5508,6 +5501,9 @@ mono_get_addr_compiled_method (MonoObject *object, MonoDelegate *del)
 		mono_error_set_pending_exception (error);
 		return NULL;
 	}
+
+	need_unbox = m_class_is_valuetype (res->klass) && !m_class_is_valuetype (method->klass);
+	addr = mono_get_runtime_callbacks ()->add_delegate_trampolines (res, addr, need_unbox);
 
 	return addr;
 }
@@ -6287,7 +6283,7 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 	if (image->wrapper_caches.runtime_invoke_method_cache)
 		clear_runtime_invoke_method_cache (image->wrapper_caches.runtime_invoke_method_cache, method);
 	if (image->wrapper_caches.delegate_abstract_invoke_cache)
-		g_hash_table_foreach_remove (image->wrapper_caches.delegate_abstract_invoke_cache, signature_pointer_pair_matches_pointer, method);
+		g_hash_table_remove (image->wrapper_caches.delegate_abstract_invoke_cache, mono_method_signature_internal (method));
 	// FIXME: Need to clear the caches in other images as well
 	if (image->wrapper_caches.delegate_bound_static_invoke_cache)
 		g_hash_table_remove (image->wrapper_caches.delegate_bound_static_invoke_cache, mono_method_signature_internal (method));
