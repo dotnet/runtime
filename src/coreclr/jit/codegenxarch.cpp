@@ -2843,16 +2843,16 @@ void CodeGen::genLclHeap(GenTree* tree)
             goto ALLOC_DONE;
         }
 
-        if (!size->IsCnsIntOrI() || !size->isContained())
+        if (size->IsCnsIntOrI() && size->isContained())
+        {
+            stackAdjustment = 0;
+            locAllocStackOffset = (target_size_t)compiler->lvaOutgoingArgSpaceSize;
+        }
+        else
         {
             inst_RV_IV(INS_add, REG_SPBASE, compiler->lvaOutgoingArgSpaceSize, EA_PTRSIZE);
             stackAdjustment += (target_size_t)compiler->lvaOutgoingArgSpaceSize;
             locAllocStackOffset = stackAdjustment;
-        }
-        else
-        {
-            stackAdjustment     = 0;
-            locAllocStackOffset = (target_size_t)compiler->lvaOutgoingArgSpaceSize;
         }
     }
 #endif
