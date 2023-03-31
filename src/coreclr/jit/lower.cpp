@@ -7987,12 +7987,19 @@ void Lowering::LowerLclHeap(GenTree* node)
     assert(node->OperIs(GT_LCLHEAP));
 
 #if defined(TARGET_XARCH)
-    if (node->gtGetOp1()->IsCnsIntOrI()
+    if (node->gtGetOp1()->IsCnsIntOrI())
     {
-        node->gtGetOp1()->AsIntCon()->SetIconValue(ALIGN_UP(node->gtGetOp1()->AsIntCon()->IconValue(), STACK_ALIGN));
+        GenTreeIntCon* sizeNode = node->gtGetOp1()->AsIntCon();
+        assert((unsigned)sizeNode->IconValue() <= UINT_MAX);
+        sizeNode->SetIconValue(ALIGN_UP(sizeNode->IconValue(), STACK_ALIGN));
         if (comp->info.compInitMem)
         {
-            ssize_t  size = node->gtGetOp1()->AsIntCon()->IconValue();
+            ssize_t size = node->gtGetOp1()->AsIntCon()->IconValue();
+            if ((unsigned)size > UINT_MAX)
+            {
+                BADCODE("Localloc size is negative or too big")
+            }
+
             LIR::Use use;
             if (BlockRange().TryGetUse(node, &use))
             {
@@ -8001,7 +8008,7 @@ void Lowering::LowerLclHeap(GenTree* node)
                 {
                     GenTree* nullNode = comp->gtNewIconNode(0, node->TypeGet());
                     use.ReplaceWith(nullNode);
-                    BlockRange().Remove(node->gtGetOp1());
+                    BlockRange().Remove(sizeNode);
                     BlockRange().Remove(node);
                     BlockRange().InsertAfter(node, nullNode);
                     return;
@@ -8025,7 +8032,7 @@ void Lowering::LowerLclHeap(GenTree* node)
             else
             {
                 // LCLHEAP is unused or empty, we can remove it (assuming we can ignore potential SO side-effect)
-                BlockRange().Remove(node->gtGetOp1());
+                BlockRange().Remove(sizeNode);
                 BlockRange().Remove(node);
             }
         }
