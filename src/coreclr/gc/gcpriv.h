@@ -889,6 +889,7 @@ public:
                          size_t* num_total_fl_items_rethread, 
                          gc_heap* current_heap,
                          min_fl_list_info* min_fl_list,
+                         size_t* free_list_space_per_heap,
                          int num_heap);
     void merge_items (gc_heap* current_heap, int to_num_heaps, int from_num_heaps);
 #endif //MULTIPLE_HEAPS && USE_REGIONS
@@ -2289,6 +2290,10 @@ private:
     PER_HEAP_ISOLATED_METHOD void destroy_semi_shared();
     PER_HEAP_METHOD void repair_allocation_contexts (BOOL repair_p);
     PER_HEAP_METHOD void fix_allocation_contexts (BOOL for_gc_p);
+#ifdef MULTIPLE_HEAPS
+    PER_HEAP_ISOLATED_METHOD void fix_allocation_contexts_heaps ();
+    PER_HEAP_ISOLATED_METHOD void fix_allocation_context_heaps (gc_alloc_context* acontext, void*);
+#endif //MULTIPLE_HEAPS
     PER_HEAP_METHOD void fix_youngest_allocation_area();
     PER_HEAP_METHOD void fix_allocation_context (alloc_context* acontext, BOOL for_gc_p,
                                  BOOL record_ac_p);
@@ -2510,7 +2515,7 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void equalize_promoted_bytes(int condemned_gen_number);
 
-    PER_HEAP_ISOLATED_METHOD void redistribute_regions(int new_n_heaps);
+    PER_HEAP_ISOLATED_METHOD bool redistribute_regions(int new_n_heaps);
 #endif //USE_REGIONS
 
 #if !defined(USE_REGIONS) || defined(_DEBUG)
@@ -3360,6 +3365,7 @@ private:
 #ifdef USE_REGIONS
     PER_HEAP_FIELD_SINGLE_GC min_fl_list_info* min_fl_list;
     PER_HEAP_FIELD_SINGLE_GC size_t num_fl_items_rethreaded_stage2;
+    PER_HEAP_FIELD_SINGLE_GC size_t* free_list_space_per_heap;
 #else //USE_REGIONS
     PER_HEAP_FIELD_SINGLE_GC heap_segment* new_heap_segment;
 #endif //USE_REGIONS
@@ -4567,6 +4573,10 @@ public:
     void GcScanRoots (promote_func* fn, int hn, ScanContext *pSC);
     void UpdatePromotedGenerations (int gen, BOOL gen_0_empty_p);
     size_t GetPromotedCount();
+
+    // Methods used to move finalization data between heaps
+    bool MergeFinalizationData (CFinalize* other_fq);
+    bool SplitFinalizationData (CFinalize* other_fq);
 
     //Methods used by the shutdown code to call every finalizer
     size_t GetNumberFinalizableObjects();
