@@ -68,9 +68,10 @@ namespace System.Reflection.Emit
             call_conv = callingConvention;
             if (parameterTypes != null)
             {
-                for (int i = 0; i < parameterTypes.Length; ++i)
-                    if (parameterTypes[i] == null)
-                        throw new ArgumentException("Elements of the parameterTypes array cannot be null", nameof(parameterTypes));
+                foreach (Type t in parameterTypes)
+                {
+                    ArgumentNullException.ThrowIfNull(t, nameof(parameterTypes));
+                }
 
                 this.parameters = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, this.parameters, parameterTypes.Length);

@@ -950,7 +950,7 @@ namespace System.Buffers
         {
             uint mask = TNegator.ExtractMask(result);
             int offsetInVector = BitOperations.TrailingZeroCount(mask);
-            return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(T));
+            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -965,7 +965,7 @@ namespace System.Buffers
                 current0 = ref current1;
                 offsetInVector -= Vector128<short>.Count;
             }
-            return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(T));
+            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -974,7 +974,7 @@ namespace System.Buffers
         {
             uint mask = TNegator.ExtractMask(result) & 0xFFFF;
             int offsetInVector = 31 - BitOperations.LeadingZeroCount(mask);
-            return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(T));
+            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -989,7 +989,7 @@ namespace System.Buffers
             }
 
             // We matched within the second vector
-            return offsetInVector - Vector128<short>.Count + (int)(Unsafe.ByteOffset(ref searchSpace, ref secondVector) / sizeof(T));
+            return offsetInVector - Vector128<short>.Count + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref secondVector) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1004,7 +1004,7 @@ namespace System.Buffers
             uint mask = TNegator.ExtractMask(result);
 
             int offsetInVector = BitOperations.TrailingZeroCount(mask);
-            return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(T));
+            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1025,7 +1025,7 @@ namespace System.Buffers
                 current0 = ref current1;
                 offsetInVector -= Vector256<short>.Count;
             }
-            return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(T));
+            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1040,7 +1040,7 @@ namespace System.Buffers
             uint mask = TNegator.ExtractMask(result);
 
             int offsetInVector = 31 - BitOperations.LeadingZeroCount(mask);
-            return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(T));
+            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1061,7 +1061,7 @@ namespace System.Buffers
             }
 
             // We matched within the second vector
-            return offsetInVector - Vector256<short>.Count + (int)(Unsafe.ByteOffset(ref searchSpace, ref secondVector) / sizeof(T));
+            return offsetInVector - Vector256<short>.Count + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref secondVector) / (nuint)sizeof(T));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

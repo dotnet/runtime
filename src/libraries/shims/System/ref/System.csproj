@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Primitives\ref\Microsoft.Win32.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.SystemEvents\ref\Microsoft.Win32.SystemEvents.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\ref\System.CodeDom.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections\ref\System.Collections.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Concurrent\ref\System.Collections.Concurrent.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\ref\System.Collections.Specialized.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel\ref\System.ComponentModel.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.EventBasedAsync\ref\System.ComponentModel.EventBasedAsync.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.Primitives\ref\System.ComponentModel.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.TypeConverter\ref\System.ComponentModel.TypeConverter.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Configuration.ConfigurationManager\ref\System.Configuration.ConfigurationManager.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.EventLog\ref\System.Diagnostics.EventLog.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.FileVersionInfo\ref\System.Diagnostics.FileVersionInfo.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.PerformanceCounter\ref\System.Diagnostics.PerformanceCounter.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.Process\ref\System.Diagnostics.Process.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.StackTrace\ref\System.Diagnostics.StackTrace.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.TextWriterTraceListener\ref\System.Diagnostics.TextWriterTraceListener.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Diagnostics.TraceSource\ref\System.Diagnostics.TraceSource.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Compression\ref\System.IO.Compression.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.FileSystem.Watcher\ref\System.IO.FileSystem.Watcher.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.IO.Ports\ref\System.IO.Ports.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.HttpListener\ref\System.Net.HttpListener.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Mail\ref\System.Net.Mail.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.NameResolution\ref\System.Net.NameResolution.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.NetworkInformation\ref\System.Net.NetworkInformation.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Ping\ref\System.Net.Ping.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\ref\System.Net.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Requests\ref\System.Net.Requests.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Security\ref\System.Net.Security.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Sockets\ref\System.Net.Sockets.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebClient\ref\System.Net.WebClient.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebHeaderCollection\ref\System.Net.WebHeaderCollection.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebProxy\ref\System.Net.WebProxy.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebSockets\ref\System.Net.WebSockets.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebSockets.Client\ref\System.Net.WebSockets.Client.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ObjectModel\ref\System.ObjectModel.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\ref\System.Security.Cryptography.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\ref\System.Security.Permissions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\ref\System.Text.RegularExpressions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\ref\System.Threading.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.AccessControl\ref\System.Threading.AccessControl.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread\ref\System.Threading.Thread.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Windows.Extensions\ref\System.Windows.Extensions.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -13,6 +13,7 @@ namespace IntelHardwareIntrinsicTest._Sse41
 {
     public partial class Program
     {
+	[Fact]
         public static unsafe void Multiply()
         {
             int testResult = Pass;

@@ -363,13 +363,16 @@ void Compiler::fgComputeEnterBlocksSet()
     assert(fgFirstBB->bbNum == 1);
 
     /* Also 'or' in the handler basic blocks */
-    for (EHblkDsc* const HBtab : EHClauses(this))
+    if (!compIsForInlining())
     {
-        if (HBtab->HasFilter())
+        for (EHblkDsc* const HBtab : EHClauses(this))
         {
-            BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdFilter->bbNum);
+            if (HBtab->HasFilter())
+            {
+                BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdFilter->bbNum);
+            }
+            BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdHndBeg->bbNum);
         }
-        BlockSetOps::AddElemD(this, fgEnterBlks, HBtab->ebdHndBeg->bbNum);
     }
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
@@ -2221,34 +2224,42 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         }
     }
 
-    // If either block or bNext has a profile weight
+    // If bNext is BBJ_THROW, block will become run rarely.
+    //
+    // Otherwise, if either block or bNext has a profile weight
     // or if both block and bNext have non-zero weights
     // then we will use the max weight for the block.
     //
-    const bool hasProfileWeight = block->hasProfileWeight() || bNext->hasProfileWeight();
-    const bool hasNonZeroWeight = (block->bbWeight > BB_ZERO_WEIGHT) || (bNext->bbWeight > BB_ZERO_WEIGHT);
-
-    if (hasProfileWeight || hasNonZeroWeight)
+    if (bNext->bbJumpKind == BBJ_THROW)
     {
-        weight_t const newWeight = max(block->bbWeight, bNext->bbWeight);
-
-        if (hasProfileWeight)
-        {
-            block->setBBProfileWeight(newWeight);
-        }
-        else
-        {
-            assert(newWeight != BB_ZERO_WEIGHT);
-            block->bbWeight = newWeight;
-            block->bbFlags &= ~BBF_RUN_RARELY;
-        }
+        block->bbSetRunRarely();
     }
-    // otherwise if either block has a zero weight we select the zero weight
     else
     {
-        noway_assert((block->bbWeight == BB_ZERO_WEIGHT) || (bNext->bbWeight == BB_ZERO_WEIGHT));
-        block->bbWeight = BB_ZERO_WEIGHT;
-        block->bbFlags |= BBF_RUN_RARELY; // Set the RarelyRun flag
+        const bool hasProfileWeight = block->hasProfileWeight() || bNext->hasProfileWeight();
+        const bool hasNonZeroWeight = (block->bbWeight > BB_ZERO_WEIGHT) || (bNext->bbWeight > BB_ZERO_WEIGHT);
+
+        if (hasProfileWeight || hasNonZeroWeight)
+        {
+            weight_t const newWeight = max(block->bbWeight, bNext->bbWeight);
+
+            if (hasProfileWeight)
+            {
+                block->setBBProfileWeight(newWeight);
+            }
+            else
+            {
+                assert(newWeight != BB_ZERO_WEIGHT);
+                block->bbWeight = newWeight;
+                block->bbFlags &= ~BBF_RUN_RARELY;
+            }
+        }
+        // otherwise if either block has a zero weight we select the zero weight
+        else
+        {
+            noway_assert((block->bbWeight == BB_ZERO_WEIGHT) || (bNext->bbWeight == BB_ZERO_WEIGHT));
+            block->bbSetRunRarely();
+        }
     }
 
     /* set the right links */
@@ -2387,6 +2398,15 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         default:
             noway_assert(!"Unexpected bbJumpKind");
             break;
+    }
+
+    if ((bNext->bbJumpDest != nullptr) && bNext->bbJumpDest->isLoopAlign())
+    {
+        // `bNext` has a backward target to some block which mean bNext is part of a loop.
+        // `block` into which `bNext` is compacted should be updated with its loop number
+        JITDUMP("Updating loop number for " FMT_BB " from " FMT_LP " to " FMT_LP ".\n", block->bbNum,
+                block->bbNatLoopNum, bNext->bbNatLoopNum);
+        block->bbNatLoopNum = bNext->bbNatLoopNum;
     }
 
     if (bNext->isLoopAlign())

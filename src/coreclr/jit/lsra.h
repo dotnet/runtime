@@ -33,6 +33,7 @@ const unsigned int RegisterTypeCount    = 2;
 * Register types
 *****************************************************************************/
 typedef var_types RegisterType;
+
 #define IntRegisterType TYP_INT
 #define FloatRegisterType TYP_FLOAT
 #define MaskRegisterType TYP_MASK
@@ -46,7 +47,21 @@ typedef var_types RegisterType;
 template <class T>
 RegisterType regType(T type)
 {
-    return varTypeUsesFloatReg(TypeGet(type)) ? FloatRegisterType : IntRegisterType;
+    if (varTypeUsesIntReg(type))
+    {
+        return IntRegisterType;
+    }
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+    else if (varTypeUsesMaskReg(type))
+    {
+        return MaskRegisterType;
+    }
+#endif // TARGET_XARCH && FEATURE_SIMD
+    else
+    {
+        assert(varTypeUsesFloatReg(type));
+        return FloatRegisterType;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -368,8 +383,8 @@ enum LsraStat
 #include "lsra_stats.h"
 #undef LSRA_STAT_DEF
 #define REG_SEL_DEF(enum_name, value, short_str, orderSeqId) STAT_##enum_name,
+#define BUSY_REG_SEL_DEF(enum_name, value, short_str, orderSeqId) REG_SEL_DEF(enum_name, value, short_str, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
     COUNT
 };
 #endif // TRACK_LSRA_STATS
@@ -395,8 +410,8 @@ struct LsraBlockInfo
 enum RegisterScore
 {
 #define REG_SEL_DEF(enum_name, value, short_str, orderSeqId) enum_name = value,
+#define BUSY_REG_SEL_DEF(enum_name, value, short_str, orderSeqId) REG_SEL_DEF(enum_name, value, short_str, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
     NONE = 0
 };
 
@@ -1313,8 +1328,8 @@ private:
         FORCEINLINE void reset(Interval* interval, RefPosition* refPosition);
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId) FORCEINLINE void try_##stat();
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
     };
 
     RegisterSelection* regSelector;
@@ -1613,6 +1628,12 @@ private:
 #endif
     PhasedVar<regMaskTP>* availableRegs[TYP_COUNT];
 
+#if defined(TARGET_XARCH)
+#define allAvailableRegs (availableIntRegs | availableFloatRegs | availableMaskRegs)
+#else
+#define allAvailableRegs (availableIntRegs | availableFloatRegs)
+#endif
+
     // Register mask of argument registers currently occupied because we saw a
     // PUTARG_REG node. Tracked between the PUTARG_REG and its corresponding
     // CALL node and is used to avoid preferring these registers for locals
@@ -1694,7 +1715,7 @@ private:
 
     void resetAvailableRegs()
     {
-        m_AvailableRegs          = (availableIntRegs | availableFloatRegs);
+        m_AvailableRegs          = allAvailableRegs;
         m_RegistersWithConstants = RBM_NONE;
     }
 
@@ -1831,12 +1852,15 @@ private:
     RefPosition* tgtPrefUse  = nullptr;
     RefPosition* tgtPrefUse2 = nullptr;
 
+public:
     // The following keep track of information about internal (temporary register) intervals
     // during the building of a single node.
     static const int MaxInternalCount = 5;
-    RefPosition*     internalDefs[MaxInternalCount];
-    int              internalCount = 0;
-    bool             setInternalRegsDelayFree;
+
+private:
+    RefPosition* internalDefs[MaxInternalCount];
+    int          internalCount = 0;
+    bool         setInternalRegsDelayFree;
 
     // When a RefTypeUse is marked as 'delayRegFree', we also want to mark the RefTypeDef
     // in the next Location as 'hasInterferingUses'. This is accomplished by setting this

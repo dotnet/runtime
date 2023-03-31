@@ -28,31 +28,31 @@ namespace System.Collections.Frozen.Tests
 
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
 
-        protected override ISet<T> GenericISetFactory(int count) =>
-            GenericISetFactory(count, optimizeForReading: true);
-
         protected virtual bool TestLargeSizes => true;
 
-        protected virtual ISet<T> GenericISetFactory(int count, bool optimizeForReading)
+        protected virtual bool OptimizeForReading => true;
+
+        public virtual T GetEqualValue(T value) => value;
+
+        protected override ISet<T> GenericISetFactory(int count)
         {
             var s = new HashSet<T>();
             for (int i = 0; i < count; i++)
             {
                 s.Add(CreateT(i));
             }
-            return optimizeForReading ?
+            return OptimizeForReading ?
                 s.ToFrozenSet(GetIEqualityComparer(), true) :
                 s.ToFrozenSet(GetIEqualityComparer());
         }
 
         [Theory]
-        [InlineData(100_000, false)]
-        [InlineData(100_000, true)]
-        public void CreateVeryLargeSet_Success(int largeCount, bool optimizeForReading)
+        [InlineData(100_000)]
+        public void CreateVeryLargeSet_Success(int largeCount)
         {
             if (TestLargeSizes)
             {
-                GenericISetFactory(largeCount, optimizeForReading);
+                GenericISetFactory(largeCount);
             }
         }
 
@@ -84,26 +84,22 @@ namespace System.Collections.Frozen.Tests
                 Assert.Same(FrozenSet<T>.Empty, Enumerable.Empty<T>().ToFrozenSet(comparer));
                 Assert.Same(FrozenSet<T>.Empty, Array.Empty<T>().ToFrozenSet(comparer));
                 Assert.Same(FrozenSet<T>.Empty, new List<T>().ToFrozenSet(comparer));
-                foreach (bool optimizeForReading in new[] { false, true })
-                {
-                    Assert.Same(FrozenSet<T>.Empty, new List<T>().ToFrozenSet(comparer, optimizeForReading));
-                    Assert.Same(FrozenSet<T>.Empty, Enumerable.Empty<T>().ToFrozenSet(comparer, optimizeForReading));
-                    Assert.Same(FrozenSet<T>.Empty, Array.Empty<T>().ToFrozenSet(comparer, optimizeForReading));
-                    Assert.Same(FrozenSet<T>.Empty, new List<T>().ToFrozenSet(comparer, optimizeForReading));
-                }
+
+                Assert.Same(FrozenSet<T>.Empty, new List<T>().ToFrozenSet(comparer, OptimizeForReading));
+                Assert.Same(FrozenSet<T>.Empty, Enumerable.Empty<T>().ToFrozenSet(comparer, OptimizeForReading));
+                Assert.Same(FrozenSet<T>.Empty, Array.Empty<T>().ToFrozenSet(comparer, OptimizeForReading));
+                Assert.Same(FrozenSet<T>.Empty, new List<T>().ToFrozenSet(comparer, OptimizeForReading));
             }
 
             Assert.NotSame(FrozenSet<T>.Empty, new List<T>().ToFrozenSet(NonDefaultEqualityComparer<T>.Instance));
             Assert.NotSame(FrozenSet<T>.Empty, Enumerable.Empty<T>().ToFrozenSet(NonDefaultEqualityComparer<T>.Instance));
             Assert.NotSame(FrozenSet<T>.Empty, Array.Empty<T>().ToFrozenSet(NonDefaultEqualityComparer<T>.Instance));
             Assert.NotSame(FrozenSet<T>.Empty, new List<T>().ToFrozenSet(NonDefaultEqualityComparer<T>.Instance));
-            foreach (bool optimizeForReading in new[] { false, true })
-            {
-                Assert.NotSame(FrozenSet<T>.Empty, new List<T>().ToFrozenSet(NonDefaultEqualityComparer<T>.Instance, optimizeForReading));
-                Assert.NotSame(FrozenSet<T>.Empty, Enumerable.Empty<T>().ToFrozenSet(NonDefaultEqualityComparer<T>.Instance, optimizeForReading));
-                Assert.NotSame(FrozenSet<T>.Empty, Array.Empty<T>().ToFrozenSet(NonDefaultEqualityComparer<T>.Instance, optimizeForReading));
-                Assert.NotSame(FrozenSet<T>.Empty, new List<T>().ToFrozenSet(NonDefaultEqualityComparer<T>.Instance, optimizeForReading));
-            }
+
+            Assert.NotSame(FrozenSet<T>.Empty, new List<T>().ToFrozenSet(NonDefaultEqualityComparer<T>.Instance, OptimizeForReading));
+            Assert.NotSame(FrozenSet<T>.Empty, Enumerable.Empty<T>().ToFrozenSet(NonDefaultEqualityComparer<T>.Instance, OptimizeForReading));
+            Assert.NotSame(FrozenSet<T>.Empty, Array.Empty<T>().ToFrozenSet(NonDefaultEqualityComparer<T>.Instance, OptimizeForReading));
+            Assert.NotSame(FrozenSet<T>.Empty, new List<T>().ToFrozenSet(NonDefaultEqualityComparer<T>.Instance, OptimizeForReading));
         }
 
         [Fact]
@@ -162,14 +158,12 @@ namespace System.Collections.Frozen.Tests
             Assert.NotSame(frozen, frozen.ToFrozenSet(NonDefaultEqualityComparer<T>.Instance));
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void ToFrozenSet_BoolArg_UsesDefaultComparer(bool optimizeForReading)
+        [Fact]
+        public void ToFrozenSet_BoolArg_UsesDefaultComparer()
         {
             HashSet<T> source = new HashSet<T>(Enumerable.Range(0, 4).Select(CreateT));
 
-            FrozenSet<T> frozen = source.ToFrozenSet(optimizeForReading);
+            FrozenSet<T> frozen = source.ToFrozenSet(OptimizeForReading);
 
             Assert.Same(EqualityComparer<T>.Default, frozen.Comparer);
         }
@@ -178,17 +172,16 @@ namespace System.Collections.Frozen.Tests
             from size in new[] { 0, 1, 2, 10, 999, 1024 }
             from comparer in new IEqualityComparer<T>[] { null, EqualityComparer<T>.Default, NonDefaultEqualityComparer<T>.Instance }
             from specifySameComparer in new[] { false, true }
-            from optimizeForReading in new[] { false, true }
-            select new object[] { size, comparer, specifySameComparer, optimizeForReading };
+            select new object[] { size, comparer, specifySameComparer };
 
         [Theory]
         [MemberData(nameof(LookupItems_AllItemsFoundAsExpected_MemberData))]
-        public void LookupItems_AllItemsFoundAsExpected(int size, IEqualityComparer<T> comparer, bool specifySameComparer, bool optimizeForReading)
+        public void LookupItems_AllItemsFoundAsExpected(int size, IEqualityComparer<T> comparer, bool specifySameComparer)
         {
             HashSet<T> original = new HashSet<T>(Enumerable.Range(0, size).Select(CreateT), comparer);
             T[] originalItems = original.ToArray();
 
-            FrozenSet<T> frozen = (specifySameComparer, optimizeForReading) switch
+            FrozenSet<T> frozen = (specifySameComparer, OptimizeForReading) switch
             {
                 (false, false) => original.ToFrozenSet(),
                 (false, true) => original.ToFrozenSet(null, true),
@@ -221,10 +214,31 @@ namespace System.Collections.Frozen.Tests
         }
 
         [Theory]
-        [InlineData(10, false)]
-        [InlineData(10, true)]
-        [InlineData(5000, false)]
-        public void ComparingWithOtherSets(int size, bool optimizeForReading)
+        [InlineData(false)]
+        [InlineData(true)]
+        public void EqualButPossiblyDifferentValuesFound(bool fromSet)
+        {
+            HashSet<T> original = new HashSet<T>(Enumerable.Range(0, 50).Select(CreateT), GetIEqualityComparer());
+
+            FrozenSet<T> frozen = fromSet ?
+                original.ToFrozenSet(GetIEqualityComparer()) :
+                original.Select(v => v).ToFrozenSet(GetIEqualityComparer());
+
+            foreach (T key in original)
+            {
+                Assert.True(original.Contains(key));
+                Assert.True(frozen.Contains(key));
+
+                T equalKey = GetEqualValue(key);
+                Assert.True(original.Contains(equalKey));
+                Assert.True(frozen.Contains(equalKey));
+            }
+        }
+
+        [Theory]
+        [InlineData(10)]
+        [InlineData(5000)]
+        public void ComparingWithOtherSets(int size)
         {
             if (size > 10 && !TestLargeSizes)
             {
@@ -241,7 +255,7 @@ namespace System.Collections.Frozen.Tests
                     source.Add(CreateT(i));
                 }
 
-                FrozenSet<T> frozen = optimizeForReading ?
+                FrozenSet<T> frozen = OptimizeForReading ?
                     source.ToFrozenSet(source.Comparer, true) :
                     source.ToFrozenSet(source.Comparer);
 
@@ -379,9 +393,16 @@ namespace System.Collections.Frozen.Tests
         protected override IEqualityComparer<string> GetIEqualityComparer() => StringComparer.Ordinal;
     }
 
+    public class FrozenSet_Generic_Tests_string_OrdinalIgnoreCase_ReadingUnoptimized : FrozenSet_Generic_Tests_string_OrdinalIgnoreCase
+    {
+        protected override bool OptimizeForReading => false;
+    }
+
     public class FrozenSet_Generic_Tests_string_OrdinalIgnoreCase : FrozenSet_Generic_Tests_string
     {
         protected override IEqualityComparer<string> GetIEqualityComparer() => StringComparer.OrdinalIgnoreCase;
+
+        public override string GetEqualValue(string value) => value.ToLowerInvariant();
 
         [Fact]
         public void TryGetValue_FindsExpectedResult()
@@ -412,6 +433,11 @@ namespace System.Collections.Frozen.Tests
             ulong lo = unchecked((ulong)rand.Next());
             return (hi << 32) | lo;
         }
+    }
+
+    public class FrozenSet_Generic_Tests_int_ReadingUnoptimized : FrozenSet_Generic_Tests_int
+    {
+        protected override bool OptimizeForReading => false;
     }
 
     public class FrozenSet_Generic_Tests_int : FrozenSet_Generic_Tests<int>

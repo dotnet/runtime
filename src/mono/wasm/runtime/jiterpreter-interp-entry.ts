@@ -13,8 +13,7 @@ import {
     WasmValtype, WasmBuilder, addWasmFunctionPointer,
     _now, elapsedTimes, counters, getRawCwrap, importDef,
     getWasmFunctionTable, recordFailure, getOptions,
-    JiterpreterOptions, shortNameBase,
-    getMemberOffset, JiterpMember
+    JiterpreterOptions, getMemberOffset, JiterpMember
 } from "./jiterpreter-support";
 
 // Controls miscellaneous diagnostic output.
@@ -277,13 +276,12 @@ function flush_wasm_entry_trampoline_jit_queue () {
 
         // Import section
         const trampImports = getTrampImports();
-        const compress = true;
+        builder.compressImportNames = true;
 
         // Emit function imports
         for (let i = 0; i < trampImports.length; i++) {
             mono_assert(trampImports[i], () => `trace #${i} missing`);
-            const wasmName = compress ? i.toString(shortNameBase) : undefined;
-            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], true, wasmName);
+            builder.defineImportedFunction("i", trampImports[i][0], trampImports[i][1], true, false, trampImports[i][2]);
         }
 
         builder._generateImportSection();
@@ -338,16 +336,8 @@ function flush_wasm_entry_trampoline_jit_queue () {
         counters.bytesGenerated += buffer.length;
         const traceModule = new WebAssembly.Module(buffer);
 
-        const imports : any = {
-        };
-        // Place our function imports into the import dictionary
-        for (let i = 0; i < trampImports.length; i++) {
-            const wasmName = compress ? i.toString(36) : trampImports[i][0];
-            imports[wasmName] = trampImports[i][2];
-        }
-
         const traceInstance = new WebAssembly.Instance(traceModule, {
-            i: imports,
+            i: builder.getImportedFunctionTable(),
             c: <any>builder.getConstants(),
             m: { h: (<any>Module).asm.memory },
         });

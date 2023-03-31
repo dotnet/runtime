@@ -2331,8 +2331,6 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
 	SGEN_ASSERT (0, sgen_workers_all_done (), "Can't have workers working after joining");
 
 	if (objects_pinned) {
-		g_assert (!sgen_concurrent_collection_in_progress);
-
 		/*
 		 * This is slow, but we just OOM'd.
 		 *

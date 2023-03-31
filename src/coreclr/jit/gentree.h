@@ -1083,7 +1083,7 @@ public:
 
     bool IsNotGcDef() const
     {
-        return IsIntegralConst(0) || IsLocalAddrExpr();
+        return IsIntegralConst(0) || OperIsLocalAddr();
     }
 
     // LIR flags
@@ -1978,14 +1978,6 @@ public:
                       bool*                 pIsEntire = nullptr,
                       ssize_t*              pOffset   = nullptr,
                       unsigned*             pSize     = nullptr);
-
-    bool DefinesLocalAddr(GenTreeLclVarCommon** pLclVarTree, ssize_t* pOffset = nullptr);
-
-    const GenTreeLclVarCommon* IsLocalAddrExpr() const;
-    GenTreeLclVarCommon*       IsLocalAddrExpr()
-    {
-        return const_cast<GenTreeLclVarCommon*>(static_cast<const GenTree*>(this)->IsLocalAddrExpr());
-    }
 
     GenTreeLclVarCommon* IsImplicitByrefParameterValuePreMorph(Compiler* compiler);
     GenTreeLclVar* IsImplicitByrefParameterValuePostMorph(Compiler* compiler, GenTree** addr);
@@ -4646,6 +4638,8 @@ public:
 
     bool IsArgAddedLate() const;
 
+    bool IsUserArg() const;
+
 #ifdef DEBUG
     void Dump(Compiler* comp);
     // Check that the value of 'AbiInfo.IsStruct' is consistent.
@@ -4706,6 +4700,7 @@ public:
     CallArg* GetThisArg();
     CallArg* GetRetBufferArg();
     CallArg* GetArgByIndex(unsigned index);
+    CallArg* GetUserArgByIndex(unsigned index);
     unsigned GetIndex(CallArg* arg);
 
     bool IsEmpty() const
@@ -4774,6 +4769,7 @@ public:
     unsigned OutgoingArgsStackSize() const;
 
     unsigned CountArgs();
+    unsigned CountUserArgs();
 
     template <CallArg* (CallArg::*Next)()>
     class CallArgIterator
@@ -7324,6 +7320,7 @@ public:
         BlkOpKindRepInstr,
 #endif
         BlkOpKindUnroll,
+        BlkOpKindUnrollMemmove,
     } gtBlkOpKind;
 
 #ifndef JIT32_GCENCODER
@@ -7376,26 +7373,15 @@ protected:
 
 struct GenTreeObj : public GenTreeBlk
 {
-    void Init()
-    {
-        // By default, an OBJ is assumed to be a global reference, unless it is local.
-        GenTreeLclVarCommon* lcl = Addr()->IsLocalAddrExpr();
-        if ((lcl == nullptr) || ((lcl->gtFlags & GTF_GLOB_EFFECT) != 0))
-        {
-            gtFlags |= GTF_GLOB_REF;
-        }
-        noway_assert(GetLayout()->GetClassHandle() != NO_CLASS_HANDLE);
-    }
-
     GenTreeObj(var_types type, GenTree* addr, ClassLayout* layout) : GenTreeBlk(GT_OBJ, type, addr, layout)
     {
-        Init();
+        noway_assert(GetLayout()->GetClassHandle() != NO_CLASS_HANDLE);
     }
 
     GenTreeObj(var_types type, GenTree* addr, GenTree* data, ClassLayout* layout)
         : GenTreeBlk(GT_STORE_OBJ, type, addr, data, layout)
     {
-        Init();
+        noway_assert(GetLayout()->GetClassHandle() != NO_CLASS_HANDLE);
     }
 
 #if DEBUGGABLE_GENTREE

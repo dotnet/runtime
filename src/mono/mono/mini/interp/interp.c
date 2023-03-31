@@ -3798,6 +3798,11 @@ max_d (double lhs, double rhs)
 		return fmax (lhs, rhs);
 }
 
+#if HOST_BROWSER
+// Dummy call info used outside of monitoring phase. We don't care what's in it
+static JiterpreterCallInfo jiterpreter_call_info = { 0 };
+#endif
+
 /*
  * If CLAUSE_ARGS is non-null, start executing from it.
  * The ERROR argument is used to avoid declaring an error object for every interp frame, its not used
@@ -5413,6 +5418,14 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SHR_UN_I8_IMM)
 			LOCAL_VAR (ip [1], guint64) = LOCAL_VAR (ip [2], guint64) >> ip [3];
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SHL_AND_I4)
+			LOCAL_VAR (ip [1], gint32) = LOCAL_VAR (ip [2], gint32) << (LOCAL_VAR (ip [3], gint32) & 31);
+			ip += 4;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SHL_AND_I8)
+			LOCAL_VAR (ip [1], gint64) = LOCAL_VAR (ip [2], gint64) << (LOCAL_VAR (ip [3], gint64) & 63);
 			ip += 4;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_NEG_I4)
@@ -7782,15 +7795,11 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 						 * (note that right now threading doesn't work, but it's worth being correct
 						 *  here so that implementing thread support will be easier later.)
 						 */
-						*mutable_ip = MINT_TIER_NOP_JITERPRETER;
-						mono_memory_barrier ();
-						*(volatile JiterpreterThunk*)(ip + 1) = prepare_result;
-						mono_memory_barrier ();
-						*mutable_ip = MINT_TIER_ENTER_JITERPRETER;
+						*mutable_ip = MINT_TIER_MONITOR_JITERPRETER;
 						// now execute the trace
 						// this isn't important for performance, but it makes it easier to use the
 						//  jiterpreter early in automated tests where code only runs once
-						offset = prepare_result(frame, locals);
+						offset = prepare_result(frame, locals, &jiterpreter_call_info);
 						ip = (guint16*) (((guint8*)ip) + offset);
 						break;
 				}
@@ -7801,9 +7810,18 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 
+		MINT_IN_CASE(MINT_TIER_MONITOR_JITERPRETER) {
+			// The trace is in monitoring mode, where we track how far it actually goes
+			//  each time it is executed for a while. After N more hits, we either
+			//  turn it into an ENTER or a NOP depending on how well it is working
+			ptrdiff_t offset = mono_jiterp_monitor_trace (ip, frame, locals);
+			ip = (guint16*) (((guint8*)ip) + offset);
+			MINT_IN_BREAK;
+		}
+
 		MINT_IN_CASE(MINT_TIER_ENTER_JITERPRETER) {
 			JiterpreterThunk thunk = (void*)READ32(ip + 1);
-			ptrdiff_t offset = thunk(frame, locals);
+			ptrdiff_t offset = thunk(frame, locals, &jiterpreter_call_info);
 			ip = (guint16*) (((guint8*)ip) + offset);
 			MINT_IN_BREAK;
 		}
