@@ -175,7 +175,8 @@ namespace DebuggerTests
                     throw exc;
                 retry = false;
                 _testOutput.WriteLine($"Let's retry: {exc.ToString()}");
-                insp = new Inspector(Id + "_retry", _testOutput);
+                Id = Interlocked.Increment(ref s_idCounter);
+                insp = new Inspector(Id, _testOutput);
                 cli = insp.Client;
                 scripts = SubscribeToScripts(insp);
                 await insp.OpenSessionAsync(fn,  $"http://{TestHarnessProxy.Endpoint.Authority}/{driver}", TestTimeout);
