@@ -60,7 +60,8 @@ namespace Microsoft.Interop
 
             public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.NativeType;
             public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => ValueBoundaryBehavior.NativeIdentifier;
-            public bool IsSupported(TargetFramework target, Version version) => true;
+            public bool IsSupported(TargetFramework target, Version version)
+                => target == TargetFramework.Net && version >= new Version(5, 0);
             public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
             public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
         }
