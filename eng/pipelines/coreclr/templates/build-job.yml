@@ -127,6 +127,11 @@ jobs:
     - ${{ if eq(parameters.pgoType, 'PGO' )}}:
       - name: pgoInstrumentArg
         value: '-pgoinstrument '
+    - name: noPgoArg
+      value: ''
+    - ${{ if eq(parameters.pgoType, 'noPgo' )}}:
+      - name: noPgoArg
+        value: '/p:NoPgoOptimize=true '
 
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
@@ -190,7 +195,7 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrRuntimeComponentsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(clrRuntimePortableBuildArg) $(CoreClrPgoDataArg) $(nativeSymbols)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrRuntimeComponentsBuildArg) $(pgoInstrumentArg) $(noPgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(clrRuntimePortableBuildArg) $(CoreClrPgoDataArg) $(nativeSymbols)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg)

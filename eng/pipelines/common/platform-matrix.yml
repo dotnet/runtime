@@ -109,6 +109,8 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
+        # Disable PGO until we get profile data collected with a new clang
+        pgoType: noPgo
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux musl arm
@@ -224,6 +226,8 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
+        # Disable PGO until we get profile data collected with a new clang
+        pgoType: noPgo
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # Linux x86
