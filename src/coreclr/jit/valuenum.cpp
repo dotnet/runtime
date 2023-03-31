@@ -4450,8 +4450,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     // (x - 0) == x
     // (x - x) == 0
     // This identity does not apply for floating point (when x == -0.0).
-    // (x + a) - x == a
-    auto identityForSubtraction = [=]() -> ValueNum {
+    auto identityForSubtraction = [=](bool ovf) -> ValueNum {
         if (!varTypeIsFloating(typ))
         {
             ValueNum ZeroVN = VNZeroForType(typ);
@@ -4464,13 +4463,17 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 return ZeroVN;
             }
 
-            VNFuncApp add;
-            if (GetVNFunc(arg0VN, &add) && (add.m_func == VNFunc(GT_ADD)))
+            if (!ovf)
             {
-                if (add.m_args[0] == arg1VN)
-                    return add.m_args[1];
-                if (add.m_args[1] == arg1VN)
-                    return add.m_args[0];
+                // (x + a) - x == a
+                VNFuncApp add;
+                if ((resultVN == NoVN) && GetVNFunc(arg0VN, &add) && (add.m_func == (VNFunc)GT_ADD))
+                {
+                    if (add.m_args[0] == arg1VN)
+                        return add.m_args[1];
+                    if (add.m_args[1] == arg1VN)
+                        return add.m_args[0];
+                }
             }
         }
 
@@ -4525,7 +4528,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 break;
 
             case GT_SUB:
-                resultVN = identityForSubtraction();
+                resultVN = identityForSubtraction(false);
                 break;
 
             case GT_MUL:
@@ -4800,7 +4803,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
 
             case VNF_SUB_OVF:
             case VNF_SUB_UN_OVF:
-                resultVN = identityForSubtraction();
+                resultVN = identityForSubtraction(true);
                 break;
 
             case VNF_MUL_OVF:

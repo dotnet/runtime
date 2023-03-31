@@ -1308,7 +1308,8 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoTyp
 //
 GenTree* Compiler::impFoldSubOfLocalOffsets(GenTree* op1, GenTree* op2)
 {
-    if (!op1->TypeIs(TYP_I_IMPL, TYP_BYREF) || !op2->TypeIs(TYP_I_IMPL, TYP_BYREF) || op1->TypeGet() != op2->TypeGet())
+    if (!op1->TypeIs(TYP_I_IMPL, TYP_BYREF) || !op2->TypeIs(TYP_I_IMPL, TYP_BYREF) ||
+        (op1->TypeGet() != op2->TypeGet()))
     {
         return nullptr;
     }
@@ -12846,7 +12847,7 @@ bool Compiler::impIsInvariant(const GenTree* tree)
 // Returns:
 //     true if it points into a local
 //
-bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
+bool Compiler::impIsAddressInLocal(const GenTree* tree, unsigned* lclNum, unsigned* lclOffs)
 {
     unsigned       offs = 0;
     const GenTree* op   = tree;
