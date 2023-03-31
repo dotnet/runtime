@@ -436,8 +436,8 @@ fi
 $__Command $HARNESS_RUNNER apple just-run %5c
   --app="net.dot.$__Category" %5c
   --output-directory="$__OutputDir" %5c
-  --set-env="MONO_APPLE_APP_ENTRY_POINT_LIB_NAME=$(MsBuildProjectName)/$(MsBuildProjectName).dll" %5c
-  --set-env="MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX=$(MsBuildProjectName)" %5c
+  --set-env="MONO_APPLE_APP_ENTRY_POINT_LIB_NAME=testdir-$(MsBuildProjectName)/$(MsBuildProjectName).dll" %5c
+  --set-env="MONO_APPLE_APP_ASSEMBLY_LOAD_PREFIX=testdir-$(MsBuildProjectName)" %5c
   --expected-exit-code=100 %5c
   --targets ios$(IosTestTargetSuffix) %5c
   -v
