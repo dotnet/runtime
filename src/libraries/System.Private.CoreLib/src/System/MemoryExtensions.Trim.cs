@@ -571,7 +571,7 @@ namespace System
         {
             // Assume that in most cases input doesn't need trimming
             if (span.Length == 0 ||
-                (span.Length > 0 && !char.IsWhiteSpace(span[0]) && !char.IsWhiteSpace(span[^1])))
+                (!char.IsWhiteSpace(span[0]) && !char.IsWhiteSpace(span[^1])))
             {
                 return span;
             }
