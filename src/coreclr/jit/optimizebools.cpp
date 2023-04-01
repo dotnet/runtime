@@ -340,7 +340,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
     if (m_comp->verbose)
     {
         printf("Folded %sboolean conditions of " FMT_BB " and " FMT_BB " to :\n", m_c2->OperIsLeaf() ? "" : "non-leaf ",
-            m_b1->bbNum, m_b2->bbNum);
+               m_b1->bbNum, m_b2->bbNum);
         m_comp->gtDispStmt(s1);
         printf("\n");
     }
@@ -394,7 +394,7 @@ bool OptBoolsDsc::FindCompareChain(GenTree* condition, bool* isTestCondition)
             *isTestCondition = true;
         }
         else if (condOp1->OperIs(GT_AND) && isPow2(static_cast<target_size_t>(condOp2Value)) &&
-            condOp1->gtGetOp2()->IsIntegralConst(condOp2Value))
+                 condOp1->gtGetOp2()->IsIntegralConst(condOp2Value))
         {
             // Found a EQ/NE(AND(...,n),n) which will be optimized to tbz/tbnz during lowering.
             *isTestCondition = true;
@@ -552,7 +552,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
         if (op1Cost > maxOp1Cost || op2Cost > maxOp2Cost)
         {
             JITDUMP("Skipping CompareChainCond that will evaluate conditions unconditionally at costs %d,%d\n", op1Cost,
-                op2Cost);
+                    op2Cost);
             return false;
         }
     }
@@ -602,7 +602,7 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     if (m_comp->verbose)
     {
         JITDUMP("\nCombined conditions " FMT_BB " and " FMT_BB " into %s chain :\n", m_b1->bbNum, m_b2->bbNum,
-            GenTree::OpName(chainedOper));
+                GenTree::OpName(chainedOper));
         m_comp->fgDumpBlock(m_b1);
         JITDUMP("\n");
     }
@@ -1075,7 +1075,7 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
         foldOp = GT_NONE;
     }
     else if ((m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_EQ) &&
-        (it1val == 0 && it2val == 0 && it3val == 0))
+             (it1val == 0 && it2val == 0 && it3val == 0))
     {
         // Case: x == 0 && y == 0
         //      t1:c1!=0 t2:c2==0 t3:c3==0
@@ -1084,7 +1084,7 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
         cmpOp  = GT_EQ;
     }
     else if ((m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_NE) &&
-        (it1val == 0 && it2val == 0 && it3val == 0))
+             (it1val == 0 && it2val == 0 && it3val == 0))
     {
         // Case: x == 1 && y ==1
         //      t1:c1!=1 t2:c2==1 t3:c3==0 is reversed from optIsBoolComp() to: t1:c1==0 t2:c2!=0 t3:c3==0
@@ -1093,8 +1093,8 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
         cmpOp  = GT_NE;
     }
     else if ((m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_GE) &&
-        (it1val == 0 && it2val == 0 && it3val == 0) &&
-        (!m_testInfo1.testTree->AsOp()->gtOp1->IsUnsigned() && !m_testInfo2.testTree->AsOp()->gtOp1->IsUnsigned()))
+             (it1val == 0 && it2val == 0 && it3val == 0) &&
+             (!m_testInfo1.testTree->AsOp()->gtOp1->IsUnsigned() && !m_testInfo2.testTree->AsOp()->gtOp1->IsUnsigned()))
     {
         // Case: x >= 0 && y >= 0
         //      t1:c1<0 t2:c2>=0 t3:c3==0
@@ -1104,7 +1104,7 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
         cmpOp  = GT_GE;
     }
     else if ((m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_EQ) &&
-        (it1val == 0 && it2val == 0 && it3val == 1))
+             (it1val == 0 && it2val == 0 && it3val == 1))
     {
         // Case: x == 0 || y == 0
         //      t1:c1==0 t2:c2==0 t3:c3==1
@@ -1113,7 +1113,7 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
         cmpOp  = GT_EQ;
     }
     else if ((m_testInfo1.compTree->gtOper == GT_NE && m_testInfo2.compTree->gtOper == GT_NE) &&
-        (it1val == 0 && it2val == 0 && it3val == 1))
+             (it1val == 0 && it2val == 0 && it3val == 1))
     {
         // Case: x == 1 || y == 1
         //      t1:c1==1 t2:c2==1 t3:c3==1 is reversed from optIsBoolComp() to: t1:c1!=0 t2:c2!=0 t3:c3==1
@@ -1122,8 +1122,8 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
         cmpOp  = GT_NE;
     }
     else if ((m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_LT) &&
-        (it1val == 0 && it2val == 0 && it3val == 1) &&
-        (!m_testInfo1.testTree->AsOp()->gtOp1->IsUnsigned() && !m_testInfo2.testTree->AsOp()->gtOp1->IsUnsigned()))
+             (it1val == 0 && it2val == 0 && it3val == 1) &&
+             (!m_testInfo1.testTree->AsOp()->gtOp1->IsUnsigned() && !m_testInfo2.testTree->AsOp()->gtOp1->IsUnsigned()))
     {
         // Case: x < 0 || y < 0
         //      t1:c1<0 t2:c2<0 t3:c3==1
@@ -1157,7 +1157,7 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
     if (m_comp->verbose)
     {
         printf("Folded %sboolean conditions of " FMT_BB ", " FMT_BB " and " FMT_BB " to :\n",
-            m_c2->OperIsLeaf() ? "" : "non-leaf ", m_b1->bbNum, m_b2->bbNum, m_b3->bbNum);
+               m_c2->OperIsLeaf() ? "" : "non-leaf ", m_b1->bbNum, m_b2->bbNum, m_b3->bbNum);
         m_comp->gtDispStmt(s1);
         printf("\n");
     }
