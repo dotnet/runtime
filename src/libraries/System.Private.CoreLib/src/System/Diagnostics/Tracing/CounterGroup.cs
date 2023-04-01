@@ -51,35 +51,50 @@ namespace System.Diagnostics.Tracing
 
             lock (s_counterGroupLock)      // Lock the CounterGroup
             {
-                float intervalValue = 1.0f;
                 if (e.Command == EventCommand.Enable)
                 {
                     Debug.Assert(e.Arguments != null);
 
-                    string? valueStr = null;
-                    float value = 0.0f;
-                    if (!e.Arguments.TryGetValue("EventCounterIntervalSec", out valueStr)
-                        || !float.TryParse(valueStr, out value))
+                    if (!e.Arguments.TryGetValue("EventCounterIntervalSec", out string? valueStr)
+                        || !float.TryParse(valueStr, out float intervalValue))
                     {
                         // Command is Enable but no EventCounterIntervalSec arg so ignore
                         return;
                     }
 
-                    intervalValue = value;
-                }
-
-                if ((e.Command == EventCommand.Disable && !_eventSource.IsEnabled()) || intervalValue <= 0)
-                {
-                    DisableTimer();
+                    // Sending an Enabled with EventCounterIntervalSec <=0 is a signal that we should immediately turn
+                    // off counters
+                    if (intervalValue <= 0)
+                    {
+                        DisableTimer();
+                    }
+                    else
+                    {
+                        EnableTimer(intervalValue);
+                    }
                 }
                 else
                 {
-                    EnableTimer(intervalValue);
+                    Debug.Assert(e.Command == EventCommand.Disable);
+                    // Since we allow sessions to send multiple Enable commands to update the interval, we cannot
+                    // rely on ref counting to determine when to enable and disable counters. You will get an arbitrary
+                    // number of Enables and one Disable per session.
+                    //
+                    // Previously we would turn off counters when we received any Disable command, but that meant that any
+                    // session could turn off counters for all other sessions. To get to a good place we now will only
+                    // turn off counters once the EventSource that provides the counters is disabled. We can then end up
+                    // keeping counters on too long in certain circumstances - if one session enables counters, then a second
+                    // session enables the EventSource but not counters we will stay on until both sessions terminate, even
+                    // if the first session terminates first.
+                    if (!_eventSource.IsEnabled())
+                    {
+                        DisableTimer();
+                    }
                 }
 
                 Debug.Assert((s_counterGroupEnabledList == null && !_eventSource.IsEnabled())
                                 || (_eventSource.IsEnabled() && s_counterGroupEnabledList!.Contains(this))
-                                || (intervalValue <= 0 && !s_counterGroupEnabledList!.Contains(this))
+                                || (_pollingIntervalInMilliseconds == 0 && !s_counterGroupEnabledList!.Contains(this))
                                 || (!_eventSource.IsEnabled() && !s_counterGroupEnabledList!.Contains(this)));
             }
         }
