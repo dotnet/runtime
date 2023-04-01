@@ -576,8 +576,7 @@ enum GenTreeFlags : unsigned int
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
 
-    GTF_SIMDASHW_OP             = 0x80000000, // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
-                                              //                   rather than from gtGetStructHandleForHWSIMD.
+    GTF_SIMDASHW_OP             = 0x80000000, // GT_HWINTRINSIC -- obsolete. TODO-Cleanup: delete.
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)
