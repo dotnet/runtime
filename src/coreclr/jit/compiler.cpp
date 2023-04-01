@@ -297,6 +297,15 @@ Histogram bbCntTable(bbCntBuckets);
 unsigned  bbSizeBuckets[] = {1, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 0};
 Histogram bbOneBBSizeTable(bbSizeBuckets);
 
+unsigned  domsChangedIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
+Histogram domsChangedIterationTable(domsChangedIterationBuckets);
+
+unsigned  computeReachabilitySetsIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
+Histogram computeReachabilitySetsIterationTable(computeReachabilitySetsIterationBuckets);
+
+unsigned  computeReachabilityIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
+Histogram computeReachabilityIterationTable(computeReachabilityIterationBuckets);
+
 #endif // COUNT_BASIC_BLOCKS
 
 /*****************************************************************************
@@ -1560,6 +1569,25 @@ void Compiler::compShutdown()
     fprintf(fout, "--------------------------------------------------\n");
     bbOneBBSizeTable.dump(fout);
     fprintf(fout, "--------------------------------------------------\n");
+
+    fprintf(fout, "--------------------------------------------------\n");
+    fprintf(fout, "fgComputeDoms `while (change)` iterations:\n");
+    fprintf(fout, "--------------------------------------------------\n");
+    domsChangedIterationTable.dump(fout);
+    fprintf(fout, "--------------------------------------------------\n");
+
+    fprintf(fout, "--------------------------------------------------\n");
+    fprintf(fout, "fgComputeReachabilitySets `while (change)` iterations:\n");
+    fprintf(fout, "--------------------------------------------------\n");
+    computeReachabilitySetsIterationTable.dump(fout);
+    fprintf(fout, "--------------------------------------------------\n");
+
+    fprintf(fout, "--------------------------------------------------\n");
+    fprintf(fout, "fgComputeReachability `while (change)` iterations:\n");
+    fprintf(fout, "--------------------------------------------------\n");
+    computeReachabilityIterationTable.dump(fout);
+    fprintf(fout, "--------------------------------------------------\n");
+
 #endif // COUNT_BASIC_BLOCKS
 
 #if COUNT_LOOPS
