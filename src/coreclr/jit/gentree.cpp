@@ -7813,57 +7813,6 @@ GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
 }
 
 //------------------------------------------------------------------------
-// gtNewObjNode: Creates a new BLK node with the given layout.
-//
-// Arguments:
-//    layout - The struct layout
-//    addr   - The address of the struct
-//
-// Return Value:
-//    Returns a node representing the struct value at the given address.
-//
-GenTreeBlk* Compiler::gtNewObjNode(ClassLayout* layout, GenTree* addr)
-{
-    assert(layout != nullptr);
-
-    GenTreeBlk* objNode = new (this, GT_BLK) GenTreeBlk(GT_BLK, layout->GetType(), addr, layout);
-
-    // TODO-Bug: this method does not have enough information to make this determination.
-    // The local may end up (or already is) address-exposed.
-    if (addr->OperIs(GT_LCL_ADDR))
-    {
-        if (lvaIsImplicitByRefLocal(addr->AsLclVarCommon()->GetLclNum()))
-        {
-            objNode->gtFlags |= GTF_GLOB_REF;
-        }
-    }
-    else
-    {
-        objNode->gtFlags |= GTF_GLOB_REF;
-    }
-
-    return objNode;
-}
-
-//------------------------------------------------------------------------
-// gtNewObjNode: Creates a new BLK node with the layout for the given handle.
-//
-// Arguments:
-//    structHnd - The class handle of the struct type
-//    addr      - The address of the struct
-//
-// Return Value:
-//    Returns a node representing the struct value at the given address.
-//
-GenTreeBlk* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
-{
-    ClassLayout* layout  = typGetObjLayout(structHnd);
-    GenTreeBlk*  objNode = gtNewObjNode(layout, addr);
-
-    return objNode;
-}
-
-//------------------------------------------------------------------------
 // gtNewStructVal: Return a node that represents a struct or block value
 //
 // Arguments:
@@ -7879,8 +7828,7 @@ GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFla
 {
     assert((indirFlags & ~GTF_IND_FLAGS) == 0);
 
-    bool isVolatile = (indirFlags & GTF_IND_VOLATILE) != 0;
-    if (!isVolatile && addr->IsLclVarAddr())
+    if (((indirFlags & GTF_IND_VOLATILE) == 0) && addr->IsLclVarAddr())
     {
         unsigned   lclNum = addr->AsLclFld()->GetLclNum();
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
@@ -7891,24 +7839,7 @@ GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFla
         }
     }
 
-    GenTreeBlk* blkNode;
-    if (layout->IsBlockLayout())
-    {
-        blkNode = new (this, GT_BLK) GenTreeBlk(GT_BLK, layout->GetType(), addr, layout);
-    }
-    else
-    {
-        blkNode = gtNewObjNode(layout, addr);
-    }
-
-    blkNode->gtFlags |= indirFlags;
-    if (isVolatile)
-    {
-        blkNode->gtFlags |= GTF_ORDER_SIDEEFF;
-    }
-    blkNode->SetIndirExceptionFlags(this);
-
-    return blkNode;
+    return gtNewBlkIndir(layout, addr, indirFlags);
 }
 
 //------------------------------------------------------------------------
@@ -15981,7 +15912,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
         {
             if (varTypeIsStruct(lclTyp))
             {
-                result = gtNewObjNode(structType, result);
+                result = gtNewBlkIndir(typGetObjLayout(structType), result);
             }
             else
             {

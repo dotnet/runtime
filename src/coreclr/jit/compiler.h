@@ -2505,8 +2505,6 @@ public:
     GenTree* gtNewBitCastNode(var_types type, GenTree* arg);
 
 public:
-    GenTreeBlk* gtNewObjNode(ClassLayout* layout, GenTree* addr);
-    GenTreeBlk* gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr);
     GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTreeCall* gtNewCallNode(gtCallTypes           callType,
@@ -2844,6 +2842,8 @@ public:
     GenTreeMDArr* gtNewMDArrLen(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
 
     GenTreeMDArr* gtNewMDArrLowerBound(GenTree* arrayOp, unsigned dim, unsigned rank, BasicBlock* block);
+
+    GenTreeBlk* gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 

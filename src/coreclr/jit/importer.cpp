@@ -4311,10 +4311,10 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
     if (!(access & CORINFO_ACCESS_ADDRESS))
     {
+        // TODO-CQ: mark the indirections non-faulting.
         if (varTypeIsStruct(lclTyp))
         {
-            // Constructor adds GTF_GLOB_REF.  Note that this is *not* GTF_EXCEPT.
-            op1 = gtNewObjNode(pFieldInfo->structType, op1);
+            op1 = gtNewBlkIndir(typGetObjLayout(pFieldInfo->structType), op1);
         }
         else
         {
@@ -9386,8 +9386,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             if (varTypeIsStruct(lclTyp))
                             {
-                                op1 = gtNewObjNode(fieldInfo.structType, op1);
-                                op1->gtFlags |= GTF_IND_NONFAULTING;
+                                op1 = gtNewBlkIndir(typGetObjLayout(fieldInfo.structType), op1, GTF_IND_NONFAULTING);
                             }
                             else
                             {
@@ -9666,8 +9665,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         if (varTypeIsStruct(lclTyp))
                         {
-                            op1 = gtNewObjNode(fieldInfo.structType, op1);
-                            op1->gtFlags |= GTF_IND_NONFAULTING;
+                            op1 = gtNewBlkIndir(typGetObjLayout(fieldInfo.structType), op1, GTF_IND_NONFAULTING);
                         }
                         else
                         {
@@ -10813,17 +10811,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     goto LDIND;
                 }
 
-                op1 = impPopStack().val;
+                GenTreeFlags indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
+                op1                     = impPopStack().val;
 
                 assertImp((genActualType(op1) == TYP_I_IMPL) || op1->TypeIs(TYP_BYREF));
 
-                op1 = gtNewObjNode(resolvedToken.hClass, op1);
-                op1->gtFlags |= GTF_EXCEPT;
-                op1->gtFlags |= impPrefixFlagsToIndirFlags(prefixFlags);
-                if (op1->AsIndir()->IsVolatile())
-                {
-                    op1->gtFlags |= GTF_ORDER_SIDEEFF;
-                }
+                op1 = gtNewBlkIndir(typGetObjLayout(resolvedToken.hClass), op1, indirFlags);
+                op1->gtFlags |= GTF_EXCEPT; // TODO-1stClassStructs-Cleanup: delete this zero-diff quirk.
 
                 impPushOnStack(op1, tiRetVal);
                 break;
