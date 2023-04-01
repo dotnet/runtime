@@ -588,6 +588,7 @@ namespace System
                         break;
                     }
                 }
+
                 int end = span.Length - 1;
                 for (; end > start; end--)
                 {
