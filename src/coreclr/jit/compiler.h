@@ -2505,8 +2505,8 @@ public:
     GenTree* gtNewBitCastNode(var_types type, GenTree* arg);
 
 public:
-    GenTreeObj* gtNewObjNode(ClassLayout* layout, GenTree* addr);
-    GenTreeObj* gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr);
+    GenTreeBlk* gtNewObjNode(ClassLayout* layout, GenTree* addr);
+    GenTreeBlk* gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr);
     GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTreeCall* gtNewCallNode(gtCallTypes           callType,
@@ -11138,7 +11138,6 @@ public:
             case GT_CKFINITE:
             case GT_LCLHEAP:
             case GT_IND:
-            case GT_OBJ:
             case GT_BLK:
             case GT_BOX:
             case GT_ALLOCOBJ:

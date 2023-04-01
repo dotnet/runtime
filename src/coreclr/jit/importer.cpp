@@ -1200,7 +1200,6 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
     switch (structVal->OperGet())
     {
         case GT_BLK:
-        case GT_OBJ:
         case GT_IND:
             if (willDeref)
             {
@@ -1335,7 +1334,7 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoTyp
 //     Given struct value 'structVal', make sure it is 'canonical', that is
 //     it is either:
 //     - a known struct type (non-TYP_STRUCT, e.g. TYP_SIMD8)
-//     - an OBJ or a MKREFANY node, or
+//     - a BLK or a MKREFANY node, or
 //     - a node (e.g. GT_FIELD) that will be morphed.
 //    If the node is a CALL or RET_EXPR, a copy will be made to a new temp.
 //
@@ -1361,7 +1360,6 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
         case GT_LCL_VAR:
         case GT_LCL_FLD:
         case GT_IND:
-        case GT_OBJ:
         case GT_BLK:
         case GT_FIELD:
         case GT_CNS_VEC:
@@ -1441,7 +1439,7 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
 
     if (structLcl != nullptr)
     {
-        // A OBJ on a ADDR(LCL_VAR) can never raise an exception
+        // A BLK on a ADDR(LCL_VAR) can never raise an exception
         // so we don't set GTF_EXCEPT here.
         if (!lvaIsImplicitByRefLocal(structLcl->GetLclNum()))
         {
@@ -1450,7 +1448,7 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
     }
     else if (structVal->OperIsBlk())
     {
-        // In general a OBJ is an indirection and could raise an exception.
+        // In general a BLK is an indirection and could raise an exception.
         structVal->gtFlags |= GTF_EXCEPT;
     }
     return structVal;
@@ -3220,8 +3218,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                 if ((treeToBox->gtFlags & GTF_SIDE_EFFECT) != 0)
                 {
                     // Is this a side effect we can replicate cheaply?
-                    if (((treeToBox->gtFlags & GTF_SIDE_EFFECT) == GTF_EXCEPT) &&
-                        treeToBox->OperIs(GT_OBJ, GT_BLK, GT_IND))
+                    if (((treeToBox->gtFlags & GTF_SIDE_EFFECT) == GTF_EXCEPT) && treeToBox->OperIs(GT_BLK, GT_IND))
                     {
                         // If the only side effect comes from the dereference itself, yes.
                         GenTree* const addr = treeToBox->AsOp()->gtGetOp1();
@@ -8316,7 +8313,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         {
                             // If the value being produced comes from loading
                             // via an underlying address, just null check the address.
-                            if (op1->OperIs(GT_FIELD, GT_IND, GT_OBJ))
+                            if (op1->OperIs(GT_FIELD, GT_IND, GT_BLK))
                             {
                                 GenTree* addr = op1->gtGetOp1();
                                 if ((addr != nullptr) && fgAddrCouldBeNull(addr))
@@ -9481,7 +9478,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                         if (!usesHelper)
                         {
-                            assert(op1->OperIs(GT_FIELD, GT_IND, GT_OBJ));
+                            assert(op1->OperIs(GT_FIELD, GT_IND, GT_BLK));
                             op1->gtFlags |= GTF_IND_VOLATILE;
                         }
                     }
@@ -9490,7 +9487,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         if (!usesHelper)
                         {
-                            assert(op1->OperIs(GT_FIELD, GT_IND, GT_OBJ));
+                            assert(op1->OperIs(GT_FIELD, GT_IND, GT_BLK));
                             op1->gtFlags |= GTF_IND_UNALIGNED;
                         }
                     }
@@ -10186,8 +10183,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* Pop the object and create the unbox helper call */
                 /* You might think that for UNBOX_ANY we need to push a different */
                 /* (non-byref) type, but here we're making the tiRetVal that is used */
-                /* for the intermediate pointer which we then transfer onto the OBJ */
-                /* instruction.  OBJ then creates the appropriate tiRetVal. */
+                /* for the intermediate pointer which we then transfer onto the BLK */
+                /* instruction. BLK then creates the appropriate tiRetVal. */
 
                 op1 = impPopStack().val;
                 assertImp(op1->gtType == TYP_REF);
@@ -10247,7 +10244,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             GenTree* boxPayloadOffset  = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
                             GenTree* boxPayloadAddress = gtNewOperNode(GT_ADD, TYP_BYREF, op1, boxPayloadOffset);
                             impPushOnStack(boxPayloadAddress, tiRetVal);
-                            oper = GT_OBJ;
+                            oper = GT_BLK;
                             goto OBJ;
                         }
                         else
@@ -10333,7 +10330,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                   | UNBOX     | push the BYREF          | spill the STRUCT to a local, |
                   |           |                         | push the BYREF to this local |
                   |---------------------------------------------------------------------
-                  | UNBOX_ANY | push a GT_OBJ of        | push the STRUCT              |
+                  | UNBOX_ANY | push a GT_BLK of        | push the STRUCT              |
                   |           | the BYREF               | For Linux when the           |
                   |           |                         |  struct is returned in two   |
                   |           |                         |  registers create a temp     |
@@ -10372,7 +10369,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         // Normal unbox helper returns a TYP_BYREF.
                         impPushOnStack(op1, tiRetVal);
-                        oper = GT_OBJ;
+                        oper = GT_BLK;
                         goto OBJ;
                     }
 
@@ -10403,7 +10400,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         impPushOnStack(op1, tiRetVal);
 
                         // Load the struct.
-                        oper = GT_OBJ;
+                        oper = GT_BLK;
 
                         assert(op1->gtType == TYP_BYREF);
 
@@ -10800,7 +10797,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_LDOBJ:
             {
-                oper = GT_OBJ;
+                oper = GT_BLK;
                 assertImp(sz == sizeof(unsigned));
 
                 _impResolveToken(CORINFO_TOKENKIND_Class);

@@ -696,7 +696,6 @@ public:
                 }
                 break;
 
-            case GT_OBJ:
             case GT_BLK:
             case GT_IND:
                 assert(TopValue(1).Node() == node);
@@ -1000,7 +999,7 @@ private:
     //
     unsigned GetIndirSize(GenTree* indir)
     {
-        assert(indir->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_FIELD));
+        assert(indir->OperIs(GT_IND, GT_BLK, GT_FIELD));
 
         if (indir->TypeGet() != TYP_STRUCT)
         {
@@ -1074,7 +1073,7 @@ private:
             if (node->TypeIs(TYP_STRUCT))
             {
                 ClassLayout* layout = node->GetLayout(m_compiler);
-                node->SetOper(GT_OBJ);
+                node->SetOper(GT_BLK);
                 node->AsBlk()->Initialize(layout);
             }
             else
@@ -1269,7 +1268,7 @@ private:
 
         // We don't expect indirections that cannot be turned into local nodes here.
         assert(val.Offset() <= UINT16_MAX);
-        assert(indir->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_FIELD) && ((indir->gtFlags & GTF_IND_VOLATILE) == 0));
+        assert(indir->OperIs(GT_IND, GT_BLK, GT_FIELD) && ((indir->gtFlags & GTF_IND_VOLATILE) == 0));
 
         if (IsUnused(indir, user))
         {
@@ -1467,7 +1466,7 @@ private:
 
                     if (node->TypeIs(TYP_STRUCT))
                     {
-                        node->SetOper(GT_OBJ);
+                        node->SetOper(GT_BLK);
                         node->AsBlk()->Initialize(layout);
                     }
                     else
@@ -1572,7 +1571,7 @@ public:
 
             node = m_ancestors.Top(1);
 
-            if (!node->OperIs(GT_OBJ))
+            if (!node->OperIs(GT_BLK))
             {
                 return;
             }

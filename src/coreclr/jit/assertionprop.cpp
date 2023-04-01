@@ -2260,7 +2260,6 @@ void Compiler::optAssertionGen(GenTree* tree)
             }
             break;
 
-        case GT_OBJ:
         case GT_BLK:
         case GT_IND:
             // R-value indirections create non-null assertions, but not all indirections are R-values.
@@ -4723,7 +4722,6 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_RETURN:
             return optAssertionProp_Return(assertions, tree->AsUnOp(), stmt);
 
-        case GT_OBJ:
         case GT_BLK:
         case GT_IND:
         case GT_NULLCHECK:
@@ -5702,7 +5700,6 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_ARR_LENGTH:
             break;
 
-        case GT_OBJ:
         case GT_BLK:
         case GT_IND:
         {

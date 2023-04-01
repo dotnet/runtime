@@ -888,7 +888,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         }
         else
         {
-            noway_assert(source->OperIsLocalRead() || source->OperIs(GT_OBJ));
+            noway_assert(source->OperIsLocalRead() || source->OperIs(GT_BLK));
 
             var_types targetType = source->TypeGet();
             noway_assert(varTypeIsStruct(targetType));
@@ -916,10 +916,10 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 // This struct must live on the stack frame.
                 assert(varDsc->lvOnFrame && !varDsc->lvRegister);
             }
-            else // we must have a GT_OBJ
+            else // we must have a GT_BLK
             {
-                layout  = source->AsObj()->GetLayout();
-                addrReg = genConsumeReg(source->AsObj()->Addr());
+                layout  = source->AsBlk()->GetLayout();
+                addrReg = genConsumeReg(source->AsBlk()->Addr());
 
 #ifdef TARGET_ARM64
                 // If addrReg equal to loReg, swap(loReg, hiReg)
@@ -1246,11 +1246,11 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             firstRegToPlace = 0;
             valueReg        = treeNode->GetRegNumByIdx(0);
         }
-        else // we must have a GT_OBJ
+        else // we must have a GT_BLK
         {
-            layout   = source->AsObj()->GetLayout();
-            addrReg  = genConsumeReg(source->AsObj()->Addr());
-            addrType = source->AsObj()->Addr()->TypeGet();
+            layout   = source->AsBlk()->GetLayout();
+            addrReg  = genConsumeReg(source->AsBlk()->Addr());
+            addrType = source->AsBlk()->Addr()->TypeGet();
 
             regNumber allocatedValueReg = REG_NA;
             if (treeNode->gtNumRegs == 1)
@@ -4474,8 +4474,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     {
         assert(!blkOp->gtBlkOpGcUnsafe);
         assert(blkOp->OperIsCopyBlkOp());
-        assert(blkOp->AsObj()->GetLayout()->HasGCPtr());
-        genCodeForCpObj(blkOp->AsObj());
+        assert(blkOp->AsBlk()->GetLayout()->HasGCPtr());
+        genCodeForCpObj(blkOp->AsBlk());
         return;
     }
 

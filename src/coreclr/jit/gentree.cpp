@@ -337,7 +337,6 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeIndir)        <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeStoreInd)     <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeAddrMode)     <= TREE_NODE_SZ_SMALL);
-    static_assert_no_msg(sizeof(GenTreeObj)          <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeBlk)          <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeStoreDynBlk)  <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeRetExpr)      <= TREE_NODE_SZ_LARGE); // *** large node
@@ -736,7 +735,6 @@ ClassLayout* GenTree::GetLayout(Compiler* compiler) const
         case GT_LCL_FLD:
             return AsLclFld()->GetLayout();
 
-        case GT_OBJ:
         case GT_BLK:
             return AsBlk()->GetLayout();
 
@@ -2702,7 +2700,6 @@ AGAIN:
                     break;
 
                 case GT_BLK:
-                case GT_OBJ:
                     if (op1->AsBlk()->GetLayout() != op2->AsBlk()->GetLayout())
                     {
                         return false;
@@ -3216,7 +3213,6 @@ AGAIN:
                                                     reinterpret_cast<uintptr_t>(tree->AsRuntimeLookup()->gtHnd)));
                     break;
                 case GT_BLK:
-                case GT_OBJ:
                     hash =
                         genTreeHashAdd(hash,
                                        static_cast<unsigned>(reinterpret_cast<uintptr_t>(tree->AsBlk()->GetLayout())));
@@ -5247,8 +5243,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     break;
 
                 case GT_MKREFANY:
-                case GT_OBJ:
-                    // We estimate the cost of a GT_OBJ or GT_MKREFANY to be two loads (GT_INDs)
+                case GT_BLK:
+                    // We estimate the cost of a GT_BLK or GT_MKREFANY to be two loads (GT_INDs)
                     costEx = 2 * IND_COST_EX;
                     costSz = 2 * 2;
                     break;
@@ -5271,7 +5267,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     }
                     break;
 
-                case GT_BLK:
                 case GT_IND:
                 {
                     /* An indirection should always have a non-zero level.
@@ -5536,7 +5531,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             {
                 case GT_IND:
                 case GT_BLK:
-                case GT_OBJ:
                 {
                     // In an ASG(IND(addr), ...), the "IND" is a pure syntactical element,
                     // the actual indirection will only be realized at the point of the ASG
@@ -6232,7 +6226,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_CKFINITE:
         case GT_LCLHEAP:
         case GT_IND:
-        case GT_OBJ:
         case GT_BLK:
         case GT_BOX:
         case GT_ALLOCOBJ:
@@ -6628,7 +6621,6 @@ bool GenTree::OperIsImplicitIndir() const
         case GT_XCHG:
         case GT_CMPXCHG:
         case GT_BLK:
-        case GT_OBJ:
         case GT_STORE_BLK:
         case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
@@ -6715,7 +6707,6 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
 
         case GT_IND:
         case GT_BLK:
-        case GT_OBJ:
         case GT_NULLCHECK:
         case GT_STORE_BLK:
         case GT_STORE_DYN_BLK:
@@ -6928,7 +6919,7 @@ GenTree::VtablePtr GenTree::GetVtableForOper(genTreeOps oper)
 
         // Handle the special cases.
         // The following opers are in GTSTRUCT_N but no other place (namely, no subtypes).
-
+        case GT_STORE_OBJ:
         case GT_STORE_BLK:
         case GT_BLK:
         {
@@ -7822,7 +7813,7 @@ GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
 }
 
 //------------------------------------------------------------------------
-// gtNewObjNode: Creates a new Obj node with the given layout.
+// gtNewObjNode: Creates a new BLK node with the given layout.
 //
 // Arguments:
 //    layout - The struct layout
@@ -7831,36 +7822,31 @@ GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
 // Return Value:
 //    Returns a node representing the struct value at the given address.
 //
-GenTreeObj* Compiler::gtNewObjNode(ClassLayout* layout, GenTree* addr)
+GenTreeBlk* Compiler::gtNewObjNode(ClassLayout* layout, GenTree* addr)
 {
     assert(layout != nullptr);
 
-    GenTreeObj* objNode = new (this, GT_OBJ) GenTreeObj(layout->GetType(), addr, layout);
+    GenTreeBlk* objNode = new (this, GT_BLK) GenTreeBlk(GT_BLK, layout->GetType(), addr, layout);
 
-    // An Obj is not a global reference, if it is known to be a local struct.
-    if ((addr->gtFlags & GTF_GLOB_REF) == 0)
+    // TODO-Bug: this method does not have enough information to make this determination.
+    // The local may end up (or already is) address-exposed.
+    if (addr->OperIs(GT_LCL_ADDR))
     {
-        // TODO-Bug: this method does not have enough information to make this determination.
-        // The local may end up (or already is) address-exposed.
-        if (addr->OperIs(GT_LCL_ADDR))
-        {
-            objNode->gtFlags |= GTF_IND_NONFAULTING;
-            if (lvaIsImplicitByRefLocal(addr->AsLclVarCommon()->GetLclNum()))
-            {
-                objNode->gtFlags |= GTF_GLOB_REF;
-            }
-        }
-        else
+        if (lvaIsImplicitByRefLocal(addr->AsLclVarCommon()->GetLclNum()))
         {
             objNode->gtFlags |= GTF_GLOB_REF;
         }
+    }
+    else
+    {
+        objNode->gtFlags |= GTF_GLOB_REF;
     }
 
     return objNode;
 }
 
 //------------------------------------------------------------------------
-// gtNewObjNode: Creates a new Obj node with the layout for the given handle.
+// gtNewObjNode: Creates a new BLK node with the layout for the given handle.
 //
 // Arguments:
 //    structHnd - The class handle of the struct type
@@ -7869,10 +7855,10 @@ GenTreeObj* Compiler::gtNewObjNode(ClassLayout* layout, GenTree* addr)
 // Return Value:
 //    Returns a node representing the struct value at the given address.
 //
-GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
+GenTreeBlk* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
 {
     ClassLayout* layout  = typGetObjLayout(structHnd);
-    GenTreeObj*  objNode = gtNewObjNode(layout, addr);
+    GenTreeBlk*  objNode = gtNewObjNode(layout, addr);
 
     return objNode;
 }
@@ -8797,11 +8783,6 @@ GenTree* Compiler::gtCloneExpr(
                     GenTreeQmark(tree->TypeGet(), tree->AsOp()->gtGetOp1(), tree->AsOp()->gtGetOp2()->AsColon());
                 break;
 
-            case GT_OBJ:
-                copy =
-                    new (this, GT_OBJ) GenTreeObj(tree->TypeGet(), tree->AsObj()->Addr(), tree->AsObj()->GetLayout());
-                break;
-
             case GT_BLK:
                 copy = new (this, GT_BLK)
                     GenTreeBlk(GT_BLK, tree->TypeGet(), tree->AsBlk()->Addr(), tree->AsBlk()->GetLayout());
@@ -9580,7 +9561,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_CKFINITE:
         case GT_LCLHEAP:
         case GT_IND:
-        case GT_OBJ:
         case GT_BLK:
         case GT_BOX:
         case GT_ALLOCOBJ:
@@ -10543,7 +10523,6 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
         {
             case GT_LEA:
             case GT_BLK:
-            case GT_OBJ:
             case GT_STORE_BLK:
             case GT_STORE_OBJ:
             case GT_STORE_DYN_BLK:
@@ -10857,7 +10836,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
             {
                 ClassLayout* layout = nullptr;
 
-                if (tree->OperIs(GT_BLK, GT_OBJ, GT_STORE_BLK, GT_STORE_OBJ))
+                if (tree->OperIs(GT_BLK, GT_STORE_BLK, GT_STORE_OBJ))
                 {
                     layout = tree->AsBlk()->GetLayout();
                 }
@@ -14246,7 +14225,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         // over in impImportAndPushBox for the inlined box case.
         GenTree* copyDst = copy->AsOp()->gtOp1;
 
-        if (!copyDst->OperIs(GT_BLK, GT_IND, GT_OBJ))
+        if (!copyDst->OperIs(GT_BLK, GT_IND))
         {
             JITDUMP("Unexpected copy dest operator %s\n", GenTree::OpName(copyDst->gtOper));
             return nullptr;
@@ -14316,7 +14295,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         {
             isStructCopy = true;
 
-            if ((copySrc->gtOper != GT_OBJ) && (copySrc->gtOper != GT_IND) && (copySrc->gtOper != GT_FIELD))
+            if ((copySrc->gtOper != GT_BLK) && (copySrc->gtOper != GT_IND) && (copySrc->gtOper != GT_FIELD))
             {
                 // We don't know how to handle other cases, yet.
                 JITDUMP(" bailing; unexpected copy source struct op with side effect %s\n",
@@ -14368,7 +14347,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
         // For struct types read the first byte of the
         // source struct; there's no need to read the
         // entire thing, and no place to put it.
-        assert(copySrc->OperIs(GT_OBJ, GT_IND, GT_FIELD));
+        assert(copySrc->OperIs(GT_BLK, GT_IND, GT_FIELD));
         copyStmt->SetRootNode(copySrc);
 
         if (options == BR_REMOVE_AND_NARROW || options == BR_REMOVE_AND_NARROW_WANT_TYPE_HANDLE)
@@ -16364,7 +16343,7 @@ bool Compiler::gtSplitTree(
             if (IsLocation(useInf))
             {
                 // Only a handful of nodes can be location, and they are all unary or nullary.
-                assert((*use)->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_LCL_VAR, GT_LCL_FLD));
+                assert((*use)->OperIs(GT_IND, GT_BLK, GT_LCL_VAR, GT_LCL_FLD));
                 if ((*use)->OperIsUnary())
                 {
                     SplitOutUse(UseInfo{&(*use)->AsUnOp()->gtOp1, user}, false);
@@ -17830,9 +17809,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
         {
             case GT_MKREFANY:
                 structHnd = impGetRefAnyClass();
-                break;
-            case GT_OBJ:
-                structHnd = tree->AsObj()->GetLayout()->GetClassHandle();
                 break;
             case GT_BLK:
                 structHnd = tree->AsBlk()->GetLayout()->GetClassHandle();
