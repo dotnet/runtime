@@ -148,14 +148,14 @@
     <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(LibrariesAllBinArtifactsPath)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(LibrariesNativeArtifactsPath)" ItemName="NativeBinPlaceItem" />
-    <NativeBinPlaceItem Include="$(PkgSystem_Net_MsQuic_Transport)\runtimes\win10-$(TargetArchitecture)\native\*"
-                        Condition="'$(UseQuicTransportPackage)' == 'true'" />
+    <NativeBinPlaceItem Include="$(PkgMicrosoft_Native_Quic_MsQuic_Schannel)\build\native\bin\$(TargetArchitecture)\*"
+                        Condition="'$(UseQuicTransportPackage)' != 'true'" />
     <NativeBinPlaceItem Include="$(PkgRuntime_win-x64_runtime_native_System_Net_MsQuic_Transport)\runtimes\win-$(TargetArchitecture)\native\*"
-                        Condition="'$(UseQuicTransportPackage)' != 'true'" />
+                        Condition="'$(UseQuicTransportPackage)' == 'true'" />
     <NativeBinPlaceItem Include="$(PkgRuntime_win-x86_runtime_native_System_Net_MsQuic_Transport)\runtimes\win-$(TargetArchitecture)\native\*"
-                        Condition="'$(UseQuicTransportPackage)' != 'true'" />
+                        Condition="'$(UseQuicTransportPackage)' == 'true'" />
     <NativeBinPlaceItem Include="$(PkgRuntime_win-arm64_runtime_native_System_Net_MsQuic_Transport)\runtimes\win-$(TargetArchitecture)\native\*"
-                        Condition="'$(UseQuicTransportPackage)' != 'true'" />
+                        Condition="'$(UseQuicTransportPackage)' == 'true'" />
   </ItemGroup>
 
   <!-- Include msquic in debug version for macOS so we can test it without packages. -->
