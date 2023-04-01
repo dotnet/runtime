@@ -267,10 +267,7 @@ void Compiler::fgComputeReachabilitySets()
                 /* Union the predecessor's reachability set into newReach */
                 change |= BlockSetOps::UnionDChanged(this, block->bbReach, predBlock->bbReach);
 
-                if (!(predBlock->bbFlags & BBF_GC_SAFE_POINT))
-                {
-                    predGcSafe = false;
-                }
+                predGcSafe &= (predBlock->bbFlags & BBF_GC_SAFE_POINT) != 0;
             }
 
             if (predGcSafe)
