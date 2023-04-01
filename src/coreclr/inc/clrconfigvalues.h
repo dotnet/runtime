@@ -133,7 +133,7 @@ CONFIG_DWORD_INFO(INTERNAL_GetAssemblyIfLoadedIgnoreRidMap, W("GetAssemblyIfLoad
 ///
 /// PE Loader
 ///
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_PELoader_DisableMapping, W("PELoader_DisableMapping"), 1, "Disable file mapping when performing non-OS layout.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_PELoader_DisableMapping, W("PELoader_DisableMapping"), 0, "Disable file mapping when performing non-OS layout.")
 
 ///
 /// Conditional breakpoints
