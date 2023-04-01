@@ -9649,8 +9649,7 @@ inline bool GenTree::IsLastUse(int fieldIndex) const
 //
 inline bool GenTree::HasLastUse() const
 {
-    assert(OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_FLD, GT_LCL_ADDR, GT_COPY,
-                  GT_RELOAD));
+    assert(OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR, GT_LCL_FLD, GT_STORE_LCL_FLD, GT_LCL_ADDR, GT_COPY, GT_RELOAD));
     return (gtFlags & (GTF_VAR_DEATH_MASK)) != 0;
 }
 
