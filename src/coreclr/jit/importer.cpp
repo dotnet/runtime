@@ -957,7 +957,7 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
             WellKnownArg wellKnownArgType =
                 srcCall->ShouldHaveRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
 
-            GenTree*   destAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
+            GenTree*   destAddr = impGetStructAddr(dest, srcCall->gtRetClsHnd, CHECK_SPILL_ALL, /* willDeref */ true);
             NewCallArg newArg   = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
 
 #if !defined(TARGET_ARM)
@@ -1059,7 +1059,7 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
         if (call->ShouldHaveRetBufArg())
         {
             // insert the return value buffer into the argument list as first byref parameter after 'this'
-            GenTree* destAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
+            GenTree* destAddr = impGetStructAddr(dest, call->gtRetClsHnd, CHECK_SPILL_ALL, /* willDeref */ true);
             call->gtArgs.InsertAfterThisOrFirst(this,
                                                 NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer));
 
@@ -1076,7 +1076,7 @@ GenTree* Compiler::impAssignStruct(GenTree*         dest,
     {
         // Since we are assigning the result of a GT_MKREFANY, "destAddr" must point to a refany.
         // TODO-CQ: we can do this without address-exposing the local on the LHS.
-        GenTree* destAddr = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
+        GenTree* destAddr = impGetStructAddr(dest, impGetRefAnyClass(), CHECK_SPILL_ALL, /* willDeref */ true);
         GenTree* destAddrClone;
         destAddr = impCloneExpr(destAddr, &destAddrClone, NO_CLASS_HANDLE, curLevel,
                                 pAfterStmt DEBUGARG("MKREFANY assignment"));
@@ -1177,67 +1177,97 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     return impAssignStruct(dst, src, curLevel, pAfterStmt, di, block);
 }
 
-/*****************************************************************************
-   Given a struct value, and the class handle for that structure, return
-   the expression for the address for that structure value.
-
-   willDeref - does the caller guarantee to dereference the pointer.
-*/
-
+//------------------------------------------------------------------------
+// impGetStructAddr: Get the address of a struct value.
+//
+// Arguments:
+//    structVal - The value in question
+//    structHnd - The struct handle for "structVal"
+//    curLevel  - Stack level for spilling
+//    willDeref - Whether the caller will dereference the address
+//
+// Return Value:
+//    In case "structVal" can represent locations (is an indirection/local),
+//    will return its address. Otherwise, address of a temporary assigned
+//    the value of "structVal" will be returned.
+//
 GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
                                     CORINFO_CLASS_HANDLE structHnd,
                                     unsigned             curLevel,
                                     bool                 willDeref)
 {
-    assert(varTypeIsStruct(structVal) || eeIsValueClass(structHnd));
-
-    var_types  type = structVal->TypeGet();
-    genTreeOps oper = structVal->gtOper;
-
-    if (oper == GT_CALL || oper == GT_RET_EXPR || (oper == GT_OBJ && !willDeref) || oper == GT_MKREFANY ||
-        structVal->OperIsHWIntrinsic() || structVal->IsCnsVec())
+    assert(varTypeIsStruct(structVal));
+    switch (structVal->OperGet())
     {
-        unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
+        case GT_BLK:
+        case GT_OBJ:
+        case GT_IND:
+            if (willDeref)
+            {
+                return structVal->AsIndir()->Addr();
+            }
+            break;
 
-        impAssignTempGen(tmpNum, structVal, structHnd, curLevel);
+        case GT_LCL_VAR:
+            return gtNewLclVarAddrNode(structVal->AsLclVar()->GetLclNum(), TYP_BYREF);
 
-        // The 'return value' is now address of the temp itself.
-        return gtNewLclVarAddrNode(tmpNum, TYP_BYREF);
-    }
-    if (oper == GT_COMMA)
-    {
-        assert(structVal->AsOp()->gtOp2->gtType == type); // Second thing is the struct
+        case GT_LCL_FLD:
+            return gtNewLclFldAddrNode(structVal->AsLclFld()->GetLclNum(), structVal->AsLclFld()->GetLclOffs(),
+                                       TYP_BYREF);
 
-        Statement* oldLastStmt   = impLastStmt;
-        structVal->AsOp()->gtOp2 = impGetStructAddr(structVal->AsOp()->gtOp2, structHnd, curLevel, willDeref);
-        structVal->gtType        = TYP_BYREF;
-
-        if (oldLastStmt != impLastStmt)
+        case GT_FIELD:
         {
-            // Some temp assignment statement was placed on the statement list
-            // for Op2, but that would be out of order with op1, so we need to
-            // spill op1 onto the statement list after whatever was last
-            // before we recursed on Op2 (i.e. before whatever Op2 appended).
-            Statement* beforeStmt;
-            if (oldLastStmt == nullptr)
-            {
-                // The op1 stmt should be the first in the list.
-                beforeStmt = impStmtList;
-            }
-            else
-            {
-                // Insert after the oldLastStmt before the first inserted for op2.
-                beforeStmt = oldLastStmt->GetNextStmt();
-            }
-
-            impInsertTreeBefore(structVal->AsOp()->gtOp1, impCurStmtDI, beforeStmt);
-            structVal->AsOp()->gtOp1 = gtNewNothingNode();
+            GenTreeField* fieldNode = structVal->AsField();
+            GenTreeField* fieldAddr =
+                new (this, GT_FIELD_ADDR) GenTreeField(GT_FIELD_ADDR, TYP_BYREF, fieldNode->GetFldObj(),
+                                                       fieldNode->gtFldHnd, fieldNode->gtFldOffset);
+            fieldAddr->gtFldMayOverlap = fieldNode->gtFldMayOverlap;
+#ifdef FEATURE_READYTORUN
+            fieldAddr->gtFieldLookup = fieldNode->gtFieldLookup;
+#endif
+            return fieldAddr;
         }
 
-        return (structVal);
+        case GT_COMMA:
+        {
+            Statement* oldLastStmt   = impLastStmt;
+            structVal->AsOp()->gtOp2 = impGetStructAddr(structVal->AsOp()->gtOp2, structHnd, curLevel, willDeref);
+            structVal->gtType        = TYP_BYREF;
+
+            if (oldLastStmt != impLastStmt)
+            {
+                // Some temp assignment statement was placed on the statement list
+                // for Op2, but that would be out of order with op1, so we need to
+                // spill op1 onto the statement list after whatever was last
+                // before we recursed on Op2 (i.e. before whatever Op2 appended).
+                Statement* beforeStmt;
+                if (oldLastStmt == nullptr)
+                {
+                    // The op1 stmt should be the first in the list.
+                    beforeStmt = impStmtList;
+                }
+                else
+                {
+                    // Insert after the oldLastStmt before the first inserted for op2.
+                    beforeStmt = oldLastStmt->GetNextStmt();
+                }
+
+                impInsertTreeBefore(structVal->AsOp()->gtOp1, impCurStmtDI, beforeStmt);
+                structVal->AsOp()->gtOp1 = gtNewNothingNode();
+            }
+
+            return structVal;
+        }
+
+        default:
+            break;
     }
 
-    return gtNewOperNode(GT_ADDR, TYP_BYREF, structVal);
+    unsigned lclNum = lvaGrabTemp(true DEBUGARG("location for address-of(RValue)"));
+    impAssignTempGen(lclNum, structVal, structHnd, curLevel);
+
+    // The 'return value' is now address of the temp itself.
+    return gtNewLclVarAddrNode(lclNum, TYP_BYREF);
 }
 
 //------------------------------------------------------------------------
@@ -10312,8 +10342,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op1 = impAssignStruct(op2, op1, CHECK_SPILL_ALL);
                         assert(op1->gtType == TYP_VOID); // We must be assigning the return struct to the temp.
 
-                        op2 = gtNewLclvNode(tmp, TYP_STRUCT);
-                        op2 = gtNewOperNode(GT_ADDR, TYP_BYREF, op2);
+                        op2 = gtNewLclVarAddrNode(tmp, TYP_BYREF);
                         op1 = gtNewOperNode(GT_COMMA, TYP_BYREF, op1, op2);
                     }
 
@@ -10350,8 +10379,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op1 = impAssignStruct(op2, op1, CHECK_SPILL_ALL);
                         assert(op1->gtType == TYP_VOID); // We must be assigning the return struct to the temp.
 
-                        op2 = gtNewLclvNode(tmp, TYP_STRUCT);
-                        op2 = gtNewOperNode(GT_ADDR, TYP_BYREF, op2);
+                        op2 = gtNewLclVarAddrNode(tmp, TYP_BYREF);
                         op1 = gtNewOperNode(GT_COMMA, TYP_BYREF, op1, op2);
 
                         // In this case the return value of the unbox helper is TYP_BYREF.
