@@ -309,12 +309,7 @@ namespace System
                 throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
             }
 
-            if (input.Length > 0 &&
-                char.IsWhiteSpace(input[0]) ||
-                char.IsWhiteSpace(input[input.Length - 1]))
-            {
-                input = input.Trim();
-            }
+            input = input.Trim();
 
             var result = new GuidResult(GuidParseThrowStyle.AllButOverflow);
             bool success = ((char)(format[0] | 0x20)) switch
@@ -349,11 +344,7 @@ namespace System
                 return false;
             }
 
-            if (char.IsWhiteSpace(input[0]) ||
-                char.IsWhiteSpace(input[input.Length - 1]))
-            {
-                input = input.Trim();
-            }
+            input = input.Trim();
 
             var parseResult = new GuidResult(GuidParseThrowStyle.None);
             bool success = false;
@@ -394,21 +385,12 @@ namespace System
 
         private static bool TryParseGuid(ReadOnlySpan<char> guidString, ref GuidResult result)
         {
+            guidString = guidString.Trim(); // Remove whitespace from beginning and end
+
             if (guidString.Length < 32) // Minimal length we can parse ('N' format)
             {
                 result.SetFailure(ParseFailure.Format_GuidUnrecognized);
                 return false;
-            }
-
-            if (char.IsWhiteSpace(guidString[0]) ||
-                char.IsWhiteSpace(guidString[guidString.Length - 1]))
-            {
-                guidString = guidString.Trim(); // Remove whitespace from beginning and end
-                if (guidString.Length < 32) // Minimal length we can parse ('N' format)
-                {
-                    result.SetFailure(ParseFailure.Format_GuidUnrecognized);
-                    return false;
-                }
             }
 
             return (guidString[0]) switch
