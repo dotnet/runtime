@@ -8414,13 +8414,6 @@ private:
 
     struct SIMDHandlesCache
     {
-        // BYTE, UBYTE, SHORT, USHORT, INT, UINT, LONG, ULONG
-        // NATIVEINT, NATIVEUINT, FLOAT, and DOUBLE
-        static const uint32_t SupportedTypeCount = 12;
-
-        // SIMD Types
-        CORINFO_CLASS_HANDLE VectorTHandles[SupportedTypeCount];
-
         CORINFO_CLASS_HANDLE PlaneHandle;
         CORINFO_CLASS_HANDLE QuaternionHandle;
         CORINFO_CLASS_HANDLE Vector2Handle;
@@ -8428,20 +8421,8 @@ private:
         CORINFO_CLASS_HANDLE Vector4Handle;
         CORINFO_CLASS_HANDLE VectorHandle;
 
-#ifdef FEATURE_HW_INTRINSICS
-#if defined(TARGET_ARM64)
-        CORINFO_CLASS_HANDLE Vector64THandles[SupportedTypeCount];
-#endif // defined(TARGET_ARM64)
-        CORINFO_CLASS_HANDLE Vector128THandles[SupportedTypeCount];
-#if defined(TARGET_XARCH)
-        CORINFO_CLASS_HANDLE Vector256THandles[SupportedTypeCount];
-        CORINFO_CLASS_HANDLE Vector512THandles[SupportedTypeCount];
-#endif // defined(TARGET_XARCH)
-#endif // FEATURE_HW_INTRINSICS
-
         SIMDHandlesCache()
         {
-            assert(SupportedTypeCount == static_cast<uint32_t>(CORINFO_TYPE_DOUBLE - CORINFO_TYPE_BYTE + 1));
             memset(this, 0, sizeof(*this));
         }
     };
