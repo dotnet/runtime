@@ -387,7 +387,7 @@ namespace System
         {
             guidString = guidString.Trim(); // Remove whitespace from beginning and end
 
-            if (guidString.Length == 0)
+            if (guidString.Length < 32) // Minimal length we can parse ('N' format)
             {
                 result.SetFailure(ParseFailure.Format_GuidUnrecognized);
                 return false;
@@ -396,10 +396,10 @@ namespace System
             return (guidString[0]) switch
             {
                 '(' => TryParseExactP(guidString, ref result),
-                '{' => guidString.Contains('-') ?
+                '{' => guidString[9] == '-' ?
                         TryParseExactB(guidString, ref result) :
                         TryParseExactX(guidString, ref result),
-                _ => guidString.Contains('-') ?
+                _ => guidString[8] == '-' ?
                         TryParseExactD(guidString, ref result) :
                         TryParseExactN(guidString, ref result),
             };
