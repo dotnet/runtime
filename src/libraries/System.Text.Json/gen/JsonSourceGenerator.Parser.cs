@@ -1517,8 +1517,15 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
-                if (converterType.GetCompatibleGenericBaseClass(_jsonConverterOfTType) != null)
+                Type? compatibleJsonConverterBaseClass = converterType.GetCompatibleGenericBaseClass(_jsonConverterOfTType);
+
+                if (compatibleJsonConverterBaseClass != null)
                 {
+                    if (type.IsNullableValueType(out Type? underlyingType) && underlyingType == compatibleJsonConverterBaseClass.GenericTypeArguments[0])
+                    {
+                        return $"{Emitter.JsonMetadataServicesTypeRef}.GetNullableConverter<{underlyingType.FullName}>({OptionsLocalVariableName})";
+                    }
+
                     return $"new {converterType.GetCompilableName()}()";
                 }
                 else if (converterType.GetCompatibleBaseClass(JsonConverterFactoryFullName) != null)
