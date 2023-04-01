@@ -314,7 +314,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
                 // Negative delta in the array access (ArrLen + -CNS)
                 const int delta = m_pCompiler->vnStore->GetConstantInt32(cnsVN);
                 if ((lenLowerLimit > 0) && (lenLowerLimit <= CORINFO_Array_MaxLength) && (delta < 0) &&
-                    (lenLowerLimit >= abs(delta)))
+                    (delta > -CORINFO_Array_MaxLength) && (lenLowerLimit >= abs(delta)))
                 {
                     JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
                     m_pCompiler->optRemoveRangeCheck(bndsChk, comma, stmt);
