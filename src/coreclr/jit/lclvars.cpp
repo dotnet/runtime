@@ -8301,10 +8301,8 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
 
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
         // We need to support alignment requirements to access memory.
-        unsigned alignment = 1;
-        pComp->codeGen->InferOpSizeAlign(lcl, &alignment);
-        alignment = roundUp(alignment, TARGET_POINTER_SIZE);
-        padding   = roundUp(padding, alignment);
+        // Be conservative and use the maximally aligned type here.
+        padding = roundUp(padding, genTypeSize(TYP_DOUBLE));
 #endif // TARGET_ARMARCH || TARGET_LOONGARCH64
 
         if (varType != TYP_STRUCT)

@@ -5557,10 +5557,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 // it provides (size and GC layout) even if the node wraps a lclvar. Due
                 // to struct reinterpretation (e.g. Unsafe.As<X, Y>) it is possible that
                 // the OBJ node has a different type than the lclvar.
-                CORINFO_CLASS_HANDLE objClass = source->AsObj()->GetLayout()->GetClassHandle();
-
-                srcSize = compiler->info.compCompHnd->getClassSize(objClass);
-                layout  = source->AsObj()->GetLayout();
+                layout  = source->AsBlk()->GetLayout();
+                srcSize = layout->GetSize();
             }
 
             unsigned structSize;
@@ -5818,9 +5816,6 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             // Because the candidate mask for the internal baseReg does not include any of the target register,
             // we can ensure that baseReg, addrReg, and the last target register are not all same.
             assert(baseReg != addrReg);
-
-            // We don't split HFA struct
-            assert(!compiler->IsHfa(source->AsObj()->GetLayout()->GetClassHandle()));
         }
 
         ClassLayout* layout = source->AsObj()->GetLayout();
@@ -9112,75 +9107,4 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         return;
     }
 }
-
-// return size
-// alignmentWB is out param
-unsigned CodeGenInterface::InferOpSizeAlign(GenTree* op, unsigned* alignmentWB)
-{
-    unsigned alignment = 0;
-    unsigned opSize    = 0;
-
-    if (op->gtType == TYP_STRUCT || op->OperIsCopyBlkOp())
-    {
-        opSize = InferStructOpSizeAlign(op, &alignment);
-    }
-    else
-    {
-        alignment = genTypeAlignments[op->TypeGet()];
-        opSize    = genTypeSizes[op->TypeGet()];
-    }
-
-    assert(opSize != 0);
-    assert(alignment != 0);
-
-    (*alignmentWB) = alignment;
-    return opSize;
-}
-
-// return size
-// alignmentWB is out param
-unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignmentWB)
-{
-    unsigned alignment = 0;
-    unsigned opSize    = 0;
-
-    while (op->gtOper == GT_COMMA)
-    {
-        op = op->AsOp()->gtOp2;
-    }
-
-    if (op->gtOper == GT_OBJ)
-    {
-        CORINFO_CLASS_HANDLE clsHnd = op->AsObj()->GetLayout()->GetClassHandle();
-        opSize                      = op->AsObj()->GetLayout()->GetSize();
-        alignment = roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
-    }
-    else if (op->gtOper == GT_LCL_VAR)
-    {
-        const LclVarDsc* varDsc = compiler->lvaGetDesc(op->AsLclVarCommon());
-        assert(varDsc->lvType == TYP_STRUCT);
-        opSize = varDsc->lvSize();
-        {
-            alignment = TARGET_POINTER_SIZE;
-        }
-    }
-    else if (op->gtOper == GT_MKREFANY)
-    {
-        opSize    = TARGET_POINTER_SIZE * 2;
-        alignment = TARGET_POINTER_SIZE;
-    }
-    else
-    {
-        assert(!"Unhandled gtOper");
-        opSize    = TARGET_POINTER_SIZE;
-        alignment = TARGET_POINTER_SIZE;
-    }
-
-    assert(opSize != 0);
-    assert(alignment != 0);
-
-    (*alignmentWB) = alignment;
-    return opSize;
-}
-
 #endif // TARGET_LOONGARCH64
