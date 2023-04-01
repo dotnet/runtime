@@ -627,7 +627,7 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
             int index = node / sizeof(unsigned long);
             nodeMask[index] = ((unsigned long)1) << (node & (sizeof(unsigned long) - 1));
 
-            int st = BindMemoryPolicy((long)address, size, (long)nodeMask, usedNodeMaskBits);
+            int st = BindMemoryPolicy(address, size, nodeMask, usedNodeMaskBits);
             assert(st == 0);
             // If the mbind fails, we still return the allocated memory since the node is just a hint
         }

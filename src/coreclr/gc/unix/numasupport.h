@@ -6,6 +6,6 @@
 
 void NUMASupportInitialize();
 int GetNumaNodeNumByCpu(int cpu);
-long BindMemoryPolicy(long start, unsigned long len, long nmask, int usedNodeMaskBits);
+long BindMemoryPolicy(void* start, unsigned long len, const unsigned long* nodemask, unsigned long maxnode);
 
 #endif // __NUMASUPPORT_H__

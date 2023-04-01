@@ -20,28 +20,28 @@ bool g_numaAvailable = false;
 #ifdef TARGET_LINUX
 static int GetNodeNum(const char* path, bool firstOnly)
 {
-	DIR *dir;
-	struct dirent *entry;
-    static int result = -1;
+    DIR *dir;
+    struct dirent *entry;
+    int result = -1;
 
-	dir = opendir(path);
-	if (dir)
+    dir = opendir(path);
+    if (dir)
     {
-		while ((entry = readdir(dir)) != NULL)
+        while ((entry = readdir(dir)) != NULL)
         {
-			if (strncmp(entry->d_name, "node", STRING_LENGTH("node")))
-				continue;
+            if (strncmp(entry->d_name, "node", STRING_LENGTH("node")))
+                continue;
 
-			int nodeNum = strtoul(entry->d_name + STRING_LENGTH("node"), NULL, 0);
-			if (result < nodeNum)
-				result = nodeNum;
+            int nodeNum = strtoul(entry->d_name + STRING_LENGTH("node"), NULL, 0);
+            if (result < nodeNum)
+                result = nodeNum;
 
             if (firstOnly)
                 break;
-		}
+        }
 
-		closedir(dir);
-	}
+        closedir(dir);
+    }
 
     return result;
 }
@@ -50,7 +50,7 @@ static int GetNodeNum(const char* path, bool firstOnly)
 void NUMASupportInitialize()
 {
 #ifdef TARGET_LINUX
-	if (syscall(__NR_get_mempolicy, NULL, NULL, 0, 0, 0) < 0 && errno == ENOSYS)
+    if (syscall(__NR_get_mempolicy, NULL, NULL, 0, 0, 0) < 0 && errno == ENOSYS)
         return;
 
     g_numaAvailable = true;
@@ -71,10 +71,10 @@ int GetNumaNodeNumByCpu(int cpu)
 #endif
 }
 
-long BindMemoryPolicy(long start, unsigned long len, long nmask, int usedNodeMaskBits)
+long BindMemoryPolicy(void* start, unsigned long len, const unsigned long* nodemask, unsigned long maxnode)
 {
 #ifdef TARGET_LINUX
-    return syscall(__NR_mbind, start, len, 1, nmask, usedNodeMaskBits, 0);
+    return syscall(__NR_mbind, (long)start, len, 1, (long)nodemask, maxnode, 0);
 #else
     return -1;
 #endif
