@@ -196,6 +196,7 @@ void Compiler::fgUpdateChangedFlowGraph(FlowGraphUpdates updates)
     JITDUMP("\nRenumbering the basic blocks for fgUpdateChangeFlowGraph\n");
     fgRenumberBlocks();
     fgComputeEnterBlocksSet();
+    fgDfsReversePostorder();
     fgComputeReachabilitySets();
     if (computeDoms)
     {
@@ -219,18 +220,18 @@ void Compiler::fgUpdateChangedFlowGraph(FlowGraphUpdates updates)
 //
 // This also sets the BBF_GC_SAFE_POINT flag on blocks.
 //
+// This depends on `fgBBReversePostorder` being correct.
+//
 // TODO-Throughput: This algorithm consumes O(n^2) because we're using dense bitsets to
 // represent reachability. While this yields O(1) time queries, it bloats the memory usage
 // for large code.  We can do better if we try to approach reachability by
 // computing the strongly connected components of the flow graph.  That way we only need
 // linear memory to label every block with its SCC.
 //
-// Assumptions:
-//    Assumes the predecessor lists are correct.
-//
 void Compiler::fgComputeReachabilitySets()
 {
     assert(fgPredsComputed);
+    assert(fgBBReversePostorder != nullptr);
 
 #ifdef DEBUG
     fgReachabilitySetsValid = false;
@@ -250,21 +251,21 @@ void Compiler::fgComputeReachabilitySets()
     // Find the reachable blocks. Also, set BBF_GC_SAFE_POINT.
 
     bool     change;
-    BlockSet newReach(BlockSetOps::MakeEmpty(this));
+    unsigned changedIterCount = 1;
     do
     {
         change = false;
 
-        for (BasicBlock* const block : Blocks())
+        for (unsigned i = 1; i <= fgBBNumMax; ++i)
         {
-            BlockSetOps::Assign(this, newReach, block->bbReach);
+            BasicBlock* const block = fgBBReversePostorder[i];
 
             bool predGcSafe = (block->bbPreds != nullptr); // Do all of our predecessor blocks have a GC safe bit?
 
             for (BasicBlock* const predBlock : block->PredBlocks())
             {
                 /* Union the predecessor's reachability set into newReach */
-                BlockSetOps::UnionD(this, newReach, predBlock->bbReach);
+                change |= BlockSetOps::UnionDChanged(this, block->bbReach, predBlock->bbReach);
 
                 if (!(predBlock->bbFlags & BBF_GC_SAFE_POINT))
                 {
@@ -276,14 +277,14 @@ void Compiler::fgComputeReachabilitySets()
             {
                 block->bbFlags |= BBF_GC_SAFE_POINT;
             }
-
-            if (!BlockSetOps::Equal(this, newReach, block->bbReach))
-            {
-                BlockSetOps::Assign(this, block->bbReach, newReach);
-                change = true;
-            }
         }
+
+        ++changedIterCount;
     } while (change);
+
+#if COUNT_BASIC_BLOCKS
+    computeReachabilitySetsIterationTable.record(changedIterCount);
+#endif // COUNT_BASIC_BLOCKS
 
 #ifdef DEBUG
     if (verbose)
@@ -598,15 +599,11 @@ PhaseStatus Compiler::fgComputeReachability()
         madeChanges |= fgRenumberBlocks();
 
         //
-        // Compute fgEnterBlks
+        // Compute fgEnterBlks, reverse post-order, and bbReach.
         //
 
         fgComputeEnterBlocksSet();
-
-        //
-        // Compute bbReach
-        //
-
+        fgDfsReversePostorder();
         fgComputeReachabilitySets();
 
         //
@@ -617,6 +614,10 @@ PhaseStatus Compiler::fgComputeReachability()
         madeChanges |= changed;
 
     } while (changed);
+
+#if COUNT_BASIC_BLOCKS
+    computeReachabilityIterationTable.record(passNum - 1);
+#endif // COUNT_BASIC_BLOCKS
 
     //
     // Now, compute the dominators
@@ -752,19 +753,24 @@ bool Compiler::fgRemoveDeadBlocks()
 //   preorder and reverse postorder numbers, plus a reverse postorder for blocks.
 //
 // Notes:
-//   Assumes caller has computed the fgEnterBlkSet.
+//   Assumes caller has computed the fgEnterBlks set.
 //
-//   Assumes caller has allocated the fgBBReversePostorder array.
-//   It will be filled in with blocks in reverse post order.
+//   Each block's `bbPreorderNum` and `bbPostorderNum` is set.
+//
+//   The `fgBBReversePostorder` array is filled in with the `BasicBlock*` in reverse post-order.
 //
 //   This algorithm only pays attention to the actual blocks. It ignores any imaginary entry block.
 //
 void Compiler::fgDfsReversePostorder()
 {
+    assert(fgBBcount == fgBBNumMax);
+    assert(BasicBlockBitSetTraits::GetSize(this) == fgBBNumMax + 1);
+
     // Make sure fgEnterBlks are still there in startNodes, even if they participate in a loop (i.e., there is
     // an incoming edge into the block).
     assert(fgEnterBlksSetValid);
-    assert(fgBBReversePostorder != nullptr);
+
+    fgBBReversePostorder = new (this, CMK_DominatorMemory) BasicBlock*[fgBBNumMax + 1]{};
 
     // visited   :  Once we run the DFS post order sort recursive algorithm, we mark the nodes we visited to avoid
     //              backtracking.
@@ -989,13 +995,6 @@ void Compiler::fgComputeDoms()
     assert(BasicBlockBitSetTraits::GetSize(this) == fgBBNumMax + 1);
 #endif // DEBUG
 
-    BlockSet processedBlks(BlockSetOps::MakeEmpty(this));
-
-    fgBBReversePostorder = new (this, CMK_DominatorMemory) BasicBlock*[fgBBNumMax + 1]{};
-
-    fgDfsReversePostorder();
-    noway_assert(fgBBReversePostorder[0] == nullptr);
-
     // flRoot and bbRoot represent an imaginary unique entry point in the flow graph.
     // All the orphaned EH blocks and fgFirstBB will temporarily have its predecessors list
     // (with bbRoot as the only basic block in it) set as flRoot.
@@ -1012,9 +1011,11 @@ void Compiler::fgComputeDoms()
 
     FlowEdge flRoot(&bbRoot, nullptr);
 
+    noway_assert(fgBBReversePostorder[0] == nullptr);
     fgBBReversePostorder[0] = &bbRoot;
 
     // Mark both bbRoot and fgFirstBB processed
+    BlockSet processedBlks(BlockSetOps::MakeEmpty(this));
     BlockSetOps::AddElemD(this, processedBlks, 0); // bbRoot    == block #0
     BlockSetOps::AddElemD(this, processedBlks, 1); // fgFirstBB == block #1
     assert(fgFirstBB->bbNum == 1);
@@ -1057,7 +1058,8 @@ void Compiler::fgComputeDoms()
     }
 
     // Now proceed to compute the immediate dominators for each basic block.
-    bool changed = true;
+    bool     changed          = true;
+    unsigned changedIterCount = 1;
     while (changed)
     {
         changed = false;
@@ -1116,7 +1118,13 @@ void Compiler::fgComputeDoms()
             }
             BlockSetOps::AddElemD(this, processedBlks, block->bbNum);
         }
+
+        ++changedIterCount;
     }
+
+#if COUNT_BASIC_BLOCKS
+    domsChangedIterationTable.record(changedIterCount);
+#endif // COUNT_BASIC_BLOCKS
 
     // As stated before, once we have computed immediate dominance we need to clear
     // all the basic blocks whose predecessor list was set to flRoot.  This
@@ -1311,7 +1319,7 @@ void Compiler::fgNumberDomTree(DomTreeNode* domTree)
 // fgIntersectDom: Intersect two immediate dominator sets.
 //
 // Find the lowest common ancestor in the dominator tree between two basic blocks. The LCA in the dominance tree
-// represents the closest dominator between the two basic blocks. Used to adjust the IDom value in fgComputDoms.
+// represents the closest dominator between the two basic blocks. Used to adjust the IDom value in fgComputeDoms.
 //
 // Arguments:
 //    a, b - two blocks to intersect

@@ -11691,6 +11691,9 @@ extern size_t   gcPtrMapNSize;
 #if COUNT_BASIC_BLOCKS
 extern Histogram bbCntTable;
 extern Histogram bbOneBBSizeTable;
+extern Histogram domsChangedIterationTable;
+extern Histogram computeReachabilitySetsIterationTable;
+extern Histogram computeReachabilityIterationTable;
 #endif
 
 /*****************************************************************************
