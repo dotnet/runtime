@@ -18,7 +18,7 @@ int g_highestNumaNode = 0;
 bool g_numaAvailable = false;
 
 #ifdef TARGET_LINUX
-static int GetNodeNum(const char* path)
+static int GetNodeNum(const char* path, bool firstOnly)
 {
 	DIR *dir;
 	struct dirent *entry;
@@ -35,6 +35,9 @@ static int GetNodeNum(const char* path)
 			int nodeNum = strtoul(entry->d_name + STRING_LENGTH("node"), NULL, 0);
 			if (result < nodeNum)
 				result = nodeNum;
+
+            if (firstOnly)
+                break;
 		}
 
 		closedir(dir);
@@ -51,7 +54,7 @@ void NUMASupportInitialize()
         return;
 
     g_numaAvailable = true;
-    g_highestNumaNode = GetNodeNum("/sys/devices/system/node");
+    g_highestNumaNode = GetNodeNum("/sys/devices/system/node", false);
 #endif
 }
 
@@ -62,7 +65,7 @@ int GetNumaNodeNumByCpu(int cpu)
     if (snprintf(path, sizeof(path), "/sys/devices/system/cpu/cpu%d", cpu) < 0)
         return -1;
 
-    return GetNodeNum(path);
+    return GetNodeNum(path, true);
 #else
     return -1;
 #endif
