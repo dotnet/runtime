@@ -349,8 +349,7 @@ namespace System
                 return false;
             }
 
-            if (input.Length > 0 &&
-                char.IsWhiteSpace(input[0]) ||
+            if (char.IsWhiteSpace(input[0]) ||
                 char.IsWhiteSpace(input[input.Length - 1]))
             {
                 input = input.Trim();
