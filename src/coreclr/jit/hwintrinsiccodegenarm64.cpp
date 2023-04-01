@@ -1057,6 +1057,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 unsigned regCount = 0;
                 op1Reg            = intrin.op1->GetRegNum();
                 op3Reg            = intrin.op3->GetRegNum();
+                assert(targetReg != op3Reg);
                 if (intrin.op2->OperIsFieldList())
                 {
                     GenTreeFieldList* fieldList  = intrin.op2->AsFieldList();
@@ -1069,7 +1070,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 #ifdef DEBUG
 
                         GenTree* argNode = use.GetNode();
+
+                        // registers should be consecutive
                         assert(argReg == argNode->GetRegNum());
+                        // and they should not interfere with targetReg
+                        assert(targetReg != argReg);
                         argReg = REG_NEXT(argReg);
 #endif
                     }

@@ -2002,7 +2002,7 @@ private:
 #ifdef FEATURE_HW_INTRINSICS
     int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount);
 #ifdef TARGET_ARM64
-    int BuildConsecutiveRegistersForUse(GenTree* treeNode);
+    int BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode = nullptr);
 #endif
 #endif // FEATURE_HW_INTRINSICS
 

@@ -1587,8 +1587,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             assert(intrin.op3 != nullptr);
             assert((intrin.id == NI_AdvSimd_VectorTableLookupExtension) ||
                    (intrin.id == NI_AdvSimd_Arm64_VectorTableLookupExtension));
-            srcCount += BuildConsecutiveRegistersForUse(intrin.op2);
-            srcCount += isRMW ? BuildDelayFreeUses(intrin.op3, intrin.op1) : BuildOperandUses(intrin.op3);
+            assert(isRMW);
+            srcCount += BuildConsecutiveRegistersForUse(intrin.op2, intrin.op1);
+            srcCount += BuildDelayFreeUses(intrin.op3, intrin.op1);
         }
         assert(dstCount == 1);
         buildInternalRegisterUses();
@@ -1684,13 +1685,24 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 //
 // Arguments:
 //    treeNode       - The GT_HWINTRINSIC node of interest
+//    rmwNode        - Read-modify-write node.
 //
 // Return Value:
 //    The number of sources consumed by this node.
 //
-int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode)
+int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode)
 {
-    int srcCount = 0;
+    int       srcCount     = 0;
+    Interval* rmwInterval  = nullptr;
+    bool      rmwIsLastUse = false;
+    if ((rmwNode != nullptr))
+    {
+        if (isCandidateLocalRef(rmwNode))
+        {
+            rmwInterval  = getIntervalForLocalVarNode(rmwNode->AsLclVar());
+            rmwIsLastUse = rmwNode->AsLclVar()->IsLastUse(0);
+        }
+    }
     if (treeNode->OperIsFieldList())
     {
         assert(compiler->info.compNeedsConsecutiveRegisters);
@@ -1739,6 +1751,15 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode)
                 }
                 refPositionMap->Set(lastRefPos, restoreRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
                 refPositionMap->Set(restoreRefPos, currRefPos, LinearScan::NextConsecutiveRefPositionsMap::Overwrite);
+
+                if (rmwNode != nullptr)
+                {
+                    // If we have rmwNode, determine if the restoreRefPos should be set to delay-free.
+                    if ((restoreRefPos->getInterval() != rmwInterval) || (!rmwIsLastUse && !restoreRefPos->lastUse))
+                    {
+                        setDelayFree(restoreRefPos);
+                    }
+                }
             }
             else
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
@@ -1754,6 +1775,14 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode)
 
             lastRefPos = currRefPos;
             regCount++;
+            if (rmwNode != nullptr)
+            {
+                // If we have rmwNode, determine if the currRefPos should be set to delay-free.
+                if ((currRefPos->getInterval() != rmwInterval) || (!rmwIsLastUse && !currRefPos->lastUse))
+                {
+                    setDelayFree(currRefPos);
+                }
+            }
         }
 
         // Set `regCount` to actual consecutive registers count for first ref-position.
