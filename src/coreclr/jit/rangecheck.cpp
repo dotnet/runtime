@@ -308,9 +308,13 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
             Range arrLenRange = GetRange(block, bndsChk->GetArrayLength(), false DEBUGARG(0));
             if (arrLenRange.LowerLimit().IsConstant())
             {
+                // Lower known limit of ArrLen:
                 const int lenLowerLimit = arrLenRange.LowerLimit().GetConstant();
-                const int lenShift      = m_pCompiler->vnStore->GetConstantInt32(cnsVN);
-                if ((lenLowerLimit > 0) && (lenLowerLimit >= lenShift))
+
+                // Negative delta in the array access (ArrLen + -CNS)
+                const int delta = m_pCompiler->vnStore->GetConstantInt32(cnsVN);
+                if ((lenLowerLimit > 0) && (lenLowerLimit <= CORINFO_Array_MaxLength) && (delta < 0) &&
+                    (lenLowerLimit >= abs(delta)))
                 {
                     JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
                     m_pCompiler->optRemoveRangeCheck(bndsChk, comma, stmt);
