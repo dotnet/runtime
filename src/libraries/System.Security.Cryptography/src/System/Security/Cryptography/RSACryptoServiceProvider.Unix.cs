@@ -278,6 +278,8 @@ namespace System.Security.Cryptography
                 throw PaddingModeNotSupported();
             }
 
+            CheckSHA3HashAlgorithm(hashAlgorithm);
+
             return _impl.VerifyData(data, offset, count, signature, hashAlgorithm, padding);
         }
 
@@ -289,6 +291,8 @@ namespace System.Security.Cryptography
             {
                 throw PaddingModeNotSupported();
             }
+
+            CheckSHA3HashAlgorithm(hashAlgorithm);
 
             return _impl.VerifyData(data, signature, hashAlgorithm, padding);
         }
@@ -309,6 +313,8 @@ namespace System.Security.Cryptography
             {
                 throw PaddingModeNotSupported();
             }
+
+            CheckSHA3HashAlgorithm(hashAlgorithm);
 
             return _impl.VerifyHash(hash, signature, hashAlgorithm, padding);
         }
