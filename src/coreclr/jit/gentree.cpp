@@ -22371,6 +22371,8 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
                 // var tmp3 = Avx2.UnpackLow(tmp1, tmp2);
                 // return Avx2.Permute4x64(tmp3.AsUInt64(), SHUFFLE_WYZX).AsUInt32();
 
+                CorInfoType opBaseJitType = (simdBaseType == TYP_INT) ? CORINFO_TYPE_LONG : CORINFO_TYPE_ULONG;
+
                 GenTree* op1Dup = fgMakeMultiUse(&op1);
                 GenTree* op2Dup = fgMakeMultiUse(&op2);
 
