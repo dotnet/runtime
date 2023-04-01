@@ -7882,16 +7882,20 @@ GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr
 // gtNewStructVal: Return a node that represents a struct or block value
 //
 // Arguments:
-//    layout - The struct's layout
-//    addr   - The address of the struct
+//    layout     - The struct's layout
+//    addr       - The struct's address
+//    indirFlags - Indirection flags
 //
 // Return Value:
 //    An "OBJ/BLK" node, or "LCL_VAR" node if "addr" points to a local
 //    with a layout compatible with "layout".
 //
-GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr)
+GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
 {
-    if (addr->OperIs(GT_LCL_VAR_ADDR))
+    assert((indirFlags & ~GTF_IND_FLAGS) == 0);
+
+    bool isVolatile = (indirFlags & GTF_IND_VOLATILE) != 0;
+    if (!isVolatile && addr->OperIs(GT_LCL_VAR_ADDR))
     {
         unsigned   lclNum = addr->AsLclVar()->GetLclNum();
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
@@ -7912,25 +7916,12 @@ GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr)
         blkNode = gtNewObjNode(layout, addr);
     }
 
+    blkNode->gtFlags |= indirFlags;
+    if (isVolatile)
+    {
+        blkNode->gtFlags |= GTF_ORDER_SIDEEFF;
+    }
     blkNode->SetIndirExceptionFlags(this);
-
-    return blkNode;
-}
-
-//------------------------------------------------------------------------
-// gtNewBlockVal: Return a node that represents a possibly untyped block value
-//
-// Arguments:
-//    addr      - The address of the block
-//    size      - The size of the block
-//
-// Return Value:
-//    A block, object or local node that represents the block value pointed to by 'addr'.
-//
-GenTree* Compiler::gtNewBlockVal(GenTree* addr, unsigned size)
-{
-    ClassLayout* layout  = typGetBlkLayout(size);
-    GenTree*     blkNode = gtNewStructVal(layout, addr);
 
     return blkNode;
 }
@@ -8208,7 +8199,8 @@ GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVo
 
     if (isVolatile)
     {
-        result->gtFlags |= GTF_BLK_VOLATILE;
+        assert(dst->OperIsIndir());
+        dst->gtFlags |= GTF_IND_VOLATILE;
     }
 
 #ifdef FEATURE_SIMD
