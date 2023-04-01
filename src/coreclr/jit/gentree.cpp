@@ -1381,11 +1381,13 @@ void NewCallArg::ValidateTypes()
     if (varTypeIsStruct(SignatureType))
     {
         assert(SignatureClsHnd != NO_CLASS_HANDLE);
+        assert(SignatureType == Node->TypeGet());
 
-        Compiler*            comp   = JitTls::GetCompiler();
-        CORINFO_CLASS_HANDLE clsHnd = comp->gtGetStructHandleIfPresent(Node);
-        assert((clsHnd == nullptr) || (SignatureClsHnd == clsHnd) ||
-               (comp->info.compCompHnd->getClassSize(SignatureClsHnd) == comp->info.compCompHnd->getClassSize(clsHnd)));
+        if (SignatureType == TYP_STRUCT)
+        {
+            Compiler* comp = JitTls::GetCompiler();
+            assert(ClassLayout::AreCompatible(comp->typGetObjLayout(SignatureClsHnd), Node->GetLayout(comp)));
+        }
     }
 }
 #endif
@@ -17849,95 +17851,6 @@ bool Compiler::gtStoreDefinesField(
     }
 
     return false;
-}
-
-CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
-{
-    CORINFO_CLASS_HANDLE structHnd = NO_CLASS_HANDLE;
-    tree                           = tree->gtEffectiveVal();
-    if (varTypeIsStruct(tree->gtType))
-    {
-        switch (tree->gtOper)
-        {
-            case GT_MKREFANY:
-                structHnd = impGetRefAnyClass();
-                break;
-            case GT_OBJ:
-                structHnd = tree->AsObj()->GetLayout()->GetClassHandle();
-                break;
-            case GT_BLK:
-                structHnd = tree->AsBlk()->GetLayout()->GetClassHandle();
-                break;
-            case GT_CALL:
-                structHnd = tree->AsCall()->gtRetClsHnd;
-                break;
-            case GT_RET_EXPR:
-                structHnd = tree->AsRetExpr()->gtInlineCandidate->gtRetClsHnd;
-                break;
-            case GT_FIELD:
-                info.compCompHnd->getFieldType(tree->AsField()->gtFldHnd, &structHnd);
-                break;
-            case GT_ASG:
-                structHnd = gtGetStructHandleIfPresent(tree->gtGetOp1());
-                break;
-            case GT_LCL_FLD:
-#ifdef FEATURE_SIMD
-                if (varTypeIsSIMD(tree))
-                {
-                    structHnd = gtGetCanonicalStructHandleForSIMD(tree->TypeGet());
-                }
-                else
-#endif // FEATURE_SIMD
-                {
-                    structHnd = tree->AsLclFld()->GetLayout()->GetClassHandle();
-                }
-                break;
-            case GT_LCL_VAR:
-            {
-                LclVarDsc* dsc = lvaGetDesc(tree->AsLclVar());
-                if ((dsc->GetLayout() != nullptr) && !dsc->GetLayout()->IsBlockLayout())
-                {
-                    structHnd = dsc->GetLayout()->GetClassHandle();
-                }
-                break;
-            }
-            case GT_RETURN:
-                structHnd = gtGetStructHandleIfPresent(tree->AsOp()->gtOp1);
-                break;
-#ifdef FEATURE_SIMD
-            case GT_IND:
-                if (varTypeIsSIMD(tree))
-                {
-                    structHnd = gtGetCanonicalStructHandleForSIMD(tree->TypeGet());
-                }
-                break;
-            case GT_CNS_VEC:
-                structHnd = gtGetCanonicalStructHandleForSIMD(tree->TypeGet());
-                break;
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HWINTRINSIC:
-                if (varTypeIsSIMD(tree))
-                {
-                    structHnd =
-                        gtGetStructHandleForSimdOrHW(tree->TypeGet(), tree->AsHWIntrinsic()->GetSimdBaseJitType(),
-                                                     tree->AsHWIntrinsic()->IsSimdAsHWIntrinsic());
-                }
-                break;
-#endif
-            default:
-                break;
-        }
-    }
-
-    return structHnd;
-}
-
-CORINFO_CLASS_HANDLE Compiler::gtGetStructHandle(GenTree* tree)
-{
-    CORINFO_CLASS_HANDLE structHnd = gtGetStructHandleIfPresent(tree);
-    assert(structHnd != NO_CLASS_HANDLE);
-    return structHnd;
 }
 
 //------------------------------------------------------------------------

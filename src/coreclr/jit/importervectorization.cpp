@@ -865,7 +865,8 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
         JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%ws\")...\n", str)
     }
 
-    CORINFO_CLASS_HANDLE spanCls      = gtGetStructHandle(spanObj);
+    CORINFO_CLASS_HANDLE spanCls;
+    info.compCompHnd->getArgType(sig, sig->args, &spanCls);
     CORINFO_FIELD_HANDLE pointerHnd   = info.compCompHnd->getFieldInClass(spanCls, 0);
     CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(spanCls, 1);
     const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);
