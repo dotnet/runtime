@@ -284,7 +284,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     if (m_pCompiler->vnStore->GetVNFunc(idxVn, &funcApp) && funcApp.m_func == (VNFunc)GT_ADD)
     {
         bool     isArrlenAddCns = false;
-        ValueNum cnsVN;
+        ValueNum cnsVN          = {};
         if ((arrLenVn == funcApp.m_args[1]) && m_pCompiler->vnStore->IsVNInt32Constant(funcApp.m_args[0]))
         {
             // ADD(cnsVN, arrLenVn);
