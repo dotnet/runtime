@@ -8439,11 +8439,6 @@ private:
 #endif // defined(TARGET_XARCH)
 #endif // FEATURE_HW_INTRINSICS
 
-        CORINFO_CLASS_HANDLE CanonicalSimd8Handle;
-        CORINFO_CLASS_HANDLE CanonicalSimd16Handle;
-        CORINFO_CLASS_HANDLE CanonicalSimd32Handle;
-        CORINFO_CLASS_HANDLE CanonicalSimd64Handle;
-
         SIMDHandlesCache()
         {
             assert(SupportedTypeCount == static_cast<uint32_t>(CORINFO_TYPE_DOUBLE - CORINFO_TYPE_BYTE + 1));
@@ -8608,58 +8603,9 @@ private:
             clsHnd = gtGetStructHandleForHWSIMD(simdType, simdBaseJitType);
         }
 
-        if (clsHnd == NO_CLASS_HANDLE)
-        {
-            // TODO-cleanup: We can probably just always use the canonical handle.
-            clsHnd = gtGetCanonicalStructHandleForSIMD(simdType);
-        }
-
         return clsHnd;
     }
 #endif // FEATURE_HW_INTRINSICS
-
-    //------------------------------------------------------------------------
-    // gtGetCanonicalStructHandleForSIMD: Get the "canonical" SIMD type handle.
-    //
-    // Some SIMD-typed trees do not carry struct handles with them (and in
-    // some cases, they cannot, due to being created by the compiler itself).
-    // To enable CSEing of these trees, we use "canonical" handles. These are
-    // captured during importation, and can represent any type normalized to
-    // be TYP_SIMD.
-    //
-    // Arguments:
-    //    simdType - The SIMD type
-    //
-    // Return Value:
-    //    The "canonical" type handle for "simdType", if one was available.
-    //    "NO_CLASS_HANDLE" otherwise.
-    //
-    CORINFO_CLASS_HANDLE gtGetCanonicalStructHandleForSIMD(var_types simdType)
-    {
-        if (m_simdHandleCache == nullptr)
-        {
-            return NO_CLASS_HANDLE;
-        }
-
-        switch (simdType)
-        {
-            case TYP_SIMD8:
-                return m_simdHandleCache->CanonicalSimd8Handle;
-            case TYP_SIMD12:
-                return m_simdHandleCache->Vector3Handle;
-            case TYP_SIMD16:
-                return m_simdHandleCache->CanonicalSimd16Handle;
-#if defined(TARGET_XARCH)
-            case TYP_SIMD32:
-                return m_simdHandleCache->CanonicalSimd32Handle;
-            case TYP_SIMD64:
-                return m_simdHandleCache->CanonicalSimd64Handle;
-#endif // TARGET_XARCH
-
-            default:
-                unreached();
-        }
-    }
 
     // Returns true if this is a SIMD type that should be considered an opaque
     // vector type (i.e. do not analyze or promote its fields).

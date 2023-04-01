@@ -459,34 +459,6 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
     {
         assert(size == info.compCompHnd->getClassSize(typeHnd));
         setUsesSIMDTypes(true);
-
-        CORINFO_CLASS_HANDLE* pCanonicalHnd = nullptr;
-
-        switch (size)
-        {
-            case 8:
-                pCanonicalHnd = &m_simdHandleCache->CanonicalSimd8Handle;
-                break;
-            case 12:
-                // There is no need for a canonical SIMD12 handle because it is always Vector3.
-                break;
-            case 16:
-                pCanonicalHnd = &m_simdHandleCache->CanonicalSimd16Handle;
-                break;
-            case 32:
-                pCanonicalHnd = &m_simdHandleCache->CanonicalSimd32Handle;
-                break;
-            case 64:
-                pCanonicalHnd = &m_simdHandleCache->CanonicalSimd64Handle;
-                break;
-            default:
-                unreached();
-        }
-
-        if ((pCanonicalHnd != nullptr) && (*pCanonicalHnd == NO_CLASS_HANDLE))
-        {
-            *pCanonicalHnd = typeHnd;
-        }
     }
 
     return simdBaseJitType;
