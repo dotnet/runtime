@@ -6932,8 +6932,9 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
         // dominators so we don't have to do this extra work here.
 
         BasicBlock* cur = pLoopDsc->lpExit;
-        while (cur != nullptr && pLoopDsc->lpContains(cur) && cur != pLoopDsc->lpEntry)
+        while (cur != nullptr && cur != pLoopDsc->lpEntry)
         {
+            assert(pLoopDsc->lpContains(cur));
             JITDUMP("  --  " FMT_BB " (dominate exit block)\n", cur->bbNum);
             defExec.Push(cur);
             cur = cur->bbIDom;
@@ -6955,15 +6956,8 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, Basi
             }
         }
 
-        // If we didn't reach the entry block, give up and *just* push the entry block (and the pre-headers).
-        if (cur != pLoopDsc->lpEntry)
-        {
-            JITDUMP("  -- odd, we didn't reach entry from exit via dominators. Only considering hoisting in entry "
-                    "block " FMT_BB "\n",
-                    pLoopDsc->lpEntry->bbNum);
-            defExec.Reset();
-            preHeadersList = existingPreHeaders;
-        }
+        // Walking the IDom tree from the single loop exit, we MUST reach the (single) loop entry.
+        assert(cur == pLoopDsc->lpEntry);
     }
     else // More than one exit
     {
