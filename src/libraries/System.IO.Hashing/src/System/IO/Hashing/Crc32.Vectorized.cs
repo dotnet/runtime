@@ -66,10 +66,22 @@ namespace System.IO.Hashing
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector128<ulong> ShiftRightBytesInVector(Vector128<ulong> operand, [ConstantExpected(Max = (byte)15)] byte numBytesToShift) =>
-            Sse2.IsSupported
-                ? Sse2.ShiftRightLogical128BitLane(operand, numBytesToShift)
-                : AdvSimd.ExtractVector128(operand.AsByte(), Vector128<byte>.Zero, numBytesToShift).AsUInt64();
+        private static Vector128<ulong> ShiftRightBytesInVector(Vector128<ulong> operand,
+            [ConstantExpected(Max = (byte)15)] byte numBytesToShift)
+        {
+            if (Sse2.IsSupported)
+            {
+                return Sse2.ShiftRightLogical128BitLane(operand, numBytesToShift);
+            }
+
+            if (AdvSimd.IsSupported)
+            {
+                return AdvSimd.ExtractVector128(operand.AsByte(), Vector128<byte>.Zero, numBytesToShift).AsUInt64();
+            }
+
+            Debug.Fail("This path should be unreachable.");
+            return default;
+        }
 
         // We check for little endian byte order here in case we're ever on ARM in big endian mode.
         // All of these checks except the length check are elided by JIT, so the JITted implementation
@@ -103,7 +115,7 @@ namespace System.IO.Hashing
             Vector128<ulong> x5;
 
             x1 ^= Vector128.CreateScalar(crc).AsUInt64();
-            Vector128<ulong> x0 = Vector128.Create(0x0154442bd4, 0x01c6e41596).AsUInt64(); // k1, k2
+            Vector128<ulong> x0 = Vector128.Create(0x0154442bd4UL, 0x01c6e41596UL); // k1, k2
 
             srcRef = ref Unsafe.Add(ref srcRef, Vector128<byte>.Count * 4);
             length -= Vector128<byte>.Count * 4;
@@ -141,7 +153,7 @@ namespace System.IO.Hashing
             }
 
             // Fold into 128-bits.
-            x0 = Vector128.Create(0x01751997d0, 0x00ccaa009e).AsUInt64(); // k3, k4
+            x0 = Vector128.Create(0x01751997d0UL, 0x00ccaa009eUL); // k3, k4
 
             x5 = CarrylessMultiplyLower(x1, x0);
             x1 = CarrylessMultiplyUpper(x1, x0);
@@ -178,7 +190,7 @@ namespace System.IO.Hashing
             x1 = ShiftRightBytesInVector(x1, 8);
             x1 ^= x2;
 
-            x0 = Vector128.CreateScalar(0x0163cd6124).AsUInt64(); // k5, k0
+            x0 = Vector128.CreateScalar(0x0163cd6124UL); // k5, k0
 
             x2 = ShiftRightBytesInVector(x1, 4);
             x1 &= x3;
@@ -186,7 +198,7 @@ namespace System.IO.Hashing
             x1 ^= x2;
 
             // Reduce to 32 bits.
-            x0 = Vector128.Create(0x01db710641, 0x01f7011641).AsUInt64(); // polynomial
+            x0 = Vector128.Create(0x01db710641UL, 0x01f7011641UL); // polynomial
 
             x2 = x1 & x3;
             x2 = CarrylessMultiplyLeftLowerRightUpper(x2, x0);
