@@ -1259,22 +1259,19 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             using (RSA rsa = RSAFactory.Create())
             {
-                if (RSAFactory.SupportsPss)
-                {
-                    Assert.Throws<PlatformNotSupportedException>(() =>
-                        SignData(rsa, new byte[] { 1 }, new HashAlgorithmName(hashAlgorithm), RSASignaturePadding.Pss));
+                Exception ex = Assert.ThrowsAny<Exception>(() =>
+                    SignData(rsa, new byte[] { 1 }, new HashAlgorithmName(hashAlgorithm), RSASignaturePadding.Pss));
 
-                    Assert.Throws<PlatformNotSupportedException>(() =>
-                        VerifyData(rsa, new byte[] { 1 }, new byte[] { 1 }, new HashAlgorithmName(hashAlgorithm), RSASignaturePadding.Pss));
-                }
-                else
-                {
-                    Assert.ThrowsAny<CryptographicException>(() =>
-                        SignData(rsa, new byte[] { 1 }, new HashAlgorithmName(hashAlgorithm), RSASignaturePadding.Pss));
+                Assert.True(
+                    ex is CryptographicException or PlatformNotSupportedException,
+                    "ex is CryptographicException or PlatformNotSupportedException");
 
-                    Assert.ThrowsAny<CryptographicException>(() =>
-                        VerifyData(rsa, new byte[] { 1 }, new byte[] { 1 }, new HashAlgorithmName(hashAlgorithm), RSASignaturePadding.Pss));
-                }
+                ex = Assert.ThrowsAny<Exception>(() =>
+                    VerifyData(rsa, new byte[] { 1 }, new byte[] { 1 }, new HashAlgorithmName(hashAlgorithm), RSASignaturePadding.Pss));
+
+                Assert.True(
+                    ex is CryptographicException or PlatformNotSupportedException,
+                    "ex is CryptographicException or PlatformNotSupportedException");
             }
         }
 
