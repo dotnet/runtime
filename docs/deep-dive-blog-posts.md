@@ -30,3 +30,4 @@
 - [Preventing .NET Garbage Collections with the TryStartNoGCRegion API](http://mattwarren.org/2016/08/16/Preventing-dotNET-Garbage-Collections-with-the-TryStartNoGCRegion-API/)
 - [GC Pauses and Safe Points](http://mattwarren.org/2016/08/08/GC-Pauses-and-Safe-Points/)
 - [Strings and the CLR - a Special Relationship](http://mattwarren.org/2016/05/31/Strings-and-the-CLR-a-Special-Relationship/)
+- [How Async/Await Really Works in C#](https://devblogs.microsoft.com/dotnet/how-async-await-really-works/)

@@ -2765,7 +2765,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 // Generate code for InitBlk by performing a loop unroll
 // Preconditions:
 //   a) Both the size and fill byte value are integer constants.
-//   b) The size of the struct to initialize is smaller than INITBLK_UNROLL_LIMIT bytes.
+//   b) The size of the struct to initialize is smaller than getUnrollThreshold() bytes.
 void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 {
     assert(node->OperIs(GT_STORE_BLK));
@@ -4355,8 +4355,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
     int cond = ((int)tree->gtFlags >> 25) & 0xf; // GenCondition::Code.
     assert((((int)tree->gtFlags >> 25) & GenCondition::Float) == 0);
 
-    bool IsUnsigned = (((cond & GenCondition::OperMask) > 1) && ((cond & GenCondition::Unsigned) != 0));
-    assert(((tree->gtFlags & GTF_UNSIGNED) != 0) == IsUnsigned);
+    bool IsUnsigned = (cond & GenCondition::Unsigned) != 0;
 
     emitAttr  cmpSize = EA_ATTR(genTypeSize(op1Type));
     regNumber regOp1  = op1->GetRegNum();
@@ -5076,7 +5075,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_LE:
         case GT_GE:
         case GT_GT:
-        case GT_CMP:
             genConsumeOperands(treeNode->AsOp());
             genCodeForCompare(treeNode->AsOp());
             break;
@@ -6459,7 +6457,7 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
 //    None
 //
 // Assumption:
-//  The size argument of the CpBlk node is a constant and <= CPBLK_UNROLL_LIMIT bytes.
+//  The size argument of the CpBlk node is a constant and <= getUnrollThreshold() bytes.
 //
 void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 {

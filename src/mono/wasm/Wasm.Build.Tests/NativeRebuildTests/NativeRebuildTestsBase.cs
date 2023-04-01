@@ -186,13 +186,5 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             return dict;
         }
-
-        protected void AssertSubstring(string substring, string full, bool contains)
-        {
-            if (contains)
-                Assert.Contains(substring, full);
-            else
-                Assert.DoesNotContain(substring, full);
-        }
     }
 }

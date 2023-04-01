@@ -228,6 +228,7 @@ namespace System
     }
     public enum ConsoleKey
     {
+        None = 0,
         Backspace = 8,
         Tab = 9,
         Clear = 12,
@@ -389,6 +390,7 @@ namespace System
     [System.FlagsAttribute]
     public enum ConsoleModifiers
     {
+        None = 0,
         Alt = 1,
         Shift = 2,
         Control = 4,

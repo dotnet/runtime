@@ -219,4 +219,13 @@
   <data name="MethodNotDeclaredInAttributedInterfaceTitle" xml:space="preserve">
     <value>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</value>
   </data>
-</root>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageDescription" xml:space="preserve">
+    <value>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</value>
+  </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute" xml:space="preserve">
+    <value>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</value>
+  </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageTitle" xml:space="preserve">
+    <value>Invalid 'GeneratedComInterfaceAttribute' usage.</value>
+  </data>
+</root>

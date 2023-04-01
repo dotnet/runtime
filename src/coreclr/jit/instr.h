@@ -119,6 +119,7 @@ enum insFlags : uint64_t
     // Resets
     Resets_OF = 1ULL << 12,
     Resets_SF = 1ULL << 13,
+    Resets_ZF = 1ULL << 39,
     Resets_AF = 1ULL << 14,
     Resets_PF = 1ULL << 15,
     Resets_CF = 1ULL << 16,
@@ -153,6 +154,25 @@ enum insFlags : uint64_t
     Input_32Bit = 1ULL << 31,
     Input_64Bit = 1ULL << 32,
     Input_Mask = (0xFULL) << 29,
+
+    // encoding of the REX.W-bit
+    REX_W0  = 1ULL << 33,
+    REX_W1  = 1ULL << 34,
+    REX_WX  = 1ULL << 35,
+
+    // encoding of the REX.W-bit is considered for EVEX only and W0 or WIG otherwise
+    REX_W0_EVEX = REX_W0,
+    REX_W1_EVEX = 1ULL << 36,
+
+    // encoding of the REX.W-bit is ignored
+    REX_WIG     = REX_W0,
+
+    // whether VEX or EVEX encodings are directly supported
+    Encoding_VEX   = 1ULL << 37,
+    Encoding_EVEX  = 1ULL << 38,
+
+    // Listed above so it is "inline" with the other Resets_* flags
+    // Resets_ZF = 1ULL << 39,
 
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
@@ -350,9 +370,14 @@ enum emitAttr : unsigned
                 EA_4BYTE         = 0x004,
                 EA_8BYTE         = 0x008,
                 EA_16BYTE        = 0x010,
+
+#if defined(TARGET_XARCH)
                 EA_32BYTE        = 0x020,
                 EA_64BYTE        = 0x040,
                 EA_SIZE_MASK     = 0x07F,
+#else
+                EA_SIZE_MASK     = 0x01F,
+#endif
 
 #ifdef TARGET_64BIT
                 EA_PTRSIZE       = EA_8BYTE,

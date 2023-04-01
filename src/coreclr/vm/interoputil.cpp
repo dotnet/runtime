@@ -1837,7 +1837,7 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
         {
             GCX_COOP();
 
-            DefItfType = TypeName::GetTypeUsingCASearchRules(defItf.GetUnicode(), pClassMT->GetAssembly());
+            DefItfType = TypeName::GetTypeReferencedByCustomAttribute(defItf.GetUnicode(), pClassMT->GetAssembly());
 
             // If the type handle isn't a named type, then throw an exception using
             // the name of the type obtained from pCurrInterfaces.
@@ -2109,7 +2109,7 @@ void GetComSourceInterfacesForClass(MethodTable *pMT, CQuickArray<MethodTable *>
                 {
                     // Load the COM source interface specified in the CA.
                     TypeHandle ItfType;
-                    ItfType = TypeName::GetTypeUsingCASearchRules(pCurrInterfaces, pMT->GetAssembly());
+                    ItfType = TypeName::GetTypeReferencedByCustomAttribute(pCurrInterfaces, pMT->GetAssembly());
 
                     // If the type handle isn't a named type, then throw an exception using
                     // the name of the type obtained from pCurrInterfaces.

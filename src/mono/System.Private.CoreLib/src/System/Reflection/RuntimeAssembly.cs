@@ -381,7 +381,7 @@ namespace System.Reflection
                         unsafe
                         {
                             Mono.MonoAssemblyName* nativeName = (Mono.MonoAssemblyName*)nativeNames[i];
-                            Mono.RuntimeMarshal.FreeAssemblyName(ref *nativeName, true);
+                            AssemblyName.FreeAssemblyName(ref *nativeName, true);
                         }
                     }
                 }
@@ -430,7 +430,7 @@ namespace System.Reflection
             if (res == assembly)
                 res = null;
             if (res == null && throwOnFileNotFound)
-                throw new FileNotFoundException(string.Format(culture, SR.IO_FileNotFound_FileName, an.Name));
+                throw new FileNotFoundException(SR.Format(culture, SR.IO_FileNotFound_FileName, an.Name));
             return res;
         }
 

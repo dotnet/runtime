@@ -165,8 +165,7 @@ namespace Internal.Reflection.Augments
 
         public abstract Assembly[] GetLoadedAssemblies();
 
-        public abstract EnumInfo<TUnderlyingValue> GetEnumInfo<TUnderlyingValue>(Type type)
-            where TUnderlyingValue : struct, INumber<TUnderlyingValue>;
+        public abstract EnumInfo GetEnumInfo(Type type, Func<Type, string[], object[], bool, EnumInfo> create);
 
         public abstract DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type);
     }

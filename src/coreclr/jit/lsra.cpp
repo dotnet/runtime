@@ -636,16 +636,20 @@ LinearScan::LinearScan(Compiler* theCompiler)
     , refPositions(theCompiler->getAllocator(CMK_LSRA_RefPosition))
     , listNodePool(theCompiler)
 {
+#if defined(TARGET_XARCH)
+    availableRegCount = ACTUAL_REG_COUNT;
+
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
-    availableRegCount = ACTUAL_REG_COUNT;
+#endif
 
-    if (!compiler->DoJitStressEvexEncoding())
+    if (!compiler->canUseEvexEncoding())
     {
         availableRegCount -= CNT_HIGHFLOAT;
+        availableRegCount -= CNT_MASK_REGS;
     }
-#endif // TARGET_AMD64
+#endif // TARGET_XARCH
 
     regSelector  = new (theCompiler, CMK_LSRA) RegisterSelection(this);
     firstColdLoc = MaxLocation;
@@ -698,51 +702,39 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
     availableFloatRegs  = RBM_ALLFLOAT;
     availableDoubleRegs = RBM_ALLDOUBLE;
+#if defined(TARGET_XARCH)
+    availableMaskRegs = RBM_ALLMASK;
+#endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (compiler->opts.compDbgEnC)
     {
         // When the EnC option is set we have an exact set of registers that we always save
         // that are also available in future versions.
-        availableIntRegs &= ~RBM_CALLEE_SAVED | RBM_ENC_CALLEE_SAVED;
-        availableFloatRegs &= ~RBM_CALLEE_SAVED;
-        availableDoubleRegs &= ~RBM_CALLEE_SAVED;
+        availableIntRegs &= ~RBM_INT_CALLEE_SAVED | RBM_ENC_CALLEE_SAVED;
+        availableFloatRegs &= ~RBM_FLT_CALLEE_SAVED;
+        availableDoubleRegs &= ~RBM_FLT_CALLEE_SAVED;
+#if defined(TARGET_XARCH)
+        availableMaskRegs &= ~RBM_MSK_CALLEE_SAVED;
+#endif // TARGET_XARCH
     }
 #endif // TARGET_AMD64 || TARGET_ARM64
 
 #if defined(TARGET_AMD64)
-    // TODO-XARCH-AVX512 switch this to canUseEvexEncoding() once we independently
-    // allow EVEX use from the stress flag (currently, if EVEX stress is turned off,
-    // we cannot use EVEX at all)
-    if (compiler->DoJitStressEvexEncoding())
+    if (compiler->canUseEvexEncoding())
     {
         availableFloatRegs |= RBM_HIGHFLOAT;
         availableDoubleRegs |= RBM_HIGHFLOAT;
     }
 #endif
 
-    for (unsigned int i = 0; i < TYP_COUNT; i++)
-    {
-        var_types thisType = (var_types)genActualTypes[i];
-        if (thisType == TYP_FLOAT)
-        {
-            availableRegs[i] = &availableFloatRegs;
-        }
-        else if (thisType == TYP_DOUBLE)
-        {
-            availableRegs[i] = &availableDoubleRegs;
-        }
-#ifdef FEATURE_SIMD
-        else if (varTypeIsSIMD(thisType))
-        {
-            availableRegs[i] = &availableDoubleRegs;
-        }
-#endif // FEATURE_SIMD
-        else
-        {
-            availableRegs[i] = &availableIntRegs;
-        }
-    }
+    // Initialize the availableRegs to use for each TYP_*
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#define DEF_TP(tn, nm, jitType, verType, sz, sze, asze, st, al, regTyp, regFld, tf)                                    \
+    availableRegs[static_cast<int>(TYP_##tn)] = &regFld;
+#include "typelist.h"
+#undef DEF_TP
 
     compiler->rpFrameType           = FT_NOT_SET;
     compiler->rpMustCreateEBPCalled = false;
@@ -1838,7 +1830,7 @@ void LinearScan::identifyCandidates()
         if (varDsc->lvLRACandidate)
         {
             var_types type = varDsc->GetStackSlotHomeType();
-            if (varTypeUsesFloatReg(type))
+            if (!varTypeUsesIntReg(type))
             {
                 compiler->compFloatingPointUsed = true;
             }
@@ -4778,7 +4770,7 @@ void LinearScan::allocateRegisters()
                     regMaskTP regMask = genRegMask(reg);
                     // If this isn't available or if it's still waiting to be freed (i.e. it was in
                     // delayRegsToFree and so now it's in regsToFree), then skip it.
-                    if ((regMask & (availableIntRegs | availableFloatRegs) & ~regsToFree) == RBM_NONE)
+                    if ((regMask & allAvailableRegs & ~regsToFree) == RBM_NONE)
                     {
                         continue;
                     }
@@ -7753,6 +7745,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
         }
     }
 
+    LclVarDsc* terminatorNodeLclVarDsc = nullptr;
     // Next, if this blocks ends with a switch table, or for Arm64, ends with JCMP instruction,
     // make sure to not copy into the registers that are consumed at the end of this block.
     //
@@ -7785,10 +7778,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             consumedRegs |= genRegMask(srcOp1->GetRegNum());
         }
     }
-
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-    // Next, if this blocks ends with a JCMP, we have to make sure:
-    // 1. Not to copy into the register that JCMP uses
+    // Next, if this blocks ends with a JCMP/JTRUE, we have to make sure:
+    // 1. Not to copy into the register that JCMP/JTRUE uses
     //    e.g. JCMP w21, BRANCH
     // 2. Not to copy into the source of JCMP's operand before it is consumed
     //    e.g. Should not use w0 since it will contain wrong value after resolution
@@ -7797,34 +7788,37 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     //          mov w21, w0
     //          JCMP w21, BRANCH
     // 3. Not to modify the local variable it must consume
-
     // Note: GT_COPY has special handling in codegen and its generation is merged with the
     // node that consumes its result. So both, the input and output regs of GT_COPY must be
     // excluded from the set available for resolution.
-    LclVarDsc* jcmpLocalVarDsc = nullptr;
-    if (block->bbJumpKind == BBJ_COND)
+    else if (block->bbJumpKind == BBJ_COND)
     {
         GenTree* lastNode = LIR::AsRange(block).LastNode();
 
-        if (lastNode->OperIs(GT_JCMP))
+        if (lastNode->OperIs(GT_JTRUE, GT_JCMP))
         {
-            GenTree* op1 = lastNode->gtGetOp1();
-            consumedRegs |= genRegMask(op1->GetRegNum());
+            GenTree* op = lastNode->gtGetOp1();
+            consumedRegs |= genRegMask(op->GetRegNum());
 
-            if (op1->OperIs(GT_COPY))
+            if (op->OperIs(GT_COPY))
             {
-                GenTree* srcOp1 = op1->gtGetOp1();
-                consumedRegs |= genRegMask(srcOp1->GetRegNum());
+                GenTree* srcOp = op->gtGetOp1();
+                consumedRegs |= genRegMask(srcOp->GetRegNum());
             }
 
-            if (op1->IsLocal())
+            if (op->IsLocal())
             {
-                GenTreeLclVarCommon* lcl = op1->AsLclVarCommon();
-                jcmpLocalVarDsc          = &compiler->lvaTable[lcl->GetLclNum()];
+                GenTreeLclVarCommon* lcl = op->AsLclVarCommon();
+                terminatorNodeLclVarDsc  = &compiler->lvaTable[lcl->GetLclNum()];
             }
+
+#ifndef TARGET_LOONGARCH64
+            // TODO-LOONGARCH64: Take into account that on LA64, the second
+            // operand of a JCMP can be in a register too.
+            assert(!lastNode->OperIs(GT_JCMP) || lastNode->gtGetOp2()->isContained());
+#endif
         }
     }
-#endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
     VarToRegMap sameVarToRegMap = sharedCriticalVarToRegMap;
     regMaskTP   sameWriteRegs   = RBM_NONE;
@@ -7901,7 +7895,8 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             }
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-            if (jcmpLocalVarDsc && (jcmpLocalVarDsc->lvVarIndex == outResolutionSetVarIndex))
+            if ((terminatorNodeLclVarDsc != nullptr) &&
+                (terminatorNodeLclVarDsc->lvVarIndex == outResolutionSetVarIndex))
             {
                 sameToReg = REG_NA;
             }
@@ -8751,8 +8746,8 @@ const char* LinearScan::getStatName(unsigned stat)
 #include "lsra_stats.h"
 #undef LSRA_STAT_DEF
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId) #stat,
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
     };
 
     assert(stat < ArrLen(lsraStatNames));
@@ -8766,8 +8761,8 @@ LsraStat LinearScan::getLsraStatFromScore(RegisterScore registerScore)
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     case RegisterScore::stat:                                                                                          \
         return LsraStat::STAT_##stat;
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
         default:
             return LsraStat::STAT_FREE;
     }
@@ -9069,8 +9064,8 @@ const char* LinearScan::getScoreName(RegisterScore score)
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     case stat:                                                                                                         \
         return shortname;
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
         default:
             return "  -  ";
     }
@@ -11065,8 +11060,8 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
 
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     mappingTable->Set(stat, &LinearScan::RegisterSelection::try_##stat);
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId) REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
 
     LPCWSTR ordering = JitConfig.JitLsraOrdering();
     if (ordering == nullptr)
@@ -11085,8 +11080,8 @@ LinearScan::RegisterSelection::RegisterSelection(LinearScan* linearScan)
     case orderSeqId:                                                                                                   \
         RegSelectionOrder[orderId] = enum_name;                                                                        \
         break;
+#define BUSY_REG_SEL_DEF(enum_name, value, shortname, orderSeqId) REG_SEL_DEF(enum_name, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
             default:
                 assert(!"Invalid lsraOrdering value.");
         }
@@ -12075,13 +12070,24 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         }
     }
 #else // RELEASE
-// In release, just invoke the default order
 
+    // In release, just invoke the default order
+    if (freeCandidates != RBM_NONE)
+    {
 #define REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                                \
     try_##stat();                                                                                                      \
     IF_FOUND_GOTO_DONE
+
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)
 #include "lsra_score.h"
-#undef REG_SEL_DEF
+    }
+
+#define REG_SEL_DEF(stat, value, shortname, orderSeqId)
+#define BUSY_REG_SEL_DEF(stat, value, shortname, orderSeqId)                                                           \
+    try_##stat();                                                                                                      \
+    IF_FOUND_GOTO_DONE
+#include "lsra_score.h"
+
 #endif // DEBUG
 #undef IF_FOUND_GOTO_DONE
 

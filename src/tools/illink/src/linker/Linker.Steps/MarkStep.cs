@@ -1966,7 +1966,7 @@ namespace Mono.Linker.Steps
 
 			MarkType (type.BaseType, new DependencyInfo (DependencyKind.BaseType, type));
 
-			// The DynamicallyAccessedMembers hiearchy processing must be done after the base type was marked
+			// The DynamicallyAccessedMembers hierarchy processing must be done after the base type was marked
 			// (to avoid inconsistencies in the cache), but before anything else as work done below
 			// might need the results of the processing here.
 			DynamicallyAccessedMembersTypeHierarchy.ProcessMarkedTypeForDynamicallyAccessedMembersHierarchy (type);

@@ -195,7 +195,7 @@ namespace System.Text.Json.Serialization.Tests
         }
       
         [Fact]
-        public static void EnumSerialization_DictionaryPolicy_Honored_CamelCase()
+        public async Task EnumSerialization_DictionaryPolicy_Honored_CamelCase()
         {
             var options = new JsonSerializerOptions
             {
@@ -203,31 +203,31 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             Dictionary<ETestEnum, ETestEnum> dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue1] = ETestEnum.TestValue1 };
-            string value = JsonSerializer.Serialize(dict, options);
+            string value = await Serializer.SerializeWrapper(dict, options);
             Assert.Equal("{\"testValue1\":1}", value);
 
             dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue2] = ETestEnum.TestValue2 };
-            value = JsonSerializer.Serialize(dict, options);
+            value = await Serializer.SerializeWrapper(dict, options);
             Assert.Equal("{\"testValue2\":2}", value);
 
             dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue1] = ETestEnum.TestValue1, [ETestEnum.TestValue2] = ETestEnum.TestValue2 };
-            value = JsonSerializer.Serialize(dict, options);
+            value = await Serializer.SerializeWrapper(dict, options);
             Assert.Equal("{\"testValue1\":1,\"testValue2\":2}", value);
         }
 
         [Fact]
-        public static void EnumSerializationAsDictKey_NoDictionaryKeyPolicy()
+        public async Task EnumSerializationAsDictKey_NoDictionaryKeyPolicy()
         {
             Dictionary<ETestEnum, ETestEnum> dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue1] = ETestEnum.TestValue1 };
-            string value = JsonSerializer.Serialize(dict);
+            string value = await Serializer.SerializeWrapper(dict);
             Assert.Equal("{\"TestValue1\":1}", value);
 
             dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue2] = ETestEnum.TestValue2 };
-            value = JsonSerializer.Serialize(dict);
+            value = await Serializer.SerializeWrapper(dict);
             Assert.Equal("{\"TestValue2\":2}", value);
 
             dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue1] = ETestEnum.TestValue1, [ETestEnum.TestValue2] = ETestEnum.TestValue2 };
-            value = JsonSerializer.Serialize(dict);
+            value = await Serializer.SerializeWrapper(dict);
             Assert.Equal("{\"TestValue1\":1,\"TestValue2\":2}", value);
         }
 
@@ -238,27 +238,27 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void EnumSerialization_DictionaryPolicy_NotApplied_WhenEnumsAreSerialized()
+        public async Task EnumSerialization_DictionaryPolicy_NotApplied_WhenEnumsAreSerialized()
         {
             var options = new JsonSerializerOptions
             {
                 DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
             };
 
-            string value = JsonSerializer.Serialize(DayOfWeek.Friday, options);
+            string value = await Serializer.SerializeWrapper(DayOfWeek.Friday, options);
 
             Assert.Equal("5", value);
 
-            value = JsonSerializer.Serialize(ETestEnum.TestValue2, options);
+            value = await Serializer.SerializeWrapper(ETestEnum.TestValue2, options);
 
             Assert.Equal("2", value);
 
 
-            value = JsonSerializer.Serialize(new ClassWithEnumProperties(), options);
+            value = await Serializer.SerializeWrapper(new ClassWithEnumProperties(), options);
 
             Assert.Equal("{\"TestEnumProperty1\":2,\"TestEnumProperty2\":1}", value);
 
-            value = JsonSerializer.Serialize(new List<DayOfWeek> { DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday}, options);
+            value = await Serializer.SerializeWrapper(new List<DayOfWeek> { DayOfWeek.Sunday, DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday }, options);
 
             Assert.Equal("[0,1,2,3,4,5,6]", value);
         }
@@ -269,7 +269,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void EnumSerialization_DictionaryPolicy_ThrowsException_WhenNamingPolicyReturnsNull()
+        public async Task EnumSerialization_DictionaryPolicy_ThrowsException_WhenNamingPolicyReturnsNull()
         {
             var options = new JsonSerializerOptions
             {
@@ -278,7 +278,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Dictionary<ETestEnum, ETestEnum> dict = new Dictionary<ETestEnum, ETestEnum> { [ETestEnum.TestValue1] = ETestEnum.TestValue1 };
 
-            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(dict, options));
+            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.SerializeWrapper(dict, options));
 
             Assert.Contains(typeof(CustomJsonNamingPolicy).ToString(), ex.Message);
         }

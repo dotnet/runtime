@@ -5,10 +5,12 @@
 //Testing small for loops (less than 5)
 
 using System;
+using Xunit;
 
-internal class SmallLoop1
+public class SmallLoop1
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool passed = true;
         int j;

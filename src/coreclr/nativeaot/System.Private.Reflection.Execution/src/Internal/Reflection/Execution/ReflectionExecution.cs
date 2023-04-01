@@ -59,27 +59,6 @@ namespace Internal.Reflection.Execution
             ExecutionEnvironment = executionEnvironment;
         }
 
-        //
-        // This entry is targeted by the ILTransformer to implement Type.GetType()'s ability to detect the calling assembly and use it as
-        // a default assembly name.
-        //
-        public static Type GetType(string typeName, string callingAssemblyName, bool throwOnError, bool ignoreCase)
-        {
-            return ExtensibleGetType(typeName, callingAssemblyName, null, null, throwOnError: throwOnError, ignoreCase: ignoreCase);
-        }
-
-        //
-        // This entry is targeted by the ILTransformer to implement Type.GetType()'s ability to detect the calling assembly and use it as
-        // a default assembly name.
-        //
-        public static Type ExtensibleGetType(string typeName, string callingAssemblyName, Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase)
-        {
-            LowLevelListWithIList<string> defaultAssemblies = new LowLevelListWithIList<string>();
-            defaultAssemblies.Add(callingAssemblyName);
-            defaultAssemblies.Add(AssemblyBinder.DefaultAssemblyNameForGetType);
-            return ReflectionCoreExecution.ExecutionDomain.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, defaultAssemblies);
-        }
-
         public static bool TryGetMethodMetadataFromStartAddress(IntPtr methodStartAddress, out MetadataReader reader, out TypeDefinitionHandle typeHandle, out MethodHandle methodHandle)
         {
             reader = null;

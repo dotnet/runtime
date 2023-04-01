@@ -186,7 +186,6 @@
       <Compile Include="$(BclSourcesRoot)\System\TypeIdentifier.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypedReference.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
       <Compile Include="$(BclSourcesRoot)\System\__ComObject.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.Mono.cs" />
@@ -245,6 +244,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\UnmanagedMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\MetadataUpdater.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeNameParser.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
@@ -289,7 +289,6 @@
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\HotReload.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\RuntimeStructs.cs" />
-      <Compile Include="$(BclSourcesRoot)\Mono\RuntimeMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\SafeStringMarshal.cs" />
       <Compile Include="$(BclSourcesRoot)\Mono\SafeGPtrArrayHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeSpec.cs" />

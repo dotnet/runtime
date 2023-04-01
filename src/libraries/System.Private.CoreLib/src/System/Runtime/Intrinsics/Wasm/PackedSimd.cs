@@ -430,6 +430,161 @@ namespace System.Runtime.Intrinsics.Wasm
         [Intrinsic]
         public static Vector128<nuint>  Negate(Vector128<nuint>  value) => Negate(value);
 
+        // Bit shifts
+
+        /// <summary>
+        ///   i8x16.shl
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<sbyte>  ShiftLeft(Vector128<sbyte>  value, int count) => ShiftLeft(value, count);
+        /// <summary>
+        ///   i8x16.shl
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<byte>   ShiftLeft(Vector128<byte>   value, int count) => ShiftLeft(value, count);
+        /// <summary>
+        ///   i16x8.shl
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  ShiftLeft(Vector128<short>  value, int count) => ShiftLeft(value, count);
+        /// <summary>
+        ///   i16x8.shl
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> ShiftLeft(Vector128<ushort> value, int count) => ShiftLeft(value, count);
+        /// <summary>
+        ///   i32x4.shl
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    ShiftLeft(Vector128<int>    value, int count) => ShiftLeft(value, count);
+        /// <summary>
+        ///   i32x4.shl
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   ShiftLeft(Vector128<uint>   value, int count) => ShiftLeft(value, count);
+        /// <summary>
+        ///   i64x2.shl
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   ShiftLeft(Vector128<long>   value, int count) => ShiftLeft(value, count);
+        /// <summary>
+        ///   i64x2.shl
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  ShiftLeft(Vector128<ulong>  value, int count) => ShiftLeft(value, count);
+        /// <summary>
+        ///   i32x4.shl
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<nint>   ShiftLeft(Vector128<nint>   value, int count) => ShiftLeft(value, count);
+        /// <summary>
+        ///   i32x4.shl
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<nuint>  ShiftLeft(Vector128<nuint>  value, int count) => ShiftLeft(value, count);
+
+        /// <summary>
+        ///   i8x16.shr_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<sbyte>  ShiftRightArithmetic(Vector128<sbyte>  value, int count) => ShiftRightArithmetic(value, count);
+        /// <summary>
+        ///   i8x16.shr_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<byte>   ShiftRightArithmetic(Vector128<byte>   value, int count) => ShiftRightArithmetic(value, count);
+        /// <summary>
+        ///   i16x8.shr_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  ShiftRightArithmetic(Vector128<short>  value, int count) => ShiftRightArithmetic(value, count);
+        /// <summary>
+        ///   i16x8.shr_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> ShiftRightArithmetic(Vector128<ushort> value, int count) => ShiftRightArithmetic(value, count);
+        /// <summary>
+        ///   i32x4.shr_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    ShiftRightArithmetic(Vector128<int>    value, int count) => ShiftRightArithmetic(value, count);
+        /// <summary>
+        ///   i32x4.shr_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   ShiftRightArithmetic(Vector128<uint>   value, int count) => ShiftRightArithmetic(value, count);
+        /// <summary>
+        ///   i64x2.shr_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   ShiftRightArithmetic(Vector128<long>   value, int count) => ShiftRightArithmetic(value, count);
+        /// <summary>
+        ///   i64x2.shr_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  ShiftRightArithmetic(Vector128<ulong>  value, int count) => ShiftRightArithmetic(value, count);
+        /// <summary>
+        ///   i32x4.shr_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<nint>   ShiftRightArithmetic(Vector128<nint>   value, int count) => ShiftRightArithmetic(value, count);
+        /// <summary>
+        ///   i32x4.shr_s
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<nuint>  ShiftRightArithmetic(Vector128<nuint>  value, int count) => ShiftRightArithmetic(value, count);
+
+        /// <summary>
+        ///   i8x16.shr_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<sbyte>  ShiftRightLogical(Vector128<sbyte>  value, int count) => ShiftRightLogical(value, count);
+        /// <summary>
+        ///   i8x16.shr_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<byte>   ShiftRightLogical(Vector128<byte>   value, int count) => ShiftRightLogical(value, count);
+        /// <summary>
+        ///   i16x8.shr_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<short>  ShiftRightLogical(Vector128<short>  value, int count) => ShiftRightLogical(value, count);
+        /// <summary>
+        ///   i16x8.shr_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ushort> ShiftRightLogical(Vector128<ushort> value, int count) => ShiftRightLogical(value, count);
+        /// <summary>
+        ///   i32x4.shr_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<int>    ShiftRightLogical(Vector128<int>    value, int count) => ShiftRightLogical(value, count);
+        /// <summary>
+        ///   i32x4.shr_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<uint>   ShiftRightLogical(Vector128<uint>   value, int count) => ShiftRightLogical(value, count);
+        /// <summary>
+        ///   i64x2.shr_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<long>   ShiftRightLogical(Vector128<long>   value, int count) => ShiftRightLogical(value, count);
+        /// <summary>
+        ///   i64x2.shr_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<ulong>  ShiftRightLogical(Vector128<ulong>  value, int count) => ShiftRightLogical(value, count);
+        /// <summary>
+        ///   i32x4.shr_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<nint>   ShiftRightLogical(Vector128<nint>   value, int count) => ShiftRightLogical(value, count);
+        /// <summary>
+        ///   i32x4.shr_u
+        /// </summary>
+        [Intrinsic]
+        public static Vector128<nuint>  ShiftRightLogical(Vector128<nuint>  value, int count) => ShiftRightLogical(value, count);
+
         // Bitwise operations
 
         /// <summary>
@@ -665,5 +820,29 @@ namespace System.Runtime.Intrinsics.Wasm
         /// </summary>
         [Intrinsic]
         public static Vector128<nuint>  CompareNotEqual(Vector128<nuint>  left, Vector128<nuint>  right) => CompareNotEqual(left, right);
+
+        /// <summary>
+        ///   i8x16.narrow_i16x8_s
+        /// </summary>
+        [Intrinsic]
+        internal static Vector128<sbyte> ConvertNarrowingSignedSaturate(Vector128<short> lower, Vector128<short> upper) => ConvertNarrowingSignedSaturate(lower, upper);
+
+        /// <summary>
+        ///   i16x8.narrow_i32x4_s
+        /// </summary>
+        [Intrinsic]
+        internal static Vector128<short> ConvertNarrowingSignedSaturate(Vector128<int>   lower, Vector128<int>   upper) => ConvertNarrowingSignedSaturate(lower, upper);
+
+        /// <summary>
+        ///   i8x16.narrow_i16x8_u
+        /// </summary>
+        [Intrinsic]
+        internal static Vector128<byte>  ConvertNarrowingUnsignedSaturate(Vector128<short> lower, Vector128<short> upper) => ConvertNarrowingUnsignedSaturate(lower, upper);
+
+        /// <summary>
+        ///   i16x8.narrow_i32x4_u
+        /// </summary>
+        [Intrinsic]
+        internal static Vector128<ushort> ConvertNarrowingUnsignedSaturate(Vector128<int>  lower, Vector128<int>   upper) => ConvertNarrowingUnsignedSaturate(lower, upper);
     }
 }
