@@ -208,7 +208,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
                 cmpOp = GT_LE;
             }
             else if ((m_testInfo1.compTree->gtOper == GT_GT && m_testInfo2.compTree->gtOper == GT_EQ) ||
-                (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_GT))
+                     (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_GT))
             {
                 // Case: t1:c1>0 t2:c1==0
                 // So we will branch to BX if c1>=0
@@ -233,8 +233,8 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
             cmpOp  = GT_EQ;
         }
         else if (m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_LT &&
-            (!m_testInfo1.testTree->AsOp()->gtOp1->IsUnsigned() &&
-                !m_testInfo2.testTree->AsOp()->gtOp1->IsUnsigned()))
+                 (!m_testInfo1.testTree->AsOp()->gtOp1->IsUnsigned() &&
+                  !m_testInfo2.testTree->AsOp()->gtOp1->IsUnsigned()))
         {
             // t1:c1<0 t2:c2<0 ==> Branch to BX if either value < 0
             // So we will branch to BX if (c1|c2)<0
@@ -271,7 +271,7 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
                 cmpOp = GT_GT;
             }
             else if ((m_testInfo1.compTree->gtOper == GT_GT && m_testInfo2.compTree->gtOper == GT_NE) ||
-                (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_LE))
+                     (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_LE))
             {
                 // Case: t1:c1>0 t2:c1!=0
                 // So we will branch to BX if c1<0
@@ -296,8 +296,8 @@ bool OptBoolsDsc::optOptimizeBoolsCondBlock()
             cmpOp  = GT_NE;
         }
         else if (m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_GE &&
-            (!m_testInfo1.testTree->AsOp()->gtOp1->IsUnsigned() &&
-                !m_testInfo2.testTree->AsOp()->gtOp1->IsUnsigned()))
+                 (!m_testInfo1.testTree->AsOp()->gtOp1->IsUnsigned() &&
+                  !m_testInfo2.testTree->AsOp()->gtOp1->IsUnsigned()))
         {
             // t1:c1<0 t2:c2>=0 ==> Branch to BX if both values >= 0
             // So we will branch to BX if (c1|c2)>=0
@@ -720,9 +720,9 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
 bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
 {
     assert(m_testInfo1.compTree->OperIs(GT_EQ, GT_NE, GT_LT, GT_GT, GT_GE, GT_LE) &&
-        m_testInfo1.compTree->AsOp()->gtOp1 == m_c1);
+           m_testInfo1.compTree->AsOp()->gtOp1 == m_c1);
     assert(m_testInfo2.compTree->OperIs(GT_EQ, GT_NE, GT_LT, GT_GT, GT_GE, GT_LE) &&
-        m_testInfo2.compTree->AsOp()->gtOp1 == m_c2);
+           m_testInfo2.compTree->AsOp()->gtOp1 == m_c2);
 
     //
     // Leave out floats where the bit-representation is more complicated
@@ -1016,7 +1016,7 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
         m_c1->AsLclVarCommon()->GetLclNum() == m_c2->AsLclVarCommon()->GetLclNum())
     {
         if (((m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_EQ) ||
-            (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_LT)) &&
+             (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_LT)) &&
             it3val == 1)
         {
             // Case: x < 0 || x == 0
@@ -1029,8 +1029,8 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
             cmpOp = GT_LE;
         }
         else if (((m_testInfo1.compTree->gtOper == GT_GT && m_testInfo2.compTree->gtOper == GT_EQ) ||
-            (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_GT)) &&
-            it3val == 1)
+                  (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_GT)) &&
+                 it3val == 1)
         {
             // Case: x > 0 || x == 0
             //      t1:c1<0 t2:c2==0 t3:c3==1
@@ -1040,10 +1040,10 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
             //      t1:c1==0 t2:c2>0 t3:c3==1
             //      ==> true if c1 >= 0
             cmpOp = GT_GE;
-    }
+        }
         else if (((m_testInfo1.compTree->gtOper == GT_LT && m_testInfo2.compTree->gtOper == GT_NE) ||
-            (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_GE)) &&
-            it3val == 0)
+                  (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_GE)) &&
+                 it3val == 0)
         {
             // Case: x >= 0 && x != 0
             //      t1:c1<0 t2:c2==0 t3:c3==0
@@ -1055,8 +1055,8 @@ bool OptBoolsDsc::optOptimizeBoolsReturnBlock(BasicBlock* b3)
             cmpOp = GT_GT;
         }
         else if (((m_testInfo1.compTree->gtOper == GT_GT && m_testInfo2.compTree->gtOper == GT_NE) ||
-            (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_LE)) &&
-            it3val == 0)
+                  (m_testInfo1.compTree->gtOper == GT_EQ && m_testInfo2.compTree->gtOper == GT_LE)) &&
+                 it3val == 0)
         {
             // Case: x <= 0 && x != 0
             //      t1:c1<0 t2:c2==0 t3:c3==0
