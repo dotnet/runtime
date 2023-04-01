@@ -97,6 +97,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.NewMultiDimArr:
                     methodDesc = context.GetHelperEntryPoint("ArrayHelpers", "NewObjArray");
                     break;
+                case ReadyToRunHelper.NewMultiDimArr1:
+                    methodDesc = context.GetHelperEntryPoint("ArrayHelpers", "NewObjArray1");
+                    break;
 
                 case ReadyToRunHelper.NewArray:
                     mangledName = "RhNewArray";

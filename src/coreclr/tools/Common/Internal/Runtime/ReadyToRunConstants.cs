@@ -352,6 +352,8 @@ namespace Internal.ReadyToRunConstants
         MonitorEnterStatic,
         MonitorExitStatic,
 
+        NewMultiDimArr1,
+
         // GVM lookup helper
         GVMLookupForSlot,
 
