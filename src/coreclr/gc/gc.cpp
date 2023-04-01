@@ -45586,6 +45586,8 @@ HRESULT GCHeap::Initialize()
         gc_heap::v_high_memory_load_th = 97;
     }
 
+    GCConfig::SetGCHighMemPercent(highmem_th_from_config);
+
     gc_heap::m_high_memory_load_th = min ((gc_heap::high_memory_load_th + 5), gc_heap::v_high_memory_load_th);
 
     gc_heap::pm_stress_on = (GCConfig::GetGCProvModeStress() != 0);
