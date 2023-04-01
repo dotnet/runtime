@@ -575,8 +575,6 @@ enum GenTreeFlags : unsigned int
     GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
-
-    GTF_SIMDASHW_OP             = 0x80000000, // GT_HWINTRINSIC -- obsolete. TODO-Cleanup: delete.
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)
@@ -6157,11 +6155,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                        IntrinsicNodeBuilder&& nodeBuilder,
                        NamedIntrinsic         hwIntrinsicID,
                        CorInfoType            simdBaseJitType,
-                       unsigned               simdSize,
-                       bool                   isSimdAsHWIntrinsic)
+                       unsigned               simdSize)
         : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, std::move(nodeBuilder), simdBaseJitType, simdSize)
     {
-        Initialize(hwIntrinsicID, isSimdAsHWIntrinsic);
+        Initialize(hwIntrinsicID);
     }
 
     template <typename... Operands>
@@ -6170,11 +6167,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                        NamedIntrinsic hwIntrinsicID,
                        CorInfoType    simdBaseJitType,
                        unsigned       simdSize,
-                       bool           isSimdAsHWIntrinsic,
                        Operands... operands)
         : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, allocator, simdBaseJitType, simdSize, operands...)
     {
-        Initialize(hwIntrinsicID, isSimdAsHWIntrinsic);
+        Initialize(hwIntrinsicID);
     }
 
 #if DEBUGGABLE_GENTREE
@@ -6186,11 +6182,6 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsMemoryLoad(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryStore(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryLoadOrStore() const;
-
-    bool IsSimdAsHWIntrinsic() const
-    {
-        return (gtFlags & GTF_SIMDASHW_OP) != 0;
-    }
 
     unsigned GetResultOpNumForFMA(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
 
@@ -6285,7 +6276,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);
 
-    void Initialize(NamedIntrinsic intrinsicId, bool isSimdAsHWIntrinsic)
+    void Initialize(NamedIntrinsic intrinsicId)
     {
         SetHWIntrinsicId(intrinsicId);
 
@@ -6300,11 +6291,6 @@ private:
             {
                 gtFlags |= GTF_ASG;
             }
-        }
-
-        if (isSimdAsHWIntrinsic)
-        {
-            gtFlags |= GTF_SIMDASHW_OP;
         }
     }
 };
