@@ -381,13 +381,6 @@ bool IntegralRange::Contains(int64_t value) const
     var_types toType       = cast->CastToType();
     bool      fromUnsigned = cast->IsUnsigned();
 
-    // if we're upcasting and the cast op is a known non-negative - consider
-    // this cast unsigned
-    if (!fromUnsigned && (genTypeSize(toType) >= genTypeSize(fromType)))
-    {
-        fromUnsigned = cast->CastOp()->IsNeverNegative(compiler);
-    }
-
     assert((fromType == TYP_INT) || (fromType == TYP_LONG) || varTypeIsFloating(fromType) || varTypeIsGC(fromType));
     assert(varTypeIsIntegral(toType));
 
@@ -413,6 +406,13 @@ bool IntegralRange::Contains(int64_t value) const
     if (varTypeIsSmall(toType) || (genActualType(toType) == fromType))
     {
         return ForCastInput(cast);
+    }
+
+    // if we're upcasting and the cast op is a known non-negative - consider
+    // this cast unsigned
+    if (!fromUnsigned && (genTypeSize(toType) >= genTypeSize(fromType)))
+    {
+        fromUnsigned = cast->CastOp()->IsNeverNegative(compiler);
     }
 
     // CAST(uint/int <- ulong/long) - [INT_MIN..INT_MAX]
