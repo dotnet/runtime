@@ -338,7 +338,7 @@ namespace System
 
         public static bool TryParseExact(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format, out Guid result)
         {
-            if (format.Length != 1)
+            if (format.Length != 1 || input.Length < 32) // Minimal length we can parse ('N' format)
             {
                 result = default;
                 return false;
