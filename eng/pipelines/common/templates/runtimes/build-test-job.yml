@@ -13,6 +13,7 @@ parameters:
   runtimeVariant: ''
   dependsOn: []
   dependOnEvaluatePaths: false
+  crossBuild: false
   pgoType: ''
 
 ### Build managed test components (native components are getting built as part
@@ -31,6 +32,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    crossBuild: ${{ parameters.crossBuild }}
     container: ${{ parameters.container }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
     testGroup: ${{ parameters.testGroup }}
