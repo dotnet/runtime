@@ -566,8 +566,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR:
                     id = ReadyToRunHelper.NewMultiDimArr;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR1:
-                    id = ReadyToRunHelper.NewMultiDimArr1;
+                case CorInfoHelpFunc.CORINFO_HELP_NEW_MDARR_RARE:
+                    id = ReadyToRunHelper.NewMultiDimArrRare;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_NEWFAST:
                     id = ReadyToRunHelper.NewObject;

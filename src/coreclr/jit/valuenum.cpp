@@ -11895,7 +11895,7 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
 
         case CORINFO_HELP_NEW_MDARR:
-        case CORINFO_HELP_NEW_MDARR1:
+        case CORINFO_HELP_NEW_MDARR_RARE:
             vnf = VNF_JitNewMdArr;
             break;
 

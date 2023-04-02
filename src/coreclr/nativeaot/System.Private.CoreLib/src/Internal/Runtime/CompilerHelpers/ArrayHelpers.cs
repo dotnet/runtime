@@ -21,12 +21,45 @@ namespace Internal.Runtime.CompilerHelpers
         public static unsafe Array NewObjArray(IntPtr pEEType, int nDimensions, int* pDimensions)
         {
             EETypePtr eeType = new EETypePtr(pEEType);
-            Debug.Assert(eeType.IsArray);
+            Debug.Assert(eeType.IsArray && !eeType.IsSzArray);
+            Debug.Assert(nDimensions > 0);
+
+            // Rank 1 arrays are handled below. We should allocate an SzArray.
+            Debug.Assert(eeType.ArrayRank > 1);
+
+            // Multidimensional arrays have two ctors, one with and one without lower bounds
+            int rank = eeType.ArrayRank;
+            Debug.Assert(rank == nDimensions || 2 * rank == nDimensions);
+
+            if (rank < nDimensions)
+            {
+                for (int i = 0; i < rank; i++)
+                {
+                    if (pDimensions[2 * i] != 0)
+                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_NonZeroLowerBound);
+
+                    pDimensions[i] = pDimensions[2 * i + 1];
+                }
+            }
+
+            return Array.NewMultiDimArray(eeType, pDimensions, rank);
+        }
+
+        /// <summary>
+        /// Helper for array allocations via `newobj` IL instruction. Dimensions are passed in as block of integers.
+        /// The content of the dimensions block may be modified by the helper.
+        /// </summary>
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The compiler ensures that if we have a TypeHandle of a Rank-1 MdArray, we also generated the SzArray.")]
+        public static unsafe Array NewObjArrayRare(IntPtr pEEType, int nDimensions, int* pDimensions)
+        {
+            EETypePtr eeType = new EETypePtr(pEEType);
+            Debug.Assert(eeType.IsArray && !eeType.IsSzArray);
             Debug.Assert(nDimensions > 0);
 
             if (eeType.IsSzArray)
             {
-                Array ret = (Array)RuntimeImports.RhNewArray(eeType, pDimensions[0]);
+                Array ret = RuntimeImports.RhNewArray(eeType, pDimensions[0]);
 
                 if (nDimensions > 1)
                 {
@@ -46,57 +79,21 @@ namespace Internal.Runtime.CompilerHelpers
                 // Multidimensional arrays have two ctors, one with and one without lower bounds
                 int rank = eeType.ArrayRank;
                 Debug.Assert(rank == nDimensions || 2 * rank == nDimensions);
+                Debug.Assert(rank == 1);
 
                 if (rank < nDimensions)
                 {
-                    for (int i = 0; i < rank; i++)
-                    {
-                        if (pDimensions[2 * i] != 0)
-                            throw new PlatformNotSupportedException(SR.PlatformNotSupported_NonZeroLowerBound);
-
-                        pDimensions[i] = pDimensions[2 * i + 1];
-                    }
-                }
-
-                // Rank 1 MdArrays should be using the helper below.
-                Debug.Assert(rank != 1);
-
-                return Array.NewMultiDimArray(eeType, pDimensions, rank);
-            }
-        }
-
-        /// <summary>
-        /// Helper for array allocations via `newobj` IL instruction. Dimensions are passed in as block of integers.
-        /// The content of the dimensions block may be modified by the helper.
-        /// </summary>
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-            Justification = "The compiler ensures that if we have a TypeHandle of a Rank-1 MdArray, we also generated the SzArray.")]
-        public static unsafe Array NewObjArray1(IntPtr pEEType, int nDimensions, int* pDimensions)
-        {
-            EETypePtr eeType = new EETypePtr(pEEType);
-            Debug.Assert(eeType.IsArray && !eeType.IsSzArray);
-            Debug.Assert(nDimensions > 0);
-            Debug.Assert(eeType.ArrayRank == 1);
-
-            // Multidimensional arrays have two ctors, one with and one without lower bounds
-            int rank = eeType.ArrayRank;
-            Debug.Assert(rank == nDimensions || 2 * rank == nDimensions);
-
-            if (rank < nDimensions)
-            {
-                for (int i = 0; i < rank; i++)
-                {
-                    if (pDimensions[2 * i] != 0)
+                    if (pDimensions[0] != 0)
                         throw new PlatformNotSupportedException(SR.PlatformNotSupported_NonZeroLowerBound);
 
-                    pDimensions[i] = pDimensions[2 * i + 1];
+                    pDimensions[0] = pDimensions[1];
                 }
-            }
 
-            // Multidimensional array of rank 1 with 0 lower bounds gets actually allocated
-            // as an SzArray. SzArray is castable to MdArray rank 1.
-            Type elementType = Type.GetTypeFromHandle(new RuntimeTypeHandle(eeType.ArrayElementType))!;
-            return RuntimeImports.RhNewArray(elementType.MakeArrayType().TypeHandle.ToEETypePtr(), pDimensions[0]);
+                // Multidimensional array of rank 1 with 0 lower bounds gets actually allocated
+                // as an SzArray. SzArray is castable to MdArray rank 1.
+                Type elementType = Type.GetTypeFromHandle(new RuntimeTypeHandle(eeType.ArrayElementType))!;
+                return RuntimeImports.RhNewArray(elementType.MakeArrayType().TypeHandle.ToEETypePtr(), pDimensions[0]);
+            }
         }
     }
 }
