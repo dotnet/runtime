@@ -5023,6 +5023,27 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			mono_arm_patch (jump, code, MONO_R_ARM64_CBZ);
 			break;
 		}
+		case OP_INIT_MRGCTX: {
+			int field_offset;
+			guint8 *jump;
+
+			field_offset = MONO_STRUCT_OFFSET (MonoMethodRuntimeGenericContext, entries);
+
+			/* Load mrgxtx->entries */
+			arm_ldrx (code, ARMREG_IP0, sreg1, field_offset);
+			jump = code;
+			arm_cbnzx (code, ARMREG_IP0, 0);
+
+			/* Slowpath */
+			g_assert (sreg1 == ARMREG_R0);
+			if (sreg2 != ARMREG_R1)
+				arm_movx (code, ARMREG_R1, sreg2);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
+							  GUINT_TO_POINTER (MONO_JIT_ICALL_mini_init_method_rgctx));
+
+			mono_arm_patch (jump, code, MONO_R_ARM64_CBZ);
+			break;
+		}
 
 		case OP_CHECK_THIS:
 			arm_ldrb (code, ARMREG_LR, sreg1, 0);

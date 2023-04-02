@@ -7419,7 +7419,7 @@ MONO_RESTORE_WARNING
 			LLVMValueRef val, cmp, callee;
 			LLVMBasicBlockRef poll_bb, cont_bb;
 			LLVMValueRef args [2];
-			static LLVMTypeRef sig;
+			static LLVMTypeRef icall_sig;
 
 			g_assert (cfg->compile_aot);
 
@@ -7445,14 +7445,14 @@ MONO_RESTORE_WARNING
 			ctx->builder = builder = create_builder (ctx);
 			LLVMPositionBuilderAtEnd (builder, poll_bb);
 
-			if (!sig)
-				sig = LLVMFunctionType2 (LLVMVoidType (), IntPtrType (), IntPtrType (), FALSE);
+			if (!icall_sig)
+				icall_sig = LLVMFunctionType2 (LLVMVoidType (), IntPtrType (), IntPtrType (), FALSE);
 
 			args [0] = convert (ctx, lhs, IntPtrType ());
 			args [1] = convert (ctx, rhs, IntPtrType ());
 
-			callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mini_init_method_rgctx));
-			LLVMBuildCall2 (builder, sig, callee, args, 2, "");
+			callee = get_callee (ctx, icall_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mini_init_method_rgctx));
+			LLVMBuildCall2 (builder, icall_sig, callee, args, 2, "");
 			LLVMBuildBr (builder, cont_bb);
 
 			ctx->builder = builder = create_builder (ctx);
