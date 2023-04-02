@@ -260,22 +260,15 @@ void Compiler::fgComputeReachabilitySets()
         {
             BasicBlock* const block = fgBBReversePostorder[i];
 
-            bool predGcSafe = (block->bbPreds != nullptr); // Do all of our predecessor blocks have a GC safe bit?
-
-            for (BasicBlock* const predBlock : block->PredBlocks())
+            if (block->bbPreds != nullptr)
             {
-                /* Union the predecessor's reachability set into newReach */
-                change |= BlockSetOps::UnionDChanged(this, block->bbReach, predBlock->bbReach);
-
-                if (!(predBlock->bbFlags & BBF_GC_SAFE_POINT))
+                BasicBlockFlags predGcFlags = BBF_GC_SAFE_POINT; // Do all of our predecessor blocks have a GC safe bit?
+                for (BasicBlock* const predBlock : block->PredBlocks())
                 {
-                    predGcSafe = false;
+                    change |= BlockSetOps::UnionDChanged(this, block->bbReach, predBlock->bbReach);
+                    predGcFlags &= predBlock->bbFlags;
                 }
-            }
-
-            if (predGcSafe)
-            {
-                block->bbFlags |= BBF_GC_SAFE_POINT;
+                block->bbFlags |= predGcFlags;
             }
         }
 
