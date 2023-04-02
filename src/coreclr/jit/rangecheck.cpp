@@ -327,7 +327,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
 
     if (m_pCompiler->vnStore->GetVNFunc(idxVn, &funcApp) && (funcApp.m_func == (VNFunc)GT_UMOD))
     {
-        // We can always omit bound checks for Arr[X u% Arr.Length] pattern.
+        // We can always omit bound checks for Arr[X u% Arr.Length] pattern (unsigned MOD).
         //
         // if arr.Length is 0 we technically should keep the bounds check, but since the expression
         // has to throw DividedByZeroException anyway - no special handling needed.
