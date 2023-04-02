@@ -325,6 +325,24 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
         }
     }
 
+    if (m_pCompiler->vnStore->GetVNFunc(idxVn, &funcApp) &&
+        ((funcApp.m_func == (VNFunc)GT_UMOD) || (funcApp.m_func == (VNFunc)GT_MOD)))
+    {
+        // We can always omit bound checks for Arr[X % Arr.Length] pattern.
+        // It should be MOD since both arguments are signed, but morph
+        // often converts "X MOD ARR_LEN" to "X UMOD ARR_LEN" so we handle both.
+        //
+        // if arr.Length is 0 we technically should keep the bounds check, but since the expression
+        // has to throw DividedByZeroException anyway - no special handling needed.
+        if (funcApp.m_args[1] == arrLenVn)
+        {
+            JITDUMP("[RangeCheck::OptimizeRangeCheck] [U]MOD(X, ARR_LEN) is always between bounds\n");
+            m_pCompiler->optRemoveRangeCheck(bndsChk, comma, stmt);
+            m_updateStmt = true;
+            return;
+        }
+    }
+
     // Get the range for this index.
     Range range = GetRange(block, treeIndex, false DEBUGARG(0));
 
