@@ -8526,7 +8526,7 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
 
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
-                                                 GT_ADDR, GT_ARR_ADDR, GT_BOUNDS_CHECK,
+                                                 GT_ARR_ADDR, GT_BOUNDS_CHECK,
                                                  GT_OBJ,      // May reference heap memory.
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
@@ -9815,12 +9815,11 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
             ValueNum initObjVN;
             if (rhs->IsIntegralConst(0))
             {
-                initObjVN = lhs->TypeIs(TYP_STRUCT) ? vnStore->VNForZeroObj(lhs->GetLayout(this))
-                                                    : vnStore->VNZeroForType(lhs->TypeGet());
+                initObjVN = vnStore->VNForZeroObj(lhs->GetLayout(this));
             }
             else
             {
-                initObjVN = vnStore->VNForExpr(compCurBB, lhs->TypeGet());
+                initObjVN = vnStore->VNForExpr(compCurBB, TYP_STRUCT);
             }
 
             rhsVNPair.SetBoth(initObjVN);

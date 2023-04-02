@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible -->
+    <!-- Needed for GCStressIncompatible, GC.WaitForPendingFinalizers -->
+    <!-- See https://github.com/dotnet/runtime/issues/68529 -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <PropertyGroup>

@@ -1,10 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
@@ -18,6 +20,8 @@ namespace System.Reflection
         private bool _throwOnError;
         private bool _ignoreCase;
         private bool _extensibleParser;
+        private bool _requireAssemblyQualifiedName;
+        private bool _suppressContextualReflectionContext;
         private Assembly? _requestingAssembly;
         private Assembly? _topLevelAssembly;
 
@@ -80,6 +84,60 @@ namespace System.Reflection
             }.Parse();
         }
 
+        // Resolve type name referenced by a custom attribute metadata.
+        // It uses the standard Type.GetType(typeName, throwOnError: true) algorithm with the following modifications:
+        // - ContextualReflectionContext is not taken into account
+        // - The dependency between the returned type and the requesting assembly is recorded for the purpose of
+        // lifetime tracking of collectible types.
+        internal static RuntimeType GetTypeReferencedByCustomAttribute(string typeName, RuntimeModule scope)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(typeName);
+
+            RuntimeAssembly requestingAssembly = scope.GetRuntimeAssembly();
+
+            RuntimeType? type = (RuntimeType?)new TypeNameParser(typeName)
+            {
+                _throwOnError = true,
+                _suppressContextualReflectionContext = true,
+                _requestingAssembly = requestingAssembly
+            }.Parse();
+
+            Debug.Assert(type != null);
+
+            RuntimeTypeHandle.RegisterCollectibleTypeDependency(type, requestingAssembly);
+
+            return type;
+        }
+
+        // Used by VM
+        internal static unsafe RuntimeType? GetTypeHelper(char* pTypeName, RuntimeAssembly? requestingAssembly,
+            bool throwOnError, bool requireAssemblyQualifiedName)
+        {
+            ReadOnlySpan<char> typeName = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pTypeName);
+
+            // Compat: Empty name throws TypeLoadException instead of
+            // the natural ArgumentException
+            if (typeName.Length == 0)
+            {
+                if (throwOnError)
+                    throw new TypeLoadException(SR.Arg_TypeLoadNullStr);
+                return null;
+            }
+
+            RuntimeType? type = (RuntimeType?)new TypeNameParser(typeName)
+            {
+                _requestingAssembly = requestingAssembly,
+                _throwOnError = throwOnError,
+                _suppressContextualReflectionContext = true,
+                _requireAssemblyQualifiedName = requireAssemblyQualifiedName,
+            }.Parse();
+
+            if (type != null)
+                RuntimeTypeHandle.RegisterCollectibleTypeDependency(type, requestingAssembly);
+
+            return type;
+        }
+
         private bool CheckTopLevelAssemblyQualifiedName()
         {
             if (_topLevelAssembly is not null)
@@ -104,7 +162,8 @@ namespace System.Reflection
             }
             else
             {
-                assembly = RuntimeAssembly.InternalLoad(new AssemblyName(assemblyName), ref Unsafe.NullRef<StackCrawlMark>(), AssemblyLoadContext.CurrentContextualReflectionContext,
+                assembly = RuntimeAssembly.InternalLoad(new AssemblyName(assemblyName), ref Unsafe.NullRef<StackCrawlMark>(),
+                    _suppressContextualReflectionContext ? null : AssemblyLoadContext.CurrentContextualReflectionContext,
                     requestingAssembly: (RuntimeAssembly?)_requestingAssembly, throwOnFileNotFound: _throwOnError);
             }
             return assembly;
@@ -153,6 +212,14 @@ namespace System.Reflection
             {
                 if (assembly is null)
                 {
+                    if (_requireAssemblyQualifiedName)
+                    {
+                        if (_throwOnError)
+                        {
+                            throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveType, EscapeTypeName(typeName)));
+                        }
+                        return null;
+                    }
                     return GetTypeFromDefaultAssemblies(typeName, nestedTypeNames);
                 }
 

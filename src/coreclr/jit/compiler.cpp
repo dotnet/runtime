@@ -297,6 +297,15 @@ Histogram bbCntTable(bbCntBuckets);
 unsigned  bbSizeBuckets[] = {1, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 0};
 Histogram bbOneBBSizeTable(bbSizeBuckets);
 
+unsigned  domsChangedIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
+Histogram domsChangedIterationTable(domsChangedIterationBuckets);
+
+unsigned  computeReachabilitySetsIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
+Histogram computeReachabilitySetsIterationTable(computeReachabilitySetsIterationBuckets);
+
+unsigned  computeReachabilityIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
+Histogram computeReachabilityIterationTable(computeReachabilityIterationBuckets);
+
 #endif // COUNT_BASIC_BLOCKS
 
 /*****************************************************************************
@@ -1258,17 +1267,6 @@ void DisplayNowayAssertMap()
 
 #endif // MEASURE_NOWAY
 
-/*****************************************************************************
- * variables to keep track of how many iterations we go in a dataflow pass
- */
-
-#if DATAFLOW_ITER
-
-unsigned CSEiterCount; // counts the # of iteration for the CSE dataflow
-unsigned CFiterCount;  // counts the # of iteration for the Const Folding dataflow
-
-#endif // DATAFLOW_ITER
-
 #if MEASURE_BLOCK_SIZE
 size_t genFlowNodeSize;
 size_t genFlowNodeCnt;
@@ -1560,6 +1558,25 @@ void Compiler::compShutdown()
     fprintf(fout, "--------------------------------------------------\n");
     bbOneBBSizeTable.dump(fout);
     fprintf(fout, "--------------------------------------------------\n");
+
+    fprintf(fout, "--------------------------------------------------\n");
+    fprintf(fout, "fgComputeDoms `while (change)` iterations:\n");
+    fprintf(fout, "--------------------------------------------------\n");
+    domsChangedIterationTable.dump(fout);
+    fprintf(fout, "--------------------------------------------------\n");
+
+    fprintf(fout, "--------------------------------------------------\n");
+    fprintf(fout, "fgComputeReachabilitySets `while (change)` iterations:\n");
+    fprintf(fout, "--------------------------------------------------\n");
+    computeReachabilitySetsIterationTable.dump(fout);
+    fprintf(fout, "--------------------------------------------------\n");
+
+    fprintf(fout, "--------------------------------------------------\n");
+    fprintf(fout, "fgComputeReachability `while (change)` iterations:\n");
+    fprintf(fout, "--------------------------------------------------\n");
+    computeReachabilityIterationTable.dump(fout);
+    fprintf(fout, "--------------------------------------------------\n");
+
 #endif // COUNT_BASIC_BLOCKS
 
 #if COUNT_LOOPS
@@ -1588,14 +1605,6 @@ void Compiler::compShutdown()
     fprintf(fout, "--------------------------------------------------\n");
 
 #endif // COUNT_LOOPS
-
-#if DATAFLOW_ITER
-
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "Total number of iterations in the CSE dataflow loop is %5u\n", CSEiterCount);
-    fprintf(fout, "Total number of iterations in the  CF dataflow loop is %5u\n", CFiterCount);
-
-#endif // DATAFLOW_ITER
 
 #if MEASURE_NODE_SIZE
 

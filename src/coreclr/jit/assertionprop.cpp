@@ -1132,7 +1132,7 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 //  Constant Assertions
                 //
                 case GT_CNS_INT:
-                    if (varTypeIsStruct(op1))
+                    if (op1->TypeIs(TYP_STRUCT))
                     {
                         assert(op2->IsIntegralConst(0));
                         op2Kind = O2K_ZEROOBJ;
@@ -3455,7 +3455,7 @@ GenTree* Compiler::optAssertionProp_Asg(ASSERT_VALARG_TP assertions, GenTreeOp* 
         {
             unsigned const       lhsLclNum      = lhsVarTree->GetLclNum();
             LclVarDsc* const     lhsLclDsc      = lvaGetDesc(lhsLclNum);
-            bool const           lhsLclIsStruct = varTypeIsStruct(lhsLclDsc->TypeGet());
+            bool const           lhsLclIsStruct = lhsLclDsc->TypeGet() == TYP_STRUCT;
             AssertionIndex const lhsIndex =
                 optLocalAssertionIsEqualOrNotEqual(O1K_LCLVAR, lhsLclNum, lhsLclIsStruct ? O2K_ZEROOBJ : O2K_CONST_INT,
                                                    0, assertions);
