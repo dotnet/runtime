@@ -1267,17 +1267,6 @@ void DisplayNowayAssertMap()
 
 #endif // MEASURE_NOWAY
 
-/*****************************************************************************
- * variables to keep track of how many iterations we go in a dataflow pass
- */
-
-#if DATAFLOW_ITER
-
-unsigned CSEiterCount; // counts the # of iteration for the CSE dataflow
-unsigned CFiterCount;  // counts the # of iteration for the Const Folding dataflow
-
-#endif // DATAFLOW_ITER
-
 #if MEASURE_BLOCK_SIZE
 size_t genFlowNodeSize;
 size_t genFlowNodeCnt;
@@ -1616,14 +1605,6 @@ void Compiler::compShutdown()
     fprintf(fout, "--------------------------------------------------\n");
 
 #endif // COUNT_LOOPS
-
-#if DATAFLOW_ITER
-
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "Total number of iterations in the CSE dataflow loop is %5u\n", CSEiterCount);
-    fprintf(fout, "Total number of iterations in the  CF dataflow loop is %5u\n", CFiterCount);
-
-#endif // DATAFLOW_ITER
 
 #if MEASURE_NODE_SIZE
 
