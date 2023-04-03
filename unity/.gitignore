@@ -1,0 +1,5 @@
+# Unity emebdding API tests
+embed_api_tests/ALL_BUILD.*
+embed_api_tests/ZERO_CHECK.*
+embed_api_tests/mono_test_app*
+embed_api_tests/Makefile
