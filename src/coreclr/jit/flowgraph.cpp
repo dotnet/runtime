@@ -617,19 +617,20 @@ PhaseStatus Compiler::fgExpandStaticInit()
                     isInitAdrNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_CONST_PTR, true);
                 }
 
-                ssize_t isInitedValue = 1;
+                GenTree* isInitedValue;
                 if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
                 {
                     // In JIT we only check a single bit (see ClassInitFlags::INITIALIZED_FLAG)
                     isInitAdrNode = gtNewOperNode(GT_AND, TYP_INT, isInitAdrNode, gtNewIconNode(1));
+                    isInitedValue = gtNewIconNode(1);
                 }
                 else
                 {
                     // It was flipped to 0 for better codegen in https://github.com/dotnet/runtime/pull/83937
-                    isInitedValue = 0;
+                    isInitedValue = gtNewIconNode(0, TYP_I_IMPL);
                 }
 
-                GenTree* isInitedCmp = gtNewOperNode(GT_EQ, TYP_INT, isInitAdrNode, gtNewIconNode(isInitedValue));
+                GenTree* isInitedCmp = gtNewOperNode(GT_EQ, TYP_INT, isInitAdrNode, isInitedValue);
                 isInitedCmp->gtFlags |= GTF_RELOP_JMP_USED;
                 BasicBlock* isInitedBb =
                     fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp), debugInfo);
