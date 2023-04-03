@@ -8003,7 +8003,7 @@ void Lowering::LowerLclHeap(GenTree* node)
         if (comp->info.compInitMem)
         {
             ssize_t alignedSize = ALIGN_UP(size, STACK_ALIGN);
-            if (max((unsigned)size, (unsigned)alignedSize) > UINT_MAX)
+            if ((size > UINT_MAX) || (alignedSize > UINT_MAX))
             {
                 // Size is too big - don't mark sizeNode as contained
                 return;
