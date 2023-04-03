@@ -8971,24 +8971,6 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned codeSize,
 
     compiler->compInfoBlkAddr = (BYTE*)compiler->info.compCompHnd->allocGCInfo(compiler->compInfoBlkSize);
 
-#if 0 // VERBOSE_SIZES
-    // TODO-X86-Cleanup: 'dataSize', below, is not defined
-
-//  if  (compiler->compInfoBlkSize > codeSize && compiler->compInfoBlkSize > 100)
-    {
-        printf("[%7u VM, %7u+%7u/%7u x86 %03u/%03u%%] %s.%s\n",
-               compiler->info.compILCodeSize,
-               compiler->compInfoBlkSize,
-               codeSize + dataSize,
-               codeSize + dataSize - prologSize - epilogSize,
-               100 * (codeSize + dataSize) / compiler->info.compILCodeSize,
-               100 * (codeSize + dataSize + compiler->compInfoBlkSize) / compiler->info.compILCodeSize,
-               compiler->info.compClassName,
-               compiler->info.compMethodName);
-}
-
-#endif
-
     /* Fill in the info block and return it to the caller */
 
     void* infoPtr = compiler->compInfoBlkAddr;

@@ -3,10 +3,12 @@
 
 using System;
 using System.Text;
+using Xunit;
 
 public class rep
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         char[] chars = new char[] { (char)0x800 };
         byte[] bytes = new byte[20];

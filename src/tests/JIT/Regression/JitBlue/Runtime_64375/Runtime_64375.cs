@@ -3,10 +3,12 @@
 
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public unsafe class Runtime_64375
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var a = new StructWithFloats { FloatOne = 1, FloatThree = 2 };
 

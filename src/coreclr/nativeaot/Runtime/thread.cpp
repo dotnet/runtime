@@ -922,6 +922,12 @@ bool Thread::IsHijacked()
     return m_pvHijackedReturnAddress != NULL;
 }
 
+void* Thread::GetHijackedReturnAddress()
+{
+    ASSERT(ThreadStore::GetCurrentThread() == this);
+    return m_pvHijackedReturnAddress;
+}
+
 void Thread::SetState(ThreadStateFlags flags)
 {
     PalInterlockedOr(&m_ThreadStateFlags, flags);
@@ -991,6 +997,8 @@ EXTERN_C NOINLINE void FASTCALL RhpWaitForGC2(PInvokeTransitionFrame * pFrame)
 // Standard calling convention variant and actual implementation for RhpGcPoll
 EXTERN_C NOINLINE void FASTCALL RhpGcPoll2(PInvokeTransitionFrame* pFrame)
 {
+    ASSERT(!Thread::IsHijackTarget(pFrame->m_RIP));
+
     Thread* pThread = ThreadStore::GetCurrentThread();
     pFrame->m_pThread = pThread;
 

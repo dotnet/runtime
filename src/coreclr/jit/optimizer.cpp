@@ -8621,9 +8621,9 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
             {
                 GenTree* lhs = tree->gtGetOp1();
 
-                if (lhs->OperIs(GT_IND))
+                if (lhs->OperIsIndir())
                 {
-                    GenTree* arg = lhs->AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
+                    GenTree* arg = lhs->AsIndir()->Addr()->gtEffectiveVal(/*commaOnly*/ true);
 
                     if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
                     {
@@ -8689,14 +8689,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         }
                     }
                 }
-                else if (lhs->OperIsBlk())
-                {
-                    // For now, assume arbitrary side effects on GcHeap/ByrefExposed...
-                    // TODO-CQ: delete this pessimization by folding into the above.
-                    memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
-                }
-                // Otherwise, must be local lhs form.
-                else
+                else // Otherwise, must be local lhs form.
                 {
                     GenTreeLclVarCommon* lhsLcl = lhs->AsLclVarCommon();
                     ValueNum             rhsVN  = tree->AsOp()->gtOp2->gtVNPair.GetLiberal();

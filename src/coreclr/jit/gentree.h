@@ -483,16 +483,15 @@ enum GenTreeFlags : unsigned int
     GTF_INX_ADDR_NONNULL        = 0x40000000, // GT_INDEX_ADDR -- this array address is not null
 
     GTF_IND_TGT_NOT_HEAP        = 0x80000000, // GT_IND -- the target is not on the heap
-    GTF_IND_VOLATILE            = 0x40000000, // GT_IND -- the load or store must use volatile semantics (this is a nop on X86)
-    GTF_IND_NONFAULTING         = 0x20000000, // Operations for which OperIsIndir() is true  -- An indir that cannot fault.
+    GTF_IND_VOLATILE            = 0x40000000, // OperIsIndir() -- the load or store must use volatile semantics (this is a nop on X86)
+    GTF_IND_NONFAULTING         = 0x20000000, // OperIsIndir() -- An indir that cannot fault.
     GTF_IND_TGT_HEAP            = 0x10000000, // GT_IND -- the target is on the heap
     GTF_IND_REQ_ADDR_IN_REG     = 0x08000000, // GT_IND -- requires its addr operand to be evaluated into a register.
                                               //           This flag is useful in cases where it is required to generate register
                                               //           indirect addressing mode. One such case is virtual stub calls on xarch.
     GTF_IND_ASG_LHS             = 0x04000000, // GT_IND -- this GT_IND node is (the effective val) of the LHS of an
                                               //           assignment; don't evaluate it independently.
-    GTF_IND_UNALIGNED           = 0x02000000, // GT_IND -- the load or store is unaligned (we assume worst case
-                                              //           alignment of 1 byte)
+    GTF_IND_UNALIGNED           = 0x02000000, // OperIsIndir() -- the load or store is unaligned (we assume worst case alignment of 1 byte)
     GTF_IND_INVARIANT           = 0x01000000, // GT_IND -- the target is invariant (a prejit indirection)
     GTF_IND_NONNULL             = 0x00400000, // GT_IND -- the indirection never returns null (zero)
 
@@ -555,9 +554,6 @@ enum GenTreeFlags : unsigned int
                                               //               of the cell that the runtime will fill in with the address
                                               //               of the static field; in both of those cases, the constant
                                               //               is what gets flagged.
-
-    GTF_BLK_VOLATILE            = GTF_IND_VOLATILE,  // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK -- is a volatile block operation
-    GTF_BLK_UNALIGNED           = GTF_IND_UNALIGNED, // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK -- is an unaligned block operation
 
     GTF_OVERFLOW                = 0x10000000, // Supported for: GT_ADD, GT_SUB, GT_MUL and GT_CAST.
                                               // Requires an overflow check. Use gtOverflow(Ex)() to check this flag.

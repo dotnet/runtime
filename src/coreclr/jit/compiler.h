@@ -2507,9 +2507,7 @@ public:
 public:
     GenTreeObj* gtNewObjNode(ClassLayout* layout, GenTree* addr);
     GenTreeObj* gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr);
-    void gtSetObjGcInfo(GenTreeObj* objNode);
-    GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr);
-    GenTree* gtNewBlockVal(GenTree* addr, unsigned size);
+    GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTreeCall* gtNewCallNode(gtCallTypes           callType,
                                CORINFO_METHOD_HANDLE handle,
@@ -3736,6 +3734,7 @@ private:
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
     static OPCODE impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEndp);
+    static GenTreeFlags impPrefixFlagsToIndirFlags(unsigned prefixFlags);
     static bool impOpcodeIsCallOpcode(OPCODE opcode);
 
 public:
@@ -11691,6 +11690,9 @@ extern size_t   gcPtrMapNSize;
 #if COUNT_BASIC_BLOCKS
 extern Histogram bbCntTable;
 extern Histogram bbOneBBSizeTable;
+extern Histogram domsChangedIterationTable;
+extern Histogram computeReachabilitySetsIterationTable;
+extern Histogram computeReachabilityIterationTable;
 #endif
 
 /*****************************************************************************
@@ -11719,17 +11721,6 @@ extern Histogram loopCountTable;          // Histogram of loop counts
 extern Histogram loopExitCountTable;      // Histogram of loop exit counts
 
 #endif // COUNT_LOOPS
-
-/*****************************************************************************
- * variables to keep track of how many iterations we go in a dataflow pass
- */
-
-#if DATAFLOW_ITER
-
-extern unsigned CSEiterCount; // counts the # of iteration for the CSE dataflow
-extern unsigned CFiterCount;  // counts the # of iteration for the Const Folding dataflow
-
-#endif // DATAFLOW_ITER
 
 #if MEASURE_BLOCK_SIZE
 extern size_t genFlowNodeSize;

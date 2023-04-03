@@ -1863,10 +1863,10 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     continue;
                 }
 
-                var_types lclTyp = (var_types)lvaTable[tmpNum].lvType;
+                var_types lclTyp = lvaTable[tmpNum].lvType;
                 noway_assert(lclTyp == lclVarInfo[lclNum + inlineInfo->argCnt].lclTypeInfo);
 
-                if (!varTypeIsStruct(lclTyp))
+                if (lclTyp != TYP_STRUCT)
                 {
                     // Unsafe value cls check is not needed here since in-linee compiler instance would have
                     // iterated over locals and marked accordingly.
