@@ -22,7 +22,7 @@
  */
 void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
 {
-    assert((tree->OperIsLocal() && (tree->OperGet() != GT_PHI_ARG)) || tree->OperIsLocalAddr());
+    assert((tree->OperIsLocal() && (tree->OperGet() != GT_PHI_ARG)) || tree->OperIs(GT_LCL_ADDR));
 
     const unsigned   lclNum = tree->GetLclNum();
     LclVarDsc* const varDsc = lvaGetDesc(lclNum);
@@ -214,8 +214,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
 
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-        case GT_LCL_VAR_ADDR:
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
             fgMarkUseDef(tree->AsLclVarCommon());
@@ -1853,7 +1852,7 @@ void Compiler::fgComputeLife(VARSET_TP&       life,
         {
             fgComputeLifeCall(life, tree->AsCall());
         }
-        else if (tree->OperIsNonPhiLocal() || tree->OperIsLocalAddr())
+        else if (tree->OperIsNonPhiLocal() || tree->OperIs(GT_LCL_ADDR))
         {
             bool isDeadStore = fgComputeLifeLocal(life, keepAliveVars, tree);
             if (isDeadStore)
@@ -1992,8 +1991,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 break;
             }
 
-            case GT_LCL_VAR_ADDR:
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
                 if (node->IsUnusedValue())
                 {
                     JITDUMP("Removing dead LclVar address:\n");
@@ -2717,7 +2715,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
                 {
                     for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr;)
                     {
-                        assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
+                        assert(cur->OperIsLocal() || cur->OperIs(GT_LCL_ADDR));
                         bool isDef = ((cur->gtFlags & GTF_VAR_DEF) != 0) && ((cur->gtFlags & GTF_VAR_USEASG) == 0);
                         bool conditional = cur != dst;
                         // Ignore conditional defs that would otherwise
@@ -2743,7 +2741,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
                 {
                     for (GenTree* cur = stmt->GetTreeListEnd(); cur != nullptr;)
                     {
-                        assert(cur->OperIsLocal() || cur->OperIsLocalAddr());
+                        assert(cur->OperIsLocal() || cur->OperIs(GT_LCL_ADDR));
                         if (!fgComputeLifeLocal(life, keepAliveVars, cur))
                         {
                             cur = cur->gtPrev;

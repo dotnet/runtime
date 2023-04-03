@@ -2781,7 +2781,7 @@ void CodeGen::genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm
                 wbKind = varDsc->lvIsParam ? CWBKind_ByRefArg : CWBKind_OtherByRefLocal;
             }
         }
-        else if (tgtAddr->OperIsLocalAddr())
+        else if (tgtAddr->OperIs(GT_LCL_ADDR))
         {
             // Ideally, we should have eliminated the barrier for this case.
             wbKind = CWBKind_AddrOfLocal;

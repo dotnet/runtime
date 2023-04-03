@@ -839,7 +839,7 @@ void ObjectAllocator::RewriteUses()
         Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
             GenTree* tree = *use;
-            assert(tree->IsLocal() || tree->OperIsLocalAddr());
+            assert(tree->IsLocal() || tree->OperIs(GT_LCL_ADDR));
 
             const unsigned int lclNum    = tree->AsLclVarCommon()->GetLclNum();
             unsigned int       newLclNum = BAD_VAR_NUM;
