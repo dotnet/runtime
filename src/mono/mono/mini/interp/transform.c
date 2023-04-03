@@ -745,6 +745,7 @@ handle_branch (TransformData *td, int long_op, int offset)
 	if (offset < 0)
 		target_bb->backwards_branch_target = TRUE;
 
+
 	if (offset < 0 && td->sp == td->stack && !td->inlined_method) {
 		// Backwards branch inside unoptimized method where the IL stack is empty
 		// This is candidate for a patchpoint
@@ -8434,6 +8435,14 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 			if (ins->opcode == MINT_TIER_PATCHPOINT_DATA) {
 				int native_offset = (int)(ip - td->new_code);
 				patchpoint_data_index = add_patchpoint_data (td, patchpoint_data_index, native_offset, -ins->data [0]);
+#if HOST_BROWSER
+			} else if (rtm->contains_traces && (
+				(ins->opcode == MINT_CALL_HANDLER_S) || (ins->opcode == MINT_CALL_HANDLER)
+			)) {
+				ip = emit_compacted_instruction (td, ip, ins);
+				if (backward_branch_offsets_count < BACKWARD_BRANCH_OFFSETS_SIZE)
+					backward_branch_offsets[backward_branch_offsets_count++] = ip - td->new_code;
+#endif
 			} else {
 				ip = emit_compacted_instruction (td, ip, ins);
 			}

@@ -345,12 +345,13 @@ export function generateWasmBody (
             case MintOpcode.MINT_CALL_HANDLER_S:
                 if (!emit_branch(builder, ip, frame, opcode))
                     ip = abort;
-                else
+                else {
                     // Technically incorrect, but the instructions following this one may not be executed
                     //  since we might have skipped over them.
                     // FIXME: Identify when we should actually set the conditionally executed flag, perhaps
                     //  by doing a simple static flow analysis based on the displacements. Update heuristic too!
                     isConditionallyExecuted = true;
+                }
                 break;
 
             case MintOpcode.MINT_CKNULL: {
@@ -923,13 +924,15 @@ export function generateWasmBody (
                 isLowValueOpcode = true;
                 break;
 
-            case MintOpcode.MINT_ENDFINALLY:
-                // This one might make sense to partially implement, but the jump target
-                //  is computed at runtime which would make it hard to figure out where
-                //  we need to put branch targets. Not worth just doing a conditional
-                //  bailout since finally blocks always run
-                ip = abort;
+            case MintOpcode.MINT_ENDFINALLY: {
+                if (builder.callHandlerReturnAddresses.length) {
+                    console.log(`endfinally @0x${(<any>ip).toString(16)}. return addresses:`, builder.callHandlerReturnAddresses.map(ra => (<any>ra).toString(16)));
+                    ip = abort;
+                } else {
+                    ip = abort;
+                }
                 break;
+            }
 
             case MintOpcode.MINT_RETHROW:
             case MintOpcode.MINT_PROF_EXIT:
@@ -2444,7 +2447,8 @@ function append_call_handler_store_ret_ip (
     builder.appendU8(WasmOpcode.i32_store);
     builder.appendMemarg(clauseDataOffset, 0); // FIXME: 32-bit alignment?
 
-    // console.log(`call_handler clauseDataOffset=0x${clauseDataOffset.toString(16)} retIp=0x${retIp.toString(16)}`);
+    console.log(`call_handler @0x${(<any>ip).toString(16)} retIp=0x${retIp.toString(16)}`);
+    builder.callHandlerReturnAddresses.push(retIp);
 }
 
 function emit_branch (

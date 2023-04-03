@@ -157,6 +157,7 @@ export class WasmBuilder {
     options!: JiterpreterOptions;
     constantSlots: Array<number> = [];
     backBranchOffsets: Array<MintOpcodePtr> = [];
+    callHandlerReturnAddresses: Array<MintOpcodePtr> = [];
     nextConstantSlot = 0;
 
     compressImportNames = false;
@@ -202,6 +203,7 @@ export class WasmBuilder {
         for (let i = 0; i < this.constantSlots.length; i++)
             this.constantSlots[i] = 0;
         this.backBranchOffsets.length = 0;
+        this.callHandlerReturnAddresses.length = 0;
 
         this.allowNullCheckOptimization = this.options.eliminateNullChecks;
     }
