@@ -84,6 +84,14 @@ mono_alcs_init (void)
 	default_alc->gchandle = mono_gchandle_new_internal (NULL, FALSE);
 }
 
+void
+mono_alc_foreach (MonoALCFunc func, gpointer user_data)
+{
+	alcs_lock ();
+	g_slist_foreach (alcs, func, user_data);
+	alcs_unlock ();
+}
+
 MonoAssemblyLoadContext *
 mono_alc_get_default (void)
 {
