@@ -27,6 +27,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			TestTypeIsBeforeFieldInit ();
 			TestStaticCtorOnTypeWithRequires ();
 			TestRunClassConstructorOnTypeWithRequires ();
+			TestRunClassConstructorOnConstructorWithRequires ();
 			typeof (StaticCtor).RequiresNonPublicConstructors ();
 		}
 
@@ -68,6 +69,23 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 			var typeHandle = typeof (StaticCtorOnTypeWithRequires).TypeHandle;
 			RuntimeHelpers.RunClassConstructor (typeHandle);
+		}
+
+		class StaticCtorForRunClassConstructorWithRequires
+		{
+			[ExpectedWarning ("IL2116")]
+			[ExpectedWarning ("IL3004", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3056", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[RequiresUnreferencedCode ("Message for --StaticCtorOnTypeWithRequires--")]
+			[RequiresAssemblyFiles ("Message for --StaticCtorOnTypeWithRequires--")]
+			[RequiresDynamicCode ("Message for --StaticCtorOnTypeWithRequires--")]
+			static StaticCtorForRunClassConstructorWithRequires () { }
+		}
+
+		static void TestRunClassConstructorOnConstructorWithRequires ()
+		{
+			// No warnings generated here - we rely on IL2116/IL3004/IL3056 in this case and avoid duplicate warnings
+			RuntimeHelpers.RunClassConstructor (typeof (StaticCtorForRunClassConstructorWithRequires).TypeHandle);
 		}
 
 		class StaticCtorTriggeredByFieldAccess
