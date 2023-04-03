@@ -14053,6 +14053,7 @@ gc_heap::init_semi_shared()
     if (conserve_mem_setting > 9)
         conserve_mem_setting = 9;
 
+    GCConfig::SetGCConserveMem(conserve_mem_setting);
     dprintf (1, ("conserve_mem_setting = %d", conserve_mem_setting));
 
     reset_mm_p = TRUE;
@@ -45360,6 +45361,9 @@ HRESULT GCHeap::Initialize()
 #endif //USE_REGIONS
 
 #endif //HOST_64BIT
+
+    GCConfig::SetRetainVM(GCConfig::GetRetainVM());
+    GCConfig::SetGCHeapHardLimitPercent(GCConfig::GetGCHeapHardLimitPercent());
     GCConfig::SetGCLargePages(gc_heap::use_large_pages_p);
 
     uint32_t nhp = 1;
@@ -45414,6 +45418,8 @@ HRESULT GCHeap::Initialize()
 
     gc_heap::gc_thread_no_affinitize_p = (gc_heap::heap_hard_limit ?
         !affinity_config_specified_p : (GCConfig::GetNoAffinitize() != 0));
+
+    GCConfig::SetNoAffinitize(GCConfig::GetNoAffinitize());
 
     if (!(gc_heap::gc_thread_no_affinitize_p))
     {
@@ -45549,6 +45555,10 @@ HRESULT GCHeap::Initialize()
     GCConfig::SetGCHeapHardLimitSOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[soh]));
     GCConfig::SetGCHeapHardLimitLOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[loh]));
     GCConfig::SetGCHeapHardLimitPOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[poh]));
+
+    GCConfig::SetGCHeapHardLimitSOHPercent(GCConfig::GetGCHeapHardLimitSOHPercent());
+    GCConfig::SetGCHeapHardLimitLOHPercent(GCConfig::GetGCHeapHardLimitLOHPercent());
+    GCConfig::SetGCHeapHardLimitPOHPercent(GCConfig::GetGCHeapHardLimitPOHPercent());
 
     if (hr != S_OK)
         return hr;
