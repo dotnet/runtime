@@ -73,4 +73,11 @@ internal static class WebWorkerEventLoop
             throw new InvalidOperationException();
         thread.UnsafeStart();
     }
+
+    /// returns true if the current thread has unsettled JS Interop promises
+    internal static bool HasUnsettledInteropPromises => HasUnsettledInteropPromisesNative();
+
+    // FIXME: this could be a qcall with a SuppressGCTransitionAttribute
+    [MethodImpl(MethodImplOptions.InternalCall)]
+    private static extern bool HasUnsettledInteropPromisesNative();
 }

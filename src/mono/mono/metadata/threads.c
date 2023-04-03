@@ -5100,6 +5100,14 @@ ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
 #endif
 }
 
+extern int mono_wasm_eventloop_has_unsettled_interop_promises(void);
+
+MonoBoolean
+ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(void)
+{
+	return !!mono_wasm_eventloop_has_unsettled_interop_promises();
+}
+
 #endif /* HOST_BROWSER && !DISABLE_THREADS */
 
 /* for the AOT cross compiler with --print-icall-table these don't need to be callable, they just
@@ -5119,6 +5127,12 @@ ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void)
 
 void
 ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePopInternal (void)
+{
+	g_assert_not_reached();
+}
+
+MonoBoolean
+ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(void)
 {
 	g_assert_not_reached();
 }
