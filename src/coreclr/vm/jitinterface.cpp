@@ -1556,20 +1556,21 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
             else if (pField->IsThreadStatic())
             {
                  // We always treat accessing thread statics as if we are in domain neutral code.
+                fieldAccessor = CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
+
+                pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
+
 #ifdef HOST_WINDOWS
-                if (((pField->GetFieldType() >= ELEMENT_TYPE_BOOLEAN) && (pField->GetFieldType() < ELEMENT_TYPE_STRING)))
+                // For windows, we convert the TLS access to the optimized helper where we will store
+                // the static blocks in TLS directly and access them via inline code.
+                if ((pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) &&
+                    ((pField->GetFieldType() >= ELEMENT_TYPE_BOOLEAN) && (pField->GetFieldType() < ELEMENT_TYPE_STRING)))
                 {
                     fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
 
                     pResult->helper = CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
                 }
-                else
 #endif // HOST_WINDOWS
-                {
-                    fieldAccessor = CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
-
-                    pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
-                }
             }
             else
             {
