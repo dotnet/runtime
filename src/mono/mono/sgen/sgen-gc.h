@@ -1158,7 +1158,6 @@ void sgen_check_whole_heap_stw (void)
 void sgen_check_objref (char *obj);
 void sgen_check_heap_marked (gboolean nursery_must_be_pinned);
 void sgen_check_nursery_objects_untag (void);
-void sgen_check_for_xdomain_refs (void);
 GCObject* sgen_find_object_for_ptr (char *ptr);
 
 void mono_gc_scan_for_specific_ref (GCObject *key, gboolean precise);

@@ -55,8 +55,6 @@ static guint64 los_array_remsets;
 
 /* If set, mark stacks conservatively, even if precise marking is possible */
 static gboolean conservative_stack_mark = FALSE;
-/* If set, check that there are no references to the domain left at domain unload */
-gboolean sgen_mono_xdomain_checks = FALSE;
 
 /* Functions supplied by the runtime to be called by the GC */
 static MonoGCCallbacks gc_callbacks;
@@ -826,12 +824,6 @@ mono_gc_clear_domain (MonoDomain * domain)
 	sgen_process_fin_stage_entries ();
 
 	sgen_clear_nursery_fragments ();
-
-	if (sgen_mono_xdomain_checks && domain != mono_get_root_domain ()) {
-		sgen_scan_for_registered_roots_in_domain (domain, ROOT_TYPE_NORMAL);
-		sgen_scan_for_registered_roots_in_domain (domain, ROOT_TYPE_WBARRIER);
-		sgen_check_for_xdomain_refs ();
-	}
 
 	/*Ephemerons and dislinks must be processed before LOS since they might end up pointing
 	to memory returned to the OS.*/
@@ -2897,15 +2889,6 @@ sgen_client_description_for_internal_mem_type (int type)
 	}
 }
 
-void
-sgen_client_pre_collection_checks (void)
-{
-	if (sgen_mono_xdomain_checks) {
-		sgen_clear_nursery_fragments ();
-		sgen_check_for_xdomain_refs ();
-	}
-}
-
 gboolean
 sgen_client_vtable_is_inited (MonoVTable *vt)
 {
@@ -2990,9 +2973,7 @@ sgen_client_print_gc_params_usage (void)
 gboolean
 sgen_client_handle_gc_debug (const char *opt)
 {
-	if (!strcmp (opt, "xdomain-checks")) {
-		sgen_mono_xdomain_checks = TRUE;
-	} else if (!strcmp (opt, "do-not-finalize")) {
+	if (!strcmp (opt, "do-not-finalize")) {
 		mono_do_not_finalize = TRUE;
 	} else if (g_str_has_prefix (opt, "do-not-finalize=")) {
 		opt = strchr (opt, '=') + 1;
@@ -3018,7 +2999,6 @@ sgen_client_handle_gc_debug (const char *opt)
 void
 sgen_client_print_gc_debug_usage (void)
 {
-	fprintf (stderr, "  xdomain-checks\n");
 	fprintf (stderr, "  do-not-finalize\n");
 	fprintf (stderr, "  log-finalizers\n");
 	fprintf (stderr, "  no-managed-allocator\n");
