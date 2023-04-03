@@ -8,6 +8,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Numerics;
+using Xunit;
 
 public struct S<T>
 {
@@ -64,7 +65,8 @@ public class Tester<T>
 
 public class Runtime_46240
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (Tester<byte>.TestS() != 100)
         {

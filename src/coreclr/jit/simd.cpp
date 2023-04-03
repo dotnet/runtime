@@ -521,9 +521,9 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
         tree = gtNewOperNode(GT_IND, type, tree);
     }
 
-    if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_LCL_VAR_ADDR))
+    if (tree->OperIsIndir() && tree->AsIndir()->Addr()->IsLclVarAddr())
     {
-        GenTreeLclVar* lclAddr = tree->AsIndir()->Addr()->AsLclVar();
+        GenTreeLclFld* lclAddr = tree->AsIndir()->Addr()->AsLclFld();
         LclVarDsc*     varDsc  = lvaGetDesc(lclAddr);
         if (varDsc->TypeGet() == type)
         {
@@ -557,7 +557,7 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
     else if (tree->gtType == TYP_BYREF)
     {
         assert(tree->IsLocal() || tree->OperIs(GT_RET_EXPR, GT_CALL) ||
-               (tree->OperIs(GT_LCL_VAR_ADDR) && varTypeIsSIMD(lvaGetDesc(tree->AsLclVar()))));
+               (tree->IsLclVarAddr() && varTypeIsSIMD(lvaGetDesc(tree->AsLclFld()))));
     }
 
     return tree;
@@ -571,7 +571,7 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
 //
 void Compiler::setLclRelatedToSIMDIntrinsic(GenTree* tree)
 {
-    assert(tree->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR));
+    assert(tree->OperIs(GT_LCL_VAR) || tree->IsLclVarAddr());
     LclVarDsc* lclVarDsc             = lvaGetDesc(tree->AsLclVarCommon());
     lclVarDsc->lvUsedInSIMDIntrinsic = true;
 }
@@ -599,7 +599,7 @@ bool areFieldsParentsLocatedSame(GenTree* op1, GenTree* op2)
             break;
         }
 
-        if (op1ObjRef->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR) &&
+        if ((op1ObjRef->OperIs(GT_LCL_VAR) || op1ObjRef->IsLclVarAddr()) &&
             (op1ObjRef->AsLclVarCommon()->GetLclNum() == op2ObjRef->AsLclVarCommon()->GetLclNum()))
         {
             return true;
@@ -775,7 +775,7 @@ GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_
     if (tree->OperIs(GT_FIELD))
     {
         GenTree* objRef = tree->AsField()->GetFldObj();
-        if ((objRef != nullptr) && objRef->OperIs(GT_LCL_VAR_ADDR))
+        if ((objRef != nullptr) && objRef->IsLclVarAddr())
         {
             // If the field is directly from a struct, then in this case,
             // we should set this struct's lvUsedInSIMDIntrinsic as true,
@@ -788,7 +788,7 @@ GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_
             // TODO-CQ:
             //  In future, we should optimize this case so that if there is a nested field like s1.s2.x and s1.s2.x's
             //  address is used for initializing the vector, then s1 can be promoted but s2 can't.
-            if (varTypeIsSIMD(lvaGetDesc(objRef->AsLclVar())))
+            if (varTypeIsSIMD(lvaGetDesc(objRef->AsLclFld())))
             {
                 setLclRelatedToSIMDIntrinsic(objRef);
             }
@@ -887,7 +887,7 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
                     if (curDst->OperIs(GT_FIELD) && curDst->AsField()->IsInstance())
                     {
                         GenTree* objRef = curDst->AsField()->GetFldObj();
-                        if (objRef->OperIs(GT_LCL_VAR_ADDR) && varTypeIsStruct(lvaGetDesc(objRef->AsLclVar())))
+                        if (objRef->IsLclVarAddr() && varTypeIsStruct(lvaGetDesc(objRef->AsLclFld())))
                         {
                             setLclRelatedToSIMDIntrinsic(objRef);
                         }

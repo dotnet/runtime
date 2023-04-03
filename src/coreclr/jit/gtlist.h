@@ -25,8 +25,7 @@ GTNODE(LCL_VAR          , GenTreeLclVar      ,0,GTK_LEAF)             // local v
 GTNODE(LCL_FLD          , GenTreeLclFld      ,0,GTK_LEAF)             // field in a non-primitive variable
 GTNODE(STORE_LCL_VAR    , GenTreeLclVar      ,0,GTK_UNOP|GTK_NOVALUE) // store to local variable
 GTNODE(STORE_LCL_FLD    , GenTreeLclFld      ,0,GTK_UNOP|GTK_NOVALUE) // store to a part of the variable
-GTNODE(LCL_VAR_ADDR     , GenTreeLclVar      ,0,GTK_LEAF)             // address of local variable
-GTNODE(LCL_FLD_ADDR     , GenTreeLclFld      ,0,GTK_LEAF)             // address of field in a non-primitive variable
+GTNODE(LCL_ADDR         , GenTreeLclFld      ,0,GTK_LEAF)             // local address
 
 //-----------------------------------------------------------------------------
 //  Leaf nodes (i.e. these nodes have no sub-operands):
@@ -76,8 +75,6 @@ GTNODE(BITCAST          , GenTreeOp          ,0,GTK_UNOP)               // reint
 #endif
 GTNODE(CKFINITE         , GenTreeOp          ,0,GTK_UNOP|DBK_NOCONTAIN) // Check for NaN
 GTNODE(LCLHEAP          , GenTreeOp          ,0,GTK_UNOP|DBK_NOCONTAIN) // alloca()
-
-GTNODE(ADDR             , GenTreeOp          ,0,GTK_UNOP|DBK_NOTLIR)    // address of
 
 GTNODE(BOUNDS_CHECK     , GenTreeBoundsChk   ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // a bounds check - for arrays/spans/SIMDs/HWINTRINSICs
 

@@ -667,6 +667,8 @@ OPDEF(MINT_SHL_I8_IMM, "shl.i8.imm", 4, 1, 1, MintOpShortInt)
 OPDEF(MINT_SHR_I4_IMM, "shr.i4.imm", 4, 1, 1, MintOpShortInt)
 OPDEF(MINT_SHR_I8_IMM, "shr.i8.imm", 4, 1, 1, MintOpShortInt)
 
+OPDEF(MINT_SHL_AND_I4, "shl.i4.and", 4, 1, 2, MintOpNoArgs)
+OPDEF(MINT_SHL_AND_I8, "shl.i8.and", 4, 1, 2, MintOpNoArgs)
 
 OPDEF(MINT_CKFINITE_R4, "ckfinite.r4", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_CKFINITE_R8, "ckfinite.r8", 3, 1, 1, MintOpNoArgs)

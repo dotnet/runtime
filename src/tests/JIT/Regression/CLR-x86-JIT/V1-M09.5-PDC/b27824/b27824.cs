@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -11,7 +12,8 @@ namespace Test
         static AA[] m_axForward3;
         static void GoToEnd() { throw new Exception(); }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool param1 = false;
             bool[] local2 = new bool[7];

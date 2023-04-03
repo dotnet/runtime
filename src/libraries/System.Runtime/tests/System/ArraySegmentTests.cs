@@ -79,7 +79,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Ctor_Invalid()
+        public void Ctor_Invalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("array", () => new ArraySegment<T>(null));
             AssertExtensions.Throws<ArgumentNullException>("array", () => new ArraySegment<T>(null, -1, 1));

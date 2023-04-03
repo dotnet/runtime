@@ -18,7 +18,7 @@ import {
     BailoutReasonNames, BailoutReason
 } from "./jiterpreter-support";
 import {
-    generate_wasm_body
+    generateWasmBody
 } from "./jiterpreter-trace-generator";
 
 // Controls miscellaneous diagnostic output.
@@ -56,7 +56,8 @@ export const
     // Print diagnostic information to the console when performing null check optimizations
     traceNullCheckOptimizations = false,
     // Print diagnostic information when generating backward branches
-    traceBackBranches = false,
+    // 1 = failures only, 2 = full detail
+    traceBackBranches = 0,
     // If we encounter an enter opcode that looks like a loop body and it was already
     //  jitted, we should abort the current trace since it's not worth continuing
     // Unproductive if we have backward branches enabled because it can stop us from jitting
@@ -652,15 +653,6 @@ function generate_wasm (
     const endOfBody = <any>startOfBody + <any>sizeOfBody;
     const traceName = `${methodName}:${(traceOffset).toString(16)}`;
 
-    // HACK: If we aren't starting at the beginning of the method, we don't know which
-    //  locals may have already had their address taken, so the null check optimization
-    //  is potentially invalid since there could be addresses on the stack
-    // FIXME: The interpreter maintains information on which locals have had their address
-    //  taken, so if we flow that information through it will allow us to make this optimization
-    //  robust in all scenarios and remove this hack
-    if (traceOffset > 0)
-        builder.allowNullCheckOptimization = false;
-
     if (useDebugCount) {
         if (cwraps.mono_jiterp_debug_count() === 0) {
             if (countLimitedPrintCounter-- >= 0)
@@ -717,16 +709,17 @@ function generate_wasm (
                 }
 
                 builder.base = ip;
+                builder.frame = frame;
                 if (getU16(ip) !== MintOpcode.MINT_TIER_PREPARE_JITERPRETER)
                     throw new Error(`Expected *ip to be MINT_TIER_PREPARE_JITERPRETER but was ${getU16(ip)}`);
 
                 builder.cfg.initialize(startOfBody, backwardBranchTable, instrument ? 1 : 0);
 
-                // TODO: Call generate_wasm_body before generating any of the sections and headers.
+                // TODO: Call generateWasmBody before generating any of the sections and headers.
                 // This will allow us to do things like dynamically vary the number of locals, in addition
                 //  to using global constants and figuring out how many constant slots we need in advance
                 //  since a long trace might need many slots and that bloats the header.
-                opcodesProcessed = generate_wasm_body(
+                opcodesProcessed = generateWasmBody(
                     frame, traceName, ip, startOfBody, endOfBody,
                     builder, instrumentedTraceId, backwardBranchTable
                 );
