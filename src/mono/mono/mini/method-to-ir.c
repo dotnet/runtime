@@ -6750,7 +6750,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			EMIT_NEW_PCONST (cfg, args [1], info);
 
 		cfg->init_method_rgctx_ins_arg = args [1];
-		cfg->init_method_rgctx_ins = mono_emit_jit_icall (cfg, mini_init_method_rgctx, args);
+		if (COMPILE_LLVM (cfg) || cfg->backend->have_init_mrgctx) {
+			MONO_INST_NEW (cfg, ins, OP_INIT_MRGCTX);
+			ins->sreg1 = args [0]->dreg;
+			ins->sreg2 = args [1]->dreg;
+			MONO_ADD_INS (cfg->cbb, ins);
+			cfg->init_method_rgctx_ins = ins;
+		} else {
+			cfg->init_method_rgctx_ins = mono_emit_jit_icall (cfg, mini_init_method_rgctx, args);
+		}
 	}
 
 	if (cfg->gsharedvt && cfg->method == method) {
