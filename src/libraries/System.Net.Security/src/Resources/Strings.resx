@@ -266,6 +266,9 @@
   <data name="net_auth_alert" xml:space="preserve">
     <value>Authentication failed on the remote side (the stream might still be available for additional authentication attempts).</value>
   </data>
+  <data name="net_auth_ephemeral" xml:space="preserve">
+    <value>Authentication failed because the platform does not support ephemeral keys.</value>
+  </data>
   <data name="net_auth_message_not_encrypted" xml:space="preserve">
     <value>Protocol error: A received message contains a valid signature but it was not encrypted as required by the effective Protection Level.</value>
   </data>

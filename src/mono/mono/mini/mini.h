@@ -1995,6 +1995,13 @@ typedef enum {
 	CMP_UNORD
 } CompRelation;
 
+enum {
+	XBINOP_FORCEINT_AND,
+	XBINOP_FORCEINT_OR,
+	XBINOP_FORCEINT_ORNOT,
+	XBINOP_FORCEINT_XOR,
+};
+
 typedef enum {
 	CMP_TYPE_L,
 	CMP_TYPE_I,
@@ -2924,6 +2931,11 @@ enum {
 	SIMD_PREFETCH_MODE_0,
 	SIMD_PREFETCH_MODE_1,
 	SIMD_PREFETCH_MODE_2,
+};
+
+enum {
+	SIMD_EXTR_IS_ANY_SET,
+	SIMD_EXTR_ARE_ALL_SET
 };
 
 int mini_primitive_type_size (MonoTypeEnum type);

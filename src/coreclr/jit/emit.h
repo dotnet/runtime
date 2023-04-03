@@ -1109,7 +1109,7 @@ protected:
         }
 #endif // TARGET_LOONGARCH64
 
-        emitAttr idOpSize()
+        emitAttr idOpSize() const
         {
             return emitDecodeSize(_idOpSize);
         }
@@ -2171,12 +2171,16 @@ private:
     instrDescAlign* emitAlignLastGroup;
 
     unsigned getLoopSize(insGroup* igLoopHeader,
-                         unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted)); // Get the smallest loop size
+                         unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted) DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
+                             DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum)); // Get the smallest loop size
     void emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
     bool emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
     void emitSetLoopBackEdge(BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
-    unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool isAlignAdjusted));
+    unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig,
+                                                  size_t offset DEBUG_ARG(bool isAlignAdjusted)
+                                                      DEBUG_ARG(UNATIVE_OFFSET containingIGNum)
+                                                          DEBUG_ARG(UNATIVE_OFFSET loopHeadPredIGNum));
 
     void emitLoopAlign(unsigned paddingBytes, bool isFirstAlign DEBUG_ARG(bool isPlacedBehindJmp));
     void emitLongLoopAlign(unsigned alignmentBoundary DEBUG_ARG(bool isPlacedBehindJmp));
@@ -3346,6 +3350,7 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 // Note: vextractf128 has a 128-bit output (register or memory) but a 256-bit input (register).
 // vinsertf128 is the inverse with a 256-bit output (register), a 256-bit input(register),
 // and a 128-bit input (register or memory).
+// Similarly, vextractf64x4 has a 256-bit output and 128-bit input and vinsertf64x4 the inverse
 // This method is mainly used for such instructions to return the appropriate memory operand
 // size, otherwise returns the regular operand size of the instruction.
 
@@ -3486,6 +3491,18 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
         case INS_vinserti128:
         {
             return EA_16BYTE;
+        }
+
+        case INS_vextractf32x8:
+        case INS_vextracti32x8:
+        case INS_vextractf64x4:
+        case INS_vextracti64x4:
+        case INS_vinsertf32x8:
+        case INS_vinserti32x8:
+        case INS_vinsertf64x4:
+        case INS_vinserti64x4:
+        {
+            return EA_32BYTE;
         }
 
         case INS_movddup:

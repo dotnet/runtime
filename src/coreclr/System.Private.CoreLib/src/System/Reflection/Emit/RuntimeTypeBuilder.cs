@@ -472,16 +472,14 @@ namespace System.Reflection.Emit
         }
 
         internal RuntimeTypeBuilder(
-            string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, RuntimeModuleBuilder module,
+            string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, RuntimeModuleBuilder module,
             PackingSize iPackingSize, int iTypeSize, RuntimeTypeBuilder? enclosingType)
         {
-            ArgumentException.ThrowIfNullOrEmpty(fullname);
+            if (name[0] == '\0')
+                throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
 
-            if (fullname[0] == '\0')
-                throw new ArgumentException(SR.Argument_IllegalName, nameof(fullname));
-
-            if (fullname.Length > 1023)
-                throw new ArgumentException(SR.Argument_TypeNameTooLong, nameof(fullname));
+            if (name.Length > 1023)
+                throw new ArgumentException(SR.Argument_TypeNameTooLong, nameof(name));
 
             int i;
             m_module = module;
@@ -489,7 +487,7 @@ namespace System.Reflection.Emit
             RuntimeAssemblyBuilder containingAssem = m_module.ContainingAssemblyBuilder;
 
             // cannot have two types within the same assembly of the same name
-            containingAssem.CheckTypeNameConflict(fullname, enclosingType);
+            containingAssem.CheckTypeNameConflict(name, enclosingType);
 
             if (enclosingType != null)
             {
@@ -514,18 +512,18 @@ namespace System.Reflection.Emit
                 }
             }
 
-            int iLast = fullname.LastIndexOf('.');
+            int iLast = name.LastIndexOf('.');
             if (iLast <= 0)
             {
                 // no name space
                 m_strNameSpace = string.Empty;
-                m_strName = fullname;
+                m_strName = name;
             }
             else
             {
                 // split the name space
-                m_strNameSpace = fullname.Substring(0, iLast);
-                m_strName = fullname.Substring(iLast + 1);
+                m_strNameSpace = name.Substring(0, iLast);
+                m_strName = name.Substring(iLast + 1);
             }
 
             VerifyTypeAttributes(attr);
@@ -550,7 +548,7 @@ namespace System.Reflection.Emit
             }
 
             m_tdType = DefineType(new QCallModule(ref module),
-                fullname, tkParent, m_iAttr, tkEnclosingType, interfaceTokens!);
+                name, tkParent, m_iAttr, tkEnclosingType, interfaceTokens!);
 
             m_iPackingSize = iPackingSize;
             m_iTypeSize = iTypeSize;
@@ -1558,6 +1556,11 @@ namespace System.Reflection.Emit
 
         protected override EventBuilder DefineEventCore(string name, EventAttributes attributes, Type eventtype)
         {
+            if (name[0] == '\0')
+            {
+                throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
+            }
+
             lock (SyncRoot)
             {
                 int tkType;

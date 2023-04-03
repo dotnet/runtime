@@ -69,8 +69,8 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
 // Arguments:
 //    use - A use of a GT_IND node of SIMD type
 //
-// TODO-ADDR: delete this once block morphing stops taking addresses of locals
-// under COMMAs.
+// TODO-ADDR: today this only exists because the xarch backend does not handle
+// IND<simd12>(LCL_VAR_ADDR/LCL_FLD_ADDR) when the address is contained correctly.
 //
 void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
 {
@@ -320,6 +320,12 @@ void Rationalizer::SanityCheck()
                     {
                         assert(!(tree->gtGetOp2()->gtFlags & GTF_VAR_DEF));
                     }
+
+                    if (tree->OperIsInitBlkOp())
+                    {
+                        // No SIMD types are allowed for InitBlks (including zero-inits).
+                        assert(tree->TypeIs(TYP_STRUCT) && tree->gtGetOp1()->TypeIs(TYP_STRUCT));
+                    }
                 }
             }
         }
@@ -396,20 +402,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
     GenTree* value    = assignment->gtGetOp2();
 
     genTreeOps locationOp = location->OperGet();
-
-    if (varTypeIsSIMD(location) && assignment->OperIsInitBlkOp())
-    {
-        var_types simdType = location->TypeGet();
-        GenTree*  initVal  = assignment->AsOp()->gtOp2;
-        GenTree*  zeroCon  = comp->gtNewZeroConNode(simdType);
-        noway_assert(initVal->IsIntegralConst(0)); // All SIMD InitBlks are zero inits.
-
-        assignment->gtOp2 = zeroCon;
-        value             = zeroCon;
-
-        BlockRange().InsertAfter(initVal, zeroCon);
-        BlockRange().Remove(initVal);
-    }
 
     switch (locationOp)
     {

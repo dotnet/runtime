@@ -472,7 +472,7 @@ namespace System.Collections.Concurrent
         }
         #endregion
 
-        #region Dynamic Partitioner for source data of IEnuemrable<> type
+        #region Dynamic Partitioner for source data of IEnumerable<> type
         /// <summary>
         /// Inherits from DynamicPartitioners
         /// Provides customized implementation of GetOrderableDynamicPartitions_Factory method, to return an instance

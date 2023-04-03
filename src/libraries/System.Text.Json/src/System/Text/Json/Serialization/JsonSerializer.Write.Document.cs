@@ -51,7 +51,7 @@ namespace System.Text.Json
         public static JsonDocument SerializeToDocument(object? value, Type inputType, JsonSerializerOptions? options = null)
         {
             ValidateInputType(value, inputType);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType, fallBackToNearestAncestorType: true);
             return WriteDocumentAsObject(value, jsonTypeInfo);
         }
 

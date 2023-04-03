@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 internal class BufferState
 {
@@ -61,16 +62,16 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public void ThrowIfDisposed()
+    internal void ThrowIfDisposed()
     {
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public void QueueCurrentBufferForUploadAndSetNewBuffer()
+    internal void QueueCurrentBufferForUploadAndSetNewBuffer()
     {
     }
 
-    public void Test()
+    internal void Test()
     {
         this.ThrowIfDisposed();
 
@@ -89,7 +90,8 @@ public class Program
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Program p = new Program();
         if (p.currentState.IsIdle)

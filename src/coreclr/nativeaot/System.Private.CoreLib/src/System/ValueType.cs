@@ -60,7 +60,7 @@ namespace System
             if (numFields == UseFastHelper)
             {
                 // Sanity check - if there are GC references, we should not be comparing bytes
-                Debug.Assert(!this.GetEETypePtr().HasPointers);
+                Debug.Assert(!this.GetEETypePtr().ContainsGCPointers);
 
                 // Compare the memory
                 int valueTypeSize = (int)this.GetEETypePtr().ValueTypeSize;
@@ -115,7 +115,7 @@ namespace System
         private static unsafe int FastGetValueTypeHashCodeHelper(MethodTable* type, ref byte data)
         {
             // Sanity check - if there are GC references, we should not be hashing bytes
-            Debug.Assert(!type->HasGCPointers);
+            Debug.Assert(!type->ContainsGCPointers);
 
             int size = (int)type->ValueTypeSize;
             int hashCode = 0;

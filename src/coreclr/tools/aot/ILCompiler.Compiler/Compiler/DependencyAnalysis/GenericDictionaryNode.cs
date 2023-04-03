@@ -115,6 +115,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => true;
 
+        public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => GetDictionaryLayout(factory).IsEmpty;
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
