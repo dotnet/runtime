@@ -51,6 +51,7 @@
     <ItemGroup>
       <_AssembliesToBundle Remove="@(_AssembliesToBundle)" />
       <_AssembliesToBundle Include="@(_AssembliesToBundleInternal)" />
+      <_AssembliesToBundle Include="$(_ParsedRuntimeConfigFilePath)" />
     </ItemGroup>
 
     <GetFileHash Files="@(_AssembliesToBundle)">

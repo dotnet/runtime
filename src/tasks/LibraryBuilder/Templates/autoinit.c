@@ -18,6 +18,33 @@
 
 #include "library-builder.h"
 
+#if defined(BUNDLED_ASSEMBLIES)
+
+static void
+cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
+{
+    free (args);
+    free (user_data);
+}
+
+static void
+initialize_runtimeconfig ()
+{
+    MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
+    if (!arg)
+        LOG_ERROR ("Out of memory.\n");
+
+    arg->kind = 1;
+    const char *data;
+    int data_len;
+    mono_get_bundled_assembly ("runtimeconfig.bin", &data, &data_len);
+    arg->runtimeconfig.data.data = data;
+    arg->runtimeconfig.data.data_len = data_len;
+    monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, NULL);
+}
+
+#else
+
 static void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 {
@@ -53,6 +80,8 @@ initialize_runtimeconfig (const char *bundle_path)
         free (file_path);
     }
 }
+
+#endif // BUNDLED_ASSEMBLIES
 
 static void
 initialize_appctx_env_variables (const char *bundle_path)
@@ -110,6 +139,13 @@ free_aot_data (MonoAssembly *assembly, int size, void *user_data, void *handle)
 static void
 runtime_init_callback ()
 {
+    register_aot_modules ();
+
+#if defined(BUNDLED_ASSEMBLIES)
+    mono_register_assemblies_bundle ();
+    mono_register_bundle ();
+#endif
+
     const char *assemblies_location = getenv ("%ASSEMBLIES_LOCATION%");
     if (!assemblies_location || assemblies_location[0] == '\0')
         assemblies_location = "./";
@@ -122,13 +158,6 @@ runtime_init_callback ()
     initialize_runtimeconfig (bundle_path);
 
     initialize_appctx_env_variables (bundle_path);
-
-    register_aot_modules ();
-
-#if defined(BUNDLED_ASSEMBLIES)
-    mono_register_assemblies_bundle ();
-    mono_register_bundle ();
-#endif
 
     mono_set_assemblies_path (bundle_path);
 

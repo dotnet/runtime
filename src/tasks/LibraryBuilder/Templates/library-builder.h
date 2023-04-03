@@ -37,6 +37,7 @@
 
 void register_aot_modules (void);
 #if defined(BUNDLED_ASSEMBLIES)
+void mono_get_bundled_assembly (const char *name, const unsigned char **out_data, unsigned int *out_size);
 void mono_register_assemblies_bundle (void);
 void mono_register_bundle (void);
 #endif // BUNDLED_ASSEMBLIES

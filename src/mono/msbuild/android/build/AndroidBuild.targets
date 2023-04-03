@@ -247,7 +247,8 @@
   <Target Name="_AndroidGenerateRuntimeConfig"
           Inputs="$(_AndroidRuntimeConfigFilePath)"
           Outputs="$(_ParsedRuntimeConfigFilePath)"
-          Condition="Exists('$(_AndroidRuntimeConfigFilePath)')">
+          Condition="Exists('$(_AndroidRuntimeConfigFilePath)')"
+          BeforeTargets="_GenerateBundle">
     <ItemGroup>
       <_RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
       <_RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
