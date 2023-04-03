@@ -566,26 +566,39 @@ void emitter::emitIns_R_R(
         code |= reg1 << 7;
         code |= reg2 << 15;
     }
-    else if ((INS_fcvt_w_s <= ins && INS_fmv_x_w >= ins) || (INS_fclass_s == ins || INS_fclass_d == ins) ||
-             (INS_fcvt_w_d == ins || INS_fcvt_wu_d == ins) || (INS_fcvt_l_s == ins || INS_fcvt_lu_s == ins) ||
-             (INS_fmv_x_d == ins) || (INS_fcvt_l_d == ins || INS_fcvt_lu_d == ins))
+    else if (INS_fmv_x_d == ins || INS_fmv_x_w == ins || INS_fclass_s == ins || INS_fclass_d == ins)
     {
-        // TODO-RISCV64-CQ: Check rounding mode
         assert(isGeneralRegisterOrR0(reg1));
         assert(isFloatReg(reg2));
         code |= (reg1 & 0x1f) << 7;
         code |= (reg2 & 0x1f) << 15;
     }
-    else if ((INS_fcvt_s_w <= ins && INS_fmv_w_x >= ins) || (INS_fcvt_d_w == ins || INS_fcvt_d_wu == ins) ||
-             (INS_fcvt_s_l == ins || INS_fcvt_s_lu == ins) || (INS_fmv_d_x == ins) ||
-             (INS_fcvt_d_l == ins || INS_fcvt_d_lu == ins))
-
+    else if (INS_fcvt_w_s == ins || INS_fcvt_wu_s == ins || INS_fcvt_w_d == ins || INS_fcvt_wu_d == ins ||
+             INS_fcvt_l_s == ins || INS_fcvt_lu_s == ins || INS_fcvt_l_d == ins || INS_fcvt_lu_d == ins)
     {
+        assert(isGeneralRegisterOrR0(reg1));
+        assert(isFloatReg(reg2));
+        code |= (reg1 & 0x1f) << 7;
+        code |= (reg2 & 0x1f) << 15;
         // TODO-RISCV64-CQ: Check rounding mode
+        code |= 0x7 << 12;
+    }
+    else if (INS_fmv_w_x == ins || INS_fmv_d_x == ins)
+    {
         assert(isFloatReg(reg1));
         assert(isGeneralRegisterOrR0(reg2));
         code |= (reg1 & 0x1f) << 7;
         code |= (reg2 & 0x1f) << 15;
+    }
+    else if (INS_fcvt_s_w == ins || INS_fcvt_s_wu == ins || INS_fcvt_d_w == ins || INS_fcvt_d_wu == ins ||
+             INS_fcvt_s_l == ins || INS_fcvt_s_lu == ins || INS_fcvt_d_l == ins || INS_fcvt_d_lu == ins)
+    {
+        assert(isFloatReg(reg1));
+        assert(isGeneralRegisterOrR0(reg2));
+        code |= (reg1 & 0x1f) << 7;
+        code |= (reg2 & 0x1f) << 15;
+        // TODO-RISCV64-CQ: Check rounding mode
+        code |= 0x7 << 12;
     }
     else if (INS_fcvt_s_d == ins || INS_fcvt_d_s == ins)
     {
@@ -593,6 +606,8 @@ void emitter::emitIns_R_R(
         assert(isFloatReg(reg2));
         code |= (reg1 & 0x1f) << 7;
         code |= (reg2 & 0x1f) << 15;
+        // TODO-RISCV64-CQ: Check rounding mode
+        code |= 0x7 << 12;
     }
     else
     {
