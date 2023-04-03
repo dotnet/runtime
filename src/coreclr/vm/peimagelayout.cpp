@@ -109,19 +109,26 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
     {
         if (!pOwner->IsInBundle()
 #if defined(TARGET_UNIX)
-            || ((pOwner->GetUncompressedSize() == 0) && !disableMapping)
+            || (pOwner->GetUncompressedSize() == 0)
 #endif
             )
         {
-            PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner, loadFailure));
-            if (pAlloc->GetBase() != NULL)
-                return pAlloc.Extract();
+#if defined(TARGET_UNIX)
+            if (!disableMapping)
+#endif
+            {
+
+                PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner, loadFailure));
+                if (pAlloc->GetBase() != NULL)
+                    return pAlloc.Extract();
 
 #if TARGET_WINDOWS
-            // For regular PE files always use OS loader. If a file cannot be loaded, do not try any further.
-            // Even if we may be able to load it, we do not want to support such files.
-            return NULL;
+                // For regular PE files always use OS loader on Windows.
+                // If a file cannot be loaded, do not try any further.
+                // Even if we may be able to load it, we do not want to support such files.
+                return NULL;
 #endif
+            }
         }
     }
 
