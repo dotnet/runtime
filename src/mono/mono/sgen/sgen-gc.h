@@ -902,9 +902,8 @@ typedef void (*SGenFinalizationProc)(gpointer, gpointer); // same as MonoFinaliz
 void sgen_object_register_for_finalization (GCObject *obj, SGenFinalizationProc user_data)
 	MONO_PERMIT (need (sgen_lock_gc));
 
-void sgen_finalize_if (SgenObjectPredicateFunc predicate, void *user_data)
+void sgen_finalize_all (void)
 	MONO_PERMIT (need (sgen_lock_gc));
-void sgen_remove_finalizers_if (SgenObjectPredicateFunc predicate, void *user_data, int generation);
 
 void sgen_wbroots_iterate_live_block_ranges (sgen_cardtable_block_callback cb);
 void sgen_wbroots_scan_card_table (ScanCopyContext ctx);

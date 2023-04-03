@@ -507,17 +507,6 @@ mono_gc_register_for_finalization (MonoObject *obj, MonoFinalizationProc user_da
 	sgen_object_register_for_finalization (obj, user_data);
 }
 
-static gboolean
-object_in_domain_predicate (MonoObject *obj, void *user_data)
-{
-	MonoDomain *domain = (MonoDomain *)user_data;
-	if (mono_object_domain (obj) == domain) {
-		SGEN_LOG (5, "Unregistering finalizer for object: %p (%s)", obj, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (obj)));
-		return TRUE;
-	}
-	return FALSE;
-}
-
 /**
  * mono_gc_finalizers_for_domain:
  * \param domain the unloading appdomain
@@ -529,7 +518,7 @@ object_in_domain_predicate (MonoObject *obj, void *user_data)
 void
 mono_gc_finalize_domain (MonoDomain *domain)
 {
-	sgen_finalize_if (object_in_domain_predicate, domain);
+	sgen_finalize_all ();
 }
 
 /*
@@ -549,35 +538,6 @@ typedef struct {
 } Ephemeron;
 
 static EphemeronLinkNode *ephemeron_list;
-
-/* LOCKING: requires that the GC lock is held */
-static MONO_PERMIT (need (sgen_gc_locked)) void
-null_ephemerons_for_domain (MonoDomain *domain)
-{
-	EphemeronLinkNode *current = ephemeron_list, *prev = NULL;
-
-	while (current) {
-		MonoObject *object = (MonoObject*)current->array;
-
-		if (object)
-			SGEN_ASSERT (0, object->vtable, "Can't have objects without vtables.");
-
-		if (object && object->vtable->domain == domain) {
-			EphemeronLinkNode *tmp = current;
-
-			if (prev)
-				prev->next = current->next;
-			else
-				ephemeron_list = current->next;
-
-			current = current->next;
-			sgen_free_internal (tmp, INTERNAL_MEM_EPHEMERON_LINK);
-		} else {
-			prev = current;
-			current = current->next;
-		}
-	}
-}
 
 /* LOCKING: requires that the GC lock is held */
 void
@@ -813,8 +773,6 @@ clear_domain_free_los_object_callback (GCObject *obj, size_t size, MonoDomain *d
 void
 mono_gc_clear_domain (MonoDomain * domain)
 {
-	int i;
-
 	LOCK_GC;
 
 	sgen_binary_protocol_domain_unload_begin (domain);
@@ -824,14 +782,6 @@ mono_gc_clear_domain (MonoDomain * domain)
 	sgen_process_fin_stage_entries ();
 
 	sgen_clear_nursery_fragments ();
-
-	/*Ephemerons and dislinks must be processed before LOS since they might end up pointing
-	to memory returned to the OS.*/
-	null_ephemerons_for_domain (domain);
-	sgen_null_links_for_domain (domain);
-
-	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
-		sgen_remove_finalizers_if (object_in_domain_predicate, domain, i);
 
 	sgen_scan_area_with_callback (sgen_nursery_section->data, sgen_nursery_section->end_data,
 			(IterateObjectCallbackFunc)clear_domain_process_minor_object_callback, domain, FALSE, TRUE);
@@ -2738,31 +2688,6 @@ MonoObject*
 mono_gchandle_get_target_internal (MonoGCHandle gchandle)
 {
 	return sgen_gchandle_get_target (MONO_GC_HANDLE_TO_UINT (gchandle));
-}
-
-static gpointer
-null_link_if_in_domain (gpointer hidden, GCHandleType handle_type, int max_generation, gpointer user)
-{
-	MonoDomain *unloading_domain = (MonoDomain *)user;
-	MonoDomain *obj_domain;
-	gboolean is_weak = MONO_GC_HANDLE_TYPE_IS_WEAK (handle_type);
-	if (MONO_GC_HANDLE_IS_OBJECT_POINTER (hidden)) {
-		MonoObject *obj = (MonoObject *)MONO_GC_REVEAL_POINTER (hidden, is_weak);
-		obj_domain = mono_object_domain (obj);
-	} else {
-		obj_domain = (MonoDomain *)MONO_GC_REVEAL_POINTER (hidden, is_weak);
-	}
-	if (unloading_domain->domain_id == obj_domain->domain_id)
-		return NULL;
-	return hidden;
-}
-
-void
-sgen_null_links_for_domain (MonoDomain *domain)
-{
-	guint type;
-	for (type = HANDLE_TYPE_MIN; type < HANDLE_TYPE_MAX; ++type)
-		sgen_gchandle_iterate ((GCHandleType)type, GENERATION_OLD, null_link_if_in_domain, domain);
 }
 
 void
