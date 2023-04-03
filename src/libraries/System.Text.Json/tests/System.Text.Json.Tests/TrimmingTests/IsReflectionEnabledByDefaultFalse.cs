@@ -12,7 +12,7 @@ using System.Text.Json.Serialization.Metadata;
 public static class Program
 {
     // Validates that expected the components are trimmed when
-    // the UseReflectionDefault feature switch is turned on.
+    // the IsReflectionEnabledByDefault feature switch is turned on.
     public static int Main()
     {
         MyPoco valueToSerialize = new MyPoco { Value = 42 };

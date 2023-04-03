@@ -45,7 +45,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(typeToConvert));
             }
 
-            if (AppContextSwitchHelper.UseReflectionDefault && _typeInfoResolver is null)
+            if (JsonSerializer.IsReflectionEnabledByDefault && _typeInfoResolver is null)
             {
                 // Backward compatibility -- root & query the default reflection converters
                 // but do not populate the TypeInfoResolver setting.

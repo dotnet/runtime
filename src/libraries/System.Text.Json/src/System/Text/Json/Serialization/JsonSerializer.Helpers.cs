@@ -13,6 +13,21 @@ namespace System.Text.Json
         internal const string SerializationUnreferencedCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed. Use the overload that takes a JsonTypeInfo or JsonSerializerContext, or make sure all of the required types are preserved.";
         internal const string SerializationRequiresDynamicCodeMessage = "JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation. Use System.Text.Json source generation for native AOT applications.";
 
+        /// <summary>
+        /// Indicates whether unconfigured <see cref="JsonSerializerOptions"/> instances
+        /// should be set to use the reflection-based <see cref="DefaultJsonTypeInfoResolver"/>.
+        /// </summary>
+        /// <remarks>
+        /// The value of the property is backed by the "System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"
+        /// feature switch and defaults to <see langword="true"/> if unset. For trimmed applications, disabling the feature switch
+        /// at link time will result in the property being substituted with a constant <see langword="false"/> value.
+        /// </remarks>
+        public static bool IsReflectionEnabledByDefault { get; } =
+            AppContext.TryGetSwitch(
+                switchName: "System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault",
+                isEnabled: out bool value)
+            ? value : true;
+
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         private static JsonTypeInfo GetTypeInfo(JsonSerializerOptions? options, Type inputType, bool fallBackToNearestAncestorType = false)

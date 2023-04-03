@@ -481,20 +481,28 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(unsupportedValue, options));
         }
 
+        [Fact]
+        public static void JsonSerializer_IsReflectionEnabledByDefault_DefaultsToTrue()
+        {
+            Assert.True(JsonSerializer.IsReflectionEnabledByDefault);
+        }
+
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void Options_DisablingUseReflectionDefaultSwitch_DefaultOptionsDoesNotSupportReflection()
+        public static void Options_DisablingIsReflectionEnabledByDefaultSwitch_DefaultOptionsDoesNotSupportReflection()
         {
             var options = new RemoteInvokeOptions
             {
                 RuntimeConfigurationOptions =
                 {
-                    ["System.Text.Json.Serialization.UseReflectionDefault"] = false
+                    ["System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"] = false
                 }
             };
 
             RemoteExecutor.Invoke(static () =>
             {
+                Assert.False(JsonSerializer.IsReflectionEnabledByDefault);
+
                 var options = JsonSerializerOptions.Default;
                 Assert.True(options.IsReadOnly);
 
@@ -519,18 +527,20 @@ namespace System.Text.Json.Serialization.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void Options_DisablingUseReflectionDefaultSwitch_NewOptionsDoesNotSupportReflection()
+        public static void Options_DisablingIsReflectionEnabledByDefaultSwitch_NewOptionsDoesNotSupportReflection()
         {
             var options = new RemoteInvokeOptions
             {
                 RuntimeConfigurationOptions =
                 {
-                    ["System.Text.Json.Serialization.UseReflectionDefault"] = false
+                    ["System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"] = false
                 }
             };
 
             RemoteExecutor.Invoke(static () =>
             {
+                Assert.False(JsonSerializer.IsReflectionEnabledByDefault);
+
                 var options = new JsonSerializerOptions();
                 Assert.False(options.IsReadOnly);
 
@@ -561,18 +571,20 @@ namespace System.Text.Json.Serialization.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void Options_DisablingUseReflectionDefaultSwitch_CanUseSourceGen()
+        public static void Options_DisablingIsReflectionEnabledByDefaultSwitch_CanUseSourceGen()
         {
             var options = new RemoteInvokeOptions
             {
                 RuntimeConfigurationOptions =
                 {
-                    ["System.Text.Json.Serialization.UseReflectionDefault"] = false
+                    ["System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"] = false
                 }
             };
 
             RemoteExecutor.Invoke(static () =>
             {
+                Assert.False(JsonSerializer.IsReflectionEnabledByDefault);
+
                 var options = new JsonSerializerOptions();
                 options.TypeInfoResolverChain.Add(JsonContext.Default);
 
@@ -654,19 +666,21 @@ namespace System.Text.Json.Serialization.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void Options_JsonSerializerContext_Net6CompatibilitySwitch_IsOverriddenByDisablingUseReflectionDefault()
+        public static void Options_JsonSerializerContext_Net6CompatibilitySwitch_IsOverriddenByDisablingIsReflectionEnabledByDefault()
         {
             var options = new RemoteInvokeOptions
             {
                 RuntimeConfigurationOptions =
                 {
-                    ["System.Text.Json.Serialization.UseReflectionDefault"] = false,
+                    ["System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"] = false,
                     ["System.Text.Json.Serialization.EnableSourceGenReflectionFallback"] = true
                 }
             };
 
             RemoteExecutor.Invoke(static () =>
             {
+                Assert.False(JsonSerializer.IsReflectionEnabledByDefault);
+
                 JsonContext context = JsonContext.Default;
                 var unsupportedValue = new MyClass();
 

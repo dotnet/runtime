@@ -60,8 +60,8 @@
     <TestConsoleAppSourceFiles Include="EnumConverterTest.cs" />
     <TestConsoleAppSourceFiles Include="JsonConverterAttributeTest.cs" />
     <TestConsoleAppSourceFiles Include="StackOrQueueNotRootedTest.cs" />
-    <TestConsoleAppSourceFiles Include="UseReflectionDefaultFalse.cs">
-      <DisabledFeatureSwitches>System.Text.Json.Serialization.UseReflectionDefault</DisabledFeatureSwitches>
+    <TestConsoleAppSourceFiles Include="IsReflectionEnabledByDefaultFalse.cs">
+      <DisabledFeatureSwitches>System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault</DisabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 
