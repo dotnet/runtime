@@ -5,6 +5,7 @@ namespace System.Threading.Tasks
 {
     public static class TimeProviderTaskExtensions
     {
+#if !NET8_0_OR_GREATER
         private sealed class DelayState : TaskCompletionSource<bool>
         {
             public DelayState() : base(TaskCreationOptions.RunContinuationsAsynchronously) {}
@@ -12,8 +13,20 @@ namespace System.Threading.Tasks
             public CancellationTokenRegistration Registration { get; set; }
         }
 
+        private sealed class WaitAsyncState : TaskCompletionSource<bool>
+        {
+            public WaitAsyncState() : base(TaskCreationOptions.RunContinuationsAsynchronously) { }
+            public readonly CancellationTokenSource ContinuationCancellation = new CancellationTokenSource();
+            public CancellationTokenRegistration Registration;
+            public ITimer? Timer;
+        }
+#endif // !NET8_0_OR_GREATER
+
         public static Task Delay(this TimeProvider timeProvider, TimeSpan delay, CancellationToken cancellationToken = default)
         {
+#if NET8_0_OR_GREATER
+            return Task.Delay(delay, timeProvider, cancellationToken);
+#else
             if (timeProvider == TimeProvider.System)
             {
                 return Task.Delay(delay, cancellationToken);
@@ -29,17 +42,20 @@ namespace System.Threading.Tasks
                 throw new ArgumentOutOfRangeException(nameof(delay));
             }
 
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-
             if (delay == TimeSpan.Zero)
             {
                 return Task.CompletedTask;
             }
 
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
             DelayState state = new();
+
+            // To prevent a race condition where the timer may fire before being assigned to s.Timer,
+            // we initialize it with an InfiniteTimeSpan and then set it to the state variable, followed by calling Time.Change.
             state.Timer = timeProvider.CreateTimer(delayState =>
             {
                 DelayState s = (DelayState)delayState;
@@ -58,24 +74,23 @@ namespace System.Threading.Tasks
                 s.Registration.Dispose();
             }, state);
 
+            // To prevent a race condition where the timer fires after we have attached the cancellation callback
+            // but before the registration is stored in state.Registration, we perform a subsequent check to ensure
+            // that the registration is not left dangling.
             if (state.Task.IsCompleted)
             {
                 state.Registration.Dispose();
             }
 
             return state.Task;
-        }
-
-        private sealed class WaitAsyncState : TaskCompletionSource<bool>
-        {
-            public WaitAsyncState() : base(TaskCreationOptions.RunContinuationsAsynchronously) { }
-            public readonly CancellationTokenSource ContinuationCancellation = new CancellationTokenSource();
-            public CancellationTokenRegistration Registration;
-            public ITimer? Timer;
+#endif // NET8_0_OR_GREATER
         }
 
         public static Task WaitAsync(this Task task, TimeSpan timeout, TimeProvider timeProvider, CancellationToken cancellationToken = default)
         {
+#if NET8_0_OR_GREATER
+            return task.WaitAsync(timeout, timeProvider, cancellationToken);
+#else
             if (task is null)
             {
                 throw new ArgumentNullException(nameof(task));
@@ -96,6 +111,16 @@ namespace System.Threading.Tasks
                 return task;
             }
 
+            if (timeout == Timeout.InfiniteTimeSpan && !cancellationToken.CanBeCanceled)
+            {
+                return task;
+            }
+
+            if (timeout == TimeSpan.Zero)
+            {
+                Task.FromException(new TimeoutException());
+            }
+
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled(cancellationToken);
@@ -103,6 +128,8 @@ namespace System.Threading.Tasks
 
             var state = new WaitAsyncState();
 
+            // To prevent a race condition where the timer may fire before being assigned to s.Timer,
+            // we initialize it with an InfiniteTimeSpan and then set it to the state variable, followed by calling Time.Change.
             state.Timer = timeProvider.CreateTimer(static s =>
             {
                 var state = (WaitAsyncState)s!;
@@ -137,35 +164,27 @@ namespace System.Threading.Tasks
                 state.ContinuationCancellation.Cancel();
             }, state);
 
+            // To prevent a race condition where the timer fires after we have attached the cancellation callback
+            // but before the registration is stored in state.Registration, we perform a subsequent check to ensure
+            // that the registration is not left dangling.
             if (state.Task.IsCompleted)
             {
                 state.Registration.Dispose();
             }
 
             return state.Task;
+#endif // NET8_0_OR_GREATER
         }
 
+#if NET8_0_OR_GREATER
         public static Task<TResult> WaitAsync<TResult>(this Task<TResult> task, TimeSpan timeout, TimeProvider timeProvider, CancellationToken cancellationToken = default)
+            => task.WaitAsync(timeout, timeProvider, cancellationToken);
+#else
+        public static async Task<TResult> WaitAsync<TResult>(this Task<TResult> task, TimeSpan timeout, TimeProvider timeProvider, CancellationToken cancellationToken = default)
         {
-            var tcs = new TaskCompletionSource<TResult>();
-
-            WaitAsync((Task)task, timeout, timeProvider, cancellationToken).ConfigureAwait(false).GetAwaiter().OnCompleted(() =>
-            {
-                if (task.IsCompleted)
-                {
-                    tcs.TrySetResult(task.Result);
-                }
-                else if (cancellationToken.IsCancellationRequested)
-                {
-                    tcs.TrySetCanceled(cancellationToken);
-                }
-                else
-                {
-                    tcs.TrySetException(new TimeoutException());
-                }
-            });
-
-            return tcs.Task;
+            await ((Task)task).WaitAsync(timeout, timeProvider, cancellationToken).ConfigureAwait(false);
+            return task.Result;
         }
+#endif // NET8_0_OR_GREATER
     }
 }

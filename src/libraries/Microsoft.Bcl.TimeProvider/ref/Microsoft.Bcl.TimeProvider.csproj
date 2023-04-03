@@ -9,8 +9,10 @@
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="Microsoft.Bcl.TimeProvider.Forwards.cs" />
   </ItemGroup>
-
+  <ItemGroup>
+    <Compile Include="Microsoft.Bcl.TimeProvider.Common.cs" />
+  </ItemGroup>
  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" />
- </ItemGroup>  
+ </ItemGroup>
 </Project>

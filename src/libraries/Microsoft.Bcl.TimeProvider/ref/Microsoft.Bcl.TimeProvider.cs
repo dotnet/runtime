@@ -26,13 +26,3 @@ namespace System.Threading
         bool Change(System.TimeSpan dueTime, System.TimeSpan period);
     }
 }
-
-namespace System.Threading.Tasks
-{
-    public static class TimeProviderTaskExtensions
-    {
-        public static System.Threading.Tasks.Task Delay(this System.TimeProvider timeProvider, System.TimeSpan delay, System.Threading.CancellationToken cancellationToken = default) { throw null; }
-        public static System.Threading.Tasks.Task<TResult> WaitAsync<TResult>(this System.Threading.Tasks.Task<TResult> task, System.TimeSpan timeout, System.TimeProvider timeProvider, System.Threading.CancellationToken cancellationToken = default) { throw null; }
-        public static System.Threading.Tasks.Task WaitAsync(this System.Threading.Tasks.Task task, System.TimeSpan timeout, System.TimeProvider timeProvider, System.Threading.CancellationToken cancellationToken = default) { throw null; }
-    }
-}

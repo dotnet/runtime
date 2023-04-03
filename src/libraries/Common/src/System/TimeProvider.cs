@@ -209,7 +209,11 @@ namespace System
 #if SYSTEM_PRIVATE_CORELIB
                     _timer = new TimerQueueTimer(callback, state, duration, periodTime, flowExecutionContext: true);
 #else
-                    _timer = new Timer(callback, state, duration, periodTime);
+                    // We want to ensure the timer we create will be tracked as long as it is scheduled.
+                    // To do that, we call the constructor which track only the callback which will make the time to be tracked by the scheduler
+                    // then we call Change on the timer to set the desired duration and period.
+                    _timer = new Timer(_ => callback(state));
+                    _timer.Change(duration, periodTime);
 #endif // SYSTEM_PRIVATE_CORELIB
                 }
 
