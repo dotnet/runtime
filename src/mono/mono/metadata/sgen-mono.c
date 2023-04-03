@@ -3109,7 +3109,6 @@ mono_gc_base_cleanup (void)
 	 * threadpool.
 	 */
 	sgen_finish_concurrent_work ("cleanup", TRUE);
-	sgen_thread_pool_shutdown ();
 
 	// We should have consumed any outstanding moves.
 	g_assert (sgen_pointer_queue_is_empty (&moved_objects_queue));
