@@ -11,11 +11,10 @@ internal class StartupHook
     // case where there are multiple incorrect Initialize
     // methods. Instead, the startup hook provider code should throw
     // an exception.
- 
-    public static int Initialize()
+
+    public void Initialize()
     {
-        Console.WriteLine("Hello from startup hook returning int!");
-        return 10;
+        Console.WriteLine("Hello from startup hook with instance method!");
     }
 
     public static void Initialize(int input)

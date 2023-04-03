@@ -3156,7 +3156,7 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        /// <summary>Creates a new <see cref="Vector128{T}" /> with the upper 64-bits set to the specified value and the upper 64-bits set to the same value as that in the given vector.</summary>
+        /// <summary>Creates a new <see cref="Vector128{T}" /> with the upper 64-bits set to the specified value and the lower 64-bits set to the same value as that in the given vector.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="vector">The vector to get the lower 64-bits from.</param>
         /// <param name="value">The value of the upper 64-bits as a <see cref="Vector64{T}" />.</param>
@@ -3243,6 +3243,36 @@ namespace System.Runtime.Intrinsics
                 ThrowHelper.ThrowNotSupportedException();
             }
             return AdvSimd.Arm64.ZipHigh(left, right);
+        }
+
+        // TODO: Make generic versions of these public, see https://github.com/dotnet/runtime/issues/82559
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<byte> AddSaturate(Vector128<byte> left, Vector128<byte> right)
+        {
+            if (Sse2.IsSupported)
+            {
+                return Sse2.AddSaturate(left, right);
+            }
+            else if (!AdvSimd.Arm64.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+            return AdvSimd.AddSaturate(left, right);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<byte> SubtractSaturate(Vector128<byte> left, Vector128<byte> right)
+        {
+            if (Sse2.IsSupported)
+            {
+                return Sse2.SubtractSaturate(left, right);
+            }
+            else if (!AdvSimd.Arm64.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+            return AdvSimd.SubtractSaturate(left, right);
         }
     }
 }

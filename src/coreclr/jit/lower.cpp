@@ -1829,7 +1829,7 @@ GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
 
             GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
                 GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, dstAddr, srcBlk, comp->typGetBlkLayout((unsigned)cnsSize));
-            storeBlk->gtFlags |= (GTF_BLK_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
+            storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
 
             // TODO-CQ: Use GenTreeObj::BlkOpKindUnroll here if srcAddr and dstAddr don't overlap, thus, we can
             // unroll this memmove as memcpy - it doesn't require lots of temp registers
@@ -2017,6 +2017,10 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
                 if (BlockRange().TryGetUse(call, &use))
                 {
                     use.ReplaceWith(result);
+                }
+                else
+                {
+                    result->SetUnusedValue();
                 }
                 BlockRange().Remove(lengthArg);
                 BlockRange().Remove(call);

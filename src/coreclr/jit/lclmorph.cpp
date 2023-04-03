@@ -461,7 +461,6 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
 
     enum class IndirTransform
     {
-        None,
         Nop,
         BitCast,
         NarrowCast,
@@ -1143,10 +1142,6 @@ private:
 
         switch (transform)
         {
-            case IndirTransform::None:
-                // TODO-ADDR: eliminate all such cases.
-                return;
-
             case IndirTransform::Nop:
                 indir->gtBashToNOP();
                 m_stmtModified = true;
@@ -1211,17 +1206,8 @@ private:
                     assert(elementType == TYP_SIMD12);
                     assert(varDsc->TypeGet() == TYP_SIMD16);
 
-                    // If we are not doing struct promotion and we have zero-initialization,
-                    // then we need to produce a VecCon(0).
-                    if (elementNode->IsIntegralConst(0))
-                    {
-                        DEBUG_DESTROY_NODE(elementNode);
-                        elementNode = m_compiler->gtNewZeroConNode(TYP_SIMD12);
-                    }
-
                     // We inverse the operands here and take elementNode as the main value and simdLclNode[3] as the
                     // new value. This gives us a new TYP_SIMD16 with all elements in the right spots
-
                     GenTree* indexNode = m_compiler->gtNewIconNode(3, TYP_INT);
                     hwiNode =
                         m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode, simdLclNode,

@@ -174,6 +174,9 @@ void ThreadStore::DetachCurrentThread()
         g_threadExitCallback();
     }
 
+    // we will be taking the threadstore lock and need to be in preemptive mode.
+    ASSERT(!pDetachingThread->IsCurrentThreadInCooperativeMode());
+
     // The following makes the thread no longer able to run managed code or participate in GC.
     // We need to hold threadstore lock while doing that.
     {
@@ -196,7 +199,23 @@ void ThreadStore::DetachCurrentThread()
 // to ensure that only one thread performs suspension.
 void ThreadStore::LockThreadStore()
 {
+    // the thread should not be in coop mode when taking the threadstore lock.
+    // this is required to avoid deadlocks if suspension is in progress.
+    bool wasCooperative = false;
+    Thread* pThisThread = GetCurrentThreadIfAvailable();
+    if (pThisThread && pThisThread->IsCurrentThreadInCooperativeMode())
+    {
+        wasCooperative = true;
+        pThisThread->EnablePreemptiveMode();
+    }
+
     m_Lock.Enter();
+
+    if (wasCooperative)
+    {
+        // we just got the lock thus EE can't be suspending, so no waiting here
+        pThisThread->DisablePreemptiveMode();
+    }
 }
 
 void ThreadStore::UnlockThreadStore()

@@ -56,7 +56,8 @@
     IMPORT JIT_WriteBarrier_Table_Loc
     IMPORT JIT_WriteBarrier_Loc
 
-    TEXTAREA
+    ;;like TEXTAREA, but with 64 byte alignment so that we can align the patchable pool below to 64 without warning
+    AREA    |.text|,ALIGN=6,CODE,READONLY
 
 ;; LPVOID __stdcall GetCurrentIP(void);
     LEAF_ENTRY GetCurrentIP
