@@ -6,8 +6,8 @@ namespace BuildDriver;
 [Flags]
 public enum TestTargets
 {
-    None = 1 << 0,
-    Embedding = 1 << 1,
-    CoreClr = 1 << 2,
-    All = ~0
+    None = 0,
+    Embedding = 1 << 0,
+    CoreClr = 1 << 1,
+    All = Embedding | CoreClr
 }

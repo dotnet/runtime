@@ -8,4 +8,8 @@
         <LangVersion>preview</LangVersion>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.23172.1" />
+    </ItemGroup>
+
 </Project>
