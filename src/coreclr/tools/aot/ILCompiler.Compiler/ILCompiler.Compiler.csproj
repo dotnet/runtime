@@ -30,6 +30,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\..\..\libraries\Common\src\System\Reflection\TypeNameParser.cs">
+      <Link>TypeNameParser.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\libraries\Common\src\System\Text\ValueStringBuilder.cs">
+      <Link>ValueStringBuilder.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\DelegateInfo.cs">
       <Link>IL\DelegateInfo.cs</Link>
     </Compile>
@@ -406,7 +412,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ReflectedFieldNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectedTypeNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReflectionInvokeSupportDependencyAlgorithm.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReflectionMethodBodyScanner.cs" />
     <Compile Include="Compiler\DependencyAnalysis\StructMarshallingDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM64\ARM64TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_ARM\ARMTentativeMethodNode.cs" />
@@ -416,6 +421,7 @@
     <Compile Include="Compiler\DependencyAnalysis\TentativeInstanceMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TrimmingDescriptorNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\TypeNameParser.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VariantInterfaceMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldMetadataNode.cs" />

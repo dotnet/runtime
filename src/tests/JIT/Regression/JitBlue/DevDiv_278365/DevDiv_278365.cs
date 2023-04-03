@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // This test is a reduced repro case for DevDiv VSO bug 278365.
 // The failure mode is that the RyuJIT/x86 backend changed call to ROUND intrinsic
@@ -31,7 +32,8 @@ public class Program
         }        
     }
 	
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

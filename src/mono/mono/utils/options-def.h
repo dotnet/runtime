@@ -129,6 +129,9 @@ DEFINE_INT(jiterpreter_trace_monitoring_long_distance, "jiterpreter-trace-monito
 DEFINE_INT(jiterpreter_trace_monitoring_max_average_penalty, "jiterpreter-trace-monitoring-max-average-penalty", 75, "If the average penalty value for a trace is above this value it will be rejected")
 // 0 = no monitoring, 1 = log when rejecting a trace, 2 = log when accepting or rejecting a trace, 3 = log every recorded bailout
 DEFINE_INT(jiterpreter_trace_monitoring_log, "jiterpreter-trace-monitoring-log", 0, "Logging detail level for trace monitoring")
+// if a trace fails to back branch outside of itself, and there is a prepare point at the branch target, boost
+//  the hit count of that prepare point so it will JIT much sooner
+DEFINE_INT(jiterpreter_back_branch_boost, "jiterpreter-back-branch-boost", 4900, "Boost the hit count of prepare points targeted by a failed backward branch")
 // After a do_jit_call call site is hit this many times, we will queue it to be jitted
 DEFINE_INT(jiterpreter_jit_call_trampoline_hit_count, "jiterpreter-jit-call-hit-count", 1000, "Queue specialized do_jit_call trampoline for JIT after this many hits")
 // After a do_jit_call call site is hit this many times without being jitted, we will flush the JIT queue

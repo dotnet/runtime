@@ -1876,6 +1876,10 @@ const unsigned         lsraRegOrderSize = ArrLen(lsraRegOrder);
 // TODO-XARCH-AVX512 we might want to move this to be configured with the rbm variables too
 static const regNumber lsraRegOrderFlt[]   = {REG_VAR_ORDER_FLT};
 const unsigned         lsraRegOrderFltSize = ArrLen(lsraRegOrderFlt);
+#if defined(TARGET_AMD64)
+static const regNumber lsraRegOrderFltUpper[]   = {REG_VAR_ORDER_FLT_UPPER};
+const unsigned         lsraRegOrderUpperFltSize = ArrLen(lsraRegOrderFltUpper);
+#endif //  TARGET_AMD64
 
 //------------------------------------------------------------------------
 // buildPhysRegRecords: Make an interval for each physical register
@@ -1899,6 +1903,17 @@ void LinearScan::buildPhysRegRecords()
         RegRecord* curr = &physRegs[reg];
         curr->regOrder  = (unsigned char)i;
     }
+#if defined(TARGET_AMD64)
+    if (compiler->canUseEvexEncoding())
+    {
+        for (unsigned int i = 0; i < lsraRegOrderUpperFltSize; i++)
+        {
+            regNumber  reg  = lsraRegOrderFltUpper[i];
+            RegRecord* curr = &physRegs[reg];
+            curr->regOrder  = (unsigned char)(i + lsraRegOrderFltSize);
+        }
+    }
+#endif //  TARGET_AMD64
 }
 
 //------------------------------------------------------------------------

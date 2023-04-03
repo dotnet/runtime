@@ -3782,6 +3782,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_SpanHelpers_SequenceEqual:
             case NI_System_Buffer_Memmove:
             {
                 // We'll try to unroll this in lower for constant input.
@@ -8137,6 +8138,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "get_Length") == 0)
                         {
                             result = NI_System_Span_get_Length;
+                        }
+                    }
+                    else if (strcmp(className, "SpanHelpers") == 0)
+                    {
+                        if (strcmp(methodName, "SequenceEqual") == 0)
+                        {
+                            result = NI_System_SpanHelpers_SequenceEqual;
                         }
                     }
                     else if (strcmp(className, "String") == 0)

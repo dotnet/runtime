@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 namespace Bug565326
 {
@@ -58,7 +59,8 @@ namespace Bug565326
 
     public class Class1
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {
