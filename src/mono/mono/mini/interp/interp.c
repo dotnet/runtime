@@ -8661,8 +8661,8 @@ interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 			}
 
 			if (copy_jit_info_data.jit_info_array) {
-				for (int i = 0; i < copy_jit_info_data.next; ++i)
-					func (copy_jit_info_data.jit_info_array [i], user_data);
+				for (int j = 0; j < copy_jit_info_data.next; ++j)
+					func (copy_jit_info_data.jit_info_array [j], user_data);
 				g_free (copy_jit_info_data.jit_info_array);
 			}
 		}
