@@ -5688,6 +5688,14 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
     {
         switch (funcApp.m_func)
         {
+            case VNF_GE_UN:
+            case VNF_GT_UN:
+            case VNF_LE_UN:
+            case VNF_LT_UN:
+            case VNF_COUNT:
+            case VNF_ADD_UN_OVF:
+            case VNF_SUB_UN_OVF:
+            case VNF_MUL_UN_OVF:
 #ifdef FEATURE_HW_INTRINSICS
 #ifdef TARGET_XARCH
             case VNF_HWI_POPCNT_PopCount:
