@@ -54,7 +54,7 @@ namespace Internal.Runtime.CompilerHelpers
         public static unsafe Array NewObjArrayRare(IntPtr pEEType, int nDimensions, int* pDimensions)
         {
             EETypePtr eeType = new EETypePtr(pEEType);
-            Debug.Assert(eeType.IsArray && !eeType.IsSzArray);
+            Debug.Assert(eeType.IsArray);
             Debug.Assert(nDimensions > 0);
 
             if (eeType.IsSzArray)
@@ -69,7 +69,7 @@ namespace Internal.Runtime.CompilerHelpers
 
                     Array[] arrayOfArrays = (Array[])ret;
                     for (int i = 0; i < arrayOfArrays.Length; i++)
-                        arrayOfArrays[i] = NewObjArray(elementType.RawValue, nDimensions - 1, pDimensions + 1);
+                        arrayOfArrays[i] = NewObjArrayRare(elementType.RawValue, nDimensions - 1, pDimensions + 1);
                 }
 
                 return ret;
