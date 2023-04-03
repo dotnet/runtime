@@ -298,7 +298,7 @@ export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo:
     }
 }
 
-export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: boolean) : void{
+export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
     try{
         const input = get_uft16_string(src, srcLength);
         let result = toUpper ? input.toUpperCase() : input.toLowerCase();
@@ -315,7 +315,7 @@ export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src:
     }
 }
 
-export function mono_wasm_change_case(exceptionMessage: Int32Ptr, culture: MonoStringRef, src: number, srcLength: number, dst: number, destLength: number, toUpper: boolean) : void{
+export function mono_wasm_change_case(exceptionMessage: Int32Ptr, culture: MonoStringRef, src: number, srcLength: number, dst: number, destLength: number, toUpper: number) : void{
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try{
         const cultureName = conv_string_root(cultureRoot);
@@ -337,7 +337,7 @@ export function mono_wasm_change_case(exceptionMessage: Int32Ptr, culture: MonoS
     }
 }
 
-function get_uft16_string(ptr: number, length: number): string{
+function get_uft16_string (ptr: number, length: number): string{
     const view = new Uint16Array(Module.HEAPU16.buffer, ptr, length);
     let string = "";
     for (let i = 0; i < length; i++)
