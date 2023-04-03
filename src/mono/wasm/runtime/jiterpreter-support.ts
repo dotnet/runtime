@@ -50,6 +50,7 @@ export const enum BailoutReason {
     CallDelegate,
     Debugging,
     Icall,
+    UnexpectedRetIp,
 }
 
 export const BailoutReasonNames = [
@@ -78,6 +79,7 @@ export const BailoutReasonNames = [
     "CallDelegate",
     "Debugging",
     "Icall",
+    "UnexpectedRetIp",
 ];
 
 type FunctionType = [

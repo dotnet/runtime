@@ -63,6 +63,9 @@ export const
     // Unproductive if we have backward branches enabled because it can stop us from jitting
     //  nested loops
     abortAtJittedLoopBodies = true,
+    // Enable generating conditional backward branches for ENDFINALLY opcodes if we saw some CALL_HANDLER
+    //  opcodes previously
+    enableEndFinally = true,
     // Emit a wasm nop between each managed interpreter opcode
     emitPadding = false,
     // Generate compressed names for imports so that modules have more space for code
