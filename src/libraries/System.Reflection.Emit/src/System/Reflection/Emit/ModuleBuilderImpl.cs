@@ -26,6 +26,7 @@ namespace System.Reflection.Emit
             _name = name;
         }
 
+        [RequiresUnreferencedCode("Types might be removed")]
         internal Type GetTypeFromCoreAssembly(string name)
         {
             Type? type;
@@ -33,9 +34,7 @@ namespace System.Reflection.Emit
             // TODO: Use Enum as the key for perf
             if (!_coreTypes.TryGetValue(name, out type))
             {
-#pragma warning disable IL2026 // Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code
                 type = _coreAssembly.GetType(name, throwOnError: true)!;
-#pragma warning restore IL2026
                 _coreTypes.Add(name, type);
             }
 

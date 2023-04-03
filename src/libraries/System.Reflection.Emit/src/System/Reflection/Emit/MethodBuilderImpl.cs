@@ -4,7 +4,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Emit
 {
@@ -18,6 +17,8 @@ namespace System.Reflection.Emit
         private readonly CallingConventions _callingConventions;
         private readonly TypeBuilderImpl _declaringType;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Do not expect System.Void type will be trimmed from core assembly")]
         internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
             Type[]? parameterTypes, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
         {

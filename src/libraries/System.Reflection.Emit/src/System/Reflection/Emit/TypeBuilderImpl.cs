@@ -71,7 +71,11 @@ namespace System.Reflection.Emit
         protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotImplementedException();
         protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
 
-        protected override void SetParentCore([DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type? parent)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2074:DynamicallyAccessedMembers",
+            Justification = "No need to propogate the attriubte for called method")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Do not expect System.Object type will be trimmed from core assembly")]
+        protected override void SetParentCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             if (parent != null)
             {
@@ -86,9 +90,7 @@ namespace System.Reflection.Emit
             {
                 if ((_attributes & TypeAttributes.Interface) != TypeAttributes.Interface)
                 {
-#pragma warning disable IL2074 // Value stored in field does not satisfy 'DynamicallyAccessedMembersAttribute' requirements. The return value of the source method does not have matching annotations.
                     _typeParent = _module.GetTypeFromCoreAssembly("System.Object");
-#pragma warning restore IL2074
                 }
                 else
                 {
