@@ -14,11 +14,8 @@
 #define MONO_RISCV_ARCHITECTURE "riscv32"
 #endif
 
-extern gboolean riscv_stdext_a, riscv_stdext_b, riscv_stdext_c,
-                riscv_stdext_d, riscv_stdext_f, riscv_stdext_j,
-                riscv_stdext_l, riscv_stdext_m, riscv_stdext_n,
-                riscv_stdext_p, riscv_stdext_q, riscv_stdext_t,
-                riscv_stdext_v;
+extern gboolean riscv_stdext_a, riscv_stdext_b, riscv_stdext_c, riscv_stdext_d, riscv_stdext_f, riscv_stdext_j,
+    riscv_stdext_l, riscv_stdext_m, riscv_stdext_n, riscv_stdext_p, riscv_stdext_q, riscv_stdext_t, riscv_stdext_v;
 
 #if defined (RISCV_FPABI_SOFT)
 #define MONO_ARCH_SOFT_FLOAT_FALLBACK
@@ -60,20 +57,20 @@ extern gboolean riscv_stdext_a, riscv_stdext_b, riscv_stdext_c,
  * - x0 is hard-wired to zero and can't be allocated by the register allocator.
  */
 
-#define MONO_ARCH_ARGUMENT_REGS		 (0b00000000000000111111110000000000)
-#define MONO_ARCH_IS_ARGUMENT_REGS(reg) (MONO_ARCH_ARGUMENT_REGS & (1 << (reg)))
+#define MONO_ARCH_ARGUMENT_REGS            (0b00000000000000111111110000000000)
+#define MONO_ARCH_IS_ARGUMENT_REGS(reg)    (MONO_ARCH_ARGUMENT_REGS & (1 << (reg)))
 #define MONO_ARCH_CALLEE_REGS        (0b11110000000000111111110000000000)
 #define MONO_ARCH_CALLEE_SAVED_REGS  (0b00001111111111000000001100000000)
 #define MONO_ARCH_IS_CALLEE_SAVED_REG(reg) (MONO_ARCH_CALLEE_SAVED_REGS & (1 << (reg)))
 
-/** 
- * callee saved regs + sp 
+/**
+ * callee saved regs + sp
  * fp aka s0 is firse reg in LMF_REGS
-*/
-#define MONO_ARCH_LMF_REGS ((MONO_ARCH_CALLEE_SAVED_REGS) | (1 << RISCV_SP))
+ */
+#define MONO_ARCH_LMF_REGS      ((MONO_ARCH_CALLEE_SAVED_REGS) | (1 << RISCV_SP))
 #define MONO_ARCH_FIRST_LMF_REG RISCV_S0
-#define MONO_ARCH_LMF_REG_FP RISCV_S0
-#define MONO_ARCH_LMF_REG_SP RISCV_SP
+#define MONO_ARCH_LMF_REG_FP    RISCV_S0
+#define MONO_ARCH_LMF_REG_SP    RISCV_SP
 
 #ifdef RISCV_FPABI_SOFT
 
@@ -82,7 +79,7 @@ extern gboolean riscv_stdext_a, riscv_stdext_b, riscv_stdext_c,
 
 #else
 
-#define MONO_ARCH_ARGUMENT_FREGS		 (0b00000000000000111111110000000000)
+#define MONO_ARCH_ARGUMENT_FREGS         (0b00000000000000111111110000000000)
 #define MONO_ARCH_IS_ARGUMENT_FREGS(reg) (MONO_ARCH_ARGUMENT_FREGS & (1 << (reg)))
 #define MONO_ARCH_CALLEE_FREGS       (0b11110000000000111111110011111000)
 #define MONO_ARCH_CALLEE_SAVED_FREGS (0b00001111111111000000001100000000)
@@ -140,7 +137,7 @@ extern gboolean riscv_stdext_a, riscv_stdext_b, riscv_stdext_c,
 #define MONO_ARCH_EMULATE_LCONV_TO_R8       (1)
 #define MONO_ARCH_EMULATE_LCONV_TO_R4       (1)
 #define MONO_ARCH_EMULATE_LCONV_TO_R8_UN    (1)
-#define MONO_ARCH_EMULATE_LONG_MUL_OVF_OPTS  (1)
+#define MONO_ARCH_EMULATE_LONG_MUL_OVF_OPTS (1)
 
 #define MONO_ARCH_NEED_DIV_CHECK (1)
 
@@ -211,7 +208,7 @@ struct MonoLMF {
 /* Structure used by the sequence points in AOTed code */
 struct SeqPointInfo {
 	gpointer ss_tramp_addr;
-	guint8* bp_addrs [MONO_ZERO_LEN_ARRAY];
+	guint8 *bp_addrs [MONO_ZERO_LEN_ARRAY];
 };
 
 #define MONO_ARCH_INIT_TOP_LMF_ENTRY(lmf)
@@ -248,16 +245,15 @@ typedef enum {
 	ArgNone // only in void return type
 } ArgStorage;
 
-
 typedef struct {
 	ArgStorage storage;
 	/* ArgVtypeInIRegs */
-	guint8  reg;
+	guint8 reg;
 	int size;
 	guint8 is_regpair;
 	/* ArgOnStack */
 	int slot_size;
-	gint32  offset;
+	gint32 offset;
 	guint8 is_signed : 1;
 } ArgInfo;
 
@@ -274,12 +270,12 @@ struct CallInfo {
 
 /* Relocations */
 enum {
-	MONO_R_RISCV_IMM  = 1,
-	MONO_R_RISCV_B    = 2,
-	MONO_R_RISCV_BEQ  = 3,
-	MONO_R_RISCV_BNE  = 4,
-	MONO_R_RISCV_BLT  = 5,
-	MONO_R_RISCV_BGE  = 6,
+	MONO_R_RISCV_IMM = 1,
+	MONO_R_RISCV_B = 2,
+	MONO_R_RISCV_BEQ = 3,
+	MONO_R_RISCV_BNE = 4,
+	MONO_R_RISCV_BLT = 5,
+	MONO_R_RISCV_BGE = 6,
 	MONO_R_RISCV_BLTU = 7,
 	MONO_R_RISCV_BGEU = 8,
 
@@ -290,40 +286,39 @@ enum {
 __attribute__ ((warn_unused_result)) guint8 *
 mono_riscv_emit_imm (guint8 *code, int rd, gsize imm);
 
-__attribute__ ((warn_unused_result)) guint8 *
-mono_riscv_emit_float_imm (guint8 *code, int rd, gsize f_imm, gboolean isSingle);
+__attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_float_imm (guint8 *code,
+                                                                        int rd,
+                                                                        gsize f_imm,
+                                                                        gboolean isSingle);
 
-__attribute__ ((warn_unused_result)) guint8 *
-mono_riscv_emit_nop (guint8 *code);
+__attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_nop (guint8 *code);
 
-__attribute__ ((warn_unused_result)) guint8 *
-mono_riscv_emit_load (guint8 *code, int rd, int rs1, gint32 imm, int length);
+__attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_load (
+    guint8 *code, int rd, int rs1, gint32 imm, int length);
 
-__attribute__ ((warn_unused_result)) guint8 *
-mono_riscv_emit_fload (guint8 *code, int rd, int rs1, gint32 imm, gboolean isSingle);
+__attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_fload (
+    guint8 *code, int rd, int rs1, gint32 imm, gboolean isSingle);
 
-__attribute__ ((warn_unused_result)) guint8 *
-mono_riscv_emit_store (guint8 *code, int rs2, int rs1, gint32 imm, int length);
+__attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_store (
+    guint8 *code, int rs2, int rs1, gint32 imm, int length);
 
-__attribute__ ((warn_unused_result)) guint8 *
-mono_riscv_emit_fstore (guint8 *code, int rs2, int rs1, gint32 imm, gboolean isSingle);
+__attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_fstore (
+    guint8 *code, int rs2, int rs1, gint32 imm, gboolean isSingle);
 
-__attribute__ ((__warn_unused_result__)) guint8*
-mono_riscv_emit_destroy_frame (guint8 *code);
+__attribute__ ((__warn_unused_result__)) guint8 *mono_riscv_emit_destroy_frame (guint8 *code);
 
-__attribute__ ((warn_unused_result)) guint8 *
-mono_riscv_emit_store_stack (guint8 *code, guint64 regs, int basereg, int offset, gboolean isFloat);
+__attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_store_stack (
+    guint8 *code, guint64 regs, int basereg, int offset, gboolean isFloat);
 
-__attribute__ ((warn_unused_result)) guint8 *
-mono_riscv_emit_load_stack (guint8 *code, guint64 used_regs, int basereg, int offset, gboolean isFloat);
+__attribute__ ((warn_unused_result)) guint8 *mono_riscv_emit_load_stack (
+    guint8 *code, guint64 used_regs, int basereg, int offset, gboolean isFloat);
 
-__attribute__ ((__warn_unused_result__)) guint8*
-mono_riscv_emit_store_regarray (guint8 *code, guint64 regs, int basereg, int offset, gboolean isFloat);
+__attribute__ ((__warn_unused_result__)) guint8 *mono_riscv_emit_store_regarray (
+    guint8 *code, guint64 regs, int basereg, int offset, gboolean isFloat);
 
-__attribute__ ((__warn_unused_result__)) guint8*
-mono_riscv_emit_load_regarray (guint8 *code, guint64 regs, int basereg, int offset, gboolean isFloat);
+__attribute__ ((__warn_unused_result__)) guint8 *mono_riscv_emit_load_regarray (
+    guint8 *code, guint64 regs, int basereg, int offset, gboolean isFloat);
 
-__attribute__ ((__warn_unused_result__)) void
-mono_riscv_patch (guint8 *code, guint8 *target, int relocation);
+__attribute__ ((__warn_unused_result__)) void mono_riscv_patch (guint8 *code, guint8 *target, int relocation);
 
 #endif
