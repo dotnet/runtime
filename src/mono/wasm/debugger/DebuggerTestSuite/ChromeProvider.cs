@@ -173,11 +173,6 @@ internal class ChromeProvider : WasmHostProvider
             Console.WriteLine ("Detected a container, disabling sandboxing for debugger tests.");
             str = "--no-sandbox " + str;
         }
-        else if (Environment.GetEnvironmentVariable("SKIP_LOG_TO_CONSOLE") == "1")
-        {
-            Console.WriteLine ("Detected CI, disabling sandboxing for debugger tests.");
-            str = "--no-sandbox " + str;
-        }
         return str;
     }
 }
