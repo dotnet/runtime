@@ -597,7 +597,7 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
                 {
                     assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
-                    GenTree* baseAddr = gtNewIconHandleNode((size_t)flagAddr.addr, GTF_ICON_CONST_PTR);
+                    GenTree* baseAddr = gtNewIconHandleNode((size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR);
 
                     // Save it to a temp - we'll be using its value for the replacementNode.
                     // This leads to some size savings on NativeAOT
@@ -614,7 +614,8 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 }
                 else
                 {
-                    isInitAdrNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_CONST_PTR, false);
+                    isInitAdrNode =
+                        gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR, false);
 
                     // Check ClassInitFlags::INITIALIZED_FLAG bit
                     isInitAdrNode = gtNewOperNode(GT_AND, TYP_INT, isInitAdrNode, gtNewIconNode(1));
@@ -655,7 +656,9 @@ PhaseStatus Compiler::fgExpandStaticInit()
                     {
                         assert(staticBaseAddr.accessType == IAT_PVALUE);
                         replacementNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)staticBaseAddr.addr,
-                                                                   GTF_ICON_STATIC_ADDR_PTR, true);
+                                                                   GTF_ICON_GLOBAL_PTR, false);
+                        replacementNode->gtFlags &= ~GTF_EXCEPT;
+                        replacementNode->gtFlags |= (GTF_IND_NONFAULTING | GTF_GLOB_REF);
                     }
                 }
                 else
