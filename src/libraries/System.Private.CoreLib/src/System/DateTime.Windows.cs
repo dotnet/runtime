@@ -142,39 +142,35 @@ namespace System
 
         private static unsafe delegate* unmanaged[SuppressGCTransition]<ulong*, void> GetGetSystemTimeAsFileTimeFnPtr()
         {
-            IntPtr kernel32Lib = Interop.Kernel32.LoadLibraryEx(Interop.Libraries.Kernel32, IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_SEARCH_SYSTEM32);
-            Debug.Assert(kernel32Lib != IntPtr.Zero);
+            const long TargetAccuracy = 100 * TicksPerMillisecond;
 
-            IntPtr pfnGetSystemTime = NativeLibrary.GetExport(kernel32Lib, "GetSystemTimeAsFileTime");
+            delegate* unmanaged[SuppressGCTransition]<ulong*, void> pfnGetSystemTime, pfnGetSystemTimePrecise;
+            pfnGetSystemTime = &Interop.Kernel32.GetSystemTimeAsFileTime;
+            pfnGetSystemTimePrecise = &Interop.Kernel32.GetSystemTimePreciseAsFileTime;
 
-            if (NativeLibrary.TryGetExport(kernel32Lib, "GetSystemTimePreciseAsFileTime", out IntPtr pfnGetSystemTimePrecise))
+            // We would like to use GetSystemTimePreciseAsFileTime.
+            // However, on misconfigured systems, it's possible for the "precise" time to be inaccurate:
+            //     https://github.com/dotnet/runtime/issues/9014
+            // If it's inaccurate, though, we expect it to be wildly inaccurate, so as a workaround/heuristic,
+            // we get both the "normal" and "precise" times, and as long as they're close, we use the precise one.
+            // This workaround can be removed when we better understand what's causing the drift
+            // and the issue is no longer a problem or can be better worked around on all targeted OSes.
+
+            // Retry this check several times to reduce chance of false negatives due to thread being rescheduled
+            // at wrong time.
+            for (int i = 10; --i >= 0;)
             {
-                // GetSystemTimePreciseAsFileTime exists and we'd like to use it.  However, on
-                // misconfigured systems, it's possible for the "precise" time to be inaccurate:
-                //     https://github.com/dotnet/runtime/issues/9014
-                // If it's inaccurate, though, we expect it to be wildly inaccurate, so as a
-                // workaround/heuristic, we get both the "normal" and "precise" times, and as
-                // long as they're close, we use the precise one. This workaround can be removed
-                // when we better understand what's causing the drift and the issue is no longer
-                // a problem or can be better worked around on all targeted OSes.
+                ulong systemTimeResult, preciseSystemTimeResult;
+                pfnGetSystemTime(&systemTimeResult);
+                pfnGetSystemTimePrecise(&preciseSystemTimeResult);
 
-                // Retry this check several times to reduce chance of false negatives due to thread being rescheduled
-                // at wrong time.
-                for (int i = 0; i < 10; i++)
+                if (preciseSystemTimeResult - systemTimeResult + TargetAccuracy <= 2 * TargetAccuracy)
                 {
-                    long systemTimeResult, preciseSystemTimeResult;
-                    ((delegate* unmanaged[SuppressGCTransition]<long*, void>)pfnGetSystemTime)(&systemTimeResult);
-                    ((delegate* unmanaged[SuppressGCTransition]<long*, void>)pfnGetSystemTimePrecise)(&preciseSystemTimeResult);
-
-                    if (Math.Abs(preciseSystemTimeResult - systemTimeResult) <= 100 * TicksPerMillisecond)
-                    {
-                        pfnGetSystemTime = pfnGetSystemTimePrecise; // use the precise version
-                        break;
-                    }
+                    return pfnGetSystemTimePrecise;
                 }
             }
 
-            return (delegate* unmanaged[SuppressGCTransition]<ulong*, void>)pfnGetSystemTime;
+            return pfnGetSystemTime;
         }
 
         private static unsafe DateTime UpdateLeapSecondCacheAndReturnUtcNow()
