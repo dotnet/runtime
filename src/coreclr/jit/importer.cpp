@@ -5451,6 +5451,21 @@ OPCODE Compiler::impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEnd
     return CEE_ILLEGAL;
 }
 
+GenTreeFlags Compiler::impPrefixFlagsToIndirFlags(unsigned prefixFlags)
+{
+    GenTreeFlags indirFlags = GTF_EMPTY;
+    if ((prefixFlags & PREFIX_VOLATILE) != 0)
+    {
+        indirFlags |= GTF_IND_VOLATILE;
+    }
+    if ((prefixFlags & PREFIX_UNALIGNED) != 0)
+    {
+        indirFlags |= GTF_IND_UNALIGNED;
+    }
+
+    return indirFlags;
+}
+
 /*****************************************************************************/
 // Checks whether the opcode is a valid opcode for volatile. and unaligned. prefixes
 
@@ -6586,7 +6601,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             GenTree*   op3;
             genTreeOps oper;
-            unsigned   size;
 
             int val;
 
@@ -10634,10 +10648,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_INITBLK:
             case CEE_CPBLK:
-
-                op3 = impPopStack().val; // Size
-                op2 = impPopStack().val; // Value / Src addr
-                op1 = impPopStack().val; // Dst addr
+            {
+                GenTreeFlags indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
+                op3                     = impPopStack().val; // Size
+                op2                     = impPopStack().val; // Value / Src addr
+                op1                     = impPopStack().val; // Dst addr
 
                 if (op3->IsCnsIntOrI())
                 {
@@ -10656,10 +10671,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         break;
                     }
 
-                    size = static_cast<unsigned>(op3->AsIntConCommon()->IconValue());
-                    op1  = gtNewBlockVal(op1, size);
-                    op2  = opcode == CEE_INITBLK ? op2 : gtNewBlockVal(op2, size);
-                    op1  = gtNewBlkOpNode(op1, op2, (prefixFlags & PREFIX_VOLATILE) != 0);
+                    ClassLayout* layout = typGetBlkLayout(static_cast<unsigned>(op3->AsIntConCommon()->IconValue()));
+                    op1                 = gtNewStructVal(layout, op1, indirFlags);
+                    op2                 = opcode == CEE_INITBLK ? op2 : gtNewStructVal(layout, op2, indirFlags);
+                    op1                 = gtNewBlkOpNode(op1, op2, (indirFlags & GTF_IND_VOLATILE) != 0);
                 }
                 else
                 {
@@ -10677,17 +10692,14 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
 #ifdef TARGET_64BIT
                     // STORE_DYN_BLK takes a native uint size as it turns into call to memcpy.
-                    op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_U_IMPL);
+                    op3 = gtNewCastNode(TYP_I_IMPL, op3, /* fromUnsigned */ true, TYP_I_IMPL);
 #endif
 
                     op1 = new (this, GT_STORE_DYN_BLK) GenTreeStoreDynBlk(op1, op2, op3);
-
-                    if ((prefixFlags & PREFIX_VOLATILE) != 0)
-                    {
-                        op1->gtFlags |= GTF_BLK_VOLATILE;
-                    }
+                    op1->gtFlags |= indirFlags;
                 }
                 goto SPILL_APPEND;
+            }
 
             case CEE_CPOBJ:
             {
@@ -10735,17 +10747,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     goto STIND;
                 }
 
-                op2 = impPopStack().val; // Value
-                op1 = impPopStack().val; // Ptr
+                GenTreeFlags indirFlags = impPrefixFlagsToIndirFlags(prefixFlags);
+                op2                     = impPopStack().val; // Value
+                op1                     = impPopStack().val; // Ptr
 
                 assertImp(varTypeIsStruct(op2));
-
-                op1 = impAssignStructPtr(op1, op2, resolvedToken.hClass, CHECK_SPILL_ALL);
-
-                if (op1->OperIsBlkOp() && (prefixFlags & PREFIX_UNALIGNED))
-                {
-                    op1->gtFlags |= GTF_BLK_UNALIGNED;
-                }
+                op1 = gtNewStructVal(typGetObjLayout(resolvedToken.hClass), op1, indirFlags);
+                op1 = impAssignStruct(op1, op2, CHECK_SPILL_ALL);
                 goto SPILL_APPEND;
             }
 
@@ -10812,10 +10820,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 op1 = gtNewObjNode(resolvedToken.hClass, op1);
                 op1->gtFlags |= GTF_EXCEPT;
-
-                if (prefixFlags & PREFIX_UNALIGNED)
+                op1->gtFlags |= impPrefixFlagsToIndirFlags(prefixFlags);
+                if (op1->AsIndir()->IsVolatile())
                 {
-                    op1->gtFlags |= GTF_IND_UNALIGNED;
+                    op1->gtFlags |= GTF_ORDER_SIDEEFF;
                 }
 
                 impPushOnStack(op1, tiRetVal);

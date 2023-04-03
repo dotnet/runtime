@@ -9918,13 +9918,13 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             case GT_STORE_BLK:
             case GT_STORE_DYN_BLK:
 
-                if (tree->gtFlags & GTF_BLK_VOLATILE)
+                if (tree->gtFlags & GTF_IND_VOLATILE)
                 {
-                    chars += printf("[BLK_VOLATILE]");
+                    chars += printf("[IND_VOLATILE]");
                 }
-                if (tree->AsBlk()->IsUnaligned())
+                if (tree->gtFlags & GTF_IND_UNALIGNED)
                 {
-                    chars += printf("[BLK_UNALIGNED]");
+                    chars += printf("[IND_UNALIGNED]");
                 }
                 break;
 
