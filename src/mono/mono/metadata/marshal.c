@@ -6279,8 +6279,6 @@ mono_marshal_free_dynamic_wrappers (MonoMethod *method)
 	 */
 	if (image->wrapper_caches.runtime_invoke_method_cache)
 		clear_runtime_invoke_method_cache (image->wrapper_caches.runtime_invoke_method_cache, method);
-	if (image->wrapper_caches.delegate_abstract_invoke_cache)
-		g_hash_table_remove (image->wrapper_caches.delegate_abstract_invoke_cache, mono_method_signature_internal (method));
 	// FIXME: Need to clear the caches in other images as well
 	if (image->wrapper_caches.delegate_bound_static_invoke_cache)
 		g_hash_table_remove (image->wrapper_caches.delegate_bound_static_invoke_cache, mono_method_signature_internal (method));

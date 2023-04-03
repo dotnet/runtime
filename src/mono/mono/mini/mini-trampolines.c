@@ -1460,11 +1460,7 @@ mono_create_delegate_trampoline (MonoClass *klass)
 
 gpointer mono_add_delegate_trampolines (MonoMethod *method, gpointer compiled_method, gboolean need_unbox)
 {
-	gpointer addr;
-
-	addr = mini_add_method_trampoline (method, compiled_method, mono_method_needs_static_rgctx_invoke (method, TRUE), need_unbox);
-
-	return addr;
+	return mini_add_method_trampoline (method, compiled_method, mono_method_needs_static_rgctx_invoke (method, TRUE), need_unbox);
 }
 
 gpointer
