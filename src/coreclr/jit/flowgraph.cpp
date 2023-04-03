@@ -583,11 +583,11 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 //
                 // *  JTRUE     void
                 // \--*  EQ        int
-                //    +--*  IND       int
+                //    +--*  IND       nint
                 //    |  \--*  ADD       long
                 //    |     +--*  CNS_INT(h) long   0x.... const ptr
                 //    |     \--*  CNS_INT   int    -8 (offset)
-                //    \--*  CNS_INT   int    1
+                //    \--*  CNS_INT   int    0
                 //
                 assert(flagAddr.accessType == IAT_VALUE);
 
@@ -595,6 +595,7 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 GenTree* isInitAdrNode;
                 if (isInitOffset != 0)
                 {
+                    assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
                     GenTree* baseAddr = gtNewIconHandleNode((size_t)flagAddr.addr, GTF_ICON_CONST_PTR);
 
                     // Save it to a temp - we'll be using its value for the replacementNode.
@@ -605,23 +606,30 @@ PhaseStatus Compiler::fgExpandStaticInit()
                     }
 
                     // Don't fold ADD(CNS1, CNS2) here since the result won't be reloc-friendly for AOT
-                    isInitAdrNode =
-                        gtNewIndir(TYP_INT, gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr, gtNewIconNode(isInitOffset)));
+                    isInitAdrNode = gtNewIndir(TYP_I_IMPL, gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr,
+                                                                         gtNewIconNode(isInitOffset)));
                     isInitAdrNode->gtFlags &= ~GTF_EXCEPT;
                     isInitAdrNode->gtFlags |= (GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
                 }
                 else
                 {
+                    assert(!IsTargetAbi(CORINFO_NATIVEAOT_ABI));
                     isInitAdrNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_CONST_PTR, true);
                 }
 
+                ssize_t isInitedValue = 1;
                 if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
                 {
                     // In JIT we only check a single bit (see ClassInitFlags::INITIALIZED_FLAG)
                     isInitAdrNode = gtNewOperNode(GT_AND, TYP_INT, isInitAdrNode, gtNewIconNode(1));
                 }
+                else
+                {
+                    // It was flipped to 0 for better codegen in https://github.com/dotnet/runtime/pull/83937
+                    isInitedValue = 0;
+                }
 
-                GenTree* isInitedCmp = gtNewOperNode(GT_EQ, TYP_INT, isInitAdrNode, gtNewIconNode(1));
+                GenTree* isInitedCmp = gtNewOperNode(GT_EQ, TYP_INT, isInitAdrNode, gtNewIconNode(isInitedValue));
                 isInitedCmp->gtFlags |= GTF_RELOP_JMP_USED;
                 BasicBlock* isInitedBb =
                     fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp), debugInfo);
