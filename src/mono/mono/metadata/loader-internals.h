@@ -227,11 +227,6 @@ mono_set_pinvoke_search_directories (int dir_count, char **dirs);
 void
 mono_alcs_init (void);
 
-typedef void (*MonoALCFunc) (void *alc, gpointer user_data);
-
-void
-mono_alc_foreach (MonoALCFunc func, gpointer user_data);
-
 void
 mono_alc_create_default (MonoDomain *domain);
 
@@ -309,6 +304,9 @@ mono_alc_find_assembly (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
 
 MONO_COMPONENT_API GPtrArray*
 mono_alc_get_all_loaded_assemblies (void);
+
+GPtrArray*
+mono_alc_get_all (void);
 
 MONO_API void
 mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const char *destfname);
