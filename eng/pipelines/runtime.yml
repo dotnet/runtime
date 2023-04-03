@@ -61,7 +61,7 @@ extends:
       - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
         - template: /eng/pipelines/common/evaluate-default-paths.yml
 
-      
+      #
       # Build CoreCLR checked
       # Only when CoreCLR is changed
       #
