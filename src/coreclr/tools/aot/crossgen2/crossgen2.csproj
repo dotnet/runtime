@@ -29,7 +29,6 @@
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup Condition="'$(NativeAotSupported)' == 'true'">
-    <LinkerFlavor Condition="'$(TargetOS)' == 'linux'">lld</LinkerFlavor>
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
     <IlcToolsPath Condition="'$(CrossBuild)' == 'true'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <SysRoot Condition="'$(CrossBuild)' == 'true' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
@@ -91,6 +90,7 @@
           BeforeTargets="SetupOSSpecificProps">
       <PropertyGroup>
         <CppCompilerAndLinker Condition="'$(CppCompilerAndLinker)' == ''">clang</CppCompilerAndLinker>
+        <LinkerFlavor Condition="'$(CppCompilerAndLinker)' == 'clang' and '$(TargetOS)' == 'linux'">lld</LinkerFlavor>
       </PropertyGroup>
 
       <Exec Command="sh -c 'build_arch=&quot;$(TargetArchitecture)&quot; compiler=&quot;$(CppCompilerAndLinker)&quot; . &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &amp;&amp; echo $CC' 2>/dev/null"
