@@ -616,7 +616,7 @@ enum {
 static G_GNUC_UNUSED inline gboolean
 riscv_is_jal_disp (void *code, void *target)
 {
-	gint64 disp = ((char*)(target) - (char*)(code))/2;
+	gint64 disp = ((char *)(target) - (char *)(code)) / 2;
 
 	return (disp > -(1 << 19)) && (disp < (1 << 19));
 }
@@ -624,7 +624,7 @@ riscv_is_jal_disp (void *code, void *target)
 static G_GNUC_UNUSED inline gsize
 riscv_get_jal_disp (void *code, void *target)
 {
-	return ((char*)(target) - (char*)(code)) & 0xfffffffe;
+	return ((char *)(target) - (char *)(code)) & 0xfffffffe;
 }
 
 /*

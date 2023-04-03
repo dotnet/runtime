@@ -168,7 +168,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 	*new_ctx = *ctx;
 
 	if (ji != NULL) {
-		// all GREG + Callee saved FREG 
+		// all GREG + Callee saved FREG
 		host_mgreg_t regs [MONO_MAX_IREGS + 12 + 1];
 		guint8 *cfa;
 		guint32 unwind_info_len;
@@ -190,10 +190,9 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 		for (int i = 0; i < 10; i++)
 			(regs + MONO_MAX_IREGS) [i] = *((host_mgreg_t*)&new_ctx->fregs [RISCV_F18 + i]);
 
-		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, (guint8*)ji->code_start,
-						   (guint8*)ji->code_start + ji->code_size,
-						   (guint8*)ip, NULL, regs, MONO_MAX_IREGS + 12 + 1,
-						   save_locations, MONO_MAX_IREGS, (guint8**)&cfa);
+		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, (guint8 *)ji->code_start,
+		                                      (guint8 *)ji->code_start + ji->code_size, (guint8 *)ip, NULL, regs,
+		                                      MONO_MAX_IREGS + 12 + 1, save_locations, MONO_MAX_IREGS, (guint8 **)&cfa);
 
 		if (!success)
 			return FALSE;
@@ -206,9 +205,9 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 
 		new_ctx->gregs [RISCV_SP] = (host_mgreg_t)(gsize)cfa;
 
-		if (*lmf && (*lmf)->gregs[RISCV_FP] && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->gregs[RISCV_SP])){
+		if (*lmf && (*lmf)->gregs [RISCV_FP] && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->gregs [RISCV_SP])) {
 			/* remove any unused lmf */
-			*lmf = (MonoLMF*)(((gsize)(*lmf)->previous_lmf) & ~(TARGET_SIZEOF_VOID_P -1));
+			*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~(TARGET_SIZEOF_VOID_P - 1));
 		}
 
 		/* we substract 1, so that the pc points into the call instruction */
@@ -225,12 +224,12 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 			return FALSE;
 
 		memcpy (&new_ctx->gregs, (*lmf)->gregs, sizeof (host_mgreg_t) * RISCV_N_GREGS);
-		new_ctx->gregs[0] = (*lmf)->pc; // use [0] as pc reg since x0 is hard-wired zero
+		new_ctx->gregs [0] = (*lmf)->pc; // use [0] as pc reg since x0 is hard-wired zero
 
 		/* we substract 1, so that the IP points into the call instruction */
-		new_ctx->gregs[0]--;
+		new_ctx->gregs [0]--;
 
-		*lmf = (MonoLMF*)(((gsize)(*lmf)->previous_lmf) & ~(TARGET_SIZEOF_VOID_P -1));
+		*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~(TARGET_SIZEOF_VOID_P - 1));
 
 		return TRUE;
 	}
