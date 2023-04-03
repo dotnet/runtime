@@ -4,22 +4,22 @@
     <body>
       <trans-unit id="PropertyNotSupportedMessageFormat">
         <source>Property '{0}' on type '{1}' is not supported.</source>
-        <target state="new">Property '{0}' on type '{1}' is not supported.</target>
+        <target state="translated">Свойство "{0}" типа "{1}" не поддерживается.</target>
         <note />
       </trans-unit>
       <trans-unit id="PropertyNotSupportedTitle">
         <source>Did not generate binding logic for a property on a type.</source>
-        <target state="new">Did not generate binding logic for a property on a type.</target>
+        <target state="translated">Не создана логика привязки для свойства типа.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
         <source>Type '{0}' is not supported: {1}.</source>
-        <target state="new">Type '{0}' is not supported: {1}.</target>
+        <target state="translated">Тип "{0}" не поддерживается: {1}.</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate binding logic for a type.</source>
-        <target state="new">Did not generate binding logic for a type.</target>
+        <target state="translated">Не создана логика привязки для типа.</target>
         <note />
       </trans-unit>
     </body>

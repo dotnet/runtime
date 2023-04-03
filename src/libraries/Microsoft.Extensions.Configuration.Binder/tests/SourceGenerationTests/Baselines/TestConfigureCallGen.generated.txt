@@ -35,15 +35,23 @@ internal static class GeneratedConfigurationBinder
             obj.MyInt = int.Parse(stringValue2);
         }
 
-        System.Collections.Generic.List<int> temp3 = obj.MyList;
-        temp3 ??= new System.Collections.Generic.List<int>();
-        BindCore(configuration.GetSection("MyList"), ref temp3);
-        obj.MyList = temp3;
+        global::Microsoft.Extensions.Configuration.IConfigurationSection section3 = configuration.GetSection("MyList");
+        if (HasChildren(section3))
+        {
+            System.Collections.Generic.List<int> temp4 = obj.MyList;
+            temp4 ??= new System.Collections.Generic.List<int>();
+            BindCore(section3, ref temp4);
+            obj.MyList = temp4;
+        }
 
-        System.Collections.Generic.Dictionary<string, string> temp4 = obj.MyDictionary;
-        temp4 ??= new System.Collections.Generic.Dictionary<string, string>();
-        BindCore(configuration.GetSection("MyDictionary"), ref temp4);
-        obj.MyDictionary = temp4;
+        global::Microsoft.Extensions.Configuration.IConfigurationSection section5 = configuration.GetSection("MyDictionary");
+        if (HasChildren(section5))
+        {
+            System.Collections.Generic.Dictionary<string, string> temp6 = obj.MyDictionary;
+            temp6 ??= new System.Collections.Generic.Dictionary<string, string>();
+            BindCore(section5, ref temp6);
+            obj.MyDictionary = temp6;
+        }
 
     }
 
@@ -57,9 +65,9 @@ internal static class GeneratedConfigurationBinder
         int element;
         foreach (Microsoft.Extensions.Configuration.IConfigurationSection section in configuration.GetChildren())
         {
-            if (section.Value is string stringValue5)
+            if (section.Value is string stringValue7)
             {
-                element = int.Parse(stringValue5);
+                element = int.Parse(stringValue7);
                 obj.Add(element);
             }
         }
@@ -75,17 +83,25 @@ internal static class GeneratedConfigurationBinder
         string key;
         foreach (Microsoft.Extensions.Configuration.IConfigurationSection section in configuration.GetChildren())
         {
-            if (section.Key is string stringValue6)
+            if (section.Key is string stringValue8)
             {
-                key = stringValue6;
+                key = stringValue8;
                 string element;
-                if (section.Value is string stringValue7)
+                if (section.Value is string stringValue9)
                 {
-                    element = stringValue7;
+                    element = stringValue9;
                     obj[key] = element;
                 }
             }
         }
     }
 
+    public static bool HasChildren(global::Microsoft.Extensions.Configuration.IConfiguration configuration)
+    {
+        foreach (global::Microsoft.Extensions.Configuration.IConfigurationSection section in configuration.GetChildren())
+        {
+            return true;
+        }
+        return false;
+    }
 }

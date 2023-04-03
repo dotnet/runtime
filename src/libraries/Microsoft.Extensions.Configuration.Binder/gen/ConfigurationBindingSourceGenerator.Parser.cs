@@ -355,12 +355,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private ObjectSpec? CreateObjectSpec(INamedTypeSymbol type, Location? location)
             {
+                Debug.Assert(!_createdSpecs.ContainsKey(type));
+
+                // Add spec to cache before traversing properties to avoid stack overflow.
+
                 if (!CanConstructObject(type, location))
                 {
+                    _createdSpecs.Add(type, null);
                     return null;
                 }
+                ObjectSpec objectSpec = new(type) { Location = location, ConstructionStrategy = ConstructionStrategy.ParameterlessConstructor };
+                _createdSpecs.Add(type, objectSpec);
 
-                List<PropertySpec> properties = new();
                 INamedTypeSymbol current = type;
                 while (current != null)
                 {
@@ -385,7 +391,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     PropertySpec spec = new PropertySpec(property) { Type = propertyTypeSpec, ConfigurationKeyName = configKeyName };
                                     if (spec.CanGet || spec.CanSet)
                                     {
-                                        properties.Add(spec);
+                                        objectSpec.Properties.Add(spec);
                                     }
                                 }
                             }
@@ -394,7 +400,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     current = current.BaseType;
                 }
 
-                return new ObjectSpec(type) { Location = location, Properties = properties, ConstructionStrategy = ConstructionStrategy.ParameterlessConstructor };
+                return objectSpec;
             }
 
             private bool IsCandidateEnumerable(INamedTypeSymbol type, out ITypeSymbol? elementType)

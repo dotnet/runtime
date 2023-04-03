@@ -27,6 +27,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string Enum = "global::System.Enum";
                 public const string FromBase64String = "global::System.Convert.FromBase64String";
                 public const string IConfiguration = "global::Microsoft.Extensions.Configuration.IConfiguration";
+                public const string IConfigurationSection = "global::Microsoft.Extensions.Configuration.IConfigurationSection";
                 public const string Int32 = "int";
                 public const string IServiceCollection = "global::Microsoft.Extensions.DependencyInjection.IServiceCollection";
                 public const string Object = "object";
@@ -74,6 +75,8 @@ using System.Linq;
                 EmitGetMethod();
 
                 EmitBindMethods();
+
+                EmitIConfigurationHasChildrenHelperMethod();
 
                 _writer.WriteBlockEnd();
 
@@ -363,7 +366,7 @@ using System.Linq;
                 string propertyParentReference = property.IsStatic ? parentType.DisplayString : Literal.obj;
                 string expressionForPropertyAccess = $"{propertyParentReference}.{property.Name}";
 
-                string expressionForConfigGetSection = $@"{Literal.configuration}.{Literal.GetSection}(""{configurationKeyName}"")";
+                string expressionForConfigSectionAccess = $@"{Literal.configuration}.{Literal.GetSection}(""{configurationKeyName}"")";
                 string expressionForConfigValueIndexer = $@"{Literal.configuration}[""{configurationKeyName}""]";
 
                 bool canGet = property.CanGet;
@@ -394,12 +397,12 @@ using System.Linq;
                                 property,
                                 propertyType,
                                 expressionForPropertyAccess,
-                                expressionForConfigArg: expressionForConfigGetSection);
+                                expressionForConfigSectionAccess);
                         }
                         break;
                     case TypeSpecKind.IConfigurationSection:
                         {
-                            EmitAssignment(expressionForPropertyAccess, expressionForConfigGetSection);
+                            EmitAssignment(expressionForPropertyAccess, expressionForConfigSectionAccess);
                         }
                         break;
                     case TypeSpecKind.Nullable:
@@ -414,7 +417,7 @@ using System.Linq;
                                 property,
                                 propertyType,
                                 expressionForPropertyAccess,
-                                expressionForConfigArg: expressionForConfigGetSection);
+                                expressionForConfigSectionAccess);
                         }
                         break;
                 }
@@ -491,8 +494,12 @@ using System.Linq;
                 PropertySpec property,
                 TypeSpec effectivePropertyType,
                 string expressionForPropertyAccess,
-                string expressionForConfigArg)
+                string expressionForConfigSectionAccess)
             {
+                string bindCoreConfigArg = GetIncrementalVarName(Literal.section);
+                EmitAssignment($"{GlobalName.IConfigurationSection} {bindCoreConfigArg}", expressionForConfigSectionAccess);
+                _writer.WriteBlockStart($"if ({Literal.HasChildren}({bindCoreConfigArg}))");
+
                 bool canGet = property.CanGet;
                 bool canSet = property.CanSet;
 
@@ -523,7 +530,7 @@ using System.Linq;
                             EmitObjectInit(effectivePropertyType, tempVarName, InitializationKind.Declaration);
                         }
 
-                        _writer.WriteLine($@"{Literal.BindCore}({expressionForConfigArg}, ref {tempVarName});");
+                        _writer.WriteLine($@"{Literal.BindCore}({bindCoreConfigArg}, ref {tempVarName});");
                         EmitAssignment(expressionForPropertyAccess, tempVarName);
                         _privateBindCoreMethodGen_QueuedTypes.Enqueue(effectivePropertyType);
                     }
@@ -532,7 +539,7 @@ using System.Linq;
                 {
                     EmitAssignment($"{effectivePropertyType.DisplayString} {tempVarName}", $"{expressionForPropertyAccess}");
                     EmitObjectInit(effectivePropertyType, tempVarName, InitializationKind.AssignmentWithNullCheck);
-                    _writer.WriteLine($@"{Literal.BindCore}({expressionForConfigArg}, ref {tempVarName});");
+                    _writer.WriteLine($@"{Literal.BindCore}({bindCoreConfigArg}, ref {tempVarName});");
 
                     if (canSet)
                     {
@@ -543,9 +550,11 @@ using System.Linq;
                 {
                     Debug.Assert(canSet);
                     EmitObjectInit(effectivePropertyType, tempVarName, InitializationKind.Declaration);
-                    _writer.WriteLine($@"{Literal.BindCore}({expressionForConfigArg}, ref {tempVarName});");
+                    _writer.WriteLine($@"{Literal.BindCore}({bindCoreConfigArg}, ref {tempVarName});");
                     EmitAssignment(expressionForPropertyAccess, tempVarName);
                 }
+
+                _writer.WriteBlockEnd();
 
                 _privateBindCoreMethodGen_QueuedTypes.Enqueue(effectivePropertyType);
             }
@@ -609,7 +618,7 @@ using System.Linq;
                 {
                     return;
                 }
-                else if (type is CollectionSpec { ConcreteType: { } concreteType})
+                else if (type is CollectionSpec { ConcreteType: { } concreteType })
                 {
                     displayString = concreteType.DisplayString;
                 }
@@ -636,6 +645,16 @@ using System.Linq;
             {
                 _writer.WriteBlockStart($"if ({Literal.configuration} is not {TypeFullName.IConfigurationSection} {Literal.section})");
                 _writer.WriteLine("throw new global::System.InvalidOperationException();");
+                _writer.WriteBlockEnd();
+            }
+
+            private void EmitIConfigurationHasChildrenHelperMethod()
+            {
+                _writer.WriteBlockStart($"public static bool {Literal.HasChildren}({GlobalName.IConfiguration} {Literal.configuration})");
+                _writer.WriteBlockStart($"foreach ({GlobalName.IConfigurationSection} {Literal.section} in {Literal.configuration}.{Literal.GetChildren}())");
+                _writer.WriteLine($"return true;");
+                _writer.WriteBlockEnd();
+                _writer.WriteLine($"return false;");
                 _writer.WriteBlockEnd();
             }
 
