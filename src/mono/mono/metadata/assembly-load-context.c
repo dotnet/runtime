@@ -84,14 +84,6 @@ mono_alcs_init (void)
 	default_alc->gchandle = mono_gchandle_new_internal (NULL, FALSE);
 }
 
-void
-mono_alc_foreach (MonoALCFunc func, gpointer user_data)
-{
-	alcs_lock ();
-	g_slist_foreach (alcs, func, user_data);
-	alcs_unlock ();
-}
-
 MonoAssemblyLoadContext *
 mono_alc_get_default (void)
 {
@@ -690,6 +682,21 @@ mono_alc_get_all_loaded_assemblies (void)
 	return assemblies;
 }
 
+GPtrArray*
+mono_alc_get_all (void)
+{
+	// FIXME: prevent the individual ALCs from being collected until the iteration is done.
+	GSList *tmp;
+	GPtrArray *all_alcs = g_ptr_array_new ();
+	MonoAssemblyLoadContext *alc;
+	alcs_lock ();
+	for (tmp = alcs; tmp; tmp = tmp->next) {
+		alc = (MonoAssemblyLoadContext *)tmp->data;
+		g_ptr_array_add (all_alcs, alc);
+	}
+	alcs_unlock ();
+	return all_alcs;
+}
 
 MonoBoolean
 ves_icall_System_Reflection_LoaderAllocatorScout_Destroy (gpointer native)
@@ -730,3 +737,4 @@ ves_icall_System_Reflection_LoaderAllocatorScout_Destroy (gpointer native)
 	return TRUE;
 #endif
 }
+
