@@ -80,6 +80,9 @@
     <RunWithAndroid>false</RunWithAndroid>
     <RunWithAndroid Condition="'$(TargetOS)' == 'android'">true</RunWithAndroid>
 
+    <RunWithiOS>false</RunWithiOS>
+    <RunWithiOS Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'">true</RunWithiOS>
+
     <MonoAot>false</MonoAot>
     <MonoAot Condition="'$(__MonoAot)' == '1'">true</MonoAot>
     <RuntimeVariant Condition="'$(__MonoAot)' == '1'">llvmaot</RuntimeVariant>
