@@ -227,6 +227,11 @@ mono_set_pinvoke_search_directories (int dir_count, char **dirs);
 void
 mono_alcs_init (void);
 
+typedef void (*MonoALCFunc) (MonoAssemblyLoadContext *alc, gpointer user_data);
+
+void
+mono_alc_foreach (MonoALCFunc func, gpointer user_data);
+
 void
 mono_alc_create_default (MonoDomain *domain);
 
