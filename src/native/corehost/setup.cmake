@@ -57,4 +57,4 @@ else()
     add_definitions(-DFALLBACK_HOST_OS="${CLI_CMAKE_FALLBACK_OS}")
 endif()
 
-add_definitions(-DCURRENT_ARCH_NAME="${CLR_CMAKE_TARGET_ARCH}")
+add_definitions(-DCURRENT_ARCH_NAME="${ARCH_TARGET_NAME}")

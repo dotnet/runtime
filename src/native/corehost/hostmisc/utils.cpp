@@ -245,7 +245,8 @@ const pal::char_t* get_arch_name(pal::architecture arch)
 
 const pal::char_t* get_current_arch_name()
 {
-    return get_arch_name(get_current_arch());
+    assert(pal::strcmp(get_arch_name(get_current_arch()), _STRINGIFY(CURRENT_ARCH_NAME)) == 0);
+    return _STRINGIFY(CURRENT_ARCH_NAME);
 }
 
 pal::string_t get_current_runtime_id(bool use_fallback)

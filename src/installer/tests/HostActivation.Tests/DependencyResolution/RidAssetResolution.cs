@@ -27,6 +27,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 : !string.IsNullOrEmpty(Tfm) && Version.Parse(Tfm[3..]) < ReadRidGraphDisabledVersion;
 
             public bool ShouldUseFallbackRid => ShouldReadRidGraph && (Rid == UnknownRid || !HasRuntimeFallbacks);
+
+            public override string ToString() => $"""
+                RID: {(Rid ?? "<null>")}
+                TFM: {(Tfm ?? "<null>")}
+                ReadRidGraph: {(ReadRidGraph.HasValue ? ReadRidGraph : "<null>")}
+                HasRuntimeFallbacks: {HasRuntimeFallbacks}
+                [computed]
+                  ShouldReadRidGraph: {ShouldReadRidGraph}
+                  ShouldUseFallbackRid: {ShouldUseFallbackRid}
+                """;
         };
 
         public class ResolvedPaths
