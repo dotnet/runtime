@@ -609,20 +609,21 @@ PhaseStatus Compiler::fgExpandStaticInit()
                     // Don't fold ADD(CNS1, CNS2) here since the result won't be reloc-friendly for AOT
                     isInitAdrNode = gtNewIndir(TYP_I_IMPL, gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr,
                                                                          gtNewIconNode(isInitOffset)));
-                    isInitAdrNode->gtFlags &= ~GTF_EXCEPT;
-                    isInitAdrNode->gtFlags |= (GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
-
                     // 0 means "initialized" on NativeAOT
                     isInitedValue = gtNewIconNode(0, TYP_I_IMPL);
                 }
                 else
                 {
-                    isInitAdrNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_CONST_PTR, true);
+                    isInitAdrNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_CONST_PTR, false);
 
                     // Check ClassInitFlags::INITIALIZED_FLAG bit
                     isInitAdrNode = gtNewOperNode(GT_AND, TYP_INT, isInitAdrNode, gtNewIconNode(1));
                     isInitedValue = gtNewIconNode(1);
                 }
+
+                // This indir points to a mutable location and doesn't have side-effects
+                isInitAdrNode->gtFlags &= ~GTF_EXCEPT;
+                isInitAdrNode->gtFlags |= (GTF_IND_NONFAULTING | GTF_GLOB_REF);
 
                 GenTree* isInitedCmp = gtNewOperNode(GT_EQ, TYP_INT, isInitAdrNode, isInitedValue);
                 isInitedCmp->gtFlags |= GTF_RELOP_JMP_USED;
