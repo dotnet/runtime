@@ -24,7 +24,7 @@ namespace Internal.Runtime.CompilerHelpers
             Debug.Assert(eeType.IsArray && !eeType.IsSzArray);
             Debug.Assert(nDimensions > 0);
 
-            // Rank 1 arrays are handled below. We should allocate an SzArray.
+            // Rank 1 arrays are handled below.
             Debug.Assert(eeType.ArrayRank > 1);
 
             // Multidimensional arrays have two ctors, one with and one without lower bounds
@@ -57,6 +57,8 @@ namespace Internal.Runtime.CompilerHelpers
             Debug.Assert(eeType.IsArray);
             Debug.Assert(nDimensions > 0);
 
+            Debug.Assert(eeType.ArrayRank == 1);
+
             if (eeType.IsSzArray)
             {
                 Array ret = RuntimeImports.RhNewArray(eeType, pDimensions[0]);
@@ -77,9 +79,8 @@ namespace Internal.Runtime.CompilerHelpers
             else
             {
                 // Multidimensional arrays have two ctors, one with and one without lower bounds
-                int rank = eeType.ArrayRank;
+                const int rank = 1;
                 Debug.Assert(rank == nDimensions || 2 * rank == nDimensions);
-                Debug.Assert(rank == 1);
 
                 if (rank < nDimensions)
                 {
