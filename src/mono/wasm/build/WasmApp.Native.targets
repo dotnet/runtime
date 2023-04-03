@@ -179,7 +179,7 @@
       <EmccLinkOptimizationFlag    Condition="'$(EmccLinkOptimizationFlag)' == ''"   >$(EmccCompileOptimizationFlag)</EmccLinkOptimizationFlag>
 
       <_EmccCompileRsp>$(_WasmIntermediateOutputPath)emcc-compile.rsp</_EmccCompileRsp>
-      <_EmccCompileOutputMessageImportance Condition="'$(EmccVerbose)' == 'true'">Normal</_EmccCompileOutputMessageImportance>
+      <_EmccCompileOutputMessageImportance Condition="'$(EmccVerbose)' == 'true'">High</_EmccCompileOutputMessageImportance>
       <_EmccCompileOutputMessageImportance Condition="'$(EmccVerbose)' != 'true'">Low</_EmccCompileOutputMessageImportance>
 
       <_EmccCompileBitcodeRsp>$(_WasmIntermediateOutputPath)emcc-compile-bc.rsp</_EmccCompileBitcodeRsp>
@@ -318,6 +318,7 @@
     </ItemGroup>
 
     <Message Text="Compiling native assets with emcc with $(EmccCompileOptimizationFlag). This may take a while ..." Importance="High" />
+    <Message Text="Verbose emcc $(EmccVerbose)." Importance="High" />
     <ItemGroup>
       <_WasmSourceFileToCompile Remove="@(_WasmSourceFileToCompile)" />
       <_WasmSourceFileToCompile Include="@(_WasmRuntimePackSrcFile)" Dependencies="%(_WasmRuntimePackSrcFile.Dependencies);$(_EmccDefaultFlagsRsp);$(_EmccCompileRsp)" />
