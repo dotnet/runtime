@@ -102,6 +102,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         private readonly List<Framework> _frameworks = new List<Framework>();
         private readonly List<Framework> _includedFrameworks = new List<Framework>();
         private readonly List<Tuple<string, string>> _properties = new List<Tuple<string, string>>();
+        private readonly List<string> _additionalProbingPaths = new List<string>();
 
         /// <summary>
         /// Creates new runtime config - overwrites existing file on Save if any.
@@ -233,6 +234,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return this;
         }
 
+        public RuntimeConfig WithAdditionalProbingPath(string path)
+        {
+            _additionalProbingPaths.Add(path);
+            return this;
+        }
+
         public RuntimeConfig WithProperty(string name, string value)
         {
             _properties.Add(new Tuple<string, string>(name, value));
@@ -280,6 +287,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
             if (_tfm is not null)
             {
                 runtimeOptions.Add("tfm", _tfm);
+            }
+
+            if (_additionalProbingPaths.Count > 0)
+            {
+                runtimeOptions.Add(
+                    Constants.AdditionalProbingPath.RuntimeConfigPropertyName,
+                    new JsonArray(_additionalProbingPaths.Select(p => JsonValue.Create(p)).ToArray()));
             }
 
             if (_properties.Count > 0)

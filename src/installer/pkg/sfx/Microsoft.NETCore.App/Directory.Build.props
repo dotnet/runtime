@@ -252,6 +252,7 @@
     <PlatformManifestFileEntry Include="emcc-props.json" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.WasmIntrinsics.xml" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.NoWasmIntrinsics.xml" IsNative="true" />
+    <PlatformManifestFileEntry Include="ILLink.Descriptors.LegacyJsInterop.xml" IsNative="true" />
     <!-- wasi specific -->
     <PlatformManifestFileEntry Include="main.c" IsNative="true" />
     <PlatformManifestFileEntry Include="driver.h" IsNative="true" />

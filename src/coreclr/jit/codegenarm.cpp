@@ -1275,6 +1275,22 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genCodeForJTrue: Produce code for a GT_JTRUE node.
+//
+// Arguments:
+//    jtrue - the node
+//
+void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
+{
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+
+    GenTree*  op  = jtrue->gtGetOp1();
+    regNumber reg = genConsumeReg(op);
+    inst_RV_RV(INS_tst, reg, reg, genActualType(op));
+    inst_JMP(EJ_ne, compiler->compCurBB->bbJumpDest);
+}
+
+//------------------------------------------------------------------------
 // genCodeForReturnTrap: Produce code for a GT_RETURNTRAP node.
 //
 // Arguments:

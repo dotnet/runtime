@@ -603,7 +603,7 @@ namespace System.Runtime.Serialization
                     MethodInfo? addMethod = collectionContract.AddMethod;
                     if (addMethod == null)
                     {
-                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.CollectionMustHaveAddMethod, DataContract.GetClrTypeFullName(collectionContract.UnderlyingType))));
+                        throw new InvalidDataContractException(SR.Format(SR.CollectionMustHaveAddMethod, DataContract.GetClrTypeFullName(collectionContract.UnderlyingType)));
                     }
 
                     return (resultCollection, collectionItem, index) =>

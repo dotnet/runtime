@@ -234,7 +234,7 @@ namespace ILCompiler
 
         public DevirtualizationManager GetDevirtualizationManager()
         {
-            return new ScannedDevirtualizationManager(MarkedNodes);
+            return new ScannedDevirtualizationManager(_factory, MarkedNodes);
         }
 
         public IInliningPolicy GetInliningPolicy()
@@ -409,7 +409,7 @@ namespace ILCompiler
             private Dictionary<TypeDesc, HashSet<TypeDesc>> _interfaceImplementators = new();
             private HashSet<TypeDesc> _disqualifiedInterfaces = new();
 
-            public ScannedDevirtualizationManager(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
+            public ScannedDevirtualizationManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
                 foreach (var node in markedNodes)
                 {
@@ -422,18 +422,6 @@ namespace ILCompiler
 
                     if (type != null)
                     {
-                        if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                        {
-                            foreach (DefType baseInterface in type.RuntimeInterfaces)
-                            {
-                                // If the interface is implemented on a template type, there might be
-                                // no real upper bound on the number of actual classes implementing it
-                                // due to MakeGenericType.
-                                if (CanAssumeWholeProgramViewOnInterfaceUse(baseInterface))
-                                    _disqualifiedInterfaces.Add(baseInterface);
-                            }
-                        }
-
                         _constructedTypes.Add(type);
 
                         if (type.IsInterface)
@@ -444,7 +432,7 @@ namespace ILCompiler
                                 {
                                     // If the interface is implemented through IDynamicInterfaceCastable, there might be
                                     // no real upper bound on the number of actual classes implementing it.
-                                    if (CanAssumeWholeProgramViewOnInterfaceUse(baseInterface))
+                                    if (CanAssumeWholeProgramViewOnInterfaceUse(factory, type, baseInterface))
                                         _disqualifiedInterfaces.Add(baseInterface);
                                 }
                             }
@@ -467,9 +455,37 @@ namespace ILCompiler
                                 // Record all interfaces this class implements to _interfaceImplementators
                                 foreach (DefType baseInterface in type.RuntimeInterfaces)
                                 {
-                                    if (CanAssumeWholeProgramViewOnInterfaceUse(baseInterface))
+                                    if (CanAssumeWholeProgramViewOnInterfaceUse(factory, type, baseInterface))
                                     {
                                         RecordImplementation(baseInterface, type);
+                                    }
+                                }
+                            }
+
+                            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                            {
+                                // If the interface is implemented on a template type, there might be
+                                // no real upper bound on the number of actual classes implementing it
+                                // due to MakeGenericType.
+                                foreach (DefType baseInterface in type.RuntimeInterfaces)
+                                {
+                                    _disqualifiedInterfaces.Add(baseInterface);
+                                }
+                            }
+                            else if (type.IsArray || type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
+                            {
+                                // Interfaces implemented by arrays and array enumerators have weird casting rules
+                                // due to array covariance (string[] castable to object[], or int[] castable to uint[]).
+                                // Disqualify such interfaces.
+                                TypeDesc elementType = type.IsArray ? ((ArrayType)type).ElementType : type.Instantiation[0];
+                                if (CastingHelper.IsArrayElementTypeCastableBySize(elementType) ||
+                                    (elementType.IsDefType && !elementType.IsValueType))
+                                {
+                                    foreach (DefType baseInterface in type.RuntimeInterfaces)
+                                    {
+                                        // Limit to the generic ones - ICollection<T>, etc.
+                                        if (baseInterface.HasInstantiation)
+                                            _disqualifiedInterfaces.Add(baseInterface);
                                     }
                                 }
                             }
@@ -492,27 +508,16 @@ namespace ILCompiler
                 }
             }
 
-            private static bool CanAssumeWholeProgramViewOnInterfaceUse(DefType interfaceType)
+            private static bool CanAssumeWholeProgramViewOnInterfaceUse(NodeFactory factory, TypeDesc implementingType, DefType interfaceType)
             {
                 if (!interfaceType.HasInstantiation)
                 {
                     return true;
                 }
 
-                foreach (GenericParameterDesc genericParam in interfaceType.GetTypeDefinition().Instantiation)
+                // If there are variance considerations, bail
+                if (VariantInterfaceMethodUseNode.IsVariantInterfaceImplementation(factory, implementingType, interfaceType))
                 {
-                    if (genericParam.Variance != GenericVariance.None)
-                    {
-                        // If the interface has any variance, this gets complicated.
-                        // Skip for now.
-                        return false;
-                    }
-                }
-
-                if (((CompilerTypeSystemContext)interfaceType.Context).IsGenericArrayInterfaceType(interfaceType))
-                {
-                    // Interfaces implemented by arrays also behave covariantly on arrays even though
-                    // they're not actually variant. Skip for now.
                     return false;
                 }
 

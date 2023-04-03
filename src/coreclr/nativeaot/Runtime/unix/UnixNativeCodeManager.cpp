@@ -18,6 +18,7 @@
 #include "gcinfodecoder.cpp"
 
 #include "UnixContext.h"
+#include "UnwindHelpers.h"
 
 #define UBF_FUNC_KIND_MASK      0x03
 #define UBF_FUNC_KIND_ROOT      0x00
@@ -46,10 +47,52 @@ UnixNativeCodeManager::UnixNativeCodeManager(TADDR moduleBase,
       m_pvManagedCodeStartRange(pvManagedCodeStartRange), m_cbManagedCodeRange(cbManagedCodeRange),
       m_pClasslibFunctions(pClasslibFunctions), m_nClasslibFunctions(nClasslibFunctions)
 {
+    // Cache the location of unwind sections
+    libunwind::LocalAddressSpace::sThisAddressSpace.findUnwindSections(
+        (uintptr_t)pvManagedCodeStartRange, m_UnwindInfoSections);
 }
 
 UnixNativeCodeManager::~UnixNativeCodeManager()
 {
+}
+
+// Virtually unwind stack to the caller of the context specified by the REGDISPLAY
+bool UnixNativeCodeManager::VirtualUnwind(REGDISPLAY* pRegisterSet)
+{
+#if _LIBUNWIND_SUPPORT_DWARF_UNWIND
+    uintptr_t pc = pRegisterSet->GetIP();
+    if (pc >= (uintptr_t)m_pvManagedCodeStartRange &&
+        pc < (uintptr_t)m_pvManagedCodeStartRange + m_cbManagedCodeRange)
+    {
+        return UnwindHelpers::StepFrame(pRegisterSet, m_UnwindInfoSections);
+    }
+#endif
+
+    return UnwindHelpers::StepFrame(pRegisterSet);
+}
+
+// Find LSDA and start address for a function at address controlPC
+bool UnixNativeCodeManager::FindProcInfo(uintptr_t controlPC, uintptr_t* startAddress, uintptr_t* endAddress, uintptr_t* lsda)
+{
+    unw_proc_info_t procInfo;
+
+    if (!UnwindHelpers::GetUnwindProcInfo((PCODE)controlPC, m_UnwindInfoSections, &procInfo))
+    {
+        return false;
+    }
+
+    assert((procInfo.start_ip <= controlPC) && (controlPC < procInfo.end_ip));
+
+#if defined(HOST_ARM)
+    // libunwind fills by reference not by value for ARM
+    *lsda = *((uintptr_t *)procInfo.lsda);
+#else
+    *lsda = procInfo.lsda;
+#endif
+    *startAddress = procInfo.start_ip;
+    *endAddress = procInfo.end_ip;
+
+    return true;
 }
 
 bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
@@ -326,7 +369,7 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
         *ppPreviousTransitionFrame = NULL;
     }
 
-    if (!VirtualUnwind(pRegisterSet)) 
+    if (!VirtualUnwind(pRegisterSet))
     {
         return false;
     }
@@ -486,16 +529,20 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
         // is treated as an epilogue.
         //
 
-        size_t startAddress;
-        size_t endAddress;
-        uintptr_t lsda;
-
-        bool result = FindProcInfo((uintptr_t)pvAddress, &startAddress, &endAddress, &lsda);
-        ASSERT(result);
-
-        if (branchTarget < startAddress || branchTarget >= endAddress)
+        if ((uintptr_t)pvAddress >= (uintptr_t)m_pvManagedCodeStartRange &&
+            (uintptr_t)pvAddress < (uintptr_t)m_pvManagedCodeStartRange + m_cbManagedCodeRange)
         {
-            return trailingEpilogueInstructions;
+            size_t startAddress;
+            size_t endAddress;
+            uintptr_t lsda;
+
+            bool result = FindProcInfo((uintptr_t)pvAddress, &startAddress, &endAddress, &lsda);
+            ASSERT(result);
+
+            if (branchTarget < startAddress || branchTarget >= endAddress)
+            {
+                return trailingEpilogueInstructions;
+            }
         }
     }
     else if ((pNextByte[0] == JMP_IND_OP) && (pNextByte[1] == 0x25))
