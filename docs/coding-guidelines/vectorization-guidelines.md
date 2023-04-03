@@ -701,7 +701,7 @@ public static Vector128<T> Xor<T>(Vector128<T> left, Vector128<T> right) => left
 public static Vector128<T> Negate<T>(Vector128<T> vector) => ~vector;
 ```
 
-`AndNot` computes the bitwise-and of a given vector and the ones complement of another vector.
+`AndNot` computes the bitwise-and of a given vector and the ones' complement of another vector.
 
 ```cs
 public static Vector128<T> AndNot<T>(Vector128<T> left, Vector128<T> right) => left & ~right;
