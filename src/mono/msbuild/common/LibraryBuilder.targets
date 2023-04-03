@@ -5,7 +5,8 @@
              AssemblyFile="$(LibraryBuilderTasksAssemblyPath)" />
 
   <Target Name="_BuildNativeLibrary"
-          Condition="'$(_IsLibraryMode)' == 'true' and '$(RunAOTCompilation)' == 'true'">
+          Condition="'$(_IsLibraryMode)' == 'true' and '$(RunAOTCompilation)' == 'true'"
+          DependsOnTargets="_GenerateBundle">
 
     <PropertyGroup>
       <_IsSharedLibrary>false</_IsSharedLibrary>
@@ -16,33 +17,9 @@
 
     <ItemGroup>
       <_ExtraLibrarySources Include="$(_AotModuleTablePath)" />
-      <_ExtraLinkerArgs Include="@(_CommonLinkerArgs)" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <_AssembliesToBundleSourceFile>$(BundleDir)bundled_assemblies.c</_AssembliesToBundleSourceFile>
-    </PropertyGroup>
-
-    <GetFileHash Files="@(_AssembliesToBundleInternal)">
-      <Output TaskParameter="Items" ItemName="_AssembliesToBundleInternalWithHashes" />
-    </GetFileHash>
-
-    <ItemGroup>
-      <_AssembliesToBundleInternalWithHashes Update="@(_AssembliesToBundleInternalWithHashes)">
-        <DestinationFile>$(BundleDir)%(_AssembliesToBundleInternalWithHashes.Filename)%(_AssembliesToBundleInternalWithHashes.Extension).$([System.String]::Copy(%(_AssembliesToBundleInternalWithHashes.FileHash)).Substring(0, 8)).c</DestinationFile>
-      </_AssembliesToBundleInternalWithHashes>
-    </ItemGroup>
-
-    <EmitBundleSourceFiles
-      FilesToBundle="@(_AssembliesToBundleInternalWithHashes)"
-      BundleName="assemblies"
-      BundleFile="$(_AssembliesToBundleSourceFile)"
-      RegistrationCallbackFunctionName="mono_add_bundled_assembly"
-      />
-
-    <ItemGroup>
       <_ExtraLibrarySources Include="$(_AssembliesToBundleSourceFile)" />
-      <_ExtraLibrarySources Include="%(_AssembliesToBundleInternalWithHashes.DestinationFile)" />
+      <_ExtraLibrarySources Include="%(_AssembliesToBundleWithHashes.DestinationFile)" />
+      <_ExtraLinkerArgs Include="@(_CommonLinkerArgs)" />
     </ItemGroup>
 
     <LibraryBuilderTask
@@ -62,6 +39,36 @@
       UsesRuntimeInitCallback="$(_UsesRuntimeInitCallback)">
       <Output TaskParameter="OutputPath" PropertyName="LibraryOutputPath" />
     </LibraryBuilderTask>
+  </Target>
+
+  <Target Name="_GenerateBundle"
+          Condition="'$(BundlesAssemblies)' == 'true'">
+
+    <PropertyGroup>
+      <_AssembliesToBundleSourceFile>$(BundleDir)bundled_assemblies.c</_AssembliesToBundleSourceFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_AssembliesToBundle Remove="@(_AssembliesToBundle)" />
+      <_AssembliesToBundle Include="@(_AssembliesToBundleInternal)" />
+    </ItemGroup>
+
+    <GetFileHash Files="@(_AssembliesToBundle)">
+      <Output TaskParameter="Items" ItemName="_AssembliesToBundleWithHashes" />
+    </GetFileHash>
+
+    <ItemGroup>
+      <_AssembliesToBundleWithHashes Update="@(_AssembliesToBundleWithHashes)">
+        <DestinationFile>$(BundleDir)%(_AssembliesToBundleWithHashes.Filename)%(_AssembliesToBundleWithHashes.Extension).$([System.String]::Copy(%(_AssembliesToBundleWithHashes.FileHash)).Substring(0, 8)).c</DestinationFile>
+      </_AssembliesToBundleWithHashes>
+    </ItemGroup>
+
+    <EmitBundleSourceFiles
+      FilesToBundle="@(_AssembliesToBundleWithHashes)"
+      BundleName="assemblies"
+      BundleFile="$(_AssembliesToBundleSourceFile)"
+      RegistrationCallbackFunctionName="mono_add_bundled_assembly"
+      />
   </Target>
 
 </Project>
