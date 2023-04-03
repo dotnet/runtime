@@ -120,7 +120,6 @@
     <Message Text="DotNetCliVersion: $(DotNetCliVersion)" Importance="High" />
     <Message Text="DotNetCliPackageType: $(DotNetCliPackageType)" Importance="High" />
     <Message Text="HelixRuntimeRid: $(HelixRuntimeRid)" Importance="High" />
-    <Message Text="TargetsAppleMobile: $(TargetsAppleMobile)" Importance="High" />
     <Message Importance="High" Text="TimeoutPerTestInMinutes: $(TimeoutPerTestInMinutes)" />
     <Error Condition="'$(_Scenarios)' == ''" Text="_Scenarios not set" />
 
@@ -281,11 +280,9 @@
     </ItemGroup>
 
     <Copy SourceFiles="@(ReducedLegacyPayloadFilesFinal)" DestinationFiles="@(ReducedLegacyPayloadFilesFinal->'$(LegacyPayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
-    <Message Text="ReducedLegacyPayloadFilesFinal @(ReducedLegacyPayloadFilesFinal)" Importance="High" />
   </Target>
 
   <Target Name="PrepareCorrelationPayloadDirectory">
-    <Message Text="PrepareCorrelationPayloadDirectory target executing" Importance="High" />
     <MSBuild Projects="$(RepoRoot)src\tests\Common\xunitconsolerunner.depproj" Targets="Restore" />
 
     <ItemGroup>
@@ -310,7 +307,7 @@
 
   <Target Name="CreateTestEnvFiles" Condition="'$(PayloadGroups)' != ''">
     <!-- This target creates one __TestEnv file for each combination of %(_PayloadGroups.Identity) and $(Scenario). -->
-    <Message Text="Payload groups in CreateTestEnvFiles is $(PayloadGroups)" Importance="High" />
+
     <ItemGroup>
       <_PayloadGroups Include="$(PayloadGroups)" />
       <_ProjectsToBuild Include="testenvironment.proj" Condition="!$(IsMergedTestWrapper)">
@@ -341,8 +338,6 @@
       </_ProjectsToBuild>
     </ItemGroup>
 
-    <Message Text="_LegacyPayloadGroups in PrepareLegacyPayloadDirectories are @(_XUnitWrapperDll->Metadata('PayloadGroup')->DistinctWithCase())" Importance="High" />
-
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
   </Target>
 
@@ -355,8 +350,6 @@
         <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_MergedPayloadGroups);IsMergedTestWrapper=true</AdditionalProperties>
       </_ProjectsToBuild>
     </ItemGroup>
-
-    <Message Text="_MergedPayloadGroups in PrepareMergedTestPayloadDirectories are @(_MergedPayloadGroups)" Importance="High" />
 
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
   </Target>
@@ -513,15 +506,10 @@
       Outputs="%(_MergedWrapperMarker.FileName)"
       DependsOnTargets="DiscoverMergedTestWrappers;GetTestExclusionList">
 
-    <Message Text="PrepareMergedTestPayloadDirectoryForAppleMobile target executing" Importance="High" />
-
     <PropertyGroup>
       <_MergedWrapperDirectory>%(_MergedWrapperMarker.RootDir)%(Directory)</_MergedWrapperDirectory>
       <_MergedWrapperName>%(_MergedWrapperMarker.FileName)</_MergedWrapperName>
     </PropertyGroup>
-
-    <Message Text="_MergedWrapperDirectory in PrepareMergedTestPayloadDirectoryForAppleMobile target is $(_MergedWrapperDirectory)" Importance="High" />
-    <Message Text="_MergedWrapperName in PrepareMergedTestPayloadDirectoryForAppleMobile target is $(_MergedWrapperName)" Importance="High" />
 
     <PropertyGroup>
       <XCodeSdk Condition="'$(TargetsiOS)' == 'true'">iphone</XCodeSdk>
@@ -545,8 +533,6 @@
       <_TestExclusionListPlaceholder Include="@(_MergedPayloadFiles)" Condition="$([System.String]::new('%(FileName)').EndsWith('TestExclusionList'))" />
       <_MergedPayloadFiles Remove="@(_TestExclusionListPlaceholder)" />
     </ItemGroup>
-
-    <Message Text="_MergedPayloadFiles in PrepareMergedTestPayloadDirectoryForAppleMobile target are @(_MergedPayloadFiles)" Importance="High" />
   
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
     <!-- Write the real test exclusion list instead of the placeholder. -->
@@ -558,7 +544,6 @@
   <Target Name="PrepareMergedTestPayloadDirectory" DependsOnTargets="DiscoverMergedTestWrappers;PrepareMergedTestPayloadDirectoryForDesktop;PrepareMergedTestPayloadDirectoryForAndroid;PrepareMergedTestPayloadDirectoryForWasm;PrepareMergedTestPayloadDirectoryForAppleMobile" />
 
   <Target Name="ZipLegacyPayloadDirectory" AfterTargets="PrepareLegacyPayloadDirectories" Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true'">
-    <Message Text="LegacyPayloadsRootDirectory in ZipLegacyPayloadDirectory target is $(LegacyPayloadsRootDirectory)" Importance="High"/>
     <ItemGroup>
       <LegacyPayloads Include="$([System.IO.Directory]::GetDirectories($(LegacyPayloadsRootDirectory)))" Condition="Exists('$(LegacyPayloadsRootDirectory)')" />
       <LegacyPayloads Update="@(LegacyPayloads)">
@@ -574,7 +559,6 @@
   </Target>
 
   <Target Name="ZipMergedPayloadDirectory" AfterTargets="PrepareMergedTestPayloadDirectories" Condition="'$(TargetsBrowser)' == 'true'">
-    <Message Text="MergedPayloadsRootDirectory in ZipMergedPayloadDirectory target is $(MergedPayloadsRootDirectory)" Importance="High"/>
     <ItemGroup>
       <MergedPayloads Include="$([System.IO.Directory]::GetDirectories($(MergedPayloadsRootDirectory)))" Condition="Exists('$(MergedPayloadsRootDirectory)')" />
       <MergedPayloads Update="@(MergedPayloads)">

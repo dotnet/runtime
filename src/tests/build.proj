@@ -277,10 +277,7 @@
       <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
       <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
       <RunAOTCompilation>True</RunAOTCompilation>
-      <MonoForceInterpreter>True</MonoForceInterpreter>
     </PropertyGroup>
-
-   <Message Text="!!!naricc_debug!!! TargetOS: $(TargetOS)" Importance="high"/>
 
     <PropertyGroup>
       <AssemblyName>$(Category)</AssemblyName>
@@ -288,6 +285,11 @@
       <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'iOS'" >ios</RuntimePackOSSuffix>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimePackOSSuffix)-$(TargetArchitecture)/$(Configuration)/runtimes/$(RuntimePackOSSuffix)-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
       <MicrosoftNetCoreAppRuntimePackNativeDir>$(MicrosoftNetCoreAppRuntimePackDir)/native</MicrosoftNetCoreAppRuntimePackNativeDir>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <!-- FIXME: Currently tracing/eventpipe tests work only with Mono Interpreter. It should be enabled only for iOSSimulator target. -->
+      <MonoForceInterpreter>True</MonoForceInterpreter>
     </PropertyGroup>
     <ItemGroup>
       <AllTestScripts Include="$(_CMDDIR)\**\*.sh" Exclude="$(_CMDDIR)\**\AppBundle\*.sh" />
@@ -366,8 +368,6 @@
       <_MobileIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'mobile'))</_MobileIntermediateOutputPath>
     </PropertyGroup>
 
-    <Message Importance="High" Text="!!!naricc_debug!!!: Build dir: $(BuildDir)/testdir*/*.dll"/>
-
     <ItemGroup>
         <_AppleAssembliesInternal Include="$(BuildDir)/**/*.dll" />
 
@@ -396,25 +396,6 @@
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
       <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
     </ItemGroup>
-
-    <!-- <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
-      <_DedupAssembly>$(BuildDir)\aot-instances.dll</_DedupAssembly>
-    </PropertyGroup>
-    <WriteLinesToFile Condition="'$(RunAOTCompilation)' == 'true'" File="$(_MobileIntermediateOutputPath)/aot-instances.cs" Overwrite="true" Lines="" WriteOnlyWhenDifferent="true" />
-    <Csc Condition="'$(RunAOTCompilation)' == 'true'"
-      Sources="$(_MobileIntermediateOutputPath)\aot-instances.cs"
-      OutputAssembly="$(_DedupAssembly)"
-      TargetType="library"
-      Deterministic="true"
-      References="@(ReferencePath)"
-      ToolExe="$(CscToolExe)"
-      ToolPath="$(CscToolPath)" />
-    <ItemGroup Condition="'$(RunAOTCompilation)' == 'true'">
-      <_AotInputAssemblies Include="$(_DedupAssembly)">
-        <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
-        <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
-      </_AotInputAssemblies>
-    </ItemGroup> -->
 
     <RemoveDuplicates
         Inputs="@(_AotInputAssemblies)">
@@ -447,10 +428,6 @@
             ItemName="_AppleAssembliesInternalDedup"/>
     </RemoveDuplicates>
 
-    <Message Importance = "High" Text="!!!naricc_debug!!! MsBuildProjectName: $(MsBuildProjectName)" />
-    <Message Importance = "High" Text="!!!naricc_debug!!! AssemblyName: $(AssemblyName)" />
-    <Message Importance = "High" Text="!!!naricc_debug!!! _AppleAssembliesInternalDedup: @(_AppleAssembliesInternalDedup)" />
-    <Message Importance = "High" Text="!!!naricc_debug!!! _AotInputAssembliesDedup: @(_AotInputAssembliesDedup)" />
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
         ProjectName="$(AssemblyName)"
@@ -579,8 +556,8 @@
     <!-- We need to build group #1 manually as it doesn't have a _GroupStartsWith item associated with it, see the comment in Common\dirs.proj -->
     <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=1;__SkipRestorePackages=1" Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator'" />
     <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=%(_GroupStartsWith.GroupNumber);__SkipRestorePackages=1" Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator'" />
-  
-    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=9;__SkipRestorePackages=9" Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator'" />
+    <!-- FIXME: Currently tracing/eventpipe tests work only with Mono Interpreter. It should be expanded to include all runtime tests. -->
+    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=4;__SkipRestorePackages=1" Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator'" />
   </Target>
 
   <Target Name="BuildManagedTestGroup"

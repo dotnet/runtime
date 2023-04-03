@@ -73,7 +73,7 @@
       </_GroupStartsWith>
 
       <_GroupStartsWith Include="$(TestRoot)tracing\eventpipe\">
-        <GroupNumber>9</GroupNumber>
+        <GroupNumber>4</GroupNumber>
       </_GroupStartsWith>
     </ItemGroup>
 
