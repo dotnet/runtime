@@ -152,8 +152,7 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 		riscv_jalr (code, RISCV_ZERO, RISCV_T0, 0);
 
 		g_assert ((code - start) <= 4 * 3);
-	}
-	else{
+	} else {
 		int size, i;
 
 		size = 8 + param_count * 4;
@@ -163,7 +162,7 @@ get_delegate_invoke_impl (gboolean has_target, gboolean param_count, guint32 *co
 		/* slide down the arguments */
 		for (i = 0; i < param_count; ++i)
 			riscv_addi (code, RISCV_A0 + i, RISCV_A0 + i + 1, 0);
-		
+
 		riscv_jalr (code, RISCV_ZERO, RISCV_T0, 0);
 		g_assert ((code - start) <= size);
 	}
@@ -190,11 +189,11 @@ mono_arch_get_delegate_invoke_impls (void)
 	guint32 code_len;
 	char *tramp_name;
 
-	code = (guint8*)get_delegate_invoke_impl (TRUE, 0, &code_len);
+	code = (guint8 *)get_delegate_invoke_impl (TRUE, 0, &code_len);
 	res = g_slist_prepend (res, mono_tramp_info_create ("delegate_invoke_impl_has_target", code, code_len, NULL, NULL));
 
 	for (int i = 0; i <= MAX_ARCH_DELEGATE_PARAMS; ++i) {
-		code = (guint8*)get_delegate_invoke_impl (FALSE, i, &code_len);
+		code = (guint8 *)get_delegate_invoke_impl (FALSE, i, &code_len);
 		tramp_name = g_strdup_printf ("delegate_invoke_impl_target_%d", i);
 		res = g_slist_prepend (res, mono_tramp_info_create (tramp_name, code, code_len, NULL, NULL));
 		g_free (tramp_name);
@@ -213,7 +212,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 	 */
 
 	if (has_target) {
-		static guint8* cached = NULL;
+		static guint8 *cached = NULL;
 
 		if (cached)
 			return cached;
@@ -221,13 +220,12 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 		if (mono_ee_features.use_aot_trampolines)
 			NOT_IMPLEMENTED;
 		else
-			start = (guint8*)get_delegate_invoke_impl (TRUE, 0, NULL);
+			start = (guint8 *)get_delegate_invoke_impl (TRUE, 0, NULL);
 		mono_memory_barrier ();
 		cached = start;
 		return cached;
-	}
-	else{
-		static guint8* cache [MAX_ARCH_DELEGATE_PARAMS + 1] = {NULL};
+	} else {
+		static guint8 *cache [MAX_ARCH_DELEGATE_PARAMS + 1] = {NULL};
 
 		if (sig->param_count > MAX_ARCH_DELEGATE_PARAMS)
 			NOT_IMPLEMENTED;
@@ -240,9 +238,8 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 			return code;
 		if (mono_ee_features.use_aot_trampolines) {
 			NOT_IMPLEMENTED;
-		}
-		else {
-			start = (guint8*)get_delegate_invoke_impl (FALSE, sig->param_count, NULL);
+		} else {
+			start = (guint8 *)get_delegate_invoke_impl (FALSE, sig->param_count, NULL);
 		}
 		mono_memory_barrier ();
 		cache [sig->param_count] = start;
@@ -254,7 +251,8 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 
 gpointer
 mono_arch_get_delegate_virtual_invoke_impl (MonoMethodSignature *sig,
-                                            MonoMethod *method, int offset,
+                                            MonoMethod *method,
+                                            int offset,
                                             gboolean load_imt_reg)
 {
 	NOT_IMPLEMENTED;
@@ -535,11 +533,10 @@ mono_arch_is_inst_imm (int opcode, int imm_opcode, gint64 imm)
 	return TRUE;
 }
 
-gint
-static mono_arch_get_memory_ordering(int memory_barrier_kind)
+gint static mono_arch_get_memory_ordering (int memory_barrier_kind)
 {
 	gint ordering;
-	switch (memory_barrier_kind){
+	switch (memory_barrier_kind) {
 	case MONO_MEMORY_BARRIER_ACQ:
 		ordering = RISCV_ORDER_AQ;
 		break;
@@ -730,7 +727,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_FDIV:
 		break;
 	default:
-		g_print("Can't decompose the OP %s\n",mono_inst_name (ins->opcode));
+		g_print ("Can't decompose the OP %s\n", mono_inst_name (ins->opcode));
 		NOT_IMPLEMENTED;
 	}
 }
@@ -749,16 +746,18 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	NOT_IMPLEMENTED;
 }
 
-#define NEW_INS_BEFORE(cfg,ins,dest,op) do {	\
-		MONO_INST_NEW ((cfg), (dest), (op)); 	\
-		(dest)->cil_code = (ins)->cil_code; 	\
-		mono_bblock_insert_before_ins (bb, ins, (dest)); \
+#define NEW_INS_BEFORE(cfg, ins, dest, op)                                                                             \
+	do {                                                                                                               \
+		MONO_INST_NEW ((cfg), (dest), (op));                                                                           \
+		(dest)->cil_code = (ins)->cil_code;                                                                            \
+		mono_bblock_insert_before_ins (bb, ins, (dest));                                                               \
 	} while (0)
 
-#define NEW_INS_AFTER(cfg,ins,dest,op) do {		\
-		MONO_INST_NEW ((cfg), (dest), (op)); 	\
-		(dest)->cil_code = (ins)->cil_code; 	\
-		mono_bblock_insert_after_ins (bb, ins, (dest)); \
+#define NEW_INS_AFTER(cfg, ins, dest, op)                                                                              \
+	do {                                                                                                               \
+		MONO_INST_NEW ((cfg), (dest), (op));                                                                           \
+		(dest)->cil_code = (ins)->cil_code;                                                                            \
+		mono_bblock_insert_after_ins (bb, ins, (dest));                                                                \
 	} while (0)
 
 /*
@@ -770,18 +769,19 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 void
 mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 {
-	MonoInst *ins, *last_ins,*n, *temp;
+	MonoInst *ins, *last_ins, *n, *temp;
 	if (cfg->verbose_level > 2) {
 		g_print ("BASIC BLOCK %d (before lowering)\n", bb->block_num);
-		MONO_BB_FOR_EACH_INS (bb, ins) {
+		MONO_BB_FOR_EACH_INS (bb, ins)
+		{
 			mono_print_ins (ins);
 		}
-		
 	}
 
-	MONO_BB_FOR_EACH_INS_SAFE (bb, n, ins){
-loop_start:
-		switch (ins->opcode){
+	MONO_BB_FOR_EACH_INS_SAFE (bb, n, ins)
+	{
+	loop_start:
+		switch (ins->opcode) {
 		case OP_IL_SEQ_POINT:
 		case OP_SEQ_POINT:
 		case OP_GC_SAFE_POINT:
@@ -837,7 +837,7 @@ loop_start:
 		case OP_LSHR_IMM:
 		case OP_LSHR_UN_IMM:
 		case OP_LOCALLOC:
-		
+
 		/* skip dummy IL */
 		case OP_NOT_REACHED:
 		case OP_NOT_NULL:
@@ -860,7 +860,7 @@ loop_start:
 		case OP_RISCV_SLTU:
 		case OP_RISCV_SLTIU:
 			break;
-		
+
 		/* Atomic Ext */
 		case OP_MEMORY_BARRIER:
 		case OP_ATOMIC_ADD_I4:
@@ -889,16 +889,16 @@ loop_start:
 			break;
 		case OP_R4CONST:
 		case OP_ICONV_TO_R4:
-			if(!cfg->r4fp){
+			if (!cfg->r4fp) {
 				NEW_INS_AFTER (cfg, ins, temp, OP_RCONV_TO_R8);
 				temp->dreg = ins->dreg;
-				temp->sreg1 = mono_alloc_freg(cfg);
+				temp->sreg1 = mono_alloc_freg (cfg);
 
 				ins->dreg = temp->sreg1;
 			}
 			break;
 		case OP_FCGT:
-		case OP_FCGT_UN:{
+		case OP_FCGT_UN: {
 			// fcgt rd, rs1, rs2 -> flt rd, rs2, rs1
 			ins->opcode = OP_FCLT;
 			int tmp_reg = ins->sreg1;
@@ -906,17 +906,16 @@ loop_start:
 			ins->sreg2 = tmp_reg;
 			break;
 		}
-		case OP_FCOMPARE:{
-			if (ins->next){
-				if(ins->next->opcode == OP_FBLT || ins->next->opcode == OP_FBLT_UN){
+		case OP_FCOMPARE: {
+			if (ins->next) {
+				if (ins->next->opcode == OP_FBLT || ins->next->opcode == OP_FBLT_UN) {
 					ins->opcode = OP_FCLT;
 					ins->dreg = mono_alloc_ireg (cfg);
 
 					ins->next->opcode = OP_RISCV_BNE;
 					ins->next->sreg1 = ins->dreg;
 					ins->next->sreg2 = RISCV_ZERO;
-				}
-				else if(ins->next->opcode == OP_FBGT || ins->next->opcode == OP_FBGT_UN){
+				} else if (ins->next->opcode == OP_FBGT || ins->next->opcode == OP_FBGT_UN) {
 					// fcmp rd, rs1, rs2; fbgt rd -> fcgt rd, rs1, rs2; bne rd, X0
 					// fcgt rd, rs1, rs2 -> flt rd, rs2, rs1
 					ins->opcode = OP_FCLT;
@@ -928,14 +927,12 @@ loop_start:
 					ins->next->opcode = OP_RISCV_BNE;
 					ins->next->sreg1 = ins->dreg;
 					ins->next->sreg2 = RISCV_ZERO;
-				}
-				else {
-					g_print("Unhandaled op %s following after OP_FCOMPARE\n",mono_inst_name (ins->next->opcode));
+				} else {
+					g_print ("Unhandaled op %s following after OP_FCOMPARE\n", mono_inst_name (ins->next->opcode));
 					NOT_IMPLEMENTED;
 				}
-			}
-			else{
-				g_assert_not_reached();
+			} else {
+				g_assert_not_reached ();
 			}
 			break;
 		}
@@ -949,7 +946,7 @@ loop_start:
 		case OP_LCALL_MEMBASE:
 		case OP_VCALL2_MEMBASE:
 		case OP_VOIDCALL_MEMBASE:
-			if(!RISCV_VALID_J_IMM(ins->inst_offset)){
+			if (!RISCV_VALID_J_IMM (ins->inst_offset)) {
 				NOT_IMPLEMENTED;
 				NEW_INS_BEFORE (cfg, ins, temp, OP_ICONST);
 				temp->dreg = mono_alloc_ireg (cfg);
@@ -970,11 +967,11 @@ loop_start:
 		case OP_CALL_REG:
 		case OP_VOIDCALL_REG:
 			break;
-		
+
 		/* Throw */
 		case OP_THROW:
 		case OP_RETHROW:
-			if (ins->sreg1 != RISCV_A0){
+			if (ins->sreg1 != RISCV_A0) {
 				NEW_INS_BEFORE (cfg, ins, temp, OP_MOVE);
 				temp->dreg = RISCV_A0;
 				temp->sreg1 = ins->sreg1;
@@ -989,39 +986,38 @@ loop_start:
 #ifdef TARGET_RISCV64
 		case OP_STOREI8_MEMBASE_IMM:
 #endif
-		case OP_STORE_MEMBASE_IMM:{
-			if(ins->inst_imm != 0){
+		case OP_STORE_MEMBASE_IMM: {
+			if (ins->inst_imm != 0) {
 				NEW_INS_BEFORE (cfg, ins, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_alloc_ireg (cfg);
-				
+
 				ins->sreg1 = temp->dreg;
-			}
-			else{
+			} else {
 				ins->sreg1 = RISCV_ZERO;
 			}
-			
-			switch (ins->opcode){
-				case OP_STORE_MEMBASE_IMM:
-					ins->opcode = OP_STORE_MEMBASE_REG;
-					break;
-				case OP_STOREI1_MEMBASE_IMM:
-					ins->opcode = OP_STOREI1_MEMBASE_REG;
-					break;
-				case OP_STOREI2_MEMBASE_IMM:
-					ins->opcode = OP_STOREI2_MEMBASE_REG;
-					break;
-				case OP_STOREI4_MEMBASE_IMM:
-					ins->opcode = OP_STOREI4_MEMBASE_REG;
-					break;
+
+			switch (ins->opcode) {
+			case OP_STORE_MEMBASE_IMM:
+				ins->opcode = OP_STORE_MEMBASE_REG;
+				break;
+			case OP_STOREI1_MEMBASE_IMM:
+				ins->opcode = OP_STOREI1_MEMBASE_REG;
+				break;
+			case OP_STOREI2_MEMBASE_IMM:
+				ins->opcode = OP_STOREI2_MEMBASE_REG;
+				break;
+			case OP_STOREI4_MEMBASE_IMM:
+				ins->opcode = OP_STOREI4_MEMBASE_REG;
+				break;
 #ifdef TARGET_RISCV64
-				case OP_STOREI8_MEMBASE_IMM:
-					ins->opcode = OP_STOREI8_MEMBASE_REG;
-					break;
+			case OP_STOREI8_MEMBASE_IMM:
+				ins->opcode = OP_STOREI8_MEMBASE_REG;
+				break;
 #endif
-				default:
-					g_assert_not_reached();
-					break;
+			default:
+				g_assert_not_reached ();
+				break;
 			}
 			goto loop_start; /* make it handle the possibly big ins->inst_offset */
 		}
@@ -1035,15 +1031,15 @@ loop_start:
 #endif
 		case OP_STORER8_MEMBASE_REG:
 		case OP_STORE_MEMBASE_REG:
-			if(ins->opcode == OP_STORER4_MEMBASE_REG && !cfg->r4fp){
+			if (ins->opcode == OP_STORER4_MEMBASE_REG && !cfg->r4fp) {
 				NEW_INS_BEFORE (cfg, ins, temp, OP_FCONV_TO_R4);
-				temp->dreg = mono_alloc_freg(cfg);
+				temp->dreg = mono_alloc_freg (cfg);
 				temp->sreg1 = ins->sreg1;
-			
+
 				ins->sreg1 = temp->dreg;
 			}
 			// check if offset is valid I-type Imm
-			if(! RISCV_VALID_I_IMM ((gint32) (gssize) (ins->inst_offset)))
+			if (!RISCV_VALID_I_IMM ((gint32)(gssize)(ins->inst_offset)))
 				NOT_IMPLEMENTED;
 			break;
 
@@ -1056,18 +1052,18 @@ loop_start:
 		case OP_LOADU4_MEMBASE:
 #ifdef TARGET_RISCV64
 		case OP_LOADI8_MEMBASE:
-#endif		
+#endif
 		case OP_LOADR4_MEMBASE:
 		case OP_LOADR8_MEMBASE:
 		case OP_LOAD_MEMBASE:
-			if(ins->opcode == OP_LOADR4_MEMBASE && !cfg->r4fp){
+			if (ins->opcode == OP_LOADR4_MEMBASE && !cfg->r4fp) {
 				NEW_INS_AFTER (cfg, ins, temp, OP_RCONV_TO_R8);
 				temp->dreg = ins->dreg;
-				temp->sreg1 = mono_alloc_freg(cfg);
+				temp->sreg1 = mono_alloc_freg (cfg);
 
 				ins->dreg = temp->sreg1;
 			}
-			if(! RISCV_VALID_I_IMM ((gint32) (gssize) (ins->inst_imm))){
+			if (!RISCV_VALID_I_IMM ((gint32)(gssize)(ins->inst_imm))) {
 				NEW_INS_BEFORE (cfg, ins, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_alloc_ireg (cfg);
@@ -1078,10 +1074,10 @@ loop_start:
 
 		case OP_COMPARE_IMM:
 		case OP_ICOMPARE_IMM:
-		case OP_LCOMPARE_IMM:{
-			if (ins->next){
-				if(ins->next->opcode == OP_LCEQ || ins->next->opcode == OP_ICEQ){
-					if(RISCV_VALID_I_IMM(ins->inst_imm)){
+		case OP_LCOMPARE_IMM: {
+			if (ins->next) {
+				if (ins->next->opcode == OP_LCEQ || ins->next->opcode == OP_ICEQ) {
+					if (RISCV_VALID_I_IMM (ins->inst_imm)) {
 						// compare rs1, imm; lceq rd => addi rs2, rs1, -imm; sltiu rd, rs2, 1
 						ins->opcode = OP_ADD_IMM;
 						ins->dreg = mono_alloc_ireg (cfg);
@@ -1093,8 +1089,8 @@ loop_start:
 						break;
 					}
 				}
-				if(ins->next->opcode == OP_ICNEQ){
-					if(RISCV_VALID_I_IMM(ins->inst_imm)){
+				if (ins->next->opcode == OP_ICNEQ) {
+					if (RISCV_VALID_I_IMM (ins->inst_imm)) {
 						// compare rs1, imm; lcneq rd => addi rs2, rs1, -imm; sltu rd, X0, rs2
 						ins->opcode = OP_ADD_IMM;
 						ins->dreg = mono_alloc_ireg (cfg);
@@ -1105,9 +1101,8 @@ loop_start:
 						ins->next->sreg2 = ins->dreg;
 						break;
 					}
-				}
-				else if(ins->next->opcode == OP_LCGT_UN || ins->next->opcode == OP_ICGT_UN){
-					if(RISCV_VALID_I_IMM(ins->inst_imm + 1)){
+				} else if (ins->next->opcode == OP_LCGT_UN || ins->next->opcode == OP_ICGT_UN) {
+					if (RISCV_VALID_I_IMM (ins->inst_imm + 1)) {
 						// compare rs1, imm; lcgt_un rd => sltiu rd, rs1, imm; xori rd, rd, 1
 						ins->opcode = OP_RISCV_SLTIU;
 						ins->dreg = ins->next->dreg;
@@ -1119,10 +1114,9 @@ loop_start:
 						ins->next->sreg1 = ins->dreg;
 						ins->next->inst_imm = 1;
 						break;
-					}			
-				}
-				else if(ins->next->opcode == OP_LCGT || ins->next->opcode == OP_ICGT){
-					if(RISCV_VALID_I_IMM(ins->inst_imm + 1)){
+					}
+				} else if (ins->next->opcode == OP_LCGT || ins->next->opcode == OP_ICGT) {
+					if (RISCV_VALID_I_IMM (ins->inst_imm + 1)) {
 						ins->opcode = OP_RISCV_SLTI;
 						ins->dreg = ins->next->dreg;
 						ins->sreg1 = ins->sreg1;
@@ -1135,18 +1129,15 @@ loop_start:
 						break;
 					}
 				}
-			}
-			else{
+			} else {
 				// why it will reach this?
 				NULLIFY_INS (ins);
 				break;
 			}
 
-
-			if(ins->inst_imm == 0){
+			if (ins->inst_imm == 0) {
 				ins->sreg2 = RISCV_ZERO;
-			}
-			else{
+			} else {
 				NEW_INS_BEFORE (cfg, ins, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_alloc_ireg (cfg);
@@ -1158,119 +1149,101 @@ loop_start:
 		}
 		case OP_COMPARE:
 		case OP_ICOMPARE:
-		case OP_LCOMPARE:{
-			if (ins->next){
-				if(ins->next->opcode == OP_COND_EXC_EQ || ins->next->opcode == OP_COND_EXC_IEQ){
+		case OP_LCOMPARE: {
+			if (ins->next) {
+				if (ins->next->opcode == OP_COND_EXC_EQ || ins->next->opcode == OP_COND_EXC_IEQ) {
 					ins->next->opcode = OP_RISCV_EXC_BEQ;
 					ins->next->sreg1 = ins->sreg1;
 					ins->next->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_COND_EXC_NE_UN){
+				} else if (ins->next->opcode == OP_COND_EXC_NE_UN) {
 					ins->next->opcode = OP_RISCV_EXC_BNE;
 					ins->next->sreg1 = ins->sreg1;
 					ins->next->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_COND_EXC_LT){
+				} else if (ins->next->opcode == OP_COND_EXC_LT) {
 					ins->next->opcode = OP_RISCV_EXC_BLT;
 					ins->next->sreg1 = ins->sreg1;
 					ins->next->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_COND_EXC_LT_UN){
+				} else if (ins->next->opcode == OP_COND_EXC_LT_UN) {
 					ins->next->opcode = OP_RISCV_EXC_BLTU;
 					ins->next->sreg1 = ins->sreg1;
 					ins->next->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_COND_EXC_LE_UN){
+				} else if (ins->next->opcode == OP_COND_EXC_LE_UN) {
 					ins->next->opcode = OP_RISCV_EXC_BGEU;
 					ins->next->sreg1 = ins->sreg2;
 					ins->next->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_COND_EXC_IGT_UN || ins->next->opcode == OP_COND_EXC_GT_UN){
+				} else if (ins->next->opcode == OP_COND_EXC_IGT_UN || ins->next->opcode == OP_COND_EXC_GT_UN) {
 					ins->next->opcode = OP_RISCV_EXC_BLTU;
 					ins->next->sreg1 = ins->sreg2;
 					ins->next->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_LBEQ || ins->next->opcode == OP_IBEQ){
+				} else if (ins->next->opcode == OP_LBEQ || ins->next->opcode == OP_IBEQ) {
 					ins->next->opcode = OP_RISCV_BEQ;
 					ins->next->sreg1 = ins->sreg1;
 					ins->next->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_LBNE_UN || ins->next->opcode == OP_IBNE_UN){
+				} else if (ins->next->opcode == OP_LBNE_UN || ins->next->opcode == OP_IBNE_UN) {
 					ins->next->opcode = OP_RISCV_BNE;
 					ins->next->sreg1 = ins->sreg1;
 					ins->next->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_LBGE_UN || ins->next->opcode == OP_IBGE_UN){
+				} else if (ins->next->opcode == OP_LBGE_UN || ins->next->opcode == OP_IBGE_UN) {
 					ins->next->opcode = OP_RISCV_BGEU;
 					ins->next->sreg1 = ins->sreg1;
 					ins->next->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_LBGE || ins->next->opcode == OP_IBGE){
+				} else if (ins->next->opcode == OP_LBGE || ins->next->opcode == OP_IBGE) {
 					ins->next->opcode = OP_RISCV_BGE;
 					ins->next->sreg1 = ins->sreg1;
 					ins->next->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_LBGT_UN || ins->next->opcode == OP_IBGT_UN){
+				} else if (ins->next->opcode == OP_LBGT_UN || ins->next->opcode == OP_IBGT_UN) {
 					ins->next->opcode = OP_RISCV_BLTU;
 					ins->next->sreg1 = ins->sreg2;
 					ins->next->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_LBGT || ins->next->opcode == OP_IBGT){
+				} else if (ins->next->opcode == OP_LBGT || ins->next->opcode == OP_IBGT) {
 					ins->next->opcode = OP_RISCV_BLT;
 					ins->next->sreg1 = ins->sreg2;
 					ins->next->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_LBLE || ins->next->opcode == OP_IBLE){
+				} else if (ins->next->opcode == OP_LBLE || ins->next->opcode == OP_IBLE) {
 					// ble rs1, rs2  -> bge rs2, rs1
 					ins->next->opcode = OP_RISCV_BGE;
 					ins->next->sreg1 = ins->sreg2;
 					ins->next->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_LBLE_UN || ins->next->opcode == OP_IBLE_UN){
+				} else if (ins->next->opcode == OP_LBLE_UN || ins->next->opcode == OP_IBLE_UN) {
 					// ble rs1, rs2  -> bge rs2, rs1
 					ins->next->opcode = OP_RISCV_BGEU;
 					ins->next->sreg1 = ins->sreg2;
 					ins->next->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_LBLT_UN || ins->next->opcode == OP_IBLT_UN){
+				} else if (ins->next->opcode == OP_LBLT_UN || ins->next->opcode == OP_IBLT_UN) {
 					ins->next->opcode = OP_RISCV_BLTU;
 					ins->next->sreg1 = ins->sreg1;
 					ins->next->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_LBLT || ins->next->opcode == OP_IBLT){
+				} else if (ins->next->opcode == OP_LBLT || ins->next->opcode == OP_IBLT) {
 					ins->next->opcode = OP_RISCV_BLT;
 					ins->next->sreg1 = ins->sreg1;
 					ins->next->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_LCLT || ins->next->opcode == OP_ICLT){
+				} else if (ins->next->opcode == OP_LCLT || ins->next->opcode == OP_ICLT) {
 					ins->next->opcode = OP_RISCV_SLT;
 					ins->next->sreg1 = ins->sreg1;
 					ins->next->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_LCLT_UN || ins->next->opcode == OP_ICLT_UN){
+				} else if (ins->next->opcode == OP_LCLT_UN || ins->next->opcode == OP_ICLT_UN) {
 					ins->next->opcode = OP_RISCV_SLTU;
 					ins->next->sreg1 = ins->sreg1;
 					ins->next->sreg2 = ins->sreg2;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_LCEQ || ins->next->opcode == OP_ICEQ){
+				} else if (ins->next->opcode == OP_LCEQ || ins->next->opcode == OP_ICEQ) {
 					// compare rs1, rs2; lceq rd => xor rd, rs1, rs2; sltiu rd, rd, 1
 					ins->opcode = OP_IXOR;
 					ins->dreg = ins->next->dreg;
@@ -1278,8 +1251,7 @@ loop_start:
 					ins->next->opcode = OP_RISCV_SLTIU;
 					ins->next->sreg1 = ins->dreg;
 					ins->next->inst_imm = 1;
-				}
-				else if(ins->next->opcode == OP_ICNEQ){
+				} else if (ins->next->opcode == OP_ICNEQ) {
 					// compare rs1, rs2; lcneq rd => xor rd, rs1, rs2; sltu rd, X0, rd
 					ins->opcode = OP_IXOR;
 					ins->dreg = ins->next->dreg;
@@ -1287,42 +1259,36 @@ loop_start:
 					ins->next->opcode = OP_RISCV_SLTU;
 					ins->next->sreg1 = RISCV_ZERO;
 					ins->next->sreg2 = ins->dreg;
-				}
-				else if(ins->next->opcode == OP_LCGT || ins->next->opcode == OP_ICGT){
+				} else if (ins->next->opcode == OP_LCGT || ins->next->opcode == OP_ICGT) {
 					ins->next->opcode = OP_RISCV_SLT;
 					ins->next->sreg1 = ins->sreg2;
 					ins->next->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_LCGT_UN || ins->next->opcode == OP_ICGT_UN){
+				} else if (ins->next->opcode == OP_LCGT_UN || ins->next->opcode == OP_ICGT_UN) {
 					ins->next->opcode = OP_RISCV_SLTU;
 					ins->next->sreg1 = ins->sreg2;
 					ins->next->sreg2 = ins->sreg1;
 					NULLIFY_INS (ins);
-				}
-				else if(ins->next->opcode == OP_IL_SEQ_POINT ||
-						ins->next->opcode == OP_MOVE ||
-						ins->next->opcode == OP_LOAD_MEMBASE ||
-						ins->next->opcode == OP_NOP ||
-						ins->next->opcode == OP_LOADI4_MEMBASE){
+				} else if (ins->next->opcode == OP_IL_SEQ_POINT || ins->next->opcode == OP_MOVE ||
+				           ins->next->opcode == OP_LOAD_MEMBASE || ins->next->opcode == OP_NOP ||
+				           ins->next->opcode == OP_LOADI4_MEMBASE) {
 					/**
 					 * there is compare without branch OP followed
-					 * 
+					 *
 					 *  icompare_imm R226
 					 *  il_seq_point il: 0xc6
-					 * 
+					 *
 					 * what should I do?
-					*/
+					 */
 					NULLIFY_INS (ins);
 					break;
-				}
-				else {
-					g_print("Unhandaled op %s following after OP_{I|L}COMPARE{|_IMM}\n",mono_inst_name (ins->next->opcode));
+				} else {
+					g_print ("Unhandaled op %s following after OP_{I|L}COMPARE{|_IMM}\n",
+					         mono_inst_name (ins->next->opcode));
 					NOT_IMPLEMENTED;
 				}
-			}
-			else
-				g_assert_not_reached();
+			} else
+				g_assert_not_reached ();
 			break;
 		}
 
@@ -1343,22 +1309,21 @@ loop_start:
 		case OP_ADD_IMM:
 		case OP_IADD_IMM:
 		case OP_LADD_IMM:
-			if(! RISCV_VALID_I_IMM ((gint32) (gssize) (ins->inst_imm)))
+			if (!RISCV_VALID_I_IMM ((gint32)(gssize)(ins->inst_imm)))
 				mono_decompose_op_imm (cfg, bb, ins);
 			break;
 		case OP_ADDCC:
-		case OP_IADDCC:{
+		case OP_IADDCC: {
 			/**
 			 * add t0, t1, t2
 			 * slti t3, t2, 0
 			 * slt t4,t0,t1
 			 * bne t3, t4, overflow
-			*/
+			 */
 			ins->opcode = OP_IADD;
 			MonoInst *branch_ins = ins->next;
-			if(branch_ins){
-				if(branch_ins->opcode == OP_COND_EXC_C
-					|| branch_ins->opcode == OP_COND_EXC_IOV ){
+			if (branch_ins) {
+				if (branch_ins->opcode == OP_COND_EXC_C || branch_ins->opcode == OP_COND_EXC_IOV) {
 					// bne t3, t4, overflow
 					branch_ins->opcode = OP_RISCV_EXC_BNE;
 					branch_ins->sreg1 = mono_alloc_ireg (cfg);
@@ -1375,16 +1340,15 @@ loop_start:
 					temp->dreg = branch_ins->sreg2;
 					temp->sreg1 = ins->dreg;
 					temp->sreg2 = ins->sreg1;
-				}
-				else{
-					mono_print_ins(branch_ins);
-					g_assert_not_reached();
+				} else {
+					mono_print_ins (branch_ins);
+					g_assert_not_reached ();
 				}
 			}
 			break;
 		}
 		case OP_MUL_IMM:
-			g_assert(riscv_stdext_m);
+			g_assert (riscv_stdext_m);
 			NEW_INS_BEFORE (cfg, ins, temp, OP_ICONST);
 			temp->inst_c0 = ins->inst_imm;
 			temp->dreg = mono_alloc_ireg (cfg);
@@ -1403,7 +1367,7 @@ loop_start:
 		case OP_LAND_IMM:
 		case OP_IOR_IMM:
 		case OP_LOR_IMM:
-			if(! RISCV_VALID_I_IMM ((gint32) (gssize) (ins->inst_imm)))
+			if (!RISCV_VALID_I_IMM ((gint32)(gssize)(ins->inst_imm)))
 				mono_decompose_op_imm (cfg, bb, ins);
 			break;
 		case OP_INOT:
@@ -1451,15 +1415,14 @@ loop_start:
 			ins->opcode = OP_RISCV_ADDIW;
 			ins->inst_imm = 0;
 			break;
-		case OP_ZEXT_I4:{
+		case OP_ZEXT_I4: {
 			// TODO: Add inst riscv_adduw in riscv-codegen.h
 			// if(riscv_stdext_b){
-			if(FALSE){
+			if (FALSE) {
 				NOT_IMPLEMENTED;
 				ins->opcode = OP_RISCV_ADDUW;
 				ins->sreg2 = RISCV_ZERO;
-			}
-			else{
+			} else {
 				// slli a0, a1, 32
 				// srli a0, a0, 32
 				NEW_INS_BEFORE (cfg, ins, temp, OP_SHL_IMM);
@@ -1475,7 +1438,8 @@ loop_start:
 		}
 #endif
 		default:
-			printf ("unable to lowering following IR:"); mono_print_ins (ins);
+			printf ("unable to lowering following IR:");
+			mono_print_ins (ins);
 			NOT_IMPLEMENTED;
 			break;
 		}
@@ -1487,10 +1451,10 @@ loop_start:
 
 	if (cfg->verbose_level > 2) {
 		g_print ("BASIC BLOCK %d (after lowering)\n", bb->block_num);
-		MONO_BB_FOR_EACH_INS (bb, ins) {
+		MONO_BB_FOR_EACH_INS (bb, ins)
+		{
 			mono_print_ins (ins);
 		}
-		
 	}
 }
 
@@ -1587,11 +1551,11 @@ mono_riscv_emit_store (guint8 *code, int rs1, int rs2, gint32 imm)
  * Stack frame layout:
  *  |--------------------------| -- <-- sp + stack_size (FP)
  *  | saved return value	   |
- *  |--------------------------| 
+ *  |--------------------------|
  * 	| saved FP reg			   |
- *  |--------------------------| 
+ *  |--------------------------|
  *  | callee saved regs		   |
- *  |--------------------------| 
+ *  |--------------------------|
  *  | param area			   |
  *  |--------------------------|
  * 	| MonoLMF structure		   |
@@ -1619,40 +1583,38 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	mono_emit_unwind_op_def_cfa (cfg, code, RISCV_SP, 0);
 
 	/* Setup frame */
-	if (RISCV_VALID_I_IMM (-cfg->stack_offset)){
-		riscv_addi (code,RISCV_SP,RISCV_SP,-cfg->stack_offset);
+	if (RISCV_VALID_I_IMM (-cfg->stack_offset)) {
+		riscv_addi (code, RISCV_SP, RISCV_SP, -cfg->stack_offset);
 		// save return value
-		stack_size += sizeof(target_mgreg_t);
+		stack_size += sizeof (target_mgreg_t);
 		code = mono_riscv_emit_store (code, RISCV_RA, RISCV_SP, cfg->stack_offset - stack_size, 0);
 		// save s0(fp) value
-		stack_size += sizeof(target_mgreg_t);
+		stack_size += sizeof (target_mgreg_t);
 		code = mono_riscv_emit_store (code, RISCV_FP, RISCV_SP, cfg->stack_offset - stack_size, 0);
-	}
-	else
+	} else
 		NOT_IMPLEMENTED;
 
 	cfa_offset += cfg->stack_offset;
 	mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
-	mono_emit_unwind_op_offset (cfg, code, RISCV_RA, cfa_offset - sizeof(target_mgreg_t));
-	mono_emit_unwind_op_offset (cfg, code, RISCV_FP, cfa_offset - (sizeof(target_mgreg_t) * 2));
+	mono_emit_unwind_op_offset (cfg, code, RISCV_RA, cfa_offset - sizeof (target_mgreg_t));
+	mono_emit_unwind_op_offset (cfg, code, RISCV_FP, cfa_offset - (sizeof (target_mgreg_t) * 2));
 
 	// set s0(fp) value
-	riscv_addi (code,RISCV_FP,RISCV_SP,cfg->stack_offset);
+	riscv_addi (code, RISCV_FP, RISCV_SP, cfg->stack_offset);
 
 	// save other registers
 	if (cfg->param_area)
 		/* The param area is below the stack pointer */
 		riscv_addi (code, RISCV_SP, RISCV_SP, -cfg->param_area);
 
-
-	if (cfg->method->save_lmf){
-		g_assert(cfg->lmf_var->inst_offset <= 0);
+	if (cfg->method->save_lmf) {
+		g_assert (cfg->lmf_var->inst_offset <= 0);
 		code = emit_setup_lmf (cfg, code, cfg->lmf_var->inst_offset, cfa_offset);
-	}
-	else
+	} else
 		/* Save gregs */
-		code = mono_riscv_emit_store_stack (code, MONO_ARCH_CALLEE_SAVED_REGS & cfg->used_int_regs, RISCV_FP, -cfg->arch.saved_gregs_offset, FALSE);
-	
+		code = mono_riscv_emit_store_stack (code, MONO_ARCH_CALLEE_SAVED_REGS & cfg->used_int_regs, RISCV_FP,
+		                                    -cfg->arch.saved_gregs_offset, FALSE);
+
 	/* Save address of return value received in A0*/
 	if (cfg->vret_addr) {
 		MonoInst *ins = cfg->vret_addr;
@@ -1670,7 +1632,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		code = mono_riscv_emit_store (code, MONO_ARCH_RGCTX_REG, ins->inst_basereg, ins->inst_offset, 0);
 
 		mono_add_var_location (cfg, cfg->rgctx_var, TRUE, MONO_ARCH_RGCTX_REG, 0, 0, code - cfg->native_code);
-		mono_add_var_location (cfg, cfg->rgctx_var, FALSE, ins->inst_basereg, ins->inst_offset, code - cfg->native_code, 0);
+		mono_add_var_location (cfg, cfg->rgctx_var, FALSE, ins->inst_basereg, ins->inst_offset, code - cfg->native_code,
+		                       0);
 	}
 
 	/*
@@ -1681,7 +1644,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	/* Initialize seq_point_info_var */
 	if (cfg->arch.seq_point_info_var)
 		NOT_IMPLEMENTED;
-	else{
+	else {
 		MonoInst *ins;
 		if (cfg->arch.ss_tramp_var) {
 			/* Initialize ss_tramp_var */
@@ -1691,15 +1654,15 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			code = mono_riscv_emit_imm (code, RISCV_T0, (guint64)&ss_trampoline);
 			code = mono_riscv_emit_store (code, RISCV_T0, ins->inst_basereg, ins->inst_offset, 0);
 		}
-		if (cfg->arch.bp_tramp_var){
+		if (cfg->arch.bp_tramp_var) {
 			/* Initialize bp_tramp_var */
 			ins = cfg->arch.bp_tramp_var;
 			g_assert (ins->opcode == OP_REGOFFSET);
 			code = mono_riscv_emit_imm (code, RISCV_T0, (guint64)bp_trampoline);
 			code = mono_riscv_emit_store (code, RISCV_T0, ins->inst_basereg, ins->inst_offset, 0);
- 		}
- 	}
-	
+		}
+	}
+
 	return code;
 }
 
@@ -1715,12 +1678,14 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	code = realloc_code (cfg, max_epilog_size);
 
 	if (cfg->method->save_lmf) {
-		code = mono_riscv_emit_load_regarray (code, MONO_ARCH_CALLEE_SAVED_REGS & cfg->used_int_regs, RISCV_FP, cfg->lmf_var->inst_offset + MONO_STRUCT_OFFSET (MonoLMF, gregs), FALSE);
+		code = mono_riscv_emit_load_regarray (code, MONO_ARCH_CALLEE_SAVED_REGS & cfg->used_int_regs, RISCV_FP,
+		                                      cfg->lmf_var->inst_offset + MONO_STRUCT_OFFSET (MonoLMF, gregs), FALSE);
 	} else {
 		/* Restore gregs */
-		code = mono_riscv_emit_load_stack (code, MONO_ARCH_CALLEE_SAVED_REGS & cfg->used_int_regs, RISCV_FP, -cfg->arch.saved_gregs_offset, FALSE);
+		code = mono_riscv_emit_load_stack (code, MONO_ARCH_CALLEE_SAVED_REGS & cfg->used_int_regs, RISCV_FP,
+		                                   -cfg->arch.saved_gregs_offset, FALSE);
 	}
-	
+
 	/* Load returned vtypes into registers if needed */
 	cinfo = cfg->arch.cinfo;
 	switch (cinfo->ret.storage) {
@@ -1730,16 +1695,17 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	case ArgInFRegR4:
 	case ArgVtypeByRef:
 		break;
-	case ArgVtypeInIReg:{
+	case ArgVtypeInIReg: {
 		MonoInst *ins = cfg->ret;
 
-		if(cinfo->ret.is_regpair)
-			code = mono_riscv_emit_load (code, cinfo->ret.reg + 1, ins->inst_basereg, ins->inst_offset + sizeof(host_mgreg_t), 0);
+		if (cinfo->ret.is_regpair)
+			code = mono_riscv_emit_load (code, cinfo->ret.reg + 1, ins->inst_basereg,
+			                             ins->inst_offset + sizeof (host_mgreg_t), 0);
 		code = mono_riscv_emit_load (code, cinfo->ret.reg, ins->inst_basereg, ins->inst_offset, 0);
 		break;
 	}
 	default:
-		g_print("Unable process returned storage %d(0x%x)\n",cinfo->ret.storage,cinfo->ret.storage);
+		g_print ("Unable process returned storage %d(0x%x)\n", cinfo->ret.storage, cinfo->ret.storage);
 		NOT_IMPLEMENTED;
 	}
 
@@ -1763,14 +1729,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 	start_offset = code - cfg->native_code;
 	g_assert (start_offset <= cfg->code_size);
 
-	if (cfg->verbose_level > 2){
+	if (cfg->verbose_level > 2) {
 		g_print ("Basic block %d starting at offset 0x%x\n", bb->block_num, bb->native_offset);
-		MONO_BB_FOR_EACH_INS (bb, ins) {
+		MONO_BB_FOR_EACH_INS (bb, ins)
+		{
 			mono_print_ins (ins);
 		}
 	}
 
-	MONO_BB_FOR_EACH_INS (bb, ins) {
+	MONO_BB_FOR_EACH_INS (bb, ins)
+	{
 		guint offset = code - cfg->native_code;
 		set_code_cursor (cfg, code);
 		max_len = ins_get_size (ins->opcode);
@@ -1786,10 +1754,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_NOT_NULL:
 		case OP_DUMMY_USE:
 			break;
-		
+
 		/* VM Related OP */
 		case OP_CHECK_THIS:
-		//  try to load 1 byte from ins->sreg to check it is null pionter
+			//  try to load 1 byte from ins->sreg to check it is null pionter
 			code = mono_riscv_emit_load (code, RISCV_RA, ins->sreg1, 0, 1);
 			break;
 		case OP_GET_EX_OBJ:
@@ -1800,8 +1768,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IL_SEQ_POINT:
 			mono_add_seq_point (cfg, bb, ins, code - cfg->native_code);
 			break;
-		case OP_SEQ_POINT:{
-			if (ins->flags & MONO_INST_SINGLE_STEP_LOC){
+		case OP_SEQ_POINT: {
+			if (ins->flags & MONO_INST_SINGLE_STEP_LOC) {
 				MonoInst *var = cfg->arch.ss_tramp_var;
 
 				g_assert (var);
@@ -1820,22 +1788,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			if (cfg->compile_aot)
 				NOT_IMPLEMENTED;
-			else{
+			else {
 				MonoInst *var = cfg->arch.bp_tramp_var;
 				g_assert (var);
 				g_assert (var->opcode == OP_REGOFFSET);
 				/* Load the address of the bp trampoline into IP0 */
 				code = mono_riscv_emit_load (code, RISCV_T0, var->inst_basereg, var->inst_offset, 0);
-				/* 
-				* A placeholder for a possible breakpoint inserted by
-				* mono_arch_set_breakpoint ().
-				*/
+				/*
+				 * A placeholder for a possible breakpoint inserted by
+				 * mono_arch_set_breakpoint ().
+				 */
 				code = mono_riscv_emit_nop (code);
 			}
 			break;
 		}
-		case OP_LOCALLOC:{
-			g_assert(MONO_ARCH_FRAME_ALIGNMENT == 16);
+		case OP_LOCALLOC: {
+			g_assert (MONO_ARCH_FRAME_ALIGNMENT == 16);
 			guint8 *loop_start;
 			// ins->sreg1 stores the size of new object.
 			// 1. Align the object size to MONO_ARCH_FRAME_ALIGNMENT
@@ -1855,23 +1823,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			loop_start = code;
 			riscv_beq (code, RISCV_T0, RISCV_T1, 0);
 			code = mono_riscv_emit_store (code, RISCV_ZERO, RISCV_T0, 0, 0);
-			code = mono_riscv_emit_store (code, RISCV_ZERO, RISCV_T0, sizeof(host_mgreg_t), 0);
+			code = mono_riscv_emit_store (code, RISCV_ZERO, RISCV_T0, sizeof (host_mgreg_t), 0);
 #ifdef TARGET_RISCV32
-			code = mono_riscv_emit_store (code, RISCV_ZERO, RISCV_T0, sizeof(host_mgreg_t) * 2, 0);
-			code = mono_riscv_emit_store (code, RISCV_ZERO, RISCV_T0, sizeof(host_mgreg_t) * 3, 0);
+			code = mono_riscv_emit_store (code, RISCV_ZERO, RISCV_T0, sizeof (host_mgreg_t) * 2, 0);
+			code = mono_riscv_emit_store (code, RISCV_ZERO, RISCV_T0, sizeof (host_mgreg_t) * 3, 0);
 #endif
 			riscv_addi (code, RISCV_T0, RISCV_T0, MONO_ARCH_FRAME_ALIGNMENT);
 			riscv_jal (code, RISCV_ZERO, riscv_get_jal_disp (code, loop_start));
 			riscv_patch_rel (loop_start, code, MONO_R_RISCV_BEQ);
 
 			riscv_addi (code, ins->dreg, RISCV_SP, 0);
-			if (cfg->param_area){
+			if (cfg->param_area) {
 				g_assert (cfg->param_area > 0);
 				riscv_addi (code, RISCV_SP, RISCV_SP, -cfg->param_area);
 			}
 			break;
 		}
-		case OP_LOCALLOC_IMM:{
+		case OP_LOCALLOC_IMM: {
 			int aligned_imm, aligned_imm_offset;
 			aligned_imm = ALIGN_TO (ins->inst_imm, MONO_ARCH_FRAME_ALIGNMENT);
 			g_assert (RISCV_VALID_I_IMM (aligned_imm));
@@ -1880,29 +1848,33 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Init */
 			g_assert (MONO_ARCH_FRAME_ALIGNMENT == 16);
 			aligned_imm_offset = 0;
-			while (aligned_imm_offset < aligned_imm){
+			while (aligned_imm_offset < aligned_imm) {
 				code = mono_riscv_emit_store (code, RISCV_ZERO, RISCV_SP, aligned_imm_offset + 0, 0);
-				code = mono_riscv_emit_store (code, RISCV_ZERO, RISCV_SP, aligned_imm_offset + sizeof(host_mgreg_t), 0), 0;
+				code =
+				    mono_riscv_emit_store (code, RISCV_ZERO, RISCV_SP, aligned_imm_offset + sizeof (host_mgreg_t), 0),
+				0;
 #ifdef TARGET_RISCV32
-				code = mono_riscv_emit_store (code, RISCV_ZERO, RISCV_SP, aligned_imm_offset + sizeof(host_mgreg_t) * 2, 0);
-				code = mono_riscv_emit_store (code, RISCV_ZERO, RISCV_SP, aligned_imm_offset + sizeof(host_mgreg_t) * 3, 0);
+				code = mono_riscv_emit_store (code, RISCV_ZERO, RISCV_SP,
+				                              aligned_imm_offset + sizeof (host_mgreg_t) * 2, 0);
+				code = mono_riscv_emit_store (code, RISCV_ZERO, RISCV_SP,
+				                              aligned_imm_offset + sizeof (host_mgreg_t) * 3, 0);
 #endif
 				aligned_imm_offset += 16;
 			}
 
 			riscv_addi (code, ins->dreg, RISCV_SP, 0);
-			if (cfg->param_area){
+			if (cfg->param_area) {
 				g_assert (cfg->param_area > 0);
 				riscv_addi (code, RISCV_SP, RISCV_SP, -cfg->param_area);
 			}
 			break;
 		}
-		case OP_GENERIC_CLASS_INIT:{
+		case OP_GENERIC_CLASS_INIT: {
 			int byte_offset;
 			guint8 *branch_label;
 
 			byte_offset = MONO_STRUCT_OFFSET (MonoVTable, initialized);
-			
+
 			/* Load vtable->initialized */
 			code = mono_riscv_emit_load (code, RISCV_T0, ins->sreg1, byte_offset, 1);
 			branch_label = code;
@@ -1911,7 +1883,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Slowpath */
 			g_assert (ins->sreg1 == RISCV_A0);
 			code = mono_riscv_emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
-								GUINT_TO_POINTER (MONO_JIT_ICALL_mono_generic_class_init));
+			                             GUINT_TO_POINTER (MONO_JIT_ICALL_mono_generic_class_init));
 
 			mono_riscv_patch (branch_label, code, MONO_R_RISCV_BNE);
 			break;
@@ -1925,17 +1897,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LMOVE:
 #endif
 			// mv ra, a1 -> addi ra, a1, 0
-			riscv_addi(code, ins->dreg, ins->sreg1, 0);
+			riscv_addi (code, ins->dreg, ins->sreg1, 0);
 			break;
 		// r4 move
 		case OP_RMOVE:
-			g_assert(riscv_stdext_f);
+			g_assert (riscv_stdext_f);
 			riscv_fsgnj_s (code, ins->dreg, ins->sreg1, ins->sreg1);
 			break;
 		case OP_FMOVE:
 			// fmv.{s|d} rd, rs1 -> fsgnj.{s|d} rd, rs1, rs1
-			g_assert(riscv_stdext_d || riscv_stdext_f);
-			if(riscv_stdext_d)
+			g_assert (riscv_stdext_d || riscv_stdext_f);
+			if (riscv_stdext_d)
 				riscv_fsgnj_d (code, ins->dreg, ins->sreg1, ins->sreg1);
 			else
 				riscv_fsgnj_s (code, ins->dreg, ins->sreg1, ins->sreg1);
@@ -2011,24 +1983,28 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LDIV:
 			g_assert (riscv_stdext_m);
-			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO, "DivideByZeroException");
+			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO,
+			                                   "DivideByZeroException");
 			riscv_div (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_LDIV_UN:
-			g_assert(riscv_stdext_m);
-			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO, "DivideByZeroException");
+			g_assert (riscv_stdext_m);
+			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO,
+			                                   "DivideByZeroException");
 			riscv_divu (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_IREM:
 		case OP_LREM:
-			g_assert(riscv_stdext_m);
-			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO, "DivideByZeroException");
+			g_assert (riscv_stdext_m);
+			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO,
+			                                   "DivideByZeroException");
 			riscv_rem (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_IREM_UN:
 		case OP_LREM_UN:
-			g_assert(riscv_stdext_m);
-			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO, "DivideByZeroException");
+			g_assert (riscv_stdext_m);
+			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO,
+			                                   "DivideByZeroException");
 			riscv_remu (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 
@@ -2130,28 +2106,28 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ATOMIC_ADD_I4:
 			riscv_amoadd_w (code, RISCV_ORDER_ALL, ins->dreg, ins->sreg2, ins->sreg1);
 			break;
-		case OP_ATOMIC_LOAD_I4:{
+		case OP_ATOMIC_LOAD_I4: {
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
 			code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 4);
 			riscv_fence (code, RISCV_FENCE_R, RISCV_FENCE_MEM);
 			break;
 		}
-		case OP_ATOMIC_STORE_U1:{
+		case OP_ATOMIC_STORE_U1: {
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_W);
 			code = mono_riscv_emit_store (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset, 1);
 			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
 				riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
 			break;
 		}
-		case OP_ATOMIC_STORE_I4:{
+		case OP_ATOMIC_STORE_I4: {
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_W);
 			code = mono_riscv_emit_store (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset, 4);
 			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
 				riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
 			break;
 		}
-		case OP_ATOMIC_CAS_I4:{
-			g_assert(riscv_stdext_a);
+		case OP_ATOMIC_CAS_I4: {
+			g_assert (riscv_stdext_a);
 			/**
 			 * loop_start:
 			 * 	lr.w	t0, rs1
@@ -2161,8 +2137,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * loop_end:
 			 * 	fence rw, rw
 			 * 	mv rd, t0
-			 * 
-			*/
+			 *
+			 */
 			guint8 *loop_start, *branch_label;
 			/* sreg2 is the value, sreg3 is the comparand */
 			loop_start = code;
@@ -2172,18 +2148,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_sc_w (code, RISCV_ORDER_RL, RISCV_T1, ins->sreg2, ins->sreg1);
 			riscv_bne (code, RISCV_ZERO, RISCV_T1, loop_start - code);
 			riscv_patch_rel (branch_label, code, MONO_R_RISCV_BNE);
-			
+
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
 			riscv_addi (code, ins->dreg, RISCV_T0, 0);
 			break;
 		}
-		case OP_ATOMIC_EXCHANGE_I4:{
+		case OP_ATOMIC_EXCHANGE_I4: {
 			g_assert (riscv_stdext_a);
 			riscv_amoswap_w (code, RISCV_ORDER_ALL, ins->dreg, ins->sreg2, ins->sreg1);
 			break;
 		}
 #ifdef TARGET_RISCV64
-		case OP_ATOMIC_STORE_U8:{
+		case OP_ATOMIC_STORE_U8: {
 			// TODO: Check This
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_W);
 			code = mono_riscv_emit_store (code, ins->sreg1, ins->inst_destbasereg, ins->inst_offset, 8);
@@ -2192,14 +2168,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ATOMIC_LOAD_I8:
-		case OP_ATOMIC_LOAD_U8:{
+		case OP_ATOMIC_LOAD_U8: {
 			// TODO: Check This
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
 			code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 8);
 			riscv_fence (code, RISCV_FENCE_R, RISCV_FENCE_MEM);
 			break;
 		}
-		case OP_ATOMIC_CAS_I8:{
+		case OP_ATOMIC_CAS_I8: {
 			g_assert (riscv_stdext_a);
 			guint8 *loop_start, *branch_label;
 			/* sreg2 is the value, sreg3 is the comparand */
@@ -2210,12 +2186,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_sc_d (code, RISCV_ORDER_RL, RISCV_T1, ins->sreg2, ins->sreg1);
 			riscv_bne (code, RISCV_ZERO, RISCV_T1, loop_start - code);
 			riscv_patch_rel (branch_label, code, MONO_R_RISCV_BNE);
-			
+
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
 			riscv_addi (code, ins->dreg, RISCV_T0, 0);
 			break;
 		}
-		case OP_ATOMIC_EXCHANGE_I8:{
+		case OP_ATOMIC_EXCHANGE_I8: {
 			g_assert (riscv_stdext_a);
 			riscv_amoswap_d (code, RISCV_ORDER_ALL, ins->dreg, ins->sreg2, ins->sreg1);
 			break;
@@ -2224,40 +2200,40 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		/* Float */
 		case OP_R4CONST:
-		case OP_R8CONST:{
-			code = mono_riscv_emit_float_imm (code, ins->dreg, *(guint64*)ins->inst_p0, ins->opcode == OP_R4CONST);
+		case OP_R8CONST: {
+			code = mono_riscv_emit_float_imm (code, ins->dreg, *(guint64 *)ins->inst_p0, ins->opcode == OP_R4CONST);
 			break;
 		}
-		case OP_ICONV_TO_R4:{
+		case OP_ICONV_TO_R4: {
 			g_assert (riscv_stdext_f);
 			riscv_fcvt_s_w (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
 			break;
 		}
-		case OP_ICONV_TO_R8:{
+		case OP_ICONV_TO_R8: {
 			g_assert (riscv_stdext_d);
 			riscv_fcvt_d_w (code, ins->dreg, ins->sreg1);
 			break;
 		}
-		case OP_RCONV_TO_R8:{
+		case OP_RCONV_TO_R8: {
 			g_assert (riscv_stdext_d);
 			riscv_fcvt_d_s (code, ins->dreg, ins->sreg1);
 			break;
 		}
-		case OP_FCONV_TO_I4:{
+		case OP_FCONV_TO_I4: {
 			g_assert (riscv_stdext_f || riscv_stdext_d);
-			if(riscv_stdext_d)
+			if (riscv_stdext_d)
 				riscv_fcvt_w_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
 			else
 				riscv_fcvt_w_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
 			break;
 		}
 		case OP_FCONV_TO_R4:
-		case OP_RISCV_SETFREG_R4:{
+		case OP_RISCV_SETFREG_R4: {
 			g_assert (riscv_stdext_d);
 			riscv_fcvt_s_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
 			break;
 		}
-		case OP_FCEQ:{
+		case OP_FCEQ: {
 			g_assert (riscv_stdext_f || riscv_stdext_d);
 			if (riscv_stdext_d)
 				riscv_feq_d (code, ins->dreg, ins->sreg1, ins->sreg2);
@@ -2266,7 +2242,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_FCLT:
-		case OP_FCLT_UN:{
+		case OP_FCLT_UN: {
 			g_assert (riscv_stdext_f || riscv_stdext_d);
 			if (riscv_stdext_d)
 				riscv_flt_d (code, ins->dreg, ins->sreg1, ins->sreg2);
@@ -2274,29 +2250,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				riscv_flt_s (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		}
-		case OP_STORER4_MEMBASE_REG:{
+		case OP_STORER4_MEMBASE_REG: {
 			if (mono_arch_is_soft_float ())
 				code = mono_riscv_emit_store (code, ins->sreg1, ins->dreg, ins->inst_offset, 4);
 			else
 				code = mono_riscv_emit_fstore (code, ins->sreg1, ins->dreg, ins->inst_offset, TRUE);
 			break;
 		}
-		case OP_STORER8_MEMBASE_REG:{
+		case OP_STORER8_MEMBASE_REG: {
 			if (mono_arch_is_soft_float ())
 				code = mono_riscv_emit_store (code, ins->sreg1, ins->dreg, ins->inst_offset, 8);
 			else
 				code = mono_riscv_emit_fstore (code, ins->sreg1, ins->dreg, ins->inst_offset, FALSE);
 			break;
 		}
-		case OP_LOADR4_MEMBASE:{
-			if( mono_arch_is_soft_float())
+		case OP_LOADR4_MEMBASE: {
+			if (mono_arch_is_soft_float ())
 				code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 4);
 			else
 				code = mono_riscv_emit_fload (code, ins->dreg, ins->sreg1, ins->inst_offset, TRUE);
 			break;
 		}
-		case OP_LOADR8_MEMBASE:{
-			if( mono_arch_is_soft_float ())
+		case OP_LOADR8_MEMBASE: {
+			if (mono_arch_is_soft_float ())
 				code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 8);
 			else
 				code = mono_riscv_emit_fload (code, ins->dreg, ins->sreg1, ins->inst_offset, FALSE);
@@ -2309,7 +2285,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_FCALL:
 		case OP_LCALL:
 		case OP_VCALL2: {
-			call = (MonoCallInst*)ins;
+			call = (MonoCallInst *)ins;
 			const MonoJumpInfoTarget patch = mono_call_to_patch (call);
 			code = mono_riscv_emit_call (cfg, code, patch.type, patch.target);
 			code = emit_move_return_value (cfg, code, ins);
@@ -2334,32 +2310,38 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		// incase of target is far from the brunch inst
 		// reverse a nop inst for patch use
 		case OP_RISCV_BNE:
-			mono_add_patch_info_rel (cfg, (code - cfg->native_code), MONO_PATCH_INFO_BB, ins->inst_true_bb, MONO_R_RISCV_BNE);
+			mono_add_patch_info_rel (cfg, (code - cfg->native_code), MONO_PATCH_INFO_BB, ins->inst_true_bb,
+			                         MONO_R_RISCV_BNE);
 			riscv_bne (code, ins->sreg1, ins->sreg2, 0);
 			code = mono_riscv_emit_nop (code);
 			break;
 		case OP_RISCV_BEQ:
-			mono_add_patch_info_rel (cfg, (code - cfg->native_code), MONO_PATCH_INFO_BB, ins->inst_true_bb, MONO_R_RISCV_BEQ);
+			mono_add_patch_info_rel (cfg, (code - cfg->native_code), MONO_PATCH_INFO_BB, ins->inst_true_bb,
+			                         MONO_R_RISCV_BEQ);
 			riscv_beq (code, ins->sreg1, ins->sreg2, 0);
 			code = mono_riscv_emit_nop (code);
 			break;
 		case OP_RISCV_BGE:
-			mono_add_patch_info_rel (cfg, (code - cfg->native_code), MONO_PATCH_INFO_BB, ins->inst_true_bb, MONO_R_RISCV_BGE);
+			mono_add_patch_info_rel (cfg, (code - cfg->native_code), MONO_PATCH_INFO_BB, ins->inst_true_bb,
+			                         MONO_R_RISCV_BGE);
 			riscv_bge (code, ins->sreg1, ins->sreg2, 0);
 			code = mono_riscv_emit_nop (code);
 			break;
 		case OP_RISCV_BGEU:
-			mono_add_patch_info_rel (cfg, (code - cfg->native_code), MONO_PATCH_INFO_BB, ins->inst_true_bb, MONO_R_RISCV_BGEU);
+			mono_add_patch_info_rel (cfg, (code - cfg->native_code), MONO_PATCH_INFO_BB, ins->inst_true_bb,
+			                         MONO_R_RISCV_BGEU);
 			riscv_bgeu (code, ins->sreg1, ins->sreg2, 0);
 			code = mono_riscv_emit_nop (code);
 			break;
 		case OP_RISCV_BLT:
-			mono_add_patch_info_rel (cfg, (code - cfg->native_code), MONO_PATCH_INFO_BB, ins->inst_true_bb, MONO_R_RISCV_BLT);
+			mono_add_patch_info_rel (cfg, (code - cfg->native_code), MONO_PATCH_INFO_BB, ins->inst_true_bb,
+			                         MONO_R_RISCV_BLT);
 			riscv_blt (code, ins->sreg1, ins->sreg2, 0);
 			code = mono_riscv_emit_nop (code);
 			break;
 		case OP_RISCV_BLTU:
-			mono_add_patch_info_rel (cfg, (code - cfg->native_code), MONO_PATCH_INFO_BB, ins->inst_true_bb, MONO_R_RISCV_BLTU);
+			mono_add_patch_info_rel (cfg, (code - cfg->native_code), MONO_PATCH_INFO_BB, ins->inst_true_bb,
+			                         MONO_R_RISCV_BLTU);
 			riscv_bltu (code, ins->sreg1, ins->sreg2, 0);
 			code = mono_riscv_emit_nop (code);
 			break;
@@ -2371,49 +2353,52 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_jalr (code, RISCV_ZERO, ins->sreg1, 0);
 			break;
 		case OP_JUMP_TABLE:
-			mono_add_patch_info_rel (cfg, offset, (MonoJumpInfoType)(gsize)ins->inst_i1, ins->inst_p0, MONO_R_RISCV_IMM);
+			mono_add_patch_info_rel (cfg, offset, (MonoJumpInfoType)(gsize)ins->inst_i1, ins->inst_p0,
+			                         MONO_R_RISCV_IMM);
 			code = mono_riscv_emit_imm (code, ins->dreg, 0xffffffff);
 			break;
 		case OP_RISCV_EXC_BNE:
 		case OP_RISCV_EXC_BEQ:
 		case OP_RISCV_EXC_BGEU:
 		case OP_RISCV_EXC_BLT:
-		case OP_RISCV_EXC_BLTU:{
-			code = mono_riscv_emit_branch_exc (cfg, code, ins->opcode, ins->sreg1, ins->sreg2, (const char*)ins->inst_p1);
+		case OP_RISCV_EXC_BLTU: {
+			code =
+			    mono_riscv_emit_branch_exc (cfg, code, ins->opcode, ins->sreg1, ins->sreg2, (const char *)ins->inst_p1);
 			break;
 		}
 
 		/* Throw */
 		case OP_THROW:
 			code = mono_riscv_emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
-							GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arch_throw_exception));
+			                             GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arch_throw_exception));
 			break;
 		case OP_RETHROW:
 			code = mono_riscv_emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
-							GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arch_rethrow_exception));
+			                             GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arch_rethrow_exception));
 			break;
 
-		case OP_GC_SAFE_POINT:{
+		case OP_GC_SAFE_POINT: {
 			guint8 *src_inst_pointer [1];
 
 			riscv_ld (code, RISCV_T1, ins->sreg1, 0);
 			/* Call it if it is non-null */
 			src_inst_pointer [0] = code;
 			riscv_beq (code, RISCV_ZERO, RISCV_T1, 0);
-			code = mono_riscv_emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_threads_state_poll));
+			code = mono_riscv_emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
+			                             GUINT_TO_POINTER (MONO_JIT_ICALL_mono_threads_state_poll));
 			mono_riscv_patch (src_inst_pointer [0], code, MONO_R_RISCV_BEQ);
 			break;
 		}
-		case OP_START_HANDLER:{
+		case OP_START_HANDLER: {
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
 			/* Save caller address */
 			code = mono_riscv_emit_store (code, RISCV_RA, spvar->inst_basereg, spvar->inst_offset, 0);
 
 			/*
-			* Reserve a param area, see test_0_finally_param_area ().
-			* This is needed because the param area is not set up when
-			* we are called from EH code.
-			*/
+			 * Reserve a param area, see test_0_finally_param_area ().
+			 * This is needed because the param area is not set up when
+			 * we are called from EH code.
+			 */
 			if (cfg->param_area)
 				riscv_addi (code, RISCV_SP, RISCV_SP, -cfg->param_area);
 			break;
@@ -2423,15 +2408,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_jal (code, RISCV_RA, 0);
 			cfg->thunk_area += THUNK_SIZE;
 			for (GList *tmp = ins->inst_eh_blocks; tmp != bb->clause_holes; tmp = tmp->prev)
-				mono_cfg_add_try_hole (cfg, ((MonoLeaveClause *) tmp->data)->clause, code, bb);
+				mono_cfg_add_try_hole (cfg, ((MonoLeaveClause *)tmp->data)->clause, code, bb);
 			break;
-		case OP_ENDFINALLY:{
+		case OP_ENDFINALLY: {
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
 			if (cfg->param_area)
 				riscv_addi (code, RISCV_SP, RISCV_SP, -cfg->param_area);
 			if (ins->opcode == OP_ENDFILTER && ins->sreg1 != RISCV_A0)
 				riscv_addi (code, RISCV_A0, ins->sreg1, 0);
-			
+
 			/* Return to either after the branch in OP_CALL_HANDLER, or to the EH code */
 			code = mono_riscv_emit_load (code, RISCV_RA, spvar->inst_basereg, spvar->inst_offset, 0);
 			riscv_jalr (code, RISCV_ZERO, RISCV_RA, 0);
@@ -2439,14 +2424,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 
 		default:
-			printf ("unable to output following IR:"); mono_print_ins (ins);
+			printf ("unable to output following IR:");
+			mono_print_ins (ins);
 			NOT_IMPLEMENTED;
 			break;
 		}
 
 		g_assertf ((code - cfg->native_code - offset) <= max_len,
-			   "wrong maximal instruction length of instruction %s (expected %d, got %d)",
-			   mono_inst_name (ins->opcode), max_len, (int)(code - cfg->native_code - offset));
+		           "wrong maximal instruction length of instruction %s (expected %d, got %d)",
+		           mono_inst_name (ins->opcode), max_len, (int)(code - cfg->native_code - offset));
 	}
 	set_code_cursor (cfg, code);
 }

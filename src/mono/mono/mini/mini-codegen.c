@@ -479,7 +479,8 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 			if (!ins->inst_false_bb)
 				g_string_append_printf (sbuf, " [B%d]", ins->inst_true_bb->block_num);
 			else
-				g_string_append_printf (sbuf, " [T:B%d F:B%d]", ins->inst_true_bb->block_num, ins->inst_false_bb->block_num);
+				g_string_append_printf (sbuf, " [T:B%d F:B%d]", ins->inst_true_bb->block_num,
+				                        ins->inst_false_bb->block_num);
 			break;
 		case OP_PHI:
 		case OP_VPHI:
@@ -691,7 +692,8 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 		if (!ins->inst_false_bb)
 			g_string_append_printf (sbuf, " [B%d]", ins->inst_true_bb->block_num);
 		else
-			g_string_append_printf (sbuf, " [T:B%d F:B%d]", ins->inst_true_bb->block_num, ins->inst_false_bb->block_num);
+			g_string_append_printf (sbuf, " [T:B%d F:B%d]", ins->inst_true_bb->block_num,
+			                        ins->inst_false_bb->block_num);
 		break;
 	case OP_LIVERANGE_START:
 	case OP_LIVERANGE_END:
