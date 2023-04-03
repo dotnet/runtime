@@ -17,6 +17,7 @@
 //    Reflection.Execution.dll
 
 using System;
+using System.Reflection;
 using System.Runtime;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -151,25 +152,17 @@ namespace Internal.Runtime.Augments
             return Array.NewMultiDimArray(typeHandleForArrayType.ToEETypePtr(), pImmutableLengths, lengths.Length);
         }
 
+        public static unsafe bool MightBeUnconstructedType(RuntimeTypeHandle type)
+        {
+            // If there are no vtable slots the type is likely an unconstructed type.
+            // But could also be an interface with no virtuals. We can't distinguish those.
+            Debug.Assert(MethodTable.Of<object>()->NumVtableSlots != 0);
+            return CreateEETypePtr(type).ToPointer()->NumVtableSlots == 0;
+        }
+
         public static IntPtr GetAllocateObjectHelperForType(RuntimeTypeHandle type)
         {
             return RuntimeImports.RhGetRuntimeHelperForType(CreateEETypePtr(type), RuntimeHelperKind.AllocateObject);
-        }
-
-        public static IntPtr GetAllocateArrayHelperForType(RuntimeTypeHandle type)
-        {
-            return RuntimeImports.RhGetRuntimeHelperForType(CreateEETypePtr(type), RuntimeHelperKind.AllocateArray);
-        }
-
-        public static IntPtr GetCastingHelperForType(RuntimeTypeHandle type, bool throwing)
-        {
-            return RuntimeImports.RhGetRuntimeHelperForType(CreateEETypePtr(type),
-                throwing ? RuntimeHelperKind.CastClass : RuntimeHelperKind.IsInst);
-        }
-
-        public static IntPtr GetDispatchMapForType(RuntimeTypeHandle typeHandle)
-        {
-            return CreateEETypePtr(typeHandle).DispatchMap;
         }
 
         public static IntPtr GetFallbackDefaultConstructor()
@@ -358,32 +351,6 @@ namespace Internal.Runtime.Augments
         }
 
         public static unsafe int ObjectHeaderSize => sizeof(EETypePtr);
-
-        [DebuggerGuidedStepThroughAttribute]
-        public static object CallDynamicInvokeMethod(
-            object thisPtr,
-            IntPtr methodToCall,
-            IntPtr dynamicInvokeHelperMethod,
-            IntPtr dynamicInvokeHelperGenericDictionary,
-            object defaultParametersContext,
-            object[] parameters,
-            BinderBundle binderBundle,
-            bool wrapInTargetInvocationException,
-            bool methodToCallIsThisCall)
-        {
-            object result = InvokeUtils.CallDynamicInvokeMethod(
-                thisPtr,
-                methodToCall,
-                dynamicInvokeHelperMethod,
-                dynamicInvokeHelperGenericDictionary,
-                defaultParametersContext,
-                parameters,
-                binderBundle,
-                wrapInTargetInvocationException,
-                methodToCallIsThisCall);
-            System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
-            return result;
-        }
 
         public static unsafe void EnsureClassConstructorRun(IntPtr staticClassConstructionContext)
         {
@@ -665,11 +632,6 @@ namespace Internal.Runtime.Augments
             return RuntimeImports.RhResolveDispatch(instance, CreateEETypePtr(interfaceType), checked((ushort)slot));
         }
 
-        public static IntPtr GVMLookupForSlot(RuntimeTypeHandle type, RuntimeMethodHandle slot)
-        {
-            return GenericVirtualMethodSupport.GVMLookupForSlot(type, slot);
-        }
-
         public static bool IsUnmanagedPointerType(RuntimeTypeHandle typeHandle)
         {
             return typeHandle.ToEETypePtr().IsPointer;
@@ -711,7 +673,7 @@ namespace Internal.Runtime.Augments
 
         public static object CheckArgument(object srcObject, RuntimeTypeHandle dstType, BinderBundle binderBundle)
         {
-            return InvokeUtils.CheckArgument(srcObject, dstType, binderBundle);
+            return InvokeUtils.CheckArgument(srcObject, dstType.ToEETypePtr(), InvokeUtils.CheckArgumentSemantics.DynamicInvoke, binderBundle);
         }
 
         // FieldInfo.SetValueDirect() has a completely different set of rules on how to coerce the argument from
@@ -863,14 +825,6 @@ namespace Internal.Runtime.Augments
             return new RuntimeTypeHandle(obj.GetEETypePtr());
         }
 
-        // Move memory which may be on the heap which may have object references in it.
-        // In general, a memcpy on the heap is unsafe, but this is able to perform the
-        // correct write barrier such that the GC is not incorrectly impacted.
-        public static unsafe void BulkMoveWithWriteBarrier(IntPtr dmem, IntPtr smem, int size)
-        {
-            RuntimeImports.RhBulkMoveWithWriteBarrier(ref *(byte*)dmem.ToPointer(), ref *(byte*)smem.ToPointer(), (uint)size);
-        }
-
         public static IntPtr GetUniversalTransitionThunk()
         {
             return RuntimeImports.RhGetUniversalTransitionThunk();
@@ -889,7 +843,6 @@ namespace Internal.Runtime.Augments
             IntPtr newThunk = RuntimeImports.RhAllocateThunk(thunksHeap);
             if (newThunk == IntPtr.Zero)
                 throw new OutOfMemoryException();
-            TypeLoaderCallbacks.RegisterThunk(newThunk);
             return newThunk;
         }
 

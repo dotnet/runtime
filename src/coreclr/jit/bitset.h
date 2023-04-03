@@ -133,11 +133,7 @@ FORCEINLINE unsigned BitSetSupport::CountBitsInIntegral<unsigned>(unsigned c)
 //      An "adapter" class that provides methods that retrieves things from the Env:
 //        static void* Alloc(Env, size_t byteSize): Allocates memory the BitSet implementation can use.
 //        static unsigned    GetSize(Env):          the current size (= # of bits) of this bitset type.
-//        static unsigned    GetArrSize(Env, unsigned elemSize):  The number of "elemSize" chunks sufficient to hold
-//                                                                "GetSize". A given BitSet implementation must call
-//                                                                this with only one constant value. Thus, and "Env"
-//                                                                may compute this result when GetSize changes.
-//
+//        static unsigned    GetArrSize(Env):       The number of size_t chunks sufficient to hold "GetSize".
 //        static unsigned    GetEpoch(Env):         the current epoch.
 //
 // (For many instantiations, BitSetValueArgType and BitSetValueRetType will be the same as BitSetType; in cases where
@@ -232,6 +228,8 @@ class BitSetOps
 
     // Destructively modify "bs1" to be the union of "bs1" and "bs2".
     static void UnionD(Env env, BitSetType& bs1, BitSetValueArgType bs2);
+    // Destructively modify "bs1" to be the union of "bs1" and "bs2"; return `true` if `bs1` changed.
+    static bool UnionDChanged(Env env, BitSetType& bs1, BitSetValueArgType bs2);
     // Returns a new BitSet that is the union of "bs1" and "bs2".
     static BitSetValueRetType Union(Env env, BitSetValueArgType bs1, BitSetValueArgType bs2);
 
@@ -377,6 +375,11 @@ public:
     {
         BitSetTraits::GetOpCounter(env)->RecordOp(BitSetSupport::BSOP_UnionD);
         BSO::UnionD(env, bs1, bs2);
+    }
+    static bool UnionDChanged(Env env, BitSetType& bs1, BitSetValueArgType bs2)
+    {
+        BitSetTraits::GetOpCounter(env)->RecordOp(BitSetSupport::BSOP_UnionDChanged);
+        return BSO::UnionDChanged(env, bs1, bs2);
     }
     static BitSetValueRetType Union(Env env, BitSetValueArgType bs1, BitSetValueArgType bs2)
     {

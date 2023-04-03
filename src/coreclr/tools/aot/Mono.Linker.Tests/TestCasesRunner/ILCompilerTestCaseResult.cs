@@ -1,7 +1,7 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Mono.Linker.Tests.TestCasesRunner;
+using ILCompiler;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCases;
 
@@ -15,9 +15,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public readonly TestCaseSandbox Sandbox;
 		public readonly TestCaseMetadataProvider MetadataProvider;
 		public readonly ManagedCompilationResult CompilationResult;
+		public readonly ILScanResults TrimmingResults;
 		public readonly TestLogWriter LogWriter;
 
-		public ILCompilerTestCaseResult (TestCase testCase, NPath inputAssemblyPath, NPath expectationsAssemblyPath, TestCaseSandbox sandbox, TestCaseMetadataProvider metadataProvider, ManagedCompilationResult compilationResult, TestLogWriter logWriter)
+		public ILCompilerTestCaseResult (TestCase testCase, NPath inputAssemblyPath, NPath expectationsAssemblyPath, TestCaseSandbox sandbox, TestCaseMetadataProvider metadataProvider, ManagedCompilationResult compilationResult, ILScanResults trimmingResults, TestLogWriter logWriter)
 		{
 			TestCase = testCase;
 			InputAssemblyPath = inputAssemblyPath;
@@ -25,6 +26,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Sandbox = sandbox;
 			MetadataProvider = metadataProvider;
 			CompilationResult = compilationResult;
+			TrimmingResults = trimmingResults;
 			LogWriter = logWriter;
 		}
 	}

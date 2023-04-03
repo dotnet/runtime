@@ -4,6 +4,7 @@
 using Xunit;
 using System.Formats.Cbor;
 using System.Collections.Generic;
+using System.Linq;
 using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 
 namespace System.Security.Cryptography.Cose.Tests
@@ -56,13 +57,13 @@ namespace System.Security.Cryptography.Cose.Tests
         {
             var map = new CoseHeaderMap();
             // only accepts int or tstr
-            Assert.Throws<ArgumentException>(() => SetValue(map, CoseHeaderLabel.Algorithm, ReadOnlySpan<byte>.Empty, method));
+            Assert.Throws<ArgumentException>("value", () => SetValue(map, CoseHeaderLabel.Algorithm, ReadOnlySpan<byte>.Empty, method));
             // [ +label ] (non-empty array)
-            Assert.Throws<ArgumentException>(() => SetValue(map, CoseHeaderLabel.CriticalHeaders, ReadOnlySpan<byte>.Empty, method));
+            Assert.Throws<ArgumentException>("value", () => SetValue(map, CoseHeaderLabel.CriticalHeaders, ReadOnlySpan<byte>.Empty, method));
             // tstr / uint
-            Assert.Throws<ArgumentException>(() => SetValue(map, CoseHeaderLabel.ContentType, -1, method));
+            Assert.Throws<ArgumentException>("value", () => SetValue(map, CoseHeaderLabel.ContentType, -1, method));
             // bstr
-            Assert.Throws<ArgumentException>(() => SetValue(map, CoseHeaderLabel.KeyIdentifier, "foo", method));
+            Assert.Throws<ArgumentException>("value", () => SetValue(map, CoseHeaderLabel.KeyIdentifier, "foo", method));
         }
 
         [Theory]
@@ -80,17 +81,17 @@ namespace System.Security.Cryptography.Cose.Tests
 
             var map = new CoseHeaderMap();
             // only accepts int or tstr
-            Assert.Throws<ArgumentException>(() => SetEncodedValue(map, CoseHeaderLabel.Algorithm, encodedNullValue, method));
+            Assert.Throws<ArgumentException>("value", () => SetEncodedValue(map, CoseHeaderLabel.Algorithm, encodedNullValue, method));
             // [ +label ] (non-empty array)
-            Assert.Throws<ArgumentException>(() => SetEncodedValue(map, CoseHeaderLabel.CriticalHeaders, encodedNullValue, method));
+            Assert.Throws<ArgumentException>("value", () => SetEncodedValue(map, CoseHeaderLabel.CriticalHeaders, encodedNullValue, method));
             writer.Reset();
             writer.WriteStartArray(0);
             writer.WriteEndArray();
-            Assert.Throws<ArgumentException>(() => SetEncodedValue(map, CoseHeaderLabel.CriticalHeaders, writer.Encode(), method));
+            Assert.Throws<ArgumentException>("value", () => SetEncodedValue(map, CoseHeaderLabel.CriticalHeaders, writer.Encode(), method));
             // tstr / uint
-            Assert.Throws<ArgumentException>(() => SetEncodedValue(map, CoseHeaderLabel.ContentType, encodedNullValue, method));
+            Assert.Throws<ArgumentException>("value", () => SetEncodedValue(map, CoseHeaderLabel.ContentType, encodedNullValue, method));
             // bstr
-            Assert.Throws<ArgumentException>(() => SetEncodedValue(map, CoseHeaderLabel.KeyIdentifier, encodedNullValue, method));
+            Assert.Throws<ArgumentException>("value", () => SetEncodedValue(map, CoseHeaderLabel.KeyIdentifier, encodedNullValue, method));
         }
 
         [Fact]
@@ -109,11 +110,11 @@ namespace System.Security.Cryptography.Cose.Tests
             {
                 var map = new CoseHeaderMap();
 
-                Assert.Throws<ArgumentException>(() => map.Add(label, new CoseHeaderValue()));
-                Assert.Throws<ArgumentException>(() => map[label] = new CoseHeaderValue());
+                Assert.Throws<ArgumentException>("value", () => map.Add(label, new CoseHeaderValue()));
+                Assert.Throws<ArgumentException>("value", () => map[label] = new CoseHeaderValue());
 
-                Assert.Throws<ArgumentException>(() => map.Add(label, default(CoseHeaderValue)));
-                Assert.Throws<ArgumentException>(() => map[label] = default(CoseHeaderValue));
+                Assert.Throws<ArgumentException>("value", () => map.Add(label, default(CoseHeaderValue)));
+                Assert.Throws<ArgumentException>("value", () => map[label] = default(CoseHeaderValue));
             }
         }
 
@@ -240,6 +241,93 @@ namespace System.Security.Cryptography.Cose.Tests
                 Assert.Throws<InvalidOperationException>(() => map.Remove(label));
                 Assert.Throws<InvalidOperationException>(() => map.Clear());
             }
+        }
+
+        [Fact]
+        public void RemoveKeyValuePair_MatchKeyAndValue_UsingNewKeyValuePair()
+        {
+            CoseHeaderLabel label = new("foo");
+            CoseHeaderValue value = CoseHeaderValue.FromString("bar");
+
+            CoseHeaderMap map = new();
+            map.Add(label, value);
+            Assert.Equal(1, map.Count);
+
+            KeyValuePair<CoseHeaderLabel, CoseHeaderValue> kvp = new(label, value);
+            Assert.True(map.Remove(kvp));
+            Assert.Equal(0, map.Count);
+        }
+
+        [Fact]
+        public void RemoveKeyValuePair_MatchKeyAndValue_UsingKeyValuePairFromEnumerator()
+        {
+            CoseHeaderLabel label = new("foo");
+            CoseHeaderValue value = CoseHeaderValue.FromString("bar");
+
+            CoseHeaderMap map = new();
+            map.Add(label, value);
+            Assert.Equal(1, map.Count);
+
+            KeyValuePair<CoseHeaderLabel, CoseHeaderValue> kvp = map.First();
+            Assert.True(map.Remove(kvp));
+            Assert.Equal(0, map.Count);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void RemoveKeyValuePair_DoesNotMatchKeyOrValue(bool changeKey)
+        {
+            CoseHeaderLabel label = new("foo");
+            CoseHeaderValue value = CoseHeaderValue.FromString("bar");
+
+            CoseHeaderMap map = new();
+            map.Add(label, value);
+            Assert.Equal(1, map.Count);
+
+            KeyValuePair<CoseHeaderLabel, CoseHeaderValue> kvp;
+            if (changeKey)
+                kvp = new(new CoseHeaderLabel("other"), value);
+            else
+                kvp = new(label, CoseHeaderValue.FromString("other"));
+
+            Assert.False(map.Remove(kvp));
+            Assert.Equal(1, map.Count);
+        }
+
+        [Fact]
+        public void SetEncodedValue_CriticalHeaders_ThrowIf_ArrayEmpty()
+        {
+            // definite length
+            var writer = new CborWriter();
+            writer.WriteStartArray(0);
+            writer.WriteEndArray();
+
+            Verify(writer.Encode());
+
+            // indefinite length
+            writer.Reset();
+            writer.WriteStartArray(null);
+            writer.WriteEndArray();
+
+            Verify(writer.Encode());
+
+            void Verify(byte[] encodedValue)
+            {
+                CoseHeaderMap map = new();
+                CoseHeaderValue value = CoseHeaderValue.FromEncodedValue(writer.Encode());
+                Assert.Throws<ArgumentException>(() => map[CoseHeaderLabel.CriticalHeaders] = value);
+            }
+        }
+
+        [Fact]
+        public void SetEncodedValue_CriticalHeaders_ThrowIf_IndefiniteLengthArrayMissingBreak()
+        {
+            byte[] encodedValue = GetDummyCritHeaderValue(useIndefiniteLength: true);
+
+            CoseHeaderMap map = new();
+            CoseHeaderValue value = CoseHeaderValue.FromEncodedValue(encodedValue.AsSpan(0, encodedValue.Length - 1));
+            Assert.Throws<ArgumentException>(() => map[CoseHeaderLabel.CriticalHeaders] = value);
         }
 
         public enum SetValueMethod
@@ -440,7 +528,11 @@ namespace System.Security.Cryptography.Cose.Tests
                 writer.WriteInt32((int)ECDsaAlgorithm.ES256);
                 yield return ReturnDataAndReset(KnownHeaderAlg, writer, setMethod, getMethod);
 
-                WriteDummyCritHeaderValue(writer);
+                WriteDummyCritHeaderValue(writer, useIndefiniteLength: false);
+                yield return ReturnDataAndReset(KnownHeaderCrit, writer, setMethod, getMethod);
+
+
+                WriteDummyCritHeaderValue(writer, useIndefiniteLength: true);
                 yield return ReturnDataAndReset(KnownHeaderCrit, writer, setMethod, getMethod);
 
                 writer.WriteTextString(ContentTypeDummyValue);

@@ -415,7 +415,7 @@ namespace System
             if (i < format.Length)
             {
                 repeat = 0;
-                // Find a "d", so contine the walk to see how may "d" that we can find.
+                // Find a "d", so continue the walk to see how may "d" that we can find.
                 while (++i < format.Length && format[i] == patternToMatch)
                 {
                     repeat++;

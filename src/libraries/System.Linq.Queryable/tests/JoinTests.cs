@@ -39,20 +39,17 @@ namespace System.Linq.Tests
         [Fact]
         public void FirstOuterMatchesLastInnerLastOuterMatchesFirstInnerSameNumberElements()
         {
-            CustomerRec[] outer = new []
-            {
+            CustomerRec[] outer = {
                 new CustomerRec{ name = "Prakash", custID = 98022 },
                 new CustomerRec{ name = "Tim", custID = 99021 },
                 new CustomerRec{ name = "Robert", custID = 99022 }
             };
-            OrderRec[] inner = new []
-            {
+            OrderRec[] inner = {
                 new OrderRec{ orderID = 45321, custID = 99022, total = 50 },
                 new OrderRec{ orderID = 43421, custID = 29022, total = 20 },
                 new OrderRec{ orderID = 95421, custID = 98022, total = 9 }
             };
-            JoinRec[] expected = new []
-            {
+            JoinRec[] expected = {
                 new JoinRec{ name = "Prakash", orderID = 95421, total = 9 },
                 new JoinRec{ name = "Robert", orderID = 45321, total = 50 }
             };
@@ -63,18 +60,16 @@ namespace System.Linq.Tests
         [Fact]
         public void NullComparer()
         {
-            CustomerRec[] outer = new []
-            {
+            CustomerRec[] outer = {
                 new CustomerRec{ name = "Prakash", custID = 98022 },
                 new CustomerRec{ name = "Tim", custID = 99021 },
                 new CustomerRec{ name = "Robert", custID = 99022 }
             };
-            AnagramRec[] inner = new []
-            {
+            AnagramRec[] inner = {
                 new AnagramRec{ name = "miT", orderID = 43455, total = 10 },
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
-            JoinRec[] expected = new [] { new JoinRec{ name = "Prakash", orderID = 323232, total = 9 } };
+            JoinRec[] expected = { new JoinRec{ name = "Prakash", orderID = 323232, total = 9 } };
 
             Assert.Equal(expected, outer.AsQueryable().Join(inner.AsQueryable(), e => e.name, e => e.name, (cr, or) => new JoinRec { name = cr.name, orderID = or.orderID, total = or.total }, null));
         }
@@ -82,19 +77,16 @@ namespace System.Linq.Tests
         [Fact]
         public void CustomComparer()
         {
-            CustomerRec[] outer = new []
-            {
+            CustomerRec[] outer = {
                 new CustomerRec{ name = "Prakash", custID = 98022 },
                 new CustomerRec{ name = "Tim", custID = 99021 },
                 new CustomerRec{ name = "Robert", custID = 99022 }
             };
-            AnagramRec[] inner = new []
-            {
+            AnagramRec[] inner = {
                 new AnagramRec{ name = "miT", orderID = 43455, total = 10 },
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
-            JoinRec[] expected = new []
-            {
+            JoinRec[] expected = {
                 new JoinRec{ name = "Prakash", orderID = 323232, total = 9 },
                 new JoinRec{ name = "Tim", orderID = 43455, total = 10 }
             };
@@ -106,8 +98,7 @@ namespace System.Linq.Tests
         public void OuterNull()
         {
             IQueryable<CustomerRec> outer = null;
-            AnagramRec[] inner = new []
-            {
+            AnagramRec[] inner = {
                 new AnagramRec{ name = "miT", orderID = 43455, total = 10 },
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
@@ -118,8 +109,7 @@ namespace System.Linq.Tests
         [Fact]
         public void InnerNull()
         {
-            CustomerRec[] outer = new []
-            {
+            CustomerRec[] outer = {
                 new CustomerRec{ name = "Prakash", custID = 98022 },
                 new CustomerRec{ name = "Tim", custID = 99021 },
                 new CustomerRec{ name = "Robert", custID = 99022 }
@@ -132,14 +122,12 @@ namespace System.Linq.Tests
         [Fact]
         public void OuterKeySelectorNull()
         {
-            CustomerRec[] outer = new []
-            {
+            CustomerRec[] outer = {
                 new CustomerRec{ name = "Prakash", custID = 98022 },
                 new CustomerRec{ name = "Tim", custID = 99021 },
                 new CustomerRec{ name = "Robert", custID = 99022 }
             };
-            AnagramRec[] inner = new []
-            {
+            AnagramRec[] inner = {
                 new AnagramRec{ name = "miT", orderID = 43455, total = 10 },
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
@@ -150,14 +138,12 @@ namespace System.Linq.Tests
         [Fact]
         public void InnerKeySelectorNull()
         {
-            CustomerRec[] outer = new []
-            {
+            CustomerRec[] outer = {
                 new CustomerRec{ name = "Prakash", custID = 98022 },
                 new CustomerRec{ name = "Tim", custID = 99021 },
                 new CustomerRec{ name = "Robert", custID = 99022 }
             };
-            AnagramRec[] inner = new []
-            {
+            AnagramRec[] inner = {
                 new AnagramRec{ name = "miT", orderID = 43455, total = 10 },
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
@@ -168,14 +154,12 @@ namespace System.Linq.Tests
         [Fact]
         public void ResultSelectorNull()
         {
-            CustomerRec[] outer = new []
-            {
+            CustomerRec[] outer = {
                 new CustomerRec{ name = "Prakash", custID = 98022 },
                 new CustomerRec{ name = "Tim", custID = 99021 },
                 new CustomerRec{ name = "Robert", custID = 99022 }
             };
-            AnagramRec[] inner = new []
-            {
+            AnagramRec[] inner = {
                 new AnagramRec{ name = "miT", orderID = 43455, total = 10 },
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
@@ -187,8 +171,7 @@ namespace System.Linq.Tests
         public void OuterNullNoComparer()
         {
             IQueryable<CustomerRec> outer = null;
-            AnagramRec[] inner = new[]
-            {
+            AnagramRec[] inner = {
                 new AnagramRec{ name = "miT", orderID = 43455, total = 10 },
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
@@ -199,8 +182,7 @@ namespace System.Linq.Tests
         [Fact]
         public void InnerNullNoComparer()
         {
-            CustomerRec[] outer = new[]
-            {
+            CustomerRec[] outer = {
                 new CustomerRec{ name = "Prakash", custID = 98022 },
                 new CustomerRec{ name = "Tim", custID = 99021 },
                 new CustomerRec{ name = "Robert", custID = 99022 }
@@ -213,14 +195,12 @@ namespace System.Linq.Tests
         [Fact]
         public void OuterKeySelectorNullNoComparer()
         {
-            CustomerRec[] outer = new[]
-            {
+            CustomerRec[] outer = {
                 new CustomerRec{ name = "Prakash", custID = 98022 },
                 new CustomerRec{ name = "Tim", custID = 99021 },
                 new CustomerRec{ name = "Robert", custID = 99022 }
             };
-            AnagramRec[] inner = new[]
-            {
+            AnagramRec[] inner = {
                 new AnagramRec{ name = "miT", orderID = 43455, total = 10 },
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
@@ -231,14 +211,12 @@ namespace System.Linq.Tests
         [Fact]
         public void InnerKeySelectorNullNoComparer()
         {
-            CustomerRec[] outer = new[]
-            {
+            CustomerRec[] outer = {
                 new CustomerRec{ name = "Prakash", custID = 98022 },
                 new CustomerRec{ name = "Tim", custID = 99021 },
                 new CustomerRec{ name = "Robert", custID = 99022 }
             };
-            AnagramRec[] inner = new[]
-            {
+            AnagramRec[] inner = {
                 new AnagramRec{ name = "miT", orderID = 43455, total = 10 },
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
@@ -249,14 +227,12 @@ namespace System.Linq.Tests
         [Fact]
         public void ResultSelectorNullNoComparer()
         {
-            CustomerRec[] outer = new[]
-            {
+            CustomerRec[] outer = {
                 new CustomerRec{ name = "Prakash", custID = 98022 },
                 new CustomerRec{ name = "Tim", custID = 99021 },
                 new CustomerRec{ name = "Robert", custID = 99022 }
             };
-            AnagramRec[] inner = new[]
-            {
+            AnagramRec[] inner = {
                 new AnagramRec{ name = "miT", orderID = 43455, total = 10 },
                 new AnagramRec{ name = "Prakash", orderID = 323232, total = 9 }
             };
@@ -275,14 +251,14 @@ namespace System.Linq.Tests
         [Fact]
         public void Join1()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().Join(new int[] { 1, 2, 3 }, n1 => n1, n2 => n2, (n1, n2) => n1 + n2).Count();
+            var count = new[] { 0, 1, 2 }.AsQueryable().Join(new[] { 1, 2, 3 }, n1 => n1, n2 => n2, (n1, n2) => n1 + n2).Count();
             Assert.Equal(2, count);
         }
 
         [Fact]
         public void Join2()
         {
-            var count = (new int[] { 0, 1, 2 }).AsQueryable().Join(new int[] { 1, 2, 3 }, n1 => n1, n2 => n2, (n1, n2) => n1 + n2, EqualityComparer<int>.Default).Count();
+            var count = new[] { 0, 1, 2 }.AsQueryable().Join(new[] { 1, 2, 3 }, n1 => n1, n2 => n2, (n1, n2) => n1 + n2, EqualityComparer<int>.Default).Count();
             Assert.Equal(2, count);
         }
     }

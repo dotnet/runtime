@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 ref struct NewReference
 {
@@ -22,7 +23,7 @@ static unsafe class Delegates
     public static long z;
 }
 
-class Runtime_69612
+public class Runtime_69612
 {
     static NewReference ToPython(object value, Type type)
     {
@@ -48,7 +49,8 @@ class Runtime_69612
     unsafe static NewReference PyLong_FromLongLong(long value) => Delegates.PyLong_FromLongLong(value);
 
     [MethodImpl(MethodImplOptions.NoOptimization)]
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         for (int i = 0; i < 100; i++)
         {

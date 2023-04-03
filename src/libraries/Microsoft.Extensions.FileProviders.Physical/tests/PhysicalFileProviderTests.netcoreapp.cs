@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.FileProviders
 {
     public partial class PhysicalFileProviderTests : FileCleanupTestBase
     {
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSymLinkSupported))]
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task UsePollingFileWatcher_UseActivePolling_HasChanged_SymbolicLink(bool useWildcard)
@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.FileProviders
                 $"Change event was not raised - current time: {DateTime.UtcNow:O}, file LastWriteTimeUtc: {File.GetLastWriteTimeUtc(filePath):O}.");
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSymLinkSupported))]
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         [OuterLoop]
         [InlineData(false)]
         [InlineData(true)]
@@ -70,7 +70,7 @@ namespace Microsoft.Extensions.FileProviders
             await Assert.ThrowsAsync<TaskCanceledException>(() => tcs.Task);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSymLinkSupported))]
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
@@ -107,14 +107,18 @@ namespace Microsoft.Extensions.FileProviders
 
             // Act - Change link target to file 2.
             File.Delete(linkPath);
-            File.CreateSymbolicLink(linkPath, file2Path);
+
+            RetryHelper.Execute(() =>
+            {
+                File.CreateSymbolicLink(linkPath, file2Path); // can fail, presumably due to some latency of delete of linkPath
+            }, maxAttempts: 10, retryWhen: e => e is UnauthorizedAccessException);
 
             // Assert - It should report the change regardless of the timestamp being older.
             Assert.True(await tcs.Task,
                 $"Change event was not raised - current time: {DateTime.UtcNow:O}, file1 LastWriteTimeUtc: {File.GetLastWriteTimeUtc(file1Path):O}, file2 LastWriteTime: {File.GetLastWriteTimeUtc(file2Path):O}.");
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSymLinkSupported))]
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task UsePollingFileWatcher_UseActivePolling_HasChanged_SymbolicLink_TargetDeleted(bool useWildcard)

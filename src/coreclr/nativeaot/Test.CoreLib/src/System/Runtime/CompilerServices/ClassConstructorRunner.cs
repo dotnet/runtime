@@ -40,17 +40,16 @@ namespace System.Runtime.CompilerServices
             while (true)
             {
                 // Read the current state of the cctor.
-                int oldInitializationState = context.initialized;
+                IntPtr oldInitializationState = context.cctorMethodAddress;
 
-                // Once it transitions to 1 then the cctor has been run (another thread got there first) and
+                // Once it transitions to 0 then the cctor has been run (another thread got there first) and
                 // we can simply return.
-                if (oldInitializationState == 1)
+                if (oldInitializationState == (IntPtr)0)
                     return;
 
-                // If the state is anything other than 0 (the initial state) then another thread is currently
-                // running this cctor. We must wait for it to complete doing so before continuing, so loop
-                // again.
-                if (oldInitializationState != 0)
+                // If the state is 1 then another thread is currently running this cctor.
+                // We must wait for it to complete doing so before continuing, so loop again.
+                if (oldInitializationState == (IntPtr)1)
                     continue;
 
                 // C# warns that passing a volatile field to a method via a reference loses the volatility of the field.
@@ -58,15 +57,14 @@ namespace System.Runtime.CompilerServices
                 // unimportant.
 #pragma warning disable 420
 
-                // We read a state of 0 (the initial state: not initialized and not being initialized). Try to
-                // transition this to 2 which will let other threads know we're going to run the cctor here.
-                if (Interlocked.CompareExchange(ref context.initialized, 2, 0) == 0)
+                // Try to transition this to 1 which will let other threads know we're going to run the cctor here.
+                if (Interlocked.CompareExchange(ref context.cctorMethodAddress, (IntPtr)1, oldInitializationState) == oldInitializationState)
                 {
-                    // We won the race to transition the state from 0 -> 2. So we can now run the cctor. Other
+                    // We won the race to transition the state to 1. So we can now run the cctor. Other
                     // threads trying to do the same thing will spin waiting for us to transition the state to
                     // 1.
 
-                    ((delegate*<void>)context.cctorMethodAddress)();
+                    ((delegate*<void>)oldInitializationState)();
 
                     // Insert a memory barrier here to order any writes executed as part of static class
                     // construction above with respect to the initialized flag update we're about to make
@@ -75,9 +73,9 @@ namespace System.Runtime.CompilerServices
                     // still see uninitialized static fields on the class.
                     Interlocked.MemoryBarrier();
 
-                    // Set the state to 1 to indicate to the runtime and other threads that this cctor has now
+                    // Set the cctorMethodAddress to 0 to indicate to the runtime and other threads that this cctor has now
                     // been run.
-                    context.initialized = 1;
+                    context.cctorMethodAddress = (IntPtr)0;
                 }
 
                 // If we get here some other thread changed the initialization state to a non-zero value

@@ -14,8 +14,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Test.Common
 {
-
-    internal sealed class Http3LoopbackStream : IAsyncDisposable
+    public sealed class Http3LoopbackStream : IAsyncDisposable
     {
         private const int MaximumVarIntBytes = 8;
         private const long VarIntMax = (1L << 62) - 1;
@@ -58,35 +57,36 @@ namespace System.Net.Test.Common
             await _stream.WriteAsync(buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
         }
 
-        public async Task SendSettingsFrameAsync(ICollection<(long settingId, long settingValue)> settings = null)
+        public async Task SendSettingsFrameAsync(SettingsEntry[] settingsEntries)
         {
-            settings ??= Array.Empty<(long settingId, long settingValue)>();
-
-            var buffer = new byte[settings.Count * MaximumVarIntBytes * 2];
+            var buffer = new byte[settingsEntries.Length * MaximumVarIntBytes * 2];
 
             int bytesWritten = 0;
 
-            foreach ((long settingId, long settingValue) in settings)
+            foreach (SettingsEntry setting in settingsEntries)
             {
-                bytesWritten += EncodeHttpInteger(settingId, buffer.AsSpan(bytesWritten));
-                bytesWritten += EncodeHttpInteger(settingValue, buffer.AsSpan(bytesWritten));
+                bytesWritten += EncodeHttpInteger((int)setting.SettingId, buffer.AsSpan(bytesWritten));
+                bytesWritten += EncodeHttpInteger(setting.Value, buffer.AsSpan(bytesWritten));
             }
 
             await SendFrameAsync(SettingsFrame, buffer.AsMemory(0, bytesWritten)).ConfigureAwait(false);
         }
 
-        private Memory<byte> ConstructHeadersPayload(HttpStatusCode statusCode, IEnumerable<HttpHeaderData> headers, bool qpackEncodeStatus = false)
+        private Memory<byte> ConstructHeadersPayload(HttpStatusCode? statusCode, IEnumerable<HttpHeaderData> headers, bool qpackEncodeStatus = false)
         {
             int bufferLength = QPackTestEncoder.MaxPrefixLength;
 
-            if (qpackEncodeStatus)
+            if (statusCode.HasValue)
             {
-                bufferLength += QPackTestEncoder.MaxVarIntLength * 2 + ":status".Length + 3;
+                if (qpackEncodeStatus)
+                {
+                    bufferLength += QPackTestEncoder.MaxVarIntLength * 2 + ":status".Length + 3;
+                }
+                else
+                {
+                    headers = headers.Prepend(new HttpHeaderData(":status", ((int)statusCode.Value).ToString(CultureInfo.InvariantCulture)));
+                };
             }
-            else
-            {
-                headers = headers.Prepend(new HttpHeaderData(":status", ((int)statusCode).ToString(CultureInfo.InvariantCulture)));
-            };
 
             foreach (HttpHeaderData header in headers)
             {
@@ -102,9 +102,9 @@ namespace System.Net.Test.Common
 
             bytesWritten += QPackTestEncoder.EncodePrefix(buffer.AsSpan(bytesWritten), 0, 0);
 
-            if (qpackEncodeStatus)
+            if (statusCode.HasValue && qpackEncodeStatus)
             {
-                bytesWritten += QPackTestEncoder.EncodeStatusCode((int)statusCode, buffer.AsSpan(bytesWritten));
+                bytesWritten += QPackTestEncoder.EncodeStatusCode((int)statusCode.Value, buffer.AsSpan(bytesWritten));
             }
 
             foreach (HttpHeaderData header in headers)
@@ -115,12 +115,12 @@ namespace System.Net.Test.Common
             return buffer.AsMemory(0, bytesWritten);
         }
 
-        private async Task SendHeadersFrameAsync(HttpStatusCode statusCode, IEnumerable<HttpHeaderData> headers, bool qpackEncodeStatus = false)
+        private async Task SendHeadersFrameAsync(HttpStatusCode? statusCode, IEnumerable<HttpHeaderData> headers, bool qpackEncodeStatus = false)
         {
             await SendFrameAsync(HeadersFrame, ConstructHeadersPayload(statusCode, headers, qpackEncodeStatus)).ConfigureAwait(false);
         }
 
-        private async Task SendPartialHeadersFrameAsync(HttpStatusCode statusCode, IEnumerable<HttpHeaderData> headers)
+        private async Task SendPartialHeadersFrameAsync(HttpStatusCode? statusCode, IEnumerable<HttpHeaderData> headers)
         {
             Memory<byte> payload = ConstructHeadersPayload(statusCode, headers);
 
@@ -255,7 +255,7 @@ namespace System.Net.Test.Common
             return headers;
         }
 
-        public async Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IEnumerable<HttpHeaderData> headers = null)
+        public async Task SendResponseHeadersAsync(HttpStatusCode? statusCode = HttpStatusCode.OK, IEnumerable<HttpHeaderData> headers = null)
         {
             headers = PrepareHeaders(headers);
             await SendHeadersFrameAsync(statusCode, headers).ConfigureAwait(false);

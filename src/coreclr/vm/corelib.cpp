@@ -35,7 +35,6 @@
 #include "assemblynative.hpp"
 #include "comthreadpool.h"
 #include "comwaithandle.h"
-#include "nativeoverlapped.h"
 
 #include "proftoeeinterfaceimpl.h"
 

@@ -73,8 +73,6 @@ unsigned emitOutput_Instr(BYTE* dst, code_t code);
 // If yes, the caller of this method can choose to omit current mov instruction.
 static bool IsMovInstruction(instruction ins);
 bool IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regNumber src, bool canSkip);
-bool IsRedundantLdStr(
-    instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt); // New functions end.
 
 /************************************************************************/
 /*           Public inline informational methods                        */
@@ -167,9 +165,6 @@ void emitIns_R_R(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2,
 void emitIns_R_R_I(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm, insOpts opt = INS_OPTS_NONE);
 
-// Checks for a large immediate that needs a second instruction
-void emitIns_R_R_Imm(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm);
-
 void emitIns_R_R_R(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, insOpts opt = INS_OPTS_NONE);
 
@@ -208,7 +203,7 @@ enum EmitCallType
     // However, LOONGARCH has a much reduced instruction set, and so the LOONGARCH emitter only
     // supports a subset of the x86 variants.  By leaving them commented out, it becomes
     // a compile time error if code tries to use them (and hopefully see this comment
-    // and know why they are unavailible on LOONGARCH), while making it easier to stay
+    // and know why they are unavailable on LOONGARCH), while making it easier to stay
     // in-sync with x86 and possibly add them back in if needed.
 
     EC_FUNC_TOKEN, //   Direct call to a helper/static/nonvirtual/global method

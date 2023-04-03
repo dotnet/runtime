@@ -19,22 +19,22 @@ namespace System.Net
         private const int OSStatus_noErr = 0;
         private const int OSStatus_errSSLWouldBlock = -9803;
         private const int InitialBufferSize = 2048;
-        private SafeSslHandle _sslContext;
+        private readonly SafeSslHandle _sslContext;
         private ArrayBuffer _inputBuffer = new ArrayBuffer(InitialBufferSize);
         private ArrayBuffer _outputBuffer = new ArrayBuffer(InitialBufferSize);
 
         public SafeSslHandle SslContext => _sslContext;
+        public SslApplicationProtocol SelectedApplicationProtocol;
+        public bool IsServer;
 
-        public SafeDeleteSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions)
-            : base(credential)
+        public SafeDeleteSslContext(SslAuthenticationOptions sslAuthenticationOptions)
+            : base(IntPtr.Zero)
         {
-            Debug.Assert((null != credential) && !credential.IsInvalid, "Invalid credential used in SafeDeleteSslContext");
-
             try
             {
                 int osStatus;
 
-                _sslContext = CreateSslContext(credential, sslAuthenticationOptions.IsServer);
+                _sslContext = CreateSslContext(sslAuthenticationOptions);
 
                 // Make sure the class instance is associated to the session and is provided
                 // in the Read/Write callback connection parameter
@@ -76,10 +76,15 @@ namespace System.Net
 
                 if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
                 {
-                    // On OSX coretls supports only client side. For server, we will silently ignore the option.
-                    if (!sslAuthenticationOptions.IsServer)
+                    if (sslAuthenticationOptions.IsClient)
                     {
+                        // On macOS coreTls supports only client side.
                         Interop.AppleCrypto.SslCtxSetAlpnProtos(_sslContext, sslAuthenticationOptions.ApplicationProtocols);
+                    }
+                    else
+                    {
+                        // For Server, we do the selection in SslStream and we set it later
+                        Interop.AppleCrypto.SslBreakOnClientHello(_sslContext, true);
                     }
                 }
             }
@@ -104,6 +109,8 @@ namespace System.Net
 
             if (sslAuthenticationOptions.IsServer)
             {
+                IsServer = true;
+
                 if (sslAuthenticationOptions.RemoteCertRequired)
                 {
                     Interop.AppleCrypto.SslSetAcceptClientCert(_sslContext);
@@ -129,9 +136,9 @@ namespace System.Net
             }
         }
 
-        private static SafeSslHandle CreateSslContext(SafeFreeSslCredentials credential, bool isServer)
+        private static SafeSslHandle CreateSslContext(SslAuthenticationOptions sslAuthenticationOptions)
         {
-            switch (credential.Policy)
+            switch (sslAuthenticationOptions.EncryptionPolicy)
             {
                 case EncryptionPolicy.RequireEncryption:
 #pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
@@ -142,10 +149,10 @@ namespace System.Net
                     break;
 #pragma warning restore SYSLIB0040
                 default:
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, credential.Policy));
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
             }
 
-            SafeSslHandle sslContext = Interop.AppleCrypto.SslCreateContext(isServer ? 1 : 0);
+            SafeSslHandle sslContext = Interop.AppleCrypto.SslCreateContext(sslAuthenticationOptions.IsServer ? 1 : 0);
 
             try
             {
@@ -157,14 +164,16 @@ namespace System.Net
                 }
 
                 // Let None mean "system default"
-                if (credential.Protocols != SslProtocols.None)
+                if (sslAuthenticationOptions.EnabledSslProtocols != SslProtocols.None)
                 {
-                    SetProtocols(sslContext, credential.Protocols);
+                    SetProtocols(sslContext, sslAuthenticationOptions.EnabledSslProtocols);
                 }
 
-                if (credential.CertificateContext != null)
+                // SslBreakOnCertRequested does not seem to do anything when we already provide the cert here.
+                // So we set it only for server in order to reliably detect whether the peer asked for it on client.
+                if (sslAuthenticationOptions.CertificateContext != null && sslAuthenticationOptions.IsServer)
                 {
-                    SetCertificate(sslContext, credential.CertificateContext);
+                    SetCertificate(sslContext, sslAuthenticationOptions.CertificateContext);
                 }
 
                 Interop.AppleCrypto.SslBreakOnCertRequested(sslContext, true);
@@ -359,7 +368,6 @@ namespace System.Net
         internal static void SetCertificate(SafeSslHandle sslContext, SslStreamCertificateContext context)
         {
             Debug.Assert(sslContext != null, "sslContext != null");
-
 
             IntPtr[] ptrs = new IntPtr[context!.IntermediateCertificates!.Length + 1];
 

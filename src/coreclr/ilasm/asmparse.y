@@ -87,7 +87,7 @@
         /* PInvoke-specific keywords */
 %token _IMPORT NOMANGLE_ LASTERR_ WINAPI_ AS_ BESTFIT_ ON_ OFF_ CHARMAPERROR_
 
-        /* intruction tokens (actually instruction groupings) */
+        /* instruction tokens (actually instruction groupings) */
 %token <opcode> INSTR_NONE INSTR_VAR INSTR_I INSTR_I8 INSTR_R INSTR_BRTARGET INSTR_METHOD INSTR_FIELD
 %token <opcode> INSTR_TYPE INSTR_STRING INSTR_SIG INSTR_TOK
 %token <opcode> INSTR_SWITCH

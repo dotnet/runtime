@@ -162,7 +162,6 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_COMMA:
         case GT_QMARK:
         case GT_COLON:
-        case GT_ADDR:
             srcCount = 0;
             assert(dstCount == 0);
             unreached();
@@ -328,12 +327,6 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-#ifdef FEATURE_SIMD
-        case GT_SIMD:
-            srcCount = BuildSIMD(tree->AsSIMD());
-            break;
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:
             srcCount = BuildHWIntrinsic(tree->AsHWIntrinsic(), &dstCount);
@@ -388,12 +381,10 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-#if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
             srcCount = BuildPutArgSplit(tree->AsPutArgSplit());
             dstCount = tree->AsPutArgSplit()->gtNumRegs;
             break;
-#endif // FEATURE_ARG_SPLIT
 
         case GT_PUTARG_STK:
             srcCount = BuildPutArgStk(tree->AsPutArgStk());
@@ -645,23 +636,6 @@ int LinearScan::BuildNode(GenTree* tree)
     return srcCount;
 }
 
-#ifdef FEATURE_SIMD
-//------------------------------------------------------------------------
-// BuildSIMD: Set the NodeInfo for a GT_SIMD tree.
-//
-// Arguments:
-//    tree       - The GT_SIMD node of interest
-//
-// Return Value:
-//    The number of sources consumed by this node.
-//
-int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
-{
-    NYI_LOONGARCH64("-----unimplemented on LOONGARCH64 yet----");
-    return 0;
-}
-#endif // FEATURE_SIMD
-
 #ifdef FEATURE_HW_INTRINSICS
 #include "hwintrinsic.h"
 //------------------------------------------------------------------------
@@ -882,18 +856,16 @@ int LinearScan::BuildCall(GenTreeCall* call)
                 srcCount++;
             }
         }
-#if FEATURE_ARG_SPLIT
         else if (argNode->OperGet() == GT_PUTARG_SPLIT)
         {
             unsigned regCount = argNode->AsPutArgSplit()->gtNumRegs;
-            assert(regCount == curArgTabEntry->numRegs);
+            assert(regCount == abiInfo.NumRegs);
             for (unsigned int i = 0; i < regCount; i++)
             {
                 BuildUse(argNode, genRegMask(argNode->AsPutArgSplit()->GetRegNumByIdx(i)), i);
             }
             srcCount += regCount;
         }
-#endif // FEATURE_ARG_SPLIT
         else
         {
             assert(argNode->OperIs(GT_PUTARG_REG));
@@ -921,11 +893,9 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // Skip arguments that have been moved to the Late Arg list
         if (arg.GetLateNode() == nullptr)
         {
-#if FEATURE_ARG_SPLIT
             // PUTARG_SPLIT nodes must be in the gtCallLateArgs list, since they
             // define registers used by the call.
             assert(argNode->OperGet() != GT_PUTARG_SPLIT);
-#endif // FEATURE_ARG_SPLIT
             if (argNode->gtOper == GT_PUTARG_STK)
             {
                 assert(arg.AbiInfo.GetRegNum() == REG_STK);
@@ -1038,7 +1008,6 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
     return srcCount;
 }
 
-#if FEATURE_ARG_SPLIT
 //------------------------------------------------------------------------
 // BuildPutArgSplit: Set the NodeInfo for a GT_PUTARG_SPLIT node
 //
@@ -1127,7 +1096,6 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     BuildDefs(argNode, dstCount, argMask);
     return srcCount;
 }
-#endif // FEATURE_ARG_SPLIT
 
 //------------------------------------------------------------------------
 // BuildBlockStore: Build the RefPositions for a block store node.

@@ -58,6 +58,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="AttributeNotSupported" xml:space="preserve">
+    <value>'{0}' is not a valid attribute for type '{1}'.</value>
+  </data>
   <data name="ExceptionOccurred" xml:space="preserve">
     <value>An exception occurred while writing to the log file {0}: {1}.</value>
   </data>

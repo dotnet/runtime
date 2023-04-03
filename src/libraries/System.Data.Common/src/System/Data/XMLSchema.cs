@@ -410,7 +410,7 @@ namespace System.Data
         }// SetExtProperties
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
-        internal void HandleRefTableProperties(ArrayList RefTables, XmlSchemaElement element)
+        internal void HandleRefTableProperties(XmlSchemaElement element)
         {
             string typeName = GetInstanceName(element);
             DataTable? table = _ds!.Tables.GetTable(XmlConvert.DecodeName(typeName), element.QualifiedName.Namespace);
@@ -724,7 +724,7 @@ namespace System.Data
                 }
                 // we should not write it also
                 setRootNStoDataSet = true;
-                //incase of Root is not mapped to DataSet and is mapped to DataTable instead; to be backward compatable
+                //incase of Root is not mapped to DataSet and is mapped to DataTable instead; to be backward compatible
                 // we need to set the Namespace of Root to DataSet's namespace also(it would be NS of First DataTable in collection)
             }
 
@@ -782,7 +782,7 @@ namespace System.Data
                 string typeName = GetInstanceName(element);
                 if (_refTables.Contains(element.QualifiedName.Namespace + ":" + typeName))
                 {
-                    HandleRefTableProperties(_refTables, element);
+                    HandleRefTableProperties(element);
                     continue;
                 }
 

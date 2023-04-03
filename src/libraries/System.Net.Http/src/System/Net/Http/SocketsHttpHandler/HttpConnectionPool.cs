@@ -43,6 +43,9 @@ namespace System.Net.Http
         /// <summary>If true, the <see cref="_http3Authority"/> will persist across a network change. If false, it will be reset to <see cref="_originAuthority"/>.</summary>
         private bool _persistAuthority;
 
+        /// <summary>The User-Agent header to use when creating a CONNECT tunnel.</summary>
+        private string? _connectTunnelUserAgent;
+
         /// <summary>
         /// When an Alt-Svc authority fails due to 421 Misdirected Request, it is placed in the blocklist to be ignored
         /// for <see cref="AltSvcBlocklistTimeoutInMilliseconds"/> milliseconds. Initialized on first use.
@@ -95,8 +98,17 @@ namespace System.Net.Http
         private SemaphoreSlim? _http3ConnectionCreateLock;
         internal readonly byte[]? _http3EncodedAuthorityHostHeader;
 
+        // These settings are advertised by the server via SETTINGS_MAX_HEADER_LIST_SIZE and SETTINGS_MAX_FIELD_SECTION_SIZE.
+        // If we had previous connections to the same host in this pool, memorize the last value seen.
+        // This value is used as an initial value for new connections before they have a chance to observe the SETTINGS frame.
+        // Doing so avoids immediately exceeding the server limit on the first request, potentially causing the connection to be torn down.
+        // 0 means there were no previous connections, or they hadn't advertised this limit.
+        // There is no need to lock when updating these values - we're only interested in saving _a_ value, not necessarily the min/max/last.
+        internal uint _lastSeenHttp2MaxHeaderListSize;
+        internal uint _lastSeenHttp3MaxHeaderListSize;
+
         /// <summary>For non-proxy connection pools, this is the host name in bytes; for proxies, null.</summary>
-        private readonly byte[]? _hostHeaderValueBytes;
+        private readonly byte[]? _hostHeaderLineBytes;
         /// <summary>Options specialized and cached for this pool and its key.</summary>
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp11;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2;
@@ -230,8 +242,15 @@ namespace System.Net.Http
                     _originAuthority.HostValue;
 
                 // Note the IDN hostname should always be ASCII, since it's already been IDNA encoded.
-                _hostHeaderValueBytes = Encoding.ASCII.GetBytes(hostHeader);
-                Debug.Assert(Encoding.ASCII.GetString(_hostHeaderValueBytes) == hostHeader);
+                byte[] hostHeaderLine = new byte[6 + hostHeader.Length + 2]; // Host: foo\r\n
+                "Host: "u8.CopyTo(hostHeaderLine);
+                Encoding.ASCII.GetBytes(hostHeader, hostHeaderLine.AsSpan(6));
+                hostHeaderLine[^2] = (byte)'\r';
+                hostHeaderLine[^1] = (byte)'\n';
+                _hostHeaderLineBytes = hostHeaderLine;
+
+                Debug.Assert(Encoding.ASCII.GetString(_hostHeaderLineBytes) == $"Host: {hostHeader}\r\n");
+
                 if (sslHostName == null)
                 {
                     _http2EncodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(H2StaticTable.Authority, hostHeader);
@@ -336,7 +355,7 @@ namespace System.Net.Http
         public bool IsSecure => _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.SslSocksTunnel;
         public Uri? ProxyUri => _proxyUri;
         public ICredentials? ProxyCredentials => _poolManager.ProxyCredentials;
-        public byte[]? HostHeaderValueBytes => _hostHeaderValueBytes;
+        public byte[]? HostHeaderLineBytes => _hostHeaderLineBytes;
         public CredentialCache? PreAuthCredentials { get; }
 
         /// <summary>
@@ -423,7 +442,13 @@ namespace System.Net.Http
         {
             Debug.Assert(desiredVersion == 2 || desiredVersion == 3);
 
-            throw new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion), inner);
+            HttpRequestException ex = new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion), inner);
+            if (request.IsExtendedConnectRequest && desiredVersion == 2)
+            {
+                ex.Data["HTTP2_ENABLED"] = false;
+            }
+
+            throw ex;
         }
 
         private bool CheckExpirationOnGet(HttpConnectionBase connection)
@@ -451,27 +476,41 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace("Creating new HTTP/1.1 connection for pool.");
 
-            HttpConnection connection;
-            using (CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource())
+            HttpConnectionWaiter<HttpConnection> waiter = queueItem.Waiter;
+            HttpConnection? connection = null;
+            Exception? connectionException = null;
+
+            CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource();
+            waiter.ConnectionCancellationTokenSource = cts;
+            try
             {
-                try
+                connection = await CreateHttp11ConnectionAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                connectionException = e is OperationCanceledException oce && oce.CancellationToken == cts.Token && !waiter.CancelledByOriginatingRequestCompletion ?
+                    CreateConnectTimeoutException(oce) :
+                    e;
+            }
+            finally
+            {
+                lock (waiter)
                 {
-                    connection = await CreateHttp11ConnectionAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
-                {
-                    HandleHttp11ConnectionFailure(queueItem.Waiter, CreateConnectTimeoutException(oce));
-                    return;
-                }
-                catch (Exception e)
-                {
-                    HandleHttp11ConnectionFailure(queueItem.Waiter, e);
-                    return;
+                    waiter.ConnectionCancellationTokenSource = null;
+                    cts.Dispose();
                 }
             }
 
-            // Add the established connection to the pool.
-            ReturnHttp11Connection(connection, isNewConnection: true, queueItem.Waiter);
+            if (connection is not null)
+            {
+                // Add the established connection to the pool.
+                ReturnHttp11Connection(connection, isNewConnection: true, queueItem.Waiter);
+            }
+            else
+            {
+                Debug.Assert(connectionException is not null);
+                HandleHttp11ConnectionFailure(waiter, connectionException);
+            }
         }
 
         private void CheckForHttp11ConnectionInjection()
@@ -480,19 +519,22 @@ namespace System.Net.Http
 
             _http11RequestQueue.PruneCompletedRequestsFromHeadOfQueue(this);
 
+            // Determine if we can and should add a new connection to the pool.
+            bool willInject = _availableHttp11Connections.Count == 0 &&             // No available connections
+                _http11RequestQueue.Count > _pendingHttp11ConnectionCount &&        // More requests queued than pending connections
+                _associatedHttp11ConnectionCount < _maxHttp11Connections &&         // Under the connection limit
+                _http11RequestQueue.RequestsWithoutAConnectionAttempt > 0;          // There are requests we haven't issued a connection attempt for
+
             if (NetEventSource.Log.IsEnabled())
             {
                 Trace($"Available HTTP/1.1 connections: {_availableHttp11Connections.Count}, Requests in the queue: {_http11RequestQueue.Count}, " +
                     $"Requests without a connection attempt: {_http11RequestQueue.RequestsWithoutAConnectionAttempt}, " +
                     $"Pending HTTP/1.1 connections: {_pendingHttp11ConnectionCount}, Total associated HTTP/1.1 connections: {_associatedHttp11ConnectionCount}, " +
-                    $"Max HTTP/1.1 connection limit: {_maxHttp11Connections}.");
+                    $"Max HTTP/1.1 connection limit: {_maxHttp11Connections}, " +
+                    $"Will inject connection: {willInject}.");
             }
 
-            // Determine if we can and should add a new connection to the pool.
-            if (_availableHttp11Connections.Count == 0 &&                           // No available connections
-                _http11RequestQueue.Count > _pendingHttp11ConnectionCount &&        // More requests queued than pending connections
-                _associatedHttp11ConnectionCount < _maxHttp11Connections &&         // Under the connection limit
-                _http11RequestQueue.RequestsWithoutAConnectionAttempt > 0)          // There are requests we haven't issued a connection attempt for
+            if (willInject)
             {
                 _associatedHttp11ConnectionCount++;
                 _pendingHttp11ConnectionCount++;
@@ -507,13 +549,10 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<HttpConnection> GetHttp11ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private bool TryGetPooledHttp11Connection(HttpRequestMessage request, bool async, [NotNullWhen(true)] out HttpConnection? connection, [NotNullWhen(false)] out HttpConnectionWaiter<HttpConnection>? waiter)
         {
-            // Look for a usable idle connection.
-            TaskCompletionSourceWithCancellation<HttpConnection> waiter;
             while (true)
             {
-                HttpConnection? connection = null;
                 lock (SyncObj)
                 {
                     _usedSinceLastCleanup = true;
@@ -533,8 +572,10 @@ namespace System.Net.Http
 
                         CheckForHttp11ConnectionInjection();
 
-                        // Break out of the loop and continue processing below.
-                        break;
+                        // There were no available idle connections. This request has been added to the request queue.
+                        if (NetEventSource.Log.IsEnabled()) Trace($"No available HTTP/1.1 connections; request queued.");
+                        connection = null;
+                        return false;
                     }
                 }
 
@@ -553,23 +594,8 @@ namespace System.Net.Http
                 }
 
                 if (NetEventSource.Log.IsEnabled()) connection.Trace("Found usable HTTP/1.1 connection in pool.");
-                return connection;
-            }
-
-            // There were no available idle connections. This request has been added to the request queue.
-            if (NetEventSource.Log.IsEnabled()) Trace($"No available HTTP/1.1 connections; request queued.");
-
-            long startingTimestamp = Stopwatch.GetTimestamp();
-            try
-            {
-                return await waiter.WaitWithCancellationAsync(async, cancellationToken).ConfigureAwait(false);
-            }
-            finally
-            {
-                if (HttpTelemetry.Log.IsEnabled())
-                {
-                    HttpTelemetry.Log.Http11RequestLeftQueue(Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds);
-                }
+                waiter = null;
+                return true;
             }
         }
 
@@ -578,7 +604,7 @@ namespace System.Net.Http
             if (NetEventSource.Log.IsEnabled()) Trace("Server does not support HTTP2; disabling HTTP2 use and proceeding with HTTP/1.1 connection");
 
             bool canUse = true;
-            TaskCompletionSourceWithCancellation<Http2Connection?>? waiter = null;
+            HttpConnectionWaiter<Http2Connection?>? waiter = null;
             lock (SyncObj)
             {
                 Debug.Assert(_pendingHttp2Connection);
@@ -607,6 +633,9 @@ namespace System.Net.Http
             while (waiter is not null)
             {
                 if (NetEventSource.Log.IsEnabled()) Trace("Downgrading queued HTTP2 request to HTTP/1.1");
+
+                // We are done with the HTTP2 connection attempt, no point to cancel it.
+                Volatile.Write(ref waiter.ConnectionCancellationTokenSource, null);
 
                 // We don't care if this fails; that means the request was previously canceled or handled by a different connection.
                 waiter.TrySetResult(null);
@@ -647,64 +676,80 @@ namespace System.Net.Http
         {
             if (NetEventSource.Log.IsEnabled()) Trace("Creating new HTTP/2 connection for pool.");
 
-            Http2Connection connection;
-            using (CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource())
+            Http2Connection? connection = null;
+            Exception? connectionException = null;
+            HttpConnectionWaiter<Http2Connection?> waiter = queueItem.Waiter;
+
+            CancellationTokenSource cts = GetConnectTimeoutCancellationTokenSource();
+            waiter.ConnectionCancellationTokenSource = cts;
+            try
             {
-                try
+                (Stream stream, TransportContext? transportContext) = await ConnectAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);
+
+                if (IsSecure)
                 {
-                    (Stream stream, TransportContext? transportContext) = await ConnectAsync(queueItem.Request, true, cts.Token).ConfigureAwait(false);
+                    SslStream sslStream = (SslStream)stream;
 
-                    if (IsSecure)
+                    if (sslStream.NegotiatedApplicationProtocol == SslApplicationProtocol.Http2)
                     {
-                        SslStream sslStream = (SslStream)stream;
+                        // The server accepted our request for HTTP2.
 
-                        if (sslStream.NegotiatedApplicationProtocol == SslApplicationProtocol.Http2)
+                        if (sslStream.SslProtocol < SslProtocols.Tls12)
                         {
-                            // The server accepted our request for HTTP2.
-
-                            if (sslStream.SslProtocol < SslProtocols.Tls12)
-                            {
-                                stream.Dispose();
-                                throw new HttpRequestException(SR.Format(SR.net_ssl_http2_requires_tls12, sslStream.SslProtocol));
-                            }
-
-                            connection = await ConstructHttp2ConnectionAsync(stream, queueItem.Request, cts.Token).ConfigureAwait(false);
+                            stream.Dispose();
+                            connectionException = new HttpRequestException(SR.Format(SR.net_ssl_http2_requires_tls12, sslStream.SslProtocol));
                         }
                         else
                         {
-                            // We established an SSL connection, but the server denied our request for HTTP2.
-                            await HandleHttp11Downgrade(queueItem.Request, stream, transportContext, cts.Token).ConfigureAwait(false);
-                            return;
+                            connection = await ConstructHttp2ConnectionAsync(stream, queueItem.Request, cts.Token).ConfigureAwait(false);
                         }
                     }
                     else
                     {
-                        connection = await ConstructHttp2ConnectionAsync(stream, queueItem.Request, cts.Token).ConfigureAwait(false);
+                        // We established an SSL connection, but the server denied our request for HTTP2.
+                        await HandleHttp11Downgrade(queueItem.Request, stream, transportContext, cts.Token).ConfigureAwait(false);
+                        return;
                     }
                 }
-                catch (OperationCanceledException oce) when (oce.CancellationToken == cts.Token)
+                else
                 {
-                    HandleHttp2ConnectionFailure(queueItem.Waiter, CreateConnectTimeoutException(oce));
-                    return;
+                    connection = await ConstructHttp2ConnectionAsync(stream, queueItem.Request, cts.Token).ConfigureAwait(false);
                 }
-                catch (Exception e)
+            }
+            catch (Exception e)
+            {
+                connectionException = e is OperationCanceledException oce && oce.CancellationToken == cts.Token && !waiter.CancelledByOriginatingRequestCompletion ?
+                    CreateConnectTimeoutException(oce) :
+                    e;
+            }
+            finally
+            {
+                lock (waiter)
                 {
-                    HandleHttp2ConnectionFailure(queueItem.Waiter, e);
-                    return;
+                    waiter.ConnectionCancellationTokenSource = null;
+                    cts.Dispose();
                 }
             }
 
-            // Register for shutdown notification.
-            // Do this before we return the connection to the pool, because that may result in it being disposed.
-            ValueTask shutdownTask = connection.WaitForShutdownAsync();
+            if (connection is not null)
+            {
+                // Register for shutdown notification.
+                // Do this before we return the connection to the pool, because that may result in it being disposed.
+                ValueTask shutdownTask = connection.WaitForShutdownAsync();
 
-            // Add the new connection to the pool.
-            ReturnHttp2Connection(connection, isNewConnection: true, queueItem.Waiter);
+                // Add the new connection to the pool.
+                ReturnHttp2Connection(connection, isNewConnection: true, queueItem.Waiter);
 
-            // Wait for connection shutdown.
-            await shutdownTask.ConfigureAwait(false);
+                // Wait for connection shutdown.
+                await shutdownTask.ConfigureAwait(false);
 
-            InvalidateHttp2Connection(connection);
+                InvalidateHttp2Connection(connection);
+            }
+            else
+            {
+                Debug.Assert(connectionException is not null);
+                HandleHttp2ConnectionFailure(waiter, connectionException);
+            }
         }
 
         private void CheckForHttp2ConnectionInjection()
@@ -714,11 +759,24 @@ namespace System.Net.Http
             _http2RequestQueue.PruneCompletedRequestsFromHeadOfQueue(this);
 
             // Determine if we can and should add a new connection to the pool.
-            if ((_availableHttp2Connections?.Count ?? 0) == 0 &&                            // No available connections
+            int availableHttp2ConnectionCount = _availableHttp2Connections?.Count ?? 0;
+            bool willInject = availableHttp2ConnectionCount == 0 &&                         // No available connections
                 !_pendingHttp2Connection &&                                                 // Only allow one pending HTTP2 connection at a time
                 _http2RequestQueue.Count > 0 &&                                             // There are requests left on the queue
                 (_associatedHttp2ConnectionCount == 0 || EnableMultipleHttp2Connections) && // We allow multiple connections, or don't have a connection currently
-                _http2RequestQueue.RequestsWithoutAConnectionAttempt > 0)                   // There are requests we haven't issued a connection attempt for
+                _http2RequestQueue.RequestsWithoutAConnectionAttempt > 0;                   // There are requests we haven't issued a connection attempt for
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                Trace($"Available HTTP/2.0 connections: {availableHttp2ConnectionCount}, " +
+                    $"Pending HTTP/2.0 connection: {_pendingHttp2Connection}" +
+                    $"Requests in the queue: {_http2RequestQueue.Count}, " +
+                    $"Requests without a connection attempt: {_http2RequestQueue.RequestsWithoutAConnectionAttempt}, " +
+                    $"Total associated HTTP/2.0 connections: {_associatedHttp2ConnectionCount}, " +
+                    $"Will inject connection: {willInject}.");
+            }
+
+            if (willInject)
             {
                 _associatedHttp2ConnectionCount++;
                 _pendingHttp2Connection = true;
@@ -733,22 +791,22 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<Http2Connection?> GetHttp2ConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        private bool TryGetPooledHttp2Connection(HttpRequestMessage request, [NotNullWhen(true)] out Http2Connection? connection, out HttpConnectionWaiter<Http2Connection?>? waiter)
         {
             Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http || _kind == HttpConnectionKind.SocksTunnel || _kind == HttpConnectionKind.SslSocksTunnel);
 
             // Look for a usable connection.
-            TaskCompletionSourceWithCancellation<Http2Connection?> waiter;
             while (true)
             {
-                Http2Connection connection;
                 lock (SyncObj)
                 {
                     _usedSinceLastCleanup = true;
 
                     if (!_http2Enabled)
                     {
-                        return null;
+                        waiter = null;
+                        connection = null;
+                        return false;
                     }
 
                     int availableConnectionCount = _availableHttp2Connections?.Count ?? 0;
@@ -765,8 +823,10 @@ namespace System.Net.Http
 
                         CheckForHttp2ConnectionInjection();
 
-                        // Break out of the loop and continue processing below.
-                        break;
+                        // There were no available connections. This request has been added to the request queue.
+                        if (NetEventSource.Log.IsEnabled()) Trace($"No available HTTP/2 connections; request queued.");
+                        connection = null;
+                        return false;
                     }
                 }
 
@@ -802,23 +862,8 @@ namespace System.Net.Http
                 }
 
                 if (NetEventSource.Log.IsEnabled()) connection.Trace("Found usable HTTP/2 connection in pool.");
-                return connection;
-            }
-
-            // There were no available connections. This request has been added to the request queue.
-            if (NetEventSource.Log.IsEnabled()) Trace($"No available HTTP/2 connections; request queued.");
-
-            long startingTimestamp = Stopwatch.GetTimestamp();
-            try
-            {
-                return await waiter.WaitWithCancellationAsync(async, cancellationToken).ConfigureAwait(false);
-            }
-            finally
-            {
-                if (HttpTelemetry.Log.IsEnabled())
-                {
-                    HttpTelemetry.Log.Http20RequestLeftQueue(Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds);
-                }
+                waiter = null;
+                return true;
             }
         }
 
@@ -901,8 +946,8 @@ namespace System.Net.Http
                     throw new HttpRequestException("QUIC connected but no HTTP/3 indicated via ALPN.", null, RequestRetryType.RetryOnSameOrNextProxy);
                 }
 #endif
-
-                http3Connection = new Http3Connection(this, _originAuthority, authority, quicConnection);
+                // if the authority was sent as an option through alt-svc then include alt-used header
+                http3Connection = new Http3Connection(this, _originAuthority, authority, quicConnection, includeAltUsedHeader: _http3Authority == authority);
                 _http3Connection = http3Connection;
 
                 if (NetEventSource.Log.IsEnabled())
@@ -989,6 +1034,8 @@ namespace System.Net.Http
             int retryCount = 0;
             while (true)
             {
+                HttpConnectionWaiter<HttpConnection>? http11ConnectionWaiter = null;
+                HttpConnectionWaiter<Http2Connection?>? http2ConnectionWaiter = null;
                 try
                 {
                     HttpResponseMessage? response = null;
@@ -996,8 +1043,8 @@ namespace System.Net.Http
                     // Use HTTP/3 if possible.
                     if (IsHttp3Supported() && // guard to enable trimming HTTP/3 support
                         _http3Enabled &&
-                        !request.IsWebSocketH2Request() &&
-                        (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
+                        (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
+                        !request.IsExtendedConnectRequest)
                     {
                         Debug.Assert(async);
                         response = await TrySendUsingHttp3Async(request, cancellationToken).ConfigureAwait(false);
@@ -1016,11 +1063,16 @@ namespace System.Net.Http
                             (request.Version.Major >= 2 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)) &&
                             (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower || IsSecure)) // prefer HTTP/1.1 if connection is not secured and downgrade is possible
                         {
-                            Http2Connection? connection = await GetHttp2ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
+                            if (!TryGetPooledHttp2Connection(request, out Http2Connection? connection, out http2ConnectionWaiter) &&
+                                http2ConnectionWaiter != null)
+                            {
+                                connection = await http2ConnectionWaiter.WaitForConnectionAsync(async, cancellationToken).ConfigureAwait(false);
+                            }
+
                             Debug.Assert(connection is not null || !_http2Enabled);
                             if (connection is not null)
                             {
-                                if (request.IsWebSocketH2Request())
+                                if (request.IsExtendedConnectRequest)
                                 {
                                     await connection.InitialSettingsReceived.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
                                     if (!connection.IsConnectEnabled)
@@ -1044,7 +1096,11 @@ namespace System.Net.Http
                             }
 
                             // Use HTTP/1.x.
-                            HttpConnection connection = await GetHttp11ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
+                            if (!TryGetPooledHttp11Connection(request, async, out HttpConnection? connection, out http11ConnectionWaiter))
+                            {
+                                connection = await http11ConnectionWaiter.WaitForConnectionAsync(async, cancellationToken).ConfigureAwait(false);
+                            }
+
                             connection.Acquire(); // In case we are doing Windows (i.e. connection-based) auth, we need to ensure that we hold on to this specific connection while auth is underway.
                             try
                             {
@@ -1088,12 +1144,7 @@ namespace System.Net.Http
                     // Throw if fallback is not allowed by the version policy.
                     if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                     {
-                        HttpRequestException exception = new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy), e);
-                        if (request.IsWebSocketH2Request())
-                        {
-                            exception.Data["HTTP2_ENABLED"] = false;
-                        }
-                        throw exception;
+                        throw new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy), e);
                     }
 
                     if (NetEventSource.Log.IsEnabled())
@@ -1112,6 +1163,52 @@ namespace System.Net.Http
                     }
 
                     // Eat exception and try again.
+                }
+                finally
+                {
+                    // We never cancel both attempts at the same time. When downgrade happens, it's possible that both waiters are non-null,
+                    // but in that case http2ConnectionWaiter.ConnectionCancellationTokenSource shall be null.
+                    Debug.Assert(http11ConnectionWaiter is null || http2ConnectionWaiter?.ConnectionCancellationTokenSource is null);
+                    CancelIfNecessary(http11ConnectionWaiter, cancellationToken.IsCancellationRequested);
+                    CancelIfNecessary(http2ConnectionWaiter, cancellationToken.IsCancellationRequested);
+                }
+            }
+        }
+
+        private void CancelIfNecessary<T>(HttpConnectionWaiter<T>? waiter, bool requestCancelled)
+        {
+            int timeout = GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion;
+            if (waiter?.ConnectionCancellationTokenSource is null ||
+                timeout == Timeout.Infinite ||
+                Settings._connectTimeout != Timeout.InfiniteTimeSpan && timeout > (int)Settings._connectTimeout.TotalMilliseconds) // Do not override shorter ConnectTimeout
+            {
+                return;
+            }
+
+            lock (waiter)
+            {
+                if (waiter.ConnectionCancellationTokenSource is null)
+                {
+                    return;
+                }
+
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    Trace($"Initiating cancellation of a pending connection attempt with delay of {timeout} ms, " +
+                        $"Reason: {(requestCancelled ? "Request cancelled" : "Request served by another connection")}.");
+                }
+
+                waiter.CancelledByOriginatingRequestCompletion = true;
+                if (timeout > 0)
+                {
+                    // Cancel after the specified timeout. This cancellation will not fire if the connection
+                    // succeeds within the delay and the CTS becomes disposed.
+                    waiter.ConnectionCancellationTokenSource.CancelAfter(timeout);
+                }
+                else
+                {
+                    // Cancel immediately if no timeout specified.
+                    waiter.ConnectionCancellationTokenSource.Cancel();
                 }
             }
         }
@@ -1194,15 +1291,8 @@ namespace System.Net.Http
                     {
                         var thisRef = new WeakReference<HttpConnectionPool>(this);
 
-                        bool restoreFlow = false;
-                        try
+                        using (ExecutionContext.SuppressFlow())
                         {
-                            if (!ExecutionContext.IsFlowSuppressed())
-                            {
-                                ExecutionContext.SuppressFlow();
-                                restoreFlow = true;
-                            }
-
                             _authorityExpireTimer = new Timer(static o =>
                             {
                                 var wr = (WeakReference<HttpConnectionPool>)o!;
@@ -1211,10 +1301,6 @@ namespace System.Net.Http
                                     @this.ExpireAltSvcAuthority();
                                 }
                             }, thisRef, nextAuthorityMaxAge, Timeout.InfiniteTimeSpan);
-                        }
-                        finally
-                        {
-                            if (restoreFlow) ExecutionContext.RestoreFlow();
                         }
                     }
                     else
@@ -1405,6 +1491,15 @@ namespace System.Net.Http
 
         public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
+            // We need the User-Agent header when we send a CONNECT request to the proxy.
+            // We must read the header early, before we return the ownership of the request back to the user.
+            if ((Kind is HttpConnectionKind.ProxyTunnel or HttpConnectionKind.SslProxyTunnel) &&
+                request.HasHeaders &&
+                request.Headers.NonValidated.TryGetValues(HttpKnownHeaderNames.UserAgent, out HeaderStringValues userAgent))
+            {
+                _connectTunnelUserAgent = userAgent.ToString();
+            }
+
             if (doRequestAuth && Settings._credentials != null)
             {
                 return AuthenticationHelper.SendWithRequestAuthAsync(request, async, Settings._credentials, Settings._preAuthenticate, this, cancellationToken);
@@ -1433,7 +1528,7 @@ namespace System.Net.Http
 
                 case HttpConnectionKind.ProxyTunnel:
                 case HttpConnectionKind.SslProxyTunnel:
-                    stream = await EstablishProxyTunnelAsync(async, request.HasHeaders ? request.Headers : null, cancellationToken).ConfigureAwait(false);
+                    stream = await EstablishProxyTunnelAsync(async, cancellationToken).ConfigureAwait(false);
                     break;
 
                 case HttpConnectionKind.SocksTunnel:
@@ -1623,7 +1718,7 @@ namespace System.Net.Http
             return http2Connection;
         }
 
-        private async ValueTask<Stream> EstablishProxyTunnelAsync(bool async, HttpRequestHeaders? headers, CancellationToken cancellationToken)
+        private async ValueTask<Stream> EstablishProxyTunnelAsync(bool async, CancellationToken cancellationToken)
         {
             Debug.Assert(_originAuthority != null);
 
@@ -1631,9 +1726,9 @@ namespace System.Net.Http
             HttpRequestMessage tunnelRequest = new HttpRequestMessage(HttpMethod.Connect, _proxyUri);
             tunnelRequest.Headers.Host = $"{_originAuthority.IdnHost}:{_originAuthority.Port}";    // This specifies destination host/port to connect to
 
-            if (headers != null && headers.TryGetValues(HttpKnownHeaderNames.UserAgent, out IEnumerable<string>? values))
+            if (_connectTunnelUserAgent is not null)
             {
-                tunnelRequest.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.UserAgent, values);
+                tunnelRequest.Headers.TryAddWithoutValidation(KnownHeaders.UserAgent.Descriptor, _connectTunnelUserAgent);
             }
 
             HttpResponseMessage tunnelResponse = await _poolManager.SendProxyConnectAsync(tunnelRequest, _proxyUri!, async, cancellationToken).ConfigureAwait(false);
@@ -1675,7 +1770,7 @@ namespace System.Net.Http
             return stream;
         }
 
-        private void HandleHttp11ConnectionFailure(TaskCompletionSourceWithCancellation<HttpConnection>? requestWaiter, Exception e)
+        private void HandleHttp11ConnectionFailure(HttpConnectionWaiter<HttpConnection>? requestWaiter, Exception e)
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"HTTP/1.1 connection failed: {e}");
 
@@ -1695,7 +1790,7 @@ namespace System.Net.Http
             }
         }
 
-        private void HandleHttp2ConnectionFailure(TaskCompletionSourceWithCancellation<Http2Connection?> requestWaiter, Exception e)
+        private void HandleHttp2ConnectionFailure(HttpConnectionWaiter<Http2Connection?> requestWaiter, Exception e)
         {
             if (NetEventSource.Log.IsEnabled()) Trace($"HTTP2 connection failed: {e}");
 
@@ -1776,7 +1871,9 @@ namespace System.Net.Http
             return false;
         }
 
-        public void ReturnHttp11Connection(HttpConnection connection, bool isNewConnection, TaskCompletionSourceWithCancellation<HttpConnection>? initialRequestWaiter = null)
+        public void RecycleHttp11Connection(HttpConnection connection) => ReturnHttp11Connection(connection, false);
+
+        private void ReturnHttp11Connection(HttpConnection connection, bool isNewConnection, HttpConnectionWaiter<HttpConnection>? initialRequestWaiter = null)
         {
             if (NetEventSource.Log.IsEnabled()) connection.Trace($"{nameof(isNewConnection)}={isNewConnection}");
 
@@ -1792,7 +1889,7 @@ namespace System.Net.Http
             // Loop in case we get a request that has already been canceled or handled by a different connection.
             while (true)
             {
-                TaskCompletionSourceWithCancellation<HttpConnection>? waiter = null;
+                HttpConnectionWaiter<HttpConnection>? waiter = null;
                 bool added = false;
                 lock (SyncObj)
                 {
@@ -1869,7 +1966,7 @@ namespace System.Net.Http
             }
         }
 
-        public void ReturnHttp2Connection(Http2Connection connection, bool isNewConnection, TaskCompletionSourceWithCancellation<Http2Connection?>? initialRequestWaiter = null)
+        private void ReturnHttp2Connection(Http2Connection connection, bool isNewConnection, HttpConnectionWaiter<Http2Connection?>? initialRequestWaiter = null)
         {
             if (NetEventSource.Log.IsEnabled()) connection.Trace($"{nameof(isNewConnection)}={isNewConnection}");
 
@@ -1894,7 +1991,7 @@ namespace System.Net.Http
                 // Loop in case we get a request that has already been canceled or handled by a different connection.
                 while (true)
                 {
-                    TaskCompletionSourceWithCancellation<Http2Connection?>? waiter = null;
+                    HttpConnectionWaiter<Http2Connection?>? waiter = null;
                     bool added = false;
                     lock (SyncObj)
                     {
@@ -2245,7 +2342,7 @@ namespace System.Net.Http
 
                 if (!connection.CheckUsabilityOnScavenge())
                 {
-                    if (NetEventSource.Log.IsEnabled()) connection.Trace($"Scavenging connection. Unexpected data or EOF received.");
+                    if (NetEventSource.Log.IsEnabled()) connection.Trace($"Scavenging connection. Keep-Alive timeout exceeded, unexpected data or EOF received.");
                     return false;
                 }
 
@@ -2307,7 +2404,7 @@ namespace System.Net.Http
             public struct QueueItem
             {
                 public HttpRequestMessage Request;
-                public TaskCompletionSourceWithCancellation<T> Waiter;
+                public HttpConnectionWaiter<T> Waiter;
             }
 
             // This implementation mimics that of Queue<T>, but without version checks and with an extra head pointer
@@ -2406,9 +2503,9 @@ namespace System.Net.Http
             }
 
 
-            public TaskCompletionSourceWithCancellation<T> EnqueueRequest(HttpRequestMessage request)
+            public HttpConnectionWaiter<T> EnqueueRequest(HttpRequestMessage request)
             {
-                var waiter = new TaskCompletionSourceWithCancellation<T>();
+                var waiter = new HttpConnectionWaiter<T>();
                 Enqueue(new QueueItem { Request = request, Waiter = waiter });
                 return waiter;
             }
@@ -2428,7 +2525,7 @@ namespace System.Net.Http
                 }
             }
 
-            public bool TryDequeueWaiter(HttpConnectionPool pool, [MaybeNullWhen(false)] out TaskCompletionSourceWithCancellation<T> waiter)
+            public bool TryDequeueWaiter(HttpConnectionPool pool, [MaybeNullWhen(false)] out HttpConnectionWaiter<T> waiter)
             {
                 PruneCompletedRequestsFromHeadOfQueue(pool);
 
@@ -2442,7 +2539,7 @@ namespace System.Net.Http
                 return false;
             }
 
-            public void TryDequeueSpecificWaiter(TaskCompletionSourceWithCancellation<T> waiter)
+            public void TryDequeueSpecificWaiter(HttpConnectionWaiter<T> waiter)
             {
                 if (TryPeek(out QueueItem queueItem) && queueItem.Waiter == waiter)
                 {
@@ -2469,6 +2566,35 @@ namespace System.Net.Http
             public int Count => _size;
 
             public int RequestsWithoutAConnectionAttempt => _size - _attemptedConnectionsOffset;
+        }
+
+        private sealed class HttpConnectionWaiter<T> : TaskCompletionSourceWithCancellation<T>
+        {
+            // When a connection attempt is pending, reference the connection's CTS, so we can tear it down if the initiating request is cancelled
+            // or completes on a different connection.
+            public CancellationTokenSource? ConnectionCancellationTokenSource;
+
+            // Distinguish connection cancellation that happens because the initiating request is cancelled or completed on a different connection.
+            public bool CancelledByOriginatingRequestCompletion { get; set; }
+
+            public async ValueTask<T> WaitForConnectionAsync(bool async, CancellationToken requestCancellationToken)
+            {
+                long startingTimestamp = Stopwatch.GetTimestamp();
+                try
+                {
+                    return await WaitWithCancellationAsync(async, requestCancellationToken).ConfigureAwait(false);
+                }
+                finally
+                {
+                    if (HttpTelemetry.Log.IsEnabled())
+                    {
+                        if (typeof(T) == typeof(HttpConnection))
+                            HttpTelemetry.Log.Http11RequestLeftQueue(Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds);
+                        else if (typeof(T) == typeof(Http2Connection))
+                            HttpTelemetry.Log.Http20RequestLeftQueue(Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds);
+                    }
+                }
+            }
         }
     }
 }

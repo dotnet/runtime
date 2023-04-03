@@ -52,6 +52,8 @@ elseif(CLR_CMAKE_HOST_ARCH_ARM64)
   set(PAL_ARCH_SOURCES_DIR arm64)
 elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
   set(PAL_ARCH_SOURCES_DIR loongarch64)
+elseif(CLR_CMAKE_HOST_ARCH_RISCV64)
+  set(PAL_ARCH_SOURCES_DIR riscv64)
 elseif(CLR_CMAKE_HOST_ARCH_I386)
   set(PAL_ARCH_SOURCES_DIR i386)
 elseif(CLR_CMAKE_HOST_ARCH_S390X)
@@ -130,9 +132,7 @@ set(SOURCES
   cruntime/malloc.cpp
   cruntime/math.cpp
   cruntime/misc.cpp
-  cruntime/printf.cpp
   cruntime/printfcpp.cpp
-  cruntime/silent_printf.cpp
   cruntime/string.cpp
   cruntime/stringtls.cpp
   cruntime/thread.cpp
@@ -169,7 +169,6 @@ set(SOURCES
   misc/sysinfo.cpp
   misc/time.cpp
   misc/utils.cpp
-  numa/numa.cpp
   objmgr/palobjbase.cpp
   objmgr/shmobject.cpp
   objmgr/shmobjectmanager.cpp
@@ -178,10 +177,7 @@ set(SOURCES
   safecrt/memmove_s.cpp
   safecrt/mbusafecrt.cpp
   safecrt/safecrt_input_s.cpp
-  safecrt/safecrt_output_l.cpp
-  safecrt/safecrt_output_s.cpp
   safecrt/safecrt_winput_s.cpp
-  safecrt/safecrt_woutput_s.cpp
   safecrt/splitpath_s.cpp
   safecrt/sprintf_s.cpp
   safecrt/sscanf_s.cpp
@@ -191,9 +187,7 @@ set(SOURCES
   safecrt/strncat_s.cpp
   safecrt/strncpy_s.cpp
   safecrt/strtok_s.cpp
-  safecrt/swprintf.cpp
   safecrt/vsprintf.cpp
-  safecrt/vswprint.cpp
   safecrt/wcscat_s.cpp
   safecrt/wcscpy_s.cpp
   safecrt/wcslen_s.cpp
@@ -202,7 +196,6 @@ set(SOURCES
   safecrt/wcsncpy_s.cpp
   safecrt/wcstok_s.cpp
   safecrt/wmakepath_s.cpp
-  safecrt/wsplitpath_s.cpp
   safecrt/xtoa_s.cpp
   safecrt/xtow_s.cpp
   sharedmemory/sharedmemory.cpp
@@ -280,6 +273,7 @@ if(CLR_CMAKE_TARGET_OSX)
   find_library(SECURITY Security)
   find_library(SYSTEM System)
   target_link_libraries(coreclrpal
+    PUBLIC
     ${COREFOUNDATION}
     ${CORESERVICES}
     ${SECURITY}
@@ -289,6 +283,7 @@ endif(CLR_CMAKE_TARGET_OSX)
 
 if(CLR_CMAKE_TARGET_FREEBSD)
   target_link_libraries(coreclrpal
+    PUBLIC
     pthread
     rt
     ${UNWIND_LIBS}
@@ -299,23 +294,31 @@ if(CLR_CMAKE_TARGET_LINUX)
   # On Android, we don't need to link with gcc_s, pthread and rt
   if(NOT CLR_CMAKE_TARGET_ANDROID)
     target_link_libraries(coreclrpal
+      PUBLIC
       gcc_s
       pthread
       rt
     )
   else(NOT CLR_CMAKE_TARGET_ANDROID)
     target_link_libraries(coreclrpal
+      PUBLIC
       ${ANDROID_GLOB}
       ${LZMA})
   endif(NOT CLR_CMAKE_TARGET_ANDROID)
 
   target_link_libraries(coreclrpal
+    PUBLIC
     dl
   )
 
   if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
-    target_link_libraries(coreclrpal ${UNWIND_LIBS})
+    target_link_libraries(coreclrpal PUBLIC ${UNWIND_LIBS})
   endif(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
+
+  # bundled libunwind requires using libucontext on alpine and x86 and ppc64le
+  if(CLR_CMAKE_TARGET_ALPINE_LINUX AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_POWERPC64))
+    target_link_libraries(coreclrpal PUBLIC ucontext)
+  endif(CLR_CMAKE_TARGET_ALPINE_LINUX AND (CLR_CMAKE_TARGET_ARCH_I386 OR CLR_CMAKE_TARGET_ARCH_POWERPC64))
 
 endif(CLR_CMAKE_TARGET_LINUX)
 
@@ -326,6 +329,7 @@ if(CLR_CMAKE_TARGET_NETBSD)
   add_definitions(-D_KMEMUSER)
   find_library(KVM kvm)
   target_link_libraries(coreclrpal
+    PUBLIC
     pthread
     rt
     ${UNWIND}
@@ -335,6 +339,7 @@ endif(CLR_CMAKE_TARGET_NETBSD)
 
 if(CLR_CMAKE_TARGET_SUNOS)
   target_link_libraries(coreclrpal
+    PUBLIC
     pthread
     rt
   )

@@ -133,7 +133,36 @@ namespace System.Security.Cryptography
             throw DerivedClassMustOverride();
         }
 
-        private static Exception DerivedClassMustOverride()
+        /// <summary>
+        /// Derive raw key material.
+        /// </summary>
+        /// <param name="otherPartyPublicKey">The public key of the party with which to derive a mutual secret.</param>
+        /// <returns>The raw key agreement.</returns>
+        /// <remarks>
+        /// Care must be taking when using the raw derived secret agreement value. The raw value is expected to be used
+        /// as input in to a Key Derivation Function, and not used directly as key material.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="otherPartyPublicKey"/> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="otherPartyPublicKey"/> is over a different curve than this key.
+        /// </exception>
+        /// <exception cref="NotImplementedException">
+        ///   A derived implementation has not provided an implementation of the method.
+        /// </exception>
+        /// <exception cref="PlatformNotSupportedException">
+        ///  The current platform does not support raw key agreement.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///  The object has already been disposed.
+        /// </exception>
+        public virtual byte[] DeriveRawSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey)
+        {
+            throw DerivedClassMustOverride();
+        }
+
+        private static NotImplementedException DerivedClassMustOverride()
         {
             return new NotImplementedException(SR.NotSupported_SubclassOverride);
         }

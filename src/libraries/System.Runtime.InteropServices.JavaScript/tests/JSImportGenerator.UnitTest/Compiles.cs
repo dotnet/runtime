@@ -7,7 +7,7 @@ using System.Runtime.InteropServices.JavaScript;
 using System.Threading.Tasks;
 using System;
 using Xunit;
-using LibraryImportGenerator.UnitTests;
+using Microsoft.Interop.UnitTests;
 
 namespace JSImportGenerator.Unit.Tests
 {
@@ -32,7 +32,7 @@ namespace JSImportGenerator.Unit.Tests
         [MemberData(nameof(CodeSnippetsToCompile))]
         public async Task ValidateSnippets(string source)
         {
-            Compilation comp = await TestUtils.CreateCompilation(source);
+            Compilation comp = await TestUtils.CreateCompilation(source, allowUnsafe: true);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags,

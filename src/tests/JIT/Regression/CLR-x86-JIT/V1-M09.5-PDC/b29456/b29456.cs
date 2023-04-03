@@ -3,11 +3,12 @@
 
 
 using System;
+using Xunit;
 
 
 namespace Tests
 {
-    internal class Operators
+    public class Operators
     {
         private static bool s_t = true;
         private static bool s_f = false;
@@ -42,7 +43,8 @@ namespace Tests
             System.Console.WriteLine(".cctor");
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             System.Console.WriteLine("----------------");
 

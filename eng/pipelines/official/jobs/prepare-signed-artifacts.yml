@@ -9,8 +9,8 @@ jobs:
   displayName: Prepare Signed Artifacts
   dependsOn: ${{ parameters.dependsOn }}
   pool:
-    name: NetCore1ESPool-Internal
-    demands: ImageOverride -equals build.windows.amd64.vs2022
+    name: $(DncEngInternalBuildPool)
+    demands: ImageOverride -equals 1es-windows-2022
   # Double the default timeout.
   timeoutInMinutes: 240
   workspace:

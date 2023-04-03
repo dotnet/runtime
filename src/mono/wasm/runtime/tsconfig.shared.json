@@ -3,6 +3,7 @@
         "noImplicitAny": true,
         "noEmitOnError": true,
         "removeComments": false,
+        "module": "ES2020",
         "sourceMap": false,
         "target": "ES2018",
         "moduleResolution": "Node",
@@ -10,10 +11,12 @@
         "lib": [
             "esnext"
         ],
-        "types": []
+        "types": [],
+        "rootDirs": [".", "../../../../artifacts/bin/native/generated"]
     },
     "exclude": [
         "dotnet.d.ts",
+        "dotnet-legacy.d.ts",
         "diagnostics-mock.d.ts",
         "bin"
     ]

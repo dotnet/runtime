@@ -1,9 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Xml;
-using System.Reflection;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.DataContracts;
+using System.Xml;
 
 namespace System.Runtime.Serialization
 {
@@ -13,10 +14,11 @@ namespace System.Runtime.Serialization
 
         internal KnownTypeDataContractResolver(XmlObjectSerializerContext context)
         {
-            Fx.Assert(context != null, "KnownTypeDataContractResolver should not be instantiated with a null context");
+            Debug.Assert(context != null, "KnownTypeDataContractResolver should not be instantiated with a null context");
             _context = context;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override bool TryResolveType(Type type, Type? declaredType, DataContractResolver knownTypeResolver, out XmlDictionaryString? typeName, out XmlDictionaryString? typeNamespace)
         {
@@ -48,6 +50,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override Type? ResolveName(string typeName, string? typeNamespace, Type? declaredType, DataContractResolver knownTypeResolver)
         {

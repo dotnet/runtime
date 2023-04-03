@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,15 +29,12 @@
     <Compile Include="System\Runtime\InteropServices\ComUnregisterFunctionAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ExporterEventKind.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleCollector.cs" />
-    <Compile Include="System\Runtime\InteropServices\IDispatchImplAttribute.cs" />
-    <Compile Include="System\Runtime\InteropServices\IDispatchImplType.cs" />
     <Compile Include="System\Runtime\InteropServices\ImportedFromTypeLibAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ManagedToNativeComInteropStubAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\RegistrationClassContext.cs" />
     <Compile Include="System\Runtime\InteropServices\RegistrationConnectionType.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironment.cs" />
-    <Compile Include="System\Runtime\InteropServices\SetWin32ContextInIDispatchAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibFuncAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibFuncFlags.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibImportClassAttribute.cs" />

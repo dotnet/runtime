@@ -243,13 +243,13 @@ namespace System.Text.Json.Serialization.Tests
             await Task.WhenAll(tasks);
         }
 
-        private async void TestIdTask()
+        private async Task TestIdTask()
         {
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(@"{""$id"":1}", s_deserializerOptionsPreserve));
             Assert.Equal("$.$id", ex.Path);
         }
 
-        private async void TestRefTask()
+        private async Task TestRefTask()
         {
             JsonException ex = await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Employee>(@"{""$ref"":1}", s_deserializerOptionsPreserve));
             Assert.Equal("$.$ref", ex.Path);

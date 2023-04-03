@@ -77,7 +77,7 @@ anyway.
 
 During development there are many instances where building an individual test is fast and necessary. All of the necessary tools to build are under `coreclr`. It is possible to use `~/runtime/dotnet.sh msbuild` as you would normally use MSBuild with a few caveats.
 
-**!! Note !! -- Passing /p:TargetOS=[OSX|Linux] is required.**
+**!! Note !! -- Passing /p:TargetOS=[osx|linux] is required.**
 
 ## Building an Individual Test
 
@@ -149,12 +149,12 @@ Run tests:
 To run all tests including disabled tests
 ```sh
 ./src/coreclr/pal/tests/palsuite/runpaltests.sh $(pwd)/artifacts/bin/coreclr/$(uname).x64.Debug/paltests
-# on macOS, replace $(uname) with OSX
+# on macOS, replace $(uname) with osx
 ```
 To only run enabled tests for the platform the tests were built for:
 ```sh
 artifacts/bin/coreclr/$(uname).x64.Debug/paltests/runpaltests.sh $(pwd)/artifacts/bin/coreclr/$(uname).x64.Debug/paltests
-# on macOS, replace $(uname) with OSX
+# on macOS, replace $(uname) with osx
 ```
 To run only specific tests, edit paltestlist.txt locally to delete the ones you don't want to run.
 

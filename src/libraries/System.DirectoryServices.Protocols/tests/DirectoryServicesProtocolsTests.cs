@@ -74,6 +74,26 @@ namespace System.DirectoryServices.Protocols.Tests
             _ = (SearchResponse) connection.SendRequest(searchRequest);
             // Does not throw
         }
+        [InlineData(60)]
+        [InlineData(0)]
+        [InlineData(-60)]
+        [ConditionalTheory(nameof(IsLdapConfigurationExist))]
+        public void TestSearchWithTimeLimit(int timeLimit)
+        {
+            using LdapConnection connection = GetConnection();
+
+            var searchRequest = new SearchRequest(LdapConfiguration.Configuration.SearchDn, "(objectClass=*)", SearchScope.Subtree);
+            if (timeLimit < 0)
+            {
+                Assert.Throws<ArgumentException>(() => searchRequest.TimeLimit = TimeSpan.FromSeconds(timeLimit));
+            }
+            else
+            {
+                searchRequest.TimeLimit = TimeSpan.FromSeconds(timeLimit);
+                _ = (SearchResponse)connection.SendRequest(searchRequest);
+                // Shall succeed
+            }
+        }
 
         [ConditionalFact(nameof(IsLdapConfigurationExist))]
         public void TestAddingOU()
@@ -648,6 +668,30 @@ namespace System.DirectoryServices.Protocols.Tests
                     DeleteEntry(connection, dn);
                 }
             }
+        }
+
+        [ConditionalFact(nameof(IsLdapConfigurationExist))]
+        public void TestMultipleServerBind()
+        {
+            LdapDirectoryIdentifier directoryIdentifier = string.IsNullOrEmpty(LdapConfiguration.Configuration.Port) ?
+                                        new LdapDirectoryIdentifier(new string[] { LdapConfiguration.Configuration.ServerName, LdapConfiguration.Configuration.ServerName }, true, false) :
+                                        new LdapDirectoryIdentifier(new string[] { LdapConfiguration.Configuration.ServerName, LdapConfiguration.Configuration.ServerName },
+                                                                    int.Parse(LdapConfiguration.Configuration.Port, NumberStyles.None, CultureInfo.InvariantCulture),
+                                                                    true, false);
+            NetworkCredential credential = new NetworkCredential(LdapConfiguration.Configuration.UserName, LdapConfiguration.Configuration.Password);
+
+            using LdapConnection connection = new LdapConnection(directoryIdentifier, credential)
+            {
+                AuthType = AuthType.Basic
+            };
+
+            // Set server protocol before bind; OpenLDAP servers default
+            // to LDAP v2, which we do not support, and will return LDAP_PROTOCOL_ERROR
+            connection.SessionOptions.ProtocolVersion = 3;
+            connection.SessionOptions.SecureSocketLayer = LdapConfiguration.Configuration.UseTls;
+            connection.Bind();
+
+            connection.Timeout = new TimeSpan(0, 3, 0);
         }
 
         private void DeleteAttribute(LdapConnection connection, string entryDn, string attributeName)

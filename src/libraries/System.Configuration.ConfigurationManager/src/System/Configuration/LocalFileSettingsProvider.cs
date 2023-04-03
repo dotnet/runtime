@@ -433,7 +433,7 @@ namespace System.Configuration
             return isUser;
         }
 
-        private XmlNode SerializeToXmlElement(SettingsProperty setting, SettingsPropertyValue value)
+        private XmlElement SerializeToXmlElement(SettingsProperty setting, SettingsPropertyValue value)
         {
             XmlDocument doc = new XmlDocument();
             XmlElement valueXml = doc.CreateElement(nameof(value));

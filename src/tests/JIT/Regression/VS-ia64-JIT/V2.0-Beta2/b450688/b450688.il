@@ -6,6 +6,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 
 // Metadata version: v2.0.50131
 .assembly extern mscorlib
@@ -13,7 +14,7 @@
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..
   .ver 2:0:0:0
 }
-.assembly repro
+.assembly 'b450688'
 {
 }
 
@@ -48,8 +49,12 @@ catch_end:
 	.try try_begin to try_end catch [mscorlib]System.Exception handler catch_begin to catch_end
 }
 
+.class public auto ansi Test_b450688 extends [mscorlib] System.Object {
 .method public static int32 Main() cil managed
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 
 	call object Test()
@@ -59,4 +64,5 @@ catch_end:
 	call void [System.Console]System.Console::WriteLine(string)
 	ldc.i4 100
 	ret
+}
 }

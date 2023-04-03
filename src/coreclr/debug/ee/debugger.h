@@ -1751,6 +1751,13 @@ extern "C" void __stdcall SignalHijackCompleteFlare(void);
 extern "C" void __stdcall ExceptionNotForRuntimeFlare(void);
 extern "C" void __stdcall NotifyRightSideOfSyncCompleteFlare(void);
 extern "C" void __stdcall NotifySecondChanceReadyForDataFlare(void);
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+extern "C" void __stdcall SetThreadContextNeededFlare(TADDR pContext, DWORD size, TADDR Rip, TADDR Rsp);
+#else
+#error Platform not supported
+#endif
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 /* ------------------------------------------------------------------------ *
  * Debugger class
@@ -1900,7 +1907,8 @@ public:
     bool FirstChanceNativeException(EXCEPTION_RECORD *exception,
                                T_CONTEXT *context,
                                DWORD code,
-                               Thread *thread);
+                               Thread *thread,
+                               BOOL fIsVEH = TRUE);
 
     bool IsJMCMethod(Module* pModule, mdMethodDef tkMethod);
 
@@ -2249,13 +2257,6 @@ private:
     // a buffer so that it can be read out-of-proc
     BYTE* SerializeModuleMetaData(Module * pModule, DWORD * countBytes);
 
-    /// Wrapps fusion Module FusionCopyPDBs.
-    HRESULT CopyModulePdb(Module* pRuntimeModule);
-
-    // When attaching to a process, this is called to enumerate all of the
-    // AppDomains currently in the process and allow modules pdbs to be copied over to the shadow dir maintaining out V2 in-proc behaviour.
-    HRESULT IterateAppDomainsForPdbs();
-
 #ifndef DACCESS_COMPILE
 public:
     // Helper function to initialize JDI structure
@@ -2346,7 +2347,8 @@ public:
 
     LONG FirstChanceSuspendHijackWorker(
                              T_CONTEXT *pContext,
-                             EXCEPTION_RECORD *pExceptionRecord);
+                             EXCEPTION_RECORD *pExceptionRecord,
+                             BOOL fIsVEH = TRUE);
     static void GenericHijackFunc(void);
     static void SecondChanceHijackFunc(void);
     static void SecondChanceHijackFuncWorker(void);
@@ -2917,6 +2919,11 @@ public:
 private:
     HANDLE GetGarbageCollectionBlockerEvent() { return  GetLazyData()->m_garbageCollectionBlockerEvent; }
 
+private:
+    BOOL m_fOutOfProcessSetContextEnabled;
+public:
+    void SendSetThreadContextNeeded(CONTEXT *context);
+    BOOL IsOutOfProcessSetContextEnabled();
 };
 
 
@@ -3858,7 +3865,7 @@ HANDLE OpenWin32EventOrThrow(
 bool DbgIsSpecialILOffset(DWORD offset);
 
 #if !defined(TARGET_X86)
-void FixupDispatcherContext(T_DISPATCHER_CONTEXT* pDispatcherContext, T_CONTEXT* pContext, T_CONTEXT* pOriginalContext, PEXCEPTION_ROUTINE pUnwindPersonalityRoutine = NULL);
+void FixupDispatcherContext(T_DISPATCHER_CONTEXT* pDispatcherContext, T_CONTEXT* pContext, PEXCEPTION_ROUTINE pUnwindPersonalityRoutine = NULL);
 #endif
 
 #endif /* DEBUGGER_H_ */

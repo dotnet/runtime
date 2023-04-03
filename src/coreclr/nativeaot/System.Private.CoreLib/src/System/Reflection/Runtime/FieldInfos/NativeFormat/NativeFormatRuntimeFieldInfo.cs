@@ -89,15 +89,12 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         public sealed override string ToString()
         {
-            TypeContext typeContext = _contextTypeInfo.TypeContext;
-            Handle typeHandle = _field.Signature.GetFieldSignature(_reader).Type;
-            return (new QTypeDefRefOrSpec(_reader, typeHandle).FormatTypeName(typeContext)) + " " + this.Name;
+            return FieldRuntimeType.FormatTypeNameForReflection() + " " + this.Name;
         }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(other);
 
             if (!(other is NativeFormatRuntimeFieldInfo otherField))
                 return false;
@@ -142,7 +139,7 @@ namespace System.Reflection.Runtime.FieldInfos.NativeFormat
 
         protected sealed override bool GetDefaultValueIfAvailable(bool raw, out object? defaultValue)
         {
-            return DefaultValueParser.GetDefaultValueIfAny(_reader, _field.DefaultValue, FieldType, CustomAttributes, raw, out defaultValue);
+            return DefaultValueParser.GetDefaultValueFromConstantIfAny(_reader, _field.DefaultValue, FieldType, raw, out defaultValue);
         }
 
         protected sealed override FieldAccessor TryGetFieldAccessor()

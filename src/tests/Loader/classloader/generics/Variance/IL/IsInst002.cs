@@ -141,7 +141,7 @@ public class TestClass
 		}	
 	}
 	
-	public static int Main(String [] args)
+	public static int Main()
 	{			
 	
 		if( RunTests() )

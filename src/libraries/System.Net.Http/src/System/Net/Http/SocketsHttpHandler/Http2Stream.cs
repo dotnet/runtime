@@ -45,7 +45,7 @@ namespace System.Net.Http
             private StreamCompletionState _requestCompletionState;
             private StreamCompletionState _responseCompletionState;
             private ResponseProtocolState _responseProtocolState;
-            private bool _webSocketEstablished;
+            private bool _responseHeadersReceived;
 
             // If this is not null, then we have received a reset from the server
             // (i.e. RST_STREAM or general IO error processing the connection)
@@ -103,12 +103,12 @@ namespace System.Net.Http
 
                 _windowManager = new Http2StreamWindowManager(connection, this);
 
-                _headerBudgetRemaining = connection._pool.Settings._maxResponseHeadersLength * 1024;
+                _headerBudgetRemaining = connection._pool.Settings.MaxResponseHeadersByteLength;
 
                 if (_request.Content == null)
                 {
                     _requestCompletionState = StreamCompletionState.Completed;
-                    if (_request.IsWebSocketH2Request())
+                    if (_request.IsExtendedConnectRequest)
                     {
                         _requestBodyCancellationSource = new CancellationTokenSource();
                     }
@@ -156,6 +156,8 @@ namespace System.Net.Http
             public bool ExpectResponseData => _responseProtocolState == ResponseProtocolState.ExpectingData;
 
             public Http2Connection Connection => _connection;
+
+            public bool ConnectProtocolEstablished { get; private set; }
 
             public HttpResponseMessage GetAndClearResponse()
             {
@@ -478,7 +480,7 @@ namespace System.Net.Http
             private const int FirstHPackNormalHeaderId = 15;
             private const int LastHPackNormalHeaderId = 61;
 
-            private static readonly int[] s_hpackStaticStatusCodeTable = new int[LastHPackStatusPseudoHeaderId - FirstHPackStatusPseudoHeaderId + 1] { 200, 204, 206, 304, 400, 404, 500 };
+            private static ReadOnlySpan<int> HpackStaticStatusCodeTable => new int[LastHPackStatusPseudoHeaderId - FirstHPackStatusPseudoHeaderId + 1] { 200, 204, 206, 304, 400, 404, 500 };
 
             private static readonly (HeaderDescriptor descriptor, byte[] value)[] s_hpackStaticHeaderTable = new (HeaderDescriptor, byte[])[LastHPackNormalHeaderId - FirstHPackNormalHeaderId + 1]
             {
@@ -542,7 +544,7 @@ namespace System.Net.Http
                 }
                 else if (index <= LastHPackStatusPseudoHeaderId)
                 {
-                    int statusCode = s_hpackStaticStatusCodeTable[index - FirstHPackStatusPseudoHeaderId];
+                    int statusCode = HpackStaticStatusCodeTable[index - FirstHPackStatusPseudoHeaderId];
 
                     OnStatus(statusCode);
                 }
@@ -587,7 +589,7 @@ namespace System.Net.Http
                 _headerBudgetRemaining -= amount;
                 if (_headerBudgetRemaining < 0)
                 {
-                    throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection._pool.Settings._maxResponseHeadersLength * 1024L));
+                    throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection._pool.Settings.MaxResponseHeadersByteLength));
                 }
             }
 
@@ -635,9 +637,9 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        if (statusCode == 200 && _response.RequestMessage!.IsWebSocketH2Request())
+                        if (statusCode == 200 && _response.RequestMessage!.IsExtendedConnectRequest)
                         {
-                            _webSocketEstablished = true;
+                            ConnectProtocolEstablished = true;
                         }
 
                         _responseProtocolState = ResponseProtocolState.ExpectingHeaders;
@@ -775,6 +777,7 @@ namespace System.Net.Http
 
                         case ResponseProtocolState.ExpectingHeaders:
                             _responseProtocolState = endStream ? ResponseProtocolState.Complete : ResponseProtocolState.ExpectingData;
+                            _responseHeadersReceived = true;
                             break;
 
                         case ResponseProtocolState.ExpectingTrailingHeaders:
@@ -988,24 +991,16 @@ namespace System.Net.Http
                 Debug.Assert(!Monitor.IsEntered(SyncObject));
                 lock (SyncObject)
                 {
-                    CheckResponseBodyState();
-
-                    if (_responseProtocolState == ResponseProtocolState.ExpectingHeaders || _responseProtocolState == ResponseProtocolState.ExpectingIgnoredHeaders || _responseProtocolState == ResponseProtocolState.ExpectingStatus)
+                    if (!_responseHeadersReceived)
                     {
+                        CheckResponseBodyState();
                         Debug.Assert(!_hasWaiter);
                         _hasWaiter = true;
                         _waitSource.Reset();
                         return (true, false);
                     }
-                    else if (_responseProtocolState == ResponseProtocolState.ExpectingData || _responseProtocolState == ResponseProtocolState.ExpectingTrailingHeaders)
-                    {
-                        return (false, false);
-                    }
-                    else
-                    {
-                        Debug.Assert(_responseProtocolState == ResponseProtocolState.Complete);
-                        return (false, _responseBuffer.IsEmpty);
-                    }
+
+                    return (false, _responseProtocolState == ResponseProtocolState.Complete && _responseBuffer.IsEmpty);
                 }
             }
 
@@ -1047,7 +1042,7 @@ namespace System.Net.Http
                     MoveTrailersToResponseMessage(_response);
                     responseContent.SetStream(EmptyReadStream.Instance);
                 }
-                else if (_webSocketEstablished)
+                else if (ConnectProtocolEstablished)
                 {
                     responseContent.SetStream(new Http2ReadWriteStream(this));
                 }

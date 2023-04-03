@@ -6,8 +6,9 @@ stages:
 
 - stage: PrepareForPublish
   displayName: Prepare for Publish
+  variables:
+  - template: /eng/common/templates/variables/pool-providers.yml
   jobs:
-
   # Prep artifacts: sign them and upload pipeline artifacts expected by stages-based publishing.
   - template: /eng/pipelines/official/jobs/prepare-signed-artifacts.yml
     parameters:
@@ -17,10 +18,12 @@ stages:
   - template: /eng/common/templates/job/publish-build-assets.yml
     parameters:
       publishUsingPipelines: true
+      publishAssetsImmediately: true
       dependsOn: PrepareSignedArtifacts
       pool:
-        name: NetCore1ESPool-Internal
-        demands: ImageOverride -equals Build.Windows.Amd64.VS2022
+        name: $(DncEngInternalBuildPool)
+        demands: ImageOverride -equals 1es-windows-2022
+      symbolPublishingAdditionalParameters: '/p:PublishSpecialClrFiles=true'
 
 # Stages-based publishing entry point
 - template: /eng/common/templates/post-build/post-build.yml
@@ -34,6 +37,7 @@ stages:
     enableSigningValidation: false
     enableNugetValidation: false
     enableSourceLinkValidation: false
+    publishAssetsImmediately: true
     SDLValidationParameters:
       enable: false
       artifactNames:

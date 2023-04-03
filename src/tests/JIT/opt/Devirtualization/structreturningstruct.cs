@@ -18,8 +18,8 @@ using System.Threading;
 //
 // The test below is set up to devirtualize under PGO.
 //
-// COMPlus_TieredPGO=1
-// COMPlus_TC_QuickJitForLoopsO=1
+// DOTNET_TieredPGO=1
+// DOTNET_TC_QuickJitForLoopsO=1
 //
 class X
 {

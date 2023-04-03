@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
-using ILCompiler;
 using Internal.TypeSystem;
 using NumberStyles = System.Globalization.NumberStyles;
 
@@ -79,7 +78,7 @@ namespace Internal.JitInterface
         /// <param name="parameters">A collection of parameter name/value pairs.</param>
         public JitConfigProvider(IEnumerable<CorJitFlag> jitFlags, IEnumerable<KeyValuePair<string, string>> parameters)
         {
-            ArrayBuilder<CorJitFlag> jitFlagBuilder = new ArrayBuilder<CorJitFlag>();
+            ArrayBuilder<CorJitFlag> jitFlagBuilder = default(ArrayBuilder<CorJitFlag>);
             foreach (CorJitFlag jitFlag in jitFlags)
             {
                 jitFlagBuilder.Add(jitFlag);
@@ -110,7 +109,7 @@ namespace Internal.JitInterface
             string stringValue;
             int intValue;
             if (_config.TryGetValue(name, out stringValue) &&
-                Int32.TryParse(stringValue, NumberStyles.AllowHexSpecifier, null, out intValue))
+                int.TryParse(stringValue, NumberStyles.AllowHexSpecifier, null, out intValue))
             {
                 return intValue;
             }
@@ -126,7 +125,7 @@ namespace Internal.JitInterface
                 return stringValue;
             }
 
-            return String.Empty;
+            return string.Empty;
         }
 
         private static string GetTargetSpec(TargetDetails target)

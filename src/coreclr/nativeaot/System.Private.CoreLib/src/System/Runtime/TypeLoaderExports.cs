@@ -109,39 +109,12 @@ namespace System.Runtime
             return RawCalliHelper.Call<object>(entry.Result, arg, entry.AuxResult);
         }
 
-        public static IntPtr UpdateTypeFloatingDictionary(IntPtr eetypePtr, IntPtr dictionaryPtr)
-        {
-            // No caching needed. Update is in-place, and happens once per dictionary
-            return RuntimeAugments.TypeLoaderCallbacks.UpdateFloatingDictionary(eetypePtr, dictionaryPtr);
-        }
-
-        public static IntPtr UpdateMethodFloatingDictionary(IntPtr dictionaryPtr)
-        {
-            // No caching needed. Update is in-place, and happens once per dictionary
-            return RuntimeAugments.TypeLoaderCallbacks.UpdateFloatingDictionary(dictionaryPtr, dictionaryPtr);
-        }
-
-#if FEATURE_UNIVERSAL_GENERICS
-        public static unsafe IntPtr GetDelegateThunk(object delegateObj, int whichThunk)
-        {
-            Entry entry = LookupInCache(s_cache, (IntPtr)delegateObj.GetMethodTable(), new IntPtr(whichThunk));
-            if (entry == null)
-            {
-                entry = CacheMiss((IntPtr)delegateObj.GetMethodTable(), new IntPtr(whichThunk),
-                    (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
-                        => RuntimeAugments.TypeLoaderCallbacks.GetDelegateThunk((Delegate)contextObject, (int)signature),
-                    delegateObj);
-            }
-            return entry.Result;
-        }
-#endif
-
         public static unsafe IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
         {
             Entry entry = LookupInCache(s_cache, (IntPtr)obj.GetMethodTable(), *(IntPtr*)&slot);
             entry ??= CacheMiss((IntPtr)obj.GetMethodTable(), *(IntPtr*)&slot,
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
-                        => Internal.Runtime.CompilerServices.GenericVirtualMethodSupport.GVMLookupForSlot(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature));
+                        => RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature));
             return entry.Result;
         }
 
@@ -381,5 +354,9 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         public static T Call<T>(IntPtr pfn, string[] arg0)
             => ((delegate*<string[], T>)pfn)(arg0);
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static ref byte Call(IntPtr pfn, void* arg1, ref byte arg2, ref byte arg3, void* arg4)
+            => ref ((delegate*<void*, ref byte, ref byte, void*, ref byte>)pfn)(arg1, ref arg2, ref arg3, arg4);
     }
 }

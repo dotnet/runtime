@@ -389,7 +389,7 @@ size_t DisAssembler::disCchFixupMember(
             if (anyReloc)
             {
                 // Make instructions like "mov rcx, 7FE8247A638h" diffable.
-                swprintf_s(wz, cchMax, W("%IXh"), dspAddr(targetAddr));
+                swprintf_s(wz, cchMax, W("%zXh"), dspAddr(targetAddr));
                 break;
             }
 
@@ -494,7 +494,7 @@ size_t DisAssembler::disCchFixupMember(
                  * "addr" is the address of the immediate */
 
                 // Make instructions like "mov rcx, 7FE8247A638h" diffable.
-                swprintf_s(wz, cchMax, W("%IXh"), dspAddr(targetAddr));
+                swprintf_s(wz, cchMax, W("%zXh"), dspAddr(targetAddr));
                 break;
             }
 
@@ -630,7 +630,7 @@ size_t DisAssembler::disCchRegRelMember(
             /* This case consists of non-static members */
 
             /* find the emitter block and the offset for the fixup
-             * fixup is emited after the coding of the instruction - size = word (2 bytes)
+             * fixup is emitted after the coding of the instruction - size = word (2 bytes)
              * GRRRR!!! - for the 16 bit case we have to check for the address size prefix = 0x66
              */
 
@@ -913,9 +913,9 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
 
     if (cb == 0)
     {
-        DISASM_DUMP("CbDisassemble offs %Iu addr %I64u\n", offs, addr);
+        DISASM_DUMP("CbDisassemble offs %zu addr %llu\n", offs, addr);
         // assert(!"can't disassemble instruction!!!");
-        fprintf(pfile, "MSVCDIS can't disassemble instruction @ offset %Iu (0x%02x)!!!\n", offs, offs);
+        fprintf(pfile, "MSVCDIS can't disassemble instruction @ offset %zu (0x%02zx)!!!\n", offs, offs);
 #if defined(TARGET_ARM64)
         fprintf(pfile, "%08Xh\n", *(unsigned int*)pb);
         return 4;
@@ -1139,21 +1139,21 @@ size_t DisAssembler::CbDisassemble(DIS*        pdis,
             {
                 // Truncate the bytes if they are too long
 
-                static const wchar_t* elipses    = W("...\0");
-                const size_t          cchElipses = 4;
+                static const wchar_t* ellipses    = W("...\0");
+                const size_t          cchEllipses = 4;
 
-                memcpy(&wzBytes[CCH_INDENT - cchElipses], elipses, cchElipses * sizeof(wchar_t));
+                memcpy(&wzBytes[CCH_INDENT - cchEllipses], ellipses, cchEllipses * sizeof(wchar_t));
 
                 cchBytes = CCH_INDENT;
             }
 
-            fprintf(pfile, "  %ls", wzBytes);
+            fprintf(pfile, "  %S", wzBytes);
             cchIndent = CCH_INDENT - cchBytes;
         }
 
         // print the dis-assembled instruction
 
-        fprintf(pfile, "%*c %ls\n", cchIndent, ' ', wz);
+        fprintf(pfile, "%*c %S\n", cchIndent, ' ', wz);
     }
 
     return cb;
@@ -1170,7 +1170,7 @@ size_t CbDisassembleWithBytes(DIS* pdis, DIS::ADDR addr, const BYTE* pb, size_t 
 
     pdis->CchFormatAddr(addr, wz, ArrLen(wz));
 
-    size_t cchIndent = (size_t)fprintf(pfile, "  %ls: ", wz);
+    size_t cchIndent = (size_t)fprintf(pfile, "  %S: ", wz);
 
     size_t cb = pdis->CbDisassemble(addr, pb, cbMax);
 
@@ -1229,12 +1229,12 @@ size_t CbDisassembleWithBytes(DIS* pdis, DIS::ADDR addr, const BYTE* pb, size_t 
         if (fFirst)
         {
             pdis->CchFormatInstr(wz, ArrLen(wz));
-            fprintf(pfile, "%-*ls %ls\n", cchBytesMax, pwzBytes, wz);
+            fprintf(pfile, "%-*S %S\n", cchBytesMax, pwzBytes, wz);
         }
 
         else
         {
-            fprintf(pfile, "%*c%ls\n", cchIndent, ' ', pwzBytes);
+            fprintf(pfile, "%*c%S\n", cchIndent, ' ', pwzBytes);
         }
     }
 

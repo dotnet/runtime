@@ -45,6 +45,10 @@
 #define SSIZE_T_MAX ((ptrdiff_t)(SIZE_T_MAX / 2))
 #endif
 
+#ifndef __has_builtin
+#define __has_builtin(x) 0
+#endif
+
 #ifndef _INC_WINDOWS
 // -----------------------------------------------------------------------------------------------------------
 //
@@ -82,6 +86,7 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #define CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT    0x8013200B
 #define CLR_E_GC_BAD_HARD_LIMIT                0x8013200D
 #define CLR_E_GC_LARGE_PAGE_MISSING_HARD_LIMIT 0x8013200E
+#define CLR_E_GC_BAD_REGION_SIZE               0x8013200F
 
 #define NOERROR                 0x0
 #define ERROR_TIMEOUT           1460
@@ -186,26 +191,15 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
  #endif
 #else // _MSC_VER
 
-#ifdef __llvm__
-#define HAS_IA32_PAUSE __has_builtin(__builtin_ia32_pause)
-#define HAS_IA32_MFENCE __has_builtin(__builtin_ia32_mfence)
-#else
-#define HAS_IA32_PAUSE 0
-#define HAS_IA32_MFENCE 0
-#endif
-
-// Only clang defines __has_builtin, so we first test for a GCC define
-// before using __has_builtin.
-
 #if defined(__i386__) || defined(__x86_64__)
 
-#if (__GNUC__ > 4 && __GNUC_MINOR > 7) || HAS_IA32_PAUSE
+#if __has_builtin(__builtin_ia32_pause)
  // clang added this intrinsic in 3.8
  // gcc added this intrinsic by 4.7.1
  #define YieldProcessor __builtin_ia32_pause
 #endif // __has_builtin(__builtin_ia32_pause)
 
-#if defined(__GNUC__) || HAS_IA32_MFENCE
+#if __has_builtin(__builtin_ia32_mfence)
  // clang has had this intrinsic since at least 3.0
  // gcc has had this intrinsic since forever
  #define MemoryBarrier __builtin_ia32_mfence
@@ -409,7 +403,7 @@ typedef struct _PROCESSOR_NUMBER {
 
 // -----------------------------------------------------------------------------------------------------------
 //
-// The subset of the contract code required by the GC/HandleTable sources. If Redhawk moves to support
+// The subset of the contract code required by the GC/HandleTable sources. If NativeAOT moves to support
 // contracts these local definitions will disappear and be replaced by real implementations.
 //
 
@@ -491,8 +485,6 @@ class MethodTable;
 class Object;
 class ArrayBase;
 
-// Various types used to refer to object references or handles. This will get more complex if we decide
-// Redhawk wants to wrap object references in the debug build.
 typedef DPTR(Object) PTR_Object;
 typedef DPTR(PTR_Object) PTR_PTR_Object;
 

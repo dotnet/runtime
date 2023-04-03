@@ -11,14 +11,14 @@ namespace System.Runtime.InteropServices
     /// <summary>
     /// A delegate used to resolve native libraries via callback.
     /// </summary>
-    /// <param name="libraryName">The native library to resolve</param>
-    /// <param name="assembly">The assembly requesting the resolution</param>
+    /// <param name="libraryName">The native library to resolve.</param>
+    /// <param name="assembly">The assembly requesting the resolution.</param>
     /// <param name="searchPath">
     ///     The DllImportSearchPathsAttribute on the PInvoke, if any.
     ///     Otherwise, the DllImportSearchPathsAttribute on the assembly, if any.
     ///     Otherwise null.
     /// </param>
-    /// <returns>The handle for the loaded native library on success, null on failure</returns>
+    /// <returns>The handle for the loaded native library on success, null on failure.</returns>
     public delegate IntPtr DllImportResolver(string libraryName,
                                              Assembly assembly,
                                              DllImportSearchPath? searchPath);
@@ -32,8 +32,8 @@ namespace System.Runtime.InteropServices
         /// NativeLibrary Loader: Simple API
         /// This method is a wrapper around OS loader, using "default" flags.
         /// </summary>
-        /// <param name="libraryPath">The name of the native library to be loaded</param>
-        /// <returns>The handle for the loaded native library</returns>
+        /// <param name="libraryPath">The name of the native library to be loaded.</param>
+        /// <returns>The handle for the loaded native library.</returns>
         /// <exception cref="System.ArgumentNullException">If libraryPath is null</exception>
         /// <exception cref="System.DllNotFoundException ">If the library can't be found.</exception>
         /// <exception cref="System.BadImageFormatException">If the library is not valid.</exception>
@@ -47,9 +47,9 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// NativeLibrary Loader: Simple API that doesn't throw
         /// </summary>
-        /// <param name="libraryPath">The name of the native library to be loaded</param>
-        /// <param name="handle">The out-parameter for the loaded native library handle</param>
-        /// <returns>True on successful load, false otherwise</returns>
+        /// <param name="libraryPath">The name of the native library to be loaded.</param>
+        /// <param name="handle">The out-parameter for the loaded native library handle.</param>
+        /// <returns>True on successful load, false otherwise.</returns>
         /// <exception cref="System.ArgumentNullException">If libraryPath is null</exception>
         public static bool TryLoad(string libraryPath, out IntPtr handle)
         {
@@ -73,10 +73,10 @@ namespace System.Runtime.InteropServices
         /// It does not invoke extension points that are not tied to the AssemblyLoadContext:
         /// * The per-assembly registered DllImportResolver callback
         /// </summary>
-        /// <param name="libraryName">The name of the native library to be loaded</param>
-        /// <param name="assembly">The assembly loading the native library</param>
-        /// <param name="searchPath">The search path</param>
-        /// <returns>The handle for the loaded library</returns>
+        /// <param name="libraryName">The name of the native library to be loaded.</param>
+        /// <param name="assembly">The assembly loading the native library.</param>
+        /// <param name="searchPath">The search path.</param>
+        /// <returns>The handle for the loaded library.</returns>
         /// <exception cref="System.ArgumentNullException">If libraryPath or assembly is null</exception>
         /// <exception cref="System.ArgumentException">If assembly is not a RuntimeAssembly</exception>
         /// <exception cref="System.DllNotFoundException">If the library can't be found.</exception>
@@ -109,11 +109,11 @@ namespace System.Runtime.InteropServices
         /// It does not invoke extension points that are not tied to the AssemblyLoadContext:
         /// * The per-assembly registered DllImportResolver callback
         /// </summary>
-        /// <param name="libraryName">The name of the native library to be loaded</param>
-        /// <param name="assembly">The assembly loading the native library</param>
-        /// <param name="searchPath">The search path</param>
-        /// <param name="handle">The out-parameter for the loaded native library handle</param>
-        /// <returns>True on successful load, false otherwise</returns>
+        /// <param name="libraryName">The name of the native library to be loaded.</param>
+        /// <param name="assembly">The assembly loading the native library.</param>
+        /// <param name="searchPath">The search path.</param>
+        /// <param name="handle">The out-parameter for the loaded native library handle.</param>
+        /// <returns>True on successful load, false otherwise.</returns>
         /// <exception cref="System.ArgumentNullException">If libraryPath or assembly is null</exception>
         /// <exception cref="System.ArgumentException">If assembly is not a RuntimeAssembly</exception>
         public static bool TryLoad(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, out IntPtr handle)
@@ -136,7 +136,7 @@ namespace System.Runtime.InteropServices
         /// Given a library handle, free it.
         /// No action if the input handle is null.
         /// </summary>
-        /// <param name="handle">The native library handle to be freed</param>
+        /// <param name="handle">The native library handle to be freed.</param>
         public static void Free(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
@@ -148,9 +148,9 @@ namespace System.Runtime.InteropServices
         /// Get the address of an exported Symbol
         /// This is a simple wrapper around OS calls, and does not perform any name mangling.
         /// </summary>
-        /// <param name="handle">The native library handle</param>
-        /// <param name="name">The name of the exported symbol</param>
-        /// <returns>The address of the symbol</returns>
+        /// <param name="handle">The native library handle.</param>
+        /// <param name="name">The name of the exported symbol.</param>
+        /// <returns>The address of the symbol.</returns>
         /// <exception cref="System.ArgumentNullException">If handle or name is null</exception>
         /// <exception cref="System.EntryPointNotFoundException">If the symbol is not found</exception>
         public static IntPtr GetExport(IntPtr handle, string name)
@@ -164,10 +164,10 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Get the address of an exported Symbol, but do not throw
         /// </summary>
-        /// <param name="handle">The  native library handle</param>
-        /// <param name="name">The name of the exported symbol</param>
-        /// <param name="address"> The out-parameter for the symbol address, if it exists</param>
-        /// <returns>True on success, false otherwise</returns>
+        /// <param name="handle">The  native library handle.</param>
+        /// <param name="name">The name of the exported symbol.</param>
+        /// <param name="address"> The out-parameter for the symbol address, if it exists.</param>
+        /// <returns>True on success, false otherwise.</returns>
         /// <exception cref="System.ArgumentNullException">If handle or name is null</exception>
         public static bool TryGetExport(IntPtr handle, string name, out IntPtr address)
         {
@@ -194,8 +194,8 @@ namespace System.Runtime.InteropServices
         /// Only one resolver can be registered per assembly.
         /// Trying to register a second resolver fails with InvalidOperationException.
         /// </summary>
-        /// <param name="assembly">The assembly for which the resolver is registered</param>
-        /// <param name="resolver">The resolver callback to register</param>
+        /// <param name="assembly">The assembly for which the resolver is registered.</param>
+        /// <param name="resolver">The resolver callback to register.</param>
         /// <exception cref="System.ArgumentNullException">If assembly or resolver is null</exception>
         /// <exception cref="System.ArgumentException">If a resolver is already set for this assembly</exception>
         public static void SetDllImportResolver(Assembly assembly, DllImportResolver resolver)
@@ -222,9 +222,9 @@ namespace System.Runtime.InteropServices
         /// The helper function that calls the per-assembly native-library resolver
         /// if one is registered for this assembly.
         /// </summary>
-        /// <param name="libraryName">The native library to load</param>
-        /// <param name="assembly">The assembly trying load the native library</param>
-        /// <param name="hasDllImportSearchPathFlags">If the pInvoke has DefaultDllImportSearchPathAttribute</param>
+        /// <param name="libraryName">The native library to load.</param>
+        /// <param name="assembly">The assembly trying load the native library.</param>
+        /// <param name="hasDllImportSearchPathFlags">If the pInvoke has DefaultDllImportSearchPathAttribute.</param>
         /// <param name="dllImportSearchPathFlags">If hasdllImportSearchPathFlags is true, the flags in
         ///                                       DefaultDllImportSearchPathAttribute; meaningless otherwise </param>
         /// <returns>The handle for the loaded library on success. Null on failure.</returns>

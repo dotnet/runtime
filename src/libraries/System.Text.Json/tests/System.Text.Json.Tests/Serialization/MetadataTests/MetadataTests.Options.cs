@@ -15,12 +15,12 @@ namespace System.Text.Json.Serialization.Tests
         {
             // Pass no options.
             MyJsonContext context = new();
-            JsonSerializerOptions options = context.Options; // New options instance created and binded at this point.
+            JsonSerializerOptions options = context.Options; // New options instance created and bound at this point.
             Assert.NotNull(options);
 
             // Pass options.
             options = new JsonSerializerOptions();
-            context = new MyJsonContext(options); // Provided options are binded at this point.
+            context = new MyJsonContext(options); // Provided options are bound at this point.
             Assert.Same(options, context.Options);
         }
 
@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Tests
             JsonSerializerOptions options = new();
             options.AddContext<MyJsonContext>();
 
-            // Options can be binded only once.
+            // Options can be bound only once.
             CauseInvalidOperationException(() => options.AddContext<MyJsonContext>());
             CauseInvalidOperationException(() => options.AddContext<MyJsonContextThatSetsOptionsInParameterlessCtor>());
         }
@@ -52,7 +52,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotNull(optionsField);
             Assert.NotNull((JsonSerializerOptions)optionsField.GetValue(context));
 
-            // Those options are overwritten when context is binded via options.AddContext<TContext>();
+            // Those options are overwritten when context is bound via options.AddContext<TContext>();
             JsonSerializerOptions options = new();
             options.AddContext<MyJsonContextThatSetsOptionsInParameterlessCtor>(); // No error.
             FieldInfo resolverField = typeof(JsonSerializerOptions).GetField("_typeInfoResolver", BindingFlags.NonPublic | BindingFlags.Instance);

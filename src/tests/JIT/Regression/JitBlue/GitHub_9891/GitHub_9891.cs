@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // Noway assert where an inlinee modified a parameter with index > 16,
 // and caller that had few args or locals passed in a constant for
 // that parameter.
 
-class B
+public class B
 {
     int X(
         int a01, int a02, int a03, int a04,
@@ -20,7 +21,8 @@ class B
         return a20;
     }
 
-    public static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         B b = new B();
         int v = b.X(1, 2, 3, 4, 5, 6, 7, 8, 9, 10,

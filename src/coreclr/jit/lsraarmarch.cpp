@@ -384,6 +384,10 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // Now generate defs and kills.
     regMaskTP killMask = getKillSetForCall(call);
     BuildDefsWithKills(call, dstCount, dstCandidates, killMask);
+
+    // No args are placed in registers anymore.
+    placedArgRegs      = RBM_NONE;
+    numPlacedArgLocals = 0;
     return srcCount;
 }
 
@@ -554,11 +558,17 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     {
         assert(src->TypeIs(TYP_STRUCT) && src->isContained());
 
-        // We can use a ldr/str sequence so we need an internal register
-        buildInternalIntRegisterDefForNode(argNode, allRegs(TYP_INT) & ~argMask);
-
         if (src->OperIs(GT_OBJ))
         {
+            // If the PUTARG_SPLIT clobbers only one register we may need an
+            // extra internal register in case there is a conflict between the
+            // source address register and target register.
+            if (argNode->gtNumRegs == 1)
+            {
+                // We can use a ldr/str sequence so we need an internal register
+                buildInternalIntRegisterDefForNode(argNode, allRegs(TYP_INT) & ~argMask);
+            }
+
             // We will generate code that loads from the OBJ's address, which must be in a register.
             srcCount = BuildOperandUses(src->AsObj()->Addr());
         }
@@ -720,6 +730,50 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 }
                 break;
 
+                case GenTreeBlk::BlkOpKindUnrollMemmove:
+                {
+#ifdef TARGET_ARM64
+
+                    // Prepare SIMD/GPR registers needed to perform an unrolled memmove. The idea that
+                    // we can ignore the fact that src and dst might overlap if we save the whole src
+                    // to temp regs in advance.
+
+                    // Lowering was expected to get rid of memmove in case of zero
+                    assert(size > 0);
+
+                    const unsigned simdSize = FP_REGSIZE_BYTES;
+                    if (size >= simdSize)
+                    {
+                        unsigned simdRegs = size / simdSize;
+                        if ((size % simdSize) != 0)
+                        {
+                            // TODO-CQ: Consider using GPR load/store here if the reminder is 1,2,4 or 8
+                            simdRegs++;
+                        }
+                        for (unsigned i = 0; i < simdRegs; i++)
+                        {
+                            // It's too late to revert the unrolling so we hope we'll have enough SIMD regs
+                            // no more than MaxInternalCount. Currently, it's controlled by getUnrollThreshold(memmove)
+                            buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                        }
+                    }
+                    else if (isPow2(size))
+                    {
+                        // Single GPR for 1,2,4,8
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                    }
+                    else
+                    {
+                        // Any size from 3 to 15 can be handled via two GPRs
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                    }
+#else // TARGET_ARM64
+                    unreached();
+#endif
+                }
+                break;
+
                 case GenTreeBlk::BlkOpKindHelper:
                     dstAddrRegMask = RBM_ARG_0;
                     if (srcAddrOrFill != nullptr)
@@ -806,9 +860,35 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     }
 #endif
 
-    int srcCount = BuildOperandUses(src);
+    int srcCount = BuildCastUses(cast, RBM_NONE);
     buildInternalRegisterUses();
     BuildDef(cast);
+    return srcCount;
+}
+
+//------------------------------------------------------------------------
+// BuildSelect: Build RefPositions for a GT_SELECT node.
+//
+// Arguments:
+//    select - The GT_SELECT node
+//
+// Return Value:
+//    The number of sources consumed by this node.
+//
+int LinearScan::BuildSelect(GenTreeOp* select)
+{
+    assert(select->OperIs(GT_SELECT, GT_SELECTCC));
+
+    int srcCount = 0;
+    if (select->OperIs(GT_SELECT))
+    {
+        srcCount += BuildOperandUses(select->AsConditional()->gtCond);
+    }
+
+    srcCount += BuildOperandUses(select->gtOp1);
+    srcCount += BuildOperandUses(select->gtOp2);
+    BuildDef(select);
+
     return srcCount;
 }
 

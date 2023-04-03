@@ -4,6 +4,7 @@
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -482,7 +483,7 @@ namespace System.Security.Cryptography.Tests
                 generated[i] = RandomNumberGenerator.GetInt32(0, 2);
             }
             VerifyAllInRange(generated, 0, 2);
-            VerifyDistribution(generated, 0.5);
+            VerifyDistribution<int>(generated, 0.5);
         }
 
 
@@ -497,7 +498,7 @@ namespace System.Security.Cryptography.Tests
                 generated[i] = RandomNumberGenerator.GetInt32(255, 257);
             }
             VerifyAllInRange(generated, 255, 257);
-            VerifyDistribution(generated, 0.5);
+            VerifyDistribution<int>(generated, 0.5);
         }
 
         [Fact]
@@ -511,7 +512,7 @@ namespace System.Security.Cryptography.Tests
                 generated[i] = RandomNumberGenerator.GetInt32(-4000, -3979);
             }
             VerifyAllInRange(generated, -4000, -3979);
-            VerifyDistribution(generated, 0.05);
+            VerifyDistribution<int>(generated, 0.05);
         }
 
         [Fact]
@@ -525,7 +526,7 @@ namespace System.Security.Cryptography.Tests
                 generated[i] = RandomNumberGenerator.GetInt32(1, 7);
             }
             VerifyAllInRange(generated, 1, 7);
-            VerifyDistribution(generated, 0.16);
+            VerifyDistribution<int>(generated, 0.16);
         }
 
         [Theory]
@@ -548,34 +549,385 @@ namespace System.Security.Cryptography.Tests
 
             double expectedDistribution = 1d / (toExclusive - fromInclusive);
             VerifyAllInRange(generated, fromInclusive, toExclusive);
-            VerifyDistribution(generated, expectedDistribution);
+            VerifyDistribution<int>(generated, expectedDistribution);
         }
 
-        private static void VerifyAllInRange(ReadOnlySpan<int> numbers, int fromInclusive, int toExclusive)
+        [Fact]
+        public static void GetItems_Choices_Empty_ArgumentException()
         {
-            for (int i = 0; i < numbers.Length; i++)
+            AssertExtensions.Throws<ArgumentException>("choices",
+                () => RandomNumberGenerator.GetItems(ReadOnlySpan<int>.Empty, 6));
+            AssertExtensions.Throws<ArgumentException>("choices",
+                () => RandomNumberGenerator.GetItems(ReadOnlySpan<int>.Empty, stackalloc int[6]));
+        }
+
+        [Fact]
+        public static void GetString_Choices_Empty_ArgumentException()
+        {
+            AssertExtensions.Throws<ArgumentException>("choices",
+                () => RandomNumberGenerator.GetString(ReadOnlySpan<char>.Empty, 6));
+        }
+
+        [Fact]
+        public static void GetItems_NegativeLength_ArgumentOutOfRangeException()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length",
+                () => RandomNumberGenerator.GetItems<int>(new int[1], -1));
+        }
+
+        [Fact]
+        public static void GetString_NegativeLength_ArgumentOutOfRangeException()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => RandomNumberGenerator.GetString("a", -1));
+        }
+
+        [Fact]
+        public static void GetItems_Empty()
+        {
+            ReadOnlySpan<int> choices = stackalloc int[] { 1 };
+            Span<int> values = RandomNumberGenerator.GetItems(choices, 0);
+            Assert.True(values.IsEmpty, "values.IsEmpty");
+        }
+
+        [Fact]
+        public static void GetString_Empty()
+        {
+            const string Choices = "a";
+            string result = RandomNumberGenerator.GetString(Choices, 0);
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public static void GetItems_SingleChoice()
+        {
+            ReadOnlySpan<int> choice = stackalloc int[] { 1 };
+            Span<int> values = RandomNumberGenerator.GetItems(choice, 256);
+            AssertExtensions.FilledWith(1, values);
+
+            values.Clear();
+            RandomNumberGenerator.GetItems(choice, values);
+            AssertExtensions.FilledWith(1, values);
+        }
+
+        [Fact]
+        public static void GetString_SingleChoice()
+        {
+            string result = RandomNumberGenerator.GetString("!", 42);
+            Assert.Equal(new string('!', 42), result);
+        }
+
+        [Fact]
+        public static void GetItems_CoinFlip_Int_RandomDistribution()
+        {
+            Span<int> generated = RandomNumberGenerator.GetItems<int>(stackalloc int[] { 1, 2 }, 10_000);
+            VerifyAllInRange(generated, fromInclusive: 1, toExclusive: 3);
+            VerifyDistribution<int>(generated, 0.5);
+
+            generated.Clear();
+            RandomNumberGenerator.GetItems<int>(stackalloc int[] { 1, 2 }, generated);
+            VerifyAllInRange(generated, fromInclusive: 1, toExclusive: 3);
+            VerifyDistribution<int>(generated, 0.5);
+        }
+
+        [Fact]
+        public static void GetItems_CoinFlip_Bool_RandomDistribution()
+        {
+            ReadOnlySpan<bool> choices = stackalloc bool[] { true, false };
+            Span<bool> generated = RandomNumberGenerator.GetItems(choices, 10_000);
+            VerifyDistribution<bool>(generated, 0.5);
+
+            generated.Clear();
+            RandomNumberGenerator.GetItems(choices, generated);
+            VerifyDistribution<bool>(generated, 0.5);
+        }
+
+        [Fact]
+        public static void GetItems_Bool_NoDeduplication()
+        {
+            ReadOnlySpan<bool> choices = stackalloc bool[] { true, true, false };
+            Span<bool> generated = RandomNumberGenerator.GetItems(choices, 10_000);
+            VerifyDistribution(generated, new Dictionary<bool, double>() { [true] = 0.66, [false] = 0.33 });
+
+            generated.Clear();
+            RandomNumberGenerator.GetItems(choices, generated);
+            VerifyDistribution(generated, new Dictionary<bool, double>() { [true] = 0.66, [false] = 0.33 });
+        }
+
+        [Fact]
+        public static void GetItems_Int_NoDeduplication()
+        {
+            ReadOnlySpan<int> choices = stackalloc int[] { 5, 5, 5, 20 };
+            Span<int> generated = RandomNumberGenerator.GetItems(choices, 10_000);
+            VerifyDistribution(generated, new Dictionary<int, double>() { [5] = 0.75, [20] = 0.25 });
+
+            generated.Clear();
+            RandomNumberGenerator.GetItems(choices, generated);
+            VerifyDistribution(generated, new Dictionary<int, double>() { [5] = 0.75, [20] = 0.25 });
+        }
+
+        [Fact]
+        public static void GetString_RandomDistribution()
+        {
+            const string Choices = "abcdefghijklmnopqrstuvwxyz";
+            string generated = RandomNumberGenerator.GetString(Choices, 10_000);
+            VerifyDistribution<char>(generated, 1f / 26);
+            VerifyAllInRange(generated, 'a', (char)('z' + 1));
+        }
+
+        [Fact]
+        public static void GetString_NoDeduplication()
+        {
+            const string Choices = "chess";
+            string generated = RandomNumberGenerator.GetString(Choices, 10_000);
+            VerifyDistribution<char>(
+                generated,
+                new Dictionary<char, double>() { ['c'] = 0.2, ['h'] = 0.2, ['e'] = 0.2, ['s'] = 0.4 });
+        }
+
+        [Fact]
+        public static void GetHexString_Empty()
+        {
+            string result = RandomNumberGenerator.GetHexString(stringLength: 0);
+            Assert.Empty(result);
+
+            Span<char> buffer = Span<char>.Empty;
+            RandomNumberGenerator.GetHexString(buffer); // Shouldn't throw.
+        }
+
+        [Theory]
+        [MemberData(nameof(GetHexStringLengths))]
+        public static void GetHexString_Allocating_Random(int length)
+        {
+            // We generate 256 strings and verify that there is no offset into the strings at which all strings contain
+            // the same character. The odds of throwing 256 d16's and all of them landing the same is nearly nothing so
+            // this would be a good signal that the random buffer is not being filled correctly.
+            string[] samples = new string[256];
+            HashSet<char> hashSet = new HashSet<char>(samples.Length);
+
+            for (int i = 0; i < samples.Length; i++)
             {
-                Assert.InRange(numbers[i], fromInclusive, toExclusive - 1);
+                samples[i] = RandomNumberGenerator.GetHexString(length);
+            }
+
+            for (int index = 0; index < length; index++)
+            {
+                foreach (string sample in samples)
+                {
+                    hashSet.Add(sample[index]);
+                }
+
+                AssertExtensions.GreaterThan(hashSet.Count, 1, $"Random character at position {index}.");
+                hashSet.Clear();
+            }
+        }
+        [Theory]
+        [MemberData(nameof(GetHexStringLengths))]
+        public static void GetHexString_Buffer_Random(int length)
+        {
+            // We generate 256 strings and verify that all positions in those 256 strings don't contain identical
+            // characters. The odds of throwing 256 d16's and all of them landing the same is nearly nothing so
+            // this would be a good signal that the random buffer is not being filled correctly.
+            char[][] samples = new char[256][];
+            HashSet<char> hashSet = new HashSet<char>(samples.Length);
+
+            for (int i = 0; i < samples.Length; i++)
+            {
+                char[] buffer = new char[length];
+                RandomNumberGenerator.GetHexString(buffer);
+                samples[i] = buffer;
+            }
+
+            for (int index = 0; index < length; index++)
+            {
+                foreach (char[] sample in samples)
+                {
+                    hashSet.Add(sample[index]);
+                }
+
+                AssertExtensions.GreaterThan(hashSet.Count, 1, $"Random character at position {index}.");
+                hashSet.Clear();
             }
         }
 
-        private static void VerifyDistribution(ReadOnlySpan<int> numbers, double expected)
+        [Theory]
+        [MemberData(nameof(GetHexStringLengths))]
+        public static void GetHexString_Conformance(int length)
         {
-            var observedNumbers = new Dictionary<int, int>(numbers.Length);
-            for (int i = 0; i < numbers.Length; i++)
+            bool[] casing = new bool[] { true, false };
+
+            foreach (bool lowercase in casing)
             {
-                int number = numbers[i];
-                if (!observedNumbers.TryAdd(number, 1))
+                string result = RandomNumberGenerator.GetHexString(length, lowercase);
+                Span<char> spanResult = new char[length];
+                spanResult.Fill('!'); // Fill it with something non-hex that is obvious.
+                RandomNumberGenerator.GetHexString(spanResult, lowercase);
+
+                AssertHexString(result, spanResult, lowercase);
+            }
+
+            static void AssertHexString(string allocatedString, Span<char> bufferString, bool generatedLowercase)
+            {
+                Assert.Equal(allocatedString.Length, bufferString.Length);
+
+                for (int i = 0; i < allocatedString.Length; i++)
                 {
-                    observedNumbers[number]++;
+                    if (generatedLowercase)
+                    {
+                        Assert.True(
+                            char.IsAsciiHexDigitLower(bufferString[i]),
+                            $"Non-lower hex character at position {i} in string {bufferString}");
+
+                        Assert.True(
+                            char.IsAsciiHexDigitLower(allocatedString[i]),
+                            $"Non-lower hex character at position {i} in string {allocatedString}");
+                    }
+                    else
+                    {
+                        Assert.True(
+                            char.IsAsciiHexDigitUpper(bufferString[i]),
+                            $"Non-upper hex character at position {i} in string {bufferString}");
+
+                        Assert.True(
+                            char.IsAsciiHexDigitUpper(allocatedString[i]),
+                            $"Non-upper hex character at position {i} in string {allocatedString}");
+                    }
                 }
             }
-            const double tolerance = 0.07;
-            foreach ((_, int occurrences) in observedNumbers)
+        }
+
+        [Fact]
+        public static void Shuffle_Empty()
+        {
+            RandomNumberGenerator.Shuffle(Span<int>.Empty);
+        }
+
+        [Fact]
+        public static void Shuffle_One()
+        {
+            int[] buffer = new int[] { 42 };
+            RandomNumberGenerator.Shuffle<int>(buffer);
+            Assert.Equal(new int[] { 42 }, buffer);
+        }
+
+        [Fact]
+        public static void Shuffle_Two()
+        {
+            ReadOnlySpan<int> numbers = new int[] { 42, 56 };
+
+            int[][] shuffles = new int[10_000][];
+
+            for (int i = 0; i < shuffles.Length; i++)
             {
-                double percentage = occurrences / (double)numbers.Length;
+                shuffles[i] = numbers.ToArray(); // Copy it.
+                RandomNumberGenerator.Shuffle<int>(shuffles[i]);
+            }
+
+            int[] firstNumber = shuffles.Select(x => x[0]).ToArray();
+            int[] secondNumber = shuffles.Select(x => x[1]).ToArray();
+
+            // For the first and second digit, in our shuffles, we expect half of them in each location.
+            VerifyDistribution<int>(firstNumber, 0.5);
+            VerifyDistribution<int>(secondNumber, 0.5);
+        }
+
+        [Fact]
+        public static void Shuffle_Ten()
+        {
+            ReadOnlySpan<int> numbers = new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+
+            int[][] shuffles = new int[10_000][];
+
+            for (int i = 0; i < shuffles.Length; i++)
+            {
+                shuffles[i] = numbers.ToArray(); // Copy it.
+                RandomNumberGenerator.Shuffle<int>(shuffles[i]);
+            }
+
+            for (int index = 0; index < numbers.Length; index++)
+            {
+                int[] shuffledNumbers = shuffles.Select(x => x[index]).ToArray();
+                VerifyDistribution<int>(shuffledNumbers, 0.1);
+            }
+        }
+
+        public static IEnumerable<object[]> GetHexStringLengths()
+        {
+            // These lengths exercise various aspects of the the hex generator.
+            // Fill an individual character (I) if the length is odd.
+            // Fill the remaining in block (B) sizes of 64 bytes, or 128 hex characters.
+
+            return new object[][]
+            {
+                new object[] { 1 }, // I: yes; B: 0
+                new object[] { 12 }, // I: no; B: 1
+                new object[] { 13 }, // I: yes; B: 1
+                new object[] { 127 }, // I: yes; B: 1. Note: smallest possible "partial" block.
+                new object[] { 128 }, // I: no; B: 1. Note: exactly 1 block.
+                new object[] { 129 }, // I: yes; B: 1. Note: exactly 1 block.
+                new object[] { 140 }, // I: no; B: 2. Note: 1 complete block another partial block of 12.
+                new object[] { 141 }, // I: yes; B: 2. Note: 1 complete block another partial block of 12, plus an I.
+                new object[] { 255 }, // I: yes; B: 2. Note: 1 complete block another partial block of 126, plus an I.
+                new object[] { 256 }, // I: no; B: 2. Note: exactly two blocks.
+                new object[] { 257 }, // I: yes; B: 2. Note: exactly two blocks plus an I.
+                new object[] { 280 }, // I: no; B: 3. Note: two whole blocks and a partial block of 24.
+                new object[] { 281 }, // I: yes; B: 3. Note: two whole blocks and a partial block of 24, plus an I.
+                new object[] { 1024 }, // I: no; B 8. Note: exactly 8 blocks.
+                new object[] { 1025 }, // I: yes; B 8. Note: exactly 8 blocks, plus an I.
+                new object[] { 1026 }, // I: no; B: 9. Note: 8 blocks plus another partial block of 2.
+                new object[] { 1027 }, // I: yes; B: 9. Note: 8 blocks plus another partial block of 2, and an I.
+            };
+        }
+
+        private static void VerifyAllInRange<T>(ReadOnlySpan<T> numbers, T fromInclusive, T toExclusive) where T : INumber<T>
+        {
+            for (int i = 0; i < numbers.Length; i++)
+            {
+                Assert.InRange<T>(numbers[i], fromInclusive, toExclusive - T.One);
+            }
+        }
+
+        private static void VerifyDistribution<T>(ReadOnlySpan<T> values, double expected)
+        {
+            var observedValues = new Dictionary<T, int>(values.Length);
+
+            for (int i = 0; i < values.Length; i++)
+            {
+                T value = values[i];
+                if (!observedValues.TryAdd(value, 1))
+                {
+                    observedValues[value]++;
+                }
+            }
+
+            const double tolerance = 0.07;
+            foreach ((_, int occurrences) in observedValues)
+            {
+                double percentage = occurrences / (double)values.Length;
                 double actual = Math.Abs(expected - percentage);
                 Assert.True(actual < tolerance, $"Occurred number of times within threshold. Actual: {actual}");
+            }
+        }
+
+        private static void VerifyDistribution<T>(ReadOnlySpan<T> values, Dictionary<T, double> distribution)
+        {
+            var observedValues = new Dictionary<T, int>(values.Length);
+
+            for (int i = 0; i < values.Length; i++)
+            {
+                T value = values[i];
+                if (!observedValues.TryAdd(value, 1))
+                {
+                    observedValues[value]++;
+                }
+            }
+
+            const double tolerance = 0.07;
+            foreach ((T value, int occurrences) in observedValues)
+            {
+                double expected = distribution[value];
+                double percentage = occurrences / (double)values.Length;
+                double actual = Math.Abs(expected - percentage);
+                Assert.True(actual < tolerance, $"'{value}' occurred number of times within threshold. Actual: {actual}");
             }
         }
 

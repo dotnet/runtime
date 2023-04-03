@@ -299,7 +299,7 @@ namespace System.Xml.Serialization
 
             baseSerializerTypeBuilder.DefineDefaultConstructor(
                 MethodAttributes.Family | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
-            Type baseSerializerType = baseSerializerTypeBuilder.CreateTypeInfo()!.AsType();
+            Type baseSerializerType = baseSerializerTypeBuilder.CreateType();
             CreatedTypes.Add(baseSerializerType.Name, baseSerializerType);
 
             return baseSerializer;
@@ -396,7 +396,7 @@ namespace System.Xml.Serialization
                 ilg.EndMethod();
             }
             typedSerializerTypeBuilder.DefineDefaultConstructor(CodeGenerator.PublicMethodAttributes);
-            Type typedSerializerType = typedSerializerTypeBuilder.CreateTypeInfo()!.AsType();
+            Type typedSerializerType = typedSerializerTypeBuilder.CreateType();
             CreatedTypes.Add(typedSerializerType.Name, typedSerializerType);
 
             return typedSerializerType.Name;
@@ -476,7 +476,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GenerateTypedSerializers")]
-        internal void GenerateSerializerContract(string className, XmlMapping[] xmlMappings, Type[] types, string readerType, string[] readMethods, string writerType, string[] writerMethods, Dictionary<string, string> serializers)
+        internal void GenerateSerializerContract(XmlMapping[] xmlMappings, Type[] types, string readerType, string[] readMethods, string writerType, string[] writerMethods, Dictionary<string, string> serializers)
         {
             TypeBuilder serializerContractTypeBuilder = CodeGenerator.CreateTypeBuilder(
                 _moduleBuilder!,
@@ -558,7 +558,7 @@ namespace System.Xml.Serialization
             ilg.Call(baseCtor);
             ilg.EndMethod();
             // Instantiate type
-            Type serializerContractType = serializerContractTypeBuilder.CreateTypeInfo()!.AsType();
+            Type serializerContractType = serializerContractTypeBuilder.CreateType();
             CreatedTypes.Add(serializerContractType.Name, serializerContractType);
         }
 

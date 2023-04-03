@@ -62,7 +62,7 @@ namespace System.Collections.Generic
         //
         public LowLevelList(int capacity)
         {
-            if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity));
+            ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
             if (capacity == 0)
                 _items = s_emptyArray;
@@ -76,8 +76,7 @@ namespace System.Collections.Generic
         //
         public LowLevelList(IEnumerable<T> collection)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
+            ArgumentNullException.ThrowIfNull(collection);
 
             ICollection<T>? c = collection as ICollection<T>;
             if (c != null)
@@ -123,10 +122,7 @@ namespace System.Collections.Generic
             }
             set
             {
-                if (value < _size)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, _size);
 
                 if (value != _items.Length)
                 {
@@ -160,19 +156,13 @@ namespace System.Collections.Generic
             get
             {
                 // Following trick can reduce the range check by one
-                if ((uint)index >= (uint)_size)
-                {
-                    throw new ArgumentOutOfRangeException();
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)_size, nameof(index));
                 return _items[index];
             }
 
             set
             {
-                if ((uint)index >= (uint)_size)
-                {
-                    throw new ArgumentOutOfRangeException();
-                }
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)_size, nameof(index));
                 _items[index] = value;
                 _version++;
             }
@@ -298,8 +288,7 @@ namespace System.Collections.Generic
         //
         public int IndexOf(T item, int index)
         {
-            if (index > _size)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _size);
             return Array.IndexOf(_items, item, index, _size - index);
         }
 
@@ -310,10 +299,8 @@ namespace System.Collections.Generic
         public void Insert(int index, T item)
         {
             // Note that insertions at the end are legal.
-            if ((uint)index > (uint)_size)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)index, (uint)_size, nameof(index));
+
             if (_size == _items.Length) EnsureCapacity(_size + 1);
             if (index < _size)
             {
@@ -331,15 +318,8 @@ namespace System.Collections.Generic
         //
         public void InsertRange(int index, IEnumerable<T> collection)
         {
-            if (collection == null)
-            {
-                throw new ArgumentNullException(nameof(collection));
-            }
-
-            if ((uint)index > (uint)_size)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentNullException.ThrowIfNull(collection);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)index, (uint)_size, nameof(index));
 
             ICollection<T>? c = collection as ICollection<T>;
             if (c != null)
@@ -402,10 +382,7 @@ namespace System.Collections.Generic
         // The complexity is O(n).
         public int RemoveAll(Predicate<T> match)
         {
-            if (match == null)
-            {
-                throw new ArgumentNullException(nameof(match));
-            }
+            ArgumentNullException.ThrowIfNull(match);
 
             int freeIndex = 0;   // the first free slot in items array
 
@@ -438,10 +415,7 @@ namespace System.Collections.Generic
         //
         public void RemoveAt(int index)
         {
-            if ((uint)index >= (uint)_size)
-            {
-                throw new ArgumentOutOfRangeException(nameof(index));
-            }
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)_size, nameof(index));
             _size--;
             if (index < _size)
             {

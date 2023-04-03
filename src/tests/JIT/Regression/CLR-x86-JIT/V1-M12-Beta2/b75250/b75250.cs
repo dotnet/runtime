@@ -3,7 +3,8 @@
 //
 
 using System;
-class testout1
+using Xunit;
+public class testout1
 {
 
     public struct VT
@@ -38,7 +39,8 @@ class testout1
         return retval;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         VT vt = new VT();
         vt.a1 = 5;

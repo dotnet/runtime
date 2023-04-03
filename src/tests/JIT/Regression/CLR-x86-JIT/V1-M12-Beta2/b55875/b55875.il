@@ -2,14 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern mscorlib{}
-.assembly H{}
-.module Hennessy.EXE
+.assembly extern xunit.core {}
+.assembly 'b55875'{}
 .namespace H
 {
   .class public H
   {
 .method public static int32 'Perm'() il managed
     {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.maxstack 4
 	.locals(int32)
     	.entrypoint

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType />
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ldfldstatic1.il" />
+  </ItemGroup>
+</Project>

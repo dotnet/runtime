@@ -3,11 +3,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Reflection;
-using System.Xml;
-using System.Runtime.Serialization;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.DataContracts;
+using System.Text;
+using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -31,12 +32,14 @@ namespace System.Runtime.Serialization.Json
             return new XmlObjectSerializerReadContextComplexJson(serializer, rootTypeDataContract);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected override object? ReadDataContractValue(DataContract dataContract, XmlReaderDelegator reader)
         {
             return DataContractJsonSerializer.ReadJsonValue(dataContract, reader, this);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public int GetJsonMemberIndex(XmlReaderDelegator xmlReader, XmlDictionaryString[] memberNames, int memberIndex, ExtensionDataObject? extensionData)
         {
@@ -104,8 +107,7 @@ namespace System.Runtime.Serialization.Json
                     dataNode = ReadNumericalPrimitiveExtensionDataValue(xmlReader);
                     break;
                 default:
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                        XmlObjectSerializer.CreateSerializationException(SR.Format(SR.JsonUnexpectedAttributeValue, _extensionDataValueType)));
+                    throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.JsonUnexpectedAttributeValue, _extensionDataValueType));
             }
 
             xmlReader.ReadEndElement();
@@ -255,6 +257,7 @@ namespace System.Runtime.Serialization.Json
             return new JsonReaderDelegator(xmlReader, this._dateTimeFormat);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override DataContract GetDataContract(RuntimeTypeHandle typeHandle, Type? type)
         {
@@ -263,6 +266,7 @@ namespace System.Runtime.Serialization.Json
             return dataContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override DataContract GetDataContractSkipValidation(int typeId, RuntimeTypeHandle typeHandle, Type? type)
         {
@@ -271,6 +275,7 @@ namespace System.Runtime.Serialization.Json
             return dataContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override DataContract GetDataContract(int id, RuntimeTypeHandle typeHandle)
         {
@@ -305,8 +310,8 @@ namespace System.Runtime.Serialization.Json
 
         public static void ThrowDuplicateMemberException(object obj, XmlDictionaryString[] memberNames, int memberIndex)
         {
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(
-                SR.Format(SR.JsonDuplicateMemberInInput, DataContract.GetClrTypeFullName(obj.GetType()), memberNames[memberIndex])));
+            throw new SerializationException(
+                SR.Format(SR.JsonDuplicateMemberInInput, DataContract.GetClrTypeFullName(obj.GetType()), memberNames[memberIndex]));
         }
 
         public static void ThrowMissingRequiredMembers(object obj, XmlDictionaryString[] memberNames, byte[] expectedElements, byte[] requiredElements)
@@ -326,13 +331,13 @@ namespace System.Runtime.Serialization.Json
 
             if (missingMembersCount == 1)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.Format(
-                 SR.JsonOneRequiredMemberNotFound, DataContract.GetClrTypeFullName(obj.GetType()), stringBuilder.ToString())));
+                throw new SerializationException(SR.Format(
+                 SR.JsonOneRequiredMemberNotFound, DataContract.GetClrTypeFullName(obj.GetType()), stringBuilder.ToString()));
             }
             else
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.Format(
-                    SR.JsonRequiredMembersNotFound, DataContract.GetClrTypeFullName(obj.GetType()), stringBuilder.ToString())));
+                throw new SerializationException(SR.Format(
+                    SR.JsonRequiredMembersNotFound, DataContract.GetClrTypeFullName(obj.GetType()), stringBuilder.ToString()));
             }
         }
 
@@ -341,6 +346,7 @@ namespace System.Runtime.Serialization.Json
             return BitFlagsGenerator.IsBitSet(bytes, bitIndex);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected override DataContract? ResolveDataContractFromRootDataContract(XmlQualifiedName typeQName)
         {

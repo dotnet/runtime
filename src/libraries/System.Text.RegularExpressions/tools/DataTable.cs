@@ -56,7 +56,7 @@ namespace GenerateRegexCasingTable
                 EmitFirstLevelLookupTable(writer);
 
                 writer.Write("\n");
-                
+
                 EmitMapArray(writer);
 
                 writer.Write("    }\n}\n");
@@ -110,8 +110,9 @@ namespace GenerateRegexCasingTable
 
             void EmitFirstLevelLookupTable(StreamWriter writer)
             {
-                var firstLevelLookupTable = FlattenFirstLevelLookupTable();
-                writer.Write("        private static ushort[] EquivalenceFirstLevelLookup { get; } = new ushort[" + firstLevelLookupTable.Count + "]\n        {\n");
+                List<ushort> firstLevelLookupTable = FlattenFirstLevelLookupTable();
+
+                writer.Write($"        private static ReadOnlySpan<ushort> EquivalenceFirstLevelLookup => new ushort[{firstLevelLookupTable.Count}]\n        {{\n");
 
                 writer.Write("            0x{0:x4}", firstLevelLookupTable[0]);
                 for (var i = 1; i < firstLevelLookupTable.Count; i++)
@@ -146,8 +147,9 @@ namespace GenerateRegexCasingTable
 
             void EmitMapArray(StreamWriter writer)
             {
-                var flattenedMap = FlattenMapDictionary();
-                writer.Write("        private static ushort[] EquivalenceCasingMap { get; } = new ushort[" + flattenedMap.Count + "]\n        {\n");
+                List<ushort> flattenedMap = FlattenMapDictionary();
+
+                writer.Write($"        private static ReadOnlySpan<ushort> EquivalenceCasingMap => new ushort[{flattenedMap.Count}]\n        {{\n");
 
                 writer.Write("            0x{0:x4}", flattenedMap[0]);
                 for (var i = 1; i < flattenedMap.Count; i++)
@@ -189,8 +191,9 @@ namespace GenerateRegexCasingTable
 
             void EmitValuesArray(StreamWriter writer)
             {
-                var flattenedValues = FlattenValuesDictionary();
-                writer.Write("        private static char[] EquivalenceCasingValues { get; } = new char[" + flattenedValues.Count + "]\n        {\n");
+                List<ushort> flattenedValues = FlattenValuesDictionary();
+
+                writer.Write("        private static ReadOnlySpan<char> EquivalenceCasingValues => new char[" + flattenedValues.Count + "]\n        {\n");
 
                 writer.Write("            \'\\u{0:X4}\'", flattenedValues[0]);
                 for (var i = 1; i < flattenedValues.Count; i++)

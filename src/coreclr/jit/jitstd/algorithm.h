@@ -85,7 +85,7 @@ void quick_sort(RandomAccessIterator first, RandomAccessIterator last, Less less
         }
 
         // Partition the [first, last] range into [first, newLast) and [newLast, last].
-        // Note that first and last have alreay been partitioned so the loops below
+        // Note that first and last have already been partitioned so the loops below
         // start by moving the iterator to the next position of interest.
         RandomAccessIterator newFirst = first;
         RandomAccessIterator newLast = last;

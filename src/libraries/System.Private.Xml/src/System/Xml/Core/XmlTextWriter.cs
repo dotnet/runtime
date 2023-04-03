@@ -350,8 +350,7 @@ namespace System.Xml
             get { return _indentation; }
             set
             {
-                if (value < 0)
-                    throw new ArgumentException(SR.Xml_InvalidIndentation);
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 _indentation = value;
             }
         }
@@ -760,7 +759,7 @@ namespace System.Xml
         {
             try
             {
-                if (null != text && (text.Contains("--") || text.StartsWith('-')))
+                if (null != text && (text.Contains("--") || text.EndsWith('-')))
                 {
                     throw new ArgumentException(SR.Xml_InvalidCommentChars);
                 }
@@ -1693,7 +1692,7 @@ namespace System.Xml
         // all valid name characters at that position. This can't be changed because of backwards compatibility.
         private void ValidateName(string name, bool isNCName)
         {
-            if (name == null || name.Length == 0)
+            if (string.IsNullOrEmpty(name))
             {
                 throw new ArgumentException(SR.Xml_EmptyName);
             }
@@ -1758,18 +1757,16 @@ namespace System.Xml
                     break;
                 case SpecialAttr.XmlSpace:
                     // validate XmlSpace attribute
-                    value = XmlConvert.TrimString(value);
-                    if (value == "default")
+                    switch (value.AsSpan().Trim(XmlConvert.WhitespaceChars))
                     {
-                        _stack[_top].xmlSpace = XmlSpace.Default;
-                    }
-                    else if (value == "preserve")
-                    {
-                        _stack[_top].xmlSpace = XmlSpace.Preserve;
-                    }
-                    else
-                    {
-                        throw new ArgumentException(SR.Format(SR.Xml_InvalidXmlSpace, value));
+                        case "default":
+                            _stack[_top].xmlSpace = XmlSpace.Default;
+                            break;
+                        case "preserve":
+                            _stack[_top].xmlSpace = XmlSpace.Preserve;
+                            break;
+                        default:
+                            throw new ArgumentException(SR.Format(SR.Xml_InvalidXmlSpace, value));
                     }
                     break;
                 case SpecialAttr.XmlNs:

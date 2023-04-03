@@ -6,6 +6,7 @@ inline void Thread::SetDeferredTransitionFrame(PInvokeTransitionFrame* pTransiti
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
     ASSERT(Thread::IsCurrentThreadInCooperativeMode());
+    ASSERT(!Thread::IsHijackTarget(pTransitionFrame->m_RIP));
     m_pDeferredTransitionFrame = pTransitionFrame;
 }
 
@@ -40,4 +41,16 @@ inline void Thread::SetThreadStressLog(void* ptsl)
 inline PTR_VOID Thread::GetThreadStressLog() const
 {
     return m_pThreadStressLog;
+}
+
+inline void Thread::PushGCFrameRegistration(GCFrameRegistration* pRegistration)
+{
+    pRegistration->m_pNext = m_pGCFrameRegistrations;
+    m_pGCFrameRegistrations = pRegistration;
+}
+
+inline void Thread::PopGCFrameRegistration(GCFrameRegistration* pRegistration)
+{
+    ASSERT(m_pGCFrameRegistrations == pRegistration);
+    m_pGCFrameRegistrations = pRegistration->m_pNext;
 }

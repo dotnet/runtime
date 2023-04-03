@@ -10,11 +10,17 @@ namespace System.Reflection.Tests
     {
         // Given a runtime Type, load up the equivalent in the Test MetataLoadContext. This is for test-writing convenience so
         // that tests can write "typeof(TestClass).Project()" and get the benefits of compile-time typename checking and Intellisense.
-        // It also opens the possibility of sharing Reflection tests between different type providers with minimal fuss.
+        // It supports sharing Reflection tests with different type providers such as the various runtimes.
         public static Type Project(this Type type)
         {
             if (type == null)
                 return null;
+
+#if NET8_0_OR_GREATER
+            // Function pointers don't support Type.GetType() so they can't be dynamically created.
+            if (type.IsFunctionPointer)
+                throw new NotSupportedException("Function pointers don't support Project()");
+#endif
 
             Assembly assembly = type.Assembly;
             string location = assembly.Location;
@@ -27,8 +33,8 @@ namespace System.Reflection.Tests
             Assembly projectedAssembly = s_assemblyDict.GetOrAdd(assembly,
                 delegate (Assembly a)
                 {
-                    // The core assembly we're using might not be the one powering the runtime. Make sure we project to the core assembly the MetataLoadContext
-                    // is using.
+                    // The core assembly we're using might not be the one powering the runtime.
+                    // Make sure we project to the core assembly the MetataLoadContext is using.
                     if (a == typeof(object).Assembly)
                     {
                         TestMetadataLoadContext.LoadFromStream(CreateStreamForCoreAssembly());

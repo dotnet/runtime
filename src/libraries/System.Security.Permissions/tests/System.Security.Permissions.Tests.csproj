@@ -5,6 +5,9 @@
     <NoWarn>$(NoWarn);SYSLIB0003</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="ApplicationTrustTests.cs" />
     <Compile Include="CodeConnectAccessTests.cs" />
     <Compile Include="CodeGroupTests.cs" />
@@ -24,6 +27,7 @@
     <Compile Include="XamlLoadPermissionTests.cs"/>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\src\System.Security.Permissions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
   </ItemGroup>
 </Project>

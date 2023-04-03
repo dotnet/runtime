@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis
@@ -300,7 +301,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             uint pcInstr = *pCode;
 
-            // first get the hight 20 bits,
+            // first get the high 20 bits,
             int imm = (int)(((pcInstr >> 5) & 0xFFFFF) << 12);
 
             // then get the low 12 bits,
@@ -329,14 +330,14 @@ namespace ILCompiler.DependencyAnalysis
             int imm = (int)imm32 + relOff;
             relOff = ((imm & 0x7ff) - relOff) & 0xfff;
 
-            // Assemble the pc-relative hight20bits of 'imm32' into the pcaddu12i instruction
+            // Assemble the pc-relative high 20 bits of 'imm32' into the pcaddu12i instruction
             pcInstr |= (uint)(((imm >> 12) & 0xFFFFF) << 5);
 
             *pCode = pcInstr;          // write the assembled instruction
 
             pcInstr = *(pCode + 1);
 
-            // Assemble the pc-relative low12bits of 'imm32' into the addid or ld instruction
+            // Assemble the pc-relative low 12 bits of 'imm32' into the addid or ld instruction
             pcInstr |= (uint)(relOff << 10);
 
             *(pCode + 1) = pcInstr;          // write the assembled instruction
@@ -373,14 +374,14 @@ namespace ILCompiler.DependencyAnalysis
             long imm = imm38 + relOff;
             relOff = (((imm & 0x1ffff) - relOff) >> 2) & 0xffff;
 
-            // Assemble the pc-relative hight20bits of 'imm38' into the pcaddu12i instruction
+            // Assemble the pc-relative high 20 bits of 'imm38' into the pcaddu12i instruction
             pcInstr |= (uint)(((imm >> 18) & 0xFFFFF) << 5);
 
             *pCode = pcInstr;          // write the assembled instruction
 
             pcInstr = *(pCode + 1);
 
-            // Assemble the pc-relative low18bits of 'imm38' into the addid or ld instruction
+            // Assemble the pc-relative low 18 bits of 'imm38' into the addid or ld instruction
             pcInstr |= (uint)(relOff << 10);
 
             *(pCode + 1) = pcInstr;          // write the assembled instruction
@@ -436,6 +437,16 @@ namespace ILCompiler.DependencyAnalysis
                     Debug.Fail("Invalid RelocType: " + relocType);
                     break;
             }
+        }
+
+        public static int GetSize(RelocType relocType)
+        {
+            return relocType switch
+            {
+                RelocType.IMAGE_REL_BASED_DIR64 => 8,
+                RelocType.IMAGE_REL_BASED_RELPTR32 => 4,
+                _ => throw new NotSupportedException(),
+            };
         }
 
         public static unsafe long ReadValue(RelocType relocType, void* location)

@@ -1035,7 +1035,7 @@ as and when needed.  This means we don't have to have vtables attached to stubs.
 
 Summarizing so far, there is a struct for each kind of stub or token of the form XXXXStub.
 They provide that actual storage layouts.
-There is a stuct in which each stub which has code is contained of the form XXXXHolder.
+There is a struct in which each stub which has code is contained of the form XXXXHolder.
 They provide alignment and anciliary storage for the stub code.
 There is a subclass of Entry for each kind of stub or token, of the form XXXXEntry.
 They provide the specific implementations of the virtual functions declared in Entry. */
@@ -1631,7 +1631,7 @@ public:
         {
             size_t size = bucketCount()+CALL_STUB_FIRST_INDEX;
             for(size_t ix = CALL_STUB_FIRST_INDEX; ix < size; ix++) delete (FastTable*)(buckets[ix]);
-            delete buckets;
+            delete[] buckets;
         }
     }
 

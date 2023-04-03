@@ -38,6 +38,25 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
+        public sealed override bool IsByRefLike
+        {
+            get
+            {
+                // If we have a type handle, ask the runtime
+                RuntimeTypeHandle typeHandle = InternalTypeHandleIfAvailable;
+                if (!typeHandle.IsNull)
+                    return Internal.Runtime.Augments.RuntimeAugments.IsByRefLike(typeHandle);
+
+                // Otherwise fall back to attributes
+                foreach (CustomAttributeHandle cah in _typeDefinition.CustomAttributes)
+                {
+                    if (cah.IsCustomAttributeOfType(_reader, "System.Runtime.CompilerServices", "IsByRefLikeAttribute"))
+                        return true;
+                }
+                return false;
+            }
+        }
+
         protected sealed override Guid? ComputeGuidFromCustomAttributes()
         {
             //
@@ -168,12 +187,15 @@ namespace System.Reflection.Runtime.TypeInfos.NativeFormat
             }
         }
 
-        internal sealed override string? InternalGetNameIfAvailable(ref Type? rootCauseForFailure)
+        public sealed override string Name
         {
-            ConstantStringValueHandle nameHandle = _typeDefinition.Name;
-            string name = nameHandle.GetString(_reader);
+            get
+            {
+                ConstantStringValueHandle nameHandle = _typeDefinition.Name;
+                string name = nameHandle.GetString(_reader);
 
-            return name.EscapeTypeNameIdentifier();
+                return name.EscapeTypeNameIdentifier();
+            }
         }
 
         protected sealed override IEnumerable<CustomAttributeData> TrueCustomAttributes => RuntimeCustomAttributeData.GetCustomAttributes(_reader, _typeDefinition.CustomAttributes);

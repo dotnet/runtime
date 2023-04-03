@@ -34,7 +34,7 @@ namespace System.Threading
                 var secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
                 {
                     nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                    lpSecurityDescriptor = (IntPtr)pSecurityDescriptor
+                    lpSecurityDescriptor = pSecurityDescriptor
                 };
 
                 SafeWaitHandle handle = Interop.Kernel32.CreateMutexEx(
@@ -44,7 +44,7 @@ namespace System.Threading
                     (uint)MutexRights.FullControl // Equivalent to MUTEX_ALL_ACCESS
                 );
 
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
 
                 if (handle.IsInvalid)
                 {
@@ -127,7 +127,7 @@ namespace System.Threading
             result = null;
             SafeWaitHandle existingHandle = Interop.Kernel32.OpenMutex((uint)rights, false, name);
 
-            int errorCode = Marshal.GetLastWin32Error();
+            int errorCode = Marshal.GetLastPInvokeError();
             if (existingHandle.IsInvalid)
             {
                 existingHandle.Dispose();

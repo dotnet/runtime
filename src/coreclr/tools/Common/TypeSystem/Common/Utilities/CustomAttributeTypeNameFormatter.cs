@@ -165,7 +165,7 @@ namespace Internal.TypeSystem
         }
 
         private static char[] s_escapedChars = new char[] { ',', '=', '"', ']', '[', '*', '&', '+', '\\' };
-        private void AppendEscapedIdentifier(StringBuilder sb, string identifier)
+        private static void AppendEscapedIdentifier(StringBuilder sb, string identifier)
         {
             if (identifier.IndexOfAny(s_escapedChars) < 0)
             {

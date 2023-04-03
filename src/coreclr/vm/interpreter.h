@@ -60,7 +60,7 @@ typedef SIZE_T NativePtr;
 
 #define NYI_INTERP(msg) _ASSERTE_MSG(false, msg)
 // I wanted to define NYI_INTERP as the following in retail:
-//   #define NYI_INTERP(msg) _ASSERTE_ALL_BUILDS(__FILE__, false)
+//   #define NYI_INTERP(msg) _ASSERTE_ALL_BUILDS(false)
 // but doing so gave a very odd unreachable code error.
 
 
@@ -539,7 +539,7 @@ typedef InterpreterCache<size_t, ILOffsetToItemCache*> GenericContextToInnerCach
 
 #endif // DACCESS_COMPILE
 
-// This is the information that the intepreter stub provides to the
+// This is the information that the interpreter stub provides to the
 // interpreter about the method being interpreted.
 struct InterpreterMethodInfo
 {
@@ -647,7 +647,7 @@ struct InterpreterMethodInfo
 
 
     // This is an array of size at least "m_numArgs", such that entry "i" describes the "i'th"
-    // arg in the "m_ilArgs" array passed to the intepreter: that is, the ArgDesc contains the type, stack-normal type,
+    // arg in the "m_ilArgs" array passed to the interpreter: that is, the ArgDesc contains the type, stack-normal type,
     // and offset in the "m_ilArgs" array of that argument.  In addition, has extra entries if "m_hasGenericsContextArg"
     // and/or "m_hasRetBuffArg" are true, giving the offset of those arguments -- the offsets of those arguments
     // are in that order in the array.  (The corresponding types should be NativeInt.)
@@ -723,14 +723,6 @@ class InterpreterCEEInfo: public CEEInfo
     CEEJitInfo m_jitInfo;
 public:
     InterpreterCEEInfo(CORINFO_METHOD_HANDLE meth): CEEInfo((MethodDesc*)meth), m_jitInfo((MethodDesc*)meth, NULL, NULL, CORJIT_FLAGS::CORJIT_FLAG_SPEED_OPT) { }
-
-    // Certain methods are unimplemented by CEEInfo (they hit an assert).  They are implemented by CEEJitInfo, yet
-    // don't seem to require any of the CEEJitInfo state we can't provide.  For those case, delegate to the "partial"
-    // CEEJitInfo m_jitInfo.
-    void addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom,CORINFO_MODULE_HANDLE moduleTo)
-    {
-        m_jitInfo.addActiveDependency(moduleFrom, moduleTo);
-    }
 };
 
 extern INT64 F_CALL_CONV InterpretMethod(InterpreterMethodInfo* methInfo, BYTE* ilArgs, void* stubContext);

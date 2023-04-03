@@ -12,9 +12,9 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
 {
     public class RuntimeGroupCollection
     {
-        private ICollection<RuntimeGroup> allRuntimeGroups;
-        private Dictionary<string, List<RuntimeGroup>> runtimeGroupsByBaseRID;
-        private HashSet<RID> knownRIDs;
+        private readonly ICollection<RuntimeGroup> allRuntimeGroups;
+        private readonly Dictionary<string, List<RuntimeGroup>> runtimeGroupsByBaseRID;
+        private readonly HashSet<RID> knownRIDs;
 
         public RuntimeGroupCollection(ICollection<RuntimeGroup> runtimeGroups)
         {
@@ -28,7 +28,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
         /// Locate an existing RuntimeGroup to append to.
         /// Existing group must have matching baseRID, then we choose based on closest version,
         /// and prefer matching arch and qualifier.
-        /// If no match is found, then a new RID heirarchy is created.
+        /// If no match is found, then a new RID hierarchy is created.
         /// </summary>
         /// <param name="runtimeIdentifier"></param>
         /// <param name="parent"></param>

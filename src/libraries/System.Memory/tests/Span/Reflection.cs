@@ -57,15 +57,8 @@ namespace System.SpanTests
             ref int refInt = ref value;
             Type refIntType = refInt.GetType();
 
-            if (PlatformDetection.IsNativeAot)
-            {
-                Assert.Throws<NotSupportedException>(() => createSpanMethod.MakeGenericMethod(refIntType));
-            }
-            else
-            {
-                MethodInfo method = createSpanMethod.MakeGenericMethod(refIntType);
-                Assert.Throws<NotSupportedException>(() => method.Invoke(null, new object[] { null, 0 }));
-            }
+            MethodInfo method = createSpanMethod.MakeGenericMethod(refIntType);
+            Assert.Throws<NotSupportedException>(() => method.Invoke(null, new object[] { null, 0 }));
         }
 
         [Fact]

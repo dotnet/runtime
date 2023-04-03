@@ -11,7 +11,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.Metadata
 {
-    partial class Transform<TPolicy>
+    internal partial class Transform<TPolicy>
     {
         private Dictionary<NamespaceKey, NamespaceDefinition> _namespaceDefs = new Dictionary<NamespaceKey, NamespaceDefinition>();
 
@@ -39,13 +39,13 @@ namespace ILCompiler.Metadata
                 return rootNamespace;
             }
 
-            string currentNamespaceName = String.Empty;
+            string currentNamespaceName = string.Empty;
             NamespaceDefinition currentNamespace = HandleNamespaceDefinition(parentScope, currentNamespaceName);
             foreach (var segment in namespaceString.Split('.'))
             {
                 string nextNamespaceName = currentNamespaceName;
                 if (nextNamespaceName.Length > 0)
-                    nextNamespaceName = nextNamespaceName + '.';
+                    nextNamespaceName += '.';
                 nextNamespaceName += segment;
                 NamespaceDefinition nextNamespace;
                 key = new NamespaceKey(parentScope, nextNamespaceName);
@@ -99,12 +99,12 @@ namespace ILCompiler.Metadata
                 return rootNamespace;
 
             NamespaceReference currentNamespace = rootNamespace;
-            string currentNamespaceName = String.Empty;
+            string currentNamespaceName = string.Empty;
             foreach (var segment in namespaceString.Split('.'))
             {
                 string nextNamespaceName = currentNamespaceName;
                 if (nextNamespaceName.Length > 0)
-                    nextNamespaceName = nextNamespaceName + '.';
+                    nextNamespaceName += '.';
                 nextNamespaceName += segment;
                 NamespaceReference nextNamespace;
                 key = new NamespaceKey(parentScope, nextNamespaceName);

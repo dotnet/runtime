@@ -1861,7 +1861,7 @@ VOID MethodTableBuilder::BuildInteropVTable_PlaceParentDeclaration(
 
     BOOL fRet = FALSE;
 
-    // Verify that the class of the declaration is in our heirarchy
+    // Verify that the class of the declaration is in our hierarchy
     MethodTable* declType = pDecl->GetMethodTable();
     MethodTable* pParentMT = bmtParent->pParentMethodTable;
     while(pParentMT != NULL)

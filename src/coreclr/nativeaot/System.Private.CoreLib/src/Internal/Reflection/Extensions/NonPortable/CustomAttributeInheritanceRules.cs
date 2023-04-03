@@ -72,8 +72,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                     return EventCustomAttributeSearcher.Default.GetMatchingCustomAttributes(eventInfo, optionalAttributeTypeFilter, inherit, skipTypeValidation: skipTypeValidation);
             }
 
-            if (element == null)
-                throw new ArgumentNullException();
+            ArgumentNullException.ThrowIfNull(element);
 
             throw new NotSupportedException(); // Shouldn't get here.
         }
@@ -233,7 +232,16 @@ namespace Internal.Reflection.Extensions.NonPortable
                 MethodInfo? methodParent = new MethodCustomAttributeSearcher().GetParent(method);
                 if (methodParent == null)
                     return null;
-                return methodParent.GetParametersNoCopy()[e.Position];
+
+                if (e.Position >= 0)
+                {
+                    return methodParent.GetParametersNoCopy()[e.Position];
+                }
+                else
+                {
+                    Debug.Assert(e.Position == -1);
+                    return methodParent.ReturnParameter;
+                }
             }
 
             public static readonly ParameterCustomAttributeSearcher Default = new ParameterCustomAttributeSearcher();

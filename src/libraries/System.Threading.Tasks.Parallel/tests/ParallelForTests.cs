@@ -1262,10 +1262,7 @@ namespace System.Threading.Tasks.Tests
                             {
                                 Interlocked.Increment(ref completedCount);
 
-                                if (!cancellationTokenSource.IsCancellationRequested)
-                                {
-                                    Task.Run(() => cancellationTokenSource.Cancel());
-                                }
+                                _ = cancellationTokenSource.CancelAsync();
                             }).IsCompleted;
                 }
                 catch (OperationCanceledException)
@@ -1299,10 +1296,7 @@ namespace System.Threading.Tasks.Tests
                             {
                                 Interlocked.Increment(ref completedCount);
 
-                                if (!cancellationTokenSource.IsCancellationRequested)
-                                {
-                                    Task.Run(() => cancellationTokenSource.Cancel());
-                                }
+                                _ = cancellationTokenSource.CancelAsync();
                             }).IsCompleted;
                 }
                 catch (OperationCanceledException)
@@ -1343,10 +1337,7 @@ namespace System.Threading.Tasks.Tests
                             {
                                 Interlocked.Increment(ref completedCount);
 
-                                if (!cancellationTokenSource.IsCancellationRequested)
-                                {
-                                    Task.Run(() => cancellationTokenSource.Cancel());
-                                }
+                                _ = cancellationTokenSource.CancelAsync();
                             }).IsCompleted;
                 }
                 catch (OperationCanceledException)

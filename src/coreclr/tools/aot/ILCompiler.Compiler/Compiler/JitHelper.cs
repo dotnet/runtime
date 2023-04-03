@@ -9,7 +9,7 @@ using Internal.ReadyToRunConstants;
 
 namespace ILCompiler
 {
-    internal class JitHelper
+    internal static class JitHelper
     {
         /// <summary>
         /// Returns JIT helper entrypoint. JIT helpers can be either implemented by entrypoint with given mangled name or
@@ -247,6 +247,9 @@ namespace ILCompiler
                     break;
                 case ReadyToRunHelper.CheckInstanceAny:
                     mangledName = "RhTypeCast_IsInstanceOf";
+                    break;
+                case ReadyToRunHelper.IsInstanceOfException:
+                    mangledName = "RhTypeCast_IsInstanceOfException";
                     break;
                 case ReadyToRunHelper.CheckCastInterface:
                     mangledName = "RhTypeCast_CheckCastInterface";

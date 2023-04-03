@@ -475,17 +475,6 @@ FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE ThreadNative_UninterruptibleSleep0()
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    ClrSleepEx(0, false);
-
-    END_QCALL;
-}
-
 FCIMPL1(INT32, ThreadNative::GetManagedThreadId, ThreadBaseObject* th) {
     FCALL_CONTRACT;
 
@@ -1096,25 +1085,34 @@ extern "C" BOOL QCALLTYPE ThreadNative_YieldThread()
 
     BOOL ret = FALSE;
 
-    BEGIN_QCALL
+    BEGIN_QCALL;
 
     ret = __SwitchToThread(0, CALLER_LIMITS_SPINNING);
 
-    END_QCALL
+    END_QCALL;
 
     return ret;
 }
 
-FCIMPL0(INT32, ThreadNative::GetCurrentProcessorNumber)
+extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread)
 {
-    FCALL_CONTRACT;
+    QCALL_CONTRACT;
 
-#ifndef TARGET_UNIX
-    PROCESSOR_NUMBER proc_no_cpu_group;
-    GetCurrentProcessorNumberEx(&proc_no_cpu_group);
-    return (proc_no_cpu_group.Group << 6) | proc_no_cpu_group.Number;
-#else
-    return ::GetCurrentProcessorNumber();
-#endif //!TARGET_UNIX
+    BEGIN_QCALL;
+
+    thread->UserAbort(EEPolicy::TA_Safe, INFINITE);
+
+    END_QCALL;
 }
-FCIMPLEND;
+
+// Unmark the current thread for a safe abort.
+extern "C" void QCALLTYPE ThreadNative_ResetAbort()
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    Thread *pThread = GetThread();
+    if (pThread->IsAbortRequested())
+    {
+        pThread->UnmarkThreadForAbort(EEPolicy::TA_Safe);
+    }
+}

@@ -12,6 +12,9 @@ using System.Resources;
 using System.Diagnostics;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections;
 
 [assembly:NeutralResourcesLanguage("en")]
 
@@ -26,6 +29,8 @@ namespace System.Resources.Tests
 
     public class ResourceManagerTests
     {
+        public static bool AllowsCustomResourceTypes => AppContext.TryGetSwitch("System.Resources.ResourceManager.AllowCustomResourceTypes", out bool isEnabled) ? isEnabled : true;
+
         [Fact]
         public static void ExpectMissingManifestResourceException()
         {
@@ -82,6 +87,7 @@ namespace System.Resources.Tests
 
         [Theory]
         [MemberData(nameof(CultureResourceData))]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))] // satellite assemblies
         public static void GetString_CultureFallback(string key, string cultureName, string expectedValue)
         {
             Type resourceType = typeof(Resources.TestResx);
@@ -92,6 +98,7 @@ namespace System.Resources.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))] //satellite assemblies
         public static void GetString_FromTestClassWithoutNeutralResources()
         {
             // This test is designed to complement the GetString_FromCulutureAndResourceType "fr" & "fr-CA" cases
@@ -200,8 +207,19 @@ namespace System.Resources.Tests
         [Fact]
         public static void BaseName()
         {
-            var manager = new ResourceManager("System.Resources.Tests.Resources.TestResx", typeof(ResourceManagerTests).GetTypeInfo().Assembly);
+            var manager = new ResourceManager("System.Resources.Tests.Resources.TestResx", typeof(ResourceManagerTests).Assembly);
             Assert.Equal("System.Resources.Tests.Resources.TestResx", manager.BaseName);
+
+            manager = new ResourceManager(typeof(System.Resources.Tests.Resources.TestResx));
+            Assert.Equal("System.Resources.Tests.Resources.TestResx", manager.BaseName);
+
+            Type typeWithoutNamespace = new { }.GetType();
+            Assert.Null(typeWithoutNamespace.Namespace);
+            manager = new ResourceManager(typeWithoutNamespace);
+            Assert.Equal(typeWithoutNamespace.Name, manager.BaseName);
+
+            manager = new ResourceManager(typeof(List<string>));
+            Assert.Equal("System.Collections.Generic.List`1", manager.BaseName);
         }
 
         [Theory]
@@ -218,6 +236,52 @@ namespace System.Resources.Tests
             Assert.Equal(expectedValue, manager.GetString(key.ToLower(), culture));
         }
 
+        /// <summary>
+        /// This test has multiple threads simultaneously loop over the keys of a moderately-sized resx using
+        /// <see cref="ResourceManager"/> and call <see cref="ResourceManager.GetString(string)"/> for each key.
+        /// This has historically been prone to thread-safety bugs because of the shared cache state and internal
+        /// method calls between RuntimeResourceSet and <see cref="ResourceReader"/>.
+        ///
+        /// Running with <paramref name="useEnumeratorEntry"/> TRUE replicates https://github.com/dotnet/runtime/issues/74868,
+        /// while running with FALSE replicates the error from https://github.com/dotnet/runtime/issues/74052.
+        /// </summary>
+        /// <param name="useEnumeratorEntry">
+        /// Whether to use <see cref="IDictionaryEnumerator.Entry"/> vs. <see cref="IDictionaryEnumerator.Key"/> when enumerating;
+        /// these follow fairly different code paths.
+        /// </param>
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void TestResourceManagerIsSafeForConcurrentAccessAndEnumeration(bool useEnumeratorEntry)
+        {
+            ResourceManager manager = new("System.Resources.Tests.Resources.AToZResx", typeof(ResourceManagerTests).GetTypeInfo().Assembly);
+
+            const int Threads = 10;
+            using Barrier barrier = new(Threads);
+            Task[] tasks = Enumerable.Range(0, Threads)
+                .Select(_ => Task.Factory.StartNew(
+                    WaitForBarrierThenEnumerateResources,
+                    CancellationToken.None,
+                    TaskCreationOptions.LongRunning,
+                    TaskScheduler.Default))
+                .ToArray();
+
+            Assert.True(Task.WaitAll(tasks, TimeSpan.FromSeconds(30)));
+
+            void WaitForBarrierThenEnumerateResources()
+            {
+                barrier.SignalAndWait();
+
+                ResourceSet set = manager.GetResourceSet(CultureInfo.InvariantCulture, createIfNotExists: true, tryParents: true);
+                IDictionaryEnumerator enumerator = set.GetEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    object key = useEnumeratorEntry ? enumerator.Entry.Key : enumerator.Key;
+                    manager.GetObject((string)key);
+                    Thread.Sleep(1);
+                }
+            }
+        }
 
         public static IEnumerable<object[]> EnglishNonStringResourceData()
         {
@@ -269,7 +333,7 @@ namespace System.Resources.Tests
             yield return new object[] { "Icon", new Icon("icon.ico") };
         }
 
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(nameof(IsDrawingSupportedAndAllowsCustomResourceTypes))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux | TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(EnglishImageResourceData))]
         public static void GetObject_Images(string key, object expectedValue)
@@ -279,7 +343,7 @@ namespace System.Resources.Tests
             Assert.Equal(GetImageData(expectedValue), GetImageData(manager.GetObject(key, new CultureInfo("en-US"))));
         }
 
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalTheory(nameof(IsDrawingSupportedAndAllowsCustomResourceTypes))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux | TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(EnglishImageResourceData))]
         public static void GetObject_Images_ResourceSet(string key, object expectedValue)
@@ -330,7 +394,9 @@ namespace System.Resources.Tests
             Assert.Equal(expectedValue, set.GetObject(key.ToLower(), true));
         }
 
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        public static bool IsDrawingSupportedAndAllowsCustomResourceTypes => PlatformDetection.IsDrawingSupported && AllowsCustomResourceTypes;
+
+        [ConditionalTheory(nameof(IsDrawingSupportedAndAllowsCustomResourceTypes))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34008", TestPlatforms.Linux | TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(EnglishImageResourceData))]
         public static void GetResourceSet_Images(string key, object expectedValue)

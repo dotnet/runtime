@@ -11,10 +11,12 @@ using System.Runtime.CompilerServices;
 
 using ArmAes = System.Runtime.Intrinsics.Arm.Aes;
 using X86Aes = System.Runtime.Intrinsics.X86.Aes;
+using Xunit;
 
-class Runtime_34587
+public class Runtime_34587
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TestLibrary.TestFramework.LogInformation("Supported x86 ISAs:");
         TestLibrary.TestFramework.LogInformation($"  AES:           {X86Aes.IsSupported}");
@@ -422,13 +424,13 @@ class Runtime_34587
 
             if (X86BaseIsSupported)
             {
-                succeeded &= (RuntimeInformation.OSArchitecture == Architecture.X86) || (RuntimeInformation.OSArchitecture == Architecture.X64);
+                succeeded &= (RuntimeInformation.ProcessArchitecture == Architecture.X86) || (RuntimeInformation.ProcessArchitecture == Architecture.X64);
             }
 
             if (X86BaseX64IsSupported)
             {
                 succeeded &= X86BaseIsSupported;
-                succeeded &= (RuntimeInformation.OSArchitecture == Architecture.X64);
+                succeeded &= (RuntimeInformation.ProcessArchitecture == Architecture.X64);
             }
 
             return succeeded;

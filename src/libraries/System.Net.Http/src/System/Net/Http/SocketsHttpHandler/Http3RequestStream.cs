@@ -25,20 +25,20 @@ namespace System.Net.Http
         private readonly HttpRequestMessage _request;
         private Http3Connection _connection;
         private long _streamId = -1; // A stream does not have an ID until the first I/O against it. This gets set almost immediately following construction.
-        private QuicStream _stream;
+        private readonly QuicStream _stream;
         private ArrayBuffer _sendBuffer;
         private ArrayBuffer _recvBuffer;
         private TaskCompletionSource<bool>? _expect100ContinueCompletionSource; // True indicates we should send content (e.g. received 100 Continue).
         private bool _disposed;
-        private CancellationTokenSource _requestBodyCancellationSource;
+        private readonly CancellationTokenSource _requestBodyCancellationSource;
 
         // Allocated when we receive a :status header.
         private HttpResponseMessage? _response;
 
         // Header decoding.
-        private QPackDecoder _headerDecoder;
+        private readonly QPackDecoder _headerDecoder;
         private HeaderState _headerState;
-        private long _headerBudgetRemaining;
+        private int _headerBudgetRemaining;
 
         /// <summary>Reusable array used to get the values for each header being written to the wire.</summary>
         private string[] _headerValues = Array.Empty<string>();
@@ -56,6 +56,9 @@ namespace System.Net.Http
         // For the precomputed length case, we need to add the DATA framing for the first write only.
         private bool _singleDataFrameWritten;
 
+        private bool _requestSendCompleted;
+        private bool _responseRecvCompleted;
+
         public long StreamId
         {
             get => Volatile.Read(ref _streamId);
@@ -70,10 +73,13 @@ namespace System.Net.Http
             _sendBuffer = new ArrayBuffer(initialSize: 64, usePool: true);
             _recvBuffer = new ArrayBuffer(initialSize: 64, usePool: true);
 
-            _headerBudgetRemaining = connection.Pool.Settings._maxResponseHeadersLength * 1024L; // _maxResponseHeadersLength is in KiB.
+            _headerBudgetRemaining = connection.Pool.Settings.MaxResponseHeadersByteLength;
             _headerDecoder = new QPackDecoder(maxHeadersLength: (int)Math.Min(int.MaxValue, _headerBudgetRemaining));
 
             _requestBodyCancellationSource = new CancellationTokenSource();
+
+            _requestSendCompleted = _request.Content == null;
+            _responseRecvCompleted = false;
         }
 
         public void Dispose()
@@ -84,6 +90,14 @@ namespace System.Net.Http
                 AbortStream();
                 _stream.Dispose();
                 DisposeSyncHelper();
+            }
+        }
+
+        private void RemoveFromConnectionIfDone()
+        {
+            if (_responseRecvCompleted && _requestSendCompleted)
+            {
+                _connection.RemoveStream(_stream);
             }
         }
 
@@ -258,6 +272,11 @@ namespace System.Net.Http
                 Exception abortException = _connection.Abort(HttpProtocolException.CreateHttp3ConnectionException(code, SR.net_http_http3_connection_close));
                 throw new HttpRequestException(SR.net_http_client_execution_error, abortException);
             }
+            catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted && _connection.AbortException != null)
+            {
+                // we close the connection, propagate the AbortException
+                throw new HttpRequestException(SR.net_http_client_execution_error, _connection.AbortException);
+            }
             // It is possible for user's Content code to throw an unexpected OperationCanceledException.
             catch (OperationCanceledException ex) when (ex.CancellationToken == _requestBodyCancellationSource.Token || ex.CancellationToken == cancellationToken)
             {
@@ -338,74 +357,79 @@ namespace System.Net.Http
 
         private async Task SendContentAsync(HttpContent content, CancellationToken cancellationToken)
         {
-            // If we're using Expect 100 Continue, wait to send content
-            // until we get a response back or until our timeout elapses.
-            if (_expect100ContinueCompletionSource != null)
-            {
-                Timer? timer = null;
-
-                try
-                {
-                    if (_connection.Pool.Settings._expect100ContinueTimeout != Timeout.InfiniteTimeSpan)
-                    {
-                        timer = new Timer(static o => ((Http3RequestStream)o!)._expect100ContinueCompletionSource!.TrySetResult(true),
-                            this, _connection.Pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan);
-                    }
-
-                    if (!await _expect100ContinueCompletionSource.Task.ConfigureAwait(false))
-                    {
-                        // We received an error response code, so the body should not be sent.
-                        return;
-                    }
-                }
-                finally
-                {
-                    if (timer != null)
-                    {
-                        await timer.DisposeAsync().ConfigureAwait(false);
-                    }
-                }
-            }
-
-            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStart();
-
-            // If we have a Content-Length, keep track of it so we don't over-send and so we can send in a single DATA frame.
-            _requestContentLengthRemaining = content.Headers.ContentLength ?? -1;
-
-            var writeStream = new Http3WriteStream(this);
             try
             {
-                await content.CopyToAsync(writeStream, null, cancellationToken).ConfigureAwait(false);
+                // If we're using Expect 100 Continue, wait to send content
+                // until we get a response back or until our timeout elapses.
+                if (_expect100ContinueCompletionSource != null)
+                {
+                    Timer? timer = null;
+
+                    try
+                    {
+                        if (_connection.Pool.Settings._expect100ContinueTimeout != Timeout.InfiniteTimeSpan)
+                        {
+                            timer = new Timer(static o => ((Http3RequestStream)o!)._expect100ContinueCompletionSource!.TrySetResult(true),
+                                this, _connection.Pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan);
+                        }
+
+                        if (!await _expect100ContinueCompletionSource.Task.ConfigureAwait(false))
+                        {
+                            // We received an error response code, so the body should not be sent.
+                            return;
+                        }
+                    }
+                    finally
+                    {
+                        if (timer != null)
+                        {
+                            await timer.DisposeAsync().ConfigureAwait(false);
+                        }
+                    }
+                }
+
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStart();
+
+                // If we have a Content-Length, keep track of it so we don't over-send and so we can send in a single DATA frame.
+                _requestContentLengthRemaining = content.Headers.ContentLength ?? -1;
+
+                long bytesWritten;
+                using (var writeStream = new Http3WriteStream(this))
+                {
+                    await content.CopyToAsync(writeStream, null, cancellationToken).ConfigureAwait(false);
+                    bytesWritten = writeStream.BytesWritten;
+                }
+
+                if (_requestContentLengthRemaining > 0)
+                {
+                    // The number of bytes we actually sent doesn't match the advertised Content-Length
+                    long contentLength = content.Headers.ContentLength.GetValueOrDefault();
+                    long sent = contentLength - _requestContentLengthRemaining;
+                    throw new HttpRequestException(SR.Format(SR.net_http_request_content_length_mismatch, sent, contentLength));
+                }
+
+                // Set to 0 to recognize that the whole request body has been sent and therefore there's no need to abort write side in case of a premature disposal.
+                _requestContentLengthRemaining = 0;
+
+                if (_sendBuffer.ActiveLength != 0)
+                {
+                    // Our initial send buffer, which has our headers, is normally sent out on the first write to the Http3WriteStream.
+                    // If we get here, it means the content didn't actually do any writing. Send out the headers now.
+                    // Also send the FIN flag, since this is the last write. No need to call Shutdown separately.
+                    await FlushSendBufferAsync(endStream: true, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    _stream.CompleteWrites();
+                }
+
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(bytesWritten);
             }
             finally
             {
-                writeStream.Dispose();
+                _requestSendCompleted = true;
+                RemoveFromConnectionIfDone();
             }
-
-            if (_requestContentLengthRemaining > 0)
-            {
-                // The number of bytes we actually sent doesn't match the advertised Content-Length
-                long contentLength = content.Headers.ContentLength.GetValueOrDefault();
-                long sent = contentLength - _requestContentLengthRemaining;
-                throw new HttpRequestException(SR.Format(SR.net_http_request_content_length_mismatch, sent, contentLength));
-            }
-
-            // Set to 0 to recognize that the whole request body has been sent and therefore there's no need to abort write side in case of a premature disposal.
-            _requestContentLengthRemaining = 0;
-
-            if (_sendBuffer.ActiveLength != 0)
-            {
-                // Our initial send buffer, which has our headers, is normally sent out on the first write to the Http3WriteStream.
-                // If we get here, it means the content didn't actually do any writing. Send out the headers now.
-                // Also send the FIN flag, since this is the last write. No need to call Shutdown separately.
-                await FlushSendBufferAsync(endStream: true, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                _stream.CompleteWrites();
-            }
-
-            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStop(writeStream.BytesWritten);
         }
 
         private async ValueTask WriteRequestContentAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -551,9 +575,9 @@ namespace System.Net.Http
             BufferBytes(normalizedMethod.Http3EncodedBytes);
             BufferIndexedHeader(H3StaticTable.SchemeHttps);
 
-            if (request.HasHeaders && request.Headers.Host != null)
+            if (request.HasHeaders && request.Headers.Host is string host)
             {
-                BufferLiteralHeaderWithStaticNameReference(H3StaticTable.Authority, request.Headers.Host);
+                BufferLiteralHeaderWithStaticNameReference(H3StaticTable.Authority, host);
             }
             else
             {
@@ -574,6 +598,8 @@ namespace System.Net.Http
             // The only way to reach H3 is to upgrade via an Alt-Svc header, so we can encode Alt-Used for every connection.
             BufferBytes(_connection.AltUsedEncodedHeaderBytes);
 
+            int headerListSize = 4 * HeaderField.RfcOverhead; // Scheme, Method, Authority, Path
+
             if (request.HasHeaders)
             {
                 // H3 does not support Transfer-Encoding: chunked.
@@ -582,7 +608,7 @@ namespace System.Net.Http
                     request.Headers.TransferEncodingChunked = false;
                 }
 
-                BufferHeaderCollection(request.Headers);
+                headerListSize += BufferHeaderCollection(request.Headers);
             }
 
             if (_connection.Pool.Settings._useCookies)
@@ -592,6 +618,7 @@ namespace System.Net.Http
                 {
                     Encoding? valueEncoding = _connection.Pool.Settings._requestHeaderEncodingSelector?.Invoke(HttpKnownHeaderNames.Cookie, request);
                     BufferLiteralHeaderWithStaticNameReference(H3StaticTable.Cookie, cookiesFromContainer, valueEncoding);
+                    headerListSize += HttpKnownHeaderNames.Cookie.Length + HeaderField.RfcOverhead;
                 }
             }
 
@@ -600,11 +627,12 @@ namespace System.Net.Http
                 if (normalizedMethod.MustHaveRequestBody)
                 {
                     BufferIndexedHeader(H3StaticTable.ContentLength0);
+                    headerListSize += HttpKnownHeaderNames.ContentLength.Length + HeaderField.RfcOverhead;
                 }
             }
             else
             {
-                BufferHeaderCollection(request.Content.Headers);
+                headerListSize += BufferHeaderCollection(request.Content.Headers);
             }
 
             // Determine our header envelope size.
@@ -618,15 +646,30 @@ namespace System.Net.Http
             int actualHeadersLengthEncodedSize = VariableLengthIntegerHelper.WriteInteger(_sendBuffer.ActiveSpan.Slice(1, headersLengthEncodedSize), headersLength);
             Debug.Assert(actualHeadersLengthEncodedSize == headersLengthEncodedSize);
 
+            // The headerListSize is an approximation of the total header length.
+            // This is acceptable as long as the value is always >= the actual length.
+            // We must avoid ever sending more than the server allowed.
+            // This approach must be revisted if we ever support the dynamic table or compression when sending requests.
+            headerListSize += headersLength;
+
+            uint maxHeaderListSize = _connection.MaxHeaderListSize;
+            if ((uint)headerListSize > maxHeaderListSize)
+            {
+                throw new HttpRequestException(SR.Format(SR.net_http_request_headers_exceeded_length, maxHeaderListSize));
+            }
+
             if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStop();
         }
 
         // TODO: special-case Content-Type for static table values values?
-        private void BufferHeaderCollection(HttpHeaders headers)
+        private int BufferHeaderCollection(HttpHeaders headers)
         {
             HeaderEncodingSelector<HttpRequestMessage>? encodingSelector = _connection.Pool.Settings._requestHeaderEncodingSelector;
 
-            foreach (HeaderEntry header in headers.GetEntries())
+            ReadOnlySpan<HeaderEntry> entries = headers.GetEntries();
+            int headerListSize = entries.Length * HeaderField.RfcOverhead;
+
+            foreach (HeaderEntry header in entries)
             {
                 int headerValuesCount = HttpHeaders.GetStoreValuesIntoStringArray(header.Key, header.Value, ref _headerValues);
                 Debug.Assert(headerValuesCount > 0, "No values for header??");
@@ -642,6 +685,10 @@ namespace System.Net.Http
                     // The Connection, Upgrade and ProxyConnection headers are also not supported in HTTP/3.
                     if (knownHeader != KnownHeaders.Host && knownHeader != KnownHeaders.Connection && knownHeader != KnownHeaders.Upgrade && knownHeader != KnownHeaders.ProxyConnection)
                     {
+                        // The length of the encoded name may be shorter than the actual name.
+                        // Ensure that headerListSize is always >= of the actual size.
+                        headerListSize += knownHeader.Name.Length;
+
                         if (knownHeader == KnownHeaders.TE)
                         {
                             // HTTP/2 allows only 'trailers' TE header. rfc7540 8.1.2.2
@@ -682,6 +729,8 @@ namespace System.Net.Http
                     BufferLiteralHeaderWithoutNameReference(header.Key.Name, headerValues, HttpHeaderParser.DefaultSeparator, valueEncoding);
                 }
             }
+
+            return headerListSize;
         }
 
         private void BufferIndexedHeader(int index)
@@ -818,11 +867,11 @@ namespace System.Net.Http
             // https://tools.ietf.org/html/draft-ietf-quic-http-24#section-4.1.1
             if (headersLength > _headerBudgetRemaining)
             {
-                _stream.Abort(QuicAbortDirection.Write, (long)Http3ErrorCode.ExcessiveLoad);
-                throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection.Pool.Settings._maxResponseHeadersLength * 1024L));
+                _stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.ExcessiveLoad);
+                throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection.Pool.Settings.MaxResponseHeadersByteLength));
             }
 
-            _headerBudgetRemaining -= headersLength;
+            _headerBudgetRemaining -= (int)headersLength;
 
             while (headersLength != 0)
             {
@@ -1064,6 +1113,8 @@ namespace System.Net.Http
                     if (_responseDataPayloadRemaining <= 0 && !ReadNextDataFrameAsync(response, CancellationToken.None).AsTask().GetAwaiter().GetResult())
                     {
                         // End of stream.
+                        _responseRecvCompleted = true;
+                        RemoveFromConnectionIfDone();
                         break;
                     }
 
@@ -1134,6 +1185,8 @@ namespace System.Net.Http
                     if (_responseDataPayloadRemaining <= 0 && !await ReadNextDataFrameAsync(response, cancellationToken).ConfigureAwait(false))
                     {
                         // End of stream.
+                        _responseRecvCompleted = true;
+                        RemoveFromConnectionIfDone();
                         break;
                     }
 
@@ -1192,6 +1245,10 @@ namespace System.Net.Http
         [DoesNotReturn]
         private void HandleReadResponseContentException(Exception ex, CancellationToken cancellationToken)
         {
+            // The stream is, or is going to be aborted
+            _responseRecvCompleted = true;
+            RemoveFromConnectionIfDone();
+
             switch (ex)
             {
                 case QuicException e when (e.QuicError == QuicError.StreamAborted):

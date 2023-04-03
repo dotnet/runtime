@@ -13,32 +13,21 @@ namespace System.Net.Security
     internal abstract class SafeDeleteContext : SafeHandle
     {
 #endif
-        private SafeFreeCredentials _credential;
-
-        protected SafeDeleteContext(SafeFreeCredentials credential)
-            : base(IntPtr.Zero, true)
+        public SafeDeleteContext(IntPtr handle) : base(handle, true)
         {
-            Debug.Assert((null != credential), "Invalid credential passed to SafeDeleteContext");
+        }
 
-            // When a credential handle is first associated with the context we keep credential
-            // ref count bumped up to ensure ordered finalization. The credential properties
-            // are used in the SSL/NEGO data structures and should survive the lifetime of
-            // the SSL/NEGO context
-            bool ignore = false;
-            _credential = credential;
-            _credential.DangerousAddRef(ref ignore);
+        public SafeDeleteContext(IntPtr handle, bool ownsHandle) : base(handle, ownsHandle)
+        {
         }
 
         public override bool IsInvalid
         {
-            get { return (null == _credential); }
+            get { return (IntPtr.Zero == handle); }
         }
 
         protected override bool ReleaseHandle()
         {
-            Debug.Assert((null != _credential), "Null credential in SafeDeleteContext");
-            _credential.DangerousRelease();
-            _credential = null!;
             return true;
         }
     }

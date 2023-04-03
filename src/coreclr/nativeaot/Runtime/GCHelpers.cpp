@@ -18,9 +18,9 @@
 #include "varint.h"
 #include "regdisplay.h"
 #include "StackFrameIterator.h"
+#include "interoplibinterface.h"
 
 #include "thread.h"
-#include "RWLock.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "thread.inl"
@@ -131,6 +131,13 @@ COOP_PINVOKE_HELPER(void, RhUnregisterGcCallout, (GcRestrictedCalloutKind eKind,
 {
     RestrictedCallouts::UnregisterGcCallout(eKind, pCallout);
 }
+
+#ifdef FEATURE_OBJCMARSHAL
+COOP_PINVOKE_HELPER(FC_BOOL_RET, RhRegisterObjectiveCMarshalBeginEndCallback, (void * pCallback))
+{
+    FC_RETURN_BOOL(ObjCMarshalNative::RegisterBeginEndCallback(pCallback));
+}
+#endif
 
 COOP_PINVOKE_HELPER(int32_t, RhGetLohCompactionMode, ())
 {
@@ -351,4 +358,24 @@ EXTERN_C NATIVEAOT_API void RhAllocateNewObject(MethodTable* pEEType, uint32_t f
 COOP_PINVOKE_HELPER(int64_t, RhGetTotalPauseDuration, ())
 {
     return GCHeapUtilities::GetGCHeap()->GetTotalPauseDuration();
+}
+
+COOP_PINVOKE_HELPER(void, RhRegisterForGCReporting, (GCFrameRegistration* pRegistration))
+{
+    Thread* pThread = ThreadStore::GetCurrentThread();
+
+    ASSERT(pRegistration->m_pThread == NULL);
+    pRegistration->m_pThread = pThread;
+
+    pThread->PushGCFrameRegistration(pRegistration);
+}
+
+COOP_PINVOKE_HELPER(void, RhUnregisterForGCReporting, (GCFrameRegistration* pRegistration))
+{
+    Thread* pThread = pRegistration->m_pThread;
+    if (pThread == NULL)
+        return;
+
+    ASSERT(pThread == ThreadStore::GetCurrentThread());
+    pThread->PopGCFrameRegistration(pRegistration);
 }

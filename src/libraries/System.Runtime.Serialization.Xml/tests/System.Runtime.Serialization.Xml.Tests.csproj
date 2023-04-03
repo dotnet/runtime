@@ -28,10 +28,30 @@
     <Compile Include="SerializationTestTypes\SampleTypes.cs" />
     <Compile Include="SerializationTestTypes\SelfRefAndCycles.cs" />
     <Compile Include="XmlSerializerTests.cs" />
+    <Compile Include="XsdDataContractExporterTests\SurrogateTests.cs" />
+    <Compile Include="XsdDataContractExporterTests\ExporterTypesTests.cs" />
+    <Compile Include="XsdDataContractExporterTests\ExporterApiTests.cs" />
+    <Compile Include="XsdDataContractExporterTests\ExportOptionsTests.cs" />
+    <Compile Include="XsdDataContractExporterTests\Types.cs" />
+    <Compile Include="XsdDataContractExporterTests\SchemaUtils.cs" />
+    <None Include="XsdDataContractExporterTests\SerializationTypes\ArrayTypes.cs" />
+    <None Include="XsdDataContractExporterTests\SerializationTypes\ConfigTypes.cs" />
+    <None Include="XsdDataContractExporterTests\SerializationTypes\ConflictingNameTypes.cs" />
+    <None Include="XsdDataContractExporterTests\SerializationTypes\DataContractSurrogate.cs" />
+    <None Include="XsdDataContractExporterTests\SerializationTypes\DataContractTypes.cs" />
+    <None Include="XsdDataContractExporterTests\SerializationTypes\Enums.cs" />
+    <None Include="XsdDataContractExporterTests\SerializationTypes\GenericTypes.cs" />
+    <None Include="XsdDataContractExporterTests\SerializationTypes\ISerializableTypes.cs" />
+    <None Include="XsdDataContractExporterTests\SerializationTypes\IXmlSerializableTypes.cs" />
+    <None Include="XsdDataContractExporterTests\SerializationTypes\LegacyTypes.cs" />
+    <None Include="XsdDataContractExporterTests\SerializationTypes\NullableTypes.cs" />
+    <None Include="XsdDataContractExporterTests\SerializationTypes\PartialTrust.cs" />
+    <None Include="XsdDataContractExporterTests\SerializationTypes\SerializableTypes.cs" />
+    <Compile Include="System.Xml\XmlBinaryNodeType.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.CodeDom\src\System.CodeDom.csproj" />
-
+    <ProjectReference Include=".\XsdDataContractExporterTests\SerializationTypes\SerializationTypes.csproj" />
     <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Serialization.xml" />
   </ItemGroup>
 </Project>

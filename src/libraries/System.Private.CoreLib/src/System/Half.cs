@@ -340,7 +340,7 @@ namespace System
         }
 
         /// <summary>
-        /// Tries to parses a <see cref="Half"/> from a <see cref="string"/> in the default parse style.
+        /// Tries to parse a <see cref="Half"/> from a <see cref="string"/> in the default parse style.
         /// </summary>
         /// <param name="s">The input to be parsed.</param>
         /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
@@ -356,7 +356,7 @@ namespace System
         }
 
         /// <summary>
-        /// Tries to parses a <see cref="Half"/> from a <see cref="ReadOnlySpan{Char}"/> in the default parse style.
+        /// Tries to parse a <see cref="Half"/> from a <see cref="ReadOnlySpan{Char}"/> in the default parse style.
         /// </summary>
         /// <param name="s">The input to be parsed.</param>
         /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="Half.PositiveInfinity"/> or <see cref="Half.NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
@@ -1261,10 +1261,56 @@ namespace System
         public static Half Atan2Pi(Half y, Half x) => (Half)float.Atan2Pi((float)y, (float)x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitDecrement(TSelf)" />
-        public static Half BitDecrement(Half x) => (Half)MathF.BitDecrement((float)x);
+        public static Half BitDecrement(Half x)
+        {
+            ushort bits = x._value;
+
+            if ((bits & PositiveInfinityBits) >= PositiveInfinityBits)
+            {
+                // NaN returns NaN
+                // -Infinity returns -Infinity
+                // +Infinity returns MaxValue
+                return (bits == PositiveInfinityBits) ? MaxValue : x;
+            }
+
+            if (bits == PositiveZeroBits)
+            {
+                // +0.0 returns -Epsilon
+                return -Epsilon;
+            }
+
+            // Negative values need to be incremented
+            // Positive values need to be decremented
+
+            bits += (ushort)(((short)bits < 0) ? +1 : -1);
+            return new Half(bits);
+        }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.BitIncrement(TSelf)" />
-        public static Half BitIncrement(Half x) => (Half)MathF.BitIncrement((float)x);
+        public static Half BitIncrement(Half x)
+        {
+            ushort bits = x._value;
+
+            if ((bits & PositiveInfinityBits) >= PositiveInfinityBits)
+            {
+                // NaN returns NaN
+                // -Infinity returns MinValue
+                // +Infinity returns +Infinity
+                return (bits == NegativeInfinityBits) ? MinValue : x;
+            }
+
+            if (bits == NegativeZeroBits)
+            {
+                // -0.0 returns Epsilon
+                return Epsilon;
+            }
+
+            // Negative values need to be decremented
+            // Positive values need to be incremented
+
+            bits += (ushort)(((short)bits < 0) ? -1 : +1);
+            return new Half(bits);
+        }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
         public static Half FusedMultiplyAdd(Half left, Half right, Half addend) => (Half)MathF.FusedMultiplyAdd((float)left, (float)right, (float)addend);
@@ -1274,6 +1320,9 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(Half x) => MathF.ILogB((float)x);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
+        public static Half Lerp(Half value1, Half value2, Half amount) => (Half)float.Lerp((float)value1, (float)value2, (float)amount);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static Half ReciprocalEstimate(Half x) => (Half)MathF.ReciprocalEstimate((float)x);
@@ -1681,7 +1730,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Half>.TryConvertToChecked<TOther>(Half value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<Half>.TryConvertToChecked<TOther>(Half value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1742,26 +1791,26 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Half>.TryConvertToSaturating<TOther>(Half value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<Half>.TryConvertToSaturating<TOther>(Half value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo<TOther>(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Half>.TryConvertToTruncating<TOther>(Half value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<Half>.TryConvertToTruncating<TOther>(Half value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo<TOther>(value, out result);
         }
 
-        private static bool TryConvertTo<TOther>(Half value, [NotNullWhen(true)] out TOther result)
+        private static bool TryConvertTo<TOther>(Half value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
@@ -1833,7 +1882,7 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
@@ -1842,6 +1891,7 @@ namespace System
         // IParsable
         //
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Half result) => TryParse(s, DefaultParseStyle, provider, out result);
 
         //

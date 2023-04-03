@@ -9,6 +9,7 @@
  */
 // csc /o- /debug+
 using System;
+using Xunit;
 
 struct BigCopy
 {
@@ -27,9 +28,10 @@ struct BigCopy
     }
 }
 
-static class Repro
+public static class Repro
 {
-    static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         BigCopy b1, b2, b3;
         b1.gc = "me";

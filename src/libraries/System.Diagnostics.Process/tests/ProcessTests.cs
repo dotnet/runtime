@@ -23,9 +23,10 @@ namespace System.Diagnostics.Tests
 {
     public partial class ProcessTests : ProcessTestBase
     {
+        // -rwxr-xr-x (755 octal)
         const UnixFileMode ExecutablePermissions = UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.UserWrite |
                                                    UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
-                                                   UnixFileMode.GroupRead | UnixFileMode.GroupExecute;
+                                                   UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
 
         private class FinalizingProcess : Process
         {
@@ -301,6 +302,7 @@ namespace System.Diagnostics.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData(true), InlineData(false)]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.Android, "Android doesn't allow executing custom shell scripts")]
         public void ProcessStart_UseShellExecute_Executes(bool filenameAsUrl)
         {
             string filename = WriteScriptFile(TestDirectory, GetTestFileName(), returnValue: 42);
@@ -373,6 +375,7 @@ namespace System.Diagnostics.Tests
             nameof(PlatformDetection.IsNotAppSandbox))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [SkipOnPlatform(TestPlatforms.Android, "Android doesn't allow executing custom shell scripts")]
         public void ProcessStart_UseShellExecute_WorkingDirectory()
         {
             // Create a directory that will ProcessStartInfo.WorkingDirectory
@@ -547,7 +550,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.MachineName);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void TestMainModule()
         {
@@ -1151,13 +1154,13 @@ namespace System.Diagnostics.Tests
 
             // Get all the processes running on the machine, and check if the current process is one of them.
             var foundCurrentProcess = (from p in Process.GetProcesses()
-                                       where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName))
+                                       where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName)) && (p.StartTime == currentProcess.StartTime)
                                        select p).Any();
 
             Assert.True(foundCurrentProcess, "TestGetProcesses001 failed");
 
             foundCurrentProcess = (from p in Process.GetProcesses(currentProcess.MachineName)
-                                   where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName))
+                                   where (p.Id == currentProcess.Id) && (p.ProcessName.Equals(currentProcess.ProcessName)) && (p.StartTime == currentProcess.StartTime)
                                    select p).Any();
 
             Assert.True(foundCurrentProcess, "TestGetProcesses002 failed");
@@ -1393,7 +1396,7 @@ namespace System.Diagnostics.Tests
             Assert.True(process.WaitForExit(WaitInMS));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "libproc is not supported on iOS/tvOS")]
         public void StartInfo_SetGet_ReturnsExpected()
         {
@@ -1827,7 +1830,7 @@ namespace System.Diagnostics.Tests
                 SetPrivateFieldValue(process, "_haveExitTime", true);
                 SetPrivateFieldValue(process, "_havePriorityBoostEnabled", true);
 
-                SetPrivateFieldValue(process, "_processInfo", typeof(Process).Assembly.GetType("System.Diagnostics.ProcessInfo").GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, Array.Empty<Type>()).Invoke(null));
+                SetPrivateFieldValue(process, "_processInfo", Type.GetType("System.Diagnostics.ProcessInfo, System.Diagnostics.Process").GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, Array.Empty<Type>()).Invoke(null));
                 SetPrivateFieldValue(process, "_threads", new ProcessThreadCollection(Array.Empty<ProcessThread>()));
                 SetPrivateFieldValue(process, "_modules",  new ProcessModuleCollection(Array.Empty<ProcessModule>()));
 
@@ -2543,6 +2546,38 @@ namespace System.Diagnostics.Tests
                 Assert.True(Directory.Exists(fullPath));
                 Directory.Delete(fullPath);
             }
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotPrivilegedProcess))]
+        public void NonElevatedUser_QueryProcessNameOfSystemProcess()
+        {
+            const string Services = "services";
+
+            string currentProcessUser = Helpers.GetProcessUserName(Process.GetCurrentProcess());
+            Assert.NotNull(currentProcessUser);
+
+            Process? systemOwnedServices = null;
+
+            foreach (var p in Process.GetProcessesByName(Services))
+            {
+                // returns the username of the owner of the process or null if the username can't be queried.
+                // for services.exe, this will be null.
+                string? servicesUser = Helpers.GetProcessUserName(p);
+
+                // this isn't really verifying that services.exe is owned by SYSTEM, but we are sure it is not owned by the current user.
+                if (servicesUser != currentProcessUser)
+                {
+                    systemOwnedServices = p;
+                    break;
+                }
+            }
+
+            Assert.NotNull(systemOwnedServices);
+            Assert.Equal(Services, systemOwnedServices.ProcessName);
+
+            systemOwnedServices = Process.GetProcessById(systemOwnedServices.Id);
+            Assert.Equal(Services, systemOwnedServices.ProcessName);
         }
 
         private IReadOnlyList<Process> CreateProcessTree()

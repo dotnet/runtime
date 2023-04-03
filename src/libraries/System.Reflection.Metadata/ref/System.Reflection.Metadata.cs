@@ -2689,6 +2689,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void OpCode(System.Reflection.Metadata.ILOpCode code) { }
         public void StoreArgument(int argumentIndex) { }
         public void StoreLocal(int slotIndex) { }
+        public System.Reflection.Metadata.Ecma335.SwitchInstructionEncoder Switch(int branchCount) { throw null; }
         public void Token(int token) { }
         public void Token(System.Reflection.Metadata.EntityHandle handle) { }
     }
@@ -3069,6 +3070,10 @@ namespace System.Reflection.Metadata.Ecma335
         public void UIntPtr() { }
         public void VoidPointer() { }
     }
+    public readonly struct SwitchInstructionEncoder
+    {
+        public void Branch(System.Reflection.Metadata.Ecma335.LabelHandle label) { }
+    }
     public enum TableIndex : byte
     {
         Module = (byte)0,
@@ -3248,12 +3253,14 @@ namespace System.Reflection.PortableExecutable
         ThreadTerm = (ushort)8,
         HighEntropyVirtualAddressSpace = (ushort)32,
         DynamicBase = (ushort)64,
+        ForceIntegrity = (ushort)128,
         NxCompatible = (ushort)256,
         NoIsolation = (ushort)512,
         NoSeh = (ushort)1024,
         NoBind = (ushort)2048,
         AppContainer = (ushort)4096,
         WdmDriver = (ushort)8192,
+        ControlFlowGuard = (ushort)16384,
         TerminalServerAware = (ushort)32768,
     }
     public enum Machine : ushort

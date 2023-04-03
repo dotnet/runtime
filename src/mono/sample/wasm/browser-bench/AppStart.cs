@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace Sample
 {
+    // http://localhost:8000/?task=AppStart
     public partial class AppStartTask : BenchTask
     {
         public override string Name => "AppStart";
@@ -21,6 +22,7 @@ namespace Sample
             measurements = new Measurement[] {
                 new PageShow(),
                 new ReachManaged(),
+                new ReachManagedCold(),
             };
         }
 
@@ -30,14 +32,12 @@ namespace Sample
         class PageShow : BenchTask.Measurement
         {
             public override string Name => "Page show";
-
             public override int InitialSamples => 3;
-
             public override bool HasRunStepAsync => true;
 
             public override async Task RunStepAsync()
             {
-                await MainApp.PageShow();
+                await MainApp.PageShow(null);
             }
         }
 
@@ -49,16 +49,29 @@ namespace Sample
 
             public override async Task RunStepAsync()
             {
-                await MainApp.FrameReachedManaged();
+                await MainApp.FrameReachedManaged(null);
+            }
+        }
+
+        class ReachManagedCold : BenchTask.Measurement
+        {
+            public override string Name => "Reach managed cold";
+            public override int InitialSamples => 1;
+            public override int RunLength => 20000;
+            public override bool HasRunStepAsync => true;
+
+            public override async Task RunStepAsync()
+            {
+                await MainApp.FrameReachedManaged(Guid.NewGuid().ToString());
             }
         }
 
         public partial class MainApp
         {
             [JSImport("globalThis.mainApp.PageShow")]
-            public static partial Task PageShow();
+            public static partial Task PageShow(string guid);
             [JSImport("globalThis.mainApp.FrameReachedManaged")]
-            public static partial Task FrameReachedManaged();
+            public static partial Task FrameReachedManaged(string guid);
         }
 
         public partial class FrameApp
@@ -66,7 +79,6 @@ namespace Sample
             [JSImport("globalThis.frameApp.ReachedCallback")]
             public static partial Task ReachedCallback();
 
-            [MethodImpl(MethodImplOptions.NoInlining)]
             [JSExport]
             public static void ReachedManaged()
             {

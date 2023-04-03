@@ -67,14 +67,14 @@ namespace System.Text.RegularExpressions.Tests
             throw new InvalidOperationException();
         }
 
-        internal static async Task<IReadOnlyList<Diagnostic>> RunGenerator(
-            string code, bool compile = false, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, bool allowUnsafe = false, CancellationToken cancellationToken = default)
+        private static async Task<(Compilation, GeneratorDriverRunResult)> RunGeneratorCore(
+            string code, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, bool allowUnsafe = false, bool checkOverflow = true, CancellationToken cancellationToken = default)
         {
             var proj = new AdhocWorkspace()
                 .AddSolution(SolutionInfo.Create(SolutionId.CreateNewId(), VersionStamp.Create()))
                 .AddProject("RegexGeneratorTest", "RegexGeneratorTest.dll", "C#")
                 .WithMetadataReferences(additionalRefs is not null ? References.Concat(additionalRefs) : References)
-                .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: allowUnsafe)
+                .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: allowUnsafe, checkOverflow: checkOverflow)
                 .WithNullableContextOptions(NullableContextOptions.Enable))
                 .WithParseOptions(new CSharpParseOptions(langVersion))
                 .AddDocument("RegexGenerator.g.cs", SourceText.From(code, Encoding.UTF8)).Project;
@@ -87,7 +87,13 @@ namespace System.Text.RegularExpressions.Tests
             var generator = new RegexGenerator();
             CSharpGeneratorDriver cgd = CSharpGeneratorDriver.Create(new[] { generator.AsSourceGenerator() }, parseOptions: CSharpParseOptions.Default.WithLanguageVersion(langVersion));
             GeneratorDriver gd = cgd.RunGenerators(comp!, cancellationToken);
-            GeneratorDriverRunResult generatorResults = gd.GetRunResult();
+            return (comp, gd.GetRunResult());
+        }
+
+        internal static async Task<IReadOnlyList<Diagnostic>> RunGenerator(
+            string code, bool compile = false, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, bool allowUnsafe = false, bool checkOverflow = true, CancellationToken cancellationToken = default)
+        {
+            (Compilation comp, GeneratorDriverRunResult generatorResults) = await RunGeneratorCore(code, langVersion, additionalRefs, allowUnsafe, checkOverflow, cancellationToken);
             if (!compile)
             {
                 return generatorResults.Diagnostics;
@@ -97,7 +103,7 @@ namespace System.Text.RegularExpressions.Tests
             EmitResult results = comp.Emit(Stream.Null, cancellationToken: cancellationToken);
             ImmutableArray<Diagnostic> generatorDiagnostics = generatorResults.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
             ImmutableArray<Diagnostic> resultsDiagnostics = results.Diagnostics.RemoveAll(d => d.Severity <= DiagnosticSeverity.Hidden);
-            if (!results.Success || resultsDiagnostics.Length != 0 || generatorDiagnostics.Length != 0)
+            if (!results.Success || resultsDiagnostics.Length != 0)
             {
                 throw new ArgumentException(
                     string.Join(Environment.NewLine, resultsDiagnostics.Concat(generatorDiagnostics)) + Environment.NewLine +
@@ -107,15 +113,29 @@ namespace System.Text.RegularExpressions.Tests
             return generatorResults.Diagnostics.Concat(results.Diagnostics).Where(d => d.Severity != DiagnosticSeverity.Hidden).ToArray();
         }
 
-        internal static async Task<Regex> SourceGenRegexAsync(
-            string pattern, RegexOptions? options = null, TimeSpan? matchTimeout = null, CancellationToken cancellationToken = default)
+        internal static async Task<string> GenerateSourceText(
+            string code, LanguageVersion langVersion = LanguageVersion.Preview, MetadataReference[]? additionalRefs = null, bool allowUnsafe = false, bool checkOverflow = true, CancellationToken cancellationToken = default)
         {
-            Regex[] results = await SourceGenRegexAsync(new[] { (pattern, options, matchTimeout) }, cancellationToken).ConfigureAwait(false);
+            (Compilation comp, GeneratorDriverRunResult generatorResults) = await RunGeneratorCore(code, langVersion, additionalRefs, allowUnsafe, checkOverflow, cancellationToken);
+            string generatedSource = string.Concat(generatorResults.GeneratedTrees.Select(t => t.ToString()));
+
+            if (generatorResults.Diagnostics.Length != 0)
+            {
+                throw new ArgumentException(string.Join(Environment.NewLine, generatorResults.Diagnostics) + Environment.NewLine + generatedSource);
+            }
+
+            return generatedSource;
+        }
+
+        internal static async Task<Regex> SourceGenRegexAsync(
+            string pattern, CultureInfo? culture, RegexOptions? options = null, TimeSpan? matchTimeout = null, CancellationToken cancellationToken = default)
+        {
+            Regex[] results = await SourceGenRegexAsync(new[] { (pattern, culture, options, matchTimeout) }, cancellationToken).ConfigureAwait(false);
             return results[0];
         }
 
         internal static async Task<Regex[]> SourceGenRegexAsync(
-            (string pattern, RegexOptions? options, TimeSpan? matchTimeout)[] regexes, CancellationToken cancellationToken = default)
+            (string pattern, CultureInfo? culture, RegexOptions? options, TimeSpan? matchTimeout)[] regexes, CancellationToken cancellationToken = default)
         {
             // Un-ifdef to compile each regex individually, which can be useful if one regex among thousands is causing a failure.
             // We compile them all en mass for test efficiency, but it can make it harder to debug a compilation failure in one of them.
@@ -144,7 +164,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 Assert.True(regex.options is not null || regex.matchTimeout is null);
                 code.AppendLine("    /// <summary>RegexGenerator method</summary>");
-                code.Append($"    [RegexGenerator({SymbolDisplay.FormatLiteral(regex.pattern, quote: true)}");
+                code.Append($"    [GeneratedRegex({SymbolDisplay.FormatLiteral(regex.pattern, quote: true)}");
                 if (regex.options is not null)
                 {
                     code.Append($", {string.Join(" | ", regex.options.ToString().Split(',').Select(o => $"RegexOptions.{o.Trim()}"))}");
@@ -152,6 +172,10 @@ namespace System.Text.RegularExpressions.Tests
                     {
                         code.Append(string.Create(CultureInfo.InvariantCulture, $", {(int)regex.matchTimeout.Value.TotalMilliseconds}"));
                     }
+                }
+                if (regex.culture is not null)
+                {
+                    code.Append($", {SymbolDisplay.FormatLiteral(regex.culture.Name, quote: true)}");
                 }
                 code.AppendLine($")] public static partial Regex Get{count}();");
 
@@ -173,8 +197,9 @@ namespace System.Text.RegularExpressions.Tests
                     .WithCompilationOptions(
                         new CSharpCompilationOptions(
                             OutputKind.DynamicallyLinkedLibrary,
+                            checkOverflow: true,
                             warningLevel: 9999, // docs recommend using "9999" to catch all warnings now and in the future
-                            specificDiagnosticOptions: ImmutableDictionary<string, ReportDiagnostic>.Empty.Add("SYSLIB1045", ReportDiagnostic.Hidden)) // regex with limited support
+                            specificDiagnosticOptions: ImmutableDictionary<string, ReportDiagnostic>.Empty.Add("SYSLIB1044", ReportDiagnostic.Hidden)) // regex with limited support
                             .WithNullableContextOptions(NullableContextOptions.Enable))
                             .WithParseOptions(s_previewParseOptions)
                     .AddDocument("RegexGenerator.g.cs", SourceText.From("// Empty", Encoding.UTF8)).Project;

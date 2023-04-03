@@ -338,10 +338,10 @@ GlobalMemoryStatusEx(
 
     // Get the physical memory size
 #if HAVE_SYSCONF && HAVE__SC_PHYS_PAGES
-    int64_t physical_memory;
+    uint64_t physical_memory;
 
     // Get the Physical memory size
-    physical_memory = sysconf( _SC_PHYS_PAGES ) * sysconf( _SC_PAGE_SIZE );
+    physical_memory = ((uint64_t)sysconf( _SC_PHYS_PAGES )) * ((uint64_t) sysconf( _SC_PAGE_SIZE ));
     lpBuffer->ullTotalPhys = (DWORDLONG)physical_memory;
     fRetVal = TRUE;
 #elif HAVE_SYSCTL
@@ -438,7 +438,7 @@ GlobalMemoryStatusEx(
         {
             // Ensure that we don't try to read the /proc/meminfo in successive calls to the GlobalMemoryStatusEx
             // if we have failed to access the file or the file didn't contain the MemAvailable value.
-            tryReadMemInfo = ReadMemAvailable(&lpBuffer->ullAvailPhys);
+            tryReadMemInfo = ReadMemAvailable((uint64_t*)&lpBuffer->ullAvailPhys);
         }
 
         if (!tryReadMemInfo)
@@ -484,27 +484,8 @@ GlobalMemoryStatusEx(
     return fRetVal;
 }
 
-PALIMPORT
-DWORD
-PALAPI
-GetCurrentProcessorNumber()
-{
-#if HAVE_SCHED_GETCPU
-    return sched_getcpu();
-#else //HAVE_SCHED_GETCPU
-    return -1;
-#endif //HAVE_SCHED_GETCPU
-}
-
-BOOL
-PALAPI
-PAL_HasGetCurrentProcessorNumber()
-{
-    return HAVE_SCHED_GETCPU;
-}
-
 bool
-ReadMemoryValueFromFile(const char* filename, uint64_t* val)
+PAL_ReadMemoryValueFromFile(const char* filename, uint64_t* val)
 {
     bool result = false;
     char *line = nullptr;
@@ -585,11 +566,11 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
         {
             path_to_size_file[index] = (char)(48 + i);
 
-            if (ReadMemoryValueFromFile(path_to_size_file, &size))
+            if (PAL_ReadMemoryValueFromFile(path_to_size_file, &size))
             {
                 path_to_level_file[index] = (char)(48 + i);
 
-                if (ReadMemoryValueFromFile(path_to_level_file, &level))
+                if (PAL_ReadMemoryValueFromFile(path_to_level_file, &level))
                 {
                     UPDATE_CACHE_SIZE_AND_LEVEL(size, level)
                 }
@@ -636,10 +617,11 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
         int64_t cacheSizeFromSysctl = 0;
         size_t sz = sizeof(cacheSizeFromSysctl);
         const bool success = false
-            // macOS-arm64: Since macOS 12.0, Apple added ".perflevelX." to determinate cache sizes for efficiency
+            // macOS: Since macOS 12.0, Apple added ".perflevelX." to determinate cache sizes for efficiency
             // and performance cores separately. "perflevel0" stands for "performance"
+            || sysctlbyname("hw.perflevel0.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
             || sysctlbyname("hw.perflevel0.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
-            // macOS-arm64: these report cache sizes for efficiency cores only:
+            // macOS: these report cache sizes for efficiency cores only:
             || sysctlbyname("hw.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
             || sysctlbyname("hw.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
             || sysctlbyname("hw.l1dcachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0;

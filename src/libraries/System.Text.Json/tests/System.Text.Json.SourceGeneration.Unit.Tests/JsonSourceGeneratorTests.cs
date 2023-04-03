@@ -11,6 +11,7 @@ using Xunit;
 namespace System.Text.Json.SourceGeneration.UnitTests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
+    [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/71962", ~RuntimeConfiguration.Release)]
     public class GeneratorTests
     {
         [Fact]
@@ -734,6 +735,9 @@ namespace Test
     {
         [Obsolete(""This is a test"")]
         public bool Test { get; set; }
+
+        [Obsolete]
+        public bool Test2 { get; set; }
     }
 }
 ";

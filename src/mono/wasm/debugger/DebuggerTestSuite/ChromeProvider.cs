@@ -15,6 +15,7 @@ using Microsoft.WebAssembly.Diagnostics;
 using System.Threading;
 using System.Collections.Generic;
 using Wasm.Tests.Internal;
+using System.Linq;
 
 #nullable enable
 
@@ -30,6 +31,11 @@ internal class ChromeProvider : WasmHostProvider
         string artifactsBinDir = Path.Combine(Path.GetDirectoryName(typeof(ChromeProvider).Assembly.Location)!, "..", "..", "..");
         return BrowserLocator.FindChrome(artifactsBinDir, "BROWSER_PATH_FOR_TESTS");
     });
+    private static readonly string[] s_messagesToFilterOut = new[]
+    {
+        "Received unexpected number of handles",
+        "Failed to connect to the bus:",
+    };
 
     public ChromeProvider(string id, ILogger logger) : base(id, logger)
     {
@@ -41,12 +47,16 @@ internal class ChromeProvider : WasmHostProvider
                                                 string messagePrefix,
                                                 ILoggerFactory loggerFactory,
                                                 CancellationTokenSource cts,
-                                                int browserReadyTimeoutMs = 20000)
+                                                int browserReadyTimeoutMs = 20000,
+                                                string locale = "en-US")
     {
         string? line;
         try
         {
-            ProcessStartInfo psi = GetProcessStartInfo(s_browserPath.Value, GetInitParms(remoteDebuggingPort), targetUrl);
+            // for WIndows setting --lang arg is enough
+            if (!OperatingSystem.IsWindows())
+                Environment.SetEnvironmentVariable("LANGUAGE", locale);
+            ProcessStartInfo psi = GetProcessStartInfo(s_browserPath.Value, GetInitParms(remoteDebuggingPort, locale), targetUrl);
             line = await LaunchHostAsync(
                                     psi,
                                     context,
@@ -77,7 +87,7 @@ internal class ChromeProvider : WasmHostProvider
 
         _logger.LogInformation($"{messagePrefix} launching proxy for {con_str}");
 
-        _debuggerProxy = new DebuggerProxy(loggerFactory, null, loggerId: Id);
+        _debuggerProxy = new DebuggerProxy(loggerFactory, loggerId: Id);
         TestHarnessProxy.RegisterNewProxy(Id, _debuggerProxy);
         var browserUri = new Uri(con_str);
         WebSocket? ideSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
@@ -104,6 +114,14 @@ internal class ChromeProvider : WasmHostProvider
         _isDisposing = false;
     }
 
+    protected override bool ShouldMessageBeLogged(string prefix, string? msg)
+    {
+        if (msg is null || !prefix.Contains("browser-stderr"))
+            return true;
+
+        return !s_messagesToFilterOut.Any(f => msg.Contains(f));
+    }
+
     private async Task<string> ExtractConnUrl (string str, ILogger logger)
     {
         var client = new HttpClient();
@@ -119,7 +137,7 @@ internal class ChromeProvider : WasmHostProvider
             await Task.Delay(100);
 
             var res = await client.GetStringAsync(new Uri(new Uri(str), "/json/list"));
-            logger.LogInformation("res is {0}", res);
+            logger.LogTrace("res is {0}", res);
 
             if (!string.IsNullOrEmpty(res))
             {
@@ -147,9 +165,9 @@ internal class ChromeProvider : WasmHostProvider
         return wsURl;
     }
 
-    private static string GetInitParms(int port)
+    private static string GetInitParms(int port, string lang="en-US")
     {
-        string str = $"--headless --disable-gpu --lang=en-US --incognito --remote-debugging-port={port}";
+        string str = $"--headless --disable-gpu --lang={lang} --incognito --remote-debugging-port={port}";
         if (File.Exists("/.dockerenv"))
         {
             Console.WriteLine ("Detected a container, disabling sandboxing for debugger tests.");
@@ -157,6 +175,4 @@ internal class ChromeProvider : WasmHostProvider
         }
         return str;
     }
-
-
 }

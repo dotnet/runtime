@@ -101,48 +101,39 @@ PALTEST(file_io_SetFilePointer_test7_paltest_setfilepointer_test7, "file_io/SetF
     }
     else
     {
-    /* verify results */
-    if (SetEndOfFile(hFile) != TRUE)
-    {
-        Trace("SetFilePointer: ERROR -> Call to SetEndOfFile failed with "
-            "error code: %d\n",
-        GetLastError());
-        if (CloseHandle(hFile) != TRUE)
+        /* verify results */
+        dwReturnedHighOrder = 0;
+        dwReturnedOffset = SetFilePointer(hFile, 0, &dwReturnedHighOrder, FILE_CURRENT);
+        if ((dwReturnedOffset != dwOffset) || (dwReturnedHighOrder != dwHighOrder))
         {
-            Trace("SetFilePointer: ERROR -> Unable to close file \"%s\".\n",
-                szTextFile);
-        }
-        if (!DeleteFileA(szTextFile))
-        {
-            Trace("SetFilePointer: ERROR -> Unable to delete file \"%s\".\n",
-                szTextFile);
-        }
-        PAL_TerminateEx(FAIL);
-        return FAIL;
-    }
-    dwReturnedOffset = GetFileSize(hFile, (DWORD*)&dwReturnedHighOrder);
-    if ((dwReturnedOffset != dwOffset) || (dwReturnedHighOrder != dwHighOrder))
-    {
-        Trace("SetFilePointer: ERROR -> Asked to move far past the "
-            "end of the file. low order sent: %ld  low order returned: %ld "
-            "high order sent: %ld  high order returned: %ld",
-            dwOffset, dwReturnedOffset,
-            dwHighOrder, dwReturnedHighOrder);
-        if (!DeleteFileA(szTextFile))
-        {
-            Trace("SetFilePointer: ERROR -> Unable to delete file \"%s\".\n",
-                szTextFile);
-        }
-        PAL_TerminateEx(FAIL);
-        return FAIL;
+            Trace("SetFilePointer: ERROR -> Asked to move far past the "
+                "end of the file. low order sent: %ld  low order returned: %ld "
+                "high order sent: %ld  high order returned: %ld",
+                dwOffset, dwReturnedOffset,
+                dwHighOrder, dwReturnedHighOrder);
+            if (!DeleteFileA(szTextFile))
+            {
+                Trace("SetFilePointer: ERROR -> Unable to delete file \"%s\".\n",
+                    szTextFile);
+            }
+            PAL_TerminateEx(FAIL);
+            return FAIL;
         }
     }
 
+    DWORD bytesWritten = 0;
+    char ch = ' ';
+    if (!WriteFile(hFile, &ch, 1, &bytesWritten, NULL))
+    {
+        Trace("WriteFile: ERROR\n");
+        PAL_TerminateEx(FAIL);
+        return FAIL;
+    }
 
     /*
      * move the pointer backwards in the file and verify
      */
-    dwOffset = 0;
+    dwOffset = -1;
     dwHighOrder = -1;
     dwRc = SetFilePointer(hFile, dwOffset, &dwHighOrder, FILE_END);
     if (dwRc != 10)

@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         private byte[] _certData;
         private X509Extension _cdpExtension;
         private X509Extension _aiaExtension;
-        private X509Extension _akidExtension;
+        private X509AuthorityKeyIdentifierExtension _akidExtension;
 
         private List<(byte[], DateTimeOffset)> _revocationList;
         private byte[] _crl;
@@ -305,7 +305,67 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             }
 
             DateTimeOffset newExpiry = now.AddSeconds(2);
+            X509AuthorityKeyIdentifierExtension akid = _akidExtension ??= CreateAkidExtension();
 
+            if (OmitNextUpdateInCrl)
+            {
+                crl = BuildCrlManually(now, newExpiry, akid);
+            }
+            else
+            {
+                CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+
+                if (_revocationList is not null)
+                {
+                    foreach ((byte[] serial, DateTimeOffset when) in _revocationList)
+                    {
+                        builder.AddEntry(serial, when);
+                    }
+                }
+
+                DateTimeOffset thisUpdate;
+                DateTimeOffset nextUpdate;
+
+                if (RevocationExpiration.HasValue)
+                {
+                    nextUpdate = RevocationExpiration.GetValueOrDefault();
+                    thisUpdate = _cert.NotBefore;
+                }
+                else
+                {
+                    thisUpdate = now;
+                    nextUpdate = newExpiry;
+                }
+
+                using (RSA key = _cert.GetRSAPrivateKey())
+                {
+                    crl = builder.Build(
+                        CorruptRevocationIssuerName ? s_nonParticipatingName : _cert.SubjectName,
+                        X509SignatureGenerator.CreateForRSA(key, RSASignaturePadding.Pkcs1),
+                        _crlNumber,
+                        nextUpdate,
+                        HashAlgorithmName.SHA256,
+                        _akidExtension,
+                        thisUpdate);
+                }
+            }
+
+            if (CorruptRevocationSignature)
+            {
+                crl[^2] ^= 0xFF;
+            }
+
+            _crl = crl;
+            _crlExpiry = newExpiry;
+            _crlNumber++;
+            return crl;
+        }
+
+        private byte[] BuildCrlManually(
+            DateTimeOffset now,
+            DateTimeOffset newExpiry,
+            X509AuthorityKeyIdentifierExtension akidExtension)
+        {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
             using (writer.PushSequence())
@@ -383,22 +443,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     // Extensions (SEQUENCE OF)
                     using (writer.PushSequence())
                     {
-                        if (_akidExtension == null)
-                        {
-                            _akidExtension = CreateAkidExtension();
-                        }
-
                         // Authority Key Identifier Extension
                         using (writer.PushSequence())
                         {
-                            writer.WriteObjectIdentifier(_akidExtension.Oid.Value);
+                            writer.WriteObjectIdentifier(akidExtension.Oid.Value);
 
-                            if (_akidExtension.Critical)
+                            if (akidExtension.Critical)
                             {
                                 writer.WriteBoolean(true);
                             }
 
-                            writer.WriteOctetString(_akidExtension.RawData);
+                            writer.WriteOctetString(akidExtension.RawData);
                         }
 
                         // CRL Number Extension
@@ -439,11 +494,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                 writer.WriteBitString(signature);
             }
 
-            _crl = writer.Encode();
-
-            _crlExpiry = newExpiry;
-            _crlNumber++;
-            return _crl;
+            return writer.Encode();
         }
 
         internal void DesignateOcspResponder(X509Certificate2 responder)
@@ -515,9 +566,18 @@ SingleResponse ::= SEQUENCE {
                         }
                         else if (status == CertStatus.Revoked)
                         {
-                            // Android does not support all precisions for seconds - just omit fractional seconds for testing on Android
                             writer.PushSequence(s_context1);
-                            writer.WriteGeneralizedTime(revokedTime, omitFractionalSeconds: OperatingSystem.IsAndroid());
+
+                            // Fracational seconds "MUST NOT" be used here. Android and macOS 13+ enforce this and
+                            // reject GeneralizedTime's with fractional seconds, so omit them.
+                            // RFC 6960: 4.2.2.1:
+                            // The format for GeneralizedTime is as specified in Section 4.1.2.5.2 of [RFC5280].
+                            // RFC 5280 4.1.2.5.2:
+                            // For the purposes of this profile, GeneralizedTime values MUST be
+                            // expressed in Greenwich Mean Time (Zulu) and MUST include seconds
+                            // (i.e., times are YYYYMMDDHHMMSSZ), even where the number of seconds
+                            // is zero. GeneralizedTime values MUST NOT include fractional seconds.
+                            writer.WriteGeneralizedTime(revokedTime, omitFractionalSeconds: true);
                             writer.PopSequence(s_context1);
                         }
                         else
@@ -703,36 +763,10 @@ SingleResponse ::= SEQUENCE {
 
         private static X509Extension CreateCdpExtension(string cdp)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-
-            // SEQUENCE OF
-            using (writer.PushSequence())
-            {
-                // DistributionPoint
-                using (writer.PushSequence())
-                {
-                    // Because DistributionPointName is a CHOICE type this tag is explicit.
-                    // (ITU-T REC X.680-201508 C.3.2.2(g)(3rd bullet))
-                    // distributionPoint [0] DistributionPointName
-                    using (writer.PushSequence(s_context0))
-                    {
-                        // [0] DistributionPointName (GeneralNames (SEQUENCE OF))
-                        using (writer.PushSequence(s_context0))
-                        {
-                            // GeneralName ([6]  IA5String)
-                            writer.WriteCharacterString(
-                                UniversalTagNumber.IA5String,
-                                cdp,
-                                new Asn1Tag(TagClass.ContextSpecific, 6));
-                        }
-                    }
-                }
-            }
-
-            return new X509Extension("2.5.29.31", writer.Encode(), false);
+            return CertificateRevocationListBuilder.BuildCrlDistributionPointExtension(new[] { cdp });
         }
 
-        private X509Extension CreateAkidExtension()
+        private X509AuthorityKeyIdentifierExtension CreateAkidExtension()
         {
             X509SubjectKeyIdentifierExtension skid =
                 _cert.Extensions.OfType<X509SubjectKeyIdentifierExtension>().SingleOrDefault();
@@ -820,8 +854,8 @@ SingleResponse ::= SEQUENCE {
                 rootAuthority = new CertificateAuthority(
                     rootCert,
                     rootDistributionViaHttp ? certUrl : null,
-                    issuerRevocationViaCrl ? cdpUrl : null,
-                    issuerRevocationViaOcsp ? ocspUrl : null);
+                    issuerRevocationViaCrl || (endEntityRevocationViaCrl && intermediateAuthorityCount == 0) ? cdpUrl : null,
+                    issuerRevocationViaOcsp || (endEntityRevocationViaOcsp && intermediateAuthorityCount == 0) ? ocspUrl : null);
 
                 CertificateAuthority issuingAuthority = rootAuthority;
                 intermediateAuthorities = new CertificateAuthority[intermediateAuthorityCount];

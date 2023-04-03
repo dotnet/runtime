@@ -25,9 +25,6 @@ namespace Internal.Runtime.Augments
     [System.Runtime.CompilerServices.ReflectionBlocked]
     public abstract class ReflectionExecutionDomainCallbacks
     {
-        // Api's that are exposed in System.Runtime but are really reflection apis.
-        public abstract Type GetType(string typeName, Func<AssemblyName, Assembly?>? assemblyResolver, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase, string defaultAssembly);
-
         public abstract IntPtr TryGetStaticClassConstructionContext(RuntimeTypeHandle runtimeTypeHandle);
 
         public abstract bool IsReflectionBlocked(RuntimeTypeHandle typeHandle);
@@ -49,17 +46,6 @@ namespace Internal.Runtime.Augments
         public abstract string GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle);
         public abstract MethodBase GetMethodBaseFromStartAddressIfAvailable(IntPtr methodStartAddress);
         public abstract Assembly GetAssemblyForHandle(RuntimeTypeHandle typeHandle);
-
-        /// <summary>
-        /// Retrieves the default value for a parameter of a method.
-        /// </summary>
-        /// <param name="defaultParametersContext">The default parameters context used to invoke the method,
-        /// this should identify the method in question. This is passed to the RuntimeAugments.CallDynamicInvokeMethod.</param>
-        /// <param name="thType">The type of the parameter to retrieve.</param>
-        /// <param name="argIndex">The index of the parameter on the method to retrieve.</param>
-        /// <param name="defaultValue">The default value of the parameter if available.</param>
-        /// <returns>true if the default parameter value is available, otherwise false.</returns>
-        public abstract bool TryGetDefaultParameterValue(object defaultParametersContext, RuntimeTypeHandle thType, int argIndex, out object defaultValue);
 
         public abstract RuntimeTypeHandle GetTypeHandleIfAvailable(Type type);
         public abstract bool SupportsReflection(Type type);

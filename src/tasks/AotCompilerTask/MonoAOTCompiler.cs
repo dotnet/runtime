@@ -66,6 +66,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     ///   - AotDataFile (when using UseAotDataFile=true)
     ///   - LlvmObjectFile (if using LLVM)
     ///   - LlvmBitcodeFile (if using LLVM-only)
+    ///   - ExportsFile (used in LibraryMode only)
     /// </summary>
     [Output]
     public ITaskItem[]? CompiledAssemblies { get; set; }
@@ -107,24 +108,49 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public bool UseDirectPInvoke { get; set; }
 
     /// <summary>
+    /// When this option is specified, the mono aot compiler will generate direct calls for only specified direct pinvokes.
+    /// Specified direct pinvokes can be in the format of 'module' to generate direct calls for all entrypoints in the module,
+    /// or 'module!entrypoint' to generate direct calls for individual entrypoints in a module. 'module' will trump 'module!entrypoint'.
+    /// For a direct call to be generated, the managed code must call the native function through a direct pinvoke, e.g.
+    ///
+    /// [DllImport("module", EntryPoint="entrypoint")]
+    /// public static extern <ret> ManagedName (arg)
+    ///
+    /// or
+    ///
+    /// [DllImport("module")]
+    /// public static extern <ret> entrypoint (arg)
+    ///
+    /// The native sources must be supplied in the direct pinvoke sources parammeter in the LibraryBuilder to generate a shared library.
+    /// If not using the LibraryBuilder, the native sources must be linked manually in the final executable or library.
+    /// This requires UseStaticLinking=true, can be used in conjunction with DirectPInvokeLists, but is incompatible with UseDirectPInvoke.
+    /// </summary>
+    public ITaskItem[] DirectPInvokes { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
+    /// When this option is specified, the mono aot compiler will generate direct calls for only specified direct pinvokes in the provided files.
+    /// Specified direct pinvokes can be in the format of 'module' to generate direct calls for all entrypoints in the module,
+    /// or 'module!entrypoint' to generate direct calls for individual entrypoints in a module. 'module' will trump 'module!entrypoint'.
+    /// For a direct call to be generated, the managed code must call the native function through a direct pinvoke, e.g.
+    ///
+    /// [DllImport("module", EntryPoint="entrypoint")]
+    /// public static extern <ret> ManagedName (arg)
+    ///
+    /// or
+    ///
+    /// [DllImport("module")]
+    /// public static extern <ret> entrypoint (arg)
+    ///
+    /// The native sources must be supplied in the direct pinvoke sources parammeter in the LibraryBuilder to generate a shared library.
+    /// If not using the LibraryBuilder, the native sources must be linked manually in the final executable or library.
+    /// This requires UseStaticLinking=true, can be used in conjunction with DirectPInvokes, but is incompatible with UseDirectPInvoke.
+    /// </summary>
+    public ITaskItem[] DirectPInvokeLists { get; set; } = Array.Empty<ITaskItem>();
+
+    /// <summary>
     /// Instructs the AOT compiler to emit DWARF debugging information.
     /// </summary>
     public bool UseDwarfDebug { get; set; }
-
-    /// <summary>
-    /// Path to Dotnet PGO binary (dotnet-pgo)
-    /// </summary>
-    public string? PgoBinaryPath { get; set; }
-
-    /// <summary>
-    /// NetTrace file to use when invoking dotnet-pgo for
-    /// </summary>
-    public string? NetTracePath { get; set; }
-
-    /// <summary>
-    /// Directory containing all assemblies referenced in a .nettrace collected from a separate device needed by dotnet-pgo. Necessary for mobile platforms.
-    /// </summary>
-    public ITaskItem[] ReferenceAssemblyPathsForPGO { get; set; } = Array.Empty<ITaskItem>();
 
     /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
@@ -177,6 +203,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// Prefix that will be added to the library file name, e.g. to add 'lib' prefix required by some platforms. Only valid if OutputType is Library.
     /// </summary>
     public string LibraryFilePrefix { get; set; } = "";
+
+    /// <summary>
+    /// Enables exporting symbols of methods decorated with UnmanagedCallersOnly Attribute containing a specified EntryPoint
+    /// </summary>
+    public bool EnableUnmanagedCallersOnlyMethodsExport { get; set; }
 
     /// <summary>
     /// Path to the directory where LLVM binaries (opt and llc) are found.
@@ -259,6 +290,8 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     private int _numCompiled;
     private int _totalNumAssemblies;
 
+    private readonly Dictionary<string, string> _symbolNameFixups = new();
+
     private bool ProcessAndValidateArguments()
     {
         if (!File.Exists(CompilerBinaryPath))
@@ -286,31 +319,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (!Directory.Exists(IntermediateOutputPath))
             Directory.CreateDirectory(IntermediateOutputPath);
-
-        if (!string.IsNullOrEmpty(NetTracePath))
-        {
-            if (!File.Exists(NetTracePath))
-            {
-                Log.LogError($"{nameof(NetTracePath)}='{NetTracePath}' doesn't exist");
-                return false;
-            }
-            if (!File.Exists(PgoBinaryPath))
-            {
-                Log.LogError($"NetTracePath was provided, but {nameof(PgoBinaryPath)}='{PgoBinaryPath}' doesn't exist");
-                return false;
-            }
-            if (ReferenceAssemblyPathsForPGO.Length == 0)
-            {
-                Log.LogError($"NetTracePath was provided, but {nameof(ReferenceAssemblyPathsForPGO)} is empty");
-                return false;
-            }
-            foreach (var refAsmItem in ReferenceAssemblyPathsForPGO)
-            {
-                string? fullPath = refAsmItem.GetMetadata("FullPath");
-                if (!File.Exists(fullPath))
-                    throw new LogAsErrorException($"ReferenceAssembly '{fullPath}' doesn't exist");
-            }
-        }
 
         if (AotProfilePath != null)
         {
@@ -399,9 +407,21 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             throw new LogAsErrorException($"'{nameof(UseDirectIcalls)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
         }
 
-        if (UseDirectPInvoke && !UseStaticLinking)
+        if (UseDirectPInvoke && (DirectPInvokes.Length > 0 || DirectPInvokeLists.Length > 0))
         {
-            throw new LogAsErrorException($"'{nameof(UseDirectPInvoke)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
+            throw new LogAsErrorException($"'{nameof(UseDirectPInvoke)}' flag trumps specified '{nameof(DirectPInvokes)}' and '{nameof(DirectPInvokeLists)}' arguments. Unset either the flag or the specific direct pinvoke arguments.");
+        }
+
+        if (UseDirectPInvoke || DirectPInvokes.Length > 0 || DirectPInvokeLists.Length > 0)
+        {
+            if (!UseStaticLinking)
+                throw new LogAsErrorException($"'{nameof(UseDirectPInvoke)}', '{nameof(DirectPInvokes)}', and '{nameof(DirectPInvokeLists)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
+
+            foreach (var directPInvokeList in DirectPInvokeLists)
+            {
+                if (!File.Exists(directPInvokeList.GetMetadata("FullPath")))
+                    throw new LogAsErrorException($"Could not find file '{directPInvokeList}'.");
+            }
         }
 
         if (UseStaticLinking && (parsedOutputType == MonoAotOutputType.Library))
@@ -438,48 +458,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private bool ProcessNettrace(string netTraceFile)
-    {
-        var outputMibcPath = Path.Combine(OutputDir, Path.ChangeExtension(Path.GetFileName(netTraceFile), ".mibc"));
-
-        if (_cache!.Enabled)
-        {
-            string hash = Utils.ComputeHash(netTraceFile);
-            if (!_cache!.UpdateAndCheckHasFileChanged($"-mibc-source-file-{Path.GetFileName(netTraceFile)}", hash))
-            {
-                Log.LogMessage(MessageImportance.Low, $"Skipping generating {outputMibcPath} from {netTraceFile} because source file hasn't changed");
-                return true;
-            }
-            else
-            {
-                Log.LogMessage(MessageImportance.Low, $"Generating {outputMibcPath} from {netTraceFile} because the source file's hash has changed.");
-            }
-        }
-
-        StringBuilder pgoArgsStr = new StringBuilder(string.Empty);
-        pgoArgsStr.Append($"create-mibc");
-        pgoArgsStr.Append($" --trace {netTraceFile} ");
-        foreach (var refAsmItem in ReferenceAssemblyPathsForPGO)
-        {
-            string? fullPath = refAsmItem.GetMetadata("FullPath");
-            pgoArgsStr.Append($" --reference \"{fullPath}\" ");
-        }
-        pgoArgsStr.Append($" --output {outputMibcPath} ");
-        (int exitCode, string output) = Utils.TryRunProcess(Log,
-                                                            PgoBinaryPath!,
-                                                            pgoArgsStr.ToString());
-
-        if (exitCode != 0)
-        {
-            Log.LogError($"dotnet-pgo({PgoBinaryPath}) failed for {netTraceFile}:{output}");
-            return false;
-        }
-
-        MibcProfilePath = MibcProfilePath.Append(outputMibcPath).ToArray();
-        Log.LogMessage(MessageImportance.Low, $"Generated {outputMibcPath} from {PgoBinaryPath}");
-        return true;
-    }
-
     private bool ExecuteInternal()
     {
         if (!ProcessAndValidateArguments())
@@ -497,9 +475,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             monoPaths = string.Join(Path.PathSeparator.ToString(), AdditionalAssemblySearchPaths);
 
         _cache = new FileCache(CacheFilePath, Log);
-
-        if (!string.IsNullOrEmpty(NetTracePath) && !ProcessNettrace(NetTracePath))
-            return false;
 
         List<PrecompileArguments> argsList = new();
         foreach (var assemblyItem in _assembliesToCompile)
@@ -563,6 +538,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
+        CheckExportSymbolsFile(_assembliesToCompile);
         CompiledAssemblies = ConvertAssembliesDictToOrderedList(compiledAssemblies, _assembliesToCompile).ToArray();
         return !Log.HasLoggedErrors;
     }
@@ -573,18 +549,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             // compare original assembly vs it's outputs.. all it's outputs!
             string assemblyPath = args.AOTAssembly.GetMetadata("FullPath");
-            if (args.ProxyFiles.Any(pf => IsNewerThanOutput(assemblyPath, pf.TargetFile)))
+            if (args.ProxyFiles.Any(pf => Utils.IsNewerThan(assemblyPath, pf.TargetFile)))
                 return false;
         }
 
         return true;
-
-        static bool IsNewerThanOutput(string inFile, string outFile)
-            => !File.Exists(inFile) || !File.Exists(outFile) ||
-                    (File.GetLastWriteTimeUtc(inFile) > File.GetLastWriteTimeUtc(outFile));
     }
 
-    private IEnumerable<ITaskItem> FilterOutUnmanagedAssemblies(IEnumerable<ITaskItem> assemblies)
+    private List<ITaskItem> FilterOutUnmanagedAssemblies(IEnumerable<ITaskItem> assemblies)
     {
         List<ITaskItem> filteredAssemblies = new();
         foreach (var asmItem in assemblies)
@@ -641,9 +613,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 Log.LogMessage(MessageImportance.Low, $"Copying {asmPath} to {newPath}");
             _fileWrites.Add(newPath);
 
-            ITaskItem newAsm = new TaskItem(newPath);
+            var newAsm = new TaskItem(newPath);
             asmItem.CopyMetadataTo(newAsm);
-            asmItem.SetMetadata(s_originalFullPathMetadataName, asmPath);
+            newAsm.SetMetadata(s_originalFullPathMetadataName, asmPath);
             newAssemblies.Add(newAsm);
         }
 
@@ -657,7 +629,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         var aotAssembly = new TaskItem(assembly);
         var aotArgs = new List<string>();
         var processArgs = new List<string>();
-        bool isDedup = assembly == DedupAssembly;
+        bool isDedup = Path.GetFileName(assembly) == Path.GetFileName(DedupAssembly);
         List<ProxyFile> proxyFiles = new(capacity: 5);
 
         var a = assemblyItem.GetMetadata("AotArguments");
@@ -692,6 +664,25 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         if (UseStaticLinking)
         {
             aotArgs.Add($"static");
+        }
+
+        if (UseDirectPInvoke)
+        {
+            aotArgs.Add($"direct-pinvoke");
+        }
+
+        if (DirectPInvokes.Length > 0)
+        {
+            var directPInvokesSB = new StringBuilder("direct-pinvokes=");
+            Array.ForEach(DirectPInvokes, directPInvokeItem => directPInvokesSB.Append($"{directPInvokeItem.ItemSpec};"));
+            aotArgs.Add(directPInvokesSB.ToString());
+        }
+
+        if (DirectPInvokeLists.Length > 0)
+        {
+            var directPInvokeListsSB = new StringBuilder("direct-pinvoke-lists=");
+            Array.ForEach(DirectPInvokeLists, directPInvokeListItem => directPInvokeListsSB.Append($"{directPInvokeListItem.GetMetadata("FullPath")};"));
+            aotArgs.Add(directPInvokeListsSB.ToString());
         }
 
         if (UseDwarfDebug)
@@ -818,6 +809,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             }
         }
 
+        if (EnableUnmanagedCallersOnlyMethodsExport)
+        {
+            string exportSymbolsFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".exportsymbols"));
+            ProxyFile proxyFile = _cache.NewFile(exportSymbolsFile);
+            proxyFiles.Add(proxyFile);
+
+            aotArgs.Add($"export-symbols-outfile={proxyFile.TempFile}");
+            aotAssembly.SetMetadata("ExportSymbolsFile", proxyFile.TargetFile);
+        }
+
         // pass msym-dir if specified
         if (MsymPath != null)
         {
@@ -832,6 +833,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotArgs.Add($"data-outfile={proxyFile.TempFile}");
             aotAssembly.SetMetadata("AotDataFile", proxyFile.TargetFile);
         }
+
+        if (Profilers?.Length > 0)
+        {
+            foreach (var profiler in Profilers)
+            {
+                processArgs.Add($"\"--profile={profiler}\"");
+            }
+        }
+
 
         if (AotProfilePath?.Length > 0)
         {
@@ -1017,7 +1027,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             if (!TryGetAssemblyName(asmPath, out string? assemblyName))
                 return false;
 
-            string symbolName = assemblyName.Replace ('.', '_').Replace ('-', '_').Replace(' ', '_');
+            string symbolName = FixupSymbolName(assemblyName);
             symbols.Add($"mono_aot_module_{symbolName}_info");
         }
 
@@ -1120,15 +1130,65 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private static IList<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, IList<ITaskItem> originalAssemblies)
+    private void CheckExportSymbolsFile(IList<ITaskItem> assemblies)
+    {
+        if (!EnableUnmanagedCallersOnlyMethodsExport)
+            return;
+
+        foreach (var assemblyItem in assemblies)
+        {
+            string assembly = assemblyItem.GetMetadata("FullPath");
+            string assemblyFilename = Path.GetFileName(assembly);
+            string exportSymbolsFile = Path.Combine(OutputDir, Path.ChangeExtension(assemblyFilename, ".exportsymbols"));
+            if (!File.Exists(exportSymbolsFile))
+                Log.LogWarning($"EnableUnmanagedCallersOnlyMethodsExport is true, but no .exportsymbols file generated for assembly '{assemblyFilename}'. Check that the AOT compilation mode is full.");
+        }
+    }
+
+    private static List<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, IList<ITaskItem> originalAssemblies)
     {
         List<ITaskItem> outItems = new(originalAssemblies.Count);
         foreach (ITaskItem item in originalAssemblies)
         {
-            if (dict.TryGetValue(item.GetMetadata("FullPath"), out ITaskItem? dictItem))
-                outItems.Add(dictItem);
+            if (!dict.TryGetValue(item.GetMetadata("FullPath"), out ITaskItem? dictItem))
+                continue;
+
+            string originalFullPath = item.GetMetadata(s_originalFullPathMetadataName);
+            if (!string.IsNullOrEmpty(originalFullPath))
+                dictItem.ItemSpec = originalFullPath;
+
+            outItems.Add(dictItem);
         }
         return outItems;
+    }
+
+    private string FixupSymbolName(string name)
+    {
+        if (_symbolNameFixups.TryGetValue(name, out string? fixedName))
+            return fixedName;
+
+        UTF8Encoding utf8 = new();
+        byte[] bytes = utf8.GetBytes(name);
+        StringBuilder sb = new();
+
+        foreach (byte b in bytes)
+        {
+            if ((b >= (byte)'0' && b <= (byte)'9') ||
+                (b >= (byte)'a' && b <= (byte)'z') ||
+                (b >= (byte)'A' && b <= (byte)'Z') ||
+                (b == (byte)'_'))
+            {
+                sb.Append((char)b);
+            }
+            else
+            {
+                sb.Append('_');
+            }
+        }
+
+        fixedName = sb.ToString();
+        _symbolNameFixups[name] = fixedName;
+        return fixedName;
     }
 
     internal sealed class PrecompileArguments
@@ -1148,132 +1208,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         public ITaskItem                    AOTAssembly          { get; private set; }
         public IList<ProxyFile>             ProxyFiles           { get; private set; }
     }
-}
-
-internal sealed class FileCache
-{
-    private CompilerCache? _newCache;
-    private CompilerCache? _oldCache;
-
-    public bool Enabled { get; }
-    public TaskLoggingHelper Log { get; }
-
-    public FileCache(string? cacheFilePath, TaskLoggingHelper log)
-    {
-        Log = log;
-        if (string.IsNullOrEmpty(cacheFilePath))
-        {
-            Log.LogMessage(MessageImportance.Low, $"Disabling cache, because CacheFilePath is not set");
-            return;
-        }
-
-        Enabled = true;
-        if (File.Exists(cacheFilePath))
-        {
-            _oldCache = (CompilerCache?)JsonSerializer.Deserialize(File.ReadAllText(cacheFilePath),
-                                                                    typeof(CompilerCache),
-                                                                    new JsonSerializerOptions());
-        }
-
-        _oldCache ??= new();
-        _newCache = new(_oldCache.FileHashes);
-    }
-
-    public bool UpdateAndCheckHasFileChanged(string filePath, string newHash)
-    {
-        if (!Enabled)
-            throw new InvalidOperationException("Cache is not enabled. Make sure the cache file path is set");
-
-        _newCache!.FileHashes[filePath] = newHash;
-        return !_oldCache!.FileHashes.TryGetValue(filePath, out string? oldHash) || oldHash != newHash;
-    }
-
-    public bool ShouldCopy(ProxyFile proxyFile, [NotNullWhen(true)] out string? cause)
-    {
-        if (!Enabled)
-            throw new InvalidOperationException("Cache is not enabled. Make sure the cache file path is set");
-
-        cause = null;
-
-        string newHash = Utils.ComputeHash(proxyFile.TempFile);
-        _newCache!.FileHashes[proxyFile.TargetFile] = newHash;
-
-        if (!File.Exists(proxyFile.TargetFile))
-        {
-            cause = $"the output file didn't exist";
-            return true;
-        }
-
-        string? oldHash;
-        if (!_oldCache!.FileHashes.TryGetValue(proxyFile.TargetFile, out oldHash))
-            oldHash = Utils.ComputeHash(proxyFile.TargetFile);
-
-        if (oldHash != newHash)
-        {
-            cause = $"hash for the file changed";
-            return true;
-        }
-
-        return false;
-    }
-
-    public bool Save(string? cacheFilePath)
-    {
-        if (!Enabled || string.IsNullOrEmpty(cacheFilePath))
-            return false;
-
-        var json = JsonSerializer.Serialize (_newCache, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(cacheFilePath!, json);
-        return true;
-    }
-
-    public ProxyFile NewFile(string targetFile) => new ProxyFile(targetFile, this);
-}
-
-internal sealed class ProxyFile
-{
-    public string TargetFile { get; }
-    public string TempFile   { get; }
-    private FileCache _cache;
-
-    public ProxyFile(string targetFile, FileCache cache)
-    {
-        _cache = cache;
-        this.TargetFile = targetFile;
-        this.TempFile = _cache.Enabled ? targetFile + ".tmp" : targetFile;
-    }
-
-    public bool CopyOutputFileIfChanged()
-    {
-        if (!_cache.Enabled)
-            return true;
-
-        if (!File.Exists(TempFile))
-            throw new LogAsErrorException($"Could not find the temporary file {TempFile} for target file {TargetFile}. Look for any errors/warnings generated earlier in the build.");
-
-        try
-        {
-            if (!_cache.ShouldCopy(this, out string? cause))
-            {
-                _cache.Log.LogMessage(MessageImportance.Low, $"Skipping copying over {TargetFile} as the contents are unchanged");
-                return false;
-            }
-
-            if (File.Exists(TargetFile))
-                File.Delete(TargetFile);
-
-            File.Copy(TempFile, TargetFile);
-
-            _cache.Log.LogMessage(MessageImportance.Low, $"Copying {TempFile} to {TargetFile} because {cause}");
-            return true;
-        }
-        finally
-        {
-            _cache.Log.LogMessage(MessageImportance.Low, $"Deleting temp file {TempFile}");
-            File.Delete(TempFile);
-        }
-    }
-
 }
 
 public enum MonoAotMode
@@ -1305,14 +1239,4 @@ public enum MonoAotModulesTableLanguage
 {
     C,
     ObjC
-}
-
-internal sealed class CompilerCache
-{
-    public CompilerCache() => FileHashes = new();
-    public CompilerCache(IDictionary<string, string> oldHashes)
-        => FileHashes = new(oldHashes);
-
-    [JsonPropertyName("file_hashes")]
-    public ConcurrentDictionary<string, string> FileHashes { get; set; }
 }

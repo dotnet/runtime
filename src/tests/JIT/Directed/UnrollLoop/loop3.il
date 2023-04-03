@@ -39,7 +39,7 @@
 
 } // end of class A
 
-.class private auto ansi beforefieldinit B
+.class public auto ansi beforefieldinit B
        extends A
 {
   .method public hidebysig virtual instance int32 
@@ -1768,7 +1768,7 @@
     IL_0026:  ret
   } // end of method B::F3downBy3neWrap
 
-  .method public hidebysig static int32  Main(string[] args) 
+  .method public hidebysig static int32  Main()
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

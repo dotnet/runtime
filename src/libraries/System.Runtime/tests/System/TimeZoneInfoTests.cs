@@ -90,44 +90,43 @@ namespace System.Tests
         public static IEnumerable<object[]> Platform_TimeZoneNamesTestData()
         {
             if (PlatformDetection.IsBrowser || PlatformDetection.IsiOS || PlatformDetection.IstvOS)
-                return new TheoryData<TimeZoneInfo, string, string, string>
+                return new TheoryData<TimeZoneInfo, string, string, string, string>
                 {
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) America/Los_Angeles", "PST", "PDT" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Australia/Sydney", "AEST", "AEDT" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Australia/Perth", "AWST", "AWDT" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Asia/Tehran", "+0330", "+0430" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) America/Los_Angeles", null, "PST", "PDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Australia/Sydney", null, "AEST", "AEDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Australia/Perth", null, "AWST", "AWDT" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Asia/Tehran", null, "+0330", "+0430" },
 
-                    { s_NewfoundlandTz, "(UTC-03:30) America/St_Johns", "NST", "NDT" },
-                    { s_catamarcaTz, "(UTC-03:00) America/Argentina/Catamarca", "-03", "-02" }
+                    { s_NewfoundlandTz, "(UTC-03:30) America/St_Johns", null, "NST", "NDT" },
+                    { s_catamarcaTz, "(UTC-03:00) America/Argentina/Catamarca", null, "-03", "-02" }
                 };
             else if (PlatformDetection.IsWindows)
-                return new TheoryData<TimeZoneInfo, string, string, string>
+                return new TheoryData<TimeZoneInfo, string, string, string, string>
                 {
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) Pacific Time (US & Canada)", "Pacific Standard Time", "Pacific Daylight Time" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Canberra, Melbourne, Sydney", "AUS Eastern Standard Time", "AUS Eastern Daylight Time" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Perth", "W. Australia Standard Time", "W. Australia Daylight Time" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Tehran", "Iran Standard Time", "Iran Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) Pacific Time (US & Canada)", null, "Pacific Standard Time", "Pacific Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Canberra, Melbourne, Sydney", null, "AUS Eastern Standard Time", "AUS Eastern Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Perth", null, "W. Australia Standard Time", "W. Australia Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Tehran", null, "Iran Standard Time", "Iran Daylight Time" },
 
-                    { s_NewfoundlandTz, "(UTC-03:30) Newfoundland", "Newfoundland Standard Time", "Newfoundland Daylight Time" },
-                    { s_catamarcaTz, "(UTC-03:00) City of Buenos Aires", "Argentina Standard Time", "Argentina Daylight Time" }
+                    { s_NewfoundlandTz, "(UTC-03:30) Newfoundland", null, "Newfoundland Standard Time", "Newfoundland Daylight Time" },
+                    { s_catamarcaTz, "(UTC-03:00) City of Buenos Aires", null, "Argentina Standard Time", "Argentina Daylight Time" }
                 };
             else
-                return new TheoryData<TimeZoneInfo, string, string, string>
+                return new TheoryData<TimeZoneInfo, string, string, string, string>
                 {
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) Pacific Time (Los Angeles)", "Pacific Standard Time", "Pacific Daylight Time" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Eastern Australia Time (Sydney)", "Australian Eastern Standard Time", "Australian Eastern Daylight Time" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Australian Western Standard Time (Perth)", "Australian Western Standard Time", "Australian Western Daylight Time" },
-                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Iran Time", "Iran Standard Time", "Iran Daylight Time" },
-
-                    { s_NewfoundlandTz, "(UTC-03:30) Newfoundland Time (St. John’s)", "Newfoundland Standard Time", "Newfoundland Daylight Time" },
-                    { s_catamarcaTz, "(UTC-03:00) Argentina Standard Time (Catamarca)", "Argentina Standard Time", "Argentina Summer Time" }
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPacific), "(UTC-08:00) Pacific Time (Los Angeles)", null, "Pacific Standard Time", "Pacific Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strSydney), "(UTC+10:00) Eastern Australia Time (Sydney)", null, "Australian Eastern Standard Time", "Australian Eastern Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strPerth), "(UTC+08:00) Australian Western Standard Time (Perth)", null, "Australian Western Standard Time", "Australian Western Daylight Time" },
+                    { TimeZoneInfo.FindSystemTimeZoneById(s_strIran), "(UTC+03:30) Iran Time", "(UTC+03:30) Iran Standard Time (Tehran)", "Iran Standard Time", "Iran Daylight Time" },
+                    { s_NewfoundlandTz, "(UTC-03:30) Newfoundland Time (St. John’s)", null, "Newfoundland Standard Time", "Newfoundland Daylight Time" },
+                    { s_catamarcaTz, "(UTC-03:00) Argentina Standard Time (Catamarca)", null, "Argentina Standard Time", "Argentina Summer Time" }
                 };
         }
 
         // We test the existence of a specific English time zone name to avoid failures on non-English platforms.
         [ConditionalTheory(nameof(IsEnglishUILanguage))]
         [MemberData(nameof(Platform_TimeZoneNamesTestData))]
-        public static void Platform_TimeZoneNames(TimeZoneInfo tzi, string displayName, string standardName, string daylightName)
+        public static void Platform_TimeZoneNames(TimeZoneInfo tzi, string displayName, string alternativeDisplayName, string standardName, string daylightName)
         {
             // Edge case - Optionally allow some characters to be absent in the display name.
             const string chars = ".’";
@@ -139,8 +138,10 @@ namespace System.Tests
                 }
             }
 
-            Assert.Equal($"DisplayName: \"{displayName}\", StandardName: {standardName}\", DaylightName: {daylightName}\"",
-                         $"DisplayName: \"{tzi.DisplayName}\", StandardName: {tzi.StandardName}\", DaylightName: {tzi.DaylightName}\"");
+            Assert.True(displayName == tzi.DisplayName || alternativeDisplayName == tzi.DisplayName,
+                         $"Display Name: Neither '{displayName}' nor '{alternativeDisplayName}' equal to '{tzi.DisplayName}'");
+            Assert.Equal(standardName, tzi.StandardName);
+            Assert.Equal(daylightName, tzi.DaylightName);
         }
 
         [Fact]
@@ -2083,6 +2084,11 @@ namespace System.Tests
             yield return new object[] { s_strPacific + "\\Display" };
             yield return new object[] { s_strPacific + "\n" }; // no trailing newline
             yield return new object[] { new string('a', 100) }; // long string
+            yield return new object[] { "/dev/random" };
+            yield return new object[] { "Invalid Id" };
+            yield return new object[] { "Invalid/Invalid" };
+            yield return new object[] { $"./{s_strPacific}" };
+            yield return new object[] { $"{s_strPacific}/../{s_strPacific}" };
         }
 
         [Theory]
@@ -2151,8 +2157,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior specific to Unix
-        public static void ConvertTimeFromToUtc_UnixOnly()
+        public static void ConvertTimeFromToUtcUsingCustomZone()
         {
             // DateTime Kind is Local
             Assert.ThrowsAny<ArgumentException>(() =>
@@ -2181,21 +2186,13 @@ namespace System.Tests
             Assert.Equal(DateTimeKind.Unspecified, convertedAmbiguous.Kind);
             Assert.True(london.IsAmbiguousTime(convertedAmbiguous), $"Expected to have {convertedAmbiguous} is ambiguous");
 
-            // convert to London time and back
-            DateTime utc = DateTime.UtcNow;
-            Assert.Equal(DateTimeKind.Utc, utc.Kind);
+            // roundtrip check using ambiguous time.
+            DateTime utc = new DateTime(2022, 10, 30, 1, 47, 13, DateTimeKind.Utc);
             DateTime converted = TimeZoneInfo.ConvertTimeFromUtc(utc, london);
             Assert.Equal(DateTimeKind.Unspecified, converted.Kind);
             DateTime back = TimeZoneInfo.ConvertTimeToUtc(converted, london);
             Assert.Equal(DateTimeKind.Utc, back.Kind);
-
-            if (london.IsAmbiguousTime(converted))
-            {
-                // if the time is ambiguous this will not round trip the original value because this ambiguous time can be mapped into
-                // 2 UTC times. usually we return the value with the DST delta added to it.
-                back = back.AddTicks(-london.GetAdjustmentRules()[0].DaylightDelta.Ticks);
-            }
-
+            Assert.True(london.IsAmbiguousTime(converted));
             Assert.Equal(utc, back);
         }
 
@@ -2327,7 +2324,7 @@ namespace System.Tests
 
         private const string IanaAbbreviationPattern = @"^(?:[A-Z][A-Za-z]+|[+-]\d{2}|[+-]\d{4})$";
 
-        [RegexGenerator(IanaAbbreviationPattern)]
+        [GeneratedRegex(IanaAbbreviationPattern)]
         private static partial Regex IanaAbbreviationRegex();
 
         // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
@@ -2477,22 +2474,106 @@ namespace System.Tests
 
         private static byte[] timeZoneFileContents = new byte[]
         {
-            0x54, 0x5A, 0x69, 0x66, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x54, 0x5A, 0x69, 0x66,
-            0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
-            0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x0C, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0xFF, 0xFF, 0xF8, 0xE4, 0x00, 0x00, 0x00, 0x00, 0x0E, 0x10, 0x01, 0x04, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x08, 0x00, 0x00, 0x0E, 0x10, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x4C,
-            0x4D, 0x54, 0x00, 0x2B, 0x30, 0x31, 0x00, 0x2B, 0x30, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00,
-            // POSIX Rule
+            //
+            // Start of v1 Header
+            //
+
+                        // Magic bytes "TZif"
+            /* 0000 */  0x54, 0x5A, 0x69, 0x66,
+
+                        // Version "2".
+            /* 0004 */  0x32,
+
+                        // Fifteen bytes containing zeros reserved for future use.
+            /* 0005 */  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+                        // The number of UT/local indicators stored in the file
+            /* 0014 */  0x00, 0x00, 0x00, 0x00,
+
+                        // The number of standard/wall indicators stored in the file
+            /* 0018 */  0x00, 0x00, 0x00, 0x00,
+
+                        // The number of leap seconds for which data entries are stored in the file
+            /* 001c */  0x00, 0x00, 0x00, 0x00,
+
+                        // The number of transition times for which data entries are stored in the file
+            /* 0020 */  0x00, 0x00, 0x00, 0x00,
+
+                        // The number of local time types for which data entries are stored in the file (must not be zero)
+            /* 0024 */  0x00, 0x00, 0x00, 0x01,
+
+                        // The number of bytes of time zone abbreviation strings stored in the file
+            /* 0028 */  0x00, 0x00, 0x00, 0x00,
+
+            //
+            // End of v1 Header
+            //
+
+                       // Padding for times count (time type count = 1 * 6 (sizeof(ttinfo)))
+                       // struct ttinfo {
+                       //     int32_t        tt_utoff;
+                       //     unsigned char  tt_isdst;
+                       //     unsigned char  tt_desigidx;
+                       // };
+            /* 002C */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+            //
+            // Start of v2 header
+            //
+
+                        //  Magic bytes "TZif"
+            /* 0032 */  0x54, 0x5A, 0x69, 0x66,
+
+                        // Version "2"
+            /* 0036 */  0x32,
+
+                        // Reserved Bytes
+            /* 0037 */  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+                        // The number of UT/local indicators stored in the file
+            /* 0046 */  0x00, 0x00, 0x00, 0x01,
+
+                        // The number of standard/wall indicators stored in the file
+            /* 004A */  0x00, 0x00, 0x00, 0x01,
+
+                        // The number of leap seconds for which data entries are stored in the file
+            /* 004E */  0x00, 0x00, 0x00, 0x00,
+
+                        // The number of transition times for which data entries are stored in the file
+            /* 0052 */  0x00, 0x00, 0x00, 0x01,
+
+                        // The number of local time types for which data entries are stored in the file (must not be zero)
+            /* 0056 */  0x00, 0x00, 0x00, 0x01,
+
+                        // The number of bytes of time zone abbreviation strings stored in the file
+            /* 005A */  0x00, 0x00, 0x00, 0x0C,
+
+                        //  Transition 0 # seconds
+            /* 005E */  0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+
+                        // transition table[0] has the locale time types index
+            /* 0065 */  0x00,
+
+                        // ttinfo table[0]: <UtcOffset:-00:30:20, IsDst::00, TZ Abbre Index: 00>
+            /* 0066 */  0xFF, 0xFF, 0xF8, 0xE4, 0x00, 0x00,
+
+                        // Zone abbreviation strings: "LMT+01+00"
+            /* 0072 */  0x4C, 0x4D, 0x54, 0x00, 0x2B, 0x30, 0x31, 0x00, 0x2B, 0x30, 0x30, 0x00,
+
+                        // standard/wall indicators values [0, 0, 0, 0, 0]
+            /* 007E */  0x00,
+
+                        // UT/local indicators [0, 0, 0, 0, 0]
+            /* 007F */  0x00,
+            // POSIX Rule: <+00>0<+01>,0/0,J365/25
             // 0x0A, 0x3C, 0x2B, 0x30, 0x30, 0x3E, 0x30, 0x3C, 0x2B, 0x30, 0x31,
             // 0x3E, 0x2C, 0x30, 0x2F, 0x30, 0x2C, 0x4A, 0x33, 0x36, 0x35, 0x2F, 0x32, 0x35, 0x0A
         };
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        // https://github.com/dotnet/runtime/issues/73031 is the tracking issue to investigate the test failure on Android.
+        private static bool CanRunNJulianRuleTest => !PlatformDetection.IsLinuxBionic && RemoteExecutor.IsSupported;
+
+        [ConditionalTheory(nameof(CanRunNJulianRuleTest))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [InlineData("<+00>0<+01>,0/0,J365/25", 1, 1, true)]
         [InlineData("<+00>0<+01>,30/0,J365/25", 31, 1, true)]
@@ -3160,6 +3241,8 @@ namespace System.Tests
                 }
 
                 var list = new List<CultureInfo>();
+
+#if !TARGET_BROWSER
                 GCHandle handle = GCHandle.Alloc(list);
                 try
                 {
@@ -3172,10 +3255,12 @@ namespace System.Tests
                 {
                     handle.Free();
                 }
+#endif
 
                 return list.ToArray();
             }
 
+#if !TARGET_BROWSER
             [UnmanagedCallersOnly]
             private static unsafe int EnumUiLanguagesCallback(char* lpUiLanguageString, IntPtr lParam)
             {
@@ -3208,6 +3293,7 @@ namespace System.Tests
 
             [DllImport("Kernel32.dll", CharSet = CharSet.Auto)]
             private static extern unsafe bool EnumUILanguages(delegate* unmanaged<char*, IntPtr, int> lpUILanguageEnumProc, uint dwFlags, IntPtr lParam);
+#endif
         }
     }
 }

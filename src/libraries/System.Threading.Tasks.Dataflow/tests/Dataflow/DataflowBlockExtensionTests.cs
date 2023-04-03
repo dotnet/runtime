@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Threading.Tasks.Dataflow.Tests
 {
@@ -114,9 +115,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 DataflowBlock.NullTarget<int>().Completion);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         [OuterLoop] // finalizer/GC interactions
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/46566", TestPlatforms.Browser)]
         public void TestNullTarget_CompletionNoCaching()
         {
             // Make sure that the Completion task returned by a NullTarget
@@ -342,9 +342,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Equal(expected: expectedTotal, actual: total);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         [OuterLoop] // stress test
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/46566", TestPlatforms.Browser)]
         public void TestAsObservableAndAsObserver_AsObservableDoesntLeak()
         {
             const int Count = 1000;
@@ -785,7 +784,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             t = bb.SendAsync(3, cts.Token);
             Assert.False(t.IsCompleted);
             cts.Cancel();
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
+            await AssertExtensions.CanceledAsync(cts.Token, t);
 
             Assert.Equal(expected: 2, actual: await bb.ReceiveAsync());
             bb.Complete();
@@ -856,7 +855,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
                 if (withCancellation)
                 {
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => target.SendAsync(42, cts.Token));
+                    await AssertExtensions.CanceledAsync(cts.Token, () => target.SendAsync(42, cts.Token));
                 }
                 else
                 {
@@ -929,7 +928,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 }
             };
             Task<bool> send = target.SendAsync(42, cts.Token);
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => send);
+            await AssertExtensions.CanceledAsync(cts.Token, send);
         }
 
         [Fact]
@@ -1035,8 +1034,12 @@ namespace System.Threading.Tasks.Dataflow.Tests
             var bb = new BufferBlock<int>();
 
             // Cancel before Receive/ReceiveAsync
-            Assert.ThrowsAny<OperationCanceledException>(() => bb.Receive(new CancellationToken(canceled: true)));
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => bb.ReceiveAsync(new CancellationToken(canceled: true)));
+            {
+                var cts = new CancellationTokenSource();
+                cts.Cancel();
+                AssertExtensions.Canceled(cts.Token, () => bb.Receive(cts.Token));
+                await AssertExtensions.CanceledAsync(cts.Token, bb.ReceiveAsync(cts.Token));
+            }
 
             // Cancel after Receive/ReceiveAsync but before data
             {
@@ -1048,7 +1051,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 var cts = new CancellationTokenSource();
                 var t = bb.ReceiveAsync(cts.Token);
                 cts.Cancel();
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => bb.ReceiveAsync(cts.Token));
+                await AssertExtensions.CanceledAsync(cts.Token, bb.ReceiveAsync(cts.Token));
             }
 
             // Cancel after data received
@@ -1236,7 +1239,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                 TaskScheduler usedScheduler = null, requestedScheduler = new ConcurrentExclusiveSchedulerPair().ConcurrentScheduler;
                 var cts = new CancellationTokenSource();
 
-                var t = chooseTestCase < 3 ?
+                var t = chooseTestCase < 2 ?
                     DataflowBlock.Choose(
                         source1, i => intValue = i,
                         source2, s => stringValue = s) :
@@ -1263,15 +1266,15 @@ namespace System.Threading.Tasks.Dataflow.Tests
                         Assert.Equal(expected: 1, actual: source2.Count);
                         break;
 
+                    // >= 2 TEST USING DATAFLOW BLOCK OPTIONS
+
                     case 2: // Test no data on either source
                         source1.Complete();
                         source2.Complete();
-                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
+                        await AssertExtensions.CanceledAsync(cts.Token, t);
                         Assert.Equal(expected: 0, actual: intValue);
                         Assert.Null(stringValue);
                         break;
-
-                    // >= 3 TEST USING DATAFLOW BLOCK OPTIONS
 
                     case 3: // Test correct TaskScheduler is used
                         source1.Post(42);
@@ -1283,7 +1286,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                         cts.Cancel();
                         source1.Post(42);
                         source2.Post("43");
-                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
+                        await AssertExtensions.CanceledAsync(cts.Token, t);
                         Assert.Equal(expected: 1, actual: source1.Count);
                         Assert.Equal(expected: 1, actual: source2.Count);
                         break;
@@ -1445,7 +1448,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
                 TaskScheduler usedScheduler = null, requestedScheduler = new ConcurrentExclusiveSchedulerPair().ConcurrentScheduler;
                 var cts = new CancellationTokenSource();
-                var t = chooseTestCase < 7 ?
+                var t = chooseTestCase < 6 ?
                     DataflowBlock.Choose(
                         source1, i => intValue = i,
                         source2, s => stringValue = s,
@@ -1516,17 +1519,17 @@ namespace System.Threading.Tasks.Dataflow.Tests
 
                         break;
 
+                    // >= 6 TEST USING DATAFLOW BLOCK OPTIONS
+
                     case 6: // Test all sources complete
                         source1.Complete();
                         source2.Complete();
                         source3.Complete();
-                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
+                        await AssertExtensions.CanceledAsync(cts.Token, t);
                         Assert.Equal(expected: 0, actual: intValue);
                         Assert.Null(stringValue);
                         Assert.Equal(expected: 0, actual: doubleValue);
                         break;
-
-                    // >= 7 TEST USING DATAFLOW BLOCK OPTIONS
 
                     case 7: // Test correct TaskScheduler is used
                         source3.Post(42);
@@ -1539,7 +1542,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                         source1.Post(42);
                         source2.Post("43");
                         source3.Post(44.0);
-                        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
+                        await AssertExtensions.CanceledAsync(cts.Token, t);
                         Assert.Equal(expected: 1, actual: source1.Count);
                         Assert.Equal(expected: 1, actual: source2.Count);
                         Assert.Equal(expected: 1, actual: source3.Count);
@@ -1627,7 +1630,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
                     if (!cancelBeforeChoose)
                         cts.Cancel();
 
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => choose);
+                    await AssertExtensions.CanceledAsync(cts.Token, choose);
 
                     int expectedLinkCount = cancelBeforeChoose ? 0 : 1;
                     Assert.All(linkCounts, i => Assert.Equal(expected: expectedLinkCount, actual: i));
@@ -1951,7 +1954,9 @@ namespace System.Threading.Tasks.Dataflow.Tests
             var t = buffer.OutputAvailableAsync(cts.Token);
             Assert.False(t.IsCompleted);
             cts.Cancel();
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
+            await AssertExtensions.CanceledAsync(
+                PlatformDetection.IsNetFramework ? default : cts.Token, // token doesn't currently flow in netstandard2.0 build due to lack of necessary API
+                t);
 
             cts = new CancellationTokenSource();
             t = buffer.OutputAvailableAsync(cts.Token);

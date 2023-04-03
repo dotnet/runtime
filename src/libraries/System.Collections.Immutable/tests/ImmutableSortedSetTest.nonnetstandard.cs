@@ -46,7 +46,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Same(emptySet, emptySet.ToImmutableSortedSet(comparer));
             Assert.Same(comparer ?? Comparer<T>.Default, ((ISortKeyCollection<T>)emptySet).KeyComparer);
 
-            var reemptied = emptySet.Add(value).Clear();
+            IImmutableSet<T> reemptied = emptySet.Add(value).Clear();
             Assert.Same(reemptied, reemptied.ToImmutableSortedSet(comparer)); //, "Getting the empty set from a non-empty instance did not preserve the comparer.");
         }
     }

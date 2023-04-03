@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Test removal of a dead struct assignment when the assignment is "internal"
 // i.e., is not a direct child of a statement node.
@@ -29,9 +30,10 @@ namespace GitHub_24253
         short l;
     }
 
-    class Program
+    public class Program
     {
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
             GetStruct(1);
             return 100;

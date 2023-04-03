@@ -131,6 +131,25 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 				if (result)
 					break;
 			}
+#ifdef ENABLE_WEBCIL
+			else {
+				/* /path/foo.dll -> /path/foo.webcil */
+				size_t n = strlen (fullpath);
+				if (n < strlen(".dll"))
+					continue;
+				n -= strlen(".dll");
+				char *fullpath2 = g_malloc (n + strlen(".webcil") + 1);
+				g_strlcpy (fullpath2, fullpath, n + 1);
+				g_strlcpy (fullpath2 + n, ".webcil", 8);
+				if (g_file_test (fullpath2, G_FILE_TEST_IS_REGULAR)) {
+					MonoImageOpenStatus status;
+					result = mono_assembly_request_open (fullpath2, &req, &status);
+				}
+				g_free (fullpath2);
+				if (result)
+					break;
+			}
+#endif
 		}
 	}
 

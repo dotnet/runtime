@@ -9,7 +9,6 @@ namespace System.Diagnostics.Eventing.Reader
 {
     public class EventLogRecord : EventRecord
     {
-        private const int SYSTEM_PROPERTY_COUNT = 18;
         private readonly EventLogSession _session;
 
         private readonly NativeWrapper.SystemProperties _systemProperties;
@@ -58,7 +57,7 @@ namespace System.Diagnostics.Eventing.Reader
             {
                 if (_systemProperties.filled == false)
                 {
-                    NativeWrapper.EvtRenderBufferWithContextSystem(_session.renderContextHandleSystem, Handle, UnsafeNativeMethods.EvtRenderFlags.EvtRenderEventValues, _systemProperties, SYSTEM_PROPERTY_COUNT);
+                    NativeWrapper.EvtRenderBufferWithContextSystem(_session.renderContextHandleSystem, Handle, UnsafeNativeMethods.EvtRenderFlags.EvtRenderEventValues, _systemProperties);
                     _systemProperties.filled = true;
                 }
             }
@@ -407,7 +406,7 @@ namespace System.Diagnostics.Eventing.Reader
         {
             if (bookmark == null)
                 return EventLogHandle.Zero;
-            EventLogHandle handle = NativeWrapper.EvtCreateBookmark(bookmark.BookmarkText);
+            EventLogHandle handle = NativeWrapper.EvtCreateBookmark(bookmark.BookmarkXml);
             return handle;
         }
     }

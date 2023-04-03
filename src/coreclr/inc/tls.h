@@ -9,7 +9,7 @@
 
 // **************************************************************************************
 // WARNING!!!: These values are used by SOS in the diagnostics repo and need to the same.
-// See: https://github.com/dotnet/diagnostics/blob/master/src/inc/tls.h
+// See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/tls.h
 // **************************************************************************************
 
 #ifndef __tls_h__

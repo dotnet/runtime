@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    [SkipOnMono("Marshal.GetExceptionCode will not be implemented in Mono, see https://github.com/mono/mono/issues/15085.")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMarshalGetExceptionPointersSupported))]
     public class GetExceptionCodeTests
     {
         [Fact]
@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(0, Marshal.GetExceptionCode());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNativeAot))]
         [InlineData(-1)]
         [InlineData(10)]
         public void GetExceptionCode_ComExceptionInsideCatch_ReturnsExpected(int errorCode)

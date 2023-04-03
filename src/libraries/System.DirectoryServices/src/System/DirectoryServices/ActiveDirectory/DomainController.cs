@@ -410,7 +410,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // Increment the RIDAvailablePool by 30k.
                 if (role == ActiveDirectoryRole.RidRole)
                 {
-                    System.DirectoryServices.Interop.UnsafeNativeMethods.IADsLargeInteger ridPool = (System.DirectoryServices.Interop.UnsafeNativeMethods.IADsLargeInteger)roleObjectEntry.Properties[PropertyManager.RIDAvailablePool].Value!;
+                    System.DirectoryServices.UnsafeNativeMethods.IADsLargeInteger ridPool = (System.DirectoryServices.UnsafeNativeMethods.IADsLargeInteger)roleObjectEntry.Properties[PropertyManager.RIDAvailablePool].Value!;
 
                     // check the overflow of the low part
                     if (ridPool.LowPart + UpdateRidPoolSeizureValue < ridPool.LowPart)
@@ -1087,7 +1087,7 @@ namespace System.DirectoryServices.ActiveDirectory
             var dsGetDomainControllerInfo = (delegate* unmanaged<IntPtr, char*, int, int*, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsGetDomainControllerInfoW");
             if (dsGetDomainControllerInfo == null)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
 
             fixed (char* domainName = Domain.Name)
@@ -1171,7 +1171,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         var dsFreeDomainControllerInfo = (delegate* unmanaged<int, int, IntPtr, void>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeDomainControllerInfoW");
                         if (dsFreeDomainControllerInfo == null)
                         {
-                            throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                            throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                         }
                         dsFreeDomainControllerInfo(dcInfoLevel, dcCount, dcInfoPtr);
                     }
@@ -1259,7 +1259,7 @@ namespace System.DirectoryServices.ActiveDirectory
             var dsListRoles = (delegate* unmanaged<IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsListRolesW");
             if (dsListRoles == null)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
 
             result = dsListRoles(_dsHandle, &rolesPtr);
@@ -1298,7 +1298,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         var dsFreeNameResult = (delegate* unmanaged<IntPtr, void>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
                         if (dsFreeNameResult == null)
                         {
-                            throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                            throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                         }
                         dsFreeNameResult(rolesPtr);
                     }

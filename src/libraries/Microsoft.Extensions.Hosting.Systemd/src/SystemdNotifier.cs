@@ -14,6 +14,9 @@ namespace Microsoft.Extensions.Hosting.Systemd
 
         private readonly string? _socketPath;
 
+        /// <summary>
+        /// Instantiates a new <see cref="SystemdNotifier"/> and sets the notify socket path.
+        /// </summary>
         public SystemdNotifier() :
             this(GetNotifySocketPath())
         { }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -225,7 +226,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
                      flags |= TypeFlags.Class;
                 }
 
-                // All other cases are handled during TypeSystemContext intitialization
+                // All other cases are handled during TypeSystemContext initialization
             }
 
             if ((mask & TypeFlags.HasGenericVarianceComputed) != 0)
@@ -250,5 +251,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
         }
 
         protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => throw new NotImplementedException();
+
+        public override int GetInlineArrayLength()
+        {
+            Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
+            throw new InvalidOperationException();
+        }
     }
 }

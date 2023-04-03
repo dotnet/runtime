@@ -145,8 +145,7 @@ namespace System.Collections.Immutable
             // boxed ImmutableArray<T> instance, reuse the underlying array if possible.
             // Note that this allows for automatic upcasting and downcasting of arrays
             // where the CLR allows it.
-            var immutableArray = items as IImmutableArray;
-            if (immutableArray != null)
+            if (items is IImmutableArray immutableArray)
             {
                 Array? array = immutableArray.Array;
                 if (array == null)

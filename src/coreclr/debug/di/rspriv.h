@@ -142,7 +142,7 @@ class CordbSafeHashTable;
 //
 // This is an encapsulation of the information necessary to connect to the debugger proxy on a remote machine.
 // It includes the IP address and the port number.  The IP address can be set via the env var
-// COMPlus_DbgTransportProxyAddress, and the port number is fixed when Mac debugging is configured.
+// DOTNET_DbgTransportProxyAddress, and the port number is fixed when Mac debugging is configured.
 //
 
 struct MachineInfo
@@ -1193,17 +1193,6 @@ public:
     static LONG s_CordbObjectUID;    // Unique ID for each object.
     static LONG s_TotalObjectCount; // total number of outstanding objects.
 
-
-    void ValidateObject()
-    {
-        if( !IsValidObject() )
-        {
-            STRESS_LOG1(LF_ASSERT, LL_ALWAYS, "CordbCommonBase::IsValidObject() failed: %x\n", this);
-            _ASSERTE(!"CordbCommonBase::IsValidObject() failed");
-            FreeBuildDebugBreak();
-        }
-    }
-
     bool IsValidObject()
     {
         return (m_signature == CORDB_COMMON_BASE_SIGNATURE);
@@ -1572,7 +1561,7 @@ _____Neuter_Status_Already_Marked = 0; \
 // 1) it means that we have no synchronization (can't take the Stop-Go lock)
 // 2) none of our backpointers are usable (they may be nulled out at anytime by another thread).
 //    - this also means we absolutely can't send IPC events (since that requires a CordbProcess)
-// 3) The only safe data are blittalbe embedded fields (eg, a pid or stack range)
+// 3) The only safe data are blittable embedded fields (eg, a pid or stack range)
 //
 // Any usage of this macro should clearly specify why this is safe.
 #define OK_IF_NEUTERED(pThis) \
@@ -3290,6 +3279,10 @@ public:
         return false;
 #endif
     }
+
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+    void HandleSetThreadContextNeeded(DWORD dwThreadId);
+#endif
 
     //
     // Shim  callbacks to simulate fake attach events.
@@ -9729,8 +9722,8 @@ public:
     COM_METHOD GetRank(ULONG32 * pnRank);
     COM_METHOD GetCount(ULONG32 * pnCount);
     COM_METHOD GetDimensions(ULONG32 cdim, ULONG32 dims[]);
-    COM_METHOD HasBaseIndices(BOOL * pbHasBaseIndices);
-    COM_METHOD GetBaseIndices(ULONG32 cdim, ULONG32 indices[]);
+    COM_METHOD HasBaseIndicies(BOOL * pbHasBaseIndicies);
+    COM_METHOD GetBaseIndicies(ULONG32 cdim, ULONG32 indices[]);
     COM_METHOD GetElement(ULONG32 cdim, ULONG32 indices[], ICorDebugValue ** ppValue);
     COM_METHOD GetElementAtPosition(ULONG32 nIndex, ICorDebugValue ** ppValue);
 
@@ -11214,7 +11207,7 @@ public:
     void NotifyTakeLock(RSLock * pLock);
     void NotifyReleaseLock(RSLock * pLock);
 
-    // Used to map other resources (like thread access) into the lock hierachy.
+    // Used to map other resources (like thread access) into the lock hierarchy.
     // Note this only effects lock leveling checks and doesn't effect HoldsAnyLock().
     void TakeVirtualLock(RSLock::ERSLockLevel level);
     void ReleaseVirtualLock(RSLock::ERSLockLevel level);

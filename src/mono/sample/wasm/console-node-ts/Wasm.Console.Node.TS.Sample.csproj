@@ -1,8 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
-    <!-- Workaround before https://github.com/dotnet/runtime/issues/63465 is solved. -->
-    <WasmMainJSPath>tsconfig.json</WasmMainJSPath>
   </PropertyGroup>
 
   <!-- 
@@ -10,9 +8,11 @@
   -->
   <Target Name="CopyRelinkedPackage" AfterTargets="WasmBuildApp" DependsOnTargets="Build" Inputs="
           $(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet.d.ts;
+          $(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet-legacy.d.ts;
           $(MicrosoftNetCoreAppRuntimePackNativeDir)/package.json;" Outputs="bin/$(Configuration)/AppBundle/.npm-stamp">
     <ItemGroup>
       <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet.d.ts"/>
+      <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/dotnet-legacy.d.ts"/>
       <NpmPackageFiles Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)/package.json"/>
     </ItemGroup>
     <Copy SourceFiles="@(NpmPackageFiles)" DestinationFolder="bin/$(Configuration)/AppBundle" SkipUnchangedFiles="true"/>

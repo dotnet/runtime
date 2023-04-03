@@ -30,7 +30,6 @@
 #include "assemblynative.hpp"
 #include "comthreadpool.h"
 #include "comwaithandle.h"
-#include "nativeoverlapped.h"
 
 #include "proftoeeinterfaceimpl.h"
 
@@ -97,13 +96,12 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeTypeHandle_GetInterfaceMethodImplementation)
     DllImportEntry(RuntimeTypeHandle_IsVisible)
     DllImportEntry(RuntimeTypeHandle_ConstructName)
-    DllImportEntry(RuntimeTypeHandle_GetTypeByName)
-    DllImportEntry(RuntimeTypeHandle_GetTypeByNameUsingCARules)
     DllImportEntry(RuntimeTypeHandle_GetInstantiation)
     DllImportEntry(RuntimeTypeHandle_Instantiate)
     DllImportEntry(RuntimeTypeHandle_GetGenericTypeDefinition)
     DllImportEntry(RuntimeTypeHandle_GetActivationInfo)
     DllImportEntry(RuntimeTypeHandle_AllocateTypeAssociatedMemory)
+    DllImportEntry(RuntimeTypeHandle_RegisterCollectibleTypeDependency)
     DllImportEntry(RuntimeMethodHandle_ConstructInstantiation)
     DllImportEntry(RuntimeMethodHandle_GetFunctionPointer)
     DllImportEntry(RuntimeMethodHandle_GetIsCollectible)
@@ -112,7 +110,6 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeMethodHandle_StripMethodInstantiation)
     DllImportEntry(RuntimeMethodHandle_IsCAVisibleFromDecoratedType)
     DllImportEntry(RuntimeMethodHandle_Destroy)
-    DllImportEntry(RuntimeModule_GetType)
     DllImportEntry(RuntimeModule_GetScopeName)
     DllImportEntry(RuntimeModule_GetFullyQualifiedName)
     DllImportEntry(StackFrame_GetMethodDescFromNativeIP)
@@ -152,13 +149,7 @@ static const Entry s_QCall[] =
     DllImportEntry(TypeBuilder_SetConstantValue)
     DllImportEntry(TypeBuilder_DefineCustomAttribute)
     DllImportEntry(MdUtf8String_EqualsCaseInsensitive)
-    DllImportEntry(MdUtf8String_HashCaseInsensitive)
-    DllImportEntry(TypeName_ReleaseTypeNameParser)
-    DllImportEntry(TypeName_CreateTypeNameParser)
-    DllImportEntry(TypeName_GetNames)
-    DllImportEntry(TypeName_GetTypeArguments)
-    DllImportEntry(TypeName_GetModifiers)
-    DllImportEntry(TypeName_GetAssemblyName)
+    DllImportEntry(Array_GetElementConstructorEntrypoint)
     DllImportEntry(AssemblyName_InitializeAssemblySpec)
     DllImportEntry(AssemblyNative_GetFullName)
     DllImportEntry(AssemblyNative_GetLocation)
@@ -171,7 +162,8 @@ static const Entry s_QCall[] =
     DllImportEntry(AssemblyNative_GetSimpleName)
     DllImportEntry(AssemblyNative_GetVersion)
     DllImportEntry(AssemblyNative_InternalLoad)
-    DllImportEntry(AssemblyNative_GetType)
+    DllImportEntry(AssemblyNative_GetTypeCore)
+    DllImportEntry(AssemblyNative_GetTypeCoreIgnoreCase)
     DllImportEntry(AssemblyNative_GetForwardedType)
     DllImportEntry(AssemblyNative_GetManifestResourceInfo)
     DllImportEntry(AssemblyNative_GetModules)
@@ -205,13 +197,11 @@ static const Entry s_QCall[] =
     DllImportEntry(LoaderAllocator_Destroy)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
     DllImportEntry(ThreadNative_Start)
-    DllImportEntry(ThreadNative_UninterruptibleSleep0)
     DllImportEntry(ThreadNative_InformThreadNameChange)
     DllImportEntry(ThreadNative_YieldThread)
     DllImportEntry(ThreadNative_GetCurrentOSThreadId)
-    DllImportEntry(ThreadPool_GetCompletedWorkItemCount)
-    DllImportEntry(ThreadPool_RequestWorkerThread)
-    DllImportEntry(ThreadPool_PerformGateActivities)
+    DllImportEntry(ThreadNative_Abort)
+    DllImportEntry(ThreadNative_ResetAbort)
 #ifdef TARGET_UNIX
     DllImportEntry(WaitHandle_CorWaitOnePrioritizedNative)
 #endif
@@ -255,6 +245,8 @@ static const Entry s_QCall[] =
     DllImportEntry(ReflectionSerialization_GetUninitializedObject)
 #if defined(FEATURE_COMWRAPPERS)
     DllImportEntry(ComWrappers_GetIUnknownImpl)
+    DllImportEntry(ComWrappers_TryGetComInstance)
+    DllImportEntry(ComWrappers_TryGetObject)
     DllImportEntry(ComWrappers_TryGetOrCreateComInterfaceForObject)
     DllImportEntry(ComWrappers_TryGetOrCreateObjectForComInstance)
     DllImportEntry(ComWrappers_SetGlobalInstanceRegisteredForMarshalling)
@@ -318,6 +310,10 @@ static const Entry s_QCall[] =
 #endif
 #if defined(FEATURE_COMINTEROP)
     DllImportEntry(InterfaceMarshaler__ClearNative)
+#endif
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+    DllImportEntry(ComWeakRefToObject)
+    DllImportEntry(ObjectToComWeakRef)
 #endif
 };
 

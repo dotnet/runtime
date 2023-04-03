@@ -5,12 +5,17 @@
 // since a final method can be overridden by an explicit .override
 
 .assembly extern mscorlib { auto }
+.assembly extern xunit.core {}
 
 .assembly GitHub_19222 { }
 
-.method assembly static int32 modopt([mscorlib]System.Runtime.CompilerServices.CallConvCdecl) 
+.class public auto ansi Test_GitHub_19222 extends [mscorlib] System.Object {
+.method public static int32 modopt([mscorlib]System.Runtime.CompilerServices.CallConvCdecl) 
         main() cil managed
 {
+  .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+      01 00 00 00
+  )
   .entrypoint
   .maxstack  2
   .locals ([0] class C c)
@@ -33,6 +38,7 @@
   // Sum of the 2 calls should give 100
   add
   ret
+}
 }
 
 .class public auto ansi beforefieldinit A

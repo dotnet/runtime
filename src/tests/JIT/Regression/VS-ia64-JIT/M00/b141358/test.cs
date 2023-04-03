@@ -3,14 +3,16 @@
 //
 
 using System;
+using Xunit;
 
 namespace test
 {
 
-    class Class1
+    public class Class1
     {
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

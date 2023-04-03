@@ -179,7 +179,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
     parseCommand(message: ProtocolCommandEvent, connNum: number): ProtocolClientCommandBase | null {
         console.debug("MONO_WASM: parsing byte command: ", message.data, connNum);
         const result = parseProtocolCommand(message.data);
-        console.debug("MONO_WASM: parsied byte command: ", result, connNum);
+        console.debug("MONO_WASM: parsed byte command: ", result, connNum);
         if (result.success) {
             return result.result;
         } else {
@@ -266,7 +266,7 @@ class DiagnosticServerImpl implements DiagnosticServer {
 
     resumeRuntime(): void {
         if (!this.runtimeResumed) {
-            console.info("MONO_WASM: resuming runtime startup");
+            console.debug("MONO_WASM: resuming runtime startup");
             cwraps.mono_wasm_diagnostic_server_post_resume_runtime();
             this.runtimeResumed = true;
         }

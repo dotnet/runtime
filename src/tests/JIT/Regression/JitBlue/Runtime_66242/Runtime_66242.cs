@@ -9,6 +9,7 @@
 // Release: Outputs 1
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public struct S0
 {
@@ -23,7 +24,8 @@ public struct S1
 public class Runtime_66242
 {
     public static short s_3;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var vr3 = new S1();
         if (vr3.F6.F1 < M4(ref vr3))

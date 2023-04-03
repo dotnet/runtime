@@ -458,6 +458,24 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public static void GetEnumValuesAsUnderlyingType_Int()
+        {
+            GetEnumValuesAsUnderlyingType(typeof(IntEnum), new int[] { 1, 2, 10, 18, 45 });
+        }
+
+        [Fact]
+        public static void GetEnumValuesAsUnderlyingType_UInt()
+        {
+            GetEnumValuesAsUnderlyingType(typeof(UIntEnum), new uint[] { 1, 10 });
+        }
+
+        private static void GetEnumValuesAsUnderlyingType(Type enumType, Array expected)
+        {
+            Assert.Equal(expected, enumType.GetTypeInfo().GetEnumValuesAsUnderlyingType());
+        }
+
+
+        [Fact]
         public void GetEnumValues_TypeNotEnum_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("enumType", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().GetEnumUnderlyingType());
@@ -1456,7 +1474,8 @@ namespace System.Reflection.Tests
         [InlineData(typeof(int), "System")]
         [InlineData(typeof(TI_BaseClass[]), "System.Reflection.Tests")]
         [InlineData(typeof(TI_BaseClass.PublicNestedClass1[]), "System.Reflection.Tests")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/42633", TestRuntimes.Mono)]
+        [InlineData(typeof(TI_BaseClass.PublicNestedClass1[][]), "System.Reflection.Tests")]
+        [InlineData(typeof(TI_Struct*), "System.Reflection.Tests")]
         public void Namespace(Type type, string expected)
         {
             Assert.Equal(expected, type.GetTypeInfo().Namespace);
@@ -1845,6 +1864,10 @@ namespace System.Reflection.Tests
             [FieldOffset(1)]
             public short y;
         }
+    }
+    public struct TI_Struct
+    {
+        public int _field;
     }
     public class TI_BaseClass
     {

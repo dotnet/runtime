@@ -46,9 +46,10 @@ namespace System.Net.Http
                 else
                 {
                     int versionLength = GetResponseHeader(requestHandle, Interop.WinHttp.WINHTTP_QUERY_VERSION, buffer);
+                    ReadOnlySpan<char> versionSpan = buffer.AsSpan(0, versionLength);
                     response.Version =
-                        CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase("HTTP/1.1", buffer, 0, versionLength) ? HttpVersion.Version11 :
-                        CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase("HTTP/1.0", buffer, 0, versionLength) ? HttpVersion.Version10 :
+                        versionSpan.Equals("HTTP/1.1".AsSpan(), StringComparison.OrdinalIgnoreCase) ? HttpVersion.Version11 :
+                        versionSpan.Equals("HTTP/1.0".AsSpan(), StringComparison.OrdinalIgnoreCase) ? HttpVersion.Version10 :
                         WinHttpHandler.HttpVersionUnknown;
                 }
 
@@ -74,18 +75,17 @@ namespace System.Net.Http
                         Interop.WinHttp.WINHTTP_QUERY_CONTENT_ENCODING,
                         buffer);
 
-                    CharArrayHelpers.Trim(buffer, ref contentEncodingStartIndex, ref contentEncodingLength);
-
-                    if (contentEncodingLength > 0)
+                    ReadOnlySpan<char> value = new ReadOnlySpan<char>(buffer, contentEncodingStartIndex, contentEncodingLength).Trim();
+                    if (!value.IsEmpty)
                     {
                         if ((manuallyProcessedDecompressionMethods & DecompressionMethods.GZip) == DecompressionMethods.GZip &&
-                            CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(EncodingNameGzip, buffer, contentEncodingStartIndex, contentEncodingLength))
+                            value.Equals(EncodingNameGzip.AsSpan(), StringComparison.OrdinalIgnoreCase))
                         {
                             decompressedStream = new GZipStream(responseStream, CompressionMode.Decompress);
                             stripEncodingHeaders = true;
                         }
                         else if ((manuallyProcessedDecompressionMethods & DecompressionMethods.Deflate) == DecompressionMethods.Deflate &&
-                                 CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(EncodingNameDeflate, buffer, contentEncodingStartIndex, contentEncodingLength))
+                                 value.Equals(EncodingNameDeflate.AsSpan(), StringComparison.OrdinalIgnoreCase))
                         {
                             decompressedStream = new DeflateStream(responseStream, CompressionMode.Decompress);
                             stripEncodingHeaders = true;

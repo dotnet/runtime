@@ -1084,7 +1084,7 @@ void ResumeAtJit(PCONTEXT pContext, LPVOID oldESP)
 #ifndef TARGET_UNIX
 #pragma warning(push)
 #pragma warning(disable: 4035)
-extern "C" DWORD __stdcall xmmYmmStateSupport()
+extern "C" DWORD xmmYmmStateSupport()
 {
     // No CONTRACT
     STATIC_CONTRACT_NOTHROW;
@@ -1106,31 +1106,34 @@ extern "C" DWORD __stdcall xmmYmmStateSupport()
 }
 #pragma warning(pop)
 
+#pragma warning(push)
+#pragma warning(disable: 4035)
+extern "C" DWORD avx512StateSupport()
+{
+    // No CONTRACT
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+
+    __asm
+    {
+        mov     ecx, 0                  ; Specify xcr0
+        xgetbv                          ; result in EDX:EAX
+        and eax, 0E6H
+        cmp eax, 0E6H                  ; check OS has enabled XMM, YMM and ZMM state support
+        jne     not_supported
+        mov     eax, 1
+        jmp     done
+    not_supported:
+        mov     eax, 0
+    done:
+    }
+}
+#pragma warning(pop)
+
+
 #else // !TARGET_UNIX
 
-void __cpuid(int cpuInfo[4], int function_id)
-{
-    // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
-
-    __asm("  cpuid"
-        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
-        : "0"(function_id)
-    );
-}
-
-void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
-{
-    // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
-
-    __asm("  cpuid"
-        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
-        : "0"(function_id), "2"(subFunction_id)
-    );
-}
-
-extern "C" DWORD __stdcall xmmYmmStateSupport()
+extern "C" DWORD xmmYmmStateSupport()
 {
     DWORD eax;
     __asm("  xgetbv\n" \
@@ -1140,6 +1143,18 @@ extern "C" DWORD __stdcall xmmYmmStateSupport()
         );
     // check OS has enabled both XMM and YMM state support
     return ((eax & 0x06) == 0x06) ? 1 : 0;
+}
+
+extern "C" DWORD avx512StateSupport()
+{
+    DWORD eax;
+    __asm("  xgetbv\n" \
+        : "=a"(eax) /*output in eax*/\
+        : "c"(0) /*inputs - 0 in ecx*/\
+        : "edx" /* registers that are clobbered*/
+        );
+    // check OS has enabled XMM, YMM and ZMM state support
+    return ((eax & 0x0E6) == 0x0E6) ? 1 : 0;
 }
 
 #endif // !TARGET_UNIX
@@ -1157,7 +1172,7 @@ void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTarget
     m_jmp        = X86_INSTR_JMP_REL32;
     m_execstub   = (BYTE*) ((pTargetCode) - (4+((BYTE*)&pEntryThunkCodeRX->m_execstub)));
 
-    FlushInstructionCache(GetCurrentProcess(),pEntryThunkCodeRX->GetEntryPoint(),sizeof(UMEntryThunkCode));
+    ClrFlushInstructionCache(pEntryThunkCodeRX->GetEntryPoint(),sizeof(UMEntryThunkCode) - GetEntryPointOffset(), /* hasCodeExecutedBefore */ true);
 }
 
 void UMEntryThunkCode::Poison()
@@ -1172,7 +1187,7 @@ void UMEntryThunkCode::Poison()
     // mov ecx, imm32
     pThisRW->m_movEAX = 0xb9;
 
-    ClrFlushInstructionCache(GetEntryPoint(),sizeof(UMEntryThunkCode));
+    ClrFlushInstructionCache(GetEntryPoint(),sizeof(UMEntryThunkCode) - GetEntryPointOffset(), /* hasCodeExecutedBefore */ true);
 }
 
 UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)

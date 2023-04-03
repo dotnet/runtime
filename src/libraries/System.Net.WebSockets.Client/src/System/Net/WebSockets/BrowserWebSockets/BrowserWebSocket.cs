@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices.JavaScript;
+using System.Buffers;
 
 namespace System.Net.WebSockets
 {
@@ -19,6 +20,8 @@ namespace System.Net.WebSockets
         private WebSocketState _state;
         private bool _disposed;
         private bool _aborted;
+        private int[] responseStatus = new int[3];
+        private MemoryHandle? responseStatusHandle;
 
         #region Properties
 
@@ -162,6 +165,7 @@ namespace System.Net.WebSockets
                 }
                 _innerWebSocket?.Dispose();
                 _innerWebSocket = null;
+                responseStatusHandle?.Dispose();
             }
         }
 
@@ -181,7 +185,10 @@ namespace System.Net.WebSockets
                     }
                 };
 
-                _innerWebSocket = BrowserInterop.WebSocketCreate(uri.ToString(), subProtocols, onClose);
+                Memory<int> responseMemory = new Memory<int>(responseStatus);
+                responseStatusHandle = responseMemory.Pin();
+
+                _innerWebSocket = BrowserInterop.UnsafeCreate(uri.ToString(), subProtocols, responseStatusHandle.Value, onClose);
                 var openTask = BrowserInterop.WebSocketOpen(_innerWebSocket);
                 var wrappedTask = CancelationHelper(openTask!, cancellationToken, _state);
 
@@ -211,7 +218,7 @@ namespace System.Net.WebSockets
         {
             try
             {
-                var sendTask = BrowserInterop.WebSocketSend(_innerWebSocket!, buffer, (int)messageType, endOfMessage);
+                var sendTask = BrowserInterop.UnsafeSendSync(_innerWebSocket!, buffer, messageType, endOfMessage);
                 if (sendTask == null)
                 {
                     // return synchronously
@@ -239,18 +246,21 @@ namespace System.Net.WebSockets
         {
             try
             {
-                ArraySegment<int> response = new ArraySegment<int>(new int[3]);
-                var receiveTask = BrowserInterop.WebSocketReceive(_innerWebSocket!, buffer, response);
-                if (receiveTask == null)
+                Memory<byte> bufferMemory = buffer.AsMemory();
+                using (MemoryHandle pinBuffer = bufferMemory.Pin())
                 {
-                    // return synchronously
-                    return ConvertResponse(response);
+                    var receiveTask = BrowserInterop.ReceiveUnsafeSync(_innerWebSocket!, pinBuffer, bufferMemory.Length);
+                    if (receiveTask == null)
+                    {
+                        // return synchronously
+                        return ConvertResponse();
+                    }
+
+                    var wrappedTask = CancelationHelper(receiveTask, cancellationToken, _state);
+                    await wrappedTask.ConfigureAwait(true);
+
+                    return ConvertResponse();
                 }
-
-                var wrappedTask = CancelationHelper(receiveTask, cancellationToken, _state);
-                await wrappedTask.ConfigureAwait(true);
-
-                return ConvertResponse(response);
             }
             catch (OperationCanceledException)
             {
@@ -266,18 +276,18 @@ namespace System.Net.WebSockets
             }
         }
 
-        private WebSocketReceiveResult ConvertResponse(ArraySegment<int> response)
+        private WebSocketReceiveResult ConvertResponse()
         {
             const int countIndex = 0;
             const int typeIndex = 1;
             const int endIndex = 2;
 
-            WebSocketMessageType messageType = (WebSocketMessageType)response[typeIndex];
+            WebSocketMessageType messageType = (WebSocketMessageType)responseStatus[typeIndex];
             if (messageType == WebSocketMessageType.Close)
             {
-                return new WebSocketReceiveResult(response[countIndex], messageType, response[endIndex] != 0, CloseStatus, CloseStatusDescription);
+                return new WebSocketReceiveResult(responseStatus[countIndex], messageType, responseStatus[endIndex] != 0, CloseStatus, CloseStatusDescription);
             }
-            return new WebSocketReceiveResult(response[countIndex], messageType, response[endIndex] != 0);
+            return new WebSocketReceiveResult(responseStatus[countIndex], messageType, responseStatus[endIndex] != 0);
         }
 
         private async Task CloseAsyncCore(WebSocketCloseStatus closeStatus, string? statusDescription, bool waitForCloseReceived, CancellationToken cancellationToken)

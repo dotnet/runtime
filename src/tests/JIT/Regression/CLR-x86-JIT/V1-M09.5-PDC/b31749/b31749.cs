@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
-    class BB
+    public class BB
     {
         public double[] Method3(double param3)
         {
@@ -18,7 +19,8 @@ namespace Test
             uint u = (uint)(param3.Method3(param3.Method3(d)[0])[0]);
             return new uint[4];
         }
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             BB a = new BB();
             Method2(Method2(0u, a)[2], a);

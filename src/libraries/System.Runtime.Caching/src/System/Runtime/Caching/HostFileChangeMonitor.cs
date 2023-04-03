@@ -95,6 +95,7 @@ namespace System.Runtime.Caching
                 {
                     fcn = host.GetService(typeof(IFileChangeNotificationSystem)) as IFileChangeNotificationSystem;
                 }
+#pragma warning disable IDE0074 // Use compound assignment
                 if (fcn == null)
                 {
 #if NETCOREAPP
@@ -106,6 +107,7 @@ namespace System.Runtime.Caching
 
                     fcn = new FileChangeNotificationSystem();
                 }
+#pragma warning restore IDE0074
                 Interlocked.CompareExchange(ref s_fcn, fcn, null);
             }
         }

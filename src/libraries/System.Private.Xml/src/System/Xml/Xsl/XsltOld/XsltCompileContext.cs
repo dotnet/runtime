@@ -184,7 +184,7 @@ namespace System.Xml.Xsl.XsltOld
         private const BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static;
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:RequiresUnreferencedCode",
             Justification = XsltArgumentList.ExtensionObjectSuppresion)]
-        private IXsltContextFunction? GetExtensionMethod(string ns, string name, XPathResultType[]? argTypes, out object? extension)
+        private FuncExtension? GetExtensionMethod(string ns, string name, XPathResultType[]? argTypes, out object? extension)
         {
             FuncExtension? result = null;
             extension = _processor!.GetScriptObject(ns);
@@ -715,7 +715,7 @@ namespace System.Xml.Xsl.XsltOld
                 switch (xt)
                 {
                     case XPathResultType.String:
-                        // Unfortunetely XPathResultType.String == XPathResultType.Navigator (This is wrong but cant be changed in Everett)
+                        // Unfortunately XPathResultType.String == XPathResultType.Navigator (This is wrong but cant be changed in Everett)
                         // Fortunetely we have typeCode hare so let's discriminate by typeCode
                         if (type == typeof(string))
                         {

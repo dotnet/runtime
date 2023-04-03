@@ -11,14 +11,15 @@ namespace System.IO
     {
         private const int NanosecondsPerTick = 100;
 
-        private const int InitializedExistsBrokenLink = -4;  // target is link with no target.
-        private const int InitializedExistsDir = -3;  // target is directory.
-        private const int InitializedExistsFile = -2; // target is file.
+        private const int InitializedExistsBrokenLink = -5;  // target is link with no target.
+        private const int InitializedExistsDir = -4;  // target is directory.
+        private const int InitializedExistsFile = -3; // target is file.
+        private const int InitializedNotExistsNotADir = -2;  // entry parent path is not a dir.
         private const int InitializedNotExists = -1;  // entry does not exist.
         private const int Uninitialized = 0;          // uninitialized, '0' to make default(FileStatus) uninitialized.
 
         // Tracks the initialization state.
-        // < 0 : initialized successfully. Value is InitializedNotExists, InitializedExistsFile, InitializedExistsDir or InitializedExistsBrokenLink.
+        // < 0 : initialized succesfully. Value is one of the Initialized* consts.
         //   0 : uninitialized.
         // > 0 : initialized with error. Value is raw errno.
         private int _state;
@@ -56,7 +57,7 @@ namespace System.IO
                     return false;
                 }
 
-#if TARGET_BROWSER
+#if TARGET_BROWSER || TARGET_WASI
                 var mode = ((UnixFileMode)_fileCache.Mode & FileSystem.ValidUnixFileModes);
                 bool isUserReadOnly = (mode & UnixFileMode.UserRead) != 0 && // has read permission
                                       (mode & UnixFileMode.UserWrite) == 0;  // but not write permission
@@ -80,7 +81,7 @@ namespace System.IO
             }
         }
 
-#if !TARGET_BROWSER
+#if !TARGET_BROWSER && !TARGET_WASI
         // HasReadOnlyFlag cache.
         // Must only be used after calling EnsureCachesInitialized.
         private int _isReadOnlyCache;
@@ -240,7 +241,7 @@ namespace System.IO
             EnsureCachesInitialized(handle, path);
 
             if (!EntryExists)
-                FileSystemInfo.ThrowNotFound(path);
+                ThrowNotFound(path);
 
             if (Interop.Sys.CanSetHiddenFlag)
             {
@@ -385,7 +386,7 @@ namespace System.IO
             EnsureCachesInitialized(handle, path);
 
             if (!EntryExists)
-                FileSystemInfo.ThrowNotFound(path);
+                ThrowNotFound(path);
 
             // we use utimes()/utimensat() to set the accessTime and writeTime
             Interop.Sys.TimeSpec* buf = stackalloc Interop.Sys.TimeSpec[2];
@@ -393,7 +394,7 @@ namespace System.IO
             long seconds = time.ToUnixTimeSeconds();
             long nanoseconds = UnixTimeSecondsToNanoseconds(time, seconds);
 
-#if TARGET_BROWSER
+#if TARGET_BROWSER || TARGET_WASI
             buf[0].TvSec = seconds;
             buf[0].TvNsec = nanoseconds;
             buf[1].TvSec = seconds;
@@ -480,15 +481,6 @@ namespace System.IO
                 throw new ArgumentException(SR.Arg_InvalidUnixFileMode, nameof(UnixFileMode));
             }
 
-            // Use ThrowNotFound to throw the appropriate exception when the file doesn't exist.
-            if (handle is null && path is not null)
-            {
-                EnsureCachesInitialized(path);
-
-                if (!EntryExists || IsBrokenLink)
-                    FileSystemInfo.ThrowNotFound(path);
-            }
-
             // Linux does not support link permissions.
             // To have consistent cross-platform behavior we operate on the link target.
             int rv = handle is not null ? Interop.Sys.FChMod(handle, (int)mode)
@@ -507,7 +499,7 @@ namespace System.IO
         {
             Debug.Assert(handle is not null || path.Length > 0);
 
-#if !TARGET_BROWSER
+#if !TARGET_BROWSER && !TARGET_WASI
             _isReadOnlyCache = -1;
 #endif
             int rv = handle is not null ?
@@ -518,15 +510,18 @@ namespace System.IO
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
 
-                if (errorInfo.Error == Interop.Error.ENOENT || // A component of the path does not exist, or path is an empty string
-                    errorInfo.Error == Interop.Error.ENOTDIR)  // A component of the path prefix of path is not a directory
+                switch (errorInfo.Error)
                 {
-                    _state = InitializedNotExists;
-                }
-                else
-                {
-                    Debug.Assert(errorInfo.RawErrno > 0); // Expect a positive integer
-                    _state = errorInfo.RawErrno; // Initialized with error.
+                    case Interop.Error.ENOENT:
+                        _state = InitializedNotExists;
+                        break;
+                    case Interop.Error.ENOTDIR:
+                        _state = InitializedNotExistsNotADir;
+                        break;
+                    default:
+                        Debug.Assert(errorInfo.RawErrno > 0); // Expect a positive integer
+                        _state = errorInfo.RawErrno; // Initialized with error.
+                        break;
                 }
 
                 return;
@@ -590,6 +585,12 @@ namespace System.IO
             const long TicksPerMillisecond = 10000;
             const long TicksPerSecond = TicksPerMillisecond * 1000;
             return (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
+        }
+
+        private void ThrowNotFound(string? path)
+        {
+            Interop.Error error = _state == InitializedNotExistsNotADir ? Interop.Error.ENOTDIR : Interop.Error.ENOENT;
+            throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(error), path);
         }
     }
 }

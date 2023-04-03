@@ -165,7 +165,7 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
         if (argDsc->lvIsHfaRegArg())
         {
             assert(regState->rsIsFloat);
-            unsigned cSlots = GetHfaCount(argDsc->GetStructHnd());
+            unsigned cSlots = GetHfaCount(argDsc->GetLayout()->GetClassHandle());
             for (unsigned i = 1; i < cSlots; i++)
             {
                 assert(inArgReg + i <= LAST_FP_ARGREG);
@@ -320,13 +320,6 @@ void Compiler::raMarkStkVars()
                 needSlot |= varDsc->IsAddressExposed();
             }
 
-#if FEATURE_FIXED_OUT_ARGS
-
-            /* Is this the dummy variable representing GT_LCLBLK ? */
-            needSlot |= (lclNum == lvaOutgoingArgSpaceVar);
-
-#endif // FEATURE_FIXED_OUT_ARGS
-
 #ifdef DEBUG
             /* For debugging, note that we have to reserve space even for
                unused variables if they are ever in scope. However, this is not
@@ -427,7 +420,7 @@ void Compiler::raMarkStkVars()
         // pointer). and the return buffer argument (if we are returning a
         // struct).
         // This is important because we don't want to try to report them
-        // to the GC, as the frame offsets in these local varables would
+        // to the GC, as the frame offsets in these local variables would
         // not be correct.
 
         if (varDsc->lvIsParam && raIsVarargsStackArg(lclNum))

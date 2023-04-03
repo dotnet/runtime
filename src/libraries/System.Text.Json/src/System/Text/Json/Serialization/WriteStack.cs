@@ -93,6 +93,12 @@ namespace System.Text.Json
         /// </summary>
         public bool IsContinuation => _continuationCount != 0;
 
+        /// <summary>
+        /// Indicates that the root-level JsonTypeInfo is the result of
+        /// polymorphic dispatch from the internal System.Object converter.
+        /// </summary>
+        public bool IsPolymorphicRootValue;
+
         // The bag of preservable references.
         public ReferenceResolver ReferenceResolver;
 
@@ -133,34 +139,37 @@ namespace System.Text.Json
             }
         }
 
-        /// <summary>
-        /// Initialize the state without delayed initialization of the JsonTypeInfo.
-        /// </summary>
-        public JsonConverter Initialize(Type type, JsonSerializerOptions options, bool supportContinuation, bool supportAsync)
+        internal void Initialize(
+            JsonTypeInfo jsonTypeInfo,
+            object? rootValueBoxed = null,
+            bool isPolymorphicRootValue = false,
+            bool supportContinuation = false,
+            bool supportAsync = false)
         {
-            JsonTypeInfo jsonTypeInfo = options.GetTypeInfoForRootType(type);
-            return Initialize(jsonTypeInfo, supportContinuation, supportAsync);
-        }
-
-        internal JsonConverter Initialize(JsonTypeInfo jsonTypeInfo, bool supportContinuation, bool supportAsync)
-        {
-            Debug.Assert(!supportAsync || supportContinuation, "supportAsync implies supportContinuation.");
+            Debug.Assert(!supportAsync || supportContinuation, "supportAsync must imply supportContinuation");
+            Debug.Assert(!IsContinuation);
+            Debug.Assert(CurrentDepth == 0);
 
             Current.JsonTypeInfo = jsonTypeInfo;
             Current.JsonPropertyInfo = jsonTypeInfo.PropertyInfoForTypeInfo;
             Current.NumberHandling = Current.JsonPropertyInfo.EffectiveNumberHandling;
+            IsPolymorphicRootValue = isPolymorphicRootValue;
+            SupportContinuation = supportContinuation;
+            SupportAsync = supportAsync;
 
             JsonSerializerOptions options = jsonTypeInfo.Options;
             if (options.ReferenceHandlingStrategy != ReferenceHandlingStrategy.None)
             {
                 Debug.Assert(options.ReferenceHandler != null);
                 ReferenceResolver = options.ReferenceHandler.CreateResolver(writing: true);
+
+                if (options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.IgnoreCycles &&
+                    rootValueBoxed is not null && jsonTypeInfo.Type.IsValueType)
+                {
+                    // Root object is a boxed value type, we need to push it to the reference stack before starting the serializer.
+                    ReferenceResolver.PushReferenceForCycleDetection(rootValueBoxed);
+                }
             }
-
-            SupportContinuation = supportContinuation;
-            SupportAsync = supportAsync;
-
-            return jsonTypeInfo.Converter;
         }
 
         /// <summary>
@@ -418,7 +427,7 @@ namespace System.Text.Json
             {
                 if (propertyName != null)
                 {
-                    if (propertyName.IndexOfAny(ReadStack.SpecialCharacters) != -1)
+                    if (propertyName.AsSpan().ContainsSpecialCharacters())
                     {
                         sb.Append(@"['");
                         sb.Append(propertyName);
@@ -434,6 +443,6 @@ namespace System.Text.Json
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay => $"Path:{PropertyPath()} Current: ConverterStrategy.{Current.JsonPropertyInfo?.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
+        private string DebuggerDisplay => $"Path:{PropertyPath()} Current: ConverterStrategy.{Current.JsonPropertyInfo?.EffectiveConverter.ConverterStrategy}, {Current.JsonTypeInfo?.Type.Name}";
     }
 }

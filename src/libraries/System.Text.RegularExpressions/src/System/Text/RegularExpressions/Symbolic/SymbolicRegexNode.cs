@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
@@ -80,7 +79,7 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             Debug.Assert(kind != SymbolicRegexNodeKind.Singleton || set is not null);
             TSet setOrStartSet = kind == SymbolicRegexNodeKind.Singleton ? set! : ComputeStartSet(builder, kind, left, right);
-            var key = (kind, left, right, lower, upper, setOrStartSet, info);
+            var key = new SymbolicRegexBuilder<TSet>.NodeCacheKey(kind, left, right, lower, upper, setOrStartSet, info);
             if (!builder._nodeCache.TryGetValue(key, out SymbolicRegexNode<TSet>? node))
             {
                 node = new SymbolicRegexNode<TSet>(builder, kind, left, right, lower, upper, setOrStartSet, info);
@@ -665,9 +664,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 // This structure arises from a folding rule in TryFold
                 if (left._kind == SymbolicRegexNodeKind.Concat && right._kind == SymbolicRegexNodeKind.Concat)
                 {
-                    Debug.Assert(right._left is not null && right._right is not null);
+                    Debug.Assert(left._left is not null && right._left is not null && right._right is not null);
                     SymbolicRegexNode<TSet> rl = right._left;
-                    if (rl._kind == SymbolicRegexNodeKind.Loop && rl._lower == 0 && rl._upper == 1 && rl.IsLazy)
+                    if (left._left.IsNullable && rl._kind == SymbolicRegexNodeKind.Loop && rl._lower == 0 && rl._upper == 1 && rl.IsLazy)
                     {
                         Debug.Assert(rl._left is not null);
                         if (TrySkipPrefix(left, rl._left, out SymbolicRegexNode<TSet>? tail))
@@ -971,7 +970,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         /// <remarks>
         /// This function will rebuild concatenations because it pushes the FixedLengthMarker into the rightmost element.
-        /// Due to this this function should not be called on every character.
+        /// Due to this function should not be called on every character.
         /// </remarks>
         /// <param name="builder">the builder that owns this node</param>
         /// <param name="lengthSoFar">accumulater used in the recursion for lengths of paths</param>
@@ -1072,9 +1071,8 @@ namespace System.Text.RegularExpressions.Symbolic
             }
             else
             {
-                // If this node is nullable for the given context then prune any branches that are less preferred than
-                // just the empty match. This is done in order to maintain backtracking semantics.
-                SymbolicRegexNode<TSet> node = IsNullableFor(context) ? PruneLowerPriorityThanNullability(builder, context) : this;
+                // To maintain backtracking semantics, prune any branches that are less preferred than just the empty match
+                SymbolicRegexNode<TSet> node = PruneLowerPriorityThanNullability(builder, context);
                 return node.CreateDerivative(builder, elem, context);
             }
         }
@@ -1082,7 +1080,10 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Prune this node wrt the given context in order to maintain backtracking semantics. Mimics how backtracking chooses a path.</summary>
         private SymbolicRegexNode<TSet> PruneLowerPriorityThanNullability(SymbolicRegexBuilder<TSet> builder, uint context)
         {
-            //caching pruning to avoid otherwise potential quadratic worst case behavior
+            if (!IsNullableFor(context))
+                return this;
+
+            // Cache result to avoid otherwise potential quadratic worst case behavior
             SymbolicRegexNode<TSet>? prunedNode;
             (SymbolicRegexNode<TSet>, uint) key = (this, context);
             if (builder._pruneLowerPriorityThanNullabilityCache.TryGetValue(key, out prunedNode))
@@ -1110,40 +1111,115 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 case SymbolicRegexNodeKind.Concat:
                     Debug.Assert(_left is not null && _right is not null);
-                    //in a concatenation (X|Y)Z priority is given to XZ when X is nullable
-                    //observe that (X|Y)Z is equivalent to (XZ|YZ) and the branch YZ must be ignored
-                    //when X is nullable (observe that XZ is nullable because this=(X|Y)Z is nullable)
-                    //if X is not nullable then XZ is maintaned as is, and YZ is pruned
-                    //e.g. (a{0,5}?|abc|b+)c* reduces to c*
-                    //---
-                    //in a concatenation XZ where X is not an alternation, both X and Z are pruned
-                    //e.g. a{0,5}?b{0,5}? reduces to ()
-                    prunedNode = _left._kind == SymbolicRegexNodeKind.Alternate ?
-                        (_left._left!.IsNullableFor(context) ?
+                    prunedNode = _left._kind switch
+                    {
+                        // If the left side is a concatenation, then we bring it to right associative form to expose
+                        // the first element of the concatenation for the cases below.
+                        SymbolicRegexNodeKind.Concat => CreateConcat(builder, _left._left!, CreateConcat(builder, _left._right!, _right))
+                            .PruneLowerPriorityThanNullability(builder, context),
+                        // In a concatenation (X|Y)Z priority is given to XZ when X is nullable.
+                        // Observe that (X|Y)Z is equivalent to (XZ|YZ) and the branch YZ must be ignored
+                        // when X is nullable (observe that XZ is nullable because this=(X|Y)Z is nullable).
+                        // If X is not nullable then XZ is maintaned as is, and YZ is pruned. For example,
+                        // (a{0,5}?|abc|b+)c* reduces to c*.
+                        SymbolicRegexNodeKind.Alternate => (_left._left!.IsNullableFor(context) ?
                             CreateConcat(builder, _left._left, _right).PruneLowerPriorityThanNullability(builder, context) :
-                            CreateAlternate(builder, CreateConcat(builder, _left._left, _right), CreateConcat(builder, _left._right!, _right).PruneLowerPriorityThanNullability(builder, context))) :
-                        CreateConcat(builder, _left.PruneLowerPriorityThanNullability(builder, context), _right.PruneLowerPriorityThanNullability(builder, context));
+                            CreateAlternate(builder, CreateConcat(builder, _left._left, _right),
+                                CreateConcat(builder, _left._right!, _right).PruneLowerPriorityThanNullability(builder, context), deduplicated: true)),
+                        // Loops have various cases that are handled uniformly for concatenations and standalone loops.
+                        SymbolicRegexNodeKind.Loop => PruneLoop(builder, context, _left, _right),
+                        // The previous cases handle all the ways that the left side of the concatenation could
+                        // contain branching. Thus if we get here it is safe to only prune the right side.
+                        _ => CreateConcat(builder, _left, _right.PruneLowerPriorityThanNullability(builder, context)),
+                    };
                     break;
 
-                case SymbolicRegexNodeKind.Loop when _info.IsLazyLoop && _lower == 0:
-                    //lazy nullable loop reduces to (), i.e., the loop body is just forgotten
-                    prunedNode = builder.Epsilon;
+                case SymbolicRegexNodeKind.Loop:
+                    // Loops have various cases that are handled uniformly for standalone loops and concatenations.
+                    prunedNode = PruneLoop(builder, context, this, builder.Epsilon);
                     break;
 
                 case SymbolicRegexNodeKind.Effect:
-                    //Effects are maintained and the pruning is propagated to the body of the effect
+                    // Effects are maintained and the pruning is propagated to the body of the effect
                     Debug.Assert(_left is not null && _right is not null);
                     prunedNode = CreateEffect(builder, _left.PruneLowerPriorityThanNullability(builder, context), _right);
                     break;
 
                 default:
-                    //In all other remaining cases no pruning takes place
+                    // In all other remaining cases no pruning takes place
                     prunedNode = this;
                     break;
             }
 
             builder._pruneLowerPriorityThanNullabilityCache[key] = prunedNode;
             return prunedNode;
+
+            static SymbolicRegexNode<TSet> PruneLoop(SymbolicRegexBuilder<TSet> builder, uint context, SymbolicRegexNode<TSet> loop, SymbolicRegexNode<TSet> tail)
+            {
+                Debug.Assert(loop.Kind == SymbolicRegexNodeKind.Loop && loop._left is not null);
+
+                if (loop._lower == 0)
+                {
+                    // Loop is nullable at least due to a zero lower bound and the cases below handle the different
+                    // priorities of checking that lower bound.
+                    if (loop.IsLazy)
+                    {
+                        // In a lazy loop nullability from the zero lower bound has highest priority, so the loop is skipped completely
+                        return tail.PruneLowerPriorityThanNullability(builder, context);
+                    }
+                    else if (!loop._left.IsNullableFor(context))
+                    {
+                        // For an eager loop with a non-nullable body, the nullability from the zero lower bound has lowest priority.
+                        // Handle by case splitting into (1) doing at least one iteration in the loop and (2) skipping the loop and
+                        // continuing directly into the tail, which then must be pruned in the current context.
+                        return CreateAlternate(builder,
+                            CreateConcat(builder, CreateLoop(builder, loop._left, 1, loop._upper, loop.IsLazy), tail),
+                            tail.PruneLowerPriorityThanNullability(builder, context));
+                    }
+                    else if (loop._upper == int.MaxValue)
+                    {
+                        // The special case of a R*S loop with a nullable body is handled separately, as the general case handler could cause
+                        // infinite recursion. The paths that backtracking would explore before stopping here are (1) consuming a character in the
+                        // first iteration of the loop and (2) skipping the loop and continuing with anything higher priority than nullability in S.
+                        // For example, a pattern (a|b??)*c? would prune into essentially a?(a|b??)*c?|c?. Note that pruning only one peeled-out
+                        // iteration of the loop is necessary, since anchors could change the priority of nullability in other locations in the input.
+                        // Additionally, a high-priority nullable body will always be skipped, in which case only option (2) is included. Finally, in
+                        // all cases the loop body must not be dropped, as doing so could affect whether some capture groups match zero characters or
+                        // don't match at all.
+                        SymbolicRegexNode<TSet> skipLoopCase = CreateConcat(builder, loop._left.PruneLowerPriorityThanNullability(builder, context),
+                                tail.PruneLowerPriorityThanNullability(builder, context));
+                        return loop._left.IsHighPriorityNullableFor(context) ? skipLoopCase : CreateAlternate(builder,
+                            CreateConcat(builder, loop._left.PruneLowerPriorityThanNullability(builder, context), CreateConcat(builder, loop, tail)),
+                            skipLoopCase);
+                    }
+                    // For an eager loop with finite upper bound and nullable body fall back to the general case handler
+                }
+
+                Debug.Assert(loop._left.IsNullableFor(context));
+                // The general case handler peels one iteration out of the loop and prunes the resulting concatenation
+                return CreateConcat(builder, loop._left, CreateConcat(builder, loop.CreateLoopContinuation(builder), tail))
+                    .PruneLowerPriorityThanNullability(builder, context);
+            }
+        }
+
+        /// <summary>
+        /// Creates the remainder of a loop when one iteration is peeled out of it. In other words, for a loop R with
+        /// a body B returns a new regex S such that R is equivalent to BS.
+        /// </summary>
+        /// <param name="builder">the builder that owns this node</param>
+        /// <returns>the loop continuation regex</returns>
+        private SymbolicRegexNode<TSet> CreateLoopContinuation(SymbolicRegexBuilder<TSet> builder)
+        {
+            Debug.Assert(_kind == SymbolicRegexNodeKind.Loop && _left is not null);
+
+            // Note that the upper bound is guaranteed to be greater than zero, since otherwise the loop would have
+            // been simplified to nothing, and int.MaxValue is treated as infinity.
+            int newupper = _upper == int.MaxValue ? int.MaxValue : _upper - 1;
+            // Do not decrement the lower bound if it equals int.MaxValue
+            int newlower = _lower == 0 || _lower == int.MaxValue ? _lower : _lower - 1;
+
+            // The continued loop becomes epsilon when newlower == newupper == 0
+            return builder.CreateLoop(_left, IsLazy, newlower, newupper);
         }
 
         /// <summary>
@@ -1241,22 +1317,18 @@ namespace System.Text.RegularExpressions.Symbolic
                         Debug.Assert(_left is not null);
                         Debug.Assert(_upper > 0);
 
-                        SymbolicRegexNode<TSet> bodyDerivative = _left.CreateDerivative(builder, elem, context);
-                        if (bodyDerivative.IsNothing(builder._solver))
+                        if (_lower == 0 || _left.IsNullable || !_left.IsNullableFor(context))
                         {
-                            derivative = builder._nothing;
+                            // In these special cases the derivative concatenates the body's derivative with the decremented loop, so
+                            // d(R{m,n}) = d(R)R{max(0,m-1),n-1}.
+                            derivative = builder.CreateConcat(_left.CreateDerivative(builder, elem, context), CreateLoopContinuation(builder));
                         }
                         else
                         {
-                            // The loop derivative peels out one iteration and concatenates the body's derivative with the decremented loop,
-                            // so d(R{m,n}) = d(R)R{max(0,m-1),n-1}. Note that n is guaranteed to be greater than zero, since otherwise the
-                            // loop would have been simplified to nothing, and int.MaxValue is treated as infinity.
-                            int newupper = _upper == int.MaxValue ? int.MaxValue : _upper - 1;
-                            // do not decrement the lower bound if it equals int.MaxValue
-                            int newlower = _lower == 0 || _lower == int.MaxValue ? _lower : _lower - 1;
-                            // the continued loop becomes epsilon when newlower == newupper == 0
-                            // in which case the returned concatenation will be just bodyDerivative
-                            derivative = builder.CreateConcat(bodyDerivative, builder.CreateLoop(_left, IsLazy, newlower, newupper));
+                            // In the general case the concatenation must be created first and the derivative taken on that. For example,
+                            // the first derivative for (a|\b){2} with an input "ac" is (a|\b)|epsilon, but the rule above would produce
+                            // just (a|\b).
+                            derivative = builder.CreateConcat(_left, CreateLoopContinuation(builder)).CreateDerivative(builder, elem, context);
                         }
                         break;
                     }
@@ -1827,7 +1899,6 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             HashSet<TSet> sets = GetSets(builder);
             List<TSet> minterms = MintermGenerator<TSet>.GenerateMinterms(builder._solver, sets);
-            minterms.Sort();
             return minterms.ToArray();
         }
 

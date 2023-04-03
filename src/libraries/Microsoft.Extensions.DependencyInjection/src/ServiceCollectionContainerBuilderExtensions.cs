@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.CompilerServices;
-using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -17,7 +15,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <param name="services">The <see cref="IServiceCollection"/> containing service descriptors.</param>
         /// <returns>The <see cref="ServiceProvider"/>.</returns>
-
         public static ServiceProvider BuildServiceProvider(this IServiceCollection services)
         {
             return BuildServiceProvider(services, ServiceProviderOptions.Default);

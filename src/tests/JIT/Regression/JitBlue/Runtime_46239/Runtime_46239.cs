@@ -7,6 +7,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Runtime_46239
 {
@@ -55,7 +56,7 @@ namespace Runtime_46239
         public int tmp2;
     }
 
-    class Program
+    public class Program
     {
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int test1<T>(int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8, int num, T a, T b)
@@ -151,7 +152,8 @@ namespace Runtime_46239
 
         }
 
-        static int Main(string[] args)
+        [Fact]
+        public static int TestEntryPoint()
         {
 
             if (test<S1>() != 100)

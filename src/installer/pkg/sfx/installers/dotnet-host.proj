@@ -3,7 +3,7 @@
     <SkipBuild Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)'">true</SkipBuild>
     <GenerateInstallers>true</GenerateInstallers>
     <InstallerName>dotnet-host</InstallerName>
-    <InstallerName Condition="'$(TargetOS)' == 'OSX'">dotnet-host-internal</InstallerName>
+    <InstallerName Condition="'$(TargetOS)' == 'osx'">dotnet-host-internal</InstallerName>
     <LinuxInstallRoot Condition="'$(BuildRpmPackage)' == 'true'">/</LinuxInstallRoot>
     <PackageBrandNameSuffix>Host</PackageBrandNameSuffix>
     <VSInsertionShortComponentName>NetCore.SharedHost</VSInsertionShortComponentName>
@@ -30,10 +30,6 @@
     <CandleVariables Include="ExtraPropertyRefIds" Value="ProductCPU;RTM_ProductVersion" />
     <!-- Enables stable provider key - do not change -->
     <CandleVariables Include="DependencyKey" Value="$(WixDependencyKeyName)_$(MajorVersion).$(MinorVersion)_$(TargetArchitecture)" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Manpage Include="$(ManPagesDir)/**/*" />
   </ItemGroup>
 
   <Target Name="PublishToDisk">

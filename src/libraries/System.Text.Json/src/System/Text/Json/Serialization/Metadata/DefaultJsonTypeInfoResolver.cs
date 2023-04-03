@@ -3,8 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Text.Json.Reflection;
 using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -69,6 +67,11 @@ namespace System.Text.Json.Serialization.Metadata
 
             JsonTypeInfo.ValidateType(type);
             JsonTypeInfo typeInfo = CreateJsonTypeInfo(type, options);
+            typeInfo.OriginatingResolver = this;
+
+            // We've finished configuring the metadata, brand the instance as user-unmodified.
+            // This should be the last update operation in the resolver to avoid resetting the flag.
+            typeInfo.IsCustomized = false;
 
             if (_modifiers != null)
             {
@@ -85,20 +88,9 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options)
         {
-            s_createReflectionJsonTypeInfoMethodInfo ??= typeof(DefaultJsonTypeInfoResolver).GetMethod(nameof(CreateReflectionJsonTypeInfo), BindingFlags.NonPublic | BindingFlags.Static)!;
-            return (JsonTypeInfo)s_createReflectionJsonTypeInfoMethodInfo.MakeGenericMethod(type)
-                .InvokeNoWrapExceptions(null, new object[] { options })!;
+            JsonConverter converter = GetConverterForType(type, options);
+            return CreateTypeInfoCore(type, converter, options);
         }
-
-        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        private static JsonTypeInfo<T> CreateReflectionJsonTypeInfo<T>(JsonSerializerOptions options)
-        {
-            JsonConverter converter = GetConverterForType(typeof(T), options);
-            return new ReflectionJsonTypeInfo<T>(converter, options);
-        }
-
-        private static MethodInfo? s_createReflectionJsonTypeInfoMethodInfo;
 
         /// <summary>
         /// Gets a list of user-defined callbacks that can be used to modify the initial contract.
@@ -120,12 +112,12 @@ namespace System.Text.Json.Serialization.Metadata
                 _resolver = resolver;
             }
 
-            protected override bool IsImmutable => !_resolver._mutable;
-            protected override void VerifyMutable()
+            public override bool IsReadOnly => !_resolver._mutable;
+            protected override void OnCollectionModifying()
             {
                 if (!_resolver._mutable)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_TypeInfoResolverImmutable();
+                    ThrowHelper.ThrowInvalidOperationException_DefaultTypeInfoResolverImmutable();
                 }
             }
         }

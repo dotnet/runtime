@@ -569,7 +569,7 @@ namespace System.Xml.Schema
 
         private void LoadSchemaFromLocation(string uri, string url)
         {
-            XmlReader? reader = null;
+            XmlTextReader? reader = null;
             SchemaInfo? schemaInfo = null;
 
             try

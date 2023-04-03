@@ -294,7 +294,7 @@ FCIMPL4(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc*
     CONTRACTL
     {
         FCALL_CHECK;
-        PRECONDITION(pMD->IsComPlusCall() || pMD->IsGenericComPlusCall() || pMD->IsEEImpl());
+        PRECONDITION(pMD->IsComPlusCall() || pMD->IsEEImpl());
     }
     CONTRACTL_END;
 
@@ -452,15 +452,6 @@ FCIMPL0(void, StubHelpers::ClearLastError)
     FCALL_CONTRACT;
 
     ::SetLastError(0);
-}
-FCIMPLEND
-
-FCIMPL1(void*, StubHelpers::GetNDirectTarget, NDirectMethodDesc* pNMD)
-{
-    FCALL_CONTRACT;
-
-    FCUnique(0xa2);
-    return pNMD->GetNDirectTarget();
 }
 FCIMPLEND
 

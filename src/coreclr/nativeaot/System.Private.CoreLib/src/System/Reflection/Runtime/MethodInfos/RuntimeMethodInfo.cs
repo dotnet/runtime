@@ -72,8 +72,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
         private Delegate CreateDelegateWorker(Type delegateType, object target, bool allowClosed)
         {
-            if (delegateType == null)
-                throw new ArgumentNullException(nameof(delegateType));
+            ArgumentNullException.ThrowIfNull(delegateType);
 
             if (!(delegateType is RuntimeTypeInfo runtimeDelegateType))
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(delegateType));
@@ -119,7 +118,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
             while (true)
             {
-                MethodInfo next = method.GetImplicitlyOverriddenBaseClassMember();
+                MethodInfo next = method.GetImplicitlyOverriddenBaseClassMember(MethodPolicies.Instance);
                 if (next == null)
                     return ((RuntimeMethodInfo)method).WithReflectedTypeSetToDeclaringType;
 
@@ -163,7 +162,6 @@ namespace System.Reflection.Runtime.MethodInfos
         [DebuggerGuidedStepThroughAttribute]
         public sealed override object? Invoke(object? obj, BindingFlags invokeAttr, Binder binder, object?[]? parameters, CultureInfo culture)
         {
-            parameters ??= Array.Empty<object>();
             MethodInvoker methodInvoker = this.MethodInvoker;
             object? result = methodInvoker.Invoke(obj, parameters, binder, invokeAttr, culture);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
@@ -297,19 +295,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             get
             {
-                MethodInvoker methodInvoker = _lazyMethodInvoker;
-                if (methodInvoker == null)
-                {
-                    if (ReturnType.IsByRef)
-                    {
-                        // The invoker is going to dereference and box (for structs) the result of the invocation
-                        // on behalf of the caller. Can't box byref-like types and can't box void.
-                        if (ReturnType.GetElementType().IsByRefLike || ReturnType.GetElementType() == typeof(void))
-                            throw new NotSupportedException();
-                    }
-                    methodInvoker = _lazyMethodInvoker = this.UncachedMethodInvoker;
-                }
-                return methodInvoker;
+                return _lazyMethodInvoker ??= UncachedMethodInvoker;
             }
         }
 
@@ -326,7 +312,7 @@ namespace System.Reflection.Runtime.MethodInfos
             Debug.Assert(runtimeDelegateType.IsDelegate);
 
             ExecutionEnvironment executionEnvironment = ReflectionCoreExecution.ExecutionEnvironment;
-            MethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
+            RuntimeMethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
 
             // Make sure the return type is assignment-compatible.
             Type expectedReturnType = ReturnParameter.ParameterType;

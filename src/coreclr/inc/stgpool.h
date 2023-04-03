@@ -22,7 +22,6 @@
 
 #include "stgpooli.h"                   // Internal helpers.
 #include "corerror.h"                   // Error codes.
-#include "metadatatracker.h"
 #include "metamodelpub.h"
 #include "ex.h"
 #include "sarray.h"
@@ -362,8 +361,6 @@ protected:
 
 
         pData->Init(m_pSegData + nOffset, m_cbSegSize - nOffset);
-
-        METADATATRACKER_ONLY(MetaDataTracker::NoteAccess((void *)pData->GetDataPointer()));
 
         return S_OK;
     } // StgPoolReadOnly::GetDataReadOnly
@@ -1381,7 +1378,7 @@ private:
 
 //*****************************************************************************
 // CGrowableStream is a simple IStream implementation that grows as
-// its written to. All the memory is contigious, so read access is
+// its written to. All the memory is contiguous, so read access is
 // fast. A grow does a realloc, so be aware of that if you're going to
 // use this.
 //*****************************************************************************

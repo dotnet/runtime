@@ -31,6 +31,7 @@
       <Version>1.4.0</Version>
     </PackageReference>
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="..\..\Common\TypeSystem\Common\ArrayMethod.Diagnostic.cs">
       <Link>TypeSystem\Common\ArrayMethod.Diagnostic.cs</Link>
@@ -43,6 +44,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Canon\CanonTypes.cs">
       <Link>TypeSystem\Canon\CanonTypes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Canon\CanonTypes.Metadata.cs">
+      <Link>TypeSystem\Canon\CanonTypes.Metadata.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Canon\CanonTypes.Diagnostic.cs">
       <Link>TypeSystem\Canon\CanonTypes.Diagnostic.cs</Link>
@@ -227,6 +231,9 @@
     <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedType.cs">
       <Link>TypeSystem\Common\InstantiatedType.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedType.Metadata.cs">
+      <Link>TypeSystem\Common\InstantiatedType.Metadata.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\InstantiatedType.Diagnostic.cs">
       <Link>TypeSystem\Common\InstantiatedType.Diagnostic.cs</Link>
     </Compile>
@@ -305,6 +312,12 @@
     <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemContext.cs">
       <Link>TypeSystem\Common\TypeSystemContext.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemContext.Resolution.cs">
+      <Link>TypeSystem\Common\TypeSystemContext.Resolution.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemContext.FieldLayout.cs">
+      <Link>TypeSystem\Common\TypeSystemContext.FieldLayout.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\TypeSystemHelpers.cs">
       <Link>TypeSystem\Common\TypeSystemHelpers.cs</Link>
     </Compile>
@@ -358,6 +371,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\RuntimeInterfacesAlgorithm.cs">
       <Link>TypeSystem\Common\RuntimeInterfacesAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\PortableExecutableMethodExtensions.cs">
+      <Link>Compiler\PortableExecutableMethodExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Ecma\CustomAttributeTypeProvider.cs">
       <Link>Ecma\CustomAttributeTypeProvider.cs</Link>

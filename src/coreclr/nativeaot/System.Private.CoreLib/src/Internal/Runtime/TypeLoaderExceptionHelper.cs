@@ -80,6 +80,12 @@ namespace Internal.Runtime
                     return SR.ClassLoad_ExplicitLayout;
                 case ExceptionStringID.ClassLoadRankTooLarge:
                     return SR.ClassLoad_RankTooLarge;
+                case ExceptionStringID.ClassLoadInlineArrayFieldCount:
+                    return SR.ClassLoad_InlineArrayFieldCount;
+                case ExceptionStringID.ClassLoadInlineArrayLength:
+                    return SR.ClassLoad_InlineArrayLength;
+                case ExceptionStringID.ClassLoadInlineArrayExplicit:
+                    return SR.ClassLoad_InlineArrayExplicit;
                 case ExceptionStringID.InvalidProgramDefault:
                     return SR.InvalidProgram_Default;
                 case ExceptionStringID.InvalidProgramSpecific:
@@ -88,6 +94,14 @@ namespace Internal.Runtime
                     return SR.InvalidProgram_Vararg;
                 case ExceptionStringID.InvalidProgramCallVirtFinalize:
                     return SR.InvalidProgram_CallVirtFinalize;
+                case ExceptionStringID.InvalidProgramNonStaticMethod:
+                    return SR.InvalidProgram_NonStaticMethod;
+                case ExceptionStringID.InvalidProgramGenericMethod:
+                    return SR.InvalidProgram_GenericMethod;
+                case ExceptionStringID.InvalidProgramNonBlittableTypes:
+                    return SR.InvalidProgram_NonBlittableTypes;
+                case ExceptionStringID.InvalidProgramMultipleCallConv:
+                    return SR.InvalidProgram_MultipleCallConv;
                 case ExceptionStringID.MissingField:
                     return SR.EE_MissingField;
                 case ExceptionStringID.MissingMethod:

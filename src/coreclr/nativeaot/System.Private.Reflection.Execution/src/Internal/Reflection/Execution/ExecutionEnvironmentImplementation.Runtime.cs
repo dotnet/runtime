@@ -102,7 +102,7 @@ namespace Internal.Reflection.Execution
                 tMethods[i] = (MethodInfo)methodBase;
                 continue;
 
-notFound:
+            notFound:
                 if (instanceType.IsAbstract)
                 {
                     throw new PlatformNotSupportedException(SR.Format(SR.Arg_InterfaceMapMustNotBeAbstract, interfaceType.FullName, instanceType.FullName));
@@ -128,7 +128,7 @@ notFound:
             return new LiteralFieldAccessor(value, fieldTypeHandle);
         }
 
-        public sealed override EnumInfo GetEnumInfo(RuntimeTypeHandle typeHandle)
+        public sealed override void GetEnumInfo(RuntimeTypeHandle typeHandle, out string[] names, out object[] values, out bool isFlags)
         {
             // Handle the weird case of an enum type nested under a generic type that makes the
             // enum itself generic
@@ -141,7 +141,10 @@ notFound:
             // If the type is reflection blocked, we pretend there are no enum values defined
             if (ReflectionExecution.ExecutionEnvironment.IsReflectionBlocked(typeDefHandle))
             {
-                return new EnumInfo(RuntimeAugments.GetEnumUnderlyingType(typeHandle), Array.Empty<object>(), Array.Empty<string>(), false);
+                names = Array.Empty<string>();
+                values = Array.Empty<object>();
+                isFlags = false;
+                return;
             }
 
             QTypeDefinition qTypeDefinition;
@@ -152,15 +155,30 @@ notFound:
 
             if (qTypeDefinition.IsNativeFormatMetadataBased)
             {
-                return NativeFormatEnumInfo.Create(typeHandle, qTypeDefinition.NativeFormatReader, qTypeDefinition.NativeFormatHandle);
+                NativeFormatEnumInfo.GetEnumValuesAndNames(
+                    qTypeDefinition.NativeFormatReader,
+                    qTypeDefinition.NativeFormatHandle,
+                    out values,
+                    out names,
+                    out isFlags);
+                return;
             }
 #if ECMA_METADATA_SUPPORT
             if (qTypeDefinition.IsEcmaFormatMetadataBased)
             {
-                return EcmaFormatEnumInfo.Create(typeHandle, qTypeDefinition.EcmaFormatReader, qTypeDefinition.EcmaFormatHandle);
+                return EcmaFormatEnumInfo.Create<TUnderlyingValue>(typeHandle, qTypeDefinition.EcmaFormatReader, qTypeDefinition.EcmaFormatHandle);
             }
 #endif
-            return null;
+            names = Array.Empty<string>();
+            values = Array.Empty<object>();
+            isFlags = false;
+            return;
+        }
+
+        public override IntPtr GetDynamicInvokeThunk(MethodInvoker invoker)
+        {
+            return ((MethodInvokerWithMethodInvokeInfo)invoker).MethodInvokeInfo.InvokeThunk
+                ;
         }
     }
 }

@@ -120,7 +120,7 @@ namespace System.DirectoryServices.ActiveDirectory
             var dsCrackNames = (delegate* unmanaged<IntPtr, int, int, int, int, IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsCrackNamesW");
             if (dsCrackNames == null)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
 
             IntPtr name = Marshal.StringToHGlobalUni(distinguishedName);
@@ -175,7 +175,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         var dsFreeNameResultW = (delegate* unmanaged<IntPtr, void>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
                         if (dsFreeNameResultW == null)
                         {
-                            throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                            throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                         }
                         dsFreeNameResultW(results);
                     }
@@ -215,7 +215,7 @@ namespace System.DirectoryServices.ActiveDirectory
             var dsCrackNames = (delegate* unmanaged<IntPtr, int, int, int, int, IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsCrackNamesW");
             if (dsCrackNames == null)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
             IntPtr name = Marshal.StringToHGlobalUni(dnsName + "/");
             IntPtr ptr = Marshal.AllocHGlobal(IntPtr.Size);
@@ -250,7 +250,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         var dsFreeNameResultW = (delegate* unmanaged<IntPtr, void>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
                         if (dsFreeNameResultW == null)
                         {
-                            throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                            throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                         }
                         dsFreeNameResultW(results);
                     }
@@ -644,7 +644,7 @@ namespace System.DirectoryServices.ActiveDirectory
             var dsMakePasswordCredentials = (delegate* unmanaged<char*, char*, char*, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsMakePasswordCredentialsW");
             if (dsMakePasswordCredentials == null)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
 
             fixed (char* usernamePtr = username)
@@ -673,7 +673,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 var dsFreePasswordCredentials = (delegate* unmanaged<IntPtr, void>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsFreePasswordCredentials");
                 if (dsFreePasswordCredentials == null)
                 {
-                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                 }
                 dsFreePasswordCredentials(authIdentity);
             }
@@ -695,7 +695,7 @@ namespace System.DirectoryServices.ActiveDirectory
             var bindWithCred = (delegate* unmanaged<char*, char*, IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsBindWithCredW");
             if (bindWithCred == null)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
 
             fixed (char* domainControllerNamePtr = domainControllerName)
@@ -722,7 +722,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 var dsUnBind = (delegate* unmanaged<IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsUnBindW");
                 if (dsUnBind == null)
                 {
-                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                 }
                 _ = dsUnBind(&dsHandle);
             }
@@ -967,14 +967,14 @@ namespace System.DirectoryServices.ActiveDirectory
             int result = global::Interop.Advapi32.LogonUser(userName!, domainName, context.Password, LOGON32_LOGON_NEW_CREDENTIALS, LOGON32_PROVIDER_WINNT50, ref hToken);
             // check the result
             if (result == 0)
-                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
 
             try
             {
                 result = global::Interop.Advapi32.ImpersonateLoggedOnUser(hToken);
                 if (result == 0)
                 {
-                    result = Marshal.GetLastWin32Error();
+                    result = Marshal.GetLastPInvokeError();
                     throw ExceptionHelper.GetExceptionFromErrorCode(result);
                 }
             }
@@ -991,13 +991,13 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             IntPtr hThread = UnsafeNativeMethods.OpenThread(THREAD_ALL_ACCESS, false, global::Interop.Kernel32.GetCurrentThreadId());
             if (hThread == (IntPtr)0)
-                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
 
             try
             {
                 int result = UnsafeNativeMethods.ImpersonateAnonymousToken(hThread);
                 if (result == 0)
-                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
             finally
             {
@@ -1010,7 +1010,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (!global::Interop.Advapi32.RevertToSelf())
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
             }
         }
 
@@ -1872,7 +1872,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 result = NativeMethods.CompareString(LCID, compareFlags, lpString1, cchCount1, lpString2, cchCount2);
                 if (result == 0)
                 {
-                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastWin32Error());
+                    throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                 }
             }
             finally
@@ -2079,7 +2079,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                 out tokenHandle
                                 ))
                 {
-                    if ((error = Marshal.GetLastWin32Error()) == 1008) // ERROR_NO_TOKEN
+                    if ((error = Marshal.GetLastPInvokeError()) == 1008) // ERROR_NO_TOKEN
                     {
                         Debug.Assert(tokenHandle.IsInvalid);
                         tokenHandle.Dispose();
@@ -2091,7 +2091,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                         out tokenHandle
                                         ))
                         {
-                            int lastError = Marshal.GetLastWin32Error();
+                            int lastError = Marshal.GetLastPInvokeError();
                             throw new InvalidOperationException(SR.Format(SR.UnableToOpenToken, lastError));
                         }
                     }
@@ -2115,7 +2115,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                         out neededBufferSize);
 
                 int getTokenInfoError = 0;
-                if ((getTokenInfoError = Marshal.GetLastWin32Error()) != 122) // ERROR_INSUFFICIENT_BUFFER
+                if ((getTokenInfoError = Marshal.GetLastPInvokeError()) != 122) // ERROR_INSUFFICIENT_BUFFER
                 {
                     throw new InvalidOperationException(
                                     SR.Format(SR.UnableToRetrieveTokenInfo, getTokenInfoError));
@@ -2135,7 +2135,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (!success)
                 {
-                    int lastError = Marshal.GetLastWin32Error();
+                    int lastError = Marshal.GetLastPInvokeError();
                     throw new InvalidOperationException(
                                     SR.Format(SR.UnableToRetrieveTokenInfo, lastError));
                 }
@@ -2152,7 +2152,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 success = global::Interop.Advapi32.CopySid(userSidLength, pCopyOfUserSid, pUserSid);
                 if (!success)
                 {
-                    int lastError = Marshal.GetLastWin32Error();
+                    int lastError = Marshal.GetLastPInvokeError();
                     throw new InvalidOperationException(
                                     SR.Format(SR.UnableToRetrieveTokenInfo, lastError));
                 }
@@ -2210,7 +2210,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 bool success = global::Interop.Advapi32.CopySid(sidLength, pCopyOfSid, info.DomainSid);
                 if (!success)
                 {
-                    int lastError = Marshal.GetLastWin32Error();
+                    int lastError = Marshal.GetLastPInvokeError();
                     throw new InvalidOperationException(
                                     SR.Format(SR.UnableToRetrievePolicy, lastError));
                 }

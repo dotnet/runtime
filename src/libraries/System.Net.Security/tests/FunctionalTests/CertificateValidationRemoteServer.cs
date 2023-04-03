@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -94,7 +95,8 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [SkipOnPlatform(TestPlatforms.Android, "The invalid certificate is rejected by Android and the .NET validation code isn't reached")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/70981", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public Task ConnectWithRevocation_WithCallback(bool checkRevocation)
         {
             X509RevocationMode mode = checkRevocation ? X509RevocationMode.Online : X509RevocationMode.NoCheck;
@@ -104,35 +106,26 @@ namespace System.Net.Security.Tests
         [PlatformSpecific(TestPlatforms.Linux)]
         [ConditionalTheory]
         [OuterLoop("Subject to system load race conditions")]
-        [InlineData(false)]
-        [InlineData(true)]
-        public Task ConnectWithRevocation_StapledOcsp(bool offlineContext)
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public Task ConnectWithRevocation_StapledOcsp(bool offlineContext, bool noIntermediates)
         {
-            if (PlatformDetection.IsRedHatFamily7 && !offlineContext)
-            {
-                throw new SkipTestException("Active test issue https://github.com/dotnet/runtime/issues/71037");
-            }
-
             // Offline will only work if
             // a) the revocation has been checked recently enough that it is cached, or
             // b) the server stapled the response
             //
             // At high load, the server's background fetch might not have completed before
             // this test runs.
-            return ConnectWithRevocation_WithCallback_Core(X509RevocationMode.Offline, offlineContext);
+            return ConnectWithRevocation_WithCallback_Core(X509RevocationMode.Offline, offlineContext, noIntermediates);
         }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/70981", typeof(PlatformDetection), nameof(PlatformDetection.IsDebian10))]
         public Task ConnectWithRevocation_ServerCertWithoutContext_NoStapledOcsp()
         {
-            // Offline will only work if
-            // a) the revocation has been checked recently enough that it is cached, or
-            // b) the server stapled the response
-            //
-            // At high load, the server's background fetch might not have completed before
-            // this test runs.
+            // When using specific certificate, OCSP is disabled e.g. when SslStreamCertificateContext is passed in explicitly.
             return ConnectWithRevocation_WithCallback_Core(X509RevocationMode.Offline, offlineContext: null);
         }
 
@@ -194,7 +187,8 @@ namespace System.Net.Security.Tests
 
         private async Task ConnectWithRevocation_WithCallback_Core(
             X509RevocationMode revocationMode,
-            bool? offlineContext = false)
+            bool? offlineContext = false,
+            bool noIntermediates = false)
         {
             string offlinePart = offlineContext.HasValue ? offlineContext.GetValueOrDefault().ToString().ToLower() : "null";
             string serverName = $"{revocationMode.ToString().ToLower()}.{offlinePart}.server.example";
@@ -205,17 +199,39 @@ namespace System.Net.Security.Tests
                 PkiOptions.EndEntityRevocationViaOcsp | PkiOptions.CrlEverywhere,
                 out RevocationResponder responder,
                 out CertificateAuthority rootAuthority,
-                out CertificateAuthority intermediateAuthority,
+                out CertificateAuthority[] intermediateAuthorities,
                 out X509Certificate2 serverCert,
+                intermediateAuthorityCount: noIntermediates ? 0 : 1,
                 subjectName: serverName,
                 keySize: 2048,
                 extensions: TestHelper.BuildTlsServerCertExtensions(serverName));
+
+            CertificateAuthority issuingAuthority = noIntermediates ? rootAuthority : intermediateAuthorities[0];
+            X509Certificate2 issuerCert = issuingAuthority.CloneIssuerCert();
+            X509Certificate2 rootCert = rootAuthority.CloneIssuerCert();
 
             SslClientAuthenticationOptions clientOpts = new SslClientAuthenticationOptions
             {
                 TargetHost = serverName,
                 RemoteCertificateValidationCallback = CertificateValidationCallback,
-                CertificateRevocationCheckMode = revocationMode,
+                CertificateChainPolicy = new X509ChainPolicy
+                {
+                    RevocationMode = revocationMode,
+                    TrustMode = X509ChainTrustMode.CustomRootTrust,
+
+                    // The offline test will not know about revocation for the intermediate,
+                    // so change the policy to only check the end certificate.
+                    RevocationFlag = X509RevocationFlag.EndCertificateOnly,
+
+                    ExtraStore =
+                    {
+                        issuerCert,
+                    },
+                    CustomTrustStore =
+                    {
+                        rootCert,
+                    },
+                },
             };
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -225,70 +241,80 @@ namespace System.Net.Security.Tests
                 serverCert = temp;
             }
 
-            await using (clientStream)
-            await using (serverStream)
-            using (responder)
-            using (rootAuthority)
-            using (intermediateAuthority)
-            using (serverCert)
-            using (X509Certificate2 issuerCert = intermediateAuthority.CloneIssuerCert())
-            await using (SslStream tlsClient = new SslStream(clientStream))
-            await using (SslStream tlsServer = new SslStream(serverStream))
+            try
             {
-                intermediateAuthority.Revoke(serverCert, serverCert.NotBefore);
-
-                SslServerAuthenticationOptions serverOpts = new SslServerAuthenticationOptions();
-
-                if (offlineContext.HasValue)
+                await using (clientStream)
+                await using (serverStream)
+                using (responder)
+                using (rootAuthority)
+                using (serverCert)
+                using (issuerCert)
+                using (rootCert)
+                await using (SslStream tlsClient = new SslStream(clientStream))
+                await using (SslStream tlsServer = new SslStream(serverStream))
                 {
-                    serverOpts.ServerCertificateContext = SslStreamCertificateContext.Create(
-                        serverCert,
-                        new X509Certificate2Collection(issuerCert),
-                        offlineContext.GetValueOrDefault());
+                    issuingAuthority.Revoke(serverCert, serverCert.NotBefore);
 
-                    if (revocationMode == X509RevocationMode.Offline)
+                    SslServerAuthenticationOptions serverOpts = new SslServerAuthenticationOptions();
+
+                    if (offlineContext.HasValue)
                     {
-                        if (offlineContext.GetValueOrDefault(false))
+                        serverOpts.ServerCertificateContext = SslStreamCertificateContext.Create(
+                            serverCert,
+                            new X509Certificate2Collection(issuerCert),
+                            offlineContext.GetValueOrDefault());
+
+                        if (revocationMode == X509RevocationMode.Offline)
                         {
-                            // Add a delay just to show we're not winning because of race conditions.
-                            await Task.Delay(200);
-                        }
-                        else
-                        {
-                            if (!OperatingSystem.IsLinux())
+                            if (offlineContext.GetValueOrDefault(false))
                             {
-                                throw new InvalidOperationException(
-                                    "This test configuration uses reflection and is only defined for Linux.");
+                                // Add a delay just to show we're not winning because of race conditions.
+                                await Task.Delay(200);
                             }
-
-                            FieldInfo pendingDownloadTaskField = typeof(SslStreamCertificateContext).GetField(
-                                "_pendingDownload",
-                                BindingFlags.Instance | BindingFlags.NonPublic);
-
-                            if (pendingDownloadTaskField is null)
+                            else
                             {
-                                throw new InvalidOperationException("Cannot find the pending download field.");
-                            }
+                                if (!OperatingSystem.IsLinux())
+                                {
+                                    throw new InvalidOperationException(
+                                        "This test configuration uses reflection and is only defined for Linux.");
+                                }
 
-                            Task download = (Task)pendingDownloadTaskField.GetValue(serverOpts.ServerCertificateContext);
+                                FieldInfo pendingDownloadTaskField = typeof(SslStreamCertificateContext).GetField(
+                                    "_pendingDownload",
+                                    BindingFlags.Instance | BindingFlags.NonPublic);
 
-                            // If it's null, it should mean it has already finished. If not, it might not have.
-                            if (download is not null)
-                            {
-                                await download;
+                                if (pendingDownloadTaskField is null)
+                                {
+                                    throw new InvalidOperationException("Cannot find the pending download field.");
+                                }
+
+                                Task download = (Task)pendingDownloadTaskField.GetValue(serverOpts.ServerCertificateContext);
+
+                                // If it's null, it should mean it has already finished. If not, it might not have.
+                                if (download is not null)
+                                {
+                                    await download;
+                                }
                             }
                         }
                     }
+                    else
+                    {
+                        serverOpts.ServerCertificate = serverCert;
+                    }
+
+                    Task serverTask = tlsServer.AuthenticateAsServerAsync(serverOpts);
+                    Task clientTask = tlsClient.AuthenticateAsClientAsync(clientOpts);
+
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(clientTask, serverTask);
                 }
-                else
+            }
+            finally
+            {
+                foreach (CertificateAuthority intermediateAuthority in intermediateAuthorities)
                 {
-                    serverOpts.ServerCertificate = serverCert;
+                    intermediateAuthority.Dispose();
                 }
-
-                Task serverTask = tlsServer.AuthenticateAsServerAsync(serverOpts);
-                Task clientTask = tlsClient.AuthenticateAsClientAsync(clientOpts);
-
-                await TestConfiguration.WhenAllOrAnyFailedWithTimeout(clientTask, serverTask);
             }
 
             static bool CertificateValidationCallback(
@@ -299,20 +325,6 @@ namespace System.Net.Security.Tests
             {
                 Assert.NotNull(certificate);
                 Assert.NotNull(chain);
-
-                sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateChainErrors;
-
-                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                chain.ChainPolicy.CustomTrustStore.Add(chain.ChainElements[^1].Certificate);
-
-                // The offline test will not know about revocation for the intermediate,
-                // so change the policy to only check the end certificate.
-                chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EndCertificateOnly;
-
-                if (!chain.Build((X509Certificate2)certificate))
-                {
-                    sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
-                }
 
                 if (chain.ChainPolicy.RevocationMode == X509RevocationMode.NoCheck)
                 {
@@ -335,9 +347,8 @@ namespace System.Net.Security.Tests
                     // process, because there's no OCSP data.
                     Assert.Equal(SslPolicyErrors.RemoteCertificateChainErrors, sslPolicyErrors);
 
-                    Assert.Contains(
-                        chain.ChainElements[0].ChainElementStatus,
-                        cs => cs.Status == X509ChainStatusFlags.RevocationStatusUnknown);
+                    X509ChainStatusFlags[] flags = chain.ChainElements[0].ChainElementStatus.Select(cs => cs.Status).ToArray();
+                    Assert.Contains(X509ChainStatusFlags.RevocationStatusUnknown, flags);
                 }
                 else
                 {
@@ -345,9 +356,8 @@ namespace System.Net.Security.Tests
                     // say the chain isn't happy.
                     Assert.Equal(SslPolicyErrors.RemoteCertificateChainErrors, sslPolicyErrors);
 
-                    Assert.Contains(
-                        chain.ChainElements[0].ChainElementStatus,
-                        cs => cs.Status == X509ChainStatusFlags.Revoked);
+                    X509ChainStatusFlags[] flags = chain.ChainElements[0].ChainElementStatus.Select(cs => cs.Status).ToArray();
+                    Assert.Contains(X509ChainStatusFlags.Revoked, flags);
                 }
 
                 return true;

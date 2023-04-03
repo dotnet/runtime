@@ -114,14 +114,14 @@ namespace System.Net.Http.Functional.Tests
                             cert,
                             clientCertificateRequired: true,
                             enabledSslProtocols: SslProtocols.Tls12,
-                            checkCertificateRevocation: false).WaitAsync(TimeSpan.FromSeconds(10));
+                            checkCertificateRevocation: false).WaitAsync(TestHelper.PassingTestTimeout);
                     }
                 }
 
-                await ResponseConnectedStreamConformanceTests.ReadHeadersAsync(server).WaitAsync(TimeSpan.FromSeconds(10));
+                await ResponseConnectedStreamConformanceTests.ReadHeadersAsync(server).WaitAsync(TestHelper.PassingTestTimeout);
                 await server.WriteAsync(Encoding.ASCII.GetBytes(GetResponseHeaders()));
 
-                using HttpResponseMessage response = await clientTask.WaitAsync(TimeSpan.FromSeconds(10));
+                using HttpResponseMessage response = await clientTask.WaitAsync(TestHelper.PassingTestTimeout);
                 using Stream clientStream = response.Content.ReadAsStream();
                 Assert.False(sawZeroByteRead.Task.IsCompleted);
 
@@ -129,14 +129,14 @@ namespace System.Net.Http.Functional.Tests
                 Assert.False(zeroByteReadTask.IsCompleted);
 
                 // The zero-byte read should block until data is actually available
-                await sawZeroByteRead.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                await sawZeroByteRead.Task.WaitAsync(TestHelper.PassingTestTimeout);
                 Assert.False(zeroByteReadTask.IsCompleted);
 
                 byte[] data = "Hello"u8.ToArray();
                 await WriteAsync(server, data);
                 await server.FlushAsync();
 
-                Assert.Equal(0, await zeroByteReadTask.WaitAsync(TimeSpan.FromSeconds(10)));
+                Assert.Equal(0, await zeroByteReadTask.WaitAsync(TestHelper.PassingTestTimeout));
 
                 // Now that data is available, a zero-byte read should complete synchronously
                 zeroByteReadTask = StreamConformanceTests.ReadAsync(readMode, clientStream, Array.Empty<byte>(), 0, 0, CancellationToken.None);
@@ -147,7 +147,7 @@ namespace System.Net.Http.Functional.Tests
                 int read = 0;
                 while (read < data.Length)
                 {
-                    read += await StreamConformanceTests.ReadAsync(readMode, clientStream, readBuffer, read, readBuffer.Length - read, CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(10));
+                    read += await StreamConformanceTests.ReadAsync(readMode, clientStream, readBuffer, read, readBuffer.Length - read, CancellationToken.None).WaitAsync(TestHelper.PassingTestTimeout);
                 }
 
                 Assert.Equal(data.Length, read);
@@ -157,35 +157,6 @@ namespace System.Net.Http.Functional.Tests
             {
                 httpConnection.Dispose();
                 server.Dispose();
-            }
-        }
-
-        private sealed class ReadInterceptStream : DelegatingStream
-        {
-            private readonly Action<int> _readCallback;
-
-            public ReadInterceptStream(Stream innerStream, Action<int> readCallback)
-                : base(innerStream)
-            {
-                _readCallback = readCallback;
-            }
-
-            public override int Read(Span<byte> buffer)
-            {
-                _readCallback(buffer.Length);
-                return base.Read(buffer);
-            }
-
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                _readCallback(count);
-                return base.Read(buffer, offset, count);
-            }
-
-            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
-            {
-                _readCallback(buffer.Length);
-                return base.ReadAsync(buffer, cancellationToken);
             }
         }
     }
@@ -297,6 +268,77 @@ namespace System.Net.Http.Functional.Tests
                     return Task.Run(() => stream.Read(buffer));
                 }
             }
+        }
+    }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+    public sealed class Http2ConnectionZeroByteReadTest : HttpClientHandlerTestBase
+    {
+        public Http2ConnectionZeroByteReadTest(ITestOutputHelper output) : base(output) { }
+
+        protected override Version UseVersion => HttpVersion.Version20;
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConnectionIssuesZeroByteReadsOnUnderlyingStream(bool useSsl)
+        {
+            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClientHandler handler = CreateHttpClientHandler();
+
+                int zeroByteReads = 0;
+                GetUnderlyingSocketsHttpHandler(handler).PlaintextStreamFilter = (context, _) =>
+                {
+                    return new ValueTask<Stream>(new ReadInterceptStream(context.PlaintextStream, read =>
+                    {
+                        if (read == 0)
+                        {
+                            zeroByteReads++;
+                        }
+                    }));
+                };
+
+                using HttpClient client = CreateHttpClient(handler);
+                client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+                Assert.Equal("Foo", await client.GetStringAsync(uri));
+
+                Assert.NotEqual(0, zeroByteReads);
+            },
+            async server =>
+            {
+                await server.HandleRequestAsync(content: "Foo");
+            }, http2Options: new Http2Options { UseSsl = useSsl });
+        }
+    }
+
+    file sealed class ReadInterceptStream : DelegatingStream
+    {
+        private readonly Action<int> _readCallback;
+
+        public ReadInterceptStream(Stream innerStream, Action<int> readCallback)
+            : base(innerStream)
+        {
+            _readCallback = readCallback;
+        }
+
+        public override int Read(Span<byte> buffer)
+        {
+            _readCallback(buffer.Length);
+            return base.Read(buffer);
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            _readCallback(count);
+            return base.Read(buffer, offset, count);
+        }
+
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            _readCallback(buffer.Length);
+            return base.ReadAsync(buffer, cancellationToken);
         }
     }
 }

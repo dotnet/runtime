@@ -11,8 +11,10 @@ namespace System.Linq
     public static class Queryable
     {
         internal const string InMemoryQueryableExtensionMethodsRequiresUnreferencedCode = "Enumerating in-memory collections as IQueryable can require unreferenced code because expressions referencing IQueryable extension methods can get rebound to IEnumerable extension methods. The IEnumerable extension methods could be trimmed causing the application to fail at runtime.";
+        internal const string InMemoryQueryableExtensionMethodsRequiresDynamicCode = "Enumerating in-memory collections as IQueryable can require creating new generic types or methods, which requires creating code at runtime. This may not work when AOT compiling.";
 
         [RequiresUnreferencedCode(InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
+        [RequiresDynamicCode(InMemoryQueryableExtensionMethodsRequiresDynamicCode)]
         public static IQueryable<TElement> AsQueryable<TElement>(this IEnumerable<TElement> source)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -21,6 +23,7 @@ namespace System.Linq
         }
 
         [RequiresUnreferencedCode(InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
+        [RequiresDynamicCode(InMemoryQueryableExtensionMethodsRequiresDynamicCode)]
         public static IQueryable AsQueryable(this IEnumerable source)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -48,9 +51,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Where_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, IQueryable<TSource>>(Where).Method,
+                    source.Expression, Expression.Quote(predicate)));
         }
 
         [DynamicDependency("Where`1", typeof(Enumerable))]
@@ -62,9 +64,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Where_Index_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, int, bool>>, IQueryable<TSource>>(Where).Method,
+                    source.Expression, Expression.Quote(predicate)));
         }
 
         [DynamicDependency("OfType`1", typeof(Enumerable))]
@@ -75,7 +76,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.OfType_TResult_1(typeof(TResult)), source.Expression));
+                    new Func<IQueryable, IQueryable<TResult>>(OfType<TResult>).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Cast`1", typeof(Enumerable))]
@@ -86,7 +88,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Cast_TResult_1(typeof(TResult)), source.Expression));
+                    new Func<IQueryable, IQueryable<TResult>>(Cast<TResult>).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Select`2", typeof(Enumerable))]
@@ -98,9 +101,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Select_TSource_TResult_2(typeof(TSource), typeof(TResult)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TResult>>, IQueryable<TResult>>(Select).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Select`2", typeof(Enumerable))]
@@ -112,9 +114,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Select_Index_TSource_TResult_2(typeof(TSource), typeof(TResult)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, int, TResult>>, IQueryable<TResult>>(Select).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("SelectMany`2", typeof(Enumerable))]
@@ -126,9 +127,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.SelectMany_TSource_TResult_2(typeof(TSource), typeof(TResult)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, IEnumerable<TResult>>>, IQueryable<TResult>>(SelectMany).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("SelectMany`2", typeof(Enumerable))]
@@ -140,9 +140,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.SelectMany_Index_TSource_TResult_2(typeof(TSource), typeof(TResult)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, int, IEnumerable<TResult>>>, IQueryable<TResult>>(SelectMany).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("SelectMany`3", typeof(Enumerable))]
@@ -155,9 +154,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.SelectMany_Index_TSource_TCollection_TResult_3(typeof(TSource), typeof(TCollection), typeof(TResult)),
-                    source.Expression, Expression.Quote(collectionSelector), Expression.Quote(resultSelector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, int, IEnumerable<TCollection>>>, Expression<Func<TSource, TCollection, TResult>>, IQueryable<TResult>>(SelectMany).Method,
+                    source.Expression, Expression.Quote(collectionSelector), Expression.Quote(resultSelector)));
         }
 
         [DynamicDependency("SelectMany`3", typeof(Enumerable))]
@@ -170,9 +168,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.SelectMany_TSource_TCollection_TResult_3(typeof(TSource), typeof(TCollection), typeof(TResult)),
-                    source.Expression, Expression.Quote(collectionSelector), Expression.Quote(resultSelector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, IEnumerable<TCollection>>>, Expression<Func<TSource, TCollection, TResult>>, IQueryable<TResult>>(SelectMany).Method,
+                    source.Expression, Expression.Quote(collectionSelector), Expression.Quote(resultSelector)));
         }
 
         private static Expression GetSourceExpression<TSource>(IEnumerable<TSource> source)
@@ -193,7 +190,8 @@ namespace System.Linq
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Join_TOuter_TInner_TKey_TResult_5(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)), outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector)));
+                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, Expression<Func<TOuter, TInner, TResult>>, IQueryable<TResult>>(Join).Method,
+                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector)));
         }
 
         [DynamicDependency("Join`4", typeof(Enumerable))]
@@ -208,7 +206,8 @@ namespace System.Linq
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Join_TOuter_TInner_TKey_TResult_6(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)), outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
+                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, Expression<Func<TOuter, TInner, TResult>>, IEqualityComparer<TKey>, IQueryable<TResult>>(Join).Method,
+                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         [DynamicDependency("GroupJoin`4", typeof(Enumerable))]
@@ -223,7 +222,8 @@ namespace System.Linq
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.GroupJoin_TOuter_TInner_TKey_TResult_5(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)), outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector)));
+                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, Expression<Func<TOuter, IEnumerable<TInner>, TResult>>, IQueryable<TResult>>(GroupJoin).Method,
+                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector)));
         }
 
         [DynamicDependency("GroupJoin`4", typeof(Enumerable))]
@@ -238,7 +238,8 @@ namespace System.Linq
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.GroupJoin_TOuter_TInner_TKey_TResult_6(typeof(TOuter), typeof(TInner), typeof(TKey), typeof(TResult)), outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
+                    new Func<IQueryable<TOuter>, IEnumerable<TInner>, Expression<Func<TOuter, TKey>>, Expression<Func<TInner, TKey>>, Expression<Func<TOuter, IEnumerable<TInner>, TResult>>, IEqualityComparer<TKey>, IQueryable<TResult>>(GroupJoin).Method,
+                    outer.Expression, GetSourceExpression(inner), Expression.Quote(outerKeySelector), Expression.Quote(innerKeySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         /// <summary>
@@ -273,9 +274,8 @@ namespace System.Linq
             return (IOrderedQueryable<T>)source.Provider.CreateQuery<T>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Order_T_1(typeof(T)),
-                    source.Expression
-                    ));
+                    new Func<IQueryable<T>, IOrderedQueryable<T>>(Order).Method,
+                    source.Expression));
         }
 
         /// <summary>
@@ -311,9 +311,8 @@ namespace System.Linq
             return (IOrderedQueryable<T>)source.Provider.CreateQuery<T>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Order_T_2(typeof(T)),
-                    source.Expression, Expression.Constant(comparer, typeof(IComparer<T>))
-                    ));
+                    new Func<IQueryable<T>, IComparer<T>, IOrderedQueryable<T>>(Order).Method,
+                    source.Expression, Expression.Constant(comparer, typeof(IComparer<T>))));
         }
 
         [DynamicDependency("OrderBy`2", typeof(Enumerable))]
@@ -325,9 +324,8 @@ namespace System.Linq
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.OrderBy_TSource_TKey_2(typeof(TSource), typeof(TKey)),
-                    source.Expression, Expression.Quote(keySelector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IOrderedQueryable<TSource>>(OrderBy).Method,
+                    source.Expression, Expression.Quote(keySelector)));
         }
 
         [DynamicDependency("OrderBy`2", typeof(Enumerable))]
@@ -339,9 +337,8 @@ namespace System.Linq
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.OrderBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
-                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IComparer<TKey>, IOrderedQueryable<TSource>>(OrderBy).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))));
         }
 
         /// <summary>
@@ -376,9 +373,8 @@ namespace System.Linq
             return (IOrderedQueryable<T>)source.Provider.CreateQuery<T>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.OrderDescending_T_1(typeof(T)),
-                    source.Expression
-                    ));
+                    new Func<IQueryable<T>, IOrderedQueryable<T>>(OrderDescending).Method,
+                    source.Expression));
         }
 
         /// <summary>
@@ -414,9 +410,8 @@ namespace System.Linq
             return (IOrderedQueryable<T>)source.Provider.CreateQuery<T>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.OrderDescending_T_2(typeof(T)),
-                    source.Expression, Expression.Constant(comparer, typeof(IComparer<T>))
-                    ));
+                    new Func<IQueryable<T>, IComparer<T>, IOrderedQueryable<T>>(OrderDescending).Method,
+                    source.Expression, Expression.Constant(comparer, typeof(IComparer<T>))));
         }
 
         [DynamicDependency("OrderByDescending`2", typeof(Enumerable))]
@@ -428,9 +423,8 @@ namespace System.Linq
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.OrderByDescending_TSource_TKey_2(typeof(TSource), typeof(TKey)),
-                    source.Expression, Expression.Quote(keySelector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IOrderedQueryable<TSource>>(OrderByDescending).Method,
+                    source.Expression, Expression.Quote(keySelector)));
         }
 
         [DynamicDependency("OrderByDescending`2", typeof(Enumerable))]
@@ -442,9 +436,8 @@ namespace System.Linq
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.OrderByDescending_TSource_TKey_3(typeof(TSource), typeof(TKey)),
-                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IComparer<TKey>, IOrderedQueryable<TSource>>(OrderByDescending).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))));
         }
 
         [DynamicDependency("ThenBy`2", typeof(Enumerable))]
@@ -456,9 +449,8 @@ namespace System.Linq
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.ThenBy_TSource_TKey_2(typeof(TSource), typeof(TKey)),
-                    source.Expression, Expression.Quote(keySelector)
-                    ));
+                    new Func<IOrderedQueryable<TSource>, Expression<Func<TSource, TKey>>, IOrderedQueryable<TSource>>(ThenBy).Method,
+                    source.Expression, Expression.Quote(keySelector)));
         }
 
         [DynamicDependency("ThenBy`2", typeof(Enumerable))]
@@ -470,9 +462,8 @@ namespace System.Linq
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.ThenBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
-                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))
-                    ));
+                    new Func<IOrderedQueryable<TSource>, Expression<Func<TSource, TKey>>, IComparer<TKey>, IOrderedQueryable<TSource>>(ThenBy).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))));
         }
 
         [DynamicDependency("ThenByDescending`2", typeof(Enumerable))]
@@ -484,9 +475,8 @@ namespace System.Linq
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.ThenByDescending_TSource_TKey_2(typeof(TSource), typeof(TKey)),
-                    source.Expression, Expression.Quote(keySelector)
-                    ));
+                    new Func<IOrderedQueryable<TSource>, Expression<Func<TSource, TKey>>, IOrderedQueryable<TSource>>(ThenByDescending).Method,
+                    source.Expression, Expression.Quote(keySelector)));
         }
 
         [DynamicDependency("ThenByDescending`2", typeof(Enumerable))]
@@ -498,9 +488,8 @@ namespace System.Linq
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.ThenByDescending_TSource_TKey_3(typeof(TSource), typeof(TKey)),
-                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))
-                    ));
+                    new Func<IOrderedQueryable<TSource>, Expression<Func<TSource, TKey>>, IComparer<TKey>, IOrderedQueryable<TSource>>(ThenByDescending).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IComparer<TKey>))));
         }
 
         [DynamicDependency("Take`1", typeof(Enumerable))]
@@ -511,9 +500,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Take_Int32_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Constant(count)
-                    ));
+                    new Func<IQueryable<TSource>, int, IQueryable<TSource>>(Take).Method,
+                    source.Expression, Expression.Constant(count)));
         }
 
         /// <summary>Returns a specified range of contiguous elements from a sequence.</summary>
@@ -530,9 +518,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Take_Range_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Constant(range)
-                    ));
+                    new Func<IQueryable<TSource>, Range, IQueryable<TSource>>(Take).Method,
+                    source.Expression, Expression.Constant(range)));
         }
 
         [DynamicDependency("TakeWhile`1", typeof(Enumerable))]
@@ -544,9 +531,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.TakeWhile_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, IQueryable<TSource>>(TakeWhile).Method,
+                    source.Expression, Expression.Quote(predicate)));
         }
 
         [DynamicDependency("TakeWhile`1", typeof(Enumerable))]
@@ -558,9 +544,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.TakeWhile_Index_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, int, bool>>, IQueryable<TSource>>(TakeWhile).Method,
+                    source.Expression, Expression.Quote(predicate)));
         }
 
         [DynamicDependency("Skip`1", typeof(Enumerable))]
@@ -571,9 +556,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Skip_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Constant(count)
-                    ));
+                    new Func<IQueryable<TSource>, int, IQueryable<TSource>>(Skip).Method,
+                    source.Expression, Expression.Constant(count)));
         }
 
         [DynamicDependency("SkipWhile`1", typeof(Enumerable))]
@@ -585,9 +569,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.SkipWhile_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, IQueryable<TSource>>(SkipWhile).Method,
+                    source.Expression, Expression.Quote(predicate)));
         }
 
         [DynamicDependency("SkipWhile`1", typeof(Enumerable))]
@@ -599,9 +582,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.SkipWhile_Index_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, int, bool>>, IQueryable<TSource>>(SkipWhile).Method,
+                    source.Expression, Expression.Quote(predicate)));
         }
 
         [DynamicDependency("GroupBy`2", typeof(Enumerable))]
@@ -613,9 +595,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<IGrouping<TKey, TSource>>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.GroupBy_TSource_TKey_2(typeof(TSource), typeof(TKey)),
-                    source.Expression, Expression.Quote(keySelector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IQueryable<IGrouping<TKey, TSource>>>(GroupBy).Method,
+                    source.Expression, Expression.Quote(keySelector)));
         }
 
         [DynamicDependency("GroupBy`3", typeof(Enumerable))]
@@ -628,9 +609,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<IGrouping<TKey, TElement>>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.GroupBy_TSource_TKey_TElement_3(typeof(TSource), typeof(TKey), typeof(TElement)),
-                    source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, Expression<Func<TSource, TElement>>, IQueryable<IGrouping<TKey, TElement>>>(GroupBy).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector)));
         }
 
         [DynamicDependency("GroupBy`2", typeof(Enumerable))]
@@ -642,9 +622,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<IGrouping<TKey, TSource>>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.GroupBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
-                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IEqualityComparer<TKey>, IQueryable<IGrouping<TKey, TSource>>>(GroupBy).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         [DynamicDependency("GroupBy`3", typeof(Enumerable))]
@@ -657,7 +636,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<IGrouping<TKey, TElement>>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.GroupBy_TSource_TKey_TElement_4(typeof(TSource), typeof(TKey), typeof(TElement)), source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, Expression<Func<TSource, TElement>>, IEqualityComparer<TKey>, IQueryable<IGrouping<TKey, TElement>>>(GroupBy).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         [DynamicDependency("GroupBy`4", typeof(Enumerable))]
@@ -671,7 +651,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.GroupBy_TSource_TKey_TElement_TResult_4(typeof(TSource), typeof(TKey), typeof(TElement), typeof(TResult)), source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Quote(resultSelector)));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, Expression<Func<TSource, TElement>>, Expression<Func<TKey, IEnumerable<TElement>, TResult>>, IQueryable<TResult>>(GroupBy).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Quote(resultSelector)));
         }
 
         [DynamicDependency("GroupBy`3", typeof(Enumerable))]
@@ -684,9 +665,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.GroupBy_TSource_TKey_TResult_3(typeof(TSource), typeof(TKey), typeof(TResult)),
-                    source.Expression, Expression.Quote(keySelector), Expression.Quote(resultSelector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, Expression<Func<TKey, IEnumerable<TSource>, TResult>>, IQueryable<TResult>>(GroupBy).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Quote(resultSelector)));
         }
 
         [DynamicDependency("GroupBy`3", typeof(Enumerable))]
@@ -699,7 +679,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.GroupBy_TSource_TKey_TResult_4(typeof(TSource), typeof(TKey), typeof(TResult)), source.Expression, Expression.Quote(keySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, Expression<Func<TKey, IEnumerable<TSource>, TResult>>, IEqualityComparer<TKey>, IQueryable<TResult>>(GroupBy).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         [DynamicDependency("GroupBy`4", typeof(Enumerable))]
@@ -713,7 +694,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.GroupBy_TSource_TKey_TElement_TResult_5(typeof(TSource), typeof(TKey), typeof(TElement), typeof(TResult)), source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, Expression<Func<TSource, TElement>>, Expression<Func<TKey, IEnumerable<TElement>, TResult>>, IEqualityComparer<TKey>, IQueryable<TResult>>(GroupBy).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Quote(elementSelector), Expression.Quote(resultSelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         [DynamicDependency("Distinct`1", typeof(Enumerable))]
@@ -724,7 +706,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Distinct_TSource_1(typeof(TSource)), source.Expression));
+                    new Func<IQueryable<TSource>, IQueryable<TSource>>(Distinct).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Distinct`1", typeof(Enumerable))]
@@ -735,9 +718,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Distinct_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
-                    ));
+                    new Func<IQueryable<TSource>, IEqualityComparer<TSource>, IQueryable<TSource>>(Distinct).Method,
+                    source.Expression, Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))));
         }
 
         /// <summary>Returns distinct elements from a sequence according to a specified key selector function.</summary>
@@ -756,9 +738,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.DistinctBy_TSource_TKey_2(typeof(TSource), typeof(TKey)),
-                    source.Expression, Expression.Quote(keySelector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IQueryable<TSource>>(DistinctBy).Method,
+                    source.Expression, Expression.Quote(keySelector)));
         }
 
         /// <summary>Returns distinct elements from a sequence according to a specified key selector function.</summary>
@@ -778,9 +759,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.DistinctBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
-                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IEqualityComparer<TKey>, IQueryable<TSource>>(DistinctBy).Method,
+                    source.Expression, Expression.Quote(keySelector), Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         /// <summary>Split the elements of a sequence into chunks of size at most <paramref name="size"/>.</summary>
@@ -802,9 +782,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource[]>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Chunk_TSource_1(typeof(TSource)),
-                    source.Expression, Expression.Constant(size)
-                    ));
+                    new Func<IQueryable<TSource>, int, IQueryable<TSource[]>>(Chunk).Method,
+                    source.Expression, Expression.Constant(size)));
         }
 
         [DynamicDependency("Concat`1", typeof(Enumerable))]
@@ -816,9 +795,8 @@ namespace System.Linq
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Concat_TSource_2(typeof(TSource)),
-                    source1.Expression, GetSourceExpression(source2)
-                    ));
+                    new Func<IQueryable<TSource>, IEnumerable<TSource>, IQueryable<TSource>>(Concat).Method,
+                    source1.Expression, GetSourceExpression(source2)));
         }
 
         [DynamicDependency("Zip`2", typeof(Enumerable))]
@@ -830,7 +808,7 @@ namespace System.Linq
             return source1.Provider.CreateQuery<(TFirst, TSecond)>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Zip_TFirst_TSecond_2(typeof(TFirst), typeof(TSecond)),
+                    new Func<IQueryable<TFirst>, IEnumerable<TSecond>, IQueryable<(TFirst, TSecond)>>(Zip).Method,
                     source1.Expression, GetSourceExpression(source2)));
         }
 
@@ -844,9 +822,8 @@ namespace System.Linq
             return source1.Provider.CreateQuery<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Zip_TFirst_TSecond_TResult_3(typeof(TFirst), typeof(TSecond), typeof(TResult)),
-                    source1.Expression, GetSourceExpression(source2), Expression.Quote(resultSelector)
-                    ));
+                    new Func<IQueryable<TFirst>, IEnumerable<TSecond>, Expression<Func<TFirst, TSecond, TResult>>, IQueryable<TResult>>(Zip).Method,
+                    source1.Expression, GetSourceExpression(source2), Expression.Quote(resultSelector)));
         }
 
         /// <summary>
@@ -869,9 +846,8 @@ namespace System.Linq
             return source1.Provider.CreateQuery<(TFirst, TSecond, TThird)>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Zip_TFirst_TSecond_TThird_3(typeof(TFirst), typeof(TSecond), typeof(TThird)),
-                    source1.Expression, GetSourceExpression(source2), GetSourceExpression(source3)
-                    ));
+                    new Func<IQueryable<TFirst>, IEnumerable<TSecond>, IEnumerable<TThird>, IQueryable<(TFirst, TSecond, TThird)>>(Zip).Method,
+                    source1.Expression, GetSourceExpression(source2), GetSourceExpression(source3)));
         }
 
         [DynamicDependency("Union`1", typeof(Enumerable))]
@@ -883,9 +859,8 @@ namespace System.Linq
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Union_TSource_2(typeof(TSource)),
-                    source1.Expression, GetSourceExpression(source2)
-                    ));
+                    new Func<IQueryable<TSource>, IEnumerable<TSource>, IQueryable<TSource>>(Union).Method,
+                    source1.Expression, GetSourceExpression(source2)));
         }
 
         [DynamicDependency("Union`1", typeof(Enumerable))]
@@ -897,11 +872,10 @@ namespace System.Linq
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Union_TSource_3(typeof(TSource)),
+                    new Func<IQueryable<TSource>, IEnumerable<TSource>, IEqualityComparer<TSource>, IQueryable<TSource>>(Union).Method,
                     source1.Expression,
                     GetSourceExpression(source2),
-                    Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
-                    ));
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))));
         }
 
         /// <summary>Produces the set union of two sequences according to a specified key selector function.</summary>
@@ -922,9 +896,8 @@ namespace System.Linq
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.UnionBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
-                    source1.Expression, GetSourceExpression(source2), Expression.Quote(keySelector)
-                    ));
+                    new Func<IQueryable<TSource>, IEnumerable<TSource>, Expression<Func<TSource, TKey>>, IQueryable<TSource>>(UnionBy).Method,
+                    source1.Expression, GetSourceExpression(source2), Expression.Quote(keySelector)));
         }
 
         /// <summary>Produces the set union of two sequences according to a specified key selector function.</summary>
@@ -946,12 +919,11 @@ namespace System.Linq
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.UnionBy_TSource_TKey_4(typeof(TSource), typeof(TKey)),
+                    new Func<IQueryable<TSource>, IEnumerable<TSource>, Expression<Func<TSource, TKey>>, IEqualityComparer<TKey>, IQueryable<TSource>>(UnionBy).Method,
                     source1.Expression,
                     GetSourceExpression(source2),
                     Expression.Quote(keySelector),
-                    Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))
-                    ));
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         [DynamicDependency("Intersect`1", typeof(Enumerable))]
@@ -963,9 +935,8 @@ namespace System.Linq
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Intersect_TSource_2(typeof(TSource)),
-                    source1.Expression, GetSourceExpression(source2)
-                    ));
+                    new Func<IQueryable<TSource>, IEnumerable<TSource>, IQueryable<TSource>>(Intersect).Method,
+                    source1.Expression, GetSourceExpression(source2)));
         }
 
         [DynamicDependency("Intersect`1", typeof(Enumerable))]
@@ -977,11 +948,10 @@ namespace System.Linq
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Intersect_TSource_3(typeof(TSource)),
+                    new Func<IQueryable<TSource>, IEnumerable<TSource>, IEqualityComparer<TSource>, IQueryable<TSource>>(Intersect).Method,
                     source1.Expression,
                     GetSourceExpression(source2),
-                    Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
-                    ));
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))));
         }
 
         /// <summary>Produces the set intersection of two sequences according to a specified key selector function.</summary>
@@ -1002,11 +972,10 @@ namespace System.Linq
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.IntersectBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
+                    new Func<IQueryable<TSource>, IEnumerable<TKey>, Expression<Func<TSource, TKey>>, IQueryable<TSource>>(IntersectBy).Method,
                     source1.Expression,
                     GetSourceExpression(source2),
-                    Expression.Quote(keySelector)
-                    ));
+                    Expression.Quote(keySelector)));
         }
 
         /// <summary>Produces the set intersection of two sequences according to a specified key selector function.</summary>
@@ -1028,12 +997,11 @@ namespace System.Linq
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.IntersectBy_TSource_TKey_4(typeof(TSource), typeof(TKey)),
+                    new Func<IQueryable<TSource>, IEnumerable<TKey>, Expression<Func<TSource, TKey>>, IEqualityComparer<TKey>, IQueryable<TSource>>(IntersectBy).Method,
                     source1.Expression,
                     GetSourceExpression(source2),
                     Expression.Quote(keySelector),
-                    Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))
-                    ));
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         [DynamicDependency("Except`1", typeof(Enumerable))]
@@ -1045,9 +1013,8 @@ namespace System.Linq
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Except_TSource_2(typeof(TSource)),
-                    source1.Expression, GetSourceExpression(source2)
-                    ));
+                    new Func<IQueryable<TSource>, IEnumerable<TSource>, IQueryable<TSource>>(Except).Method,
+                    source1.Expression, GetSourceExpression(source2)));
         }
 
         [DynamicDependency("Except`1", typeof(Enumerable))]
@@ -1059,11 +1026,10 @@ namespace System.Linq
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Except_TSource_3(typeof(TSource)),
+                    new Func<IQueryable<TSource>, IEnumerable<TSource>, IEqualityComparer<TSource>, IQueryable<TSource>>(Except).Method,
                     source1.Expression,
                     GetSourceExpression(source2),
-                    Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
-                    ));
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))));
         }
 
         /// <summary>
@@ -1085,11 +1051,10 @@ namespace System.Linq
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.ExceptBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
+                    new Func<IQueryable<TSource>, IEnumerable<TKey>, Expression<Func<TSource, TKey>>, IQueryable<TSource>>(ExceptBy).Method,
                     source1.Expression,
                     GetSourceExpression(source2),
-                    Expression.Quote(keySelector)
-                    ));
+                    Expression.Quote(keySelector)));
         }
 
         /// <summary>
@@ -1112,12 +1077,11 @@ namespace System.Linq
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.ExceptBy_TSource_TKey_4(typeof(TSource), typeof(TKey)),
+                    new Func<IQueryable<TSource>, IEnumerable<TKey>, Expression<Func<TSource, TKey>>, IEqualityComparer<TKey>, IQueryable<TSource>>(ExceptBy).Method,
                     source1.Expression,
                     GetSourceExpression(source2),
                     Expression.Quote(keySelector),
-                    Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))
-                    ));
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TKey>))));
         }
 
         [DynamicDependency("First`1", typeof(Enumerable))]
@@ -1128,7 +1092,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.First_TSource_1(typeof(TSource)), source.Expression));
+                    new Func<IQueryable<TSource>, TSource>(First).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("First`1", typeof(Enumerable))]
@@ -1140,9 +1105,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.First_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, TSource>(First).Method,
+                    source.Expression, Expression.Quote(predicate)));
         }
 
         [DynamicDependency("FirstOrDefault`1", typeof(Enumerable))]
@@ -1153,7 +1117,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.FirstOrDefault_TSource_1(typeof(TSource)), source.Expression));
+                    new Func<IQueryable<TSource>, TSource?>(FirstOrDefault).Method,
+                    source.Expression));
         }
 
         /// <summary>Returns the first element of a sequence, or a default value if the sequence contains no elements.</summary>
@@ -1170,7 +1135,7 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.FirstOrDefault_TSource_3(typeof(TSource)),
+                    new Func<IQueryable<TSource>, TSource, TSource>(FirstOrDefault).Method,
                     source.Expression, Expression.Constant(defaultValue, typeof(TSource))));
         }
 
@@ -1183,9 +1148,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.FirstOrDefault_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, TSource?>(FirstOrDefault).Method,
+                    source.Expression, Expression.Quote(predicate)));
         }
 
         /// <summary>Returns the first element of the sequence that satisfies a condition or a default value if no such element is found.</summary>
@@ -1204,9 +1168,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.FirstOrDefault_TSource_4(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate), Expression.Constant(defaultValue, typeof(TSource))
-                ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, TSource, TSource>(FirstOrDefault).Method,
+                    source.Expression, Expression.Quote(predicate), Expression.Constant(defaultValue, typeof(TSource))));
         }
 
         [DynamicDependency("Last`1", typeof(Enumerable))]
@@ -1217,7 +1180,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Last_TSource_1(typeof(TSource)), source.Expression));
+                    new Func<IQueryable<TSource>, TSource>(Last).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Last`1", typeof(Enumerable))]
@@ -1229,9 +1193,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Last_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, TSource>(Last).Method,
+                    source.Expression, Expression.Quote(predicate)));
         }
 
         [DynamicDependency("LastOrDefault`1", typeof(Enumerable))]
@@ -1242,7 +1205,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.LastOrDefault_TSource_1(typeof(TSource)), source.Expression));
+                    new Func<IQueryable<TSource>, TSource?>(LastOrDefault).Method,
+                    source.Expression));
         }
 
         /// <summary>Returns the last element of a sequence, or a default value if the sequence contains no elements.</summary>
@@ -1259,7 +1223,7 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.LastOrDefault_TSource_3(typeof(TSource)),
+                    new Func<IQueryable<TSource>, TSource, TSource>(LastOrDefault).Method,
                     source.Expression, Expression.Constant(defaultValue, typeof(TSource))));
         }
 
@@ -1272,9 +1236,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.LastOrDefault_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, TSource?>(LastOrDefault).Method,
+                    source.Expression, Expression.Quote(predicate)));
         }
 
         /// <summary>Returns the last element of a sequence that satisfies a condition or a default value if no such element is found.</summary>
@@ -1293,7 +1256,7 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.LastOrDefault_TSource_4(typeof(TSource)),
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, TSource, TSource>(LastOrDefault).Method,
                     source.Expression, Expression.Quote(predicate), Expression.Constant(defaultValue, typeof(TSource))
                 ));
         }
@@ -1306,7 +1269,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Single_TSource_1(typeof(TSource)), source.Expression));
+                    new Func<IQueryable<TSource>, TSource>(Single).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Single`1", typeof(Enumerable))]
@@ -1318,9 +1282,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Single_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, TSource>(Single).Method,
+                    source.Expression, Expression.Quote(predicate)));
         }
 
         [DynamicDependency("SingleOrDefault`1", typeof(Enumerable))]
@@ -1331,7 +1294,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.SingleOrDefault_TSource_1(typeof(TSource)), source.Expression));
+                    new Func<IQueryable<TSource>, TSource?>(SingleOrDefault).Method,
+                    source.Expression));
         }
 
         /// <summary>Returns the only element of a sequence, or a default value if the sequence is empty; this method throws an exception if there is more than one element in the sequence.</summary>
@@ -1349,7 +1313,7 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.SingleOrDefault_TSource_3(typeof(TSource)),
+                    new Func<IQueryable<TSource>, TSource, TSource>(SingleOrDefault).Method,
                     source.Expression, Expression.Constant(defaultValue, typeof(TSource))));
         }
 
@@ -1362,9 +1326,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.SingleOrDefault_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, TSource?>(SingleOrDefault).Method,
+                    source.Expression, Expression.Quote(predicate)));
         }
 
         /// <summary>Returns the only element of a sequence that satisfies a specified condition or a default value if no such element exists; this method throws an exception if more than one element satisfies the condition.</summary>
@@ -1384,9 +1347,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.SingleOrDefault_TSource_4(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate), Expression.Constant(defaultValue, typeof(TSource))
-                ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, TSource, TSource>(SingleOrDefault).Method,
+                    source.Expression, Expression.Quote(predicate), Expression.Constant(defaultValue, typeof(TSource))));
         }
 
         [DynamicDependency("ElementAt`1", typeof(Enumerable))]
@@ -1400,9 +1362,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.ElementAt_Int32_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Constant(index)
-                    ));
+                    new Func<IQueryable<TSource>, int, TSource>(ElementAt).Method,
+                    source.Expression, Expression.Constant(index)));
         }
 
         /// <summary>Returns the element at a specified index in a sequence.</summary>
@@ -1423,9 +1384,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.ElementAt_Index_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Constant(index)
-                    ));
+                    new Func<IQueryable<TSource>, Index, TSource>(ElementAt).Method,
+                    source.Expression, Expression.Constant(index)));
         }
 
         [DynamicDependency("ElementAtOrDefault`1", typeof(Enumerable))]
@@ -1436,9 +1396,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.ElementAtOrDefault_Int32_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Constant(index)
-                    ));
+                    new Func<IQueryable<TSource>, int, TSource?>(ElementAtOrDefault).Method,
+                    source.Expression, Expression.Constant(index)));
         }
 
         /// <summary>Returns the element at a specified index in a sequence or a default value if the index is out of range.</summary>
@@ -1455,9 +1414,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.ElementAtOrDefault_Index_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Constant(index)
-                    ));
+                    new Func<IQueryable<TSource>, Index, TSource?>(ElementAtOrDefault).Method,
+                    source.Expression, Expression.Constant(index)));
         }
 
         [DynamicDependency("DefaultIfEmpty`1", typeof(Enumerable))]
@@ -1468,7 +1426,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.DefaultIfEmpty_TSource_1(typeof(TSource)), source.Expression));
+                    new Func<IQueryable<TSource>, IQueryable<TSource?>>(DefaultIfEmpty).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("DefaultIfEmpty`1", typeof(Enumerable))]
@@ -1479,9 +1438,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.DefaultIfEmpty_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Constant(defaultValue, typeof(TSource))
-                    ));
+                    new Func<IQueryable<TSource>, TSource, IQueryable<TSource?>>(DefaultIfEmpty).Method,
+                    source.Expression, Expression.Constant(defaultValue, typeof(TSource))));
         }
 
         [DynamicDependency("Contains`1", typeof(Enumerable))]
@@ -1492,9 +1450,8 @@ namespace System.Linq
             return source.Provider.Execute<bool>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Contains_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Constant(item, typeof(TSource))
-                    ));
+                    new Func<IQueryable<TSource>, TSource, bool>(Contains).Method,
+                    source.Expression, Expression.Constant(item, typeof(TSource))));
         }
 
         [DynamicDependency("Contains`1", typeof(Enumerable))]
@@ -1505,9 +1462,8 @@ namespace System.Linq
             return source.Provider.Execute<bool>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Contains_TSource_3(typeof(TSource)),
-                    source.Expression, Expression.Constant(item, typeof(TSource)), Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
-                    ));
+                    new Func<IQueryable<TSource>, TSource, IEqualityComparer<TSource>, bool>(Contains).Method,
+                    source.Expression, Expression.Constant(item, typeof(TSource)), Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))));
         }
 
         [DynamicDependency("Reverse`1", typeof(Enumerable))]
@@ -1518,7 +1474,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Reverse_TSource_1(typeof(TSource)), source.Expression));
+                    new Func<IQueryable<TSource>, IQueryable<TSource>>(Reverse).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("SequenceEqual`1", typeof(Enumerable))]
@@ -1530,9 +1487,8 @@ namespace System.Linq
             return source1.Provider.Execute<bool>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.SequenceEqual_TSource_2(typeof(TSource)),
-                    source1.Expression, GetSourceExpression(source2)
-                    ));
+                    new Func<IQueryable<TSource>, IEnumerable<TSource>, bool>(SequenceEqual).Method,
+                    source1.Expression, GetSourceExpression(source2)));
         }
 
         [DynamicDependency("SequenceEqual`1", typeof(Enumerable))]
@@ -1544,11 +1500,10 @@ namespace System.Linq
             return source1.Provider.Execute<bool>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.SequenceEqual_TSource_3(typeof(TSource)),
+                    new Func<IQueryable<TSource>, IEnumerable<TSource>, IEqualityComparer<TSource>, bool>(SequenceEqual).Method,
                     source1.Expression,
                     GetSourceExpression(source2),
-                    Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))
-                    ));
+                    Expression.Constant(comparer, typeof(IEqualityComparer<TSource>))));
         }
 
         [DynamicDependency("Any`1", typeof(Enumerable))]
@@ -1559,7 +1514,8 @@ namespace System.Linq
             return source.Provider.Execute<bool>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Any_TSource_1(typeof(TSource)), source.Expression));
+                    new Func<IQueryable<TSource>, bool>(Any).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Any`1", typeof(Enumerable))]
@@ -1571,9 +1527,8 @@ namespace System.Linq
             return source.Provider.Execute<bool>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Any_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, bool>(Any).Method,
+                    source.Expression, Expression.Quote(predicate)));
         }
 
         [DynamicDependency("All`1", typeof(Enumerable))]
@@ -1585,9 +1540,8 @@ namespace System.Linq
             return source.Provider.Execute<bool>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.All_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, bool>(All).Method,
+                    source.Expression, Expression.Quote(predicate)));
         }
 
         [DynamicDependency("Count`1", typeof(Enumerable))]
@@ -1598,7 +1552,8 @@ namespace System.Linq
             return source.Provider.Execute<int>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Count_TSource_1(typeof(TSource)), source.Expression));
+                    new Func<IQueryable<TSource>, int>(Count).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Count`1", typeof(Enumerable))]
@@ -1610,9 +1565,8 @@ namespace System.Linq
             return source.Provider.Execute<int>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Count_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, int>(Count).Method,
+                    source.Expression, Expression.Quote(predicate)));
         }
 
         [DynamicDependency("LongCount`1", typeof(Enumerable))]
@@ -1623,7 +1577,8 @@ namespace System.Linq
             return source.Provider.Execute<long>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.LongCount_TSource_1(typeof(TSource)), source.Expression));
+                    new Func<IQueryable<TSource>, long>(LongCount).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("LongCount`1", typeof(Enumerable))]
@@ -1635,9 +1590,8 @@ namespace System.Linq
             return source.Provider.Execute<long>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.LongCount_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(predicate)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, bool>>, long>(LongCount).Method,
+                    source.Expression, Expression.Quote(predicate)));
         }
 
         [DynamicDependency("Min`1", typeof(Enumerable))]
@@ -1648,7 +1602,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Min_TSource_1(typeof(TSource)), source.Expression));
+                    new Func<IQueryable<TSource>, TSource?>(Min).Method,
+                    source.Expression));
         }
 
         /// <summary>Returns the minimum value in a generic <see cref="System.Linq.IQueryable{T}" />.</summary>
@@ -1666,10 +1621,9 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Min_TSource_2(typeof(TSource)),
+                    new Func<IQueryable<TSource>, IComparer<TSource>, TSource?>(Min).Method,
                     source.Expression,
-                    Expression.Constant(comparer, typeof(IComparer<TSource>))
-                    ));
+                    Expression.Constant(comparer, typeof(IComparer<TSource>))));
         }
 
         [DynamicDependency("Min`2", typeof(Enumerable))]
@@ -1681,9 +1635,8 @@ namespace System.Linq
             return source.Provider.Execute<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Min_TSource_TResult_2(typeof(TSource), typeof(TResult)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TResult>>, TResult?>(Min).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         /// <summary>Returns the minimum value in a generic <see cref="IQueryable{T}"/> according to a specified key selector function.</summary>
@@ -1703,10 +1656,9 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.MinBy_TSource_TKey_2(typeof(TSource), typeof(TKey)),
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, TSource?>(MinBy).Method,
                     source.Expression,
-                    Expression.Quote(keySelector)
-                    ));
+                    Expression.Quote(keySelector)));
         }
 
         /// <summary>Returns the minimum value in a generic <see cref="IQueryable{T}"/> according to a specified key selector function.</summary>
@@ -1727,11 +1679,10 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.MinBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IComparer<TSource>, TSource?>(MinBy).Method,
                     source.Expression,
                     Expression.Quote(keySelector),
-                    Expression.Constant(comparer, typeof(IComparer<TSource>))
-                    ));
+                    Expression.Constant(comparer, typeof(IComparer<TSource>))));
         }
 
         [DynamicDependency("Max`1", typeof(Enumerable))]
@@ -1742,7 +1693,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Max_TSource_1(typeof(TSource)), source.Expression));
+                    new Func<IQueryable<TSource>, TSource?>(Max).Method,
+                    source.Expression));
         }
 
         /// <summary>Returns the maximum value in a generic <see cref="System.Linq.IQueryable{T}" />.</summary>
@@ -1759,10 +1711,9 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Max_TSource_2(typeof(TSource)),
+                    new Func<IQueryable<TSource>, IComparer<TSource>, TSource?>(Max).Method,
                     source.Expression,
-                    Expression.Constant(comparer, typeof(IComparer<TSource>))
-                    ));
+                    Expression.Constant(comparer, typeof(IComparer<TSource>))));
         }
 
         [DynamicDependency("Max`2", typeof(Enumerable))]
@@ -1774,9 +1725,8 @@ namespace System.Linq
             return source.Provider.Execute<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Max_TSource_TResult_2(typeof(TSource), typeof(TResult)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TResult>>, TResult?>(Max).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         /// <summary>Returns the maximum value in a generic <see cref="IQueryable{T}"/> according to a specified key selector function.</summary>
@@ -1796,10 +1746,9 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.MaxBy_TSource_TKey_2(typeof(TSource), typeof(TKey)),
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, TSource?>(MaxBy).Method,
                     source.Expression,
-                    Expression.Quote(keySelector)
-                    ));
+                    Expression.Quote(keySelector)));
         }
 
         /// <summary>Returns the maximum value in a generic <see cref="IQueryable{T}"/> according to a specified key selector function.</summary>
@@ -1820,11 +1769,10 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.MaxBy_TSource_TKey_3(typeof(TSource), typeof(TKey)),
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TKey>>, IComparer<TSource>, TSource?>(MaxBy).Method,
                     source.Expression,
                     Expression.Quote(keySelector),
-                    Expression.Constant(comparer, typeof(IComparer<TSource>))
-                    ));
+                    Expression.Constant(comparer, typeof(IComparer<TSource>))));
         }
 
         [DynamicDependency("Sum", typeof(Enumerable))]
@@ -1835,7 +1783,8 @@ namespace System.Linq
             return source.Provider.Execute<int>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_Int32_1, source.Expression));
+                    new Func<IQueryable<int>, int>(Sum).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Sum", typeof(Enumerable))]
@@ -1846,7 +1795,8 @@ namespace System.Linq
             return source.Provider.Execute<int?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_NullableInt32_1, source.Expression));
+                    new Func<IQueryable<int?>, int?>(Sum).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Sum", typeof(Enumerable))]
@@ -1857,7 +1807,8 @@ namespace System.Linq
             return source.Provider.Execute<long>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_Int64_1, source.Expression));
+                    new Func<IQueryable<long>, long>(Sum).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Sum", typeof(Enumerable))]
@@ -1868,7 +1819,8 @@ namespace System.Linq
             return source.Provider.Execute<long?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_NullableInt64_1, source.Expression));
+                    new Func<IQueryable<long?>, long?>(Sum).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Sum", typeof(Enumerable))]
@@ -1879,7 +1831,8 @@ namespace System.Linq
             return source.Provider.Execute<float>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_Single_1, source.Expression));
+                    new Func<IQueryable<float>, float>(Sum).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Sum", typeof(Enumerable))]
@@ -1890,7 +1843,8 @@ namespace System.Linq
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_NullableSingle_1, source.Expression));
+                    new Func<IQueryable<float?>, float?>(Sum).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Sum", typeof(Enumerable))]
@@ -1901,7 +1855,8 @@ namespace System.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_Double_1, source.Expression));
+                    new Func<IQueryable<double>, double>(Sum).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Sum", typeof(Enumerable))]
@@ -1912,7 +1867,8 @@ namespace System.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_NullableDouble_1, source.Expression));
+                    new Func<IQueryable<double?>, double?>(Sum).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Sum", typeof(Enumerable))]
@@ -1923,7 +1879,8 @@ namespace System.Linq
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_Decimal_1, source.Expression));
+                    new Func<IQueryable<decimal>, decimal>(Sum).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Sum", typeof(Enumerable))]
@@ -1934,7 +1891,8 @@ namespace System.Linq
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_NullableDecimal_1, source.Expression));
+                    new Func<IQueryable<decimal?>, decimal?>(Sum).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Sum`1", typeof(Enumerable))]
@@ -1946,9 +1904,8 @@ namespace System.Linq
             return source.Provider.Execute<int>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_Int32_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, int>>, int>(Sum).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Sum`1", typeof(Enumerable))]
@@ -1960,9 +1917,8 @@ namespace System.Linq
             return source.Provider.Execute<int?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_NullableInt32_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, int?>>, int?>(Sum).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Sum`1", typeof(Enumerable))]
@@ -1974,9 +1930,8 @@ namespace System.Linq
             return source.Provider.Execute<long>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_Int64_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, long>>, long>(Sum).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Sum`1", typeof(Enumerable))]
@@ -1988,9 +1943,8 @@ namespace System.Linq
             return source.Provider.Execute<long?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_NullableInt64_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, long?>>, long?>(Sum).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Sum`1", typeof(Enumerable))]
@@ -2002,9 +1956,8 @@ namespace System.Linq
             return source.Provider.Execute<float>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_Single_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, float>>, float>(Sum).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Sum`1", typeof(Enumerable))]
@@ -2016,9 +1969,8 @@ namespace System.Linq
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_NullableSingle_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, float?>>, float?>(Sum).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Sum`1", typeof(Enumerable))]
@@ -2030,9 +1982,8 @@ namespace System.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_Double_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, double>>, double>(Sum).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Sum`1", typeof(Enumerable))]
@@ -2044,9 +1995,8 @@ namespace System.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_NullableDouble_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, double?>>, double?>(Sum).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Sum`1", typeof(Enumerable))]
@@ -2058,9 +2008,8 @@ namespace System.Linq
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_Decimal_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, decimal>>, decimal>(Sum).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Sum`1", typeof(Enumerable))]
@@ -2072,9 +2021,8 @@ namespace System.Linq
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Sum_NullableDecimal_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, decimal?>>, decimal?>(Sum).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Average", typeof(Enumerable))]
@@ -2085,7 +2033,8 @@ namespace System.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_Int32_1, source.Expression));
+                    new Func<IQueryable<int>, double>(Average).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Average", typeof(Enumerable))]
@@ -2096,7 +2045,8 @@ namespace System.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_NullableInt32_1, source.Expression));
+                    new Func<IQueryable<int?>, double?>(Average).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Average", typeof(Enumerable))]
@@ -2107,7 +2057,8 @@ namespace System.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_Int64_1, source.Expression));
+                    new Func<IQueryable<long>, double>(Average).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Average", typeof(Enumerable))]
@@ -2118,7 +2069,8 @@ namespace System.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_NullableInt64_1, source.Expression));
+                    new Func<IQueryable<long?>, double?>(Average).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Average", typeof(Enumerable))]
@@ -2129,7 +2081,8 @@ namespace System.Linq
             return source.Provider.Execute<float>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_Single_1, source.Expression));
+                    new Func<IQueryable<float>, float>(Average).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Average", typeof(Enumerable))]
@@ -2140,7 +2093,8 @@ namespace System.Linq
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_NullableSingle_1, source.Expression));
+                    new Func<IQueryable<float?>, float?>(Average).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Average", typeof(Enumerable))]
@@ -2151,7 +2105,8 @@ namespace System.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_Double_1, source.Expression));
+                    new Func<IQueryable<double>, double>(Average).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Average", typeof(Enumerable))]
@@ -2162,7 +2117,8 @@ namespace System.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_NullableDouble_1, source.Expression));
+                    new Func<IQueryable<double?>, double?>(Average).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Average", typeof(Enumerable))]
@@ -2173,7 +2129,8 @@ namespace System.Linq
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_Decimal_1, source.Expression));
+                    new Func<IQueryable<decimal>, decimal>(Average).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Average", typeof(Enumerable))]
@@ -2184,7 +2141,8 @@ namespace System.Linq
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_NullableDecimal_1, source.Expression));
+                    new Func<IQueryable<decimal?>, decimal?>(Average).Method,
+                    source.Expression));
         }
 
         [DynamicDependency("Average`1", typeof(Enumerable))]
@@ -2196,9 +2154,8 @@ namespace System.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_Int32_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, int>>, double>(Average).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Average`1", typeof(Enumerable))]
@@ -2210,9 +2167,8 @@ namespace System.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_NullableInt32_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, int?>>, double?>(Average).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Average`1", typeof(Enumerable))]
@@ -2224,9 +2180,8 @@ namespace System.Linq
             return source.Provider.Execute<float>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_Single_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, float>>, float>(Average).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Average`1", typeof(Enumerable))]
@@ -2238,9 +2193,8 @@ namespace System.Linq
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_NullableSingle_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, float?>>, float?>(Average).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Average`1", typeof(Enumerable))]
@@ -2252,9 +2206,8 @@ namespace System.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_Int64_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, long>>, double>(Average).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Average`1", typeof(Enumerable))]
@@ -2266,9 +2219,8 @@ namespace System.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_NullableInt64_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, long?>>, double?>(Average).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Average`1", typeof(Enumerable))]
@@ -2280,9 +2232,8 @@ namespace System.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_Double_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, double>>, double>(Average).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Average`1", typeof(Enumerable))]
@@ -2294,9 +2245,8 @@ namespace System.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_NullableDouble_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, double?>>, double?>(Average).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Average`1", typeof(Enumerable))]
@@ -2308,9 +2258,8 @@ namespace System.Linq
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_Decimal_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, decimal>>, decimal>(Average).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Average`1", typeof(Enumerable))]
@@ -2322,9 +2271,8 @@ namespace System.Linq
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Average_NullableDecimal_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(selector)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, decimal?>>, decimal?>(Average).Method,
+                    source.Expression, Expression.Quote(selector)));
         }
 
         [DynamicDependency("Aggregate`1", typeof(Enumerable))]
@@ -2336,9 +2284,8 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Aggregate_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Quote(func)
-                    ));
+                    new Func<IQueryable<TSource>, Expression<Func<TSource, TSource, TSource>>, TSource>(Aggregate).Method,
+                    source.Expression, Expression.Quote(func)));
         }
 
         [DynamicDependency("Aggregate`2", typeof(Enumerable))]
@@ -2350,9 +2297,8 @@ namespace System.Linq
             return source.Provider.Execute<TAccumulate>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Aggregate_TSource_TAccumulate_3(typeof(TSource), typeof(TAccumulate)),
-                    source.Expression, Expression.Constant(seed), Expression.Quote(func)
-                    ));
+                    new Func<IQueryable<TSource>, TAccumulate, Expression<Func<TAccumulate, TSource, TAccumulate>>, TAccumulate>(Aggregate).Method,
+                    source.Expression, Expression.Constant(seed), Expression.Quote(func)));
         }
 
         [DynamicDependency("Aggregate`3", typeof(Enumerable))]
@@ -2365,7 +2311,8 @@ namespace System.Linq
             return source.Provider.Execute<TResult>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Aggregate_TSource_TAccumulate_TResult_4(typeof(TSource), typeof(TAccumulate), typeof(TResult)), source.Expression, Expression.Constant(seed), Expression.Quote(func), Expression.Quote(selector)));
+                    new Func<IQueryable<TSource>, TAccumulate, Expression<Func<TAccumulate, TSource, TAccumulate>>, Expression<Func<TAccumulate, TResult>>, TResult>(Aggregate).Method,
+                    source.Expression, Expression.Constant(seed), Expression.Quote(func), Expression.Quote(selector)));
         }
 
         [DynamicDependency("SkipLast`1", typeof(Enumerable))]
@@ -2376,7 +2323,7 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.SkipLast_TSource_2(typeof(TSource)),
+                    new Func<IQueryable<TSource>, int, IQueryable<TSource>>(SkipLast).Method,
                     source.Expression, Expression.Constant(count)
                     ));
         }
@@ -2389,9 +2336,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.TakeLast_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Constant(count)
-                    ));
+                    new Func<IQueryable<TSource>, int, IQueryable<TSource>>(TakeLast).Method,
+                    source.Expression, Expression.Constant(count)));
         }
 
         [DynamicDependency("Append`1", typeof(Enumerable))]
@@ -2402,9 +2348,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Append_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Constant(element)
-                    ));
+                    new Func<IQueryable<TSource>, TSource, IQueryable<TSource>>(Append).Method,
+                    source.Expression, Expression.Constant(element)));
         }
 
         [DynamicDependency("Prepend`1", typeof(Enumerable))]
@@ -2415,9 +2360,8 @@ namespace System.Linq
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     null,
-                    CachedReflectionInfo.Prepend_TSource_2(typeof(TSource)),
-                    source.Expression, Expression.Constant(element)
-                    ));
+                    new Func<IQueryable<TSource>, TSource, IQueryable<TSource>>(Prepend).Method,
+                    source.Expression, Expression.Constant(element)));
         }
     }
 }

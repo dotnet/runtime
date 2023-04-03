@@ -20,7 +20,7 @@ namespace System.Diagnostics.Tests
             const string libraryName = "LongPath.dll";
             const int minPathLength = 261;
 
-            string testBinPath = Path.GetDirectoryName(typeof(ProcessModuleTests).Assembly.Location);
+            string testBinPath = AppContext.BaseDirectory;
             string libraryToCopy = Path.Combine(testBinPath, libraryName);
             Assert.True(File.Exists(libraryToCopy), $"{libraryName} was not present in bin folder '{testBinPath}'");
 

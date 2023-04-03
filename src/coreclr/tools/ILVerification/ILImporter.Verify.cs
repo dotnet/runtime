@@ -9,6 +9,8 @@ using Internal.TypeSystem.Ecma;
 
 using ILVerify;
 
+#pragma warning disable IDE0060
+
 namespace Internal.IL
 {
     class VerificationException : Exception
@@ -2581,6 +2583,8 @@ namespace Internal.IL
             Unverifiable();
 
             var size = Pop();
+
+            Check(_stackTop == 0, VerifierError.LocallocStackNotEmpty);
 
             CheckIsInteger(size);
 

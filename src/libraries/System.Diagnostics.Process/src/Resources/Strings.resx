@@ -269,6 +269,9 @@
   <data name="CantSetDuplicatePassword" xml:space="preserve">
     <value>ProcessStartInfo.Password and ProcessStartInfo.PasswordInClearText cannot both be set. Use only one of them.</value>
   </data>
+  <data name="CantEnableConflictingLogonFlags" xml:space="preserve">
+    <value>ProcessStartInfo.LoadUserProfile and ProcessStartInfo.UseCredentialsForNetworkingOnly cannot both be set. Use only one of them.</value>
+  </data>
   <data name="ArgumentOutOfRange_IndexCountBuffer" xml:space="preserve">
     <value>Index and count must refer to a location within the buffer.</value>
   </data>
@@ -295,9 +298,6 @@
   </data>
   <data name="Argument_InvalidCharSequenceNoIndex" xml:space="preserve">
     <value>String contains invalid Unicode code points.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
-    <value>Non-negative number required.</value>
   </data>
   <data name="CantStartAsUser" xml:space="preserve">
     <value>The Process object must have the UseShellExecute property set to false in order to start a process as a user.</value>

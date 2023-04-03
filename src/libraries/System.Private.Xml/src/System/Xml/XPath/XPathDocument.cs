@@ -78,6 +78,8 @@ namespace System.Xml.XPath
         /// </summary>
         public XPathDocument(TextReader textReader)
         {
+            ArgumentNullException.ThrowIfNull(textReader);
+
             XmlTextReaderImpl reader = SetupReader(new XmlTextReaderImpl(string.Empty, textReader));
 
             try
@@ -95,6 +97,8 @@ namespace System.Xml.XPath
         /// </summary>
         public XPathDocument(Stream stream)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             XmlTextReaderImpl reader = SetupReader(new XmlTextReaderImpl(string.Empty, stream));
 
             try
@@ -425,14 +429,13 @@ namespace System.Xml.XPath
         {
             XPathNodeRef nodeRef;
 
-            if (_idValueMap == null || !_idValueMap.ContainsKey(id))
+            if (_idValueMap == null || !_idValueMap.TryGetValue(id, out nodeRef))
             {
                 pageElem = null;
                 return 0;
             }
 
             // Extract page and index from XPathNodeRef
-            nodeRef = _idValueMap[id];
             pageElem = nodeRef.Page;
             return nodeRef.Index;
         }

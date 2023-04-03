@@ -2,17 +2,95 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
+    [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/71962", ~RuntimeConfiguration.Release)]
     public class JsonSourceGeneratorDiagnosticsTests
     {
+        /// <summary>
+        /// https://github.com/dotnet/runtime/issues/61379
+        /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
+        public void EmitsDocumentationOnPublicMembersAndDoesNotCauseCS1591()
+        {
+            // Compile the referenced assembly first.
+            Compilation documentedCompilation = CompilationHelper.CreateReferencedModelWithFullyDocumentedProperties();
+
+            // Emit the image of the referenced assembly.
+            byte[] documentedImage = CompilationHelper.CreateAssemblyImage(documentedCompilation);
+
+            // Main source for current compilation.
+            string source = @"
+            using System.Collections.Generic;
+            using System.Text.Json.Serialization;
+            using ReferencedAssembly;
+
+            namespace JsonSourceGenerator
+            {
+                /// <summary>
+                /// Documentation
+                /// </summary>
+                [JsonSerializable(typeof(DocumentedModel))]
+                [JsonSerializable(typeof(DocumentedModel2<string>))]
+                public partial class JsonContext : JsonSerializerContext
+                {
+                }
+
+                /// <summary>
+                /// Documentation
+                /// </summary>
+                public class DocumentedModel2<T>
+                {
+                    /// <summary>
+                    /// Documentation
+                    /// </summary>
+                    public List<Model> Models { get; set; }
+                    /// documentation
+                    public T Prop { get; set; }
+                }
+
+                /// <summary>
+                /// Documentation
+                /// </summary>
+                public class DocumentedModel
+                {
+                    /// <summary>
+                    /// Documentation
+                    /// </summary>
+                    public List<Model> Models { get; set; }
+                }
+            }";
+
+            MetadataReference[] additionalReferences = {
+                MetadataReference.CreateFromImage(documentedImage),
+            };
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences, configureParseOptions: options => options.WithDocumentationMode(DocumentationMode.Diagnose));
+
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+
+            compilation = CompilationHelper.RunGenerators(compilation, out var _, generator);
+
+            using var emitStream = new MemoryStream();
+            using var xmlStream = new MemoryStream();
+            var result = compilation.Emit(emitStream, xmlDocumentationStream: xmlStream);
+            var diagnostics = result.Diagnostics;
+
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, diagnostics, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, diagnostics, Array.Empty<(Location, string)>());
+        }
+
+        [Fact]
         public void SuccessfulSourceGeneration()
         {
             // Compile the referenced assembly first.
@@ -62,8 +140,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
-        public void UnsuccessfulSourceGeneration()
+        public void MultiDimensionArrayDoesNotProduceWarnings()
         {
             static void RunTest(bool explicitRef)
             {
@@ -125,14 +202,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     location = compilation.GetSymbolsWithName("JsonContext").First().Locations[0];
                 }
 
-                // Expected warning logs.
-                (Location, string)[] expectedWarningDiagnostics = new (Location, string)[]
-                {
-                    (location, "Did not generate serialization metadata for type 'global::ReferencedAssembly.ActiveOrUpcomingEvent[]'.")
-                };
-
                 CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-                CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, expectedWarningDiagnostics);
+                CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
                 CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
             }
 
@@ -141,7 +212,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void NameClashSourceGeneration()
         {
             // Without resolution.
@@ -174,7 +244,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void ProgramsThatDontUseGeneratorCompile()
         {
             // No STJ usage.
@@ -217,27 +286,18 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
-        public void WarnOnClassesWithInitOnlyProperties()
+        public void DoNotWarnOnClassesWithInitOnlyProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithInitOnlyProperties();
             JsonSourceGenerator generator = new JsonSourceGenerator();
             CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
 
-            Location location = compilation.GetSymbolsWithName("Id").First().Locations[0];
-
-            (Location, string)[] expectedWarningDiagnostics = new (Location, string)[]
-            {
-                (location, "The type 'Location' defines init-only properties, deserialization of which is currently not supported in source generation mode.")
-            };
-
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, expectedWarningDiagnostics);
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58770", TestPlatforms.Browser)]
         public void DoNotWarnOnClassesWithConstructorInitOnlyProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithConstructorInitOnlyProperties();
@@ -250,27 +310,18 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
         
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58770", TestPlatforms.Browser)]
-        public void WarnOnClassesWithMixedInitOnlyProperties()
+        public void DoNotWarnOnClassesWithMixedInitOnlyProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithMixedInitOnlyProperties();
             JsonSourceGenerator generator = new JsonSourceGenerator();
             CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
 
-            Location location = compilation.GetSymbolsWithName("Orphaned").First().Locations[0];
-
-            (Location, string)[] expectedWarningDiagnostics = new (Location, string)[]
-            {
-                (location, "The type 'MyClass' defines init-only properties, deserialization of which is currently not supported in source generation mode.")
-            };
-
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, expectedWarningDiagnostics);
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58770", TestPlatforms.Browser)]
         public void DoNotWarnOnRecordsWithInitOnlyPositionalParameters()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithRecordPositionalParameters();
@@ -283,7 +334,18 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
+        public void DoNotWarnOnClassesWithRequiredProperties()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilationWithRequiredProperties();
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+            Compilation newCompilation = CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+        }
+
+        [Fact]
         public void WarnOnClassesWithInaccessibleJsonIncludeProperties()
         {
             Compilation compilation = CompilationHelper.CreateCompilationWithInaccessibleJsonIncludeProperties();

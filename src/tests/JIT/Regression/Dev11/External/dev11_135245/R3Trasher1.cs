@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace R3Trasher1
 {
@@ -60,9 +61,10 @@ namespace R3Trasher1
     }
 
 
-    internal static class App
+    public static class App
     {
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             var board = new Board();
             int ret = 100;

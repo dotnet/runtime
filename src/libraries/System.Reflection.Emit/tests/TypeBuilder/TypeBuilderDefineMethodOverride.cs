@@ -31,7 +31,7 @@ namespace System.Reflection.Emit.Tests
             MethodInfo declaration = typeof(DefineMethodOverrideInterface).GetMethod("M");
             type.DefineMethodOverride(method, declaration);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
 
             MethodInfo createdMethod = typeof(DefineMethodOverrideInterface).GetMethod("M");
             Assert.Equal(2, createdMethod.Invoke(Activator.CreateInstance(createdType), null));
@@ -51,7 +51,7 @@ namespace System.Reflection.Emit.Tests
             MethodInfo declaration = typeof(DefineMethodOverrideInterface).GetMethod("M");
             type.DefineMethodOverride(method, declaration);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             MethodInfo createdMethod = typeof(DefineMethodOverrideInterface).GetMethod("M");
 
             ConstructorInfo createdTypeCtor = createdType.GetConstructor(new Type[0]);
@@ -74,7 +74,7 @@ namespace System.Reflection.Emit.Tests
             MethodInfo interfaceMethod = typeof(GenericInterface<string>).GetMethod(nameof(GenericInterface<string>.Method));
             type.DefineMethodOverride(method, interfaceMethod);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             Assert.Equal("Hello World", interfaceMethod.Invoke(Activator.CreateInstance(createdType), null));
         }
 
@@ -92,7 +92,7 @@ namespace System.Reflection.Emit.Tests
             type.DefineMethodOverride(method, declaration);
             type.DefineMethodOverride(method, declaration);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
 
             MethodInfo createdMethod = typeof(DefineMethodOverrideInterface).GetMethod("M");
             Assert.Equal(2, createdMethod.Invoke(Activator.CreateInstance(createdType), null));
@@ -143,7 +143,7 @@ namespace System.Reflection.Emit.Tests
             method.GetILGenerator().Emit(OpCodes.Ret);
             type.AddInterfaceImplementation(typeof(DefineMethodOverrideInterface));
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             MethodInfo body = createdType.GetMethod(method.Name);
             MethodInfo declaration = typeof(DefineMethodOverrideInterface).GetMethod(method.Name);
 

@@ -45,7 +45,7 @@ public:
     // Creates memory block copy.
     inline DataBuffer(
         const DataBuffer &source);
-    // Initializes memory block to empty data. The object could be already initialzied.
+    // Initializes memory block to empty data. The object could be already initialized.
     inline void Clear();
     // Initializes memory block to data (pbData, of size cbSize). The object should be empty before.
     inline void Init(

@@ -72,7 +72,7 @@ namespace Microsoft.Win32.RegistryTests
         [InlineData("RegistryKey_GetValue_str_obj_b_Name")]
         [InlineData("RegistryKey_GetValue_str_obj_b_blah")]
         [InlineData("RegistryKey_GetValue_str_obj_b_TestKEyyyyyyyyyyyyyy")]
-        public void GetValueWithNewlyCreatedEnvironmentVarables(string varName)
+        public void GetValueWithNewlyCreatedEnvironmentVariables(string varName)
         {
             const string valueName = "MyTestKey";
             string expectedValue = "%" + varName + "%" + @"\subdirectory\myfile.txt";

@@ -12,8 +12,6 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        internal delegate int X509StoreVerifyCallback(int ok, IntPtr ctx);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NotBefore")]
         internal static partial IntPtr GetX509NotBefore(SafeX509Handle x509);
 
@@ -82,15 +80,15 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_PemReadX509FromBioAux")]
         internal static partial SafeX509Handle PemReadX509FromBioAux(SafeBioHandle bio);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509GetSerialNumber")]
-        private static partial SafeSharedAsn1IntegerHandle X509GetSerialNumber_private(SafeX509Handle x);
+        [LibraryImport(Libraries.CryptoNative)]
+        private static partial SafeSharedAsn1IntegerHandle CryptoNative_X509GetSerialNumber(SafeX509Handle x);
 
         internal static SafeSharedAsn1IntegerHandle X509GetSerialNumber(SafeX509Handle x)
         {
             CheckValidOpenSslHandle(x);
 
             return SafeInteriorHandle.OpenInteriorHandle(
-                X509GetSerialNumber_private,
+                CryptoNative_X509GetSerialNumber,
                 x);
         }
 
@@ -166,7 +164,7 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool X509StoreAddCrl(SafeX509StoreHandle ctx, SafeX509CrlHandle x);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreSetRevocationFlag")]
+        [LibraryImport(Libraries.CryptoNative)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool CryptoNative_X509StoreSetRevocationFlag(SafeX509StoreHandle ctx, X509RevocationFlag revocationFlag);
 
@@ -238,16 +236,27 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetErrorDepth")]
         internal static partial int X509StoreCtxGetErrorDepth(SafeX509StoreCtxHandle ctx);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxSetVerifyCallback")]
-        internal static partial void X509StoreCtxSetVerifyCallback(SafeX509StoreCtxHandle ctx, X509StoreVerifyCallback callback);
+        [LibraryImport(Libraries.CryptoNative)]
+        private static unsafe partial int CryptoNative_X509StoreCtxSetVerifyCallback(SafeX509StoreCtxHandle ctx, delegate* unmanaged<int, IntPtr, int> callback, void* appData);
+
+        internal static unsafe void X509StoreCtxSetVerifyCallback(SafeX509StoreCtxHandle ctx, delegate* unmanaged<int, IntPtr, int> callback, void* appData)
+        {
+            if (CryptoNative_X509StoreCtxSetVerifyCallback(ctx, callback, appData) != 1)
+            {
+                throw CreateOpenSslCryptographicException();
+            }
+        }
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetAppData")]
+        internal static unsafe partial void* X509StoreCtxGetAppData(SafeX509StoreCtxHandle ctx);
 
         internal static string GetX509VerifyCertErrorString(int n)
         {
-            return Marshal.PtrToStringAnsi(X509VerifyCertErrorString(n))!;
+            return Marshal.PtrToStringUTF8(CryptoNative_X509VerifyCertErrorString(n))!;
         }
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509VerifyCertErrorString")]
-        private static partial IntPtr X509VerifyCertErrorString(int n);
+        [LibraryImport(Libraries.CryptoNative)]
+        private static partial IntPtr CryptoNative_X509VerifyCertErrorString(int n);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509CrlDestroy")]
         internal static partial void X509CrlDestroy(IntPtr a);

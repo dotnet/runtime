@@ -327,6 +327,9 @@
   <data name="VerifyTypeAndFieldLayoutOption" xml:space="preserve">
     <value>Verify that struct type layout and field offsets match between compile time and runtime. Use only for diagnostic purposes.</value>
   </data>
+  <data name="HotColdSplittingOption" xml:space="preserve">
+    <value>Turn on hot cold splitting optimization.</value>
+  </data>
   <data name="MapCsvFileOption" xml:space="preserve">
     <value>Generate a CSV formatted map file</value>
   </data>
@@ -373,7 +376,7 @@
     <value>Input file with '{0}' extension not supported</value>
   </data>
   <data name="ImageBase" xml:space="preserve">
-    <value>Hexademical value to set target PE-file ImageBase field</value>
+    <value>Hexadecimal value to set target PE-file ImageBase field</value>
   </data>
   <data name="CrossModuleInlining" xml:space="preserve">
     <value>Allow inclusion of code from the specified module into the module being compiled. In addition to specifying an assembly by name, the special value of "*" is recognized as indicating that code from all modules may be included. Any module specified in this way MUST be loadable from the first moment the R2R module is loaded, as loads of these modules may be triggered unpredictably.</value>
@@ -389,5 +392,11 @@
   </data>
   <data name="CpuFamilies" xml:space="preserve">
     <value>The following CPU names are predefined groups of instruction sets and can be used in --instruction-set too:</value>
+  </data>
+  <data name="SupportIbc" xml:space="preserve">
+    <value>Enable processing of Ibc data embedded in the input assembly.</value>
+  </data>
+  <data name="Crossgen2BannerText" xml:space="preserve">
+    <value>.NET Crossgen2 Compiler</value>
   </data>
 </root>

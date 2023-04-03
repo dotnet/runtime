@@ -113,6 +113,19 @@ const Parser = {
             result[i] = (buf[j + 2 * i + 1] << 8) | buf[j + 2 * i];
         }
         advancePos(pos, length * 2);
+
+        /* Trim trailing nul character(s) that are added by the protocol */
+        let trailingNulStart = -1;
+        for (let i = result.length - 1; i >= 0; i--) {
+            if (result[i] === 0) {
+                trailingNulStart = i;
+            } else {
+                break;
+            }
+        }
+        if (trailingNulStart >= 0)
+            result.splice(trailingNulStart);
+
         return String.fromCharCode.apply(null, result);
     }
 };

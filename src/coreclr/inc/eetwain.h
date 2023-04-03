@@ -61,7 +61,7 @@ typedef struct _DAC_SLOT_LOCATION
 
 typedef void (*GCEnumCallback)(
     LPVOID          hCallback,      // callback data
-    OBJECTREF*      pObject,        // address of obect-reference we are reporting
+    OBJECTREF*      pObject,        // address of object-reference we are reporting
     uint32_t        flags           // is this a pinned and/or interior pointer
     DAC_ARG(DacSlotLocation loc)    // where the reference came from
 );
@@ -254,7 +254,7 @@ virtual OBJECTREF GetInstance(PREGDISPLAY     pContext,
                               EECodeInfo*     pCodeInfo) = 0;
 
 /*
-    Returns the extra argument passed to to shared generic code if it is still alive.
+    Returns the extra argument passed to shared generic code if it is still alive.
     Returns NULL in all other cases.
 */
 virtual PTR_VOID GetParamTypeArg(PREGDISPLAY     pContext,
@@ -503,7 +503,7 @@ OBJECTREF GetInstance(
                 EECodeInfo *    pCodeInfo);
 
 /*
-    Returns the extra argument passed to to shared generic code if it is still alive.
+    Returns the extra argument passed to shared generic code if it is still alive.
     Returns NULL in all other cases.
 */
 virtual
@@ -701,7 +701,6 @@ struct hdrInfo
     bool                doubleAlign;    // is the stack double-aligned? locals addressed relative to ESP, and arguments relative to EBP
     bool                interruptible;  // intr. at all times (excluding prolog/epilog), not just call sites
 
-    bool                securityCheck;  // has a slot for security object
     bool                handlers;       // has callable handlers
     bool                localloc;       // uses localloc
     bool                editNcontinue;  // has been compiled in EnC mode

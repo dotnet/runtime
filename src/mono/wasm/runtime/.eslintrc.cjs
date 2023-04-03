@@ -19,7 +19,6 @@ module.exports = {
     "ignorePatterns": [
         "node_modules/**/*.*",
         "bin/**/*.*",
-        "cjs/*.js",
         "es6/*.js",
     ],
     "rules": {

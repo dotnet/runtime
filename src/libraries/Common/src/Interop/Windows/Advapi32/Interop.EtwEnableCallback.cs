@@ -19,14 +19,5 @@ internal static partial class Interop
             public int Size;
             public int Type;
         }
-
-        internal unsafe delegate void EtwEnableCallback(
-            Guid* sourceId,
-            int isEnabled,
-            byte level,
-            long matchAnyKeywords,
-            long matchAllKeywords,
-            EVENT_FILTER_DESCRIPTOR* filterData,
-            void* callbackContext);
     }
 }

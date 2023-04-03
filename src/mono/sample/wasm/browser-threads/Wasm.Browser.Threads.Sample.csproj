@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\DefaultBrowserSample.targets" />
+  <PropertyGroup>
+    <WasmEnableThreads>true</WasmEnableThreads>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="main.js" />
+  </ItemGroup>
+
+  <!-- set the condition to false and you will get a CA1416 error about the call to Thread.Start from a browser-wasm project -->
+  <ItemGroup Condition="true">
+    <!-- TODO: some .props file that automates this.  Unfortunately just adding a ProjectReference to Microsoft.NET.WebAssembly.Threading.proj doesn't work - it ends up bundling the ref assemblies into the publish directory and breaking the app. -->
+    <!-- it's a reference assembly, but the project system doesn't know that - include it during compilation, but don't publish it -->
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Threading.Thread.WebAssembly.Threading\ref\System.Threading.Thread.WebAssembly.Threading.csproj" IncludeAssets="compile" PrivateAssets="none" ExcludeAssets="runtime" Private="false" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Threading.ThreadPool.WebAssembly.Threading\ref\System.Threading.ThreadPool.WebAssembly.Threading.csproj" IncludeAssets="compile" PrivateAssets="none" ExcludeAssets="runtime" Private="false" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Diagnostics.Tracing.WebAssembly.PerfTracing\ref\System.Diagnostics.Tracing.WebAssembly.PerfTracing.csproj" IncludeAssets="compile" PrivateAssets="none" ExcludeAssets="runtime" Private="false" />
+  </ItemGroup>
+
+</Project>

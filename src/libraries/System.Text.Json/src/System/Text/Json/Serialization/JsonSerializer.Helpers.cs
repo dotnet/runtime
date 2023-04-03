@@ -15,32 +15,60 @@ namespace System.Text.Json
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
-        private static JsonTypeInfo GetTypeInfo(JsonSerializerOptions? options, Type runtimeType)
+        private static JsonTypeInfo GetTypeInfo(JsonSerializerOptions? options, Type inputType, bool fallBackToNearestAncestorType = false)
         {
-            Debug.Assert(runtimeType != null);
+            Debug.Assert(inputType != null);
 
             options ??= JsonSerializerOptions.Default;
 
-            if (!options.IsImmutable || !DefaultJsonTypeInfoResolver.IsDefaultInstanceRooted)
+            if (!options.IsInitializedForReflectionSerializer)
             {
                 options.InitializeForReflectionSerializer();
             }
 
-            return options.GetTypeInfoForRootType(runtimeType);
+            // In order to improve performance of polymorphic root-level object serialization,
+            // we bypass GetTypeInfoForRootType and cache JsonTypeInfo<object> in a dedicated property.
+            // This lets any derived types take advantage of the cache in GetTypeInfoForRootType themselves.
+            return inputType == JsonTypeInfo.ObjectType
+                ? options.ObjectTypeInfo
+                : options.GetTypeInfoForRootType(inputType, fallBackToNearestAncestorType);
         }
 
-        private static JsonTypeInfo GetTypeInfo(JsonSerializerContext context, Type type)
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
+        private static JsonTypeInfo<T> GetTypeInfo<T>(JsonSerializerOptions? options)
+            => (JsonTypeInfo<T>)GetTypeInfo(options, typeof(T));
+
+        private static JsonTypeInfo GetTypeInfo(JsonSerializerContext context, Type inputType)
         {
             Debug.Assert(context != null);
-            Debug.Assert(type != null);
+            Debug.Assert(inputType != null);
 
-            JsonTypeInfo? info = context.GetTypeInfo(type);
+            JsonTypeInfo? info = context.GetTypeInfo(inputType);
             if (info is null)
             {
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForType(type, context);
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForType(inputType, context);
             }
 
+            info.EnsureConfigured();
             return info;
+        }
+
+        private static void ValidateInputType(object? value, Type inputType)
+        {
+            if (inputType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(inputType));
+            }
+
+            if (value is not null)
+            {
+                Type runtimeType = value.GetType();
+                if (!inputType.IsAssignableFrom(runtimeType))
+                {
+                    ThrowHelper.ThrowArgumentException_DeserializeWrongType(inputType, value);
+                }
+            }
         }
 
         internal static bool IsValidNumberHandlingValue(JsonNumberHandling handling) =>
@@ -50,5 +78,55 @@ namespace System.Text.Json
                 JsonNumberHandling.AllowReadingFromString |
                 JsonNumberHandling.WriteAsString |
                 JsonNumberHandling.AllowNamedFloatingPointLiterals));
+
+        internal static bool IsValidUnmappedMemberHandlingValue(JsonUnmappedMemberHandling handling) =>
+            handling is JsonUnmappedMemberHandling.Skip or JsonUnmappedMemberHandling.Disallow;
+
+        [return: NotNullIfNotNull(nameof(value))]
+        internal static T? UnboxOnRead<T>(object? value)
+        {
+            if (value is null)
+            {
+                if (default(T) is not null)
+                {
+                    // Casting null values to a non-nullable struct throws NullReferenceException.
+                    ThrowUnableToCastValue(value);
+                }
+
+                return default;
+            }
+
+            if (value is T typedValue)
+            {
+                return typedValue;
+            }
+
+            ThrowUnableToCastValue(value);
+            return default!;
+
+            static void ThrowUnableToCastValue(object? value)
+            {
+                if (value is null)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_DeserializeUnableToAssignNull(declaredType: typeof(T));
+                }
+                else
+                {
+                    ThrowHelper.ThrowInvalidCastException_DeserializeUnableToAssignValue(typeOfValue: value.GetType(), declaredType: typeof(T));
+                }
+            }
+        }
+
+        [return: NotNullIfNotNull(nameof(value))]
+        internal static T? UnboxOnWrite<T>(object? value)
+        {
+            if (default(T) is not null && value is null)
+            {
+                // Casting null values to a non-nullable struct throws NullReferenceException.
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(typeof(T));
+            }
+
+            return (T?)value;
+        }
     }
 }

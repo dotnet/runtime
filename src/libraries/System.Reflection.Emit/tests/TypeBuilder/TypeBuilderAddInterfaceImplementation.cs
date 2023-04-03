@@ -19,12 +19,12 @@ namespace System.Reflection.Emit.Tests
                 MethodAttributes.Abstract | MethodAttributes.Virtual | MethodAttributes.Public,
                 typeof(int),
                 new Type[] { typeof(int), typeof(int) });
-            Type createdInterface = interfaceBuilder.CreateTypeInfo().AsType();
+            Type createdInterface = interfaceBuilder.CreateType();
 
             TypeBuilder type = Helpers.DynamicType(typeAttributes);
             type.AddInterfaceImplementation(createdInterface);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             Assert.Equal(createdInterface, createdType.GetTypeInfo().ImplementedInterfaces.Single(i => i.Name == createdInterface.Name));
         }
 
@@ -37,7 +37,7 @@ namespace System.Reflection.Emit.Tests
                 typeof(int),
                 new Type[] { typeof(int), typeof(int) });
 
-            Type createdInterface = interfaceBuilder.CreateTypeInfo().AsType();
+            Type createdInterface = interfaceBuilder.CreateType();
 
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
             type.AddInterfaceImplementation(createdInterface);
@@ -50,7 +50,7 @@ namespace System.Reflection.Emit.Tests
             MethodInfo createdMethod = createdInterface.GetMethod("TestMethod");
             type.DefineMethodOverride(methodBuilder, createdMethod);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             Assert.Equal(createdInterface, createdType.GetTypeInfo().ImplementedInterfaces.Single(i => i.Name == createdInterface.Name));
         }
 
@@ -65,7 +65,7 @@ namespace System.Reflection.Emit.Tests
         public void AddInterfaceImplementation_TypeAlreadyCreated_ThrowsInvalidOperationException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
 
             Assert.Throws<InvalidOperationException>(() => type.AddInterfaceImplementation(typeof(EmptyNonGenericInterface1)));
         }

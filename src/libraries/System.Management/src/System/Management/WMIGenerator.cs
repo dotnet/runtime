@@ -64,7 +64,7 @@ namespace System.Management
 
         private ManagementClass classobj;
         private CodeDomProvider cp;
-        private TextWriter tw;
+        private StreamWriter tw;
         private readonly string genFileName = string.Empty;
         private CodeTypeDeclaration cc;
         private CodeTypeDeclaration ccc;
@@ -677,7 +677,7 @@ namespace System.Management
         /// <summary>
         /// This function will solve the naming collisions that might occur
         /// due to the collision between the local objects of the generated
-        /// class and the properties/methos of the original WMI Class.
+        /// class and the properties/methods of the original WMI Class.
         /// </summary>
         private void ProcessNamingCollisions()
         {
@@ -926,7 +926,7 @@ namespace System.Management
         /// <param name="isLiteral"></param>
         /// <param name="isBrowsable"></param>
         /// <param name="Comment"></param>
-        private void GeneratePublicReadOnlyProperty(string propName, string propType, object propValue, bool isLiteral, bool isBrowsable, string Comment)
+        private void GeneratePublicReadOnlyProperty(string propName, string propType, string propValue, bool isLiteral, bool isBrowsable, string Comment)
         {
             cmp = new CodeMemberProperty();
             cmp.Name = propName;
@@ -950,7 +950,7 @@ namespace System.Management
 
             if (isLiteral)
             {
-                cmp.GetStatements.Add(new CodeMethodReturnStatement(new CodeSnippetExpression(propValue.ToString())));
+                cmp.GetStatements.Add(new CodeMethodReturnStatement(new CodeSnippetExpression(propValue)));
             }
             else
             {
@@ -4531,7 +4531,7 @@ namespace System.Management
 
         /// <summary>
         /// This function will convert the given CIMTYPE to an acceptable .NET type.
-        /// Since CLS doen't support lotz of the basic types, we are using .NET helper
+        /// Since CLS doesn't support lotz of the basic types, we are using .NET helper
         /// classes here. We safely assume that there won't be any problem using them
         /// since .NET has to be there for the System.Management.Dll to work.
         /// </summary>

@@ -1391,7 +1391,7 @@ CMiniMdRW::InitOnMem(
     BYTE    *pBuf = const_cast<BYTE*>(reinterpret_cast<const BYTE*>(pvBuf));
     int      i;
 
-    // post contruction initialize the embedded lookuptable struct
+    // post construction initialize the embedded lookuptable struct
     for (ULONG ixTbl = 0; ixTbl < m_TblCount; ++ixTbl)
     {
         if (m_TableDefs[ixTbl].m_iKey < m_TableDefs[ixTbl].m_cCols)
@@ -2056,7 +2056,7 @@ CMiniMdRW::GetFullSaveSize(
     cbTotal += cbAlign;
     m_cbSaveSize = cbTotal;
 
-    LOG((LOGMD, "CMiniMdRW::GetFullSaveSize: Total size = %d\n", cbTotal));
+    LOG((LOGMD, "CMiniMdRW::GetFullSaveSize: Total size = %u\n", cbTotal));
 
     *pcbSaveSize = cbTotal;
 
@@ -2805,7 +2805,7 @@ CMiniMdRW::PreSaveFull()
         SORTER(FieldMarshal, Parent);
         sortFieldMarshal.Sort();
 
-        // Always sort the MethodSematics
+        // Always sort the MethodSemantics
         _ASSERTE(!CanHaveCustomAttribute(TBL_MethodSemantics));
         SORTER(MethodSemantics, Association);
         sortMethodSemantics.Sort();
@@ -2984,7 +2984,7 @@ CMiniMdRW::PreSaveEnc()
                 // If we found the token, don't keep the record.
                 if (pul != 0)
                 {
-                    LOG((LOGMD, "PreSave ENCLog skipping duplicate token %d", pFrom->GetToken()));
+                    LOG((LOGMD, "PreSave ENCLog skipping duplicate token 0x%x", pFrom->GetToken()));
                     continue;
                 }
                 // First time token was seen, so keep track of it.
