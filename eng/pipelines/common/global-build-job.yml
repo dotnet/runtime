@@ -79,12 +79,6 @@ jobs:
       - name: _crossBuildPropertyArg
         value: /p:CrossBuild=${{ parameters.crossBuild }}
 
-      - name: _noPgoArg
-        value: ''
-      - ${{ if eq(parameters.pgoType, 'noPgo' )}}:
-        - name: _noPgoArg
-          value: '/p:NoPgoOptimize=true '
-
       - ${{ if ne(parameters.jobParameters.crossrootfsDir, '') }}:
         # This is only required for cross builds.
         - name: ROOTFS_DIR
@@ -193,7 +187,7 @@ jobs:
         - task: CodeQL3000Init@0
           displayName: Initialize CodeQL (manually-injected)
 
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) $(_noPgoArg) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
         displayName: Build product
         ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
           continueOnError: ${{ parameters.shouldContinueOnError }}
