@@ -44,7 +44,11 @@ namespace Tests.System
         {
             Assert.Equal(TimeZoneInfo.Local.Id, TimeProvider.System.LocalTimeZone.Id);
 
+#if NETFRAMEWORK
+            TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time");
+#else
             TimeZoneInfo tzi = TimeZoneInfo.FindSystemTimeZoneById(OperatingSystem.IsWindows() ? "Pacific Standard Time" : "America/Los_Angeles");
+#endif // NETFRAMEWORK
 
             TimeProvider tp = TimeProvider.FromLocalTimeZone(tzi);
             Assert.Equal(tzi.Id, tp.LocalTimeZone.Id);
@@ -57,6 +61,15 @@ namespace Tests.System
             Assert.InRange(utcConvertedDto.Ticks, utcDto1.Ticks, utcDto2.Ticks);
         }
 
+#if NETFRAMEWORK
+        public static double s_tickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
+        public static TimeSpan GetElapsedTime(long startingTimestamp, long endingTimestamp) =>
+            new TimeSpan((long)((endingTimestamp - startingTimestamp) * s_tickFrequency));
+#else
+        public static TimeSpan GetElapsedTime(long startingTimestamp, long endingTimestamp) =>
+                        Stopwatch.GetElapsedTime(startingTimestamp, endingTimestamp);
+#endif // NETFRAMEWORK
+
         [Fact]
         public void TestSystemTimestamp()
         {
@@ -68,7 +81,7 @@ namespace Tests.System
 
             Assert.InRange(providerTimestamp1, timestamp1, timestamp2);
             Assert.True(providerTimestamp2 > timestamp2);
-            Assert.Equal(Stopwatch.GetElapsedTime(providerTimestamp1, providerTimestamp2), TimeProvider.System.GetElapsedTime(providerTimestamp1, providerTimestamp2));
+            Assert.Equal(GetElapsedTime(providerTimestamp1, providerTimestamp2), TimeProvider.System.GetElapsedTime(providerTimestamp1, providerTimestamp2));
 
             Assert.Equal(Stopwatch.Frequency, TimeProvider.System.TimestampFrequency);
         }
@@ -151,6 +164,21 @@ namespace Tests.System
             yield return new object[] { new FastClock() };
         }
 
+#if NETFRAMEWORK
+        private static void CancelAfter(TimeProvider provider, CancellationTokenSource cts, TimeSpan delay)
+        {
+            if (provider == TimeProvider.System)
+            {
+                cts.CancelAfter(delay);
+            }
+            else
+            {
+                ITimer timer = provider.CreateTimer(s => ((CancellationTokenSource)s).Cancel(), cts, delay, Timeout.InfiniteTimeSpan);
+                cts.Token.Register(t => ((ITimer)t).Dispose(), timer);
+            }
+        }
+#endif // NETFRAMEWORK
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(TimersProvidersListData))]
         public static void CancellationTokenSourceWithTimer(TimeProvider provider)
@@ -158,7 +186,11 @@ namespace Tests.System
             //
             // Test out some int-based timeout logic
             //
+#if NETFRAMEWORK
+            CancellationTokenSource cts = new CancellationTokenSource(Timeout.InfiniteTimeSpan); // should be an infinite timeout
+#else
             CancellationTokenSource cts = new CancellationTokenSource(Timeout.InfiniteTimeSpan, provider); // should be an infinite timeout
+#endif // NETFRAMEWORK
             CancellationToken token = cts.Token;
             ManualResetEventSlim mres = new ManualResetEventSlim(false);
             CancellationTokenRegistration ctr = token.Register(() => mres.Set());
@@ -166,12 +198,20 @@ namespace Tests.System
             Assert.False(token.IsCancellationRequested,
                "CancellationTokenSourceWithTimer:  Cancellation signaled on infinite timeout (int)!");
 
+#if NETFRAMEWORK
+            CancelAfter(provider, cts, TimeSpan.FromMilliseconds(1000000));
+#else
             cts.CancelAfter(1000000);
+#endif // NETFRAMEWORK
 
             Assert.False(token.IsCancellationRequested,
                "CancellationTokenSourceWithTimer:  Cancellation signaled on super-long timeout (int) !");
 
+#if NETFRAMEWORK
+            CancelAfter(provider, cts, TimeSpan.FromMilliseconds(1));
+#else
             cts.CancelAfter(1);
+#endif // NETFRAMEWORK
 
             Debug.WriteLine("CancellationTokenSourceWithTimer: > About to wait on cancellation that should occur soon (int)... if we hang, something bad happened");
 
@@ -183,7 +223,12 @@ namespace Tests.System
             // Test out some TimeSpan-based timeout logic
             //
             TimeSpan prettyLong = new TimeSpan(1, 0, 0);
+#if NETFRAMEWORK
+            cts = new CancellationTokenSource(prettyLong);
+#else
             cts = new CancellationTokenSource(prettyLong, provider);
+#endif // NETFRAMEWORK
+
             token = cts.Token;
             mres = new ManualResetEventSlim(false);
             ctr = token.Register(() => mres.Set());
@@ -191,12 +236,20 @@ namespace Tests.System
             Assert.False(token.IsCancellationRequested,
                "CancellationTokenSourceWithTimer:  Cancellation signaled on super-long timeout (TimeSpan,1)!");
 
+#if NETFRAMEWORK
+            CancelAfter(provider, cts, prettyLong);
+#else
             cts.CancelAfter(prettyLong);
+#endif // NETFRAMEWORK
 
             Assert.False(token.IsCancellationRequested,
                "CancellationTokenSourceWithTimer:  Cancellation signaled on super-long timeout (TimeSpan,2) !");
 
+#if NETFRAMEWORK
+            CancelAfter(provider, cts, TimeSpan.FromMilliseconds(1000));
+#else
             cts.CancelAfter(new TimeSpan(1000));
+#endif // NETFRAMEWORK
 
             Debug.WriteLine("CancellationTokenSourceWithTimer: > About to wait on cancellation that should occur soon (TimeSpan)... if we hang, something bad happened");
 
@@ -213,8 +266,13 @@ namespace Tests.System
             CancellationToken token = cts.Token;
 
             // These should all complete quickly, with RAN_TO_COMPLETION status.
+#if NETFRAMEWORK
+            Task task1 = provider.Delay(new TimeSpan(0));
+            Task task2 = provider.Delay(new TimeSpan(0), token);
+#else
             Task task1 = Task.Delay(new TimeSpan(0), provider);
             Task task2 = Task.Delay(new TimeSpan(0), provider, token);
+#endif // NETFRAMEWORK
 
             Debug.WriteLine("RunDelayTests:    > Waiting for 0-delayed uncanceled tasks to complete.  If we hang, something went wrong.");
             try
@@ -230,7 +288,11 @@ namespace Tests.System
             Assert.True(task2.Status == TaskStatus.RanToCompletion, "    > FAILED.  Expected Delay(TimeSpan(0), timeProvider, uncanceledToken) to run to completion");
 
             // This should take some time
+#if NETFRAMEWORK
+            Task task3 = provider.Delay(TimeSpan.FromMilliseconds(20000));
+#else
             Task task3 = Task.Delay(TimeSpan.FromMilliseconds(20000), provider);
+#endif // NETFRAMEWORK
             Assert.False(task3.IsCompleted, "RunDelayTests:    > FAILED.  Delay(20000) appears to have completed too soon(1).");
             Task t2 = Task.Delay(TimeSpan.FromMilliseconds(10));
             Assert.False(task3.IsCompleted, "RunDelayTests:    > FAILED.  Delay(10000) appears to have completed too soon(2).");
@@ -242,16 +304,16 @@ namespace Tests.System
         {
             CancellationTokenSource cts = new CancellationTokenSource();
 
-            var tcs1 = new TaskCompletionSource();
+            var tcs1 = new TaskCompletionSource<bool>();
             Task task1 = tcs1.Task.WaitAsync(TimeSpan.FromDays(1), provider);
             Assert.False(task1.IsCompleted);
-            tcs1.SetResult();
+            tcs1.SetResult(true);
             await task1;
 
-            var tcs2 = new TaskCompletionSource();
+            var tcs2 = new TaskCompletionSource<bool>();
             Task task2 = tcs2.Task.WaitAsync(TimeSpan.FromDays(1), provider, cts.Token);
             Assert.False(task2.IsCompleted);
-            tcs2.SetResult();
+            tcs2.SetResult(true);
             await task2;
 
             var tcs3 = new TaskCompletionSource<int>();
@@ -291,6 +353,7 @@ namespace Tests.System
             Assert.Equal(200, await task8);
         }
 
+#if !NETFRAMEWORK
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [MemberData(nameof(TimersProvidersListData))]
         public static async void PeriodicTimerTests(TimeProvider provider)
@@ -304,6 +367,7 @@ namespace Tests.System
             timer.Dispose();
             Assert.False(timer.WaitForNextTickAsync().Result);
         }
+#endif // !NETFRAMEWORK
 
         [Fact]
         public static void NegativeTests()
@@ -316,9 +380,11 @@ namespace Tests.System
             Assert.Throws<ArgumentOutOfRangeException>(() => TimeProvider.System.CreateTimer(obj => { }, null, TimeSpan.FromMilliseconds(-2), Timeout.InfiniteTimeSpan));
             Assert.Throws<ArgumentOutOfRangeException>(() => TimeProvider.System.CreateTimer(obj => { }, null, Timeout.InfiniteTimeSpan, TimeSpan.FromMilliseconds(-2)));
 
+#if !NETFRAMEWORK
             Assert.Throws<ArgumentNullException>(() => new CancellationTokenSource(Timeout.InfiniteTimeSpan, null));
 
             Assert.Throws<ArgumentNullException>(() => new PeriodicTimer(TimeSpan.FromMilliseconds(1), null));
+#endif // !NETFRAMEWORK
         }
 
         class TimerState
@@ -414,7 +480,16 @@ namespace Tests.System
             }
 
             public void Dispose() => _timer.Dispose();
+
+#if NETFRAMEWORK
+            public ValueTask DisposeAsync()
+            {
+                _timer.Dispose();
+                return default;
+            }
+#else
             public ValueTask DisposeAsync() => _timer.DisposeAsync();
+#endif // NETFRAMEWORK
         }
     }
 }
