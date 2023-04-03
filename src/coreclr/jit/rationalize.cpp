@@ -303,6 +303,12 @@ void Rationalizer::SanityCheck()
                     {
                         assert(!(tree->gtGetOp2()->gtFlags & GTF_VAR_DEF));
                     }
+
+                    if (tree->OperIsInitBlkOp())
+                    {
+                        // No SIMD types are allowed for InitBlks (including zero-inits).
+                        assert(tree->TypeIs(TYP_STRUCT) && tree->gtGetOp1()->TypeIs(TYP_STRUCT));
+                    }
                 }
             }
         }
@@ -380,20 +386,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
     genTreeOps locationOp = location->OperGet();
 
-    if (varTypeIsSIMD(location) && assignment->OperIsInitBlkOp())
-    {
-        var_types simdType = location->TypeGet();
-        GenTree*  initVal  = assignment->AsOp()->gtOp2;
-        GenTree*  zeroCon  = comp->gtNewZeroConNode(simdType);
-        noway_assert(initVal->IsIntegralConst(0)); // All SIMD InitBlks are zero inits.
-
-        assignment->gtOp2 = zeroCon;
-        value             = zeroCon;
-
-        BlockRange().InsertAfter(initVal, zeroCon);
-        BlockRange().Remove(initVal);
-    }
-
     switch (locationOp)
     {
         case GT_LCL_VAR:
@@ -441,8 +433,7 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                     GenTree::OpName(storeOper));
             storeBlk->SetOperRaw(storeOper);
             storeBlk->gtFlags &= ~GTF_DONT_CSE;
-            storeBlk->gtFlags |=
-                (assignment->gtFlags & (GTF_ALL_EFFECT | GTF_BLK_VOLATILE | GTF_BLK_UNALIGNED | GTF_DONT_CSE));
+            storeBlk->gtFlags |= (assignment->gtFlags & (GTF_ALL_EFFECT | GTF_DONT_CSE));
             storeBlk->AsBlk()->Data() = value;
 
             // Remove the block node from its current position and replace the assignment node with it

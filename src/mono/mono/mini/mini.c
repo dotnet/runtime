@@ -3018,6 +3018,9 @@ init_backend (MonoBackend *backend)
 #ifdef MONO_ARCH_FORCE_FLOAT32
 	backend->force_float32 = 1;
 #endif
+#ifdef MONO_ARCH_HAVE_INIT_MRGCTX
+	backend->have_init_mrgctx = 1;
+#endif
 }
 
 static gboolean

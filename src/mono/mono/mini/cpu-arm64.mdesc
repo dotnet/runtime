@@ -523,5 +523,6 @@ expand_r8: dest:x src1:f len:4
 
 generic_class_init: src1:a len:44 clob:c
 gc_safe_point: src1:i len:12 clob:c
+init_mrgctx: src1:a src2:i len:44 clob:c
 
 fill_prof_call_ctx: src1:i len:128

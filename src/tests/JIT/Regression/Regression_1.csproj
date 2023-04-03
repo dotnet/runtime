@@ -1,4 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <NumberOfStripesToUseInStress>10</NumberOfStripesToUseInStress>
+  </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="CLR-x86-*/**/*.??proj" />
     <MergedWrapperProjectReference Remove="*/**/*_d.??proj" />

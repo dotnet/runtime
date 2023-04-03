@@ -7599,7 +7599,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
             {
                 GenTree* lcl  = gtNewLclvNode(varNum, lclType);
                 GenTree* init = nullptr;
-                if (varTypeIsStruct(lclType))
+                if (lclType == TYP_STRUCT)
                 {
                     init = gtNewBlkOpNode(lcl, gtNewIconNode(0));
                     init = fgMorphInitBlock(init);
