@@ -53,8 +53,13 @@ void NUMASupportInitialize()
     if (syscall(__NR_get_mempolicy, NULL, NULL, 0, 0, 0) < 0 && errno == ENOSYS)
         return;
 
+    int maxNodes = GetNodeNum("/sys/devices/system/node", false);
+    // we only use this implementation when there are two or more NUMA nodes available
+    if (maxNodes < 2)
+        return;
+
     g_numaAvailable = true;
-    g_highestNumaNode = GetNodeNum("/sys/devices/system/node", false);
+    g_highestNumaNode = maxNodes;
 #endif
 }
 
