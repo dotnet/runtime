@@ -70,15 +70,16 @@ jobs:
       - name: timeoutPerTestCollectionInMinutes
         value: 180
     jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_RuntimeTests
+      buildArgs: -s mono+libs -c $(_BuildConfig)
+      timeoutInMinutes: 240
+      # extra steps, run tests
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:
             testGroup: innerloop
-      testGroup: innerloop
-      nameSuffix: AllSubsets_Mono_RuntimeTests
-      buildArgs: -s mono+clr.hosts -c $(_BuildConfig) /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:BuildTestsOnHelix=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true
-      timeoutInMinutes: 240
-      # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
       extraStepsParameters:
-        testSubsetArgs: -tree:./src/tests/JIT
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
