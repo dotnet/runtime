@@ -41,6 +41,7 @@ extern void mono_wasm_typed_array_from_ref (int ptr, int begin, int end, int byt
 // Blazor specific custom routines - see dotnet_support.js for backing code
 extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
 #endif /* ENABLE_LEGACY_JS_INTEROP */
+extern int mono_wasm_compare_string(MonoString **exceptionMessage, MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options);
 
 void bindings_initialize_internals (void)
 {
@@ -69,4 +70,5 @@ void bindings_initialize_internals (void)
 	// Blazor specific custom routines - see dotnet_support.js for backing code
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
 #endif /* ENABLE_LEGACY_JS_INTEROP */
+	mono_add_internal_call ("System.Globalization.CompareInfoInterop::CompareStringJS", mono_wasm_compare_string);
 }
