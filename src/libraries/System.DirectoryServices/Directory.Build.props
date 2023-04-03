@@ -4,7 +4,7 @@
     <!-- this assembly is inbox in desktop, do not version it unless you
          plan on shipping a new desktop version out of band. Instead add API
          to a different assembly. -->
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard2.0'">4.0.0.0</AssemblyVersion>
     <!-- Since this assembly version is pinned, we don't want to validate that it matches
     the expected assembly version on the targeting pack. -->
     <SkipValidateAssemblyVersion>true</SkipValidateAssemblyVersion>
