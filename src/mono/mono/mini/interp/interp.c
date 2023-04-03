@@ -8597,7 +8597,7 @@ static void
 interp_invalidate_transformed_func (void* data, gpointer user_data)
 {
 	MonoAssemblyLoadContext* alc = (MonoAssemblyLoadContext*)data;
-	MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)(alc->mem_manager->runtime_info);
+	MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)(alc->memory_manager->runtime_info);
 
 	jit_mm_lock (jit_mm);
 	mono_internal_hash_table_apply (&jit_mm->interp_code_hash, invalidate_transform, NULL);
@@ -8642,9 +8642,9 @@ typedef struct {
 static void 
 interp_jit_info_foreach_func (void* data, gpointer user_data)
 {
-	InterpJitInfoFuncUserData func_userdata = (InterpJitInfoFuncUserData*)user_data;
+	InterpJitInfoFuncUserData* func_userdata = (InterpJitInfoFuncUserData*)user_data;
 	MonoAssemblyLoadContext* alc = (MonoAssemblyLoadContext*)data;
-	MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)(alc->mem_manager->runtime_info);
+	MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)(alc->memory_manager->runtime_info);
 	InterpCopyJitInfoFuncUserData copy_jit_info_data;
 	// Can't keep memory manager lock while iterating and calling callback since it might take other locks
 	// causing poential deadlock situations. Instead, create copy of interpreter imethod jinfo pointers into
