@@ -206,12 +206,6 @@ mono_gc_base_init (void)
 }
 
 void
-mono_gc_base_cleanup (void)
-{
-	GC_set_finalizer_notifier (NULL);
-}
-
-void
 mono_gc_init_icalls (void)
 {
 }
