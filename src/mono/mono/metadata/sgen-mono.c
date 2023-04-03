@@ -681,87 +681,6 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 }
 
 /*
- * Appdomain handling
- */
-
-static gboolean
-need_remove_object_for_domain (GCObject *start, MonoDomain *domain)
-{
-	if (mono_object_domain (start) == domain) {
-		SGEN_LOG (4, "Need to cleanup object %p", start);
-		sgen_binary_protocol_cleanup (start, (gpointer)SGEN_LOAD_VTABLE (start), sgen_safe_object_get_size ((GCObject*)start));
-		return TRUE;
-	}
-	return FALSE;
-}
-
-static void
-process_object_for_domain_clearing (GCObject *start, MonoDomain *domain)
-{
-	MonoVTable *vt = SGEN_LOAD_VTABLE (start);
-	if (vt->klass == mono_defaults.internal_thread_class)
-		g_assert (mono_object_domain (start) == mono_get_root_domain ());
-}
-
-static gboolean
-clear_domain_process_object (GCObject *obj, MonoDomain *domain)
-{
-	gboolean remove;
-
-	process_object_for_domain_clearing (obj, domain);
-	remove = need_remove_object_for_domain (obj, domain);
-
-	if (remove && obj->synchronisation) {
-		MonoGCHandle dislink = mono_monitor_get_object_monitor_gchandle (obj);
-		if (dislink)
-			mono_gchandle_free_internal (dislink);
-	}
-
-	return remove;
-}
-
-static void
-clear_domain_process_minor_object_callback (GCObject *obj, size_t size, MonoDomain *domain)
-{
-	if (clear_domain_process_object (obj, domain)) {
-		CANARIFY_SIZE (size);
-		memset (obj, 0, size);
-	}
-}
-
-static void
-clear_domain_process_major_object_callback (GCObject *obj, size_t size, MonoDomain *domain)
-{
-	clear_domain_process_object (obj, domain);
-}
-
-static void
-clear_domain_free_major_non_pinned_object_callback (GCObject *obj, size_t size, MonoDomain *domain)
-{
-	if (need_remove_object_for_domain (obj, domain))
-		sgen_major_collector.free_non_pinned_object (obj, size);
-}
-
-static void
-clear_domain_free_major_pinned_object_callback (GCObject *obj, size_t size, MonoDomain *domain)
-{
-	if (need_remove_object_for_domain (obj, domain))
-		sgen_major_collector.free_pinned_object (obj, size);
-}
-
-static void
-clear_domain_process_los_object_callback (GCObject *obj, size_t size, MonoDomain *domain)
-{
-	clear_domain_process_object (obj, domain);
-}
-
-static gboolean
-clear_domain_free_los_object_callback (GCObject *obj, size_t size, MonoDomain *domain)
-{
-	return need_remove_object_for_domain (obj, domain);
-}
-
-/*
  * When appdomains are unloaded we can easily remove objects that have finalizers,
  * but all the others could still be present in random places on the heap.
  * We need a sweep to get rid of them even though it's going to be costly
@@ -782,24 +701,6 @@ mono_gc_clear_domain (MonoDomain * domain)
 	sgen_process_fin_stage_entries ();
 
 	sgen_clear_nursery_fragments ();
-
-	sgen_scan_area_with_callback (sgen_nursery_section->data, sgen_nursery_section->end_data,
-			(IterateObjectCallbackFunc)clear_domain_process_minor_object_callback, domain, FALSE, TRUE);
-
-	/* We need two passes over major and large objects because
-	   freeing such objects might give their memory back to the OS
-	   (in the case of large objects) or obliterate its vtable
-	   (pinned objects with major-copying or pinned and non-pinned
-	   objects with major-mark&sweep), but we might need to
-	   dereference a pointer from an object to another object if
-	   the first object is a proxy. */
-	sgen_major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)clear_domain_process_major_object_callback, domain);
-
-	sgen_los_iterate_objects ((IterateObjectCallbackFunc)clear_domain_process_los_object_callback, domain);
-	sgen_los_iterate_objects_free ((IterateObjectResultCallbackFunc)clear_domain_free_los_object_callback, domain);
-
-	sgen_major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_NON_PINNED, (IterateObjectCallbackFunc)clear_domain_free_major_non_pinned_object_callback, domain);
-	sgen_major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_PINNED, (IterateObjectCallbackFunc)clear_domain_free_major_pinned_object_callback, domain);
 
 	if (domain == mono_get_root_domain ()) {
 		sgen_pin_stats_report ();

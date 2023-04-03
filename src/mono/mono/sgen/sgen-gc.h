@@ -688,7 +688,6 @@ struct _SgenMajorCollector {
 
 	GCObject* (*alloc_object) (GCVTable vtable, size_t size, gboolean has_references);
 	GCObject* (*alloc_object_par) (GCVTable vtable, size_t size, gboolean has_references);
-	void (*free_pinned_object) (GCObject *obj, size_t size);
 
 	/*
 	 * This is used for domain unloading, heap walking from the logging profiler, and
@@ -696,7 +695,6 @@ struct _SgenMajorCollector {
 	 */
 	void (*iterate_objects) (IterateObjectsFlags flags, IterateObjectCallbackFunc callback, void *data);
 
-	void (*free_non_pinned_object) (GCObject *obj, size_t size);
 	void (*pin_objects) (SgenGrayQueue *queue);
 	void (*pin_major_object) (GCObject *obj, SgenGrayQueue *queue);
 	void (*scan_card_table) (CardTableScanType scan_type, ScanCopyContext ctx, int job_index, int job_split_count, int block_count);
