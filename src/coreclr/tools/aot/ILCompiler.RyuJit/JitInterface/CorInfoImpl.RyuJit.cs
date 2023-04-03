@@ -2359,7 +2359,7 @@ namespace Internal.JitInterface
             MetadataType type = (MetadataType)HandleToObject(cls);
             addr.addr = (void*)ObjectToHandle(_compilation.NodeFactory.TypeNonGCStaticsSymbol(type));
             addr.accessType = InfoAccessType.IAT_VALUE;
-            offset = _compilation.NodeFactory.Target.PointerSize -
+            offset = -
                 NonGCStaticsNode.GetClassConstructorContextSize(_compilation.NodeFactory.Target);
             return true;
         }
