@@ -1212,8 +1212,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
 #ifdef TARGET_ARM64
-	if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp))
-		return NULL;
+	//if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp))
+	//	return NULL;
 #endif
 
 	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod);
@@ -1270,6 +1270,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_Ceiling:
 		case SN_Divide:
 		case SN_Multiply:
+		case SN_Dot:
 			break;
 		default: 
 			return NULL;
@@ -1479,7 +1480,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 #if defined(TARGET_ARM64) || defined(TARGET_WASM)
 		int instc0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
-		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
+		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, args[0]->klass, OP_XBINOP, instc0, arg0_type, fsig, args);
 
 		return emit_sum_vector (cfg, fsig->params [0], arg0_type, pairwise_multiply);
 #elif defined(TARGET_AMD64)
