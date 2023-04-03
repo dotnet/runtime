@@ -827,7 +827,7 @@
   </Target>
 
   <PropertyGroup>
-    <SigningCommand>
+    <SigningCommand Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
     <![CDATA[
       for APP_FILE in `find . -name *.app`; do cp embedded.mobileprovision $APP_FILE; sign $APP_FILE; done]]>
     </SigningCommand>
