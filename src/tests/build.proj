@@ -58,11 +58,13 @@
       <LegacyRunnableTestPaths Separator="%(LegacyRunnableTestPaths.SecondSeparator)" Condition="'%(LegacyRunnableTestPaths.SecondSeparator)' != '-1'" />
       <TestDirectoriesWithDup Include="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').Substring(0, %(LegacyRunnableTestPaths.Separator)))" />
     </ItemGroup>
+
     <RemoveDuplicates Inputs="@(TestDirectoriesWithDup)">
       <Output
           TaskParameter="Filtered"
           ItemName="TestDirectories"/>
     </RemoveDuplicates>
+
   </Target>
 
   <!-- Target to check the test build, to see if it looks ok. We've had several cases where a change inadvertently and drastically changes

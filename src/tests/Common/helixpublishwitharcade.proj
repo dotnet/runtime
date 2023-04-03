@@ -342,15 +342,12 @@
   </Target>
 
   <Target Name="PrepareMergedTestPayloadDirectories" DependsOnTargets="PrepareMergedTestPayloadDirectory">
-
-    <Message Text="PrepareMergedTestPayloadDirectories target executing" Importance="High" />
     <ItemGroup>
       <_Scenario Include="$(_Scenarios.Split(','))" />
       <_ProjectsToBuild Include="$(MSBuildProjectFile)">
         <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_MergedPayloadGroups);IsMergedTestWrapper=true</AdditionalProperties>
       </_ProjectsToBuild>
     </ItemGroup>
-
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
   </Target>
 
@@ -533,7 +530,7 @@
       <_TestExclusionListPlaceholder Include="@(_MergedPayloadFiles)" Condition="$([System.String]::new('%(FileName)').EndsWith('TestExclusionList'))" />
       <_MergedPayloadFiles Remove="@(_TestExclusionListPlaceholder)" />
     </ItemGroup>
-  
+
     <Copy SourceFiles="@(_MergedPayloadFiles)" DestinationFiles="@(_MergedPayloadFiles->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')" />
     <!-- Write the real test exclusion list instead of the placeholder. -->
     <WriteLinesToFile File="@(_TestExclusionListPlaceholder->'$(MergedPayloadsRootDirectory)\$(_MergedWrapperName)\%(FileRelativeToPayloadsRootDirectory)')"
