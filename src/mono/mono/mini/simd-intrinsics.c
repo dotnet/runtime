@@ -387,7 +387,7 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_Multiply:
 			case SN_op_Multiply: {
 #ifdef TARGET_ARM64
-				if (!COMPILE_LLVM (cfg) && (arg_type == MONO_TYPE_I8 || arg_type == MONO_TYPE_U8))
+				if (!COMPILE_LLVM (cfg) && (arg_type == MONO_TYPE_I8 || arg_type == MONO_TYPE_U8 || MONO_TYPE_I || MONO_TYPE_U))
 					return NULL;
 #endif
 				if (fsig->params [1]->type != MONO_TYPE_GENERICINST) 
