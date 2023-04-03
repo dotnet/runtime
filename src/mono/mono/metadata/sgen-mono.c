@@ -681,41 +681,6 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 }
 
 /*
- * When appdomains are unloaded we can easily remove objects that have finalizers,
- * but all the others could still be present in random places on the heap.
- * We need a sweep to get rid of them even though it's going to be costly
- * with big heaps.
- * The reason we need to remove them is because we access the vtable and class
- * structures to know the object size and the reference bitmap: once the domain is
- * unloaded the point to random memory.
- */
-void
-mono_gc_clear_domain (MonoDomain * domain)
-{
-	LOCK_GC;
-
-	sgen_binary_protocol_domain_unload_begin (domain);
-
-	sgen_stop_world (0, FALSE);
-
-	sgen_process_fin_stage_entries ();
-
-	sgen_clear_nursery_fragments ();
-
-	if (domain == mono_get_root_domain ()) {
-		sgen_pin_stats_report ();
-		sgen_object_layout_dump (stdout);
-	}
-
-	sgen_restart_world (0, FALSE);
-
-	sgen_binary_protocol_domain_unload_end (domain);
-	sgen_binary_protocol_flush_buffers (FALSE);
-
-	UNLOCK_GC;
-}
-
-/*
  * Allocation
  */
 

@@ -175,7 +175,6 @@ MONO_API int   mono_gc_register_root (char *start, size_t size, MonoGCDescriptor
 MONO_COMPONENT_API void  mono_gc_deregister_root (char* addr);
 void  mono_gc_finalize_domain (MonoDomain *domain);
 void  mono_gc_run_finalize (void *obj, void *data);
-void  mono_gc_clear_domain (MonoDomain * domain);
 
 /*
  * Register a root which can only be written using a write barrier.

@@ -887,11 +887,6 @@ mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src)
 				m_class_get_instance_size (mono_object_class (obj)) - MONO_ABI_SIZEOF (MonoObject));
 }
 
-void
-mono_gc_clear_domain (MonoDomain *domain)
-{
-}
-
 int
 mono_gc_get_suspend_signal (void)
 {
