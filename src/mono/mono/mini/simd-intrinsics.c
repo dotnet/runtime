@@ -3602,7 +3602,7 @@ emit_arm64_intrinsics (
 			MonoClassField *fields = m_class_get_fields (tclass);
 			int nfields = mono_class_get_field_count (tclass);
 			guint32 *offsets = mono_mempool_alloc0 (cfg->mempool, nfields * sizeof (guint32));
-			for (int i = 0; i < mono_class_get_field_count (tclass); ++i)
+			for (uint32_t i = 0; i < mono_class_get_field_count (tclass); ++i)
 				offsets [i] = mono_field_get_offset (&fields [i]) - MONO_ABI_SIZEOF (MonoObject);
 
 			int vreg = alloc_xreg (cfg);
