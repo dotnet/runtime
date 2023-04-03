@@ -253,10 +253,10 @@ typedef struct MonoAotOptions {
 	gboolean dump_json;
 	gboolean profile_only;
 	gboolean no_opt;
+	gboolean wrappers_only;
 	char *clangxx;
 	char *depfile;
 	char *runtime_init_callback;
-	gboolean wrappers_only;
 } MonoAotOptions;
 
 typedef enum {
@@ -4708,11 +4708,14 @@ mono_aot_can_enter_interp (MonoMethod *method)
 }
 
 static void
-add_wrappers (MonoAotCompile *acfg)
+add_full_aot_wrappers (MonoAotCompile *acfg)
 {
 	MonoMethod *method, *m;
 	MonoMethodSignature *sig, *csig;
 	guint32 token;
+
+	if (!mono_aot_mode_is_full (&acfg->aot_opts))
+		return;
 
 	/*
 	 * FIXME: Instead of AOTing all the wrappers, it might be better to redesign them
@@ -5113,27 +5116,6 @@ add_wrappers (MonoAotCompile *acfg)
 		}
 	}
 
-	/* pinvoke wrappers */
-	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
-	for (int i = 0; i < rows; ++i) {
-		ERROR_DECL (error);
-		token = MONO_TOKEN_METHOD_DEF | (i + 1);
-		method = mono_get_method_checked (acfg->image, token, NULL, NULL, error);
-		report_loader_error (acfg, error, TRUE, "Failed to load method token 0x%x due to %s\n", i, mono_error_get_message (error));
-
-		if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
-			(method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)) {
-			add_method (acfg, mono_marshal_get_native_wrapper (method, TRUE, TRUE));
-		}
-
-		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
-			if (acfg->aot_opts.llvm_only) {
-				/* The wrappers have a different signature (hasthis is not set) so need to add this too */
-				add_gsharedvt_wrappers (acfg, mono_method_signature_internal (method), FALSE, TRUE, FALSE);
-			}
-		}
-	}
-
 	/* StructureToPtr/PtrToStructure wrappers */
 	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_TYPEDEF]);
 	for (int i = 0; i < rows; ++i) {
@@ -5404,6 +5386,14 @@ MONO_RESTORE_WARNING
 		g_free (export_symbols_out);
 		fclose (export_symbols_outfile);
 	}
+}
+
+static void
+add_wrappers (MonoAotCompile *acfg)
+{
+	add_full_aot_wrappers (acfg);
+	add_managed_to_native_wrappers (acfg);
+	add_native_to_managed_wrappers (acfg);
 }
 
 static gboolean
@@ -12938,11 +12928,7 @@ collect_methods (MonoAotCompile *acfg)
 	if (mono_aot_mode_is_full (&acfg->aot_opts) || mono_aot_mode_is_hybrid (&acfg->aot_opts))
 		add_generic_instances (acfg);
 
-	if (mono_aot_mode_is_full (&acfg->aot_opts))
-		add_wrappers (acfg);
-
-	add_managed_to_native_wrappers (acfg);
-	add_native_to_managed_wrappers (acfg);
+	add_wrappers (acfg);
 
 	return TRUE;
 }
