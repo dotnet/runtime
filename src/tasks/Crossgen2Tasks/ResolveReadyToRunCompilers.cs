@@ -149,6 +149,7 @@ namespace Microsoft.NET.Build.Tasks
                 "linux-musl" => "linux",
                 "osx" => "osx",
                 "win" => "windows",
+                "freebsd" => "freebsd",
                 _ => null
             };
 
@@ -297,7 +298,7 @@ namespace Microsoft.NET.Build.Tasks
                     }
                 }
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || IsFreeBSD())
             {
                 if (_targetArchitecture == Architecture.Arm || _targetArchitecture == Architecture.Arm64)
                 {
@@ -352,7 +353,7 @@ namespace Microsoft.NET.Build.Tasks
                 toolFileName = "crossgen2.exe";
                 v5_clrJitFileNamePattern = "clrjit-{0}.dll";
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || IsFreeBSD())
             {
                 toolFileName = "crossgen2";
                 v5_clrJitFileNamePattern = "libclrjit-{0}.so";
@@ -401,5 +402,17 @@ namespace Microsoft.NET.Build.Tasks
                 _ => null
             };
         }
+
+#if NETCOREAPP
+        private static bool IsFreeBSD() => RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD);
+#else
+        private static readonly OSPlatform s_freebsdOSPlatform = OSPlatform.Create("FREEBSD");
+
+        private static bool IsFreeBSD()
+        {
+            return RuntimeInformation.IsOSPlatform(s_freebsdOSPlatform);
+        }
+#endif
+
     }
 }
