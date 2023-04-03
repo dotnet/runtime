@@ -14053,7 +14053,6 @@ gc_heap::init_semi_shared()
     if (conserve_mem_setting > 9)
         conserve_mem_setting = 9;
 
-    GCConfig::SetGCConserveMem(conserve_mem_setting);
     dprintf (1, ("conserve_mem_setting = %d", conserve_mem_setting));
 
     reset_mm_p = TRUE;
@@ -45361,7 +45360,6 @@ HRESULT GCHeap::Initialize()
 #endif //USE_REGIONS
 
 #endif //HOST_64BIT
-
     GCConfig::SetGCLargePages(gc_heap::use_large_pages_p);
 
     uint32_t nhp = 1;
