@@ -63,6 +63,9 @@ resources:
       env:
         ROOTFS_DIR: /crossrootfs/ppc64le
 
+    - container: debian-11-gcc12-amd64
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-gcc12-amd64
+
     - container: browser_wasm
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-webassembly-net8-20230322221728-80fdceb
 
