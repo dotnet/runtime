@@ -831,38 +831,36 @@ bool emitter::IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2)
 
     bool result = false;
 
-    emitPeepholeIterateLastInstrs(
-        [&](instrDesc* id)
+    emitPeepholeIterateLastInstrs([&](instrDesc* id) {
+        instruction ins = id->idIns();
+
+        switch (ins)
         {
-            instruction ins = id->idIns();
-
-            switch (ins)
+            case INS_cmp:
             {
-                case INS_cmp:
+                if ((id->idReg1() == reg1) && (id->idReg2() == reg2))
                 {
-                    if ((id->idReg1() == reg1) && (id->idReg2() == reg2))
-                    {
-                        result = (size == id->idOpSize());
-                    }
-
-                    return PEEPHOLE_ABORT;
+                    result = (size == id->idOpSize());
                 }
 
-                default:
-                    break;
-            }
-
-            if (emitDoesInsModifyFlags(ins))
-            {
                 return PEEPHOLE_ABORT;
             }
 
-            if (emitIsInstrWritingToReg(id, reg1) || emitIsInstrWritingToReg(id, reg2))
-            {
-                return PEEPHOLE_ABORT;
-            }
+            default:
+                break;
+        }
 
-            return PEEPHOLE_CONTINUE;
+        if (emitDoesInsModifyFlags(ins))
+        {
+            return PEEPHOLE_ABORT;
+        }
+
+        if (emitIsInstrWritingToReg(id, reg1) || emitIsInstrWritingToReg(id, reg2))
+        {
+            return PEEPHOLE_ABORT;
+        }
+
+        return PEEPHOLE_CONTINUE;
     });
 
     return result;
