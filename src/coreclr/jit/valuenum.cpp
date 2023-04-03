@@ -5697,7 +5697,7 @@ bool ValueNumStore::IsVNNeverNegative(ValueNum vn)
             case VNF_HWI_BMI1_TrailingZeroCount:
             case VNF_HWI_BMI1_X64_TrailingZeroCount:
                 return true;
-#elif TARGET_ARM64
+#elif defined(TARGET_ARM64)
             case VNF_HWI_AdvSimd_PopCount:
             case VNF_HWI_AdvSimd_LeadingZeroCount:
             case VNF_HWI_AdvSimd_LeadingSignCount:
