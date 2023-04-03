@@ -369,7 +369,7 @@ class DeadCodeElimination
 
             // We only expect to be able to get rid of it when optimizing
 #if !DEBUG
-            ThrowIfPresentWithTypeHandle(typeof(TestBranchesInGenericCodeRemoval), nameof(Unused));
+            ThrowIfPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Unused));
 #endif
             ThrowIfNotPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Used));
 
@@ -387,30 +387,6 @@ class DeadCodeElimination
         if (GetTypeSecretly(testType, typeName) != null)
         {
             throw new Exception(typeName);
-        }
-    }
-
-    private static void ThrowIfPresentWithTypeHandle(Type testType, string typeName)
-    {
-        Type t = GetTypeSecretly(testType, typeName);
-        if (t == null)
-        {
-            throw new Exception("Not found " + typeName);
-        }
-
-        bool thrown = false;
-        try
-        {
-            _ = t.TypeHandle;
-        }
-        catch (NotSupportedException)
-        {
-            thrown = true;
-        }
-
-        if (!thrown)
-        {
-            throw new Exception(typeName + " has type handle");
         }
     }
 
