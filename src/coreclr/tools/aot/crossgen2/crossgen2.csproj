@@ -43,6 +43,11 @@
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets"
           Condition="'$(NativeAotSupported)' == 'true' and '$(_IsPublishing)' == 'true'" />
 
+  <!-- Some asserts in CoreLib are not compatible with metadata blocking -->
+  <ItemGroup>
+    <IlcArg Include="--nometadatablocking" />
+  </ItemGroup>
+
   <Target Name="RewriteRuntimePackDir"
           Condition="'$(_IsPublishing)' == 'true'"
           DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"

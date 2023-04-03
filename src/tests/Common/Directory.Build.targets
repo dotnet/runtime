@@ -18,6 +18,7 @@
     <CopyCoreDisToolsToCoreRoot Condition="$(GCStressDependsOnCoreDisTools) And '$(DotNetBuildFromSource)' != 'true'">true</CopyCoreDisToolsToCoreRoot>
     <!-- Non-desktop OS's use a custom dotnet host, instead of corerun -->
     <IsDesktopOS Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsAndroid)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsMacCatalyst)' != 'true'">true</IsDesktopOS>
+    <Crossgen2Supported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TestBuildMode)' != 'nativeaot'">true</Crossgen2Supported>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)coredistools.targets" Condition="$(CopyCoreDisToolsToCoreRoot)" />
@@ -29,6 +30,14 @@
 
   <Target Name="CopyDependencyToCoreRoot"
           DependsOnTargets="ResolveAssemblyReferences;ResolveRuntimeFilesFromLocalBuild">
+
+    <!-- Publish crossgen2 on supported platforms. -->
+
+    <MSBuild Condition="'$(Crossgen2Supported)' == 'true'"
+      Targets="Restore;Publish"
+      BuildInParallel="true"
+      Properties="PublishDir=$(CORE_ROOT)\crossgen2;DisableSourceLink=true"
+      Projects="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\Microsoft.NETCore.App.Crossgen2.sfxproj" />
 
     <ItemGroup>
       <RunTimeDependencyCopyLocal Include="@(RuntimeCopyLocalItems)" />
@@ -65,11 +74,6 @@
       <!-- Used by the Crossgen comparison job -->
       <RunTimeArtifactsIncludeFolders Include="IL/" />
 
-      <!-- Used for Crossgen2 R2R tests -->
-      <RunTimeArtifactsIncludeFolders Include="crossgen2/">
-        <IncludeSubFolders>True</IncludeSubFolders>
-      </RunTimeArtifactsIncludeFolders>
-
       <!-- Used for capturing symbolic stack traces using Watson -->
       <RunTimeArtifactsIncludeFolders Include="PDB/" />
 
@@ -97,7 +101,7 @@
 
       <RunTimeDependencyCopyLocal
           Condition="'%(RuntimeArtifactsIncludeFolders.IncludeSubFolders)' == 'True'"
-          Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)**/*"
+          Include="$(CoreCLRArtifactsPath)%(RunTimeArtifactsIncludeFolders.Identity)**\*"
           Exclude="@(RunTimeArtifactsExcludeFiles -> '$(CoreCLRArtifactsPath)%(Identity)')"
           TargetDir="%(RunTimeArtifactsIncludeFolders.Identity)" />
     </ItemGroup>
@@ -180,7 +184,7 @@
 
     <Copy
       SourceFiles="@(RunTimeDependencyCopyLocal)"
-      DestinationFiles="@(RunTimeDependencyCopyLocal -> '$(CORE_ROOT)/%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"
+      DestinationFiles="@(RunTimeDependencyCopyLocal -> '$(CORE_ROOT)\%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"
       SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
       OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
       Retries="$(CopyRetryCount)"
