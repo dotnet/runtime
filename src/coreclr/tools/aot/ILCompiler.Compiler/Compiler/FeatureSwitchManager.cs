@@ -769,21 +769,14 @@ namespace ILCompiler
             if (type1.ContainsSignatureVariables() || type2.ContainsSignatureVariables())
                 return false;
 
-            // If either type is in canonical form, we cannot directly compare, but we could still be able
-            // to figure out things are false: if one of them is a reference type canon and the other is a valuetype.
-            if (type1.IsCanonicalDefinitionType(CanonicalFormKind.Specific) && !type1.IsValueType
-                && !type2.IsCanonicalDefinitionType(CanonicalFormKind.Any) && type2.IsValueType)
-                constant = 0;
-            else if (type2.IsCanonicalDefinitionType(CanonicalFormKind.Specific) && !type2.IsValueType
-                && !type1.IsCanonicalDefinitionType(CanonicalFormKind.Any) && type1.IsValueType)
-                constant = 0;
-            else if (type1.IsCanonicalSubtype(CanonicalFormKind.Any) || type2.IsCanonicalSubtype(CanonicalFormKind.Any))
+            bool? equality = TypeExtensions.CompareTypesForEquality(type1, type2);
+            if (!equality.HasValue)
                 return false;
-            else
-                constant = type1 == type2 ? 1 : 0;
+
+            constant = equality.Value ? 1 : 0;
 
             if (op == "op_Inequality")
-                constant = constant == 0 ? 1 : 0;
+                constant ^= 1;
 
             return true;
 
