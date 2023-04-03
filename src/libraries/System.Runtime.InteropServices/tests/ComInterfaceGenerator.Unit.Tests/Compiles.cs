@@ -319,9 +319,16 @@ namespace ComInterfaceGenerator.Unit.Tests
             TestUtils.AssertPostSourceGeneratorCompilation(newComp, "CS0105");
         }
 
+        public static IEnumerable<object[]> ComInterfaceSnippetsToCompile()
+        {
+            CodeSnippets codeSnippets = new(new GeneratedComInterfaceAttributeProvider());
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceType };
+        }
+
         [Theory]
         [MemberData(nameof(CodeSnippetsToCompile), GeneratorKind.ComInterfaceGenerator)]
         [MemberData(nameof(CustomCollections), GeneratorKind.ComInterfaceGenerator)]
+        [MemberData(nameof(ComInterfaceSnippetsToCompile))]
         public async Task ValidateComInterfaceSnippets(string id, string source)
         {
             _ = id;
