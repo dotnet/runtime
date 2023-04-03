@@ -766,6 +766,7 @@ struct min_fl_list_info
     uint8_t* tail;
 
     void thread_item (uint8_t* item);
+    void thread_item_no_prev (uint8_t* item);
 };
 #endif //MULTIPLE_HEAPS && USE_REGIONS
 
@@ -909,6 +910,10 @@ public:
                                   size_t max_item_count,
                                   size_t* recorded_fl_info_size);
 #endif //FEATURE_EVENT_TRACE
+    bool is_doubly_linked_p()
+    {
+        return (gen_number == max_generation);
+    }
 };
 
 #define NUM_GEN_POWER2 (20)
@@ -2104,8 +2109,8 @@ private:
 
 #if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
     PER_HEAP_ISOLATED_METHOD void fl_exp();
-    PER_HEAP_METHOD void rethread_fl_items();
-    PER_HEAP_ISOLATED_METHOD void merge_fl_from_other_heaps (int to_n_heaps, int from_n_heaps);
+    PER_HEAP_METHOD void rethread_fl_items(int gen_idx);
+    PER_HEAP_ISOLATED_METHOD void merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n_heaps);
 #endif //MULTIPLE_HEAPS && USE_REGIONS
 
     PER_HEAP_ISOLATED_METHOD void save_data_for_no_gc();

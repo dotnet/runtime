@@ -15793,6 +15793,28 @@ void min_fl_list_info::thread_item (uint8_t* item)
     tail = item;
 }
 
+void min_fl_list_info::thread_item_no_prev (uint8_t* item)
+{
+    free_list_slot (item) = 0;
+    free_list_undo (item) = UNDO_EMPTY;
+    assert (item != head);
+
+    if (head == 0)
+    {
+        head = item;
+    }
+    else
+    {
+        assert ((free_list_slot(head) != 0) || (tail == head));
+        assert (item != tail);
+        assert (free_list_slot(tail) == 0);
+
+        free_list_slot (tail) = item;
+    }
+
+    tail = item;
+}
+
 // This is only implemented for gen2 right now!!!!
 // the min_fl_list array is arranged as chunks of n_heaps min_fl_list_info, the 1st chunk corresponds to the 1st bucket,
 // and so on.
@@ -15806,6 +15828,8 @@ void allocator::rethread_items (size_t* num_total_fl_items, size_t* num_total_fl
     size_t num_fl_items = 0;
     size_t num_fl_items_rethreaded = 0;
 
+    assert (num_buckets <= MAX_BUCKET_COUNT);
+
     for (unsigned int i = 0; i < num_buckets; i++)
     {
         // Get to the portion that corresponds to beginning of this bucket. We will be filling in entries for heaps
@@ -15813,6 +15837,7 @@ void allocator::rethread_items (size_t* num_total_fl_items, size_t* num_total_fl
         min_fl_list_info* current_bucket_min_fl_list = min_fl_list + (i * num_heaps);
 
         uint8_t* free_item = alloc_list_head_of (i);
+        uint8_t* prev_item = nullptr;
         while (free_item)
         {
             assert (((CObjectHeader*)free_item)->IsFree());
@@ -15830,16 +15855,31 @@ void allocator::rethread_items (size_t* num_total_fl_items, size_t* num_total_fl
                 size_t size_o = Align(size (free_item), align_const);
                 uint8_t* next_item = free_list_slot (free_item);
 
-                unlink_item_no_undo (free_item, size_o);
                 int hn = region->heap->heap_number;
-                current_bucket_min_fl_list[hn].thread_item (free_item);
-
+                if (is_doubly_linked_p())
+                {
+                    unlink_item_no_undo (free_item, size_o);
+                    current_bucket_min_fl_list[hn].thread_item (free_item);
+                }
+                else
+                {
+                    if (prev_item == nullptr)
+                    {
+                        alloc_list_head_of (i) = next_item;
+                    }
+                    else
+                    {
+                        free_list_slot (prev_item) = next_item;
+                    }
+                    current_bucket_min_fl_list[hn].thread_item_no_prev (free_item);
+                }
                 free_list_space_per_heap[hn] += size_o;
 
                 free_item = next_item;
             }
             else
             {
+                prev_item = free_item;
                 free_item = free_list_slot (free_item);
             }
         }
@@ -15875,8 +15915,10 @@ void allocator::merge_items (gc_heap* current_heap, int to_num_heaps, int from_n
 
             if (head_other_heap)
             {
-                free_list_prev (head_other_heap) = tail;
-
+                if (is_doubly_linked_p())
+                {
+                    free_list_prev (head_other_heap) = tail;
+                }
                 uint8_t* saved_head = head;
                 uint8_t* saved_tail = tail;
 
@@ -22371,19 +22413,16 @@ void gc_heap::fl_exp()
 }
 
 // Currently only implemented for gen2!
-void gc_heap::rethread_fl_items()
+void gc_heap::rethread_fl_items(int gen_idx)
 {
     if (!total_num_fl_items_moved_stage1)
         return;
 
-    allocator* gen_allocator = generation_allocator (generation_of (max_generation));
-    int num_buckets = gen_allocator->number_of_buckets();
-
     if (!min_fl_list)
     {    
-        min_fl_list = new (nothrow) min_fl_list_info [num_buckets * n_max_heaps];
+        min_fl_list = new (nothrow) min_fl_list_info [MAX_BUCKET_COUNT * n_max_heaps];
     }
-    uint32_t min_fl_list_size = sizeof (min_fl_list_info) * (num_buckets * n_max_heaps);
+    uint32_t min_fl_list_size = sizeof (min_fl_list_info) * (MAX_BUCKET_COUNT * n_max_heaps);
     memset (min_fl_list, 0, min_fl_list_size);
 
     if (!free_list_space_per_heap)
@@ -22395,13 +22434,14 @@ void gc_heap::rethread_fl_items()
     size_t num_fl_items = 0;
     size_t num_fl_items_rethreaded = 0;
 
+    allocator* gen_allocator = generation_allocator (generation_of (gen_idx));
     gen_allocator->rethread_items (&num_fl_items, &num_fl_items_rethreaded, this, min_fl_list, free_list_space_per_heap, n_heaps);
 
     num_fl_items_rethreaded_stage2 = num_fl_items_rethreaded;
 }
 
 // Currently only implemented for gen2!
-void gc_heap::merge_fl_from_other_heaps (int to_n_heaps, int from_n_heaps)
+void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n_heaps)
 {
     if (!total_num_fl_items_moved_stage1)
         return;
@@ -22417,7 +22457,7 @@ void gc_heap::merge_fl_from_other_heaps (int to_n_heaps, int from_n_heaps)
         total_num_fl_items_rethreaded_stage2 += hp->num_fl_items_rethreaded_stage2;
 
         min_fl_list_info* current_heap_min_fl_list = hp->min_fl_list;
-        allocator* gen_allocator = generation_allocator (hp->generation_of (max_generation));
+        allocator* gen_allocator = generation_allocator (hp->generation_of (gen_idx));
         int num_buckets = gen_allocator->number_of_buckets();
 
         for (int i = 0; i < num_buckets; i++)
@@ -22452,7 +22492,7 @@ void gc_heap::merge_fl_from_other_heaps (int to_n_heaps, int from_n_heaps)
     for (int hn = 0; hn < to_n_heaps; hn++)
     {
         gc_heap* hp = g_heaps[hn];
-        generation* gen = hp->generation_of (max_generation);
+        generation* gen = hp->generation_of (gen_idx);
         allocator* gen_allocator = generation_allocator (gen);
         gen_allocator->merge_items (hp, to_n_heaps, from_n_heaps);
 
@@ -22467,8 +22507,9 @@ void gc_heap::merge_fl_from_other_heaps (int to_n_heaps, int from_n_heaps)
                 free_list_space_decrease += hp->free_list_space_per_heap[to_hn];
             }
         }
-        dprintf (8888, ("heap %d %zd total free list space, %zd moved to other heaps",
+        dprintf (8888, ("heap %d gen %d %zd total free list space, %zd moved to other heaps",
             hn,
+            gen_idx,
             generation_free_list_space (gen),
             free_list_space_decrease));
 
@@ -22482,7 +22523,7 @@ void gc_heap::merge_fl_from_other_heaps (int to_n_heaps, int from_n_heaps)
 
             free_list_space_increase += from_hp->free_list_space_per_heap[hn];
         }
-        dprintf (8888, ("heap %d %zd free list space moved from other heaps", hn, free_list_space_increase));
+        dprintf (8888, ("heap %d gen %d %zd free list space moved from other heaps", hn, gen_idx, free_list_space_increase));
         generation_free_list_space (gen) += free_list_space_increase;
     }
 
@@ -22493,7 +22534,7 @@ void gc_heap::merge_fl_from_other_heaps (int to_n_heaps, int from_n_heaps)
     for (int hn = 0; hn < to_n_heaps; hn++)
     {
         gc_heap* hp = g_heaps[hn];
-        allocator* gen_allocator = generation_allocator (hp->generation_of (max_generation));
+        allocator* gen_allocator = generation_allocator (hp->generation_of (gen_idx));
         size_t fl_items_count = 0;
         size_t fl_items_for_oh_count = 0;
         gen_allocator->count_items (hp, &fl_items_count, &fl_items_for_oh_count);
@@ -24641,13 +24682,16 @@ bool gc_heap::redistribute_regions (int new_n_heaps)
     }
 
     // rethread the free lists
-    for (int i = 0; i < old_n_heaps; i++)
+    for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
     {
-        gc_heap* hp = g_heaps[i];
+        for (int i = 0; i < old_n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
 
-        hp->rethread_fl_items ();
+            hp->rethread_fl_items (gen_idx);
+        }
+        merge_fl_from_other_heaps (gen_idx, new_n_heaps, old_n_heaps);
     }
-    merge_fl_from_other_heaps (new_n_heaps, old_n_heaps);
 
     // there should be no items in the bgc_alloc_lock on any heap - check that
     for (int i = 0; i < old_n_heaps; i++)
