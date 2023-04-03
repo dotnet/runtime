@@ -5485,25 +5485,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
                 goto DONE;
 
-            case GT_COLON:
-
-                level = gtSetEvalOrder(op1);
-                lvl2  = gtSetEvalOrder(op2);
-
-                if (level < lvl2)
-                {
-                    level = lvl2;
-                }
-                else if (level == lvl2)
-                {
-                    level += 1;
-                }
-
-                costEx = op1->GetCostEx() + op2->GetCostEx();
-                costSz = op1->GetCostSz() + op2->GetCostSz();
-
-                goto DONE;
-
             case GT_INDEX_ADDR:
                 costEx = 6; // cmp reg,reg; jae throw; mov reg, [addrmode]  (not taken)
                 costSz = 9; // jump to cold section
@@ -7860,14 +7841,19 @@ GenTreeObj* Compiler::gtNewObjNode(ClassLayout* layout, GenTree* addr)
     // An Obj is not a global reference, if it is known to be a local struct.
     if ((addr->gtFlags & GTF_GLOB_REF) == 0)
     {
-        GenTreeLclVarCommon* lclNode = addr->IsLocalAddrExpr();
-        if (lclNode != nullptr)
+        // TODO-Bug: this method does not have enough information to make this determination.
+        // The local may end up (or already is) address-exposed.
+        if (addr->OperIsLocalAddr())
         {
             objNode->gtFlags |= GTF_IND_NONFAULTING;
-            if (!lvaIsImplicitByRefLocal(lclNode->GetLclNum()))
+            if (lvaIsImplicitByRefLocal(addr->AsLclVarCommon()->GetLclNum()))
             {
-                objNode->gtFlags &= ~GTF_GLOB_REF;
+                objNode->gtFlags |= GTF_GLOB_REF;
             }
+        }
+        else
+        {
+            objNode->gtFlags |= GTF_GLOB_REF;
         }
     }
 
@@ -7893,36 +7879,23 @@ GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr
 }
 
 //------------------------------------------------------------------------
-// gtSetObjGcInfo: Set the GC info on an object node
-//
-// Arguments:
-//    objNode - The object node of interest
-//
-void Compiler::gtSetObjGcInfo(GenTreeObj* objNode)
-{
-    assert(varTypeIsStruct(objNode->TypeGet()));
-    assert(objNode->TypeGet() == impNormStructType(objNode->GetLayout()->GetClassHandle()));
-
-    if (!objNode->GetLayout()->HasGCPtr())
-    {
-        objNode->SetOper(objNode->OperIs(GT_OBJ) ? GT_BLK : GT_STORE_BLK);
-    }
-}
-
-//------------------------------------------------------------------------
 // gtNewStructVal: Return a node that represents a struct or block value
 //
 // Arguments:
-//    layout - The struct's layout
-//    addr   - The address of the struct
+//    layout     - The struct's layout
+//    addr       - The struct's address
+//    indirFlags - Indirection flags
 //
 // Return Value:
 //    An "OBJ/BLK" node, or "LCL_VAR" node if "addr" points to a local
 //    with a layout compatible with "layout".
 //
-GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr)
+GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
 {
-    if (addr->OperIs(GT_LCL_VAR_ADDR))
+    assert((indirFlags & ~GTF_IND_FLAGS) == 0);
+
+    bool isVolatile = (indirFlags & GTF_IND_VOLATILE) != 0;
+    if (!isVolatile && addr->OperIs(GT_LCL_VAR_ADDR))
     {
         unsigned   lclNum = addr->AsLclVar()->GetLclNum();
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
@@ -7943,25 +7916,12 @@ GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr)
         blkNode = gtNewObjNode(layout, addr);
     }
 
+    blkNode->gtFlags |= indirFlags;
+    if (isVolatile)
+    {
+        blkNode->gtFlags |= GTF_ORDER_SIDEEFF;
+    }
     blkNode->SetIndirExceptionFlags(this);
-
-    return blkNode;
-}
-
-//------------------------------------------------------------------------
-// gtNewBlockVal: Return a node that represents a possibly untyped block value
-//
-// Arguments:
-//    addr      - The address of the block
-//    size      - The size of the block
-//
-// Return Value:
-//    A block, object or local node that represents the block value pointed to by 'addr'.
-//
-GenTree* Compiler::gtNewBlockVal(GenTree* addr, unsigned size)
-{
-    ClassLayout* layout  = typGetBlkLayout(size);
-    GenTree*     blkNode = gtNewStructVal(layout, addr);
 
     return blkNode;
 }
@@ -8197,7 +8157,7 @@ GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVo
     bool isCopyBlock = srcOrFillVal->TypeGet() == dst->TypeGet();
     if (!isCopyBlock) // InitBlk
     {
-        assert(genActualTypeIsInt(srcOrFillVal));
+        assert(genActualTypeIsInt(srcOrFillVal) && dst->TypeIs(TYP_STRUCT));
         if (!srcOrFillVal->IsIntegralConst(0))
         {
             srcOrFillVal = gtNewOperNode(GT_INIT_VAL, TYP_INT, srcOrFillVal);
@@ -8239,7 +8199,8 @@ GenTree* Compiler::gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVo
 
     if (isVolatile)
     {
-        result->gtFlags |= GTF_BLK_VOLATILE;
+        assert(dst->OperIsIndir());
+        dst->gtFlags |= GTF_IND_VOLATILE;
     }
 
 #ifdef FEATURE_SIMD
@@ -15909,8 +15870,6 @@ GenTree* Compiler::gtNewTempAssign(
     }
     else if (varTypeIsStruct(varDsc))
     {
-        GenTree* valx = val->gtEffectiveVal(/*commaOnly*/ true);
-        valx->gtFlags |= GTF_DONT_CSE;
         asg = impAssignStruct(dest, val, CHECK_SPILL_NONE, pAfterStmt, di, block);
     }
     else
@@ -16350,7 +16309,7 @@ bool Compiler::gtSplitTree(
                 return false;
             }
 
-            if (useInf.User->OperIs(GT_ADDR, GT_ASG) && (useInf.Use == &useInf.User->AsUnOp()->gtOp1))
+            if (useInf.User->OperIs(GT_ASG) && (useInf.Use == &useInf.User->AsUnOp()->gtOp1))
             {
                 return true;
             }
@@ -17178,8 +17137,6 @@ bool GenTree::IsPartialLclFld(Compiler* comp)
 //------------------------------------------------------------------------
 // DefinesLocal: Does "this" define a local?
 //
-// Recognizes "ASG" stores. Also recognizes "STORE_OBJ/BLK".
-//
 // Arguments:
 //    comp        - the compiler instance
 //    pLclVarTree - [out] parameter for the local representing the definition
@@ -17187,30 +17144,27 @@ bool GenTree::IsPartialLclFld(Compiler* comp)
 //                  a "full" definition (overwrites the entire variable)
 //    pOffset     - optional [out] parameter for the offset, relative to the
 //                  local, at which the store is performed
+//    pSize       - optional [out] parameter for the amount of bytes affected
+//                  by the store
 //
 // Return Value:
-//    Whether "this" represents a store to a local variable.
+//    Whether "this" represents a store to a possibly tracked local variable
+//    before rationalization.
 //
 // Notes:
 //    This function is contractually bound to recognize a superset of stores
-//    that "LocalAddressVisitor" recognizes, as it is used to detect which
-//    trees can define tracked locals.
+//    that "LocalAddressVisitor" recognizes and transforms, as it is used to
+//    detect which trees can define tracked locals.
 //
 bool GenTree::DefinesLocal(
     Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset, unsigned* pSize)
 {
     assert((pOffset == nullptr) || (*pOffset == 0));
 
-    GenTreeLclVarCommon* lclVarTree = nullptr;
-    unsigned             storeSize  = 0;
-    ssize_t              offset     = 0;
-
     if (OperIs(GT_ASG))
     {
         GenTree* lhs = AsOp()->gtGetOp1();
 
-        // Return early for the common case.
-        //
         if (lhs->OperIs(GT_LCL_VAR))
         {
             *pLclVarTree = lhs->AsLclVarCommon();
@@ -17248,111 +17202,41 @@ bool GenTree::DefinesLocal(
 
             return true;
         }
-
-        if (lhs->OperIsIndir() && lhs->AsIndir()->Addr()->DefinesLocalAddr(&lclVarTree, &offset))
-        {
-            storeSize = lhs->AsIndir()->Size();
-        }
-        else
-        {
-            return false;
-        }
     }
     else if (OperIs(GT_CALL))
     {
-        GenTree* retBufArg = comp->gtCallGetDefinedRetBufLclAddr(AsCall());
-        if (retBufArg == nullptr)
+        GenTreeLclVarCommon* lclAddr = comp->gtCallGetDefinedRetBufLclAddr(AsCall());
+        if (lclAddr == nullptr)
         {
             return false;
         }
 
-        if (!retBufArg->DefinesLocalAddr(&lclVarTree, &offset))
+        *pLclVarTree = lclAddr;
+
+        if ((pIsEntire != nullptr) || (pSize != nullptr))
         {
-            return false;
-        }
+            unsigned storeSize = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
 
-        storeSize = comp->typGetObjLayout(AsCall()->gtRetClsHnd)->GetSize();
-    }
-    else if (OperIs(GT_STORE_BLK, GT_STORE_OBJ) && AsBlk()->Addr()->DefinesLocalAddr(&lclVarTree, &offset))
-    {
-        storeSize = AsBlk()->Size();
-    }
-    else
-    {
-        return false;
-    }
-
-    assert(lclVarTree != nullptr);
-    *pLclVarTree = lclVarTree;
-
-    if (pIsEntire != nullptr)
-    {
-        if (offset == 0)
-        {
-            unsigned lclSize = comp->lvaLclExactSize(lclVarTree->GetLclNum());
-            if (comp->lvaGetDesc(lclVarTree)->lvNormalizeOnStore())
+            if (pIsEntire != nullptr)
             {
-                // It's normalize on store, so use the full storage width -- writing to low bytes won't
-                // necessarily yield a normalized value.
-                lclSize = genTypeSize(TYP_INT);
+                *pIsEntire = storeSize == comp->lvaLclExactSize(lclAddr->GetLclNum());
             }
 
-            *pIsEntire = storeSize == lclSize;
+            if (pSize != nullptr)
+            {
+                *pSize = storeSize;
+            }
         }
-        else
-        {
-            *pIsEntire = false;
-        }
-    }
-
-    if (pOffset != nullptr)
-    {
-        *pOffset = offset;
-    }
-
-    if (pSize != nullptr)
-    {
-        *pSize = storeSize;
-    }
-
-    return true;
-}
-
-//------------------------------------------------------------------------
-// DefinesLocalAddr: Does "this" represent a local address tree?
-//
-// Arguments:
-//    pLclVarTree - [out] parameter for the local node
-//    pOffset     - optional [out] parameter for the offset (relative to the
-//                  local itself) that this tree computes. The caller must
-//                  initialize this to zero.
-//
-// Return Value:
-//    Whether "this" is a LCL_VAR|FLD_ADDR-equivalent tree.
-//
-bool GenTree::DefinesLocalAddr(GenTreeLclVarCommon** pLclVarTree, ssize_t* pOffset)
-{
-    if (OperIsLocalAddr())
-    {
-        *pLclVarTree = AsLclVarCommon();
 
         if (pOffset != nullptr)
         {
-            *pOffset += AsLclVarCommon()->GetLclOffs();
+            *pOffset = lclAddr->GetLclOffs();
         }
 
         return true;
     }
 
     return false;
-}
-
-// If this tree evaluates some sum of a local address and some constants,
-// return the node for the local being addressed
-
-const GenTreeLclVarCommon* GenTree::IsLocalAddrExpr() const
-{
-    return OperIsLocalAddr() ? AsLclVarCommon() : nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -18252,79 +18136,73 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
         case GT_IND:
         {
             GenTreeIndir* indir = obj->AsIndir();
+            GenTree*      base  = indir->Base();
 
-            if (indir->HasBase() && !indir->HasIndex())
+            // indir(lcl_var_addr) --> lcl
+            //
+            // This comes up during constrained callvirt on ref types.
+            //
+            if (base->OperIs(GT_LCL_VAR_ADDR))
             {
-                // indir(addr(lcl)) --> lcl
+                const unsigned objLcl = base->AsLclVarCommon()->GetLclNum();
+                objClass              = lvaTable[objLcl].lvClassHnd;
+                *pIsExact             = lvaTable[objLcl].lvClassIsExact;
+            }
+            else if (base->OperIs(GT_INDEX_ADDR, GT_ARR_ELEM))
+            {
+                // indir(arr_elem(...)) -> array element type
+
+                if (base->OperIs(GT_INDEX_ADDR))
+                {
+                    objClass = gtGetArrayElementClassHandle(base->AsIndexAddr()->Arr());
+                }
+                else
+                {
+                    objClass = gtGetArrayElementClassHandle(base->AsArrElem()->gtArrObj);
+                }
+
+                *pIsExact   = false;
+                *pIsNonNull = false;
+            }
+            else if (base->OperGet() == GT_ADD)
+            {
+                // TODO-VNTypes: use "IsFieldAddr" here instead.
+
+                // This could be a static field access.
                 //
-                // This comes up during constrained callvirt on ref types.
+                // See if op1 is a static field base helper call
+                // and if so, op2 will have the field info.
+                GenTree* op1 = base->AsOp()->gtOp1;
+                GenTree* op2 = base->AsOp()->gtOp2;
 
-                GenTree*             base = indir->Base();
-                GenTreeLclVarCommon* lcl  = base->IsLocalAddrExpr();
-
-                if ((lcl != nullptr) && (base->OperGet() != GT_ADD))
+                if (op2->IsCnsIntOrI())
                 {
-                    const unsigned objLcl = lcl->GetLclNum();
-                    objClass              = lvaTable[objLcl].lvClassHnd;
-                    *pIsExact             = lvaTable[objLcl].lvClassIsExact;
-                }
-                else if (base->OperIs(GT_INDEX_ADDR, GT_ARR_ELEM))
-                {
-                    // indir(arr_elem(...)) -> array element type
-
-                    if (base->OperIs(GT_INDEX_ADDR))
+                    FieldSeq* fieldSeq = op2->AsIntCon()->gtFieldSeq;
+                    if ((fieldSeq != nullptr) && (fieldSeq->GetOffset() == op2->AsIntCon()->IconValue()))
                     {
-                        objClass = gtGetArrayElementClassHandle(base->AsIndexAddr()->Arr());
-                    }
-                    else
-                    {
-                        objClass = gtGetArrayElementClassHandle(base->AsArrElem()->gtArrObj);
-                    }
+                        // No benefit to calling gtGetFieldClassHandle here, as
+                        // the exact field being accessed can vary.
+                        CORINFO_FIELD_HANDLE fieldHnd   = fieldSeq->GetFieldHandle();
+                        CORINFO_CLASS_HANDLE fieldClass = NO_CLASS_HANDLE;
+                        var_types            fieldType  = eeGetFieldType(fieldHnd, &fieldClass);
 
-                    *pIsExact   = false;
-                    *pIsNonNull = false;
-                }
-                else if (base->OperGet() == GT_ADD)
-                {
-                    // TODO-VNTypes: use "IsFieldAddr" here instead.
-
-                    // This could be a static field access.
-                    //
-                    // See if op1 is a static field base helper call
-                    // and if so, op2 will have the field info.
-                    GenTree* op1 = base->AsOp()->gtOp1;
-                    GenTree* op2 = base->AsOp()->gtOp2;
-
-                    if (op2->IsCnsIntOrI())
-                    {
-                        FieldSeq* fieldSeq = op2->AsIntCon()->gtFieldSeq;
-                        if ((fieldSeq != nullptr) && (fieldSeq->GetOffset() == op2->AsIntCon()->IconValue()))
+                        if (fieldType == TYP_REF)
                         {
-                            // No benefit to calling gtGetFieldClassHandle here, as
-                            // the exact field being accessed can vary.
-                            CORINFO_FIELD_HANDLE fieldHnd   = fieldSeq->GetFieldHandle();
-                            CORINFO_CLASS_HANDLE fieldClass = NO_CLASS_HANDLE;
-                            var_types            fieldType  = eeGetFieldType(fieldHnd, &fieldClass);
-
-                            if (fieldType == TYP_REF)
-                            {
-                                objClass = fieldClass;
-                            }
+                            objClass = fieldClass;
                         }
                     }
                 }
-                else if (base->IsIconHandle(GTF_ICON_CONST_PTR, GTF_ICON_STATIC_HDL))
+            }
+            else if (base->IsIconHandle(GTF_ICON_CONST_PTR, GTF_ICON_STATIC_HDL))
+            {
+                // Check if we have IND(ICON_HANDLE) that represents a static field
+                FieldSeq* fldSeq = base->AsIntCon()->gtFieldSeq;
+                if ((fldSeq != nullptr) && (fldSeq->GetOffset() == base->AsIntCon()->IconValue()))
                 {
-                    // Check if we have IND(ICON_HANDLE) that represents a static field
-                    FieldSeq* fldSeq = base->AsIntCon()->gtFieldSeq;
-                    if ((fldSeq != nullptr) && (fldSeq->GetOffset() == base->AsIntCon()->IconValue()))
-                    {
-                        CORINFO_FIELD_HANDLE fldHandle = base->AsIntCon()->gtFieldSeq->GetFieldHandle();
-                        objClass                       = gtGetFieldClassHandle(fldHandle, pIsExact, pIsNonNull);
-                    }
+                    CORINFO_FIELD_HANDLE fldHandle = base->AsIntCon()->gtFieldSeq->GetFieldHandle();
+                    objClass                       = gtGetFieldClassHandle(fldHandle, pIsExact, pIsNonNull);
                 }
             }
-
             break;
         }
 
@@ -18628,7 +18506,7 @@ bool Compiler::gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle)
 // Returns:
 //   A tree representing the address of a local.
 //
-GenTree* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
+GenTreeLclVarCommon* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
 {
     if (!call->IsOptimizingRetBufAsLocal())
     {
@@ -18654,9 +18532,9 @@ GenTree* Compiler::gtCallGetDefinedRetBufLclAddr(GenTreeCall* call)
     // This may be called very late to check validity of LIR.
     node = node->gtSkipReloadOrCopy();
 
-    assert(node->OperIsLocalAddr() && lvaGetDesc(node->AsLclVarCommon())->lvHiddenBufferStructArg);
+    assert(node->OperIsLocalAddr() && lvaGetDesc(node->AsLclVarCommon())->IsHiddenBufferStructArg());
 
-    return node;
+    return node->AsLclVarCommon();
 }
 
 //------------------------------------------------------------------------
@@ -19234,6 +19112,7 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX2_ConvertToInt32:
         case NI_AVX2_ConvertToUInt32:
         case NI_AVX2_ExtractVector128:
+        case NI_AVX512F_ExtractVector256:
         {
             // These HWIntrinsic operations are contained as part of a store
             return true;
@@ -21815,6 +21694,66 @@ GenTree* Compiler::gtNewSimdGetElementNode(var_types   type,
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 }
 
+GenTree* Compiler::gtNewSimdGetLowerNode(
+    var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
+{
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    NamedIntrinsic intrinsicId = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    if (simdSize == 32)
+    {
+        assert(type == TYP_SIMD16);
+        intrinsicId = NI_Vector256_GetLower;
+    }
+    else
+    {
+        assert((type == TYP_SIMD32) && (simdSize == 64));
+        intrinsicId = NI_Vector512_GetLower;
+    }
+#elif defined(TARGET_ARM64)
+    assert((type == TYP_SIMD8) && (simdSize == 16));
+    intrinsicId = NI_Vector128_GetLower;
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    assert(intrinsicId != NI_Illegal);
+    return gtNewSimdHWIntrinsicNode(type, op1, intrinsicId, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+}
+
+GenTree* Compiler::gtNewSimdGetUpperNode(
+    var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic)
+{
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    NamedIntrinsic intrinsicId = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    if (simdSize == 32)
+    {
+        assert(type == TYP_SIMD16);
+        intrinsicId = NI_Vector256_GetUpper;
+    }
+    else
+    {
+        assert((type == TYP_SIMD32) && (simdSize == 64));
+        intrinsicId = NI_Vector512_GetUpper;
+    }
+#elif defined(TARGET_ARM64)
+    assert((type == TYP_SIMD8) && (simdSize == 16));
+    intrinsicId = NI_Vector128_GetUpper;
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    assert(intrinsicId != NI_Illegal);
+    return gtNewSimdHWIntrinsicNode(type, op1, intrinsicId, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+}
+
 //----------------------------------------------------------------------------------------------
 // Compiler::gtNewSimdLoadNode: Creates a new simd Load node
 //
@@ -22544,8 +22483,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
 
                 tmp1 = gtNewSimdHWIntrinsicNode(type, tmp1, NI_Vector128_ToVector256Unsafe, simdBaseJitType, 16,
                                                 isSimdAsHWIntrinsic);
-                return gtNewSimdHWIntrinsicNode(type, tmp1, tmp2, gtNewIconNode(1), NI_AVX_InsertVector128,
-                                                simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+                return gtNewSimdWithUpperNode(type, tmp1, tmp2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
             }
 
             default:
@@ -22765,8 +22703,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
 
         tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector64_ToVector128Unsafe, simdBaseJitType, simdSize,
                                         isSimdAsHWIntrinsic);
-        tmp2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, gtNewIconNode(1), op2, NI_AdvSimd_InsertScalar,
-                                        tmp2BaseJitType, 16, isSimdAsHWIntrinsic);
+        tmp2 = gtNewSimdWithUpperNode(TYP_SIMD16, tmp1, op2, tmp2BaseJitType, 16, isSimdAsHWIntrinsic);
 
         return gtNewSimdHWIntrinsicNode(type, tmp2, NI_AdvSimd_Arm64_ConvertToSingleLower, simdBaseJitType, simdSize,
                                         isSimdAsHWIntrinsic);
@@ -22782,8 +22719,7 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
 
         tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector64_ToVector128Unsafe, simdBaseJitType, simdSize,
                                         isSimdAsHWIntrinsic);
-        tmp2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, gtNewIconNode(1), op2, NI_AdvSimd_InsertScalar,
-                                        tmp2BaseJitType, 16, isSimdAsHWIntrinsic);
+        tmp2 = gtNewSimdWithUpperNode(TYP_SIMD16, tmp1, op2, tmp2BaseJitType, 16, isSimdAsHWIntrinsic);
 
         return gtNewSimdHWIntrinsicNode(type, tmp2, NI_AdvSimd_ExtractNarrowingLower, simdBaseJitType, simdSize,
                                         isSimdAsHWIntrinsic);
@@ -22935,8 +22871,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
             simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
 
             GenTree* op1Dup   = fgMakeMultiUse(&op1, clsHnd);
-            GenTree* op1Lower = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector256_GetLower, simdBaseJitType,
-                                                         simdSize, isSimdAsHWIntrinsic);
+            GenTree* op1Lower = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
             op2                          = gtNewVconNode(TYP_SIMD16);
             op2->AsVecCon()->gtSimd16Val = vecCns.v128[0];
@@ -22944,8 +22879,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
             op1Lower = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Lower, op2, NI_SSSE3_Shuffle, simdBaseJitType, 16,
                                                 isSimdAsHWIntrinsic);
 
-            GenTree* op1Upper = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Dup, gtNewIconNode(1), NI_AVX_ExtractVector128,
-                                                         simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+            GenTree* op1Upper =
+                gtNewSimdGetUpperNode(TYP_SIMD16, op1Dup, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
             op2                          = gtNewVconNode(TYP_SIMD16);
             op2->AsVecCon()->gtSimd16Val = vecCns.v128[1];
@@ -22953,8 +22888,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
             op1Upper = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1Upper, op2, NI_SSSE3_Shuffle, simdBaseJitType, 16,
                                                 isSimdAsHWIntrinsic);
 
-            return gtNewSimdHWIntrinsicNode(type, op1Lower, op1Upper, gtNewIconNode(1), NI_AVX_InsertVector128,
-                                            simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+            return gtNewSimdWithUpperNode(type, op1Lower, op1Upper, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
         }
 
         if (elementSize == 4)
@@ -23350,11 +23284,9 @@ GenTree* Compiler::gtNewSimdSumNode(
         intrinsic = (simdBaseType == TYP_FLOAT) ? NI_SSE_Add : NI_SSE2_Add;
 
         tmp = fgMakeMultiUse(&op1, clsHnd);
-        op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode(0x01, TYP_INT), NI_AVX_ExtractVector128,
-                                       simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+        op1 = gtNewSimdGetUpperNode(TYP_SIMD16, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
-        tmp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp, NI_Vector256_GetLower, simdBaseJitType, simdSize,
-                                       isSimdAsHWIntrinsic);
+        tmp = gtNewSimdGetLowerNode(TYP_SIMD16, tmp, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
         op1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, tmp, intrinsic, simdBaseJitType, 16, isSimdAsHWIntrinsic);
     }
 
@@ -23551,8 +23483,7 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
         assert(!varTypeIsIntegral(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
 
-        tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector256_GetLower, simdBaseJitType, simdSize,
-                                        isSimdAsHWIntrinsic);
+        tmp1 = gtNewSimdGetLowerNode(TYP_SIMD16, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
         switch (simdBaseType)
         {
@@ -23652,8 +23583,7 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(
 #elif defined(TARGET_ARM64)
     if (simdSize == 16)
     {
-        tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, NI_Vector128_GetLower, simdBaseJitType, simdSize,
-                                        isSimdAsHWIntrinsic);
+        tmp1 = gtNewSimdGetLowerNode(TYP_SIMD8, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
     }
     else
     {
@@ -23680,8 +23610,7 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(
 
     if (simdSize == 8)
     {
-        tmp1 =
-            gtNewSimdHWIntrinsicNode(TYP_SIMD8, tmp1, NI_Vector128_GetLower, simdBaseJitType, 16, isSimdAsHWIntrinsic);
+        tmp1 = gtNewSimdGetLowerNode(TYP_SIMD8, tmp1, simdBaseJitType, 16, isSimdAsHWIntrinsic);
     }
 
     return tmp1;
@@ -23714,8 +23643,7 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
         assert(!varTypeIsIntegral(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
 
-        tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, gtNewIconNode(1), NI_AVX_ExtractVector128, simdBaseJitType,
-                                        simdSize, isSimdAsHWIntrinsic);
+        tmp1 = gtNewSimdGetUpperNode(TYP_SIMD16, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
         switch (simdBaseType)
         {
@@ -23866,10 +23794,7 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(
 
         tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
         zero = gtNewZeroConNode(TYP_SIMD16);
-        tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, tmp1, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
-                                        simdBaseJitType, 16, isSimdAsHWIntrinsic);
-        return gtNewSimdHWIntrinsicNode(TYP_SIMD8, tmp1, NI_Vector128_GetLower, simdBaseJitType, simdSize,
-                                        isSimdAsHWIntrinsic);
+        return gtNewSimdGetUpperNode(TYP_SIMD8, tmp1, simdBaseJitType, 16, isSimdAsHWIntrinsic);
     }
 #else
 #error Unsupported platform
@@ -23958,6 +23883,72 @@ GenTree* Compiler::gtNewSimdWithElementNode(var_types   type,
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+}
+
+GenTree* Compiler::gtNewSimdWithLowerNode(var_types   type,
+                                          GenTree*    op1,
+                                          GenTree*    op2,
+                                          CorInfoType simdBaseJitType,
+                                          unsigned    simdSize,
+                                          bool        isSimdAsHWIntrinsic)
+{
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    NamedIntrinsic intrinsicId = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    if (simdSize == 32)
+    {
+        assert(type == TYP_SIMD32);
+        intrinsicId = NI_Vector256_WithLower;
+    }
+    else
+    {
+        assert((type == TYP_SIMD64) && (simdSize == 64));
+        intrinsicId = NI_Vector512_WithLower;
+    }
+#elif defined(TARGET_ARM64)
+    assert((type == TYP_SIMD16) && (simdSize == 16));
+    intrinsicId = NI_Vector128_WithLower;
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+}
+
+GenTree* Compiler::gtNewSimdWithUpperNode(var_types   type,
+                                          GenTree*    op1,
+                                          GenTree*    op2,
+                                          CorInfoType simdBaseJitType,
+                                          unsigned    simdSize,
+                                          bool        isSimdAsHWIntrinsic)
+{
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    NamedIntrinsic intrinsicId = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    if (simdSize == 32)
+    {
+        assert(type == TYP_SIMD32);
+        intrinsicId = NI_Vector256_WithUpper;
+    }
+    else
+    {
+        assert((type == TYP_SIMD64) && (simdSize == 64));
+        intrinsicId = NI_Vector512_WithUpper;
+    }
+#elif defined(TARGET_ARM64)
+    assert((type == TYP_SIMD16) && (simdSize == 16));
+    intrinsicId = NI_Vector128_WithUpper;
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+    return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsicId, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 }
 
 GenTreeHWIntrinsic* Compiler::gtNewScalarHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicID)
@@ -25067,7 +25058,7 @@ bool GenTreeLclFld::IsOffsetMisaligned() const
 
 bool GenTree::IsInvariant() const
 {
-    return OperIsConst() || IsLocalAddrExpr();
+    return OperIsConst() || OperIsLocalAddr();
 }
 
 //------------------------------------------------------------------------

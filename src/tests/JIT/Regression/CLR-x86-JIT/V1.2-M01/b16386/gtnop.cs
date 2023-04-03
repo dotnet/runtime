@@ -3,9 +3,11 @@
 //
 
 using System;
+using Xunit;
 public class gtnop
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         byte[] arr = new byte[1];
         short i = 3;

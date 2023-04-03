@@ -7415,6 +7415,52 @@ MONO_RESTORE_WARNING
 			break;
 		}
 
+		case OP_INIT_MRGCTX: {
+			LLVMValueRef val, cmp, callee;
+			LLVMBasicBlockRef poll_bb, cont_bb;
+			LLVMValueRef args [2];
+			static LLVMTypeRef icall_sig;
+
+			g_assert (cfg->compile_aot);
+
+			/*
+			 * if (!((MonoMethodRuntimeGenericContext)->lhs)->entries)
+			 *   mini_init_method_rgctx (lhs, rhs);
+			 */
+
+			LLVMValueRef offset = const_int32 (MONO_STRUCT_OFFSET (MonoMethodRuntimeGenericContext, entries));
+			LLVMValueRef ptr = LLVMBuildAdd (builder, convert (ctx, lhs, IntPtrType ()), convert (ctx, offset, IntPtrType ()), "");
+
+			val = emit_load (builder, IntPtrType (), convert (ctx, ptr, pointer_type (IntPtrType ())), "", TRUE);
+			cmp = LLVMBuildICmp (builder, LLVMIntEQ, val, LLVMConstNull (LLVMTypeOf (val)), "");
+			poll_bb = gen_bb (ctx, "POLL_BB");
+			cont_bb = gen_bb (ctx, "CONT_BB");
+
+			args [0] = cmp;
+			args [1] = LLVMConstInt (LLVMInt1Type (), 0, FALSE);
+			cmp = call_intrins (ctx, INTRINS_EXPECT_I1, args, "");
+
+			mono_llvm_build_weighted_branch (builder, cmp, poll_bb, cont_bb, 1, 1000);
+
+			ctx->builder = builder = create_builder (ctx);
+			LLVMPositionBuilderAtEnd (builder, poll_bb);
+
+			if (!icall_sig)
+				icall_sig = LLVMFunctionType2 (LLVMVoidType (), IntPtrType (), IntPtrType (), FALSE);
+
+			args [0] = convert (ctx, lhs, IntPtrType ());
+			args [1] = convert (ctx, rhs, IntPtrType ());
+
+			callee = get_callee (ctx, icall_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mini_init_method_rgctx));
+			LLVMBuildCall2 (builder, icall_sig, callee, args, 2, "");
+			LLVMBuildBr (builder, cont_bb);
+
+			ctx->builder = builder = create_builder (ctx);
+			LLVMPositionBuilderAtEnd (builder, cont_bb);
+			ctx->bblocks [bb->block_num].end_bblock = cont_bb;
+			break;
+		}
+
 			/*
 			 * Overflow opcodes.
 			 */

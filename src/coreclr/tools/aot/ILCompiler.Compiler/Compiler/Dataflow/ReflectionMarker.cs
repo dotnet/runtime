@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -70,7 +71,7 @@ namespace ILCompiler.Dataflow
                     MarkEvent(origin, @event, reason);
                     break;
                     // case InterfaceImplementation
-                    //  Nothing to do currently as Native AOT will presere all interfaces on a preserved type
+                    //  Nothing to do currently as Native AOT will preserve all interfaces on a preserved type
             }
         }
 
@@ -78,19 +79,26 @@ namespace ILCompiler.Dataflow
         {
             ModuleDesc? callingModule = ((diagnosticContext.Origin.MemberDefinition as MethodDesc)?.OwningType as MetadataType)?.Module;
 
-            // NativeAOT doesn't have a fully capable type name resolver yet
-            // Once this is implemented don't forget to wire up marking of type forwards which are used in generic parameters
-            if (!DependencyAnalysis.ReflectionMethodBodyScanner.ResolveType(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context, out TypeDesc foundType, out ModuleDesc referenceModule))
+            List<ModuleDesc> referencedModules = new();
+            TypeDesc foundType = System.Reflection.TypeNameParser.ResolveType(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context,
+                referencedModules, out bool typeWasNotFoundInAssemblyNorBaseLibrary);
+            if (foundType == null)
             {
+                if (needsAssemblyName && typeWasNotFoundInAssemblyNorBaseLibrary)
+                    diagnosticContext.AddDiagnostic(DiagnosticId.TypeWasNotFoundInAssemblyNorBaseLibrary, typeName);
+
                 type = default;
                 return false;
             }
 
             if (_enabled)
             {
-                // Also add module metadata in case this reference was through a type forward
-                if (Factory.MetadataManager.CanGenerateMetadata(referenceModule.GetGlobalModuleType()))
-                    _dependencies.Add(Factory.ModuleMetadata(referenceModule), reason);
+                foreach (ModuleDesc referencedModule in referencedModules)
+                {
+                    // Also add module metadata in case this reference was through a type forward
+                    if (Factory.MetadataManager.CanGenerateMetadata(referencedModule.GetGlobalModuleType()))
+                        _dependencies.Add(Factory.ModuleMetadata(referencedModule), reason);
+                }
 
                 MarkType(diagnosticContext.Origin, foundType, reason);
             }

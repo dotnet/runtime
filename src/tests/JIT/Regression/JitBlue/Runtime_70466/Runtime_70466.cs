@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_70466
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Problem(1, 0);
         return 100;
@@ -31,8 +33,8 @@ public class Runtime_70466
         }
     }
 
-    public static void Use<T>(T arg) { }
+    internal static void Use<T>(T arg) { }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void JitUse<T>(T arg) { }
+    internal static void JitUse<T>(T arg) { }
 }

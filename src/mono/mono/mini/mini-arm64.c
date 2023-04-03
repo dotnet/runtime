@@ -3746,7 +3746,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_XCAST:
 			break;
-
+		case OP_EXPAND_I1:
+		case OP_EXPAND_I2:
+		case OP_EXPAND_I4:
+		case OP_EXPAND_I8: {
+			const int t = get_type_size_macro (ins->inst_c1);
+			arm_neon_dup_g (code, VREG_FULL, t, ins->dreg, ins->sreg1);
+			break;
+		}
+		case OP_EXPAND_R4:
+		case OP_EXPAND_R8: {
+			const int t = get_type_size_macro (ins->inst_c1);
+			arm_neon_fdup_e (code, VREG_FULL, t, ins->dreg, ins->sreg1, 0);
+			break;
+		}
 		case OP_EXTRACT_I1:
 		case OP_EXTRACT_I2:
 		case OP_EXTRACT_I4:
@@ -5006,6 +5019,27 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (sreg1 == ARMREG_R0);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
 							  GUINT_TO_POINTER (MONO_JIT_ICALL_mono_generic_class_init));
+
+			mono_arm_patch (jump, code, MONO_R_ARM64_CBZ);
+			break;
+		}
+		case OP_INIT_MRGCTX: {
+			int field_offset;
+			guint8 *jump;
+
+			field_offset = MONO_STRUCT_OFFSET (MonoMethodRuntimeGenericContext, entries);
+
+			/* Load mrgxtx->entries */
+			arm_ldrx (code, ARMREG_IP0, sreg1, field_offset);
+			jump = code;
+			arm_cbnzx (code, ARMREG_IP0, 0);
+
+			/* Slowpath */
+			g_assert (sreg1 == ARMREG_R0);
+			if (sreg2 != ARMREG_R1)
+				arm_movx (code, ARMREG_R1, sreg2);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
+							  GUINT_TO_POINTER (MONO_JIT_ICALL_mini_init_method_rgctx));
 
 			mono_arm_patch (jump, code, MONO_R_ARM64_CBZ);
 			break;

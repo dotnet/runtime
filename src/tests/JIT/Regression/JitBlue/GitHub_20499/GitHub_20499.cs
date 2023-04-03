@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct S
 {
@@ -29,7 +30,8 @@ public class X
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Synchronized)]
     S G() => z.F();
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = Test();
         if (result == 100) {
