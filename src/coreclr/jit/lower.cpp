@@ -473,8 +473,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
             return LowerSwitch(node);
 
         case GT_CALL:
-            LowerCall(node);
-            break;
+        {
+            GenTree* newNode = LowerCall(node);
+            if (newNode != nullptr)
+            {
+                return newNode;
+            }
+        }
+        break;
 
         case GT_LT:
         case GT_LE:
@@ -1775,6 +1781,273 @@ GenTree* Lowering::AddrGen(void* addr)
     return AddrGen((ssize_t)addr);
 }
 
+//------------------------------------------------------------------------
+// LowerCallMemmove: Replace Buffer.Memmove(DST, SRC, CNS_SIZE) with a GT_STORE_BLK:
+//
+//    *  STORE_BLK struct<CNS_SIZE> (copy) (Unroll)
+//    +--*  LCL_VAR   byref  dst
+//    \--*  IND       struct
+//       \--*  LCL_VAR   byref  src
+//
+// Arguments:
+//    tree - GenTreeCall node to replace with STORE_BLK
+//
+// Return Value:
+//    nullptr if no changes were made
+//
+GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
+{
+    JITDUMP("Considering Memmove [%06d] for unrolling.. ", comp->dspTreeID(call))
+    assert(comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_Buffer_Memmove);
+
+    assert(call->gtArgs.CountUserArgs() == 3);
+
+    if (comp->info.compHasNextCallRetAddr)
+    {
+        JITDUMP("compHasNextCallRetAddr=true so we won't be able to remove the call - bail out.\n")
+        return nullptr;
+    }
+
+    GenTree* lengthArg = call->gtArgs.GetUserArgByIndex(2)->GetNode();
+    if (lengthArg->IsIntegralConst())
+    {
+        ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
+        JITDUMP("Size=%ld.. ", (LONG)cnsSize);
+        // TODO-CQ: drop the whole thing in case of 0
+        if ((cnsSize > 0) && (cnsSize <= (ssize_t)comp->getUnrollThreshold(Compiler::UnrollKind::Memmove)))
+        {
+            JITDUMP("Accepted for unrolling!\nOld tree:\n")
+            DISPTREE(call);
+
+            GenTree* dstAddr = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* srcAddr = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+
+            // TODO-CQ: Try to create an addressing mode
+            GenTreeIndir* srcBlk = comp->gtNewIndir(TYP_STRUCT, srcAddr);
+            srcBlk->gtFlags |= GTF_GLOB_REF;
+            srcBlk->SetContained();
+
+            GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
+                GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, dstAddr, srcBlk, comp->typGetBlkLayout((unsigned)cnsSize));
+            storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
+
+            // TODO-CQ: Use GenTreeObj::BlkOpKindUnroll here if srcAddr and dstAddr don't overlap, thus, we can
+            // unroll this memmove as memcpy - it doesn't require lots of temp registers
+            storeBlk->gtBlkOpKind = GenTreeObj::BlkOpKindUnrollMemmove;
+
+            BlockRange().InsertBefore(call, srcBlk);
+            BlockRange().InsertBefore(call, storeBlk);
+            BlockRange().Remove(lengthArg);
+            BlockRange().Remove(call);
+
+            // Remove all non-user args (e.g. r2r cell)
+            for (CallArg& arg : call->gtArgs.Args())
+            {
+                if (arg.IsArgAddedLate())
+                {
+                    arg.GetNode()->SetUnusedValue();
+                }
+            }
+
+            JITDUMP("\nNew tree:\n")
+            DISPTREE(storeBlk);
+            return storeBlk;
+        }
+        else
+        {
+            JITDUMP("Size is either 0 or too big to unroll.\n")
+        }
+    }
+    else
+    {
+        JITDUMP("size is not a constant.\n")
+    }
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
+// LowerCallMemcmp: Replace SpanHelpers.SequenceEqual)(left, right, CNS_SIZE)
+//    with a series of merged comparisons (via GT_IND nodes)
+//
+// Arguments:
+//    tree - GenTreeCall node to unroll as memcmp
+//
+// Return Value:
+//    nullptr if no changes were made
+//
+GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
+{
+    JITDUMP("Considering Memcmp [%06d] for unrolling.. ", comp->dspTreeID(call))
+    assert(comp->lookupNamedIntrinsic(call->gtCallMethHnd) == NI_System_SpanHelpers_SequenceEqual);
+    assert(call->gtArgs.CountUserArgs() == 3);
+    assert(TARGET_POINTER_SIZE == 8);
+
+    if (!comp->opts.OptimizationEnabled())
+    {
+        JITDUMP("Optimizations aren't allowed - bail out.\n")
+        return nullptr;
+    }
+
+    if (comp->info.compHasNextCallRetAddr)
+    {
+        JITDUMP("compHasNextCallRetAddr=true so we won't be able to remove the call - bail out.\n")
+        return nullptr;
+    }
+
+    GenTree* lengthArg = call->gtArgs.GetUserArgByIndex(2)->GetNode();
+    if (lengthArg->IsIntegralConst())
+    {
+        ssize_t cnsSize = lengthArg->AsIntCon()->IconValue();
+        JITDUMP("Size=%ld.. ", (LONG)cnsSize);
+        // TODO-CQ: drop the whole thing in case of 0
+        if (cnsSize > 0)
+        {
+            GenTree* lArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* rArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+            // TODO: Add SIMD path for [16..128] via GT_HWINTRINSIC nodes
+            if (cnsSize <= 16)
+            {
+                unsigned  loadWidth = 1 << BitOperations::Log2((unsigned)cnsSize);
+                var_types loadType;
+                if (loadWidth == 1)
+                {
+                    loadType = TYP_UBYTE;
+                }
+                else if (loadWidth == 2)
+                {
+                    loadType = TYP_USHORT;
+                }
+                else if (loadWidth == 4)
+                {
+                    loadType = TYP_INT;
+                }
+                else if ((loadWidth == 8) || (loadWidth == 16))
+                {
+                    loadWidth = 8;
+                    loadType  = TYP_LONG;
+                }
+                else
+                {
+                    unreached();
+                }
+                var_types actualLoadType = genActualType(loadType);
+
+                GenTree* result = nullptr;
+
+                // loadWidth == cnsSize means a single load is enough for both args
+                if ((loadWidth == (unsigned)cnsSize) && (loadWidth <= 8))
+                {
+                    // We're going to emit something like the following:
+                    //
+                    // bool result = *(int*)leftArg == *(int*)rightArg
+                    //
+                    // ^ in the given example we unroll for length=4
+                    //
+                    GenTree* lIndir = comp->gtNewIndir(loadType, lArg);
+                    GenTree* rIndir = comp->gtNewIndir(loadType, rArg);
+                    result          = comp->gtNewOperNode(GT_EQ, TYP_INT, lIndir, rIndir);
+
+                    BlockRange().InsertAfter(lArg, lIndir);
+                    BlockRange().InsertAfter(rArg, rIndir);
+                    BlockRange().InsertBefore(call, result);
+                }
+                else
+                {
+                    // First, make both args multi-use:
+                    LIR::Use lArgUse;
+                    LIR::Use rArgUse;
+                    bool     lFoundUse = BlockRange().TryGetUse(lArg, &lArgUse);
+                    bool     rFoundUse = BlockRange().TryGetUse(rArg, &rArgUse);
+                    assert(lFoundUse && rFoundUse);
+                    GenTree* lArgClone = comp->gtNewLclvNode(lArgUse.ReplaceWithLclVar(comp), genActualType(lArg));
+                    GenTree* rArgClone = comp->gtNewLclvNode(rArgUse.ReplaceWithLclVar(comp), genActualType(rArg));
+                    BlockRange().InsertBefore(call, lArgClone, rArgClone);
+
+                    // We're going to emit something like the following:
+                    //
+                    // bool result = ((*(int*)leftArg ^ *(int*)rightArg) |
+                    //                (*(int*)(leftArg + 1) ^ *((int*)(rightArg + 1)))) == 0;
+                    //
+                    // ^ in the given example we unroll for length=5
+                    //
+                    // In IR:
+                    //
+                    // *  EQ        int
+                    // +--*  OR        int
+                    // |  +--*  XOR       int
+                    // |  |  +--*  IND       int
+                    // |  |  |  \--*  LCL_VAR   byref  V1
+                    // |  |  \--*  IND       int
+                    // |  |     \--*  LCL_VAR   byref  V2
+                    // |  \--*  XOR       int
+                    // |     +--*  IND       int
+                    // |     |  \--*  ADD       byref
+                    // |     |     +--*  LCL_VAR   byref  V1
+                    // |     |     \--*  CNS_INT   int    1
+                    // |     \--*  IND       int
+                    // |        \--*  ADD       byref
+                    // |           +--*  LCL_VAR   byref  V2
+                    // |           \--*  CNS_INT   int    1
+                    // \--*  CNS_INT   int    0
+                    //
+                    GenTree* l1Indir   = comp->gtNewIndir(loadType, lArgUse.Def());
+                    GenTree* r1Indir   = comp->gtNewIndir(loadType, rArgUse.Def());
+                    GenTree* lXor      = comp->gtNewOperNode(GT_XOR, actualLoadType, l1Indir, r1Indir);
+                    GenTree* l2Offs    = comp->gtNewIconNode(cnsSize - loadWidth, TYP_I_IMPL);
+                    GenTree* l2AddOffs = comp->gtNewOperNode(GT_ADD, lArg->TypeGet(), lArgClone, l2Offs);
+                    GenTree* l2Indir   = comp->gtNewIndir(loadType, l2AddOffs);
+                    GenTree* r2Offs    = comp->gtCloneExpr(l2Offs); // offset is the same
+                    GenTree* r2AddOffs = comp->gtNewOperNode(GT_ADD, rArg->TypeGet(), rArgClone, r2Offs);
+                    GenTree* r2Indir   = comp->gtNewIndir(loadType, r2AddOffs);
+                    GenTree* rXor      = comp->gtNewOperNode(GT_XOR, actualLoadType, l2Indir, r2Indir);
+                    GenTree* resultOr  = comp->gtNewOperNode(GT_OR, actualLoadType, lXor, rXor);
+                    GenTree* zeroCns   = comp->gtNewIconNode(0, actualLoadType);
+                    result             = comp->gtNewOperNode(GT_EQ, TYP_INT, resultOr, zeroCns);
+
+                    BlockRange().InsertAfter(rArgClone, l1Indir, r1Indir, l2Offs, l2AddOffs);
+                    BlockRange().InsertAfter(l2AddOffs, l2Indir, r2Offs, r2AddOffs, r2Indir);
+                    BlockRange().InsertAfter(r2Indir, lXor, rXor, resultOr, zeroCns);
+                    BlockRange().InsertAfter(zeroCns, result);
+                }
+
+                JITDUMP("\nUnrolled to:\n");
+                DISPTREE(result);
+
+                LIR::Use use;
+                if (BlockRange().TryGetUse(call, &use))
+                {
+                    use.ReplaceWith(result);
+                }
+                else
+                {
+                    result->SetUnusedValue();
+                }
+                BlockRange().Remove(lengthArg);
+                BlockRange().Remove(call);
+
+                // Remove all non-user args (e.g. r2r cell)
+                for (CallArg& arg : call->gtArgs.Args())
+                {
+                    if (!arg.IsUserArg())
+                    {
+                        arg.GetNode()->SetUnusedValue();
+                    }
+                }
+                return lArg;
+            }
+        }
+        else
+        {
+            JITDUMP("Size is either 0 or too big to unroll.\n")
+        }
+    }
+    else
+    {
+        JITDUMP("size is not a constant.\n")
+    }
+    return nullptr;
+}
+
 // do lowering steps for a call
 // this includes:
 //   - adding the placement nodes (either stack or register variety) for arguments
@@ -1782,7 +2055,7 @@ GenTree* Lowering::AddrGen(void* addr)
 //   - adding nodes for other operations that occur after the call sequence starts and before
 //        control transfer occurs (profiling and tail call helpers, pinvoke incantations)
 //
-void Lowering::LowerCall(GenTree* node)
+GenTree* Lowering::LowerCall(GenTree* node)
 {
     GenTreeCall* call = node->AsCall();
 
@@ -1792,6 +2065,27 @@ void Lowering::LowerCall(GenTree* node)
 
     // All runtime lookups are expected to be expanded in fgExpandRuntimeLookups
     assert(!call->IsExpRuntimeLookup());
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+    {
+        GenTree*       newNode = nullptr;
+        NamedIntrinsic ni      = comp->lookupNamedIntrinsic(call->gtCallMethHnd);
+        if (ni == NI_System_Buffer_Memmove)
+        {
+            newNode = LowerCallMemmove(call);
+        }
+        else if (ni == NI_System_SpanHelpers_SequenceEqual)
+        {
+            newNode = LowerCallMemcmp(call);
+        }
+
+        if (newNode != nullptr)
+        {
+            return newNode->gtNext;
+        }
+    }
+#endif
 
     call->ClearOtherRegs();
     LowerArgsForCall(call);
@@ -1911,6 +2205,7 @@ void Lowering::LowerCall(GenTree* node)
     JITDUMP("lowering call (after):\n");
     DISPTREERANGE(BlockRange(), call);
     JITDUMP("\n");
+    return nullptr;
 }
 
 // Inserts profiler hook, GT_PROF_HOOK for a tail call node.
@@ -3382,6 +3677,14 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
             flags   = cond->OperIs(GT_EQ) ? GTF_JCMP_EQ : GTF_EMPTY;
             useJCMP = true;
         }
+        else if (cond->OperIs(GT_LT, GT_GE) && !cond->IsUnsigned() && relopOp2->IsIntegralConst(0))
+        {
+            // Codegen will use tbnz or tbz in codegen which do not affect the flag register
+            flags   = GTF_JCMP_TST | (cond->OperIs(GT_LT) ? GTF_EMPTY : GTF_JCMP_EQ);
+            useJCMP = true;
+            relopOp2->AsIntConCommon()->SetIntegralValue(
+                (static_cast<INT64>(1) << (8 * genTypeSize(genActualType(relopOp1)) - 1)));
+        }
         else if (cond->OperIs(GT_TEST_EQ, GT_TEST_NE) && isPow2(relopOp2->AsIntCon()->IconValue()))
         {
             // Codegen will use tbz or tbnz in codegen which do not affect the flag register
@@ -3744,8 +4047,7 @@ void Lowering::LowerRet(GenTreeUnOp* ret)
     //   - We're returning a floating type as an integral type or vice-versa, or
     // - If we're returning a struct as a primitive type, we change the type of
     // 'retval' in 'LowerRetStructLclVar()'
-    bool needBitcast =
-        (ret->TypeGet() != TYP_VOID) && (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(ret->gtGetOp1()));
+    bool needBitcast        = (ret->TypeGet() != TYP_VOID) && !varTypeUsesSameRegType(ret, ret->gtGetOp1());
     bool doPrimitiveBitcast = false;
     if (needBitcast)
     {
@@ -4009,7 +4311,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
     }
 
     // src and dst can be in registers, check if we need a bitcast.
-    if (!src->TypeIs(TYP_STRUCT) && (varTypeUsesFloatReg(lclRegType) != varTypeUsesFloatReg(src)))
+    if (!src->TypeIs(TYP_STRUCT) && !varTypeUsesSameRegType(lclRegType, src))
     {
         assert(!srcIsMultiReg);
         assert(lclStore->OperIsLocalStore());
@@ -4072,6 +4374,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
     switch (retVal->OperGet())
     {
         case GT_CNS_INT:
+        {
             // When we promote LCL_VAR single fields into return, we could have all types of constants here.
             if (varTypeUsesFloatReg(nativeReturnType))
             {
@@ -4088,7 +4391,12 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
                     retVal->BashToConst(*reinterpret_cast<double*>(&value));
                 }
             }
+            else
+            {
+                assert(varTypeUsesIntReg(nativeReturnType));
+            }
             break;
+        }
 
         case GT_BLK:
         case GT_OBJ:
@@ -4123,7 +4431,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 
         default:
             assert(varTypeIsEnregisterable(retVal));
-            if (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(retVal))
+            if (!varTypeUsesSameRegType(ret, retVal))
             {
                 GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), retVal);
                 ret->gtOp1       = bitcast;
@@ -4194,7 +4502,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
         const var_types actualType = genActualType(lclVarType);
         lclVar->ChangeType(actualType);
 
-        if (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(lclVarType))
+        if (!varTypeUsesSameRegType(ret, lclVarType))
         {
             GenTree* bitcast = comp->gtNewBitCastNode(ret->TypeGet(), ret->gtOp1);
             ret->gtOp1       = bitcast;
@@ -4292,7 +4600,8 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 
 #ifdef FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
-                if (varTypeUsesFloatReg(returnType) != varTypeUsesFloatReg(origType))
+            {
+                if (!varTypeUsesSameRegType(returnType, origType))
                 {
                     GenTree* bitCast = comp->gtNewBitCastNode(origType, call);
                     BlockRange().InsertAfter(call, bitCast);
@@ -4300,6 +4609,7 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
                     ContainCheckBitCast(bitCast);
                 }
                 break;
+            }
 #endif // FEATURE_HW_INTRINSICS
 
             default:

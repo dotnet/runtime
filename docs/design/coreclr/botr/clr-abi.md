@@ -711,34 +711,34 @@ The general rules outlined in the System V x86_64 ABI documentation are followed
 6. The following table describes register usage according to the System V x86_64 ABI
 
 ```
-| Register     | Usage                                   | Preserved across  |
-|              |                                         | function calls    |
-|--------------|-----------------------------------------|-------------------|
-| %rax         | temporary register; with variable argu- | No                |
-|              | ments passes information about the      |                   |
-|              | number of SSE registers used;           |                   |
-|              | 1st return argument                     |                   |
-| %rbx         | callee-saved register; optionally used  | Yes               |
-|              | as base pointer                         |                   |
-| %rcx         | used to pass 4st integer argument to    | No                |
-|              | to functions                            |                   |
-| %rdx         | used to pass 3rd argument to functions  | No                |
-|              | 2nd return register                     |                   |
-| %rsp         | stack pointer                           | Yes               |
-| %rbp         | callee-saved register; optionally used  | Yes               |
-|              | as frame pointer                        |                   |
-| %rsi         | used to pass 2nd argument to functions  | No                |
-| %rdi         | used to pass 1st argument to functions  | No                |
-| %r8          | used to pass 5th argument to functions  | No                |
-| %r9          | used to pass 6th argument to functions  | No                |
-| %r10         | temporary register, used for passing a  | No                |
-|              | function's static chain pointer         |                   |
-| %r11         | temporary register                      | No                |
-| %r12-%r15    | callee-saved registers                  | Yes               |
-| %xmm0-%xmm1  | used to pass and return floating point  | No                |
-|              | arguments                               |                   |
-| %xmm2-%xmm7  | used to pass floating point arguments   | No                |
-| %xmm8-%xmm15 | temporary registers                     | No                |
+| Register      | Usage                                   | Preserved across  |
+|               |                                         | function calls    |
+|---------------|-----------------------------------------|-------------------|
+| %rax          | temporary register; with variable argu- | No                |
+|               | ments passes information about the      |                   |
+|               | number of SSE registers used;           |                   |
+|               | 1st return argument                     |                   |
+| %rbx          | callee-saved register; optionally used  | Yes               |
+|               | as base pointer                         |                   |
+| %rcx          | used to pass 4st integer argument to    | No                |
+|               | to functions                            |                   |
+| %rdx          | used to pass 3rd argument to functions  | No                |
+|               | 2nd return register                     |                   |
+| %rsp          | stack pointer                           | Yes               |
+| %rbp          | callee-saved register; optionally used  | Yes               |
+|               | as frame pointer                        |                   |
+| %rsi          | used to pass 2nd argument to functions  | No                |
+| %rdi          | used to pass 1st argument to functions  | No                |
+| %r8           | used to pass 5th argument to functions  | No                |
+| %r9           | used to pass 6th argument to functions  | No                |
+| %r10          | temporary register, used for passing a  | No                |
+|               | function's static chain pointer         |                   |
+| %r11          | temporary register                      | No                |
+| %r12-%r15     | callee-saved registers                  | Yes               |
+| %xmm0-%xmm1   | used to pass and return floating point  | No                |
+|               | arguments                               |                   |
+| %xmm2-%xmm7   | used to pass floating point arguments   | No                |
+| %xmm8-%xmm31  | temporary registers                     | No                |
 ```
 
 # Calling convention specifics for x86

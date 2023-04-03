@@ -3601,7 +3601,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         assert(tmpReg2 != REG_WRITE_BARRIER_SRC_BYREF);
     }
 
-    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpObjNode->IsVolatile())
     {
         // issue a full memory barrier before a volatile CpObj operation
         instGen_MemoryBarrier();
@@ -3674,7 +3674,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         assert(gcPtrCount == 0);
     }
 
-    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpObjNode->IsVolatile())
     {
         // issue a load barrier after a volatile CpObj operation
         instGen_MemoryBarrier(BARRIER_LOAD_ONLY);
@@ -4188,7 +4188,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         var_types   type = tree->TypeGet();
         instruction ins  = ins_StoreFromSrc(dataReg, type);
 
-        if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
+        if (tree->IsVolatile())
         {
             bool addrIsInReg   = addr->isUsedFromReg();
             bool addrIsAligned = ((tree->gtFlags & GTF_IND_UNALIGNED) == 0);
@@ -4532,7 +4532,19 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         if (op2->isContainedIntOrIImmed())
         {
             GenTreeIntConCommon* intConst = op2->AsIntConCommon();
-            emit->emitIns_R_I(ins, cmpSize, op1->GetRegNum(), intConst->IconValue());
+
+            regNumber op1Reg = op1->GetRegNum();
+
+            if (compiler->opts.OptimizationEnabled() && (ins == INS_cmp) && (targetReg != REG_NA) &&
+                tree->OperIs(GT_LT) && !tree->IsUnsigned() && intConst->IsIntegralConst(0) &&
+                ((cmpSize == EA_4BYTE) || (cmpSize == EA_8BYTE)))
+            {
+                emit->emitIns_R_R_I(INS_lsr, cmpSize, targetReg, op1Reg, (int)cmpSize * 8 - 1);
+                genProduceReg(tree);
+                return;
+            }
+
+            emit->emitIns_R_I(ins, cmpSize, op1Reg, intConst->IconValue());
         }
         else
         {
@@ -4725,7 +4737,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
     {
         ssize_t compareImm = op2->AsIntCon()->IconValue();
 
-        assert(isPow2(compareImm));
+        assert(isPow2(((size_t)compareImm)));
 
         instruction ins = (tree->gtFlags & GTF_JCMP_EQ) ? INS_tbz : INS_tbnz;
         int         imm = genLog2((size_t)compareImm);

@@ -54,6 +54,42 @@ static BasicBlock* CreateBlockFromTree(Compiler*   comp,
 }
 
 //------------------------------------------------------------------------------
+// gtNewRuntimeLookupHelperCallNode : Helper to create a runtime lookup call helper node.
+//
+// Arguments:
+//    helper    - Call helper
+//    type      - Type of the node
+//    args      - Call args
+//
+// Return Value:
+//    New CT_HELPER node
+//
+GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_LOOKUP* pRuntimeLookup,
+                                                        GenTree*                ctxTree,
+                                                        void*                   compileTimeHandle)
+{
+    // Call the helper
+    // - Setup argNode with the pointer to the signature returned by the lookup
+    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
+    GenTreeCall* helperCall = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree, argNode);
+
+    // No need to perform CSE/hoisting for signature node - it is expected to end up in a rarely-taken block after
+    // "Expand runtime lookups" phase.
+    argNode->gtFlags |= GTF_DONT_CSE;
+
+    // Leave a note that this method has runtime lookups we might want to expand (nullchecks, size checks) later.
+    // We can also consider marking current block as a runtime lookup holder to improve TP for Tier0
+    impInlineRoot()->setMethodHasExpRuntimeLookup();
+    helperCall->SetExpRuntimeLookup();
+    if (!impInlineRoot()->GetSignatureToLookupInfoMap()->Lookup(pRuntimeLookup->signature))
+    {
+        JITDUMP("Registering %p in SignatureToLookupInfoMap\n", pRuntimeLookup->signature)
+        impInlineRoot()->GetSignatureToLookupInfoMap()->Set(pRuntimeLookup->signature, *pRuntimeLookup);
+    }
+    return helperCall;
+}
+
+//------------------------------------------------------------------------------
 // fgExpandRuntimeLookups : partially expand runtime lookups helper calls
 //                          to add a nullcheck [+ size check] and a fast path
 // Returns:

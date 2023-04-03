@@ -45,7 +45,7 @@ namespace Microsoft.Interop
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            // Get all methods with the [GeneratedComInterface] attribute.
+            // Get all types with the [GeneratedComInterface] attribute.
             var attributedInterfaces = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
                     TypeNames.GeneratedComInterfaceAttribute,
@@ -62,7 +62,7 @@ namespace Microsoft.Interop
                 return new { data.Syntax, data.Symbol, Diagnostic = diagnostic };
             });
 
-            // Split the methods we want to generate and the ones we don't into two separate groups.
+            // Split the types we want to generate and the ones we don't into two separate groups.
             var interfacesToGenerate = interfacesWithDiagnostics.Where(static data => data.Diagnostic is null);
             var invalidTypeDiagnostics = interfacesWithDiagnostics.Where(static data => data.Diagnostic is not null);
 
@@ -726,7 +726,7 @@ namespace Microsoft.Interop
                         .WithExpressionBody(
                             ArrowExpressionClause(
                                 ConditionalExpression(
-                                    BinaryExpression(SyntaxKind.EqualsExpression,
+                                    BinaryExpression(SyntaxKind.NotEqualsExpression,
                                         IdentifierName(vtableFieldName),
                                         LiteralExpression(SyntaxKind.NullLiteralExpression)),
                                     IdentifierName(vtableFieldName),

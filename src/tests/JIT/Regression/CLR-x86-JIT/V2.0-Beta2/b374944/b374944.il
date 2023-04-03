@@ -21,8 +21,6 @@
     ret
   }
 
-}
-
 
 .method public hidebysig static int32 Main() cil managed
 {
@@ -53,4 +51,5 @@ EXIT:
 
     ldloc.1
     ret
+}
 }

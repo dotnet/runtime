@@ -5,6 +5,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Numerics;
+using Xunit;
 
 // This test is a repro case for DevDiv VSO bug 288222.
 // The failure mode is that the size was not being set for a "this" pointer
@@ -16,12 +17,13 @@ public class Program
     public delegate void CopyToDelegate(float[] array, int start);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void MyCopyTo(CopyToDelegate doCopy, float[] array, int start)
+    internal static void MyCopyTo(CopyToDelegate doCopy, float[] array, int start)
     {
         doCopy(array, start);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

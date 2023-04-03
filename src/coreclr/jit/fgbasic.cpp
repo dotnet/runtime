@@ -43,12 +43,12 @@ void Compiler::fgInit()
 
     /* Initialize the basic block list */
 
-    fgFirstBB                     = nullptr;
-    fgLastBB                      = nullptr;
-    fgFirstColdBlock              = nullptr;
-    fgEntryBB                     = nullptr;
-    fgOSREntryBB                  = nullptr;
-    fgOSROriginalEntryBBProtected = false;
+    fgFirstBB          = nullptr;
+    fgLastBB           = nullptr;
+    fgFirstColdBlock   = nullptr;
+    fgEntryBB          = nullptr;
+    fgOSREntryBB       = nullptr;
+    fgEntryBBExtraRefs = 0;
 
 #if defined(FEATURE_EH_FUNCLETS)
     fgFirstFuncletBB  = nullptr;
@@ -62,7 +62,6 @@ void Compiler::fgInit()
     fgBBOrder          = nullptr;
 #endif // DEBUG
 
-    fgBBNumMin        = compIsForInlining() ? impInlineRoot()->fgBBNumMax + 1 : 1;
     fgBBNumMax        = 0;
     fgEdgeCount       = 0;
     fgDomBBcount      = 0;
@@ -1195,7 +1194,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector256_Create:
                             case NI_Vector512_Create:
                             case NI_Vector256_CreateScalar:
+                            case NI_Vector512_CreateScalar:
                             case NI_Vector256_CreateScalarUnsafe:
+                            case NI_Vector512_CreateScalarUnsafe:
                             case NI_VectorT256_CreateBroadcast:
                             case NI_X86Base_BitScanForward:
                             case NI_X86Base_X64_BitScanForward:
@@ -1481,6 +1482,19 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_VectorT256_AsVectorUInt32:
                             case NI_VectorT256_AsVectorUInt64:
                             case NI_VectorT256_op_UnaryPlus:
+                            case NI_Vector512_As:
+                            case NI_Vector512_AsByte:
+                            case NI_Vector512_AsDouble:
+                            case NI_Vector512_AsInt16:
+                            case NI_Vector512_AsInt32:
+                            case NI_Vector512_AsInt64:
+                            case NI_Vector512_AsNInt:
+                            case NI_Vector512_AsNUInt:
+                            case NI_Vector512_AsSByte:
+                            case NI_Vector512_AsSingle:
+                            case NI_Vector512_AsUInt16:
+                            case NI_Vector512_AsUInt32:
+                            case NI_Vector512_AsUInt64:
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
                             case NI_SRCS_UNSAFE_As:
@@ -1519,6 +1533,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_Vector256_get_AllBitsSet:
                             case NI_Vector256_get_One:
                             case NI_Vector256_get_Zero:
+                            case NI_Vector512_get_AllBitsSet:
+                            case NI_Vector512_get_One:
+                            case NI_Vector512_get_Zero:
                             case NI_VectorT256_get_AllBitsSet:
                             case NI_VectorT256_get_One:
                             case NI_VectorT256_get_Zero:
@@ -4643,6 +4660,9 @@ BasicBlock* Compiler::fgSplitBlockBeforeTree(
     BasicBlockFlags originalFlags = block->bbFlags;
     BasicBlock*     prevBb        = block;
 
+    // We use fgSplitBlockAfterStatement() API here to split the block, however, we want to split
+    // it *Before* rather than *After* so if the current statement is the first in the
+    // current block - invoke fgSplitBlockAtBeginning
     if (stmt == block->firstStmt())
     {
         block = fgSplitBlockAtBeginning(prevBb);
@@ -5432,7 +5452,7 @@ bool Compiler::fgRenumberBlocks()
 
     bool     renumbered  = false;
     bool     newMaxBBNum = false;
-    unsigned num         = fgBBNumMin;
+    unsigned num         = 1;
 
     for (BasicBlock* block : Blocks())
     {
@@ -5448,7 +5468,7 @@ bool Compiler::fgRenumberBlocks()
         if (block->bbNext == nullptr)
         {
             fgLastBB  = block;
-            fgBBcount = num - fgBBNumMin + 1;
+            fgBBcount = num;
             if (fgBBNumMax != num)
             {
                 fgBBNumMax  = num;

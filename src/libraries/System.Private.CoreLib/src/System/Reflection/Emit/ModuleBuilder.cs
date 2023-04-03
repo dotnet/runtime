@@ -18,7 +18,11 @@ namespace System.Reflection.Emit
         protected abstract void CreateGlobalFunctionsCore();
 
         public EnumBuilder DefineEnum(string name, TypeAttributes visibility, Type underlyingType)
-            => DefineEnumCore(name, visibility, underlyingType);
+        {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
+            return DefineEnumCore(name, visibility, underlyingType);
+        }
 
         protected abstract EnumBuilder DefineEnumCore(string name, TypeAttributes visibility, Type underlyingType);
 
@@ -80,7 +84,11 @@ namespace System.Reflection.Emit
 
         public TypeBuilder DefineType(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces)
-                => DefineTypeCore(name, attr, parent, interfaces, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize);
+        {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
+            return DefineTypeCore(name, attr, parent, interfaces, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize);
+        }
 
         public TypeBuilder DefineType(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, int typesize)
@@ -92,7 +100,11 @@ namespace System.Reflection.Emit
 
         public TypeBuilder DefineType(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, PackingSize packingSize, int typesize)
-                => DefineTypeCore(name, attr, parent, null, packingSize, typesize);
+        {
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
+            return DefineTypeCore(name, attr, parent, null, packingSize, typesize);
+        }
 
         protected abstract TypeBuilder DefineTypeCore(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize);

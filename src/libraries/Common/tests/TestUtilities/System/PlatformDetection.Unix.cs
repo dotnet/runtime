@@ -17,14 +17,12 @@ namespace System
         public static bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
         public static bool IsOpenSUSE => IsDistroAndVersion("opensuse");
         public static bool IsUbuntu => IsDistroAndVersion("ubuntu");
-        public static bool IsUbuntu1804 => IsDistroAndVersion("ubuntu", 18, 4);
         public static bool IsUbuntu2004 => IsDistroAndVersion("ubuntu", 20, 4);
         public static bool IsDebian => IsDistroAndVersion("debian");
         public static bool IsAlpine => IsDistroAndVersion("alpine");
         public static bool IsDebian10 => IsDistroAndVersion("debian", 10);
         public static bool IsRaspbian10 => IsDistroAndVersion("raspbian", 10);
         public static bool IsMariner => IsDistroAndVersion("mariner");
-        public static bool IsMariner1 => IsDistroAndVersion("mariner", 1);
         public static bool IsSLES => IsDistroAndVersion("sles");
         public static bool IsTizen => IsDistroAndVersion("tizen");
         public static bool IsFedora => IsDistroAndVersion("fedora");

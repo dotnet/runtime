@@ -29,7 +29,7 @@
       <_PortableBuildArg Condition="'$(PortableBuild)' != 'true'"> -portablebuild=false</_PortableBuildArg>
       <_CrossBuildArg Condition="'$(CrossBuild)' == 'true'"> -cross</_CrossBuildArg>
       <_KeepNativeSymbolsBuildArg Condition="'$(KeepNativeSymbols)' != 'false'"> -keepnativesymbols</_KeepNativeSymbolsBuildArg>
-      <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> $(CMakeArgs)</_CMakeArgs>
+      <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)"</_CMakeArgs>
 
       <!--
         BuildNativeCompiler is a pass-through argument, to pass an argument to build-native.sh. It is intended to be

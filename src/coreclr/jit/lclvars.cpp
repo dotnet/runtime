@@ -323,7 +323,7 @@ void Compiler::lvaInitTypeRef()
         }
     }
 
-    // If this is an OSR method, mark all the OSR locals and model OSR exposure.
+    // If this is an OSR method, mark all the OSR locals.
     //
     // Do this before we add the GS Cookie Dummy or Outgoing args to the locals
     // so we don't have to do special checks to exclude them.
@@ -338,14 +338,7 @@ void Compiler::lvaInitTypeRef()
             if (info.compPatchpointInfo->IsExposed(lclNum))
             {
                 JITDUMP("-- V%02u is OSR exposed\n", lclNum);
-                varDsc->lvHasLdAddrOp = 1;
-
-                // todo: Why does it apply only to non-structs?
-                //
-                if (!varTypeIsStruct(varDsc) && !varTypeIsSIMD(varDsc))
-                {
-                    lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::OSR_EXPOSED));
-                }
+                varDsc->lvIsOSRExposedLocal = true;
             }
         }
     }
@@ -1069,7 +1062,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
 #if FEATURE_FASTTAILCALL
             // Check if arg was split between registers and stack.
-            if (!varTypeUsesFloatReg(argType))
+            if (varTypeUsesIntReg(argType))
             {
                 unsigned firstRegArgNum = genMapIntRegNumToRegArgNum(varDsc->GetArgReg());
                 unsigned lastRegArgNum  = firstRegArgNum + cSlots - 1;
@@ -1118,6 +1111,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 else
 #endif // defined(UNIX_AMD64_ABI)
                 {
+                    assert(varTypeUsesFloatReg(argType) || varTypeUsesIntReg(argType));
+
                     bool     isFloat   = varTypeUsesFloatReg(argType);
                     unsigned regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), argType);
 
@@ -1170,9 +1165,14 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         {
 #if defined(TARGET_ARM)
             varDscInfo->setAllRegArgUsed(argType);
+
             if (varTypeUsesFloatReg(argType))
             {
                 varDscInfo->setAnyFloatStackArgs();
+            }
+            else
+            {
+                assert(varTypeUsesIntReg(argType));
             }
 
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
@@ -1767,6 +1767,11 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
 
     bool overlappingFields = StructHasOverlappingFields(typeFlags);
     if (overlappingFields)
+    {
+        return false;
+    }
+
+    if (StructHasIndexableFields(typeFlags))
     {
         return false;
     }
@@ -2400,7 +2405,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
     {
         const lvaStructFieldInfo* pFieldInfo = &structPromotionInfo.fields[index];
 
-        if (varTypeUsesFloatReg(pFieldInfo->fldType))
+        if (!varTypeUsesIntReg(pFieldInfo->fldType))
         {
             // Whenever we promote a struct that contains a floating point field
             // it's possible we transition from a method that originally only had integer
@@ -2436,14 +2441,15 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         // refresh the cached varDsc for lclNum.
         varDsc = compiler->lvaGetDesc(lclNum);
 
-        LclVarDsc* fieldVarDsc       = compiler->lvaGetDesc(varNum);
-        fieldVarDsc->lvType          = pFieldInfo->fldType;
-        fieldVarDsc->lvIsStructField = true;
-        fieldVarDsc->lvFldOffset     = pFieldInfo->fldOffset;
-        fieldVarDsc->lvFldOrdinal    = pFieldInfo->fldOrdinal;
-        fieldVarDsc->lvParentLcl     = lclNum;
-        fieldVarDsc->lvIsParam       = varDsc->lvIsParam;
-        fieldVarDsc->lvIsOSRLocal    = varDsc->lvIsOSRLocal;
+        LclVarDsc* fieldVarDsc           = compiler->lvaGetDesc(varNum);
+        fieldVarDsc->lvType              = pFieldInfo->fldType;
+        fieldVarDsc->lvIsStructField     = true;
+        fieldVarDsc->lvFldOffset         = pFieldInfo->fldOffset;
+        fieldVarDsc->lvFldOrdinal        = pFieldInfo->fldOrdinal;
+        fieldVarDsc->lvParentLcl         = lclNum;
+        fieldVarDsc->lvIsParam           = varDsc->lvIsParam;
+        fieldVarDsc->lvIsOSRLocal        = varDsc->lvIsOSRLocal;
+        fieldVarDsc->lvIsOSRExposedLocal = varDsc->lvIsOSRExposedLocal;
 
         // This new local may be the first time we've seen a long typed local.
         if (fieldVarDsc->lvType == TYP_LONG)
@@ -6385,7 +6391,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         lvaIncrementFrameSize(extraSlotSize);
     }
 
-    // In case of Amd64 compCalleeRegsPushed does not include float regs (Xmm6-xmm15) that
+    // In case of Amd64 compCalleeRegsPushed does not include float regs (xmm6-xmm31) that
     // need to be pushed.  But Amd64 doesn't support push/pop of xmm registers.
     // Instead we need to allocate space for them on the stack and save them in prolog.
     // Therefore, we consider xmm registers being saved while computing stack offsets

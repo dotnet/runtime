@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using Internal.TypeSystem;
@@ -37,7 +36,7 @@ namespace ILCompiler.Dataflow
         internal static bool TryGetRequiresAttribute(TypeSystemEntity member, string requiresAttributeName, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
         {
             attribute = default;
-            CustomAttributeValue<TypeDesc>? decoded = default;
+            CustomAttributeValue<TypeDesc>? decoded;
             switch (member)
             {
                 case MethodDesc method:
@@ -59,8 +58,9 @@ namespace ILCompiler.Dataflow
                     decoded = @event.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
                     break;
                 default:
-                    Debug.Fail("Trying to operate with unsupported TypeSystemEntity " + member.GetType().ToString());
-                    break;
+                    // This can happen for a compiler generated method, for example if mark methods on array for reflection (through DAM)
+                    // There are several different types which can occur here, but none should ever have any of Requires* attributes.
+                    return false;
             }
             if (!decoded.HasValue)
                 return false;
@@ -92,21 +92,21 @@ namespace ILCompiler.Dataflow
         /// <remarks>Unlike <see cref="DoesMemberRequire(TypeSystemEntity, string, out CustomAttributeValue{TypeDesc}?)"/>
         /// if a declaring type has Requires, all methods in that type are considered "in scope" of that Requires. So this includes also
         /// instance methods (not just statics and .ctors).</remarks>
-        internal static bool IsInRequiresScope(this MethodDesc method, string requiresAttribute) =>
-            method.IsInRequiresScope(requiresAttribute, true);
+        internal static bool IsInRequiresScope(this MethodDesc method, string requiresAttribute)
+            => IsInRequiresScope(method, requiresAttribute, out _);
 
-        private static bool IsInRequiresScope(this MethodDesc method, string requiresAttribute, bool checkAssociatedSymbol)
+        internal static bool IsInRequiresScope(this MethodDesc method, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
         {
-            if (method.HasCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttribute) && !method.IsStaticConstructor)
+            if (TryGetRequiresAttribute(method, requiresAttribute, out attribute) && !method.IsStaticConstructor)
                 return true;
 
-            if (method.OwningType is TypeDesc type && TryGetRequiresAttribute(type, requiresAttribute, out _))
+            if (method.OwningType is TypeDesc type && TryGetRequiresAttribute(type, requiresAttribute, out attribute))
                 return true;
 
-            if (checkAssociatedSymbol && method.GetPropertyForAccessor() is PropertyPseudoDesc property && TryGetRequiresAttribute(property, requiresAttribute, out _))
+            if (method.GetPropertyForAccessor() is PropertyPseudoDesc property && TryGetRequiresAttribute(property, requiresAttribute, out attribute))
                 return true;
 
-            if (checkAssociatedSymbol && method.GetEventForAccessor() is EventPseudoDesc @event && TryGetRequiresAttribute(@event, requiresAttribute, out _))
+            if (method.GetEventForAccessor() is EventPseudoDesc @event && TryGetRequiresAttribute(@event, requiresAttribute, out attribute))
                 return true;
 
             return false;
@@ -152,6 +152,9 @@ namespace ILCompiler.Dataflow
 
         internal static bool DoesEventRequire(this EventPseudoDesc @event, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute) =>
             TryGetRequiresAttribute(@event, requiresAttribute, out attribute);
+
+        internal static bool DoesTypeRequire(this TypeDesc type, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute) =>
+            TryGetRequiresAttribute(type, requiresAttribute, out attribute);
 
         /// <summary>
         /// Determines if member requires (and thus any usage of such method should be warned about).

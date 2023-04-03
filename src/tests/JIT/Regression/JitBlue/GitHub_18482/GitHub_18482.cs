@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public struct SequentialStruct
 {
@@ -28,7 +29,8 @@ public class Test_GitHub_18482
         return 100;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         SequentialStruct ss = new SequentialStruct();
         ss.f0 = 100;

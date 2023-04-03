@@ -1084,7 +1084,7 @@ void ResumeAtJit(PCONTEXT pContext, LPVOID oldESP)
 #ifndef TARGET_UNIX
 #pragma warning(push)
 #pragma warning(disable: 4035)
-extern "C" DWORD __stdcall xmmYmmStateSupport()
+extern "C" DWORD xmmYmmStateSupport()
 {
     // No CONTRACT
     STATIC_CONTRACT_NOTHROW;
@@ -1108,7 +1108,7 @@ extern "C" DWORD __stdcall xmmYmmStateSupport()
 
 #pragma warning(push)
 #pragma warning(disable: 4035)
-extern "C" DWORD __stdcall avx512StateSupport()
+extern "C" DWORD avx512StateSupport()
 {
     // No CONTRACT
     STATIC_CONTRACT_NOTHROW;
@@ -1133,33 +1133,7 @@ extern "C" DWORD __stdcall avx512StateSupport()
 
 #else // !TARGET_UNIX
 
-#if !__has_builtin(__cpuid)
-void __cpuid(int cpuInfo[4], int function_id)
-{
-    // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
-
-    __asm("  cpuid"
-        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
-        : "0"(function_id)
-    );
-}
-#endif
-
-#if !__has_builtin(__cpuidex)
-void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
-{
-    // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
-
-    __asm("  cpuid"
-        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
-        : "0"(function_id), "2"(subFunction_id)
-    );
-}
-#endif
-
-extern "C" DWORD __stdcall xmmYmmStateSupport()
+extern "C" DWORD xmmYmmStateSupport()
 {
     DWORD eax;
     __asm("  xgetbv\n" \
@@ -1171,7 +1145,7 @@ extern "C" DWORD __stdcall xmmYmmStateSupport()
     return ((eax & 0x06) == 0x06) ? 1 : 0;
 }
 
-extern "C" DWORD __stdcall avx512StateSupport()
+extern "C" DWORD avx512StateSupport()
 {
     DWORD eax;
     __asm("  xgetbv\n" \
