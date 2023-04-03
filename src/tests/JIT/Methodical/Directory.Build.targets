@@ -3,4 +3,6 @@
   <Target Name="CheckForTestOutsideOfGroup" BeforeTargets="Build">
     <Error Condition="'$(OutputType)' == 'Exe'" Text="Tests should not set OutputType to Exe in a merged test subdirectory." />
   </Target>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 </Project>
