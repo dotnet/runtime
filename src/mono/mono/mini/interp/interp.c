@@ -80,6 +80,7 @@
 #include <mono/mini/trace.h>
 
 #include <mono/metadata/components.h>
+#include <mono/metadata/loader-internals.h>
 
 #ifdef TARGET_ARM
 #include <mono/mini/mini-arm.h>
@@ -8592,6 +8593,17 @@ metadata_update_prepare_to_invalidate (void)
 }
 
 
+static void 
+interp_invalidate_transformed_func (void* data, gpointer user_data)
+{
+	MonoAssemblyLoadContext* alc = (MonoAssemblyLoadContext*)data;
+	MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)alc->mem_manager->runtime_info;
+
+	jit_mm_lock (jit_mm);
+	mono_internal_hash_table_apply (&jit_mm->interp_code_hash, invalidate_transform, NULL);
+	jit_mm_unlock (jit_mm);
+}
+
 static void
 interp_invalidate_transformed (void)
 {
@@ -8602,12 +8614,7 @@ interp_invalidate_transformed (void)
                 need_stw_restart = TRUE;
         }
 
-	// FIXME: Enumerate all memory managers
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
-
-	jit_mm_lock (jit_mm);
-	mono_internal_hash_table_apply (&jit_mm->interp_code_hash, invalidate_transform, NULL);
-	jit_mm_unlock (jit_mm);
+	mono_alc_foreach (interp_invalidate_transformed_func, NULL);
 
 	if (need_stw_restart)
 		mono_restart_world (MONO_THREAD_INFO_FLAGS_NO_GC);
@@ -8627,14 +8634,18 @@ interp_copy_jit_info_func (gpointer imethod, gpointer user_data)
 		data->jit_info_array [data->next++] = ((InterpMethod *)imethod)->jinfo;
 }
 
-static void
-interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
+typedef struct {
+	InterpJitInfoFunc func;
+	gpointer user_data;
+} InterpJitInfoFuncUserData;
+
+static void 
+interp_jit_info_foreach_func (void* data, gpointer user_data)
 {
+	InterpJitInfoFuncUserData func_userdata = (InterpJitInfoFuncUserData*)user_data;
+	MonoAssemblyLoadContext* alc = (MonoAssemblyLoadContext*)data;
+	MonoJitMemoryManager *jit_mm = (MonoJitMemoryManager*)alc->mem_manager->runtime_info;
 	InterpCopyJitInfoFuncUserData copy_jit_info_data;
-
-	// FIXME: Enumerate all memory managers
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
-
 	// Can't keep memory manager lock while iterating and calling callback since it might take other locks
 	// causing poential deadlock situations. Instead, create copy of interpreter imethod jinfo pointers into
 	// plain array and use pointers from array when when running callbacks.
@@ -8649,9 +8660,18 @@ interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 
 	if (copy_jit_info_data.jit_info_array) {
 		for (int i = 0; i < copy_jit_info_data.next; ++i)
-			func (copy_jit_info_data.jit_info_array [i], user_data);
+			func_userdata.func (copy_jit_info_data.jit_info_array [i], func_userdata.user_data);
 		g_free (copy_jit_info_data.jit_info_array);
 	}
+}
+
+static void
+interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
+{
+	InterpJitInfoFuncUserData func_data;
+	func_data.func = func;
+	func_data.user_data = user_data;
+	mono_alc_foreach (interp_invalidate_transformed_func, &func_data);
 }
 
 static gboolean
