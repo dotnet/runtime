@@ -13,32 +13,29 @@ namespace System.Reflection.Emit
     {
         private readonly Assembly _coreAssembly;
         private readonly string _name;
-        private readonly Dictionary<string, Type> _coreTypes = new();
+        private Type?[]? _coreTypes;
         private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyRefStore = new();
         private readonly Dictionary<Type, TypeReferenceHandle> _typeRefStore = new();
         private readonly List<TypeBuilderImpl> _typeDefStore = new();
         private int _nextMethodDefRowId = 1;
         private int _nextFieldDefRowId = 1;
-
+        private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short),
+                                                        typeof(ushort), typeof(int), typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double),
+                                                        typeof(decimal), typeof(DateTime), typeof(string), typeof(nint), typeof(nuint) };
         internal ModuleBuilderImpl(string name, Assembly coreAssembly)
         {
             _coreAssembly = coreAssembly;
             _name = name;
         }
 
-        [RequiresUnreferencedCode("Types might be removed")]
-        internal Type GetTypeFromCoreAssembly(string name)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types are preserved via s_coreTypes")]
+        internal Type? GetTypeFromCoreAssembly(CoreTypeId typeId)
         {
-            Type? type;
+            int index = (int)typeId;
+            // Use s_coreTypes directly for runtime reflection
+            _coreTypes ??= (_coreAssembly == typeof(object).Assembly) ? s_coreTypes : new Type[s_coreTypes.Length];
 
-            // TODO: Use Enum as the key for perf
-            if (!_coreTypes.TryGetValue(name, out type))
-            {
-                type = _coreAssembly.GetType(name, throwOnError: true)!;
-                _coreTypes.Add(name, type);
-            }
-
-            return type;
+            return _coreTypes[index] ?? (_coreTypes[index] = _coreAssembly.GetType(s_coreTypes[index].FullName!, throwOnError: true));
         }
 
         internal void AppendMetadata(MetadataBuilder metadata)
@@ -81,7 +78,7 @@ namespace System.Reflection.Emit
 
                 foreach (FieldBuilderImpl field in typeBuilder._fieldDefStore)
                 {
-                    MetadataHelper.AddFieldDefinition(metadata, field);
+                    MetadataHelper.AddFieldDefinition(metadata, field, MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this));
                     _nextFieldDefRowId++;
                 }
             }

@@ -10,18 +10,16 @@ namespace System.Reflection.Emit
     // TODO: Only support simple signatures. More complex signatures will be added.
     internal static class MetadataSignatureHelper
     {
-        internal static BlobBuilder FieldSignatureEncoder(Type fieldType)
+        internal static BlobBuilder FieldSignatureEncoder(Type fieldType, ModuleBuilderImpl module)
         {
             BlobBuilder fieldSignature = new();
 
-            WriteSignatureTypeForReflectionType(new BlobEncoder(fieldSignature).FieldSignature(), fieldType);
+            WriteSignatureTypeForReflectionType(new BlobEncoder(fieldSignature).FieldSignature(), fieldType, module);
 
             return fieldSignature;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Do not expect System.Void type will be trimmed from core assembly")]
-        internal static BlobBuilder MethodSignatureEncoder(ModuleBuilderImpl _module, Type[]? parameters, Type? returnType, bool isInstance)
+        internal static BlobBuilder MethodSignatureEncoder(ModuleBuilderImpl module, Type[]? parameters, Type? returnType, bool isInstance)
         {
             // Encoding return type and parameters.
             BlobBuilder methodSignature = new();
@@ -33,9 +31,9 @@ namespace System.Reflection.Emit
                 MethodSignature(isInstanceMethod: isInstance).
                 Parameters((parameters == null) ? 0 : parameters.Length, out retEncoder, out parEncoder);
 
-            if (returnType != null && returnType != _module.GetTypeFromCoreAssembly("System.Void"))
+            if (returnType != null && returnType != module.GetTypeFromCoreAssembly(CoreTypeId.Void))
             {
-                WriteSignatureTypeForReflectionType(retEncoder.Type(), returnType);
+                WriteSignatureTypeForReflectionType(retEncoder.Type(), returnType, module);
             }
             else // If null mark ReturnTypeEncoder as void
             {
@@ -46,46 +44,95 @@ namespace System.Reflection.Emit
             {
                 foreach (Type parameter in parameters)
                 {
-                    WriteSignatureTypeForReflectionType(parEncoder.AddParameter().Type(), parameter);
+                    WriteSignatureTypeForReflectionType(parEncoder.AddParameter().Type(), parameter, module);
                 }
             }
 
             return methodSignature;
         }
 
-        private static void WriteSignatureTypeForReflectionType(SignatureTypeEncoder signature, Type type)
+        private static void WriteSignatureTypeForReflectionType(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)
         {
-            // We need to translate from Reflection.Type to SignatureTypeEncoder. Most common types for proof of concept. More types will be added.
-            // TODO: This switch should be done by comparing Type objects, without fetching FullName.
-            switch (type.FullName)
+            // We need to translate from Reflection.Type to SignatureTypeEncoder.
+            if (Enum.TryParse(type.Name, out CoreTypeId typeId) && type.Equals(module.GetTypeFromCoreAssembly(typeId)))
             {
-                case "System.Boolean":
-                    signature.Boolean();
-                    break;
-                case "System.Byte":
-                    signature.Byte();
-                    break;
-                case "System.Char":
-                    signature.Char();
-                    break;
-                case "System.Double":
-                    signature.Double();
-                    break;
-                case "System.Int32":
-                    signature.Int32();
-                    break;
-                case "System.Int64":
-                    signature.Int64();
-                    break;
-                case "System.Object":
-                    signature.Object();
-                    break;
-                case "System.String":
-                    signature.String();
-                    break;
-
-                default: throw new NotSupportedException(SR.Format(SR.NotSupported_Signature, type.FullName));
+                switch (typeId)
+                {
+                    case CoreTypeId.Boolean:
+                        signature.Boolean();
+                        return;
+                    case CoreTypeId.Byte:
+                        signature.Byte();
+                        return;
+                    case CoreTypeId.SByte:
+                        signature.SByte();
+                        return;
+                    case CoreTypeId.Char:
+                        signature.Char();
+                        return;
+                    case CoreTypeId.Int16:
+                        signature.Int16();
+                        break;
+                    case CoreTypeId.UInt16:
+                        signature.UInt16();
+                        return;
+                    case CoreTypeId.Int32:
+                        signature.Int32();
+                        return;
+                    case CoreTypeId.UInt32:
+                        signature.UInt32();
+                        return;
+                    case CoreTypeId.Int64:
+                        signature.Int64();
+                        return;
+                    case CoreTypeId.UInt64:
+                        signature.UInt64();
+                        return;
+                    case CoreTypeId.Single:
+                        signature.Single();
+                        return;
+                    case CoreTypeId.Double:
+                        signature.Double();
+                        return;
+                    case CoreTypeId.IntPtr:
+                        signature.IntPtr();
+                        return;
+                    case CoreTypeId.UIntPtr:
+                        signature.UIntPtr();
+                        return;
+                    case CoreTypeId.Object:
+                        signature.Object();
+                        return;
+                    case CoreTypeId.String:
+                        signature.String();
+                        return;
+                }
             }
+
+            throw new NotSupportedException(SR.Format(SR.NotSupported_Signature, type.FullName));
         }
+    }
+
+    internal enum CoreTypeId
+    {
+        Void = 0,
+        Object = 1,
+        Boolean = 2,
+        Char = 3,
+        SByte = 4,
+        Byte = 5,
+        Int16 = 6,
+        UInt16 = 7,
+        Int32 = 8,
+        UInt32 = 9,
+        Int64 = 10,
+        UInt64 = 11,
+        Single = 12,
+        Double = 13,
+        Decimal = 14,
+        DateTime = 15,
+        String = 16,
+        IntPtr = 17,
+        UIntPtr = 18,
     }
 }

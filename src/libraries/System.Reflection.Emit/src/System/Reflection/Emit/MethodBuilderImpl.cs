@@ -17,13 +17,11 @@ namespace System.Reflection.Emit
         private readonly CallingConventions _callingConventions;
         private readonly TypeBuilderImpl _declaringType;
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Do not expect System.Void type will be trimmed from core assembly")]
         internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
             Type[]? parameterTypes, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
         {
             _module = module;
-            _returnType = returnType ?? _module.GetTypeFromCoreAssembly("System.Void"); ;
+            _returnType = returnType ?? _module.GetTypeFromCoreAssembly(CoreTypeId.Void)!;
             _name = name;
             _attributes = attributes;
             _callingConventions = callingConventions;

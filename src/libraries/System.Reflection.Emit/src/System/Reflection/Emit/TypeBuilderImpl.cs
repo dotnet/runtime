@@ -72,9 +72,7 @@ namespace System.Reflection.Emit
         protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2074:DynamicallyAccessedMembers",
-            Justification = "No need to propogate the attriubte for called method")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Do not expect System.Object type will be trimmed from core assembly")]
+            Justification = "No need to propogate the attribute to the called method")]
         protected override void SetParentCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             if (parent != null)
@@ -90,7 +88,7 @@ namespace System.Reflection.Emit
             {
                 if ((_attributes & TypeAttributes.Interface) != TypeAttributes.Interface)
                 {
-                    _typeParent = _module.GetTypeFromCoreAssembly("System.Object");
+                    _typeParent = _module.GetTypeFromCoreAssembly(CoreTypeId.Object);
                 }
                 else
                 {
