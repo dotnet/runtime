@@ -28,16 +28,18 @@ Affected public APIs:
 
 The number of `CompareOptions` and `StringComparison` combinations is limited. Originally supported combinations can be found [here for CompareOptions](https://learn.microsoft.com/dotnet/api/system.globalization.compareoptions) and [here for StringComparison](https://learn.microsoft.com/dotnet/api/system.stringcomparison).
 
-- `IgnoreWidth` is not supported. Throws `PlatformNotSupportedException`.
+- `IgnoreWidth` is not supported because there is no equivalent in Web API. Throws `PlatformNotSupportedException`.
 ```
 let high = String.fromCharCode(65281)                                       // %uff83 = ﾃ
 let low = String.fromCharCode(12486)                                        // %u30c6 = テ
-high.localeCompare(low, "ja-JP", { sensitivity: "case" })                   // -1
+high.localeCompare(low, "ja-JP", { sensitivity: "case" })                   // -1 ; case: a ≠ b, a = á, a ≠ A; expected: 0
 
-high = String.fromCharCode(65499)                                           // %uFFDB = ￛ
-low = String.fromCharCode(12642)                                            // %u3162 = ㅢ
-high.localeCompare(low, "ja-JP", { sensitivity: "case" })                   // 1
+let wide = String.fromCharCode(65345)                                       // %uFF41 = ａ
+let narrow = "a"
+wide.localeCompare(narrow, "en-US", { sensitivity: "accent" })              // 0; accent: a ≠ b, a ≠ á, a = A; expected: -1
 ```
+
+For comparison where "accent" sensitivity is used, ignoring some type of character widths is applied and cannot be switched off (see: point about `IgnoreCase`).
 
 - `IgnoreKanaType`:
 
@@ -65,6 +67,15 @@ let hiraganaBig = `${String.fromCharCode(12353)} A`                          // 
 let katakanaSmall = `${String.fromCharCode(12449)} a`                        // %u30A1 = ァ
 hiraganaBig.localeCompare(katakanaSmall, "en-US", { sensitivity: "accent" }) // 0;  accent: a ≠ b, a ≠ á, a = A
 ```
+
+Known exceptions:
+
+| **character 1** | **character 2** | **CompareOptions** | **hybrid globalization** | **icu** |                       **comments**                      |
+|:---------------:|:---------------:|--------------------|:------------------------:|:-------:|:-------------------------------------------------------:|
+|        a        |   `\uFF41` ａ   |   IgnoreKanaType   |             0            |    -1   |            applies to all wide-narrow chars             |
+|   `\u30DC` ボ   |    `\uFF8E` ﾎ   |     IgnoreCase     |             1            |    -1   | 1 is returned in icu when we additionally ignore width  |
+|   `\u30BF` タ   |    `\uFF80` ﾀ   |     IgnoreCase     |             0            |    -1   |                                                         |
+
 
 For `IgnoreCase` alone, a comparison with default option: `sensitivity: "variant"` is used after string case unification.
 
