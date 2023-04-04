@@ -8025,7 +8025,7 @@ void Lowering::LowerLclHeap(GenTree* node)
                 GenTree*    zero     = comp->gtNewIconNode(0);
                 GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
                     GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, heapLcl, zero, comp->typGetBlkLayout((unsigned)alignedSize));
-                storeBlk->gtFlags |= (GTF_BLK_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
+                storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
                 BlockRange().InsertAfter(use.Def(), heapLcl, zero, storeBlk);
                 LowerNode(storeBlk);
             }
