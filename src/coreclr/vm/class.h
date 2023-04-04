@@ -2230,6 +2230,11 @@ private:
         SUPPORTS_DAC;
         return m_totalFields - m_currField - 1;
     }
+    int GetValueClassCacheIndex()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_currField;
+    }
 };
 
 //
