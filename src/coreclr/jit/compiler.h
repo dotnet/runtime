@@ -5699,8 +5699,8 @@ protected:
     PhaseStatus fgPrepareToInstrumentMethod();
     PhaseStatus fgInstrumentMethod();
     PhaseStatus fgIncorporateProfileData();
-    void        fgIncorporateBlockCounts();
-    void        fgIncorporateEdgeCounts();
+    bool        fgIncorporateBlockCounts();
+    bool        fgIncorporateEdgeCounts();
 
 public:
     const char*                            fgPgoFailReason;
