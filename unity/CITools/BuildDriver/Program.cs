@@ -129,6 +129,9 @@ public class Program
 
             // We always need to build the embedding host because on CI we have the build and tests split into separate jobs.  And the way we have artifacts setup,
             // we don't retain anything built under `unity`.  And therefore we need to rebuild it so that tests that depend on something in managed.sln can find what they need
+            //
+            // Also when trying to run just the embedding managed tests, dotnet test will not always rebuild dependencies.  Having this build here is handy to ensure that
+            // when the tests run that the embed host is up-to-date
             EmbeddingHost.Build(gConfig);
 
             if (bTargets != BuildTargets.None)
@@ -139,7 +142,7 @@ public class Program
                     CoreCLR.Build(gConfig);
 
                 // TODO: Switch to using Embedding Host build to perform the copy instead of this once that lands.
-                NPath artifacts = ConsolidateArtifacts(gConfig);
+                NPath artifacts = Artifacts.ConsolidateArtifacts(gConfig);
 
                 NPath zipExe = new("7z");
                 if (zipTask != null)
@@ -156,8 +159,11 @@ public class Program
 
             if (tTargets != TestTargets.None)
             {
-                if (tTargets.HasFlag(TestTargets.Embedding))
-                    EmbeddingHost.Test(gConfig);
+                if (tTargets.HasFlag(TestTargets.EmbeddingManaged))
+                    EmbeddingHost.TestManaged(gConfig);
+
+                if (tTargets.HasFlag(TestTargets.EmbeddingNative))
+                    EmbeddingHost.TestNative(gConfig);
 
                 if (tTargets.HasFlag(TestTargets.Classlibs))
                     CoreCLR.TestClassLibraries(gConfig);
@@ -173,34 +179,6 @@ public class Program
                 Console.WriteLine("******************************");
             }
         }
-    }
-
-    static NPath ConsolidateArtifacts(GlobalConfig gConfig)
-    {
-        string osAbbrev = "win";
-        string unityGCLib = "unitygc.dll";
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-        {
-            osAbbrev = "osx";
-            unityGCLib = "libunitygc.dylib";
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-        {
-            osAbbrev = "linux";
-            unityGCLib = "libunitygc.so";
-        }
-
-        NPath destDir = Paths.RepoRoot.Combine("artifacts", "bin",
-            $"microsoft.netcore.app.runtime.{osAbbrev}-{gConfig.Architecture}", gConfig.Configuration, "runtimes",
-            $"{osAbbrev}-{gConfig.Architecture}");
-
-        Paths.UnityGC.Combine(gConfig.Configuration, unityGCLib).Copy(destDir.Combine("native"));
-
-        NPath tfmDir = Paths.UnityEmbedHost.Combine("bin", gConfig.Configuration).Directories().Single();
-        tfmDir.Files("unity-embed-host.*").Copy(destDir.Combine("lib", tfmDir.FileName));
-        Paths.RepoRoot.Combine("LICENSE.md").Copy(destDir);
-
-        return destDir;
     }
 
     private static string[] GetArchitectures(bool allArchitectures = false)

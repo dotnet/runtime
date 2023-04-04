@@ -57,7 +57,10 @@ static unsafe partial class CoreCLRHost
 
     [return: NativeWrapperType("MonoString*")]
     [return: NativeCallbackType("ManagedStringPtr_t")]
-    public static StringPtr string_new_len([NativeCallbackType("MonoDomain*")] void* domain /* unused */, [NativeCallbackType("const char*")] sbyte* text, uint length)
+    public static StringPtr string_new_len(
+        [NoManagedWrapper]
+        [NativeCallbackType("MonoDomain*")] void* domain /* unused */,
+        [NativeCallbackType("const char*")] sbyte* text, uint length)
     {
         var s = new string(text, 0, (int)length, Encoding.UTF8);
         return StringToPtr(s);
@@ -66,7 +69,10 @@ static unsafe partial class CoreCLRHost
 
     [return: NativeWrapperType("MonoString*")]
     [return: NativeCallbackType("ManagedStringPtr_t")]
-    public static StringPtr string_new_utf16([NativeCallbackType("MonoDomain*")] void* domain /* unused */, ushort* text, [NativeCallbackType("gint32")] int length)
+    public static StringPtr string_new_utf16(
+        [NoManagedWrapper]
+        [NativeCallbackType("MonoDomain*")] void* domain /* unused */,
+        ushort* text, [NativeCallbackType("gint32")] int length)
     {
         var s = new string((char*)text, 0, length);
         return StringToPtr(s);
@@ -100,16 +106,25 @@ static unsafe partial class CoreCLRHost
         => obj.ToManagedRepresentation().TypeHandleIntPtr();
 
     [return: NativeCallbackType("MonoArray*")]
-    public static IntPtr array_new([NativeCallbackType("MonoDomain*")] IntPtr domain, [NativeCallbackType("MonoClass*")] IntPtr klass, [NativeCallbackType("guint32")] int n)
+    public static IntPtr array_new(
+        [NoManagedWrapper]
+        [NativeCallbackType("MonoDomain*")] IntPtr domain,
+        [NativeCallbackType("MonoClass*")] IntPtr klass, [NativeCallbackType("guint32")] int n)
         => Array.CreateInstance(klass.TypeFromHandleIntPtr(), n).ToNativeRepresentation();
 
     [return: NativeCallbackType("MonoArray*")]
-    public static IntPtr unity_array_new_2d([NativeCallbackType("MonoDomain*")] IntPtr domain, [NativeCallbackType("MonoClass*")] IntPtr klass,
+    public static IntPtr unity_array_new_2d(
+        [NoManagedWrapper]
+        [NativeCallbackType("MonoDomain*")] IntPtr domain,
+        [NativeCallbackType("MonoClass*")] IntPtr klass,
         [NativeCallbackType("size_t")] int size0, [NativeCallbackType("size_t")] int size1)
         => Array.CreateInstance(klass.TypeFromHandleIntPtr(), size0, size1).ToNativeRepresentation();
 
     [return: NativeCallbackType("MonoArray*")]
-    public static IntPtr unity_array_new_3d([NativeCallbackType("MonoDomain*")] IntPtr domain, [NativeCallbackType("MonoClass*")] IntPtr klass,
+    public static IntPtr unity_array_new_3d(
+        [NoManagedWrapper]
+        [NativeCallbackType("MonoDomain*")] IntPtr domain,
+        [NativeCallbackType("MonoClass*")] IntPtr klass,
         [NativeCallbackType("size_t")] int size0, [NativeCallbackType("size_t")] int size1, [NativeCallbackType("size_t")] int size2)
         => Array.CreateInstance(klass.TypeFromHandleIntPtr(), size0, size1, size2).ToNativeRepresentation();
 
