@@ -13,7 +13,7 @@ namespace System.Reflection.Emit
     {
         private readonly Assembly _coreAssembly;
         private readonly string _name;
-        private Type?[] _coreTypes;
+        private Type[]? _coreTypes;
         private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyRefStore = new();
         private readonly Dictionary<Type, TypeReferenceHandle> _typeRefStore = new();
         private readonly List<TypeBuilderImpl> _typeDefStore = new();
@@ -24,38 +24,63 @@ namespace System.Reflection.Emit
         internal ModuleBuilderImpl(string name, Assembly coreAssembly)
         {
             _coreAssembly = coreAssembly;
-            // Use s_coreTypes directly for runtime reflection
-            _coreTypes = (_coreAssembly == typeof(object).Assembly) ? s_coreTypes : new Type[s_coreTypes.Length];
             _name = name;
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types are preserved via s_coreTypes")]
-        internal Type GetTypeFromCoreAssembly(CoreTypeId typeId)
+         internal Type GetTypeFromCoreAssembly(CoreTypeId typeId)
         {
-            int index = (int)typeId;
-
-            return _coreTypes[index] ?? (_coreTypes[index] = _coreAssembly.GetType(s_coreTypes[index].FullName!, throwOnError: true)!);
-        }
-
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types are preserved via s_coreTypes")]
-        internal int GetTypeIdFromCoreTypes(Type type)
-        {
-            for(int i=0; i < _coreTypes.Length; i++)
+            if (_coreTypes == null)
             {
-                if (_coreTypes[i] == type)
+                // Use s_coreTypes directly for runtime reflection
+                if (_coreAssembly == typeof(object).Assembly)
                 {
-                    return i;
+                    _coreTypes = s_coreTypes;
+                }
+                else
+                {
+                    _coreTypes = new Type[s_coreTypes.Length];
+
+                    for (int i = 0; i < s_coreTypes.Length; i++)
+                    {
+                        _coreTypes[i] = _coreAssembly.GetType(s_coreTypes[i].FullName!, throwOnError: true)!;
+                    }
                 }
             }
 
-            Type? foundType = _coreAssembly.GetType(type.FullName!, throwOnError: true);
+            return _coreTypes[(int)typeId];
+        }
 
-            if (foundType == null || !Enum.TryParse(foundType.Name, out CoreTypeId result))
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types are preserved via s_coreTypes")]
+        internal CoreTypeId? GetTypeIdFromCoreTypes(Type type)
+        {
+            if (_coreTypes == null)
             {
-                return -1;
+                // Use s_coreTypes directly for runtime reflection
+                if (_coreAssembly == typeof(object).Assembly)
+                {
+                    _coreTypes = s_coreTypes;
+                }
+                else
+                {
+                    _coreTypes = new Type[s_coreTypes.Length];
+
+                    for (int i = 0; i < s_coreTypes.Length; i++)
+                    {
+                        _coreTypes[i] = _coreAssembly.GetType(s_coreTypes[i].FullName!, throwOnError: true)!;
+                    }
+                }
             }
 
-            return (int)result;
+            for (int i = 0; i < _coreTypes.Length; i++)
+            {
+                if (_coreTypes[i] == type)
+                {
+                    return (CoreTypeId)i;
+                }
+            }
+
+            return null;
         }
 
         internal void AppendMetadata(MetadataBuilder metadata)

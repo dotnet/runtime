@@ -53,12 +53,12 @@ namespace System.Reflection.Emit
 
         private static void WriteSignatureTypeForReflectionType(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)
         {
-            int id = module.GetTypeIdFromCoreTypes(type);
+            CoreTypeId? typeId = module.GetTypeIdFromCoreTypes(type);
 
             // We need to translate from Reflection.Type to SignatureTypeEncoder.
-            if (id > -1)
+            if (typeId.HasValue)
             {
-                switch ((CoreTypeId)id)
+                switch (typeId)
                 {
                     case CoreTypeId.Boolean:
                         signature.Boolean();

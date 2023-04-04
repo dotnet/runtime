@@ -72,7 +72,7 @@ namespace System.Reflection.Emit
         protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2074:DynamicallyAccessedMembers",
-            Justification = "No need to propogate the attribute to the called method")]
+            Justification = "TODO: Need to figure out how to preserve System.Object public constructor")]
         protected override void SetParentCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             if (parent != null)
