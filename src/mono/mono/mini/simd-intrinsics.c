@@ -268,6 +268,28 @@ emit_simd_ins_for_sig (MonoCompile *cfg, MonoClass *klass, int opcode, int instc
 
 static gboolean type_enum_is_unsigned (MonoTypeEnum type);
 static gboolean type_enum_is_float (MonoTypeEnum type);
+static int type_to_expand_op (MonoTypeEnum type);
+
+static MonoInst*
+handle_mul_div_by_scalar (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum arg_type, int scalar_reg, int vector_reg, int sub_op)
+{
+	MonoInst* ins;
+
+	if (COMPILE_LLVM (cfg)) {
+		ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, scalar_reg, -1);
+		ins->inst_c1 = arg_type;
+		ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, vector_reg, ins->dreg);
+		ins->inst_c0 = sub_op;
+	} else {
+		ins = emit_simd_ins (cfg, klass, type_to_expand_op (arg_type), scalar_reg, -1);
+		ins->inst_c1 = arg_type;
+		ins = emit_simd_ins (cfg, klass, OP_XBINOP, vector_reg, ins->dreg);
+		ins->inst_c0 = sub_op;
+		ins->inst_c1 = arg_type;
+	}
+
+	return ins;
+}
 
 static MonoInst*
 emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoInst **args, MonoTypeEnum arg_type, int id)
@@ -304,13 +326,9 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_op_Division: {
 				const char *class_name = m_class_get_name (klass);
 				if (strcmp ("Vector2", class_name) && strcmp ("Vector4", class_name) && strcmp ("Quaternion", class_name) && strcmp ("Plane", class_name)) {
-					if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type != MONO_TYPE_GENERICINST)) {
-						MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [1]->dreg, -1);
-						ins->inst_c1 = arg_type;
-						ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [0]->dreg, ins->dreg);
-						ins->inst_c0 = OP_FDIV;
-						return ins;
-					} else if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type == MONO_TYPE_GENERICINST)) {
+					if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type != MONO_TYPE_GENERICINST))
+						return handle_mul_div_by_scalar (cfg, klass, arg_type, args [1]->dreg, args [0]->dreg, OP_FDIV);
+					else if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type == MONO_TYPE_GENERICINST)) {
 						instc0 = OP_FDIV;
 						break;
 					} else {
@@ -330,19 +348,11 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_op_Multiply: {
 				const char *class_name = m_class_get_name (klass);
 				if (strcmp ("Vector2", class_name) && strcmp ("Vector4", class_name) && strcmp ("Quaternion", class_name) && strcmp ("Plane", class_name)) {
-					if (fsig->params [1]->type != MONO_TYPE_GENERICINST) {
-						MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [1]->dreg, -1);
-						ins->inst_c1 = arg_type;
-						ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [0]->dreg, ins->dreg);
-						ins->inst_c0 = OP_FMUL;
-						return ins;
-					} else if (fsig->params [0]->type != MONO_TYPE_GENERICINST) {
-						MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [0]->dreg, -1);
-						ins->inst_c1 = arg_type;
-						ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [1]->dreg, ins->dreg);
-						ins->inst_c0 = OP_FMUL;
-						return ins;
-					} else if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type == MONO_TYPE_GENERICINST)) {
+					if (fsig->params [1]->type != MONO_TYPE_GENERICINST)
+						return handle_mul_div_by_scalar (cfg, klass, arg_type, args [1]->dreg, args [0]->dreg, OP_FMUL);
+					else if (fsig->params [0]->type != MONO_TYPE_GENERICINST)
+						return handle_mul_div_by_scalar (cfg, klass, arg_type, args [0]->dreg, args [1]->dreg, OP_FMUL);
+					else if ((fsig->params [0]->type == MONO_TYPE_GENERICINST) && (fsig->params [1]->type == MONO_TYPE_GENERICINST)) {
 						instc0 = OP_FMUL;
 						break;
 					} else {
@@ -375,22 +385,18 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 				instc0 = type_enum_is_unsigned (arg_type) ? OP_IMIN_UN : OP_IMIN;
 				break;
 			case SN_Multiply:
-			case SN_op_Multiply:
-				if (fsig->params [1]->type != MONO_TYPE_GENERICINST) {
-					MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [1]->dreg, -1);
-					ins->inst_c1 = arg_type;
-					ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [0]->dreg, ins->dreg);
-					ins->inst_c0 = OP_IMUL;
-					return ins;
-				} else if (fsig->params [0]->type != MONO_TYPE_GENERICINST) {
-					MonoInst* ins = emit_simd_ins (cfg, klass, OP_CREATE_SCALAR_UNSAFE, args [0]->dreg, -1);
-					ins->inst_c1 = arg_type;
-					ins = emit_simd_ins (cfg, klass, OP_XBINOP_BYSCALAR, args [1]->dreg, ins->dreg);
-					ins->inst_c0 = OP_IMUL;
-					return ins;
-				}
+			case SN_op_Multiply: {
+#ifdef TARGET_ARM64
+				if (!COMPILE_LLVM (cfg) && (arg_type == MONO_TYPE_I8 || arg_type == MONO_TYPE_U8 || arg_type == MONO_TYPE_I || arg_type == MONO_TYPE_U))
+					return NULL;
+#endif
+				if (fsig->params [1]->type != MONO_TYPE_GENERICINST) 
+					return handle_mul_div_by_scalar (cfg, klass, arg_type, args [1]->dreg, args [0]->dreg, OP_IMUL);
+				else if (fsig->params [0]->type != MONO_TYPE_GENERICINST)
+					return handle_mul_div_by_scalar (cfg, klass, arg_type, args [0]->dreg, args [1]->dreg, OP_IMUL);
 				instc0 = OP_IMUL;
 				break;
+			}
 			case SN_Subtract:
 			case SN_op_Subtraction:
 				instc0 = OP_ISUB;
@@ -432,6 +438,12 @@ emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignat
 #else
 	return NULL;
 #endif
+}
+
+static gboolean
+type_is_simd_vector (MonoType *type)
+{
+	return type->type == MONO_TYPE_GENERICINST && m_class_is_simd_type (mono_class_from_mono_type_internal (type));
 }
 
 static gboolean
@@ -799,9 +811,9 @@ type_enum_is_float (MonoTypeEnum type)
 }
 
 static int
-type_to_expand_op (MonoType *type)
+type_to_expand_op (MonoTypeEnum type)
 {
-	switch (type->type) {
+	switch (type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 		return OP_EXPAND_I1;
@@ -1262,6 +1274,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_ToScalar:
 		case SN_Floor:
 		case SN_Ceiling:
+		case SN_Divide:
+		case SN_Multiply:
 			break;
 		default: 
 			return NULL;
@@ -1447,7 +1461,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
 		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype))
-			return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
+			return emit_simd_ins (cfg, klass, type_to_expand_op (etype->type), args [0]->dreg, -1);
 		else if (is_create_from_half_vectors_overload (fsig))
 			return emit_simd_ins (cfg, klass, OP_XCONCAT, args [0]->dreg, args [1]->dreg);
 		else if (is_elementwise_create_overload (fsig, etype))
@@ -1936,30 +1950,10 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return NULL;
 #endif
 
-// FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
+// FIXME: Support Vector64 for mini JIT on arm64
 #ifdef TARGET_ARM64
-	if (!COMPILE_LLVM (cfg)) {
+	if (!COMPILE_LLVM (cfg) && (size != 16))
 		return NULL;
-		/*if (size != 16)
-			return NULL;
-		switch (id) {
-		case SN_get_One:
-		case SN_get_Zero:
-		case SN_op_OnesComplement:
-		case SN_op_UnaryNegation:
-		case SN_op_UnaryPlus:
-		case SN_op_Addition:
-		case SN_op_Subtraction:
-		case SN_op_BitwiseAnd:
-		case SN_op_BitwiseOr:
-		case SN_op_ExclusiveOr:
-		case SN_op_Equality:
-		case SN_op_Inequality:
-			break;
-		default:
-			return NULL;
-		}*/
-	}
 #endif
 
 	switch (id) {
@@ -2166,7 +2160,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 			gboolean indirect = FALSE;
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], &indirect);
 
-			int opcode = type_to_expand_op (etype);
+			int opcode = type_to_expand_op (etype->type);
 			ins = emit_simd_ins (cfg, klass, opcode, args [1]->dreg, -1);
 
 			for (int i = 1; i < fsig->param_count; ++i) {
@@ -2639,7 +2633,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype)) {
 			int dreg = load_simd_vreg (cfg, cmethod, args [0], NULL);
 
-			int opcode = type_to_expand_op (etype);
+			int opcode = type_to_expand_op (etype->type);
 			ins = emit_simd_ins (cfg, klass, opcode, args [1]->dreg, -1);
 			ins->dreg = dreg;
 			return ins;
@@ -3250,8 +3244,8 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_TransposeOdd, OP_ARM64_TRN2},
 	{SN_UnzipEven, OP_ARM64_UZP1},
 	{SN_UnzipOdd, OP_ARM64_UZP2},
-	{SN_VectorTableLookup, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1},
-	{SN_VectorTableLookupExtension, OP_XOP_OVR_X_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBX1},
+	{SN_VectorTableLookup},
+	{SN_VectorTableLookupExtension},
 	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_XOR},
 	{SN_ZeroExtendWideningLower, OP_ARM64_UXTL},
 	{SN_ZeroExtendWideningUpper, OP_ARM64_UXTL2},
@@ -3408,7 +3402,7 @@ emit_arm64_intrinsics (
 				break;
 			}
 			}
-			return emit_simd_ins (cfg, ret_klass, type_to_expand_op (rtype), scalar_src_reg, -1);
+			return emit_simd_ins (cfg, ret_klass, type_to_expand_op (rtype->type), scalar_src_reg, -1);
 		}
 		case SN_Extract: {
 			int extract_op = type_to_xextract_op (arg0_type);
@@ -3448,7 +3442,7 @@ emit_arm64_intrinsics (
 			MonoType *etype = get_vector_t_elem_type (fsig->ret);
 			gboolean is_unsigned = type_is_unsigned (fsig->ret);
 			gboolean scalar = id == SN_ShiftLeftLogicalSaturateScalar;
-			int s2v = scalar ? OP_CREATE_SCALAR_UNSAFE : type_to_expand_op (etype);
+			int s2v = scalar ? OP_CREATE_SCALAR_UNSAFE : type_to_expand_op (etype->type);
 			int xop = scalar ? OP_XOP_OVR_SCALAR_X_X_X : OP_XOP_OVR_X_X_X;
 			int iid = is_unsigned ? INTRINS_AARCH64_ADV_SIMD_UQSHL : INTRINS_AARCH64_ADV_SIMD_SQSHL;
 			MonoInst *shift_vector = emit_simd_ins (cfg, ret_klass, s2v, args [1]->dreg, -1);
@@ -3554,6 +3548,63 @@ emit_arm64_intrinsics (
 			MonoInst *ret = emit_simd_ins (cfg, ret_klass, opcode, args [0]->dreg, args [1]->dreg);
 			ret->sreg3 = scalar->dreg;
 			return ret;
+		}
+        case SN_VectorTableLookup:
+        case SN_VectorTableLookupExtension: {
+			if (type_is_simd_vector (fsig->params [0]) && type_is_simd_vector (fsig->params [1])) {
+				if (id == SN_VectorTableLookup)
+					return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1, 0, fsig, args);
+				else
+					return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBX1, 0, fsig, args);
+			}
+
+			MonoInst *ins, *addr;
+			int tuple_argindex;
+
+			if (id == SN_VectorTableLookup)
+				/* VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) */
+				tuple_argindex = 0;
+			else
+				/* VectorTableLookupExtension(Vector128<byte> defaultValues, (Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes */
+				tuple_argindex = 1;
+
+			/*
+			 * These intrinsics have up to 5 inputs, and our IR can't model that, so save the inputs to the stack and have
+			 * the LLVM implementation read them back.
+			 */
+			MonoType *tuple_type = fsig->params [tuple_argindex];
+			g_assert (tuple_type->type == MONO_TYPE_GENERICINST);
+			MonoClass *tclass = mono_class_from_mono_type_internal (tuple_type);
+			mono_class_init_internal (tclass);
+
+			MonoClassField *fields = m_class_get_fields (tclass);
+			int nfields = mono_class_get_field_count (tclass);
+			guint32 *offsets = mono_mempool_alloc0 (cfg->mempool, nfields * sizeof (guint32));
+			for (uint32_t i = 0; i < mono_class_get_field_count (tclass); ++i)
+				offsets [i] = mono_field_get_offset (&fields [i]) - MONO_ABI_SIZEOF (MonoObject);
+
+			int vreg = alloc_xreg (cfg);
+			NEW_VARLOADA_VREG (cfg, addr, vreg, tuple_type);
+			MONO_ADD_INS (cfg->cbb, addr);
+
+			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, tuple_type, addr->dreg, 0, args [tuple_argindex]->dreg);
+
+			MONO_INST_NEW (cfg, ins, id == SN_VectorTableLookup ? OP_ARM64_TBL_INDIRECT : OP_ARM64_TBX_INDIRECT);
+			ins->dreg = alloc_xreg (cfg);
+			ins->sreg1 = addr->dreg;
+			if (id == SN_VectorTableLookup) {
+				/* byteIndexes */
+				ins->sreg2 = args [1]->dreg;
+			} else {
+				/* defaultValues */
+				ins->sreg2 = args [0]->dreg;
+				/* byteIndexes */
+				ins->sreg3 = args [2]->dreg;
+			}
+			ins->inst_c0 = nfields;
+			ins->inst_p1 = offsets;
+			MONO_ADD_INS (cfg->cbb, ins);
+			return ins;
 		}
 		default:
 			g_assert_not_reached ();
@@ -4851,7 +4902,7 @@ emit_wasm_supported_intrinsics (
 			case SN_Splat: {
 				MonoType *etype = get_vector_t_elem_type (fsig->ret);
 				g_assert (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype));
-				return emit_simd_ins (cfg, klass, type_to_expand_op (etype), args [0]->dreg, -1);
+				return emit_simd_ins (cfg, klass, type_to_expand_op (etype->type), args [0]->dreg, -1);
 			}
 			case SN_Dot:
 				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, INTRINS_WASM_DOT, -1, fsig, args);

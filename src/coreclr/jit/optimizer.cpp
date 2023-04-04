@@ -8621,11 +8621,9 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
             {
                 GenTree* lhs = tree->gtGetOp1();
 
-                assert(!lhs->OperIs(GT_COMMA));
-
-                if (lhs->OperIs(GT_IND))
+                if (lhs->OperIsIndir())
                 {
-                    GenTree* arg = lhs->AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
+                    GenTree* arg = lhs->AsIndir()->Addr()->gtEffectiveVal(/*commaOnly*/ true);
 
                     if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
                     {
@@ -8691,22 +8689,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         }
                     }
                 }
-                else if (lhs->OperIsBlk())
-                {
-                    GenTreeLclVarCommon* lclVarTree;
-                    bool                 isEntire;
-                    if (!tree->DefinesLocal(this, &lclVarTree, &isEntire))
-                    {
-                        // For now, assume arbitrary side effects on GcHeap/ByrefExposed...
-                        memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
-                    }
-                    else if (lvaVarAddrExposed(lclVarTree->GetLclNum()))
-                    {
-                        memoryHavoc |= memoryKindSet(ByrefExposed);
-                    }
-                }
-                // Otherwise, must be local lhs form.  I should assert that.
-                else if (lhs->OperIsLocal())
+                else // Otherwise, must be local lhs form.
                 {
                     GenTreeLclVarCommon* lhsLcl = lhs->AsLclVarCommon();
                     ValueNum             rhsVN  = tree->AsOp()->gtOp2->gtVNPair.GetLiberal();
@@ -9123,8 +9106,7 @@ void Compiler::optRemoveRedundantZeroInits()
                 {
                     case GT_LCL_VAR:
                     case GT_LCL_FLD:
-                    case GT_LCL_VAR_ADDR:
-                    case GT_LCL_FLD_ADDR:
+                    case GT_LCL_ADDR:
                     {
                         unsigned  lclNum    = tree->AsLclVarCommon()->GetLclNum();
                         unsigned* pRefCount = refCounts.LookupPointer(lclNum);

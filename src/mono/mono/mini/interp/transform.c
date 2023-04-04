@@ -9914,10 +9914,10 @@ interp_super_instructions (TransformData *td)
 					}
 				}
 			} else if (MINT_IS_BINOP_SHIFT (opcode)) {
-				// ldc + sh -> sh.imm
 				gint16 imm;
 				int sreg_imm = ins->sregs [1];
 				if (get_sreg_imm (td, sreg_imm, &imm, MINT_TYPE_I2)) {
+					// ldc + sh -> sh.imm
 					int shift_op = MINT_SHR_UN_I4_IMM + (opcode - MINT_SHR_UN_I4);
 					InterpInst *new_inst = interp_insert_ins (td, ins, shift_op);
 					new_inst->dreg = ins->dreg;
@@ -9929,6 +9929,38 @@ interp_super_instructions (TransformData *td)
 					if (td->verbose_level) {
 						g_print ("superins: ");
 						dump_interp_inst (new_inst);
+					}
+				} else if (opcode == MINT_SHL_I4 || opcode == MINT_SHL_I8) {
+					int amount_var = ins->sregs [1];
+					InterpInst *amount_def = td->locals [amount_var].def;
+					if (amount_def != NULL && td->local_ref_count [amount_var] == 1 && amount_def->opcode == MINT_AND_I4) {
+						int mask_var = amount_def->sregs [1];
+						if (get_sreg_imm (td, mask_var, &imm, MINT_TYPE_I2)) {
+							// ldc + and + shl -> shl_and_imm
+							int new_opcode = -1;
+							if (opcode == MINT_SHL_I4 && imm == 31)
+								new_opcode = MINT_SHL_AND_I4;
+							else if (opcode == MINT_SHL_I8 && imm == 63)
+								new_opcode = MINT_SHL_AND_I8;
+
+							if (new_opcode != -1) {
+								InterpInst *new_inst = interp_insert_ins (td, ins, new_opcode);
+								new_inst->dreg = ins->dreg;
+								new_inst->sregs [0] = ins->sregs [0];
+								new_inst->sregs [1] = amount_def->sregs [0];
+
+								local_ref_count [amount_var]--;
+								local_ref_count [mask_var]--;
+
+								interp_clear_ins (td->locals [mask_var].def);
+								interp_clear_ins (amount_def);
+								interp_clear_ins (ins);
+								if (td->verbose_level) {
+									g_print ("superins: ");
+									dump_interp_inst (new_inst);
+								}
+							}
+						}
 					}
 				}
 			} else if (opcode == MINT_DIV_UN_I4 || opcode == MINT_DIV_UN_I8) {

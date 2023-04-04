@@ -1815,7 +1815,7 @@ TypeHandle MethodTable::SetupCoClassForInterface()
 
         // Try to load the class using its name as a fully qualified name. If that fails,
         // then we try to load it in the assembly of the current class.
-        CoClassType = TypeName::GetTypeUsingCASearchRules(ss.GetUnicode(), GetAssembly());
+        CoClassType = TypeName::GetTypeReferencedByCustomAttribute(ss.GetUnicode(), GetAssembly());
 
         // Cache the coclass type
         GetClass_NoLogging()->SetCoClassForInterface(CoClassType);
@@ -1862,7 +1862,7 @@ void MethodTable::GetEventInterfaceInfo(MethodTable **ppSrcItfClass, MethodTable
 
     // Try to load the class using its name as a fully qualified name. If that fails,
     // then we try to load it in the assembly of the current class.
-    SrcItfType = TypeName::GetTypeUsingCASearchRules(ss.GetUnicode(), GetAssembly());
+    SrcItfType = TypeName::GetTypeReferencedByCustomAttribute(ss.GetUnicode(), GetAssembly());
 
     // Retrieve the COM event provider class name.
     IfFailThrow(cap.GetNonNullString(&szName, &cbName));
@@ -1872,7 +1872,7 @@ void MethodTable::GetEventInterfaceInfo(MethodTable **ppSrcItfClass, MethodTable
 
     // Try to load the class using its name as a fully qualified name. If that fails,
     // then we try to load it in the assembly of the current class.
-    EventProvType = TypeName::GetTypeUsingCASearchRules(ss.GetUnicode(), GetAssembly());
+    EventProvType = TypeName::GetTypeReferencedByCustomAttribute(ss.GetUnicode(), GetAssembly());
 
     // Set the source interface and event provider classes.
     *ppSrcItfClass = SrcItfType.GetMethodTable();
