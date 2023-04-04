@@ -2742,18 +2742,10 @@ void CodeGen::genLclHeap(GenTree* tree)
 
     // compute the amount of memory to allocate to properly STACK_ALIGN.
     size_t amount = 0;
-    if (size->IsCnsIntOrI())
+    if (size->IsCnsIntOrI() && size->isContained())
     {
-        // If size is a constant, then it must be contained.
-        assert(size->isContained());
-
-        // If amount is zero then return null in targetReg
         amount = size->AsIntCon()->gtIconVal;
-        if (amount == 0)
-        {
-            instGen_Set_Reg_To_Zero(EA_PTRSIZE, targetReg);
-            goto BAILOUT;
-        }
+        assert((amount > 0) && (amount <= UINT_MAX));
 
         // 'amount' is the total number of bytes to localloc to properly STACK_ALIGN
         amount = AlignUp(amount, STACK_ALIGN);
@@ -2848,77 +2840,44 @@ void CodeGen::genLclHeap(GenTree* tree)
             goto ALLOC_DONE;
         }
 
-        inst_RV_IV(INS_add, REG_SPBASE, compiler->lvaOutgoingArgSpaceSize, EA_PTRSIZE);
-        stackAdjustment += (target_size_t)compiler->lvaOutgoingArgSpaceSize;
-        locAllocStackOffset = stackAdjustment;
+        if (size->IsCnsIntOrI() && size->isContained())
+        {
+            stackAdjustment     = 0;
+            locAllocStackOffset = (target_size_t)compiler->lvaOutgoingArgSpaceSize;
+        }
+        else
+        {
+            inst_RV_IV(INS_add, REG_SPBASE, compiler->lvaOutgoingArgSpaceSize, EA_PTRSIZE);
+            stackAdjustment += (target_size_t)compiler->lvaOutgoingArgSpaceSize;
+            locAllocStackOffset = stackAdjustment;
+        }
     }
 #endif
 
-    if (size->IsCnsIntOrI())
+    if (size->IsCnsIntOrI() && size->isContained())
     {
         // We should reach here only for non-zero, constant size allocations.
         assert(amount > 0);
         assert((amount % STACK_ALIGN) == 0);
-        assert((amount % REGSIZE_BYTES) == 0);
 
-        // For small allocations we will generate up to six push 0 inline
-        size_t cntRegSizedWords = amount / REGSIZE_BYTES;
-        if (compiler->info.compInitMem && (cntRegSizedWords <= 6))
+        // We should reach here only for non-zero, constant size allocations which we zero
+        // via BLK explicitly, so just bump the stack pointer.
+        if ((amount >= compiler->eeGetPageSize()) || (TARGET_POINTER_SIZE == 4))
         {
-            for (; cntRegSizedWords != 0; cntRegSizedWords--)
-            {
-                inst_IV(INS_push_hide, 0); // push_hide means don't track the stack
-            }
-
-            lastTouchDelta = 0;
-
-            goto ALLOC_DONE;
+            regCnt = tree->GetSingleTempReg();
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, regCnt, -(ssize_t)amount);
+            genStackPointerDynamicAdjustmentWithProbe(regCnt);
+            // lastTouchDelta is dynamic, and can be up to a page. So if we have outgoing arg space,
+            // we're going to assume the worst and probe.
         }
-
-#ifdef TARGET_X86
-        bool needRegCntRegister = true;
-#else  // !TARGET_X86
-        bool needRegCntRegister = initMemOrLargeAlloc;
-#endif // !TARGET_X86
-
-        if (needRegCntRegister)
-        {
-            // If compInitMem=true, we can reuse targetReg as regcnt.
-            // Since size is a constant, regCnt is not yet initialized.
-            assert(regCnt == REG_NA);
-            if (compiler->info.compInitMem)
-            {
-                assert(tree->AvailableTempRegCount() == 0);
-                regCnt = targetReg;
-            }
-            else
-            {
-                regCnt = tree->GetSingleTempReg();
-            }
-        }
-
-        if (!initMemOrLargeAlloc)
+        else
         {
             // Since the size is less than a page, and we don't need to zero init memory, simply adjust ESP.
-            // ESP might already be in the guard page, so we must touch it BEFORE
-            // the alloc, not after.
-
-            assert(amount < compiler->eeGetPageSize()); // must be < not <=
+            // ESP might already be in the guard page, so we must touch it BEFORE the alloc, not after.
             lastTouchDelta = genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)amount,
-                                                                            /* trackSpAdjustments */ regCnt == REG_NA);
-            goto ALLOC_DONE;
+                                                                            /* trackSpAdjustments */ true);
         }
-
-        // else, "mov regCnt, amount"
-
-        if (compiler->info.compInitMem)
-        {
-            // When initializing memory, we want 'amount' to be the loop count.
-            assert((amount % STACK_ALIGN) == 0);
-            amount /= STACK_ALIGN;
-        }
-
-        instGen_Set_Reg_To_Imm(((size_t)(int)amount == amount) ? EA_4BYTE : EA_8BYTE, regCnt, amount);
+        goto ALLOC_DONE;
     }
 
     // We should not have any temp registers at this point.
@@ -2995,8 +2954,6 @@ ALLOC_DONE:
     {
         genDefineTempLabel(endLabel);
     }
-
-BAILOUT:
 
 #ifdef JIT32_GCENCODER
     if (compiler->lvaLocAllocSPvar != BAD_VAR_NUM)
