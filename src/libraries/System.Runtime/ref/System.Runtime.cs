@@ -9705,8 +9705,6 @@ namespace System.IO
         public MemoryStream(byte[] buffer, int index, int count, bool writable) { }
         public MemoryStream(byte[] buffer, int index, int count, bool writable, bool publiclyVisible) { }
         public MemoryStream(int capacity) { }
-        public MemoryStream(Memory<byte> buffer) { }
-        public MemoryStream(Memory<byte> buffer, bool writable) { }
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanWrite { get { throw null; } }

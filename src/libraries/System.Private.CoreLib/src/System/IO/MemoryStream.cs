@@ -97,29 +97,6 @@ namespace System.IO
             _isOpen = true;
         }
 
-        public MemoryStream(Memory<byte> buffer)
-            : this(buffer, true)
-        {
-        }
-
-        public MemoryStream(Memory<byte> buffer, bool writable)
-        {
-            if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> segment))
-            {
-                _buffer = _bufferArray = segment.Array;
-                _origin = _position = segment.Offset;
-                Debug.Assert(segment.Count == buffer.Length);
-            }
-            else
-            {
-                _buffer = buffer;
-            }
-
-            _length = _capacity = buffer.Length;
-            _isOpen = true;
-            _writable = writable;
-        }
-
         public override bool CanRead => _isOpen;
 
         public override bool CanSeek => _isOpen;
