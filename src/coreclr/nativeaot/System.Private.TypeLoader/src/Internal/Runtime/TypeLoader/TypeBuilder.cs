@@ -1101,9 +1101,8 @@ namespace Internal.Runtime.TypeLoader
             if ((contextKind & GenericContextKind.FromMethodHiddenArg) != 0)
             {
                 RuntimeTypeHandle declaringTypeHandle;
-                MethodNameAndSignature nameAndSignature;
                 RuntimeTypeHandle[] genericMethodArgHandles;
-                bool success = TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(context, out declaringTypeHandle, out nameAndSignature, out genericMethodArgHandles);
+                bool success = TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(context, out declaringTypeHandle, out genericMethodArgHandles);
                 Debug.Assert(success);
 
                 if (RuntimeAugments.IsGenericType(declaringTypeHandle))

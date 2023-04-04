@@ -821,7 +821,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIsLocalAddr();
+    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -841,7 +841,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     regNumber tmpReg = cpObjNode->ExtractTempReg();
     assert(genIsValidIntReg(tmpReg));
 
-    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpObjNode->IsVolatile())
     {
         // issue a full memory barrier before & after a volatile CpObj operation
         instGen_MemoryBarrier();
@@ -888,7 +888,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         assert(gcPtrCount == 0);
     }
 
-    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpObjNode->IsVolatile())
     {
         // issue a full memory barrier before & after a volatile CpObj operation
         instGen_MemoryBarrier();

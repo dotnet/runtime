@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
 
     public struct AA
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool[] ab = new bool[2];
             try

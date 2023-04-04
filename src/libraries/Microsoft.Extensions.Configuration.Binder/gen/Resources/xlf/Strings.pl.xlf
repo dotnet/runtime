@@ -4,12 +4,12 @@
     <body>
       <trans-unit id="Language VersionIsNotSupportedMessageFormat">
         <source>The project's language version has to be at least 'C# 11'.</source>
-        <target state="new">The project's language version has to be at least 'C# 11'.</target>
+        <target state="translated">Wersja językowa projektu musi mieć wartość co najmniej „C# 11”.</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
         <source>Language version is required to be at least C# 11</source>
-        <target state="new">Language version is required to be at least C# 11</target>
+        <target state="translated">Wymagana jest wersja językowa co najmniej C# 11</target>
         <note />
       </trans-unit>
       <trans-unit id="PropertyNotSupportedMessageFormat">
@@ -19,7 +19,7 @@
       </trans-unit>
       <trans-unit id="PropertyNotSupportedTitle">
         <source>Did not generate binding logic for a property on a type</source>
-        <target state="new">Did not generate binding logic for a property on a type</target>
+        <target state="translated">Nie wygenerowano logiki powiązania dla właściwości w typie</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
@@ -29,7 +29,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate binding logic for a type</source>
-        <target state="new">Did not generate binding logic for a type</target>
+        <target state="translated">Nie wygenerowano logiki powiązania dla typu</target>
         <note />
       </trans-unit>
     </body>

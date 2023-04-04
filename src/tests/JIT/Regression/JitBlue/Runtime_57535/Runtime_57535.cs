@@ -1,11 +1,13 @@
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_57535
 {
     static long z;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         z = 10;
         int[] a = F();

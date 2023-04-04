@@ -265,6 +265,11 @@ namespace System.Reflection.Emit
 
         protected override ModuleBuilder DefineDynamicModuleCore(string name)
         {
+            if (name[0] == '\0')
+            {
+                throw new ArgumentException(SR.Argument_InvalidName, nameof(name));
+            }
+
             if (manifest_module_used)
                 throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
             manifest_module_used = true;
