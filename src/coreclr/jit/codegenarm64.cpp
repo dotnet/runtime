@@ -4725,7 +4725,6 @@ void CodeGen::genCodeForCinc(GenTreeOp* cinc)
     regNumber               targetReg = cinc->GetRegNum();
     regNumber               srcReg    = op->IsIntegralConst(0) ? REG_ZR : genConsumeReg(op);
 
-    assert(op->IsCnsIntOrI());
     assert(prevDesc.oper != GT_OR && prevDesc.oper != GT_AND);
     emit->emitIns_R_R_COND(INS_cinc, attr, targetReg, srcReg, JumpKindToInsCond(prevDesc.jumpKind1));
     regSet.verifyRegUsed(targetReg);
