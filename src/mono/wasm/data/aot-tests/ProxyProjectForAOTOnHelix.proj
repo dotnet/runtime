@@ -17,6 +17,7 @@
     <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
 
     <_PropsFile>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).props</_PropsFile>
+    <WasmAOTCompilerVerbose>true</WasmAOTCompilerVerbose>
   </PropertyGroup>
 
   <Import Project="$(_PropsFile)" />
