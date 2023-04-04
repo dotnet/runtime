@@ -833,6 +833,14 @@
     </SigningCommand>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">
+      <AppleTestTarget Condition="'$(TargetOS)' == 'iossimulator'">ios-simulator-64</AppleTestTarget>
+      <AppleTestTarget Condition="'$(TargetOS)' == 'tvossimulator'">tvos-simulator</AppleTestTarget>
+      <AppleTestTarget Condition="'$(TargetOS)' == 'ios'">ios-device</AppleTestTarget>
+      <AppleTestTarget Condition="'$(TargetOS)' == 'tvos'">tvos-device</AppleTestTarget>
+      <AppleTestTarget Condition="'$(TargetOS)' == 'maccatalyst'">maccatalyst</AppleTestTarget>
+  </PropertyGroup>
+
   <ItemGroup>
     <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
@@ -853,12 +861,10 @@
       <AndroidPackageName>net.dot.%(PayloadGroup)</AndroidPackageName>
       <AndroidInstrumentationName>net.dot.MonoRunner</AndroidInstrumentationName>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
-      <TestTarget Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'iOSSimulator'">ios-simulator-64</TestTarget>
     </XHarnessApkToTest>
 
     <XHarnessAppBundleToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAppleMobile)' == 'true'">
-      <TestTarget Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'iOSSimulator'">ios-simulator-64</TestTarget>
-      <TestTarget Condition="'$(TargetsiOS)' == 'true'">ios-device</TestTarget>
+      <TestTarget>$(AppleTestTarget)</TestTarget>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
       <CustomCommands> $(SigningCommand); dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
       <CustomCommands Condition=" '%(TestGroup)' != '' ">$(SigningCommand); dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
@@ -866,9 +872,7 @@
 
     <XHarnessAppBundleToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAppleMobile)' == 'true'">
       <Arguments>--set-env=TestExclusionListPath=TestExclusionList.txt</Arguments>
-      <TestTarget Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'iOSSimulator'">ios-simulator-64</TestTarget>
-      <TestTarget Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'iOSSimulator'">ios-simulator-64</TestTarget>
-      <TestTarget Condition="'$(TargetsiOS)' == 'true'">ios-device</TestTarget>
+      <TestTarget>$(AppleTestTarget)</TestTarget>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
     </XHarnessAppBundleToTest>
 
