@@ -2236,9 +2236,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_Vector128_AsVector2:
             case NI_Vector128_AsVector3:
             case NI_Vector128_ToVector256:
+            case NI_Vector128_ToVector512:
+            case NI_Vector256_ToVector512:
             case NI_Vector128_ToVector256Unsafe:
             case NI_Vector256_ToVector512Unsafe:
             case NI_Vector256_GetLower:
+            case NI_Vector512_GetLower:
+            case NI_Vector512_GetLower128:
             {
                 assert(numArgs == 1);
 

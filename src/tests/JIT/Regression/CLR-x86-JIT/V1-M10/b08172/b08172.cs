@@ -4,6 +4,8 @@
 // Factorial
 
 using System;
+using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Test
 {
@@ -14,6 +16,13 @@ public class Test
         return (100);
     }
 
+    [Fact]
+    public static void TestEntryPoint() {
+        Test app = new Test();
+        app.Run(new string[0]);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public int Run(string[] args)
     {
         long i;

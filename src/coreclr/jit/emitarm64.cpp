@@ -13804,7 +13804,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
     if (addr->isContained())
     {
-        assert(addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR, GT_LEA));
+        assert(addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_ADDR, GT_LEA));
 
         int   offset = 0;
         DWORD lsl    = 0;
@@ -13913,7 +13913,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                 regNumber addrReg = indir->GetSingleTempReg();
                 emitIns_R_C(ins, attr, dataReg, addrReg, addr->AsClsVar()->gtClsVarHnd, 0);
             }
-            else if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+            else if (addr->OperIs(GT_LCL_ADDR))
             {
                 GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
                 unsigned             lclNum  = varNode->GetLclNum();
@@ -13948,7 +13948,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
     else // addr is not contained, so we evaluate it into a register
     {
 #ifdef DEBUG
-        if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+        if (addr->OperIs(GT_LCL_ADDR))
         {
             // If the local var is a gcref or byref, the local var better be untracked, because we have
             // no logic here to track local variable lifetime changes, like we do in the contained case
@@ -16248,6 +16248,12 @@ bool emitter::ReplaceLdrStrWithPairInstr(
 //                      ldr     w1, [x20, #0x14]
 //                      ldr     w2, [x20, #0x10]    =>  ldp     w2, w1, [x20, #0x10]
 //
+//                      ldr     w1, [x20]
+//                      ldr     w2, [x20, #0x04]    =>  ldp     w1, w2, [x20]
+//
+//                      ldr     q1, [x0, #0x20]
+//                      ldr     q2, [x0, #0x30]     =>  ldp     q1, q2, [x0, #0x20]
+//
 // Arguments:
 //     ins  - The instruction code
 //     reg1 - Register 1 number
@@ -16291,16 +16297,21 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
         return eRO_none;
     }
 
-    if ((!isGeneralRegisterOrZR(reg1)) || (!isGeneralRegisterOrZR(prevReg1)))
+    if ((reg1 == REG_SP) || (prevReg1 == REG_SP) || (isGeneralRegisterOrZR(reg1) != isGeneralRegisterOrZR(prevReg1)))
     {
-        // Either register 1 is not a general register or previous register 1 is not a general register
-        // or the zero register, so we cannot optimise.
+        // We cannot optimise when one of the following conditions are met
+        // 1. reg1 or prevReg1 is SP
+        // 2. both reg1 and prevReg1 are not of the same type (SIMD or non-SIMD)
         return eRO_none;
     }
 
-    if (lastInsFmt != fmt)
+    const bool compatibleFmt = (lastInsFmt == fmt) || (lastInsFmt == IF_LS_2B && fmt == IF_LS_2A) ||
+                               (lastInsFmt == IF_LS_2A && fmt == IF_LS_2B);
+    if (!compatibleFmt)
     {
-        // The formats of the two instructions differ.
+        // We cannot optimise when all of the following conditions are met
+        // 1. instruction formats differ
+        // 2. instructions are not using "base" or "base plus immediate offset" addressing modes
         return eRO_none;
     }
 

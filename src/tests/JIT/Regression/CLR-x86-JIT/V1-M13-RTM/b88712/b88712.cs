@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public struct AA
 {
@@ -11,7 +12,8 @@ public struct AA
         float a = 125.0f;
         a += (a *= 60.0f);
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Static5();
         return 100;

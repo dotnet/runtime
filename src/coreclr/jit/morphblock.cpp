@@ -888,15 +888,15 @@ void MorphCopyBlockHelper::MorphStructCases()
     }
 
 #if defined(TARGET_ARM)
-    if ((m_src->OperIsIndir()) && (m_src->gtFlags & GTF_IND_UNALIGNED))
+    if ((m_dst->OperIsIndir()) && m_dst->AsIndir()->IsUnaligned())
     {
-        JITDUMP(" src is unaligned");
+        JITDUMP(" store is unaligned");
         requiresCopyBlock = true;
     }
 
-    if (m_asg->gtFlags & GTF_BLK_UNALIGNED)
+    if ((m_src->OperIsIndir()) && m_src->AsIndir()->IsUnaligned())
     {
-        JITDUMP(" m_asg is unaligned");
+        JITDUMP(" src is unaligned");
         requiresCopyBlock = true;
     }
 #endif // TARGET_ARM
@@ -1621,7 +1621,7 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
         if ((size != 0) && FitsIn<int32_t>(size))
         {
             ClassLayout* layout = typGetBlkLayout(static_cast<unsigned>(size));
-            GenTree*     dst    = gtNewStructVal(layout, tree->Addr());
+            GenTree*     dst    = gtNewStructVal(layout, tree->Addr(), tree->gtFlags & GTF_IND_FLAGS);
             dst->gtFlags |= GTF_GLOB_REF;
 
             GenTree* src = tree->Data();
@@ -1633,7 +1633,7 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
             }
 
             GenTree* asg = gtNewAssignNode(dst, src);
-            asg->gtFlags |= (tree->gtFlags & (GTF_ALL_EFFECT | GTF_BLK_VOLATILE | GTF_BLK_UNALIGNED));
+            asg->AddAllEffectsFlags(tree);
             INDEBUG(asg->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
             fgAssignSetVarDef(asg);

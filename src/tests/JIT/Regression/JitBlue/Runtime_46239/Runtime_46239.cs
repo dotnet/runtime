@@ -7,6 +7,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Runtime_46239
 {
@@ -151,7 +152,8 @@ namespace Runtime_46239
 
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
 
             if (test<S1>() != 100)
