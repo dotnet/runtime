@@ -1004,9 +1004,13 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Use IndexOf{Any} to accelerate the skip loop via vectorization to match the first prefix.
                 // But we avoid using it for the relatively common case of the starting set being '.', aka anything other than
-                // a newline, as it's very rare to have long, uninterrupted sequences of newlines.
+                // a newline, as it's very rare to have long, uninterrupted sequences of newlines. And we avoid using it
+                // for the case of the starting set being anything (e.g. '.' with SingleLine), as in that case it'll always match
+                // the first char.
                 int setIndex = 0;
-                bool canUseIndexOf = primarySet.Set != RegexCharClass.NotNewLineClass;
+                bool canUseIndexOf =
+                    primarySet.Set != RegexCharClass.NotNewLineClass &&
+                    primarySet.Set != RegexCharClass.AnyClass;
                 bool needLoop = !canUseIndexOf || setsToUse > 1;
 
                 FinishEmitBlock loopBlock = default;
