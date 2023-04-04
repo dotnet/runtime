@@ -32,6 +32,7 @@ import { init_legacy_exports } from "./net6-legacy/corebindings";
 import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
 import { BINDING, MONO } from "./net6-legacy/imports";
 import { init_globalization } from "./icu";
+import { mapBootConfigToMonoConfig } from "./blazorbootconfig";
 
 let config: MonoConfigInternal = undefined as any;
 let configLoaded = false;
@@ -676,6 +677,14 @@ export async function mono_wasm_load_config(configFilePath?: string): Promise<vo
 function normalizeConfig() {
     // normalize
     Module.config = config = runtimeHelpers.config = Object.assign(runtimeHelpers.config, Module.config || {});
+
+    const anyConfig = config as any;
+    if (anyConfig.resources) {
+        // blazor.boot.json
+        mapBootConfigToMonoConfig(Module.config, anyConfig);
+        anyConfig.resources = undefined;
+    }
+
     config.environmentVariables = config.environmentVariables || {};
     config.assets = config.assets || [];
     config.runtimeOptions = config.runtimeOptions || [];
