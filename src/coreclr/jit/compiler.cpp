@@ -6718,6 +6718,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     compBasicBlockID = 0;
 #endif
 
+#ifdef TARGET_ARM64
+    info.compNeedsConsecutiveRegisters = false;
+#endif
+
     /* Initialize emitter */
 
     if (!compIsForInlining())

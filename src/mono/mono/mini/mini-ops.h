@@ -1762,6 +1762,14 @@ MINI_OP3(OP_ARM64_SQRDMLSH, "arm64_sqrdmlsh", XREG, XREG, XREG, XREG)
 MINI_OP3(OP_ARM64_SQRDMLSH_BYSCALAR, "arm64_sqrdmlsh_byscalar", XREG, XREG, XREG, XREG)
 MINI_OP3(OP_ARM64_SQRDMLSH_SCALAR, "arm64_sqrdmlsh_scalar", XREG, XREG, XREG, XREG)
 
+/*
+ * sreg1 points to a memory area with the input vectors.
+ * inst_c0 is the number of vectors.
+ * inst_p1 points to an int array with the offsets inside the memory area.
+ */
+MINI_OP(OP_ARM64_TBL_INDIRECT, "arm64_tbl_indirect", XREG, IREG, XREG)
+MINI_OP3(OP_ARM64_TBX_INDIRECT, "arm64_tbx_indirect", XREG, IREG, XREG, XREG)
+
 #endif // TARGET_ARM64
 
 MINI_OP(OP_FCVTL, "convert_to_higher_precision", XREG, XREG, NONE)

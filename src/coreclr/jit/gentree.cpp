@@ -23010,6 +23010,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
     op2->AsVecCon()->gtSimdVal = vecCns;
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, lookupIntrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
@@ -23878,6 +23879,38 @@ GenTree* Compiler::gtNewSimdWithElementNode(var_types   type,
 
     return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 }
+
+#ifdef TARGET_ARM64
+//------------------------------------------------------------------------
+// gtConvertTableOpToFieldList: Convert a operand that represents table of rows into
+//    field list, where each field represents a row in the table.
+//
+// Arguments:
+//    op                  -- Operand to convert.
+//    fieldCount          -- Number of fields or rows present.
+//
+// Return Value:
+//    The GenTreeFieldList node.
+//
+GenTreeFieldList* Compiler::gtConvertTableOpToFieldList(GenTree* op, unsigned fieldCount)
+{
+    LclVarDsc* opVarDsc  = lvaGetDesc(op->AsLclVar());
+    unsigned   lclNum    = lvaGetLclNum(opVarDsc);
+    unsigned   fieldSize = opVarDsc->lvSize() / fieldCount;
+    var_types  fieldType = TYP_SIMD16;
+
+    GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST) GenTreeFieldList();
+    int               offset    = 0;
+    for (unsigned fieldId = 0; fieldId < fieldCount; fieldId++)
+    {
+        GenTreeLclFld* fldNode = gtNewLclFldNode(lclNum, fieldType, offset);
+        fieldList->AddField(this, fldNode, offset, fieldType);
+
+        offset += fieldSize;
+    }
+    return fieldList;
+}
+#endif // TARGET_ARM64
 
 GenTree* Compiler::gtNewSimdWithLowerNode(var_types   type,
                                           GenTree*    op1,

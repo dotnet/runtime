@@ -2809,6 +2809,10 @@ public:
                                               CORINFO_CLASS_HANDLE clsHnd,
                                               CORINFO_SIG_INFO*    sig,
                                               CorInfoType          simdBaseJitType);
+    
+#ifdef TARGET_ARM64
+    GenTreeFieldList* gtConvertTableOpToFieldList(GenTree* op, unsigned fieldCount);
+#endif
 #endif // FEATURE_HW_INTRINSICS
 
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
@@ -10060,6 +10064,10 @@ public:
 
         // Number of class profile probes in this method
         unsigned compHandleHistogramProbeCount;
+
+#ifdef TARGET_ARM64
+        bool compNeedsConsecutiveRegisters;
+#endif
 
     } info;
 

@@ -441,6 +441,12 @@ emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignat
 }
 
 static gboolean
+type_is_simd_vector (MonoType *type)
+{
+	return type->type == MONO_TYPE_GENERICINST && m_class_is_simd_type (mono_class_from_mono_type_internal (type));
+}
+
+static gboolean
 is_hw_intrinsics_class (MonoClass *klass, const char *name, gboolean *is_64bit)
 {
 	const char *class_name = m_class_get_name (klass);
@@ -3260,8 +3266,8 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_TransposeOdd, OP_ARM64_TRN2},
 	{SN_UnzipEven, OP_ARM64_UZP1},
 	{SN_UnzipOdd, OP_ARM64_UZP2},
-	{SN_VectorTableLookup, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1},
-	{SN_VectorTableLookupExtension, OP_XOP_OVR_X_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBX1},
+	{SN_VectorTableLookup},
+	{SN_VectorTableLookupExtension},
 	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_XOR},
 	{SN_ZeroExtendWideningLower, OP_ARM64_UXTL},
 	{SN_ZeroExtendWideningUpper, OP_ARM64_UXTL2},
@@ -3564,6 +3570,63 @@ emit_arm64_intrinsics (
 			MonoInst *ret = emit_simd_ins (cfg, ret_klass, opcode, args [0]->dreg, args [1]->dreg);
 			ret->sreg3 = scalar->dreg;
 			return ret;
+		}
+        case SN_VectorTableLookup:
+        case SN_VectorTableLookupExtension: {
+			if (type_is_simd_vector (fsig->params [0]) && type_is_simd_vector (fsig->params [1])) {
+				if (id == SN_VectorTableLookup)
+					return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1, 0, fsig, args);
+				else
+					return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBX1, 0, fsig, args);
+			}
+
+			MonoInst *ins, *addr;
+			int tuple_argindex;
+
+			if (id == SN_VectorTableLookup)
+				/* VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) */
+				tuple_argindex = 0;
+			else
+				/* VectorTableLookupExtension(Vector128<byte> defaultValues, (Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes */
+				tuple_argindex = 1;
+
+			/*
+			 * These intrinsics have up to 5 inputs, and our IR can't model that, so save the inputs to the stack and have
+			 * the LLVM implementation read them back.
+			 */
+			MonoType *tuple_type = fsig->params [tuple_argindex];
+			g_assert (tuple_type->type == MONO_TYPE_GENERICINST);
+			MonoClass *tclass = mono_class_from_mono_type_internal (tuple_type);
+			mono_class_init_internal (tclass);
+
+			MonoClassField *fields = m_class_get_fields (tclass);
+			int nfields = mono_class_get_field_count (tclass);
+			guint32 *offsets = mono_mempool_alloc0 (cfg->mempool, nfields * sizeof (guint32));
+			for (uint32_t i = 0; i < mono_class_get_field_count (tclass); ++i)
+				offsets [i] = mono_field_get_offset (&fields [i]) - MONO_ABI_SIZEOF (MonoObject);
+
+			int vreg = alloc_xreg (cfg);
+			NEW_VARLOADA_VREG (cfg, addr, vreg, tuple_type);
+			MONO_ADD_INS (cfg->cbb, addr);
+
+			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, tuple_type, addr->dreg, 0, args [tuple_argindex]->dreg);
+
+			MONO_INST_NEW (cfg, ins, id == SN_VectorTableLookup ? OP_ARM64_TBL_INDIRECT : OP_ARM64_TBX_INDIRECT);
+			ins->dreg = alloc_xreg (cfg);
+			ins->sreg1 = addr->dreg;
+			if (id == SN_VectorTableLookup) {
+				/* byteIndexes */
+				ins->sreg2 = args [1]->dreg;
+			} else {
+				/* defaultValues */
+				ins->sreg2 = args [0]->dreg;
+				/* byteIndexes */
+				ins->sreg3 = args [2]->dreg;
+			}
+			ins->inst_c0 = nfields;
+			ins->inst_p1 = offsets;
+			MONO_ADD_INS (cfg->cbb, ins);
+			return ins;
 		}
 		default:
 			g_assert_not_reached ();
