@@ -33,8 +33,7 @@
       <InnerBuildArgs>$(InnerBuildArgs) --outputrid $(TargetRid)</InnerBuildArgs>
       <!-- PackageOS and RuntimeOS control the rids of prebuilts consumed by the build.
            They are set to RuntimeOS so they match with the build SDK rid. -->
-      <InnerBuildArgs>$(InnerBuildArgs) /p:PackageOS=$(RuntimeOS) /p:ToolsOS=$(RuntimeOS)</InnerBuildArgs>
-      <InnerBuildArgs>$(InnerBuildArgs) /p:RuntimeOS=$(RuntimeOS)</InnerBuildArgs>
+      <InnerBuildArgs Condition="'$(RuntimeOS)' != ''">$(InnerBuildArgs) /p:PackageOS=$(RuntimeOS) /p:ToolsOS=$(RuntimeOS)</InnerBuildArgs>
       <!-- BaseOS is an expected known rid in the graph that TargetRid is compatible with.
            It's used to add TargetRid in the graph if the parent can't be detected. -->
       <InnerBuildArgs>$(InnerBuildArgs) /p:AdditionalRuntimeIdentifierParent=$(BaseOS)</InnerBuildArgs>
