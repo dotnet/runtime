@@ -625,7 +625,7 @@ namespace System.Xml
 
         internal static XmlResolver GetDefaultPermissiveResolver()
         {
-            return AppContextSwitchHelper.AllowResolvingUrlsByDefault ? new XmlUrlResolver() : XmlResolver.FileSystemResolver;
+            return LocalAppContextSwitches.AllowResolvingUrlsByDefault ? new XmlUrlResolver() : XmlResolver.FileSystemResolver;
         }
 
         [DoesNotReturn]

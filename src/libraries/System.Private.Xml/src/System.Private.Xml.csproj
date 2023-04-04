@@ -4,8 +4,6 @@
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
-    <!-- ILLinker settings -->
-    <ILLinkDirectory>$(MSBuildThisFileDirectory)ILLink\</ILLinkDirectory>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,7 +13,6 @@
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs" Link="Common\System\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
-    <Compile Include="System\Xml\AppContextSwitchHelper.cs" />
     <Compile Include="System\Xml\BinaryXml\XmlBinaryReader.cs" />
     <Compile Include="System\Xml\BinaryXml\BinXmlToken.cs" />
     <Compile Include="System\Xml\BinaryXml\SqlUtils.cs" />
@@ -49,7 +46,6 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>TextUtf8RawTextWriter.tt</DependentUpon>
     </Compile>
-    <Compile Include="System\Xml\XmlResolver.FileSystemResolver.cs" />
     <None Include="System\Xml\Core\HtmlEncodedRawTextWriter.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>HtmlEncodedRawTextWriter.cs</LastGenOutput>
@@ -127,7 +123,6 @@
     <Compile Include="System\Xml\XmlComplianceUtil.cs" />
     <Compile Include="System\Xml\XmlConvert.cs" />
     <Compile Include="System\Xml\XmlDownloadManager.cs" />
-    <Compile Include="System\Xml\XmlDownloadManagerAsync.cs" />
     <Compile Include="System\Xml\XmlEncoding.cs" />
     <Compile Include="System\Xml\XmlException.cs" />
     <Compile Include="System\Xml\XmlNamespacemanager.cs" />
@@ -138,10 +133,10 @@
     <Compile Include="System\Xml\XmlQualifiedName.cs" />
     <Compile Include="System\Xml\XmlReservedNs.cs" />
     <Compile Include="System\Xml\XmlResolver.cs" />
+    <Compile Include="System\Xml\XmlResolver.FileSystemResolver.cs" />
     <Compile Include="System\Xml\XmlResolver.ThrowingResolver.cs" />
     <Compile Include="System\Xml\XmlSecureResolver.cs" />
     <Compile Include="System\Xml\XmlUrlResolver.cs" />
-    <Compile Include="System\Xml\XmlUrlResolverAsync.cs" />
     <Compile Include="System\Xml\Core\CharEntityEncoderFallback.cs" />
     <Compile Include="System\Xml\Core\ConformanceLevel.cs" />
     <Compile Include="System\Xml\Core\DtdProcessing.cs" />
@@ -749,7 +744,6 @@
     <Compile Include="System\Xml\Xsl\Xslt\XsltLoader.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XsltQilFactory.cs" />
     <Compile Include="System\Xml\Xsl\Xslt\XslVisitor.cs" />
-    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs" Link="System\LocalAppContextSwitches.Common.cs" />
     <Compile Include="System\Xml\Core\LocalAppContextSwitches.cs" />
     <Compile Include="$(CommonPath)System\CSharpHelpers.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />

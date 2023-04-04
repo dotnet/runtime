@@ -1,61 +1,45 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Linq.Expressions;
-using System.Runtime.CompilerServices;
-
-namespace System
+namespace System.Xml
 {
-    internal static partial class LocalAppContextSwitches
+    internal static class LocalAppContextSwitches
     {
-        private static int s_dontThrowOnInvalidSurrogatePairs;
-        public static bool DontThrowOnInvalidSurrogatePairs
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return GetCachedSwitchValue("Switch.System.Xml.DontThrowOnInvalidSurrogatePairs", ref s_dontThrowOnInvalidSurrogatePairs);
-            }
-        }
+        public static bool DontThrowOnInvalidSurrogatePairs { get; } =
+            AppContext.TryGetSwitch(
+                switchName: "Switch.System.Xml.DontThrowOnInvalidSurrogatePairs",
+                isEnabled: out bool value)
+            ? value : false;
 
-        private static int s_ignoreEmptyKeySequences;
-        public static bool IgnoreEmptyKeySequences
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return GetCachedSwitchValue("Switch.System.Xml.IgnoreEmptyKeySequencess", ref s_ignoreEmptyKeySequences);
-            }
-        }
+        public static bool IgnoreEmptyKeySequences { get; } =
+            AppContext.TryGetSwitch(
+                switchName: "Switch.System.Xml.IgnoreEmptyKeySequences",
+                isEnabled: out bool value)
+            ? value : false;
 
-        private static int s_ignoreKindInUtcTimeSerialization;
-        public static bool IgnoreKindInUtcTimeSerialization
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return GetCachedSwitchValue("Switch.System.Xml.IgnoreKindInUtcTimeSerialization", ref s_ignoreKindInUtcTimeSerialization);
-            }
-        }
+        public static bool IgnoreKindInUtcTimeSerialization { get; } =
+            AppContext.TryGetSwitch(
+                switchName: "Switch.System.Xml.IgnoreKindInUtcTimeSerialization",
+                isEnabled: out bool value)
+            ? value : false;
 
-        private static int s_limitXPathComplexity;
-        public static bool LimitXPathComplexity
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return GetCachedSwitchValue("Switch.System.Xml.LimitXPathComplexity", ref s_limitXPathComplexity);
-            }
-        }
+        public static bool LimitXPathComplexity { get; } =
+            AppContext.TryGetSwitch(
+                switchName: "Switch.System.Xml.LimitXPathComplexity",
+                isEnabled: out bool value)
+            ? value : false;
 
-        private static int s_allowDefaultResolver;
-        public static bool AllowDefaultResolver
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return GetCachedSwitchValue("Switch.System.Xml.AllowDefaultResolver", ref s_allowDefaultResolver);
-            }
-        }
+        public static bool AllowDefaultResolver { get; } =
+            AppContext.TryGetSwitch(
+                switchName: "Switch.System.Xml.AllowDefaultResolver",
+                isEnabled: out bool value)
+            ? value : false;
+
+
+        public static bool AllowResolvingUrlsByDefault { get; } =
+            AppContext.TryGetSwitch(
+                switchName: "System.Xml.AllowResolvingUrlsByDefault",
+                isEnabled: out bool value)
+            ? value : true;
     }
 }

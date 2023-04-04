@@ -8,6 +8,12 @@
                                ExtraTrimmerArgs="--enable-opt sealer" />
     <TestConsoleAppSourceFiles Include="XmlSerializer.Serialize.cs" />
     <TestConsoleAppSourceFiles Include="XslCompiledTransformTests.cs" />
+    <TestConsoleAppSourceFiles Include="XmlUrlResolverDefaults.DisallowResolvingUrlsByDefault.cs">
+      <DisabledFeatureSwitches>System.Xml.AllowResolvingUrlsByDefault</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="XmlUrlResolverDefaults.AllowResolvingUrlsByDefault.cs">
+      <EnabledFeatureSwitches>System.Xml.AllowResolvingUrlsByDefault</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

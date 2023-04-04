@@ -18,7 +18,7 @@ namespace System.Xml
         /// </remarks>
         public static XmlResolver FileSystemResolver => XmlFileSystemResolver.s_singleton;
 
-        // An XmlResolver that forbids all external entity resolution.
+        // An XML resolver that resolves only file system URIs.
         private sealed class XmlFileSystemResolver : XmlResolver
         {
             internal static readonly XmlFileSystemResolver s_singleton = new();
@@ -37,14 +37,13 @@ namespace System.Xml
                 throw new XmlException(SR.Xml_UnsupportedClass, string.Empty);
             }
 
-            public override async Task<object> GetEntityAsync(Uri absoluteUri, string? role, Type? ofObjectToReturn)
+            public override Task<object> GetEntityAsync(Uri absoluteUri, string? role, Type? ofObjectToReturn)
             {
                 if (ofObjectToReturn == null || ofObjectToReturn == typeof(Stream) || ofObjectToReturn == typeof(object))
                 {
                     if (absoluteUri.Scheme == "file")
                     {
-                        return await Task.Run<Stream>(() => new FileStream(absoluteUri.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, 1, useAsync: true))
-                            .ConfigureAwait(false);
+                        return Task.FromResult<object>(new FileStream(absoluteUri.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read, 1, useAsync: true));
                     }
                 }
 
