@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.Hosting
 
             serviceTester.WaitForStatus(ServiceControllerStatus.Stopped);
             var status = serviceTester.QueryServiceStatus();
-            Assert.Equal(1064, status.win32ExitCode);
+            Assert.Equal(Interop.Errors.ERROR_EXCEPTION_IN_SERVICE, status.win32ExitCode);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.Hosting
 
             serviceTester.WaitForStatus(ServiceControllerStatus.Stopped);
             var status = serviceTester.QueryServiceStatus();
-            Assert.Equal(1067, status.win32ExitCode);
+            Assert.Equal(Interop.Errors.ERROR_PROCESS_ABORTED, status.win32ExitCode);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
@@ -123,7 +123,7 @@ namespace Microsoft.Extensions.Hosting
 
             serviceTester.WaitForStatus(ServiceControllerStatus.Stopped);
             var status = serviceTester.QueryServiceStatus();
-            Assert.Equal(1067, status.win32ExitCode);
+            Assert.Equal(Interop.Errors.ERROR_PROCESS_ABORTED, status.win32ExitCode);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]

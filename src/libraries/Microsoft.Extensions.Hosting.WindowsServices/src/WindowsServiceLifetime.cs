@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         private readonly TaskCompletionSource<object?> _serviceDispatcherStopped = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly ManualResetEventSlim _delayStop = new ManualResetEventSlim();
         private readonly HostOptions _hostOptions;
-        private bool _serviceStopped;
+        private bool _serviceStopRequested;
 
         /// <summary>
         /// Initializes a new <see cref="WindowsServiceLifetime"/> instance.
@@ -98,16 +98,20 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
             }
         }
 
+        /// <summary>
+        /// Called from <see cref="IHost.StopAsync"/> to stop the service if not already stopped, and wait for the service dispatcher to exit.
+        /// Once this method returns the service is stopped and the process can be terminated at any time.
+        /// </summary>
         public async Task StopAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (!_serviceStopped)
+            if (!_serviceStopRequested)
             {
                 await Task.Run(Stop, cancellationToken).ConfigureAwait(false);
             }
 
-            // When the underlying service is stopped this will cause the ServiceBase.Run method to complete and return, which completes _serviceStopped.
+            // When the underlying service is stopped this will cause the ServiceBase.Run method to complete and return, which completes _serviceStopRequested.
             await _serviceDispatcherStopped.Task.ConfigureAwait(false);
         }
 
@@ -120,12 +124,13 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         }
 
         /// <summary>
-        /// Raises the Stop event to stop the <see cref="WindowsServiceLifetime"/>.
+        /// Executes when a Stop command is sent to the service by the Service Control Manager (SCM).
+        /// Triggers <see cref="IHostApplicationLifetime.ApplicationStopping"/> and waits for <see cref="IHostApplicationLifetime.ApplicationStopped"/>.
+        /// Shortly after this method returns, the Service will be marked as stopped in SCM and the process may exit at any point.
         /// </summary>
-        /// <remarks>This might be called multiple times by service Stop, ApplicationStopping, and StopAsync. That's okay because StopApplication uses a CancellationTokenSource and prevents any recursion.</remarks>
         protected override void OnStop()
         {
-            _serviceStopped = true;
+            _serviceStopRequested = true;
             ApplicationLifetime.StopApplication();
             // Wait for the host to shutdown before marking service as stopped.
             _delayStop.Wait(_hostOptions.ShutdownTimeout);
@@ -133,11 +138,13 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         }
 
         /// <summary>
-        /// Raises the Shutdown event.
+        /// Executes when a Shutdown command is sent to the service by the Service Control Manager (SCM).
+        /// Triggers <see cref="IHostApplicationLifetime.ApplicationStopping"/> and waits for <see cref="IHostApplicationLifetime.ApplicationStopped"/>.
+        /// Shortly after this method returns, the Service will be marked as stopped in SCM and the process may exit at any point.
         /// </summary>
         protected override void OnShutdown()
         {
-            _serviceStopped = true;
+            _serviceStopRequested = true;
             ApplicationLifetime.StopApplication();
             // Wait for the host to shutdown before marking service as stopped.
             _delayStop.Wait(_hostOptions.ShutdownTimeout);
