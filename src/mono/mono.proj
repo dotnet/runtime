@@ -839,6 +839,13 @@
       <MonoAotCrossOffsetsToolParams Condition="'$(TargetsWasi)' == 'true'" Include="--wasi-sdk=&quot;$([MSBuild]::NormalizePath('$(WASI_SDK_PATH)'))&quot;" />
     </ItemGroup>
 
+    <!-- x64 Linux cross build options -->
+    <ItemGroup Condition="'$(RealTargetArchitecture)' == 'x64' and '$(RealTargetOS)' == 'linux'">
+      <MonoAOTCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
+      <_MonoAotBuildEnv Include="TARGET_BUILD_ARCH=x64" />
+      <_MonAotoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/x86_64-linux-gnu/pkgconfig" />
+    </ItemGroup>
+
     <!-- ARM Linux cross build options on CI -->
     <ItemGroup Condition="'$(RealTargetArchitecture)' == 'arm64' and '$(RealTargetOS)' == 'linux'">
       <MonoAOTCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
