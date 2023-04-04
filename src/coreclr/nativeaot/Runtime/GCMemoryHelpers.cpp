@@ -13,20 +13,19 @@
 #include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 
-// This function clears a piece of memory in a GC safe way.  It makes the guarantee that it will clear memory in at
-// least pointer sized chunks whenever possible.  Unaligned memory at the beginning and remaining bytes at the end are
-// written bytewise. We must make this guarantee whenever we clear memory in the GC heap that could contain object
+// This function clears a piece of memory in a GC safe way.
+// Object-aligned memory is zeroed with no smaller than pointer-size granularity.
+// We must make this guarantee whenever we clear memory in the GC heap that could contain object
 // references.  The GC or other user threads can read object references at any time, clearing them bytewise can result
 // in a read on another thread getting incorrect data.
-//
-// USAGE:  The caller is responsible for hoisting any null reference exceptions to a place where the hardware exception
-//         can be properly translated to a managed exception.
-COOP_PINVOKE_CDECL_HELPER(void *, RhpInitMultibyte, (void * mem, size_t size))
+// Unaligned memory at the beginning and remaining bytes at the end are written bytewise.
+// USAGE:  The caller is responsible for null-checking the reference.
+COOP_PINVOKE_CDECL_HELPER(void *, RhpGcSafeZeroMemory, (void * mem, size_t size))
 {
     // The caller must do the null-check because we cannot take an AV in the runtime and translate it to managed.
     ASSERT(mem != nullptr);
 
-    InlineGCSafeFillMemory(mem, size, 0);
+    InlineGcSafeZeroMemory(mem, size);
 
     // memset returns the destination buffer
     return mem;
