@@ -1377,6 +1377,53 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void Shared_NonNull_Idempotent()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                HttpClient client = HttpClient.Shared;
+                Assert.NotNull(client);
+                Assert.Same(client, HttpClient.Shared);
+            }).Dispose();
+        }
+
+        [Fact]
+        public void Shared_PropertiesConfiguredWithDefaults()
+        {
+            Assert.Null(HttpClient.Shared.BaseAddress);
+            Assert.Equal(HttpVersion.Version11, HttpClient.Shared.DefaultRequestVersion);
+            Assert.Equal(HttpVersionPolicy.RequestVersionOrLower, HttpClient.Shared.DefaultVersionPolicy);
+            Assert.Equal(int.MaxValue, HttpClient.Shared.MaxResponseContentBufferSize);
+            Assert.Equal(TimeSpan.FromSeconds(100), HttpClient.Shared.Timeout);
+
+            Assert.Throws<NotSupportedException>(() => HttpClient.Shared.DefaultRequestHeaders);
+
+            Assert.Throws<InvalidOperationException>(() => HttpClient.Shared.BaseAddress = null);
+            Assert.Throws<InvalidOperationException>(() => HttpClient.Shared.DefaultRequestVersion = HttpVersion.Version11);
+            Assert.Throws<InvalidOperationException>(() => HttpClient.Shared.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower);
+            Assert.Throws<InvalidOperationException>(() => HttpClient.Shared.MaxResponseContentBufferSize = int.MaxValue);
+            Assert.Throws<InvalidOperationException>(() => HttpClient.Shared.Timeout = TimeSpan.FromSeconds(100));
+        }
+
+        [Fact]
+        public async Task Shared_SimpleRequestsSucceed()
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                const string Content = "hello shared";
+                await LoopbackServerFactory.CreateClientAndServerAsync(
+                    async uri =>
+                    {
+                        using (HttpClient client = HttpClient.Shared)
+                        {
+                            Assert.Equal(Content, await client.GetStringAsync(uri));
+                        }
+                    },
+                    async server => await server.AcceptConnectionSendResponseAndCloseAsync(content: Content));
+            }
+        }
+
         private sealed class StoreMessageHttpMessageInvoker : HttpMessageHandler
         {
             public HttpRequestMessage Message;

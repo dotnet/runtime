@@ -16,6 +16,7 @@ namespace System.Net.Http
         #region Fields
 
         private static IWebProxy? s_defaultProxy;
+        private static HttpClient? s_shared;
         private static readonly TimeSpan s_defaultTimeout = TimeSpan.FromSeconds(100);
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
         private static readonly TimeSpan s_infiniteTimeout = Threading.Timeout.InfiniteTimeSpan;
@@ -23,6 +24,7 @@ namespace System.Net.Http
 
         private volatile bool _operationStarted;
         private volatile bool _disposed;
+        private bool _isSharedInstance;
 
         private CancellationTokenSource _pendingRequestsCts;
         private HttpRequestHeaders? _defaultRequestHeaders;
@@ -46,8 +48,41 @@ namespace System.Net.Http
             }
         }
 
-        public HttpRequestHeaders DefaultRequestHeaders =>
-            _defaultRequestHeaders ??= new HttpRequestHeaders();
+        /// <summary>Gets an <see cref="HttpClient"/> instance configured with all of the default options.</summary>
+        public static HttpClient Shared
+        {
+            get
+            {
+                return s_shared ?? Initialize();
+
+                static HttpClient Initialize()
+                {
+                    var shared = new HttpClient() { _isSharedInstance = true, _operationStarted = true };
+                    if (Interlocked.CompareExchange(ref s_shared, shared, null) is not null)
+                    {
+                        shared._isSharedInstance = false;
+                        shared.Dispose();
+                        shared = s_shared;
+                    }
+                    return shared;
+                }
+            }
+        }
+
+        public HttpRequestHeaders DefaultRequestHeaders
+        {
+            get
+            {
+                if (_isSharedInstance)
+                {
+                    // HttpRequestHeaders is not thread safe. Developers trying to mutate HttpClient.Shared.DefaultRequestHeaders
+                    // could thus corrupt the instance if used from multiple threads.
+                    throw new NotSupportedException(SR.net_http_shared_httpclient_notsupported);
+                }
+
+                return _defaultRequestHeaders ??= new HttpRequestHeaders();
+            }
+        }
 
         public Version DefaultRequestVersion
         {
@@ -699,15 +734,23 @@ namespace System.Net.Http
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && !_disposed)
+            if (disposing)
             {
-                _disposed = true;
+                if (_isSharedInstance)
+                {
+                    return;
+                }
 
-                // Cancel all pending requests (if any). Note that we don't call CancelPendingRequests() but cancel
-                // the CTS directly. The reason is that CancelPendingRequests() would cancel the current CTS and create
-                // a new CTS. We don't want a new CTS in this case.
-                _pendingRequestsCts.Cancel();
-                _pendingRequestsCts.Dispose();
+                if (!_disposed)
+                {
+                    _disposed = true;
+
+                    // Cancel all pending requests (if any). Note that we don't call CancelPendingRequests() but cancel
+                    // the CTS directly. The reason is that CancelPendingRequests() would cancel the current CTS and create
+                    // a new CTS. We don't want a new CTS in this case.
+                    _pendingRequestsCts.Cancel();
+                    _pendingRequestsCts.Dispose();
+                }
             }
 
             base.Dispose(disposing);

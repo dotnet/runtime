@@ -579,4 +579,7 @@
     <data name="net_unsupported_extended_connect" xml:space="preserve">
     <value>Failed to establish web socket connection over HTTP/2 because extended CONNECT is not supported. Try to downgrade the request version to HTTP/1.1.</value>
   </data>
+  <data name="net_http_shared_httpclient_notsupported" xml:space="preserve">
+    <value>This operation is not supported on the instance available from HttpClient.Shared.</value>
+  </data>
 </root>
