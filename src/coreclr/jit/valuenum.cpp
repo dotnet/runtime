@@ -4548,7 +4548,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 break;
 
             case GT_SUB:
-                resultVN = identityForSubtraction(false);
+                resultVN = identityForSubtraction(/* ovf */ false);
                 break;
 
             case GT_MUL:
@@ -4823,7 +4823,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
 
             case VNF_SUB_OVF:
             case VNF_SUB_UN_OVF:
-                resultVN = identityForSubtraction(true);
+                resultVN = identityForSubtraction(/* ovf */ true);
                 break;
 
             case VNF_MUL_OVF:

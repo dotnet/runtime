@@ -685,11 +685,11 @@ public:
                     (lhs.LclNum() == rhs.LclNum()) && (rhs.Offset() <= lhs.Offset()) &&
                     FitsIn<int>(lhs.Offset() - rhs.Offset()))
                 {
-                    // TODO-Correctness: Due to inlining we may end up with incorrectly typed SUB trees here.
+                    // TODO-Bug: Due to inlining we may end up with incorrectly typed SUB trees here.
                     assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
 
                     ssize_t result = (ssize_t)(lhs.Offset() - rhs.Offset());
-                    *use = node = m_compiler->gtNewIconNode(result, TYP_I_IMPL);
+                    node->BashToConst(result, TYP_I_IMPL);
                     INDEBUG(lhs.Consume());
                     INDEBUG(rhs.Consume());
                     PopValue();
