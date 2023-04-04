@@ -6,8 +6,6 @@
     <RootNamespace>Microsoft.NET.Sdk.WebAssembly</RootNamespace>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-
-    <BuildOutputTargetFolder>tools\$(TargetFramework)</BuildOutputTargetFolder>
   </PropertyGroup>
 
   <ItemDefinitionGroup>
