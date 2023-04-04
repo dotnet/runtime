@@ -13804,8 +13804,7 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
     if (addr->isContained())
     {
-        assert(addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_ADDR, GT_LEA) ||
-               (addr->IsIconHandle(GTF_ICON_TLS_HDL)));
+        assert(addr->OperIs(GT_CLS_VAR_ADDR, GT_LCL_ADDR, GT_LEA) || (addr->IsIconHandle(GTF_ICON_TLS_HDL)));
 
         int   offset = 0;
         DWORD lsl    = 0;
