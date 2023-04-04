@@ -4711,8 +4711,8 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Bitmask, OP_WASM_SIMD_BITMASK},
 	{SN_CompareEqual},
 	{SN_CompareNotEqual},
-	{SN_ConvertNarrowingSignedSaturate, OP_XOP_X_X_X},
-	{SN_ConvertNarrowingUnsignedSaturate, OP_XOP_X_X_X},
+	{SN_ConvertNarrowingSignedSaturate},
+	{SN_ConvertNarrowingUnsignedSaturate},
 	{SN_Dot, OP_XOP_X_X_X, INTRINS_WASM_DOT},
 	{SN_ExtractLane},
 	{SN_Multiply},
@@ -4811,6 +4811,8 @@ emit_wasm_supported_intrinsics (
 			case SN_CompareNotEqual:
 				return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_NE, arg0_type, fsig, args);
 			case SN_ConvertNarrowingSignedSaturate: {
+				op = OP_XOP_X_X_X;
+
 				switch (arg0_type) {
 				case MONO_TYPE_I2:
 						c0 = INTRINS_WASM_NARROW_SIGNED_V16;
@@ -4825,6 +4827,8 @@ emit_wasm_supported_intrinsics (
 				return NULL;
 			}
 			case SN_ConvertNarrowingUnsignedSaturate: {
+				op = OP_XOP_X_X_X;
+
 				switch (arg0_type) {
 				case MONO_TYPE_I2:
 						c0 = INTRINS_WASM_NARROW_UNSIGNED_V16;
@@ -4855,6 +4859,7 @@ emit_wasm_supported_intrinsics (
 				return emit_simd_ins (cfg, klass, type_to_expand_op (etype->type), args [0]->dreg, -1);
 			}
 		}
+
 		if (op != 0)
 			return emit_simd_ins_for_sig (cfg, klass, op, c0, arg0_type, fsig, args);
 	}
