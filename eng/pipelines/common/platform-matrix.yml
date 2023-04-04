@@ -341,7 +341,7 @@ jobs:
 
 # Mono LLVMAot test build
 
-- ${{ if or(containsValue(parameters.platforms, 'linux_x64_llvmaot')) }}:
+- ${{ if containsValue(parameters.platforms, 'linux_x64_llvmaot') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
