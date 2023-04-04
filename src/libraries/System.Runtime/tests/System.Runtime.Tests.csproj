@@ -14,8 +14,6 @@
 
     <!-- The test is looking for debugger attributes we would have stripped with NativeAOT -->
     <IlcKeepManagedDebuggerSupport>true</IlcKeepManagedDebuggerSupport>
-
-    <WasmAOTCompilerVerbose>true</WasmAOTCompilerVerbose>
   </PropertyGroup>
 
   <!--
