@@ -9,6 +9,16 @@
   <Import Project="$(MSBuildThisFileDirectory)/Common/disableversioncheck.targets"
           Condition="'$(DisableVersionCheckImported)' != 'true'" />
 
+  <!-- comment this.  should it go here or lower? -->
+  <Target Name="CheckForTestOutsideOfGroup" BeforeTargets="Build">
+    <Error Condition="'$(InMergedTestDirectory)' == 'true'
+      and '$(OutputType)' == 'Exe'
+      and '$(RequiresProcessIsolation)' != 'true'
+      and '$(BuildAsStandalone)' != 'true'
+      and '$(IsMergedTestRunnerAssembly)' != 'true'"
+      Text="Tests in merged test directories should not set OutputType to Exe unless it is RequiresProcessIsolation, BuildAsStandalone, or IsMergedTestRunnerAssembly." />
+  </Target>
+
   <!-- Default priority building values. -->
   <PropertyGroup>
     <DisableProjectBuild Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and $(BuildAsStandalone)">true</DisableProjectBuild>
