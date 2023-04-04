@@ -27,7 +27,7 @@ import {
     traceEip, nullCheckValidation,
     abortAtJittedLoopBodies, traceNullCheckOptimizations,
     nullCheckCaching, traceBackBranches,
-    enableEndFinally,
+    maxCallHandlerReturnAddresses,
 
     mostRecentOptions,
 
@@ -927,9 +927,8 @@ export function generateWasmBody (
 
             case MintOpcode.MINT_ENDFINALLY: {
                 if (
-                    enableEndFinally &&
                     (builder.callHandlerReturnAddresses.length > 0) &&
-                    (builder.callHandlerReturnAddresses.length <= 3)
+                    (builder.callHandlerReturnAddresses.length <= maxCallHandlerReturnAddresses)
                 ) {
                     // console.log(`endfinally @0x${(<any>ip).toString(16)}. return addresses:`, builder.callHandlerReturnAddresses.map(ra => (<any>ra).toString(16)));
                     // FIXME: Clean this codegen up
@@ -2528,10 +2527,14 @@ function emit_branch (
                     counters.backBranchesEmitted++;
                     return true;
                 } else {
-                    if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
-                        console.log(`back branch target 0x${destination.toString(16)} not found in list ` +
+                    if (destination < builder.cfg.entryIp) {
+                        if ((traceBackBranches > 1) || (builder.cfg.trace > 1))
+                            console.log(`${info[0]} target 0x${destination.toString(16)} before start of trace`);
+                    } else if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
+                        console.log(`0x${(<any>ip).toString(16)} ${info[0]} target 0x${destination.toString(16)} not found in list ` +
                             builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
                         );
+
                     cwraps.mono_jiterp_boost_back_branch_target(destination);
                     // FIXME: Should there be a safepoint here?
                     append_bailout(builder, destination, BailoutReason.BackwardBranch);
@@ -2618,8 +2621,11 @@ function emit_branch (
             builder.cfg.branch(destination, true, true);
             counters.backBranchesEmitted++;
         } else {
-            if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
-                console.log(`back branch target 0x${destination.toString(16)} not found in list ` +
+            if (destination < builder.cfg.entryIp) {
+                if ((traceBackBranches > 1) || (builder.cfg.trace > 1))
+                    console.log(`${info[0]} target 0x${destination.toString(16)} before start of trace`);
+            } else if ((traceBackBranches > 0) || (builder.cfg.trace > 0))
+                console.log(`0x${(<any>ip).toString(16)} ${info[0]} target 0x${destination.toString(16)} not found in list ` +
                     builder.backBranchOffsets.map(bbo => "0x" + (<any>bbo).toString(16)).join(", ")
                 );
             // We didn't find a loop to branch to, so bail out

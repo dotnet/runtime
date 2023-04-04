@@ -745,7 +745,6 @@ handle_branch (TransformData *td, int long_op, int offset)
 	if (offset < 0)
 		target_bb->backwards_branch_target = TRUE;
 
-
 	if (offset < 0 && td->sp == td->stack && !td->inlined_method) {
 		// Backwards branch inside unoptimized method where the IL stack is empty
 		// This is candidate for a patchpoint
@@ -8439,6 +8438,9 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 			} else if (rtm->contains_traces && (
 				(ins->opcode == MINT_CALL_HANDLER_S) || (ins->opcode == MINT_CALL_HANDLER)
 			)) {
+				// While this formally isn't a backward branch target, we want to record
+				//  the offset of its following instruction so that the jiterpreter knows
+				//  to generate the necessary dispatch code to enable branching back to it.
 				ip = emit_compacted_instruction (td, ip, ins);
 				if (backward_branch_offsets_count < BACKWARD_BRANCH_OFFSETS_SIZE)
 					backward_branch_offsets[backward_branch_offsets_count++] = ip - td->new_code;
