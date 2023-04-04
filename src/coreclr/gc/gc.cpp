@@ -22406,7 +22406,7 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
     dprintf (8888, ("stage1 moved %Id items - stage 2 rethreaded %Id items, merging took %I64dus (%I64dms)",
         total_num_fl_items_moved_stage1, total_num_fl_items_rethreaded_stage2, elapsed, (elapsed / 1000)));
 
-    if ((total_num_fl_items_moved_stage1 != total_num_fl_items_rethreaded_stage2) && (total_num_fl_items_moved_stage1 != ~0))
+    if ((total_num_fl_items_moved_stage1 != total_num_fl_items_rethreaded_stage2) && (total_num_fl_items_moved_stage1 != (size_t)~0))
     {
         GCToOSInterface::DebugBreak ();
     }
@@ -22472,7 +22472,7 @@ void gc_heap::merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n
         GCToOSInterface::DebugBreak ();
     }
 
-    if ((total_num_fl_items_stage1 != total_fl_items_count) && (total_num_fl_items_stage1 != ~0))
+    if ((total_num_fl_items_stage1 != total_fl_items_count) && (total_num_fl_items_stage1 != (size_t)~0))
     {
         GCToOSInterface::DebugBreak ();
     }
