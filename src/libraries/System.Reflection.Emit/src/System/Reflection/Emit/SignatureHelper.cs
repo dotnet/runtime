@@ -56,62 +56,61 @@ namespace System.Reflection.Emit
             CoreTypeId? typeId = module.GetTypeIdFromCoreTypes(type);
 
             // We need to translate from Reflection.Type to SignatureTypeEncoder.
-            if (typeId.HasValue)
+            switch (typeId)
             {
-                switch (typeId)
-                {
-                    case CoreTypeId.Boolean:
-                        signature.Boolean();
-                        return;
-                    case CoreTypeId.Byte:
-                        signature.Byte();
-                        return;
-                    case CoreTypeId.SByte:
-                        signature.SByte();
-                        return;
-                    case CoreTypeId.Char:
-                        signature.Char();
-                        return;
-                    case CoreTypeId.Int16:
-                        signature.Int16();
-                        break;
-                    case CoreTypeId.UInt16:
-                        signature.UInt16();
-                        return;
-                    case CoreTypeId.Int32:
-                        signature.Int32();
-                        return;
-                    case CoreTypeId.UInt32:
-                        signature.UInt32();
-                        return;
-                    case CoreTypeId.Int64:
-                        signature.Int64();
-                        return;
-                    case CoreTypeId.UInt64:
-                        signature.UInt64();
-                        return;
-                    case CoreTypeId.Single:
-                        signature.Single();
-                        return;
-                    case CoreTypeId.Double:
-                        signature.Double();
-                        return;
-                    case CoreTypeId.IntPtr:
-                        signature.IntPtr();
-                        return;
-                    case CoreTypeId.UIntPtr:
-                        signature.UIntPtr();
-                        return;
-                    case CoreTypeId.Object:
-                        signature.Object();
-                        return;
-                    case CoreTypeId.String:
-                        signature.String();
-                        return;
-                }
+                case CoreTypeId.Boolean:
+                    signature.Boolean();
+                    break;
+                case CoreTypeId.Byte:
+                    signature.Byte();
+                    break;
+                case CoreTypeId.SByte:
+                    signature.SByte();
+                    break;
+                case CoreTypeId.Char:
+                    signature.Char();
+                    break;
+                case CoreTypeId.Int16:
+                    signature.Int16();
+                    break;
+                case CoreTypeId.UInt16:
+                    signature.UInt16();
+                    break;
+                case CoreTypeId.Int32:
+                    signature.Int32();
+                    break;
+                case CoreTypeId.UInt32:
+                    signature.UInt32();
+                    break;
+                case CoreTypeId.Int64:
+                    signature.Int64();
+                    break;
+                case CoreTypeId.UInt64:
+                    signature.UInt64();
+                    break;
+                case CoreTypeId.Single:
+                    signature.Single();
+                    break;
+                case CoreTypeId.Double:
+                    signature.Double();
+                    break;
+                case CoreTypeId.IntPtr:
+                    signature.IntPtr();
+                    break;
+                case CoreTypeId.UIntPtr:
+                    signature.UIntPtr();
+                    break;
+                case CoreTypeId.Object:
+                    signature.Object();
+                    break;
+                case CoreTypeId.String:
+                    signature.String();
+                    break;
+                default:
+                    throw new NotSupportedException(SR.Format(SR.NotSupported_Signature, type.FullName));
+            }
             }
 
-            throw new NotSupportedException(SR.Format(SR.NotSupported_Signature, type.FullName));
         }
     }
 
