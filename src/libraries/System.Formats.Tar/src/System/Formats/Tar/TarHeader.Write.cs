@@ -28,14 +28,59 @@ namespace System.Formats.Tar
         // Writes the current header as a V7 entry into the archive stream.
         internal void WriteAsV7(Stream archiveStream, Span<byte> buffer)
         {
-            WriteV7FieldsToBuffer(buffer);
+            Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
+            if (_dataStream == null || _dataStream.CanSeek) // seek status of archive does not matter
+            {
+                WriteV7FieldsToBuffer(GetTotalDataBytesToWrite(), buffer);
+
+                archiveStream.Write(buffer);
+
+                if (_dataStream != null)
+                {
+                    WriteData(archiveStream, _dataStream, _size);
+                }
+            }
+            else // seekable archive stream, unseekable data stream
+            {
+                WriteAsV7WithUnseekableDataStream(archiveStream, buffer);
+            }
+        }
+
+        // Writes the entry in the order required to be able to obtain the unseekable data stream size.
+        private void WriteAsV7WithUnseekableDataStream(Stream archiveStream, Span<byte> buffer)
+        {
+            // When the data stream is unseekable, the order in which we write the entry data changes
+            Debug.Assert(archiveStream.CanSeek);
+            Debug.Assert(_dataStream != null);
+
+            // Store the start of the current entry's header, it'll be used later
+            long headerStartPosition = archiveStream.Position;
+
+            // We know the exact location where the data starts depending on the format
+            long dataStartPosition = headerStartPosition + FieldLocations.V7Data;
+
+            // Move to the data start location and write the data
+            archiveStream.Seek(FieldLocations.V7Data, SeekOrigin.Current);
+            _dataStream.CopyTo(archiveStream); // The data gets copied from the current position
+
+            // Get the new archive stream position, and the difference is the size of the data stream
+            long dataEndPosition = archiveStream.Position;
+            long actualLength = dataEndPosition - dataStartPosition;
+
+            // Write the padding now so that we can go back to writing the entry's header metadata
+            WritePadding(archiveStream, actualLength);
+
+            // Store the end of the current header, we will write the next one after this position
+            long endOfHeaderPosition = archiveStream.Position;
+
+            // Go back to the start of the entry header to write the rest of the fields
+            archiveStream.Position = headerStartPosition;
+            WriteV7FieldsToBuffer(actualLength, buffer);
             archiveStream.Write(buffer);
 
-            if (_dataStream != null)
-            {
-                WriteData(archiveStream, _dataStream, _size);
-            }
+            // Finally, move to the end of the header to continue with the next entry
+            archiveStream.Position = endOfHeaderPosition;
         }
 
         // Asynchronously writes the current header as a V7 entry into the archive stream and returns the value of the final checksum.
@@ -43,20 +88,65 @@ namespace System.Formats.Tar
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            WriteV7FieldsToBuffer(buffer.Span);
+            Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
-            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
-
-            if (_dataStream != null)
+            if (_dataStream == null || _dataStream.CanSeek) // seek status of archive does not matter
             {
-                await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
+                WriteV7FieldsToBuffer(GetTotalDataBytesToWrite(), buffer.Span);
+
+                await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+                if (_dataStream != null)
+                {
+                    await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            else // seekable archive stream, unseekable data stream
+            {
+                await WriteAsV7WithUnseekableDataStreamAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        // Writes the V7 header fields to the specified buffer, calculates and writes the checksum, then returns the final data length.
-        private void WriteV7FieldsToBuffer(Span<byte> buffer)
+        // Asynchronously writes the entry in the order required to be able to obtain the unseekable data stream size.
+        private async Task WriteAsV7WithUnseekableDataStreamAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            _size = GetTotalDataBytesToWrite();
+            // When the data stream is unseekable, the order in which we write the entry data changes
+            Debug.Assert(archiveStream.CanSeek);
+            Debug.Assert(_dataStream != null);
+
+            // Store the start of the current entry's header, it'll be used later
+            long headerStartPosition = archiveStream.Position;
+
+            // We know the exact location where the data starts depending on the format
+            long dataStartPosition = headerStartPosition + FieldLocations.V7Data;
+
+            // Move to the data start location and write the data
+            archiveStream.Seek(FieldLocations.V7Data, SeekOrigin.Current);
+            await _dataStream.CopyToAsync(archiveStream, cancellationToken).ConfigureAwait(false); // The data gets copied from the current position
+
+            // Get the new archive stream position, and the difference is the size of the data stream
+            long dataEndPosition = archiveStream.Position;
+            long actualLength = dataEndPosition - dataStartPosition;
+
+            // Write the padding now so that we can go back to writing the entry's header metadata
+            await WritePaddingAsync(archiveStream, actualLength, cancellationToken).ConfigureAwait(false);
+
+            // Store the end of the current header, we will write the next one after this position
+            long endOfHeaderPosition = archiveStream.Position;
+
+            // Go back to the start of the entry header to write the rest of the fields
+            archiveStream.Position = headerStartPosition;
+            WriteV7FieldsToBuffer(actualLength, buffer.Span);
+            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+            // Finally, move to the end of the header to continue with the next entry
+            archiveStream.Position = endOfHeaderPosition;
+        }
+
+        // Writes the V7 header fields to the specified buffer, calculates and writes the checksum, then returns the final data length.
+        private void WriteV7FieldsToBuffer(long size, Span<byte> buffer)
+        {
+            _size = size;
             TarEntryType actualEntryType = TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.V7, _typeFlag);
 
             int tmpChecksum = WriteName(buffer);
@@ -67,41 +157,131 @@ namespace System.Formats.Tar
         // Writes the current header as a Ustar entry into the archive stream.
         internal void WriteAsUstar(Stream archiveStream, Span<byte> buffer)
         {
-            WriteUstarFieldsToBuffer(buffer);
+            Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
+            if (_dataStream == null || _dataStream.CanSeek) // seek status of archive does not matter
+            {
+                WriteUstarFieldsToBuffer(GetTotalDataBytesToWrite(), buffer);
+
+                archiveStream.Write(buffer);
+
+                if (_dataStream != null)
+                {
+                    WriteData(archiveStream, _dataStream, _size);
+                }
+            }
+            else // seekable archive stream, unseekable data stream
+            {
+                WriteAsUstarWithUnseekableDataStream(archiveStream, buffer);
+            }
+        }
+
+        // Writes the entry in the order required to be able to obtain the unseekable data stream size.
+        private void WriteAsUstarWithUnseekableDataStream(Stream archiveStream, Span<byte> buffer)
+        {
+            // When the data stream is unseekable, the order in which we write the entry data changes
+            Debug.Assert(archiveStream.CanSeek);
+            Debug.Assert(_dataStream != null);
+
+            // Store the start of the current entry's header, it'll be used later
+            long headerStartPosition = archiveStream.Position;
+
+            // We know the exact location where the data starts depending on the format
+            long dataStartPosition = headerStartPosition + FieldLocations.PosixData;
+
+            // Move to the data start location and write the data
+            archiveStream.Seek(FieldLocations.PosixData, SeekOrigin.Current);
+            _dataStream.CopyTo(archiveStream); // The data gets copied from the current position
+
+            // Get the new archive stream position, and the difference is the size of the data stream
+            long dataEndPosition = archiveStream.Position;
+            long actualLength = dataEndPosition - dataStartPosition;
+
+            // Write the padding now so that we can go back to writing the entry's header metadata
+            WritePadding(archiveStream, actualLength);
+
+            // Store the end of the current header, we will write the next one after this position
+            long endOfHeaderPosition = archiveStream.Position;
+
+            // Go back to the start of the entry header to write the rest of the fields
+            archiveStream.Position = headerStartPosition;
+            WriteUstarFieldsToBuffer(actualLength, buffer);
             archiveStream.Write(buffer);
 
-            if (_dataStream != null)
-            {
-                WriteData(archiveStream, _dataStream, _size);
-            }
+            // Finally, move to the end of the header to continue with the next entry
+            archiveStream.Position = endOfHeaderPosition;
         }
 
         // Asynchronously rites the current header as a Ustar entry into the archive stream and returns the value of the final checksum.
         internal async Task WriteAsUstarAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
-            WriteUstarFieldsToBuffer(buffer.Span);
-
-            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
-
-            if (_dataStream != null)
+            if (_dataStream == null || _dataStream.CanSeek) // seek status of archive does not matter
             {
-                await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
+                WriteUstarFieldsToBuffer(GetTotalDataBytesToWrite(), buffer.Span);
+
+                await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+                if (_dataStream != null)
+                {
+                    await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            else // seekable archive stream, unseekable data stream
+            {
+                await WriteAsUstarWithUnseekableDataStreamAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        // Writes the Ustar header fields to the specified buffer, calculates and writes the checksum, then returns the final data length.
-        private void WriteUstarFieldsToBuffer(Span<byte> buffer)
+        // Asynchronously writes the entry in the order required to be able to obtain the unseekable data stream size.
+        private async Task WriteAsUstarWithUnseekableDataStreamAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            _size = GetTotalDataBytesToWrite();
+            // When the data stream is unseekable, the order in which we write the entry data changes
+            Debug.Assert(archiveStream.CanSeek);
+            Debug.Assert(_dataStream != null);
+
+            // Store the start of the current entry's header, it'll be used later
+            long headerStartPosition = archiveStream.Position;
+
+            // We know the exact location where the data starts depending on the format
+            long dataStartPosition = headerStartPosition + FieldLocations.PosixData;
+
+            // Move to the data start location and write the data
+            archiveStream.Seek(FieldLocations.PosixData, SeekOrigin.Current);
+            await _dataStream.CopyToAsync(archiveStream, cancellationToken).ConfigureAwait(false); // The data gets copied from the current position
+
+            // Get the new archive stream position, and the difference is the size of the data stream
+            long dataEndPosition = archiveStream.Position;
+            long actualLength = dataEndPosition - dataStartPosition;
+
+            // Write the padding now so that we can go back to writing the entry's header metadata
+            await WritePaddingAsync(archiveStream, actualLength, cancellationToken).ConfigureAwait(false);
+
+            // Store the end of the current header, we will write the next one after this position
+            long endOfHeaderPosition = archiveStream.Position;
+
+            // Go back to the start of the entry header to write the rest of the fields
+            archiveStream.Position = headerStartPosition;
+            WriteUstarFieldsToBuffer(actualLength, buffer.Span);
+            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+            // Finally, move to the end of the header to continue with the next entry
+            archiveStream.Position = endOfHeaderPosition;
+        }
+
+        // Writes the Ustar header fields to the specified buffer, calculates and writes the checksum, then returns the final data length.
+        private void WriteUstarFieldsToBuffer(long size, Span<byte> buffer)
+        {
+            _size = size;
             TarEntryType actualEntryType = TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.Ustar, _typeFlag);
 
             int tmpChecksum = WriteUstarName(buffer);
             tmpChecksum += WriteCommonFields(buffer, actualEntryType);
             tmpChecksum += WritePosixMagicAndVersion(buffer);
             tmpChecksum += WritePosixAndGnuSharedFields(buffer);
+
             _checksum = WriteChecksum(tmpChecksum, buffer);
         }
 
@@ -140,7 +320,6 @@ namespace System.Formats.Tar
             // First, we write the preceding extended attributes header
             TarHeader extendedAttributesHeader = new(TarEntryFormat.Pax);
             // Fill the current header's dict
-            _size = GetTotalDataBytesToWrite();
             CollectExtendedAttributesFromStandardFieldsIfNeeded();
             // And pass the attributes to the preceding extended attributes header for writing
             extendedAttributesHeader.WriteAsPaxExtendedAttributes(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1);
@@ -159,7 +338,6 @@ namespace System.Formats.Tar
             // First, we write the preceding extended attributes header
             TarHeader extendedAttributesHeader = new(TarEntryFormat.Pax);
             // Fill the current header's dict
-            _size = GetTotalDataBytesToWrite();
             CollectExtendedAttributesFromStandardFieldsIfNeeded();
             // And pass the attributes to the preceding extended attributes header for writing
             await extendedAttributesHeader.WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1, cancellationToken).ConfigureAwait(false);
@@ -240,35 +418,125 @@ namespace System.Formats.Tar
         // Writes the current header as a GNU entry into the archive stream.
         internal void WriteAsGnuInternal(Stream archiveStream, Span<byte> buffer)
         {
-            WriteAsGnuSharedInternal(buffer);
+            Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
+            if (_dataStream == null || _dataStream.CanSeek) // seek status of archive does not matter
+            {
+                WriteGnuFieldsToBuffer(GetTotalDataBytesToWrite(), buffer);
+
+                archiveStream.Write(buffer);
+
+                if (_dataStream != null)
+                {
+                    WriteData(archiveStream, _dataStream, _size);
+                }
+            }
+            else // seekable archive stream, unseekable data stream
+            {
+                WriteAsGnuWithUnseekableDataStream(archiveStream, buffer);
+            }
+        }
+
+        // Writes the entry in the order required to be able to obtain the unseekable data stream size.
+        private void WriteAsGnuWithUnseekableDataStream(Stream archiveStream, Span<byte> buffer)
+        {
+            // When the data stream is unseekable, the order in which we write the entry data changes
+            Debug.Assert(archiveStream.CanSeek);
+            Debug.Assert(_dataStream != null);
+
+            // Store the start of the current entry's header, it'll be used later
+            long headerStartPosition = archiveStream.Position;
+
+            // We know the exact location where the data starts depending on the format
+            long dataStartPosition = headerStartPosition + FieldLocations.GnuData;
+
+            // Move to the data start location and write the data
+            archiveStream.Seek(FieldLocations.GnuData, SeekOrigin.Current);
+            _dataStream.CopyTo(archiveStream); // The data gets copied from the current position
+
+            // Get the new archive stream position, and the difference is the size of the data stream
+            long dataEndPosition = archiveStream.Position;
+            long actualLength = dataEndPosition - dataStartPosition;
+
+            // Write the padding now so that we can go back to writing the entry's header metadata
+            WritePadding(archiveStream, actualLength);
+
+            // Store the end of the current header, we will write the next one after this position
+            long endOfHeaderPosition = archiveStream.Position;
+
+            // Go back to the start of the entry header to write the rest of the fields
+            archiveStream.Position = headerStartPosition;
+            WriteGnuFieldsToBuffer(actualLength, buffer);
             archiveStream.Write(buffer);
 
-            if (_dataStream != null)
-            {
-                WriteData(archiveStream, _dataStream, _size);
-            }
+            // Finally, move to the end of the header to continue with the next entry
+            archiveStream.Position = endOfHeaderPosition;
         }
 
         // Asynchronously writes the current header as a GNU entry into the archive stream.
         internal async Task WriteAsGnuInternalAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
-            WriteAsGnuSharedInternal(buffer.Span);
-
-            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
-
-            if (_dataStream != null)
+            if (_dataStream == null || _dataStream.CanSeek) // seek status of archive does not matter
             {
-                await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
+
+                WriteGnuFieldsToBuffer(GetTotalDataBytesToWrite(), buffer.Span);
+
+                await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+                if (_dataStream != null)
+                {
+                    await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            else // seekable archive stream, unseekable data stream
+            {
+                await WriteAsGnuWithUnseekableDataStreamAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        // Shared checksum and data length calculations for GNU entry writing.
-        private void WriteAsGnuSharedInternal(Span<byte> buffer)
+        // Asynchronously writes the entry in the order required to be able to obtain the unseekable data stream size.
+        private async Task WriteAsGnuWithUnseekableDataStreamAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            _size = GetTotalDataBytesToWrite();
+            // When the data stream is unseekable, the order in which we write the entry data changes
+            Debug.Assert(archiveStream.CanSeek);
+            Debug.Assert(_dataStream != null);
+
+            // Store the start of the current entry's header, it'll be used later
+            long headerStartPosition = archiveStream.Position;
+
+            // We know the exact location where the data starts depending on the format
+            long dataStartPosition = headerStartPosition + FieldLocations.GnuData;
+
+            // Move to the data start location and write the data
+            archiveStream.Seek(FieldLocations.GnuData, SeekOrigin.Current);
+            await _dataStream.CopyToAsync(archiveStream, cancellationToken).ConfigureAwait(false); // The data gets copied from the current position
+
+            // Get the new archive stream position, and the difference is the size of the data stream
+            long dataEndPosition = archiveStream.Position;
+            long actualLength = dataEndPosition - dataStartPosition;
+
+            // Write the padding now so that we can go back to writing the entry's header metadata
+            await WritePaddingAsync(archiveStream, actualLength, cancellationToken).ConfigureAwait(false);
+
+            // Store the end of the current header, we will write the next one after this position
+            long endOfHeaderPosition = archiveStream.Position;
+
+            // Go back to the start of the entry header to write the rest of the fields
+            archiveStream.Position = headerStartPosition;
+            WriteGnuFieldsToBuffer(actualLength, buffer.Span);
+            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+            // Finally, move to the end of the header to continue with the next entry
+            archiveStream.Position = endOfHeaderPosition;
+        }
+
+        // Shared checksum and data length calculations for GNU entry writing.
+        private void WriteGnuFieldsToBuffer(long size, Span<byte> buffer)
+        {
+            _size = size;
 
             int tmpChecksum = WriteName(buffer);
             tmpChecksum += WriteCommonFields(buffer, TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.Gnu, _typeFlag));
@@ -305,7 +573,7 @@ namespace System.Formats.Tar
                 GenerateExtendedAttributeName();
 
             _mode = TarHelpers.GetDefaultMode(_typeFlag);
-            _size = GetTotalDataBytesToWrite();
+            //_size = GetTotalDataBytesToWrite();
             _typeFlag = isGea ? TarEntryType.GlobalExtendedAttributes : TarEntryType.ExtendedAttributes;
         }
 
@@ -313,14 +581,59 @@ namespace System.Formats.Tar
         // This method writes an entry as both entries require, using the data from the current header instance.
         private void WriteAsPaxInternal(Stream archiveStream, Span<byte> buffer)
         {
-            WriteAsPaxSharedInternal(buffer);
+            Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
+            if (_dataStream == null || _dataStream.CanSeek) // seek status of archive does not matter
+            {
+                WritePaxFieldsToBuffer(GetTotalDataBytesToWrite(), buffer);
+
+                archiveStream.Write(buffer);
+
+                if (_dataStream != null)
+                {
+                    WriteData(archiveStream, _dataStream, _size);
+                }
+            }
+            else // seekable archive stream, unseekable data stream
+            {
+                WriteAsPaxWithUnseekableDataStream(archiveStream, buffer);
+            }
+        }
+
+        // Writes the entry in the order required to be able to obtain the unseekable data stream size.
+        private void WriteAsPaxWithUnseekableDataStream(Stream archiveStream, Span<byte> buffer)
+        {
+            // When the data stream is unseekable, the order in which we write the entry data changes
+            Debug.Assert(archiveStream.CanSeek);
+            Debug.Assert(_dataStream != null);
+
+            // Store the start of the current entry's header, it'll be used later
+            long headerStartPosition = archiveStream.Position;
+
+            // We know the exact location where the data starts depending on the format
+            long dataStartPosition = headerStartPosition + FieldLocations.PosixData;
+
+            // Move to the data start location and write the data
+            archiveStream.Seek(FieldLocations.PosixData, SeekOrigin.Current);
+            _dataStream.CopyTo(archiveStream); // The data gets copied from the current position
+
+            // Get the new archive stream position, and the difference is the size of the data stream
+            long dataEndPosition = archiveStream.Position;
+            long actualLength = dataEndPosition - dataStartPosition;
+
+            // Write the padding now so that we can go back to writing the entry's header metadata
+            WritePadding(archiveStream, actualLength);
+
+            // Store the end of the current header, we will write the next one after this position
+            long endOfHeaderPosition = archiveStream.Position;
+
+            // Go back to the start of the entry header to write the rest of the fields
+            archiveStream.Position = headerStartPosition;
+            WritePaxFieldsToBuffer(actualLength, buffer);
             archiveStream.Write(buffer);
 
-            if (_dataStream != null)
-            {
-                WriteData(archiveStream, _dataStream, _size);
-            }
+            // Finally, move to the end of the header to continue with the next entry
+            archiveStream.Position = endOfHeaderPosition;
         }
 
         // Both the Extended Attributes and Global Extended Attributes entry headers are written in a similar way, just the data changes
@@ -329,19 +642,65 @@ namespace System.Formats.Tar
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            WriteAsPaxSharedInternal(buffer.Span);
+            Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
 
-            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
-
-            if (_dataStream != null)
+            if (_dataStream == null || _dataStream.CanSeek) // seek status of archive does not matter
             {
-                await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
+                WritePaxFieldsToBuffer(GetTotalDataBytesToWrite(), buffer.Span);
+
+                await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+                if (_dataStream != null)
+                {
+                    await WriteDataAsync(archiveStream, _dataStream, _size, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            else // seekable archive stream, unseekable data stream
+            {
+                await WriteAsPaxWithUnseekableDataStreamAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
             }
         }
 
-        // Shared checksum and data length calculations for PAX entry writing.
-        private void WriteAsPaxSharedInternal(Span<byte> buffer)
+        // Asynchronously writes the entry in the order required to be able to obtain the unseekable data stream size.
+        private async Task WriteAsPaxWithUnseekableDataStreamAsync(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
         {
+            // When the data stream is unseekable, the order in which we write the entry data changes
+            Debug.Assert(archiveStream.CanSeek);
+            Debug.Assert(_dataStream != null);
+
+            // Store the start of the current entry's header, it'll be used later
+            long headerStartPosition = archiveStream.Position;
+
+            // We know the exact location where the data starts depending on the format
+            long dataStartPosition = headerStartPosition + FieldLocations.PosixData;
+
+            // Move to the data start location and write the data
+            archiveStream.Seek(FieldLocations.PosixData, SeekOrigin.Current);
+            await _dataStream.CopyToAsync(archiveStream, cancellationToken).ConfigureAwait(false); // The data gets copied from the current position
+
+            // Get the new archive stream position, and the difference is the size of the data stream
+            long dataEndPosition = archiveStream.Position;
+            long actualLength = dataEndPosition - dataStartPosition;
+
+            // Write the padding now so that we can go back to writing the entry's header metadata
+            await WritePaddingAsync(archiveStream, actualLength, cancellationToken).ConfigureAwait(false);
+
+            // Store the end of the current header, we will write the next one after this position
+            long endOfHeaderPosition = archiveStream.Position;
+
+            // Go back to the start of the entry header to write the rest of the fields
+            archiveStream.Position = headerStartPosition;
+            WritePaxFieldsToBuffer(actualLength, buffer.Span);
+            await archiveStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+
+            // Finally, move to the end of the header to continue with the next entry
+            archiveStream.Position = endOfHeaderPosition;
+        }
+
+        // Shared checksum and data length calculations for PAX entry writing.
+        private void WritePaxFieldsToBuffer(long size, Span<byte> buffer)
+        {
+            _size = size;
             int tmpChecksum = WriteName(buffer);
             tmpChecksum += WriteCommonFields(buffer, TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.Pax, _typeFlag));
             tmpChecksum += WritePosixMagicAndVersion(buffer);
@@ -507,18 +866,19 @@ namespace System.Formats.Tar
         }
 
         // Calculates how many data bytes should be written, depending on the position pointer of the stream.
+        // Only works if the stream is seekable.
         private long GetTotalDataBytesToWrite()
         {
-            if (_dataStream != null)
+            if (_dataStream == null)
             {
-                long length = _dataStream.Length;
-                long position = _dataStream.Position;
-                if (position < length)
-                {
-                    return length - position;
-                }
+                return 0;
             }
-            return 0;
+            Debug.Assert(_dataStream.CanSeek);
+
+            long length = _dataStream.Length;
+            long position = _dataStream.Position;
+
+            return position < length ? length - position : 0;
         }
 
         // Writes the magic and version fields of a ustar or pax entry into the specified spans.
@@ -609,7 +969,12 @@ namespace System.Formats.Tar
         private static void WriteData(Stream archiveStream, Stream dataStream, long actualLength)
         {
             dataStream.CopyTo(archiveStream); // The data gets copied from the current position
+            WritePadding(archiveStream, actualLength);
+        }
 
+        // Calculates the padding for the current entry and writes it after the data.
+        private static void WritePadding(Stream archiveStream, long actualLength)
+        {
             int paddingAfterData = TarHelpers.CalculatePadding(actualLength);
             if (paddingAfterData != 0)
             {
@@ -621,6 +986,24 @@ namespace System.Formats.Tar
 
                 archiveStream.Write(padding);
             }
+        }
+
+        // Calculates the padding for the current entry and asynchronously writes it after the data.
+        private static ValueTask WritePaddingAsync(Stream archiveStream, long actualLength, CancellationToken cancellationToken)
+        {
+            int paddingAfterData = TarHelpers.CalculatePadding(actualLength);
+            if (paddingAfterData != 0)
+            {
+                Debug.Assert(paddingAfterData <= TarHelpers.RecordSize);
+
+                byte[] b = new byte[TarHelpers.RecordSize];
+                Memory<byte> padding = b.AsMemory();
+                padding = padding.Slice(0, paddingAfterData);
+
+                return archiveStream.WriteAsync(padding, cancellationToken);
+            }
+
+            return ValueTask.CompletedTask;
         }
 
         // Asynchronously writes the current header's data stream into the archive stream.
