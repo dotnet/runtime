@@ -1066,7 +1066,7 @@ public:
         while ((index < replacements.size()) && (replacements[index].Offset < end))
         {
             Replacement& rep = replacements[index];
-            assert((rep.Offset >= offs) && (rep.Offset + genTypeSize(rep.AccessType) <= end));
+            assert(rep.Overlaps(offs, size));
             rep.NeedsReadBack  = true;
             rep.NeedsWriteBack = false;
             index++;
