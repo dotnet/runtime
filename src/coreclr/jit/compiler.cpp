@@ -4713,9 +4713,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_EARLY_LIVENESS, &Compiler::fgEarlyLiveness);
 
-    // Promote more struct locals
+    // Promote struct locals based on primitive access patterns
     //
-    DoPhase(this, PHASE_GENERALIZED_PROMOTION, &Compiler::GeneralizedPromotion);
+    DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
 
     // Run a simple forward substitution pass.
     //

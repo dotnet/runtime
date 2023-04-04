@@ -3,12 +3,12 @@
 #include "jitstd/algorithm.h"
 
 //------------------------------------------------------------------------
-// GeneralizedPromotion: Promote structs based on primitive access patterns.
+// PhysicalPromotion: Promote structs based on primitive access patterns.
 //
 // Returns:
 //    Suitable phase status.
 //
-PhaseStatus Compiler::GeneralizedPromotion()
+PhaseStatus Compiler::PhysicalPromotion()
 {
     if (!opts.OptEnabled(CLFLG_STRUCTPROMOTE))
     {
@@ -20,14 +20,14 @@ PhaseStatus Compiler::GeneralizedPromotion()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    if (!compStressCompile(STRESS_GENERALIZED_PROMOTION, 25))
+    if (!compStressCompile(STRESS_PHYSICAL_PROMOTION, 25))
     {
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
     static ConfigMethodRange s_range;
-    s_range.EnsureInit(JitConfig.JitEnableGeneralizedPromotionRange());
+    s_range.EnsureInit(JitConfig.JitEnablePhysicalPromotionRange());
 
     if (!s_range.Contains(info.compMethodHash()))
     {
@@ -459,7 +459,7 @@ public:
         }
 
 #ifdef DEBUG
-        if (comp->compStressCompile(Compiler::STRESS_GENERALIZED_PROMOTION_COST, 25))
+        if (comp->compStressCompile(Compiler::STRESS_PHYSICAL_PROMOTION_COST, 25))
         {
             JITDUMP("  Promoting replacement due to stress\n");
             return true;

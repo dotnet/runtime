@@ -6100,7 +6100,7 @@ private:
     PhaseStatus fgMarkAddressExposedLocals();
     void fgSequenceLocals(Statement* stmt);
 
-    PhaseStatus GeneralizedPromotion();
+    PhaseStatus PhysicalPromotion();
 
     PhaseStatus fgForwardSub();
     bool fgForwardSubBlock(BasicBlock* block);
@@ -9860,8 +9860,8 @@ public:
         STRESS_MODE(SPLIT_TREES_RANDOMLY) /* Split all statements at a random tree */           \
         STRESS_MODE(SPLIT_TREES_REMOVE_COMMAS) /* Remove all GT_COMMA nodes */                  \
         STRESS_MODE(NO_OLD_PROMOTION) /* Do not use old promotion */                            \
-        STRESS_MODE(GENERALIZED_PROMOTION) /* Use generalized promotion */                      \
-        STRESS_MODE(GENERALIZED_PROMOTION_COST)                                                 \
+        STRESS_MODE(PHYSICAL_PROMOTION) /* Use physical promotion */                            \
+        STRESS_MODE(PHYSICAL_PROMOTION_COST)                                                    \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
