@@ -22,6 +22,7 @@
 #include "threadstore.h"
 #include "threadstore.inl"
 //#include "PalRedhawk.h"
+#include "EventPipeInterface.h"
 
 #define Win32EventWrite PalEventWrite
 #else // !FEATURE_NATIVEAOT
@@ -898,7 +899,7 @@ void ETW::GCLog::FireGcStart(ETW_GC_INFO* pGcInfo)
 
 #if !defined(FEATURE_PAL) || defined(FEATURE_DTRACE)
 
-    if (ETW_TRACING_CATEGORY_ENABLED(
+    if (EventPipeAdapter_Enabled() || ETW_TRACING_CATEGORY_ENABLED(
         MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
         TRACE_LEVEL_INFORMATION,
         CLR_GC_KEYWORD))
@@ -921,6 +922,7 @@ void ETW::GCLog::FireGcStart(ETW_GC_INFO* pGcInfo)
         }
 
         FireEtwGCStart_V2(pGcInfo->GCStart.Count, pGcInfo->GCStart.Depth, pGcInfo->GCStart.Reason, pGcInfo->GCStart.Type, GetClrInstanceId(), l64ClientSequenceNumberToLog);
+        FireEtXplatGCStart_V2(pGcInfo->GCStart.Count, pGcInfo->GCStart.Depth, pGcInfo->GCStart.Reason, pGcInfo->GCStart.Type, GetClrInstanceId(), l64ClientSequenceNumberToLog);
 
 #elif defined(FEATURE_DTRACE)
         FireEtwGCStart(pGcInfo->GCStart.Count, pGcInfo->GCStart.Reason);

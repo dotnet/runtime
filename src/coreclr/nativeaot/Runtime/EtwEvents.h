@@ -410,17 +410,17 @@ extern "C" __declspec(selectany) RH_ETW_CONTEXT MICROSOFT_WINDOWS_NATIVEAOT_GC_P
 
 #define FireEtwGCPerHeapHistory_V3(ClrInstanceID, FreeListAllocated, FreeListRejected, EndOfSegAllocated, CondemnedAllocated, PinnedAllocated, PinnedAllocatedAdvance, RunningFreeListEfficiency, CondemnReasons0, CondemnReasons1, CompactMechanisms, ExpandMechanisms, HeapIndex, ExtraGen0Commit, Count, Values_Len_, Values) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCPerHeapHistory_V3)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCPerHeapHistory_V3(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCPerHeapHistory_V3, ClrInstanceID, FreeListAllocated, FreeListRejected, EndOfSegAllocated, CondemnedAllocated, PinnedAllocated, PinnedAllocatedAdvance, RunningFreeListEfficiency, CondemnReasons0, CondemnReasons1, CompactMechanisms, ExpandMechanisms, HeapIndex, ExtraGen0Commit, Count, Values_Len_, Values) : 0
 
-#define FireEtwGCRestartEEBegin_V1(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCRestartEEBegin_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCRestartEEBegin_V1, ClrInstanceID) : 0
+#define FireEtXplatGCRestartEEBegin_V1(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCRestartEEBegin_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCRestartEEBegin_V1, ClrInstanceID) : 0
 
-#define FireEtwGCRestartEEEnd_V1(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCRestartEEEnd_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCRestartEEEnd_V1, ClrInstanceID) : 0
+#define FireEtXplatGCRestartEEEnd_V1(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCRestartEEEnd_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCRestartEEEnd_V1, ClrInstanceID) : 0
 
 #define FireEtwGCStart_V1(Count, Depth, Reason, Type, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCStart_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCStart_V1(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCStart_V1, Count, Depth, Reason, Type, ClrInstanceID) : 0
 
-#define FireEtwGCStart_V2(Count, Depth, Reason, Type, ClrInstanceID, ClientSequenceNumber) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCStart_V2)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCStart_V2(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCStart_V2, Count, Depth, Reason, Type, ClrInstanceID, ClientSequenceNumber) : 0
+#define FireEtXplatGCStart_V2(Count, Depth, Reason, Type, ClrInstanceID, ClientSequenceNumber) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCStart_V2)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCStart_V2(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCStart_V2, Count, Depth, Reason, Type, ClrInstanceID, ClientSequenceNumber) : 0
 
-#define FireEtwGCSuspendEEBegin_V1(Reason, Count, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCSuspendEEBegin_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCSuspendEE_V1(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCSuspendEEBegin_V1, Reason, Count, ClrInstanceID) : 0
+#define FireEtXplatGCSuspendEEBegin_V1(Reason, Count, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCSuspendEEBegin_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCSuspendEE_V1(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCSuspendEEBegin_V1, Reason, Count, ClrInstanceID) : 0
 
-#define FireEtwGCSuspendEEEnd_V1(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCSuspendEEEnd_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCSuspendEEEnd_V1, ClrInstanceID) : 0
+#define FireEtXPlatGCSuspendEEEnd_V1(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCSuspendEEEnd_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCNoUserData(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCSuspendEEEnd_V1, ClrInstanceID) : 0
 
 #define FireEtwGCTerminateConcurrentThread_V1(ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCTerminateConcurrentThread_V1)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_GCTerminateConcurrentThread(Microsoft_Windows_Redhawk_GC_PublicHandle, &GCTerminateConcurrentThread_V1, ClrInstanceID) : 0
 
@@ -888,12 +888,12 @@ TemplateEventDescriptor(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor
 #define FireEtwGCMarkStackRoots(HeapNum, ClrInstanceID)
 #define FireEtwGCMarkWithType(HeapNum, ClrInstanceID, Type, Bytes)
 #define FireEtwGCPerHeapHistory_V3(ClrInstanceID, FreeListAllocated, FreeListRejected, EndOfSegAllocated, CondemnedAllocated, PinnedAllocated, PinnedAllocatedAdvance, RunningFreeListEfficiency, CondemnReasons0, CondemnReasons1, CompactMechanisms, ExpandMechanisms, HeapIndex, ExtraGen0Commit, Count, Values_Len_, Values)
-#define FireEtwGCRestartEEBegin_V1(ClrInstanceID)
-#define FireEtwGCRestartEEEnd_V1(ClrInstanceID)
+#define FireEtXplatGCRestartEEBegin_V1(ClrInstanceID)
+#define FireEtXplatGCRestartEEEnd_V1(ClrInstanceID)
 #define FireEtwGCStart_V1(Count, Depth, Reason, Type, ClrInstanceID)
-#define FireEtwGCStart_V2(Count, Depth, Reason, Type, ClrInstanceID, ClientSequenceNumber)
-#define FireEtwGCSuspendEEBegin_V1(Reason, Count, ClrInstanceID)
-#define FireEtwGCSuspendEEEnd_V1(ClrInstanceID)
+#define FireEtXplatGCStart_V2(Count, Depth, Reason, Type, ClrInstanceID, ClientSequenceNumber)
+#define FireEtXplatGCSuspendEEBegin_V1(Reason, Count, ClrInstanceID)
+#define FireEtXPlatGCSuspendEEEnd_V1(ClrInstanceID)
 #define FireEtwGCTerminateConcurrentThread_V1(ClrInstanceID)
 #define FireEtwGCTriggered(Reason, ClrInstanceID)
 #define FireEtwModuleLoad_V2(ModuleID, AssemblyID, ModuleFlags, Reserved1, ModuleILPath, ModuleNativePath, ClrInstanceID, ManagedPdbSignature, ManagedPdbAge, ManagedPdbBuildPath, NativePdbSignature, NativePdbAge, NativePdbBuildPath)
