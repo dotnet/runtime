@@ -11,6 +11,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// <summary>
     /// Details for the IUnknown derived interface.
     /// </summary>
+    [CLSCompliant(false)]
     public interface IIUnknownDerivedDetails
     {
         /// <summary>

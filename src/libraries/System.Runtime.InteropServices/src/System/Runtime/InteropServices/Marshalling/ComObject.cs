@@ -51,15 +51,23 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         private IIUnknownCacheStrategy CacheStrategy { get; }
 
+        internal bool UniqueInstance { get; init; }
+
         /// <summary>
-        /// Returns an IDisposable that can be used to perform a final release
-        /// on this COM object wrapper.
+        /// Releases all references owned by this ComObject if it is a unique instance.
         /// </summary>
         /// <remarks>
-        /// This property will only be non-null if the ComObject was created using
+        /// This method does nothing if the ComObject was not created with
         /// CreateObjectFlags.UniqueInstance.
         /// </remarks>
-        public IDisposable? FinalRelease { get; internal init; }
+        public void FinalRelease()
+        {
+            if (UniqueInstance)
+            {
+                CacheStrategy.Clear(IUnknownStrategy);
+                IUnknownStrategy.Release(_instancePointer);
+            }
+        }
 
         /// <inheritdoc />
         RuntimeTypeHandle IDynamicInterfaceCastable.GetInterfaceImplementation(RuntimeTypeHandle interfaceType)

@@ -12,6 +12,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// <typeparam name="T">The type that provides type-level information about the interface.</typeparam>
     /// <typeparam name="TImpl">The type to use for calling from managed callers to unmanaged implementations of the interface.</typeparam>
     [AttributeUsage(AttributeTargets.Interface, Inherited = false)]
+    [CLSCompliant(false)]
     public class IUnknownDerivedAttribute<T, TImpl> : Attribute, IIUnknownDerivedDetails
         where T : IIUnknownInterfaceType
     {

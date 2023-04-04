@@ -7,6 +7,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// <summary>
     /// Information about a virtual method table and the unmanaged instance pointer.
     /// </summary>
+    [CLSCompliant(false)]
     public readonly unsafe struct VirtualMethodTableInfo
     {
         /// <summary>
