@@ -236,7 +236,6 @@ namespace System.Runtime
                 // Set HasValue to false and clear the value (in case there were GC references we wish to stop reporting).
                 InternalCalls.RhpInitMultibyte(
                     ref data,
-                    0,
                     pUnboxToEEType->ValueTypeSize);
 
                 return;
