@@ -105,7 +105,7 @@
     <Error Condition="'$(HostOS)' == 'windows' and ('$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true')" Text="Error: Mono runtime for $(TargetOS) can't be built on Windows." />
 
     <!-- check if Ninja is available and default to it on Unix platforms -->
-    <Exec Condition="'$(HostOS)' != 'windows' and '$(Ninja)' == ''" Command="which ninja" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" >
+    <Exec Condition="'$(HostOS)' != 'windows' and '$(Ninja)' == ''" Command="command -v ninja" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" StandardOutputImportance="Low" >
       <Output TaskParameter="ExitCode" PropertyName="_MonoFindNinjaExitCode"/>
     </Exec>
     <PropertyGroup>
