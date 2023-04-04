@@ -300,7 +300,7 @@ Histogram bbOneBBSizeTable(bbSizeBuckets);
 unsigned  domsChangedIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
 Histogram domsChangedIterationTable(domsChangedIterationBuckets);
 
-unsigned  computeReachabilitySetsIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
+unsigned  computeReachabilitySetsIterationBuckets[] = {1, 2, 3, 5, 10, 20, 50, 100, 1000, 10000, 0};
 Histogram computeReachabilitySetsIterationTable(computeReachabilitySetsIterationBuckets);
 
 unsigned  computeReachabilityIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};

@@ -44,6 +44,7 @@ private:
     static void AddElemDLong(Env env, BitSetShortLongRep& bs, unsigned i);
     static bool TryAddElemDLong(Env env, BitSetShortLongRep& bs, unsigned i);
     static void RemoveElemDLong(Env env, BitSetShortLongRep& bs, unsigned i);
+    static bool ExtractLowestElemDLong(Env env, BitSetShortLongRep& bs, unsigned* pi);
     static void ClearDLong(Env env, BitSetShortLongRep& bs);
     static BitSetShortLongRep MakeUninitArrayBits(Env env);
     static BitSetShortLongRep MakeEmptyArrayBits(Env env);
@@ -308,6 +309,41 @@ public:
         else
         {
             return TryAddElemDLong(env, bs, i);
+        }
+    }
+
+    static bool ExtractLowestElem(Env env, BitSetShortLongRep& bs, unsigned* pi)
+    {
+        if (IsShort(env))
+        {
+            DWORD foundBitIndex;
+            bool  hasBit;
+#ifdef HOST_64BIT
+            static_assert_no_msg(sizeof(size_t) == 8);
+            hasBit = BitScanForward64(&foundBitIndex, (size_t)bs);
+#else
+            static_assert_no_msg(sizeof(size_t) == 4);
+            hasBit = BitScanForward(&foundBitIndex, (size_t)bs);
+#endif
+
+            if (hasBit)
+            {
+                assert((0 <= foundBitIndex) && (foundBitIndex < BitsInSizeT));
+                *pi = foundBitIndex;
+
+                // Clear the bit we just found.
+                size_t mask = ((size_t)1) << foundBitIndex;
+                mask        = ~mask;
+                bs          = (BitSetShortLongRep)(((size_t)bs) & mask);
+
+                return true;
+            }
+
+            return false;
+        }
+        else
+        {
+            return ExtractLowestElemDLong(env, bs, pi);
         }
     }
 
@@ -729,6 +765,44 @@ void BitSetOps</*BitSetType*/ BitSetShortLongRep,
     size_t   mask  = ((size_t)1) << (i % BitsInSizeT);
     mask           = ~mask;
     bs[index] &= mask;
+}
+
+template <typename Env, typename BitSetTraits>
+bool BitSetOps</*BitSetType*/ BitSetShortLongRep,
+               /*Brand*/ BSShortLong,
+               /*Env*/ Env,
+               /*BitSetTraits*/ BitSetTraits>::ExtractLowestElemDLong(Env env, BitSetShortLongRep& bs, unsigned* pi)
+{
+    assert(!IsShort(env));
+
+    unsigned len = BitSetTraits::GetArrSize(env);
+    for (unsigned i = 0; i < len; i++)
+    {
+        DWORD foundBitIndex;
+        bool  hasBit;
+#ifdef HOST_64BIT
+        static_assert_no_msg(sizeof(size_t) == 8);
+        hasBit = BitScanForward64(&foundBitIndex, bs[i]);
+#else
+        static_assert_no_msg(sizeof(size_t) == 4);
+        hasBit = BitScanForward(&foundBitIndex, bs[i]);
+#endif
+
+        if (hasBit)
+        {
+            assert((0 <= foundBitIndex) && (foundBitIndex < BitsInSizeT));
+            *pi = i * BitsInSizeT + foundBitIndex;
+
+            // Clear the bit we just found.
+            size_t mask = ((size_t)1) << foundBitIndex;
+            mask        = ~mask;
+            bs[i] &= mask;
+
+            return true;
+        }
+    }
+
+    return false;
 }
 
 template <typename Env, typename BitSetTraits>

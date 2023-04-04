@@ -220,7 +220,7 @@ void Compiler::fgUpdateChangedFlowGraph(FlowGraphUpdates updates)
 //
 // This also sets the BBF_GC_SAFE_POINT flag on blocks.
 //
-// This depends on `fgBBReversePostorder` being correct.
+// This depends on `fgBBReversePostorder` being correct and `fgEnterBlks` being valid.
 //
 // TODO-Throughput: This algorithm consumes O(n^2) because we're using dense bitsets to
 // represent reachability. While this yields O(1) time queries, it bloats the memory usage
@@ -232,10 +232,35 @@ void Compiler::fgComputeReachabilitySets()
 {
     assert(fgPredsComputed);
     assert(fgBBReversePostorder != nullptr);
+    assert(fgEnterBlksSetValid);
 
 #ifdef DEBUG
     fgReachabilitySetsValid = false;
 #endif // DEBUG
+
+#ifdef DEBUG
+    for (BasicBlock* const block : Blocks())
+    {
+        unsigned reversePostorderIndex = fgBBcount - block->bbPostorderNum + 1;
+        JITDUMP("reach: " FMT_BB ": pre-order %d, post-order %d, reverse post-order %d\n", block->bbNum,
+                block->bbPreorderNum, block->bbPostorderNum, reversePostorderIndex);
+    }
+    for (unsigned i = 1; i <= fgBBNumMax; i++)
+    {
+        assert(fgBBReversePostorder[i] != nullptr);
+        JITDUMP("reach: fgBBReversePostorder[%d] = " FMT_BB "\n", i, fgBBReversePostorder[i]->bbNum);
+    }
+#endif
+
+    // The work list is a set of blocks indexed by reverse post order index (not bbNum), which is in the
+    // same numeric range as bbNum. We always pull off work using the lowest reverse post-order number.
+
+    BlockSet workset(BlockSetOps::MakeEmpty(this));
+
+    // We can't just Assign/Union in the enter block sets because `workset` is indexed by reverse postorder
+    // number, not bbNum. Create a mapping from bbNum to BasicBlock* to help find reverse post-order number
+    // from the fgEnterBlks set.
+    BasicBlock** blockMap = new (this, CMK_DominatorMemory) BasicBlock*[fgBBNumMax + 1]{};
 
     for (BasicBlock* const block : Blocks())
     {
@@ -244,39 +269,116 @@ void Compiler::fgComputeReachabilitySets()
         // and the old set could have wrong size.
         block->bbReach = BlockSetOps::MakeEmpty(this);
 
-        /* Mark block as reaching itself */
-        BlockSetOps::AddElemD(this, block->bbReach, block->bbNum);
+        // Create the block mapping.
+        assert(blockMap[block->bbNum] == nullptr);
+        blockMap[block->bbNum] = block;
     }
+    assert(blockMap[0] == nullptr); // block numbers start from 1
+
+    // Iterate over the `fgEnterBlks` set, adding each block to the workset.
+    BlockSetOps::Iter iterEnter(this, fgEnterBlks);
+    unsigned          bbNum = 0;
+    while (iterEnter.NextElem(&bbNum))
+    {
+        // Map bbNum->block->reverse postorder
+        const BasicBlock* block = blockMap[bbNum];
+        assert(block != nullptr);
+        assert(block->bbNum == bbNum);
+        unsigned reversePostorderIndex = fgBBcount - block->bbPostorderNum + 1;
+        BlockSetOps::AddElemD(this, workset, reversePostorderIndex);
+        JITDUMP("reach: seed " FMT_BB " (reverse post-order %d)\n", bbNum, reversePostorderIndex);
+    }
+
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    BlockSetOps::Iter iterAlways(this, fgAlwaysBlks);
+    while (iterAlways.NextElem(&bbNum))
+    {
+        // Map bbNum->block->reverse postorder
+        const BasicBlock* block = blockMap[bbNum];
+        assert(block != nullptr);
+        assert(block->bbNum == bbNum);
+        unsigned reversePostorderIndex = fgBBcount - block->bbPostorderNum + 1;
+        BlockSetOps::AddElemD(this, workset, reversePostorderIndex);
+        JITDUMP("reach: seed " FMT_BB " (reverse post-order %d)\n", bbNum, reversePostorderIndex);
+    }
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
     // Find the reachable blocks. Also, set BBF_GC_SAFE_POINT.
 
-    bool     change;
-    unsigned changedIterCount = 1;
-    do
+    unsigned blocksProcessedCount     = 0;
+    unsigned predBlocksProcessedCount = 0;
+    unsigned succBlocksProcessedCount = 0;
+    while (true)
     {
-        change = false;
-
-        for (unsigned i = 1; i <= fgBBNumMax; ++i)
+        // Pull block with lowest reverse post-order number off the work list.
+        unsigned   blockReversePostOrderNum;
+        const bool isFound = BlockSetOps::ExtractLowestElem(this, workset, &blockReversePostOrderNum);
+        if (!isFound)
         {
-            BasicBlock* const block = fgBBReversePostorder[i];
+            // No bits set in the bitset; nothing left in the work list.
+            break;
+        }
 
-            if (block->bbPreds != nullptr)
+        BasicBlock* const block = fgBBReversePostorder[blockReversePostOrderNum];
+
+        JITDUMP("reach: extract " FMT_BB " (reverse post-order %d) from workset\n", block->bbNum,
+                blockReversePostOrderNum);
+
+        // Do all of our predecessor blocks have a GC safe bit?
+        BasicBlockFlags predGcFlags = (block->bbPreds == nullptr) ? BBF_EMPTY : BBF_GC_SAFE_POINT;
+
+        bool blockChanged = BlockSetOps::TryAddElemD(this, block->bbReach, block->bbNum); // Add in self
+        for (BasicBlock* const predBlock : block->PredBlocks())
+        {
+            ++predBlocksProcessedCount;
+            blockChanged |= BlockSetOps::UnionDChanged(this, block->bbReach, predBlock->bbReach);
+            predGcFlags &= predBlock->bbFlags;
+        }
+        block->bbFlags |= predGcFlags;
+
+        if (blockChanged)
+        {
+            // Add successors to work list. Use the expensive successors iterator for BBJ_EHFINALLYRET,
+            // and the cheap one for everything else (we don't need the special handling in the expensive
+            // one for switches or BBJ_EHFILTERRET).
+            if (block->bbJumpKind == BBJ_EHFINALLYRET)
             {
-                BasicBlockFlags predGcFlags = BBF_GC_SAFE_POINT; // Do all of our predecessor blocks have a GC safe bit?
-                for (BasicBlock* const predBlock : block->PredBlocks())
+                for (BasicBlock* const succ : block->Succs(this))
                 {
-                    change |= BlockSetOps::UnionDChanged(this, block->bbReach, predBlock->bbReach);
-                    predGcFlags &= predBlock->bbFlags;
+                    ++succBlocksProcessedCount;
+                    if (succ != block) // For self-loops, don't add this block back to the work list.
+                    {
+                        unsigned reversePostorderIndex = fgBBcount - succ->bbPostorderNum + 1;
+                        JITDUMP("reach: add " FMT_BB " (reverse post-order %d) to workset (BBJ_EHFINALLYRET)\n",
+                                succ->bbNum, reversePostorderIndex);
+                        BlockSetOps::AddElemD(this, workset, reversePostorderIndex);
+                    }
                 }
-                block->bbFlags |= predGcFlags;
+            }
+            else
+            {
+                for (BasicBlock* const succ : block->Succs())
+                {
+                    ++succBlocksProcessedCount;
+                    if (succ != block) // For self-loops, don't add this block back to the work list.
+                    {
+                        unsigned reversePostorderIndex = fgBBcount - succ->bbPostorderNum + 1;
+                        JITDUMP("reach: add " FMT_BB " (reverse post-order %d) to workset\n", succ->bbNum,
+                                reversePostorderIndex);
+                        BlockSetOps::AddElemD(this, workset, reversePostorderIndex);
+                    }
+                }
             }
         }
 
-        ++changedIterCount;
-    } while (change);
+        ++blocksProcessedCount;
+    }
 
 #if COUNT_BASIC_BLOCKS
-    computeReachabilitySetsIterationTable.record(changedIterCount);
+    printf("BlockProcessed: %d\n", blocksProcessedCount);
+    printf("PredBlockProcessed: %d\n", predBlocksProcessedCount);
+    printf("SuccBlockProcessed: %d\n", succBlocksProcessedCount);
+    computeReachabilitySetsIterationTable.record(blocksProcessedCount);
 #endif // COUNT_BASIC_BLOCKS
 
 #ifdef DEBUG
@@ -646,7 +748,7 @@ bool Compiler::fgRemoveDeadBlocks()
     }
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
-    // For ARM code, prevent creating retless calls by adding the BBJ_ALWAYS to the "fgAlwaysBlks" list.
+    // For ARM code, prevent creating retless calls by adding the BBJ_ALWAYS to the worklist.
     for (BasicBlock* const block : Blocks())
     {
         if (block->bbJumpKind == BBJ_CALLFINALLY)
