@@ -4283,9 +4283,35 @@ get_method_index (MonoAotCompile *acfg, MonoMethod *method)
 	return index - 1;
 }
 
+static gboolean
+collect_dedup_method (MonoAotCompile *acfg, MonoMethod *method)
+{
+	// Check if the dedup is enabled, and if the current method can be deduplicated
+	if ((acfg->aot_opts.dedup || acfg->aot_opts.dedup_include) && mono_aot_can_dedup (method)) {
+		if (!acfg->dedup_emit_mode) {
+			/* Remember for later */
+			if (!g_hash_table_lookup (dedup_methods, method))
+				g_hash_table_insert (dedup_methods, method, method);
+		} else if (acfg->aot_opts.dedup_include) {
+			// Allow emitting collected methods
+			return FALSE;
+		}
+		return TRUE;
+	}
+	return FALSE;
+}
+
+
+
 static int
 add_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean extra, int depth)
 {
+	if (collect_dedup_method (acfg, method))
+		return -1;
+
+	if (acfg->aot_opts.log_generics && extra)
+		aot_printf (acfg, "%*sAdding method %s.\n", depth, "", mono_method_get_full_name (method));
+
 	int index;
 
 	index = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_indexes, method));
@@ -4371,20 +4397,6 @@ add_extra_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean prefer
 		method = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
 		mono_error_assert_ok (error);
 	}
-
-	if ((acfg->aot_opts.dedup || acfg->aot_opts.dedup_include) && mono_aot_can_dedup (method)) {
-		if (acfg->aot_opts.dedup) {
-			/* Don't emit instances */
-			return;
-		} else if (!acfg->dedup_emit_mode) {
-			/* Remember for later */
-			if (!g_hash_table_lookup (dedup_methods, method))
-				g_hash_table_insert (dedup_methods, method, method);
-		}
-	}
-
-	if (acfg->aot_opts.log_generics)
-		aot_printf (acfg, "%*sAdding method %s.\n", depth, "", mono_method_get_full_name (method));
 
 	add_method_full (acfg, method, TRUE, depth);
 }
@@ -14868,6 +14880,8 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		g_hash_table_iter_init (&iter, dedup_methods);
 		while (g_hash_table_iter_next (&iter, (gpointer *)&key, (gpointer *)&method))
 			add_method_full (acfg, method, TRUE, 0);
+		// Disable dedup_emit_mode to restrict emitting additional methods which are not collected in dedup_methods
+		acfg->dedup_emit_mode = FALSE;
 	}
 
 	{
