@@ -5156,9 +5156,8 @@ GenTree* Compiler::impTransformThis(GenTree*                thisPtr,
             assert(genActualType(obj->gtType) == TYP_I_IMPL || obj->gtType == TYP_BYREF);
             CorInfoType constraintTyp = info.compCompHnd->asCorInfoType(pConstrainedResolvedToken->hClass);
 
-            obj = gtNewOperNode(GT_IND, JITtype2varType(constraintTyp), obj);
-            // ldind could point anywhere, example a boxed class static int
-            obj->gtFlags |= (GTF_EXCEPT | GTF_GLOB_REF);
+            obj = gtNewIndir(JITtype2varType(constraintTyp), obj);
+            obj->gtFlags |= GTF_GLOB_REF;
 
             return obj;
         }
@@ -8881,7 +8880,7 @@ GenTree* Compiler::impArrayAccessIntrinsic(
         else
         {
             // TODO-Bug: GTF_GLOB_REF is missing.
-            arrElem = gtNewOperNode(GT_IND, elemType, arrElem);
+            arrElem = gtNewIndir(elemType, arrElem);
         }
     }
 
