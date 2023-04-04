@@ -109,8 +109,6 @@ namespace System.Reflection.Emit
                 default:
                     throw new NotSupportedException(SR.Format(SR.NotSupported_Signature, type.FullName));
             }
-            }
-
         }
     }
 
