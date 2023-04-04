@@ -11,7 +11,6 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static System.Net.Mime.MediaTypeNames;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
@@ -71,15 +70,15 @@ namespace Microsoft.Interop
 
             var interfaceBaseInfo = interfacesToGenerate.Collect().SelectMany((data, ct) =>
             {
-                ImmutableArray<(int StartingOffset, ManagedTypeInfo? BaseInterface)>.Builder baseInterfaceInfo = ImmutableArray.CreateBuilder<(int, ManagedTypeInfo?)>(data.Length);
+                ImmutableArray<(int StartingOffset, ManagedTypeInfo? BaseInterface, bool IsMarkerInterface)>.Builder baseInterfaceInfo = ImmutableArray.CreateBuilder<(int, ManagedTypeInfo?, bool)>(data.Length);
                 // Track the calculated last offsets of the interfaces.
                 // If a type has invalid methods, we'll count them and issue an error when generating code for that
                 // interface.
                 Dictionary<INamedTypeSymbol, int> derivedNextOffset = new(SymbolEqualityComparer.Default);
                 foreach (var iface in data)
                 {
-                    var (starting, baseType, _) = CalculateOffsetsForInterface(iface.Symbol);
-                    baseInterfaceInfo.Add((starting, baseType is not null ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(baseType) : null));
+                    var (starting, baseType, derivedStarting) = CalculateOffsetsForInterface(iface.Symbol);
+                    baseInterfaceInfo.Add((starting, baseType is not null ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(baseType) : null, starting == derivedStarting));
                 }
                 return baseInterfaceInfo.MoveToImmutable();
 
@@ -315,7 +314,7 @@ namespace Microsoft.Interop
                 generateStubInformation
                 .Collect()
                 .SelectMany(static (data, ct) => GroupContextsForInterfaceGeneration(data.CastArray<GeneratedMethodContextBase>()))
-                .Zip(interfaceBaseInfo)
+                .Zip(interfaceBaseInfo.Where(static info => !info.IsMarkerInterface))
                 .Select(static (data, ct) => GenerateImplementationVTable(ImmutableArray.CreateRange(data.Left.Array.Cast<IncrementalMethodStubGenerationContext>()), data.Right))
                 .WithTrackingName(StepNames.GenerateNativeToManagedVTable)
                 .WithComparer(SyntaxEquivalentComparer.Instance)
@@ -645,7 +644,7 @@ namespace Microsoft.Interop
 
         private static readonly MethodDeclarationSyntax CreateManagedVirtualFunctionTableMethodTemplate = MethodDeclaration(VoidStarStarSyntax, CreateManagedVirtualFunctionTableMethodName)
             .AddModifiers(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword));
-        private static InterfaceDeclarationSyntax GenerateImplementationVTable(ImmutableArray<IncrementalMethodStubGenerationContext> interfaceMethodStubs, (int StartingOffset, ManagedTypeInfo? BaseInterface) baseInterfaceTypeInfo)
+        private static InterfaceDeclarationSyntax GenerateImplementationVTable(ImmutableArray<IncrementalMethodStubGenerationContext> interfaceMethodStubs, (int StartingOffset, ManagedTypeInfo? BaseInterface, bool) baseInterfaceTypeInfo)
         {
             const string vtableLocalName = "vtable";
             var interfaceType = interfaceMethodStubs[0].OriginalDefiningType;
