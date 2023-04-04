@@ -2030,7 +2030,7 @@ namespace System.Tests
             DateTimeFormatInfo parseDtfi = CreateDateTimeFormatInfo(parseSpaceChar);
             Assert.Equal(dateTime, DateTime.Parse(formatted, parseDtfi));
 
-            static DateTimeFormatInfo CreateDateTimeFormatInfo(char timeSpaceChar)
+            static DateTimeFormatInfo CreateDateTimeFormatInfo(char spaceChar)
             {
                 return new DateTimeFormatInfo()
                 {
@@ -2039,15 +2039,15 @@ namespace System.Tests
                     FirstDayOfWeek = DayOfWeek.Monday,
                     AMDesignator = "AM",
                     DateSeparator = "/",
-                    FullDateTimePattern = $"dddd, MMMM d, yyyy h:mm:ss{timeSpaceChar}tt",
-                    LongDatePattern = "dddd, MMMM d, yyyy",
-                    LongTimePattern = $"h:mm:ss{timeSpaceChar}tt",
+                    FullDateTimePattern = $"dddd,{spaceChar}MMMM{spaceChar}d,{spaceChar}yyyy{spaceChar}h:mm:ss{spaceChar}tt",
+                    LongDatePattern = $"dddd,{spaceChar}MMMM{spaceChar}d,{spaceChar}yyyy",
+                    LongTimePattern = $"h:mm:ss{spaceChar}tt",
                     MonthDayPattern = "MMMM d",
                     PMDesignator = "PM",
                     ShortDatePattern = "M/d/yyyy",
-                    ShortTimePattern = $"h:mm{timeSpaceChar}tt",
+                    ShortTimePattern = $"h:mm{spaceChar}tt",
                     TimeSeparator = ":",
-                    YearMonthPattern = "MMMM yyyy",
+                    YearMonthPattern = $"MMMM{spaceChar}yyyy",
                     AbbreviatedDayNames = new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" },
                     ShortestDayNames = new[] { "Su", "Mo", "Tu", "We", "Th", "Fr", "Sa" },
                     DayNames = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" },
