@@ -497,6 +497,7 @@ atomic_store_r4: dest:b src1:f len:28
 atomic_store_r8: dest:b src1:f len:24
 xbinop: dest:x src1:x src2:x len:8 clob:1
 xzero: dest:x len:4
+xones: dest:x len:8
 xmove: dest:x src1:x len:4
 xconst: dest:x len:10
 xcompare: dest:x src1:x src2:x len:4
