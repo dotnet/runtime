@@ -1,9 +1,8 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.targets" />
   <PropertyGroup>
-    <!-- this assembly is inbox in desktop, do not version it unless you
-         plan on shipping a new desktop version out of band. Instead add API
-         to a different assembly. -->
+    <!-- This assembly is inbox in .NETFramework, ensure that the .NETStandard assembly 
+         remains <= the desktop version -->
     <AssemblyVersion Condition="'$(TargetFramework)' == 'netstandard2.0'">4.0.0.0</AssemblyVersion>
   </PropertyGroup>
 </Project>
