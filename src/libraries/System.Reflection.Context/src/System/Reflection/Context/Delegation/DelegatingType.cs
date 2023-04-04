@@ -110,7 +110,7 @@ namespace System.Reflection.Context.Delegation
         }
 
 #if NET8_0_OR_GREATER
-        [Obsolete("Legacy formatter-based serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0049", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [Obsolete("Legacy formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
 #endif
         public override bool IsSerializable
         {

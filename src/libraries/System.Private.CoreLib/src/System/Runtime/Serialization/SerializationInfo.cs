@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
-#pragma warning disable SYSLIB0049 // The SerializationInfo type is part of the obsolete legacy serialization framework
+#pragma warning disable SYSLIB0050 // The SerializationInfo type is part of the obsolete legacy serialization framework
 
 namespace System.Runtime.Serialization
 {

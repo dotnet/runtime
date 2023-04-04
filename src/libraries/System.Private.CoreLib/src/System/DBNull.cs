@@ -19,9 +19,9 @@ namespace System
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-#pragma warning disable SYSLIB0049 // UnitySerializationHolder is obsolete
+#pragma warning disable SYSLIB0050 // UnitySerializationHolder is obsolete
             UnitySerializationHolder.GetUnitySerializationInfo(info, UnitySerializationHolder.NullUnity);
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
         }
 
         public override string ToString()

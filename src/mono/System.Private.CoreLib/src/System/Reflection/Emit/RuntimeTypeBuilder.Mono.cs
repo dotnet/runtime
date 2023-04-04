@@ -1499,13 +1499,13 @@ namespace System.Reflection.Emit
                 attrs |= TypeAttributes.SpecialName;
                 return;
             }
-#pragma warning disable SYSLIB0049 // TypeAttributes.Serializable is obsolete
+#pragma warning disable SYSLIB0050 // TypeAttributes.Serializable is obsolete
             else if (attrname == "System.SerializableAttribute")
             {
                 attrs |= TypeAttributes.Serializable;
                 return;
             }
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
             else if (attrname == "System.Runtime.InteropServices.ComImportAttribute")
             {
                 attrs |= TypeAttributes.Import;

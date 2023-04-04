@@ -410,9 +410,9 @@ namespace System.Runtime.Serialization.DataContracts
             try
             {
                 return (
-#pragma warning disable SYSLIB0049 // Type.IsSerializable is obsolete
+#pragma warning disable SYSLIB0050 // Type.IsSerializable is obsolete
                         type.IsSerializable ||
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
                         type.IsDefined(Globals.TypeOfDataContractAttribute, false) ||
                         (Globals.TypeOfIXmlSerializable.IsAssignableFrom(type) && !type.IsGenericTypeDefinition) ||
                         CollectionDataContract.IsCollection(type, out _) ||

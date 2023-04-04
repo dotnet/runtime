@@ -480,12 +480,12 @@ namespace System.Runtime.Serialization.DataContracts
 
                         if (!CollectionDataContract.TryCreate(type, out dataContract))
                         {
-#pragma warning disable SYSLIB0049 // Type.IsSerializable is obsolete
+#pragma warning disable SYSLIB0050 // Type.IsSerializable is obsolete
                             if (!type.IsSerializable && !type.IsDefined(Globals.TypeOfDataContractAttribute, false) && !ClassDataContract.IsNonAttributedTypeValidForSerialization(type))
                             {
                                 ThrowInvalidDataContractException(SR.Format(SR.TypeNotSerializable, type), type);
                             }
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
                             dataContract = new ClassDataContract(type);
                             if (type != originalType)
                             {
@@ -1144,9 +1144,9 @@ namespace System.Runtime.Serialization.DataContracts
         private static bool IsTypeSerializable(Type type, HashSet<Type>? previousCollectionTypes)
         {
             if (
-#pragma warning disable SYSLIB0049 // Type.IsSerializable is obsolete
+#pragma warning disable SYSLIB0050 // Type.IsSerializable is obsolete
                 type.IsSerializable ||
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
                 type.IsEnum ||
                 type.IsDefined(Globals.TypeOfDataContractAttribute, false) ||
                 type.IsInterface ||

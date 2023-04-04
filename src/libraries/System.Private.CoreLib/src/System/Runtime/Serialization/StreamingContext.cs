@@ -4,7 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 
 #pragma warning disable CA1066 // Implement IEquatable when overriding Object.Equals
-#pragma warning disable SYSLIB0049 // The StreamingContext type is part of the obsolete legacy serialization framework
+#pragma warning disable SYSLIB0050 // The StreamingContext type is part of the obsolete legacy serialization framework
 
 namespace System.Runtime.Serialization
 {

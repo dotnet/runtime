@@ -41,9 +41,9 @@ namespace System.Reflection.Runtime.TypeInfos
         protected sealed override TypeAttributes GetAttributeFlagsImpl()
         {
             TypeAttributes attrs = TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed;
-#pragma warning disable SYSLIB0049 // Legacy serialization infrastructure is obsolete
+#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
             attrs |= TypeAttributes.Serializable;
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
             return attrs;
         }
 

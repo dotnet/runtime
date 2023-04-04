@@ -8,11 +8,11 @@ using System.Runtime.Serialization;
 namespace System.Reflection
 {
     public class ParameterInfo : ICustomAttributeProvider
-#pragma warning disable SYSLIB0049 // IObjectReference is obsolete
+#pragma warning disable SYSLIB0050 // IObjectReference is obsolete
 #pragma warning disable SA1001 // CommasMustBeSpacedCorrectly
         , IObjectReference
 #pragma warning restore SA1001
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
     {
         protected ParameterInfo() { }
 

@@ -88,11 +88,11 @@ namespace System.Reflection
             int count = 0;
             TypeAttributes Attributes = type.Attributes;
 
-#pragma warning disable SYSLIB0049 // TypeAttributes.Serializable is obsolete
+#pragma warning disable SYSLIB0050 // TypeAttributes.Serializable is obsolete
             /* IsSerializable returns true for delegates/enums as well */
             if ((Attributes & TypeAttributes.Serializable) != 0)
                 count++;
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
             if ((Attributes & TypeAttributes.Import) != 0)
                 count++;
 
@@ -101,10 +101,10 @@ namespace System.Reflection
             object[] attrs = new object[count];
             count = 0;
 
-#pragma warning disable SYSLIB0049 // TypeAttributes.Serializable is obsolete
+#pragma warning disable SYSLIB0050 // TypeAttributes.Serializable is obsolete
             if ((Attributes & TypeAttributes.Serializable) != 0)
                 attrs[count++] = new SerializableAttribute();
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
             if ((Attributes & TypeAttributes.Import) != 0)
                 attrs[count++] = new ComImportAttribute();
 
@@ -532,11 +532,11 @@ namespace System.Reflection
             int count = 0;
             TypeAttributes Attributes = type.Attributes;
 
-#pragma warning disable SYSLIB0049 // TypeAttributes.Serializable is obsolete
+#pragma warning disable SYSLIB0050 // TypeAttributes.Serializable is obsolete
             /* IsSerializable returns true for delegates/enums as well */
             if ((Attributes & TypeAttributes.Serializable) != 0)
                 count++;
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
             if ((Attributes & TypeAttributes.Import) != 0)
                 count++;
 
@@ -545,10 +545,10 @@ namespace System.Reflection
             CustomAttributeData[] attrsData = new CustomAttributeData[count];
             count = 0;
 
-#pragma warning disable SYSLIB0049 // TypeAttributes.Serializable is obsolete
+#pragma warning disable SYSLIB0050 // TypeAttributes.Serializable is obsolete
             if ((Attributes & TypeAttributes.Serializable) != 0)
                 attrsData[count++] = new RuntimeCustomAttributeData((typeof(SerializableAttribute)).GetConstructor(Type.EmptyTypes)!);
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
             if ((Attributes & TypeAttributes.Import) != 0)
                 attrsData[count++] = new RuntimeCustomAttributeData((typeof(ComImportAttribute)).GetConstructor(Type.EmptyTypes)!);
 

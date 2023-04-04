@@ -19,9 +19,9 @@ namespace System.Runtime.Serialization.Json
         private readonly bool _useSimpleDictionaryFormat;
 
         internal XmlObjectSerializerReadContextComplexJson(DataContractJsonSerializer serializer, DataContract rootTypeDataContract)
-#pragma warning disable SYSLIB0049 // StreamingContext ctor is obsolete
+#pragma warning disable SYSLIB0050 // StreamingContext ctor is obsolete
             : base(serializer, serializer.MaxItemsInObjectGraph, new StreamingContext(StreamingContextStates.All), serializer.IgnoreExtensionDataObject)
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
         {
             this.rootTypeDataContract = rootTypeDataContract;
             this.serializerKnownTypeList = serializer.knownTypeList;

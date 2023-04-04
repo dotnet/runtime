@@ -346,10 +346,10 @@ namespace System.Data
                     {
                         MemoryStream memStream = new MemoryStream();
 #pragma warning disable SYSLIB0011 // Issue https://github.com/dotnet/runtime/issues/39289 tracks finding an alternative to BinaryFormatter
-#pragma warning disable SYSLIB0049 // StreamingContext ctor is obsolete
+#pragma warning disable SYSLIB0050 // StreamingContext ctor is obsolete
                         BinaryFormatter bf = new BinaryFormatter(null, new StreamingContext(context.State, false));
                         bf.Serialize(memStream, Tables[i]);
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
 #pragma warning restore SYSLIB0011
                         memStream.Position = 0;
                         info.AddValue(string.Format(CultureInfo.InvariantCulture, "DataSet.Tables_{0}", i), memStream.GetBuffer());
@@ -430,10 +430,10 @@ namespace System.Data
                         MemoryStream memStream = new MemoryStream(buffer);
                         memStream.Position = 0;
 #pragma warning disable SYSLIB0011 // Issue https://github.com/dotnet/runtime/issues/39289 tracks finding an alternative to BinaryFormatter
-#pragma warning disable SYSLIB0049 // StreamingContext ctor is obsolete
+#pragma warning disable SYSLIB0050 // StreamingContext ctor is obsolete
                         BinaryFormatter bf = new BinaryFormatter(null, new StreamingContext(context.State, false));
                         DataTable dt = (DataTable)bf.Deserialize(memStream);
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
 #pragma warning restore SYSLIB0011
                         Tables.Add(dt);
                     }

@@ -473,10 +473,10 @@ namespace System
                             return false;
                         if (((criteria & FieldAttributes.Literal) != 0) && (attr & FieldAttributes.Literal) == 0)
                             return false;
-#pragma warning disable SYSLIB0049 // Legacy serialization infrastructure is obsolete
+#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
                         if (((criteria & FieldAttributes.NotSerialized) != 0) && (attr & FieldAttributes.NotSerialized) == 0)
                             return false;
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
                         if (((criteria & FieldAttributes.PinvokeImpl) != 0) && (attr & FieldAttributes.PinvokeImpl) == 0)
                             return false;
                         return true;

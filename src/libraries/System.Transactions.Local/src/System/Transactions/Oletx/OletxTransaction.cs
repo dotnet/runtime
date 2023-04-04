@@ -23,11 +23,11 @@ namespace System.Transactions.Oletx
     /// </summary>
     [Serializable]
     internal class OletxTransaction : ISerializable
-#pragma warning disable SYSLIB0049 // IObjectReference is obsolete
+#pragma warning disable SYSLIB0050 // IObjectReference is obsolete
 #pragma warning disable SA1001 // CommasMustBeSpacedCorrectly
         , IObjectReference
 #pragma warning restore SA1001
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
     {
         // We have a strong reference on realOletxTransaction which does the real work
         internal RealOletxTransaction RealOletxTransaction;
@@ -140,7 +140,7 @@ namespace System.Transactions.Oletx
             RealOletxTransaction = null!;
         }
 
-#pragma warning disable SYSLIB0049 // IObjectReference is obsolete
+#pragma warning disable SYSLIB0050 // IObjectReference is obsolete
         public object GetRealObject(StreamingContext context)
         {
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
@@ -187,7 +187,7 @@ namespace System.Transactions.Oletx
 
             return returnValue;
         }
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
 
         /// <summary>
         /// Implementation of IDisposable.Dispose. Releases managed, and unmanaged resources

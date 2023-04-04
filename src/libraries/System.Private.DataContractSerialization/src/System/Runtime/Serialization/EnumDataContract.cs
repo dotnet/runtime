@@ -253,7 +253,7 @@ namespace System.Runtime.Serialization.DataContracts
                     }
                     else
                     {
-#pragma warning disable SYSLIB0049 // FieldInfo.IsNotSerialized is obsolete
+#pragma warning disable SYSLIB0050 // FieldInfo.IsNotSerialized is obsolete
                         if (!field.IsNotSerialized)
                         {
                             DataMember memberContract = new DataMember(field) { Name = field.Name };
@@ -261,7 +261,7 @@ namespace System.Runtime.Serialization.DataContracts
                             ClassDataContract.CheckAndAddMember(tempMembers, memberContract, memberValuesTable);
                             enumMemberValid = true;
                         }
-#pragma warning restore SYSLIB0049
+#pragma warning restore SYSLIB0050
                     }
 
                     if (enumMemberValid)
