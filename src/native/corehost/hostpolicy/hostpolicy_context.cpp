@@ -11,7 +11,6 @@
 #include "bundle/runner.h"
 #include "bundle/file_entry.h"
 #include "shared_store.h"
-#include <tfm_compat.h>
 
 namespace
 {
@@ -145,7 +144,8 @@ bool hostpolicy_context_t::should_read_rid_fallback_graph(const hostpolicy_init_
         return pal::strcasecmp(init.cfg_values[idx].data(), _X("true")) == 0;
     }
 
-    return !tfm_compat::is_rid_fallback_graph_disabled(init.tfm);
+    // Reading the RID fallback graph is disabled by default
+    return false;
 }
 
 int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs)

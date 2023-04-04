@@ -23,7 +23,6 @@ list(APPEND SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/../bundle/file_entry.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../bundle/manifest.cpp
     ${CMAKE_CURRENT_LIST_DIR}/../bundle/runner.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/../tfm_compat.cpp
 )
 
 list(APPEND HEADERS
@@ -45,5 +44,4 @@ list(APPEND HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/../bundle/manifest.h
     ${CMAKE_CURRENT_LIST_DIR}/../bundle/runner.h
     ${CMAKE_CURRENT_LIST_DIR}/../coreclr_resolver.h
-    ${CMAKE_CURRENT_LIST_DIR}/../tfm_compat.h
 )

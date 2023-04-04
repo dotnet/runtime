@@ -18,7 +18,6 @@ list(APPEND SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/install_info.cpp
     ${CMAKE_CURRENT_LIST_DIR}/sdk_info.cpp
     ${CMAKE_CURRENT_LIST_DIR}/sdk_resolver.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/../tfm_compat.cpp
 )
 
 list(APPEND HEADERS
@@ -36,6 +35,5 @@ list(APPEND HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/install_info.h
     ${CMAKE_CURRENT_LIST_DIR}/sdk_info.h
     ${CMAKE_CURRENT_LIST_DIR}/sdk_resolver.h
-    ${CMAKE_CURRENT_LIST_DIR}/../tfm_compat.h
 )
 

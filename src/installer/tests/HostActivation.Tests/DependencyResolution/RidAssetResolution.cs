@@ -17,20 +17,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         public class TestSetup
         {
             public string? Rid { get; init; }
-            public string? Tfm { get; init; }
 
             public bool? ReadRidGraph { get; init; }
             public bool HasRuntimeFallbacks { get; init; }
 
-            public bool ShouldReadRidGraph => ReadRidGraph.HasValue
-                ? ReadRidGraph.Value
-                : !string.IsNullOrEmpty(Tfm) && Version.Parse(Tfm[3..]) < ReadRidGraphDisabledVersion;
-
+            public bool ShouldReadRidGraph => ReadRidGraph == true;
             public bool ShouldUseFallbackRid => ShouldReadRidGraph && (Rid == UnknownRid || !HasRuntimeFallbacks);
 
             public override string ToString() => $"""
                 RID: {(Rid ?? "<null>")}
-                TFM: {(Tfm ?? "<null>")}
                 ReadRidGraph: {(ReadRidGraph.HasValue ? ReadRidGraph : "<null>")}
                 HasRuntimeFallbacks: {HasRuntimeFallbacks}
                 [computed]
@@ -55,7 +50,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
         protected TestApp UpdateAppConfigForTest(TestApp app, TestSetup setup, bool copyOnUpdate)
         {
-            if (!setup.ReadRidGraph.HasValue && string.IsNullOrEmpty(setup.Tfm))
+            if (!setup.ReadRidGraph.HasValue)
                 return app;
 
             if (copyOnUpdate)
@@ -65,9 +60,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             if (setup.ReadRidGraph.HasValue)
                 config.WithProperty("System.Host.Resolution.ReadRidGraph", setup.ReadRidGraph.ToString());
-
-            if (!string.IsNullOrEmpty(setup.Tfm))
-                config.WithTfm(setup.Tfm);
 
             config.Save();
 
@@ -182,19 +174,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 new ResolvedPaths() { IncludedAssemblyPaths = includedPath, ExcludedAssemblyPaths = excludedPath });
         }
 
-        [Theory]
-        [InlineData("net7.0")]
-        [InlineData("net8.0")]
-        public void RidSpecificAssembly_ComputedRid_WithTfm(string? tfm)
-        {
-            (string includedPath, string excludedPath) = GetExpectedPathsforCurrentRid(LinuxAssembly, MacOSAssembly, WindowsAssembly);
-
-            RidSpecificAssemblyImpl(
-                new TestSetup() { Rid = null, Tfm = tfm, HasRuntimeFallbacks = true },
-                includedPath,
-                excludedPath);
-        }
-
         private void RidSpecificNativeLibraryImpl(TestSetup setup, string includedPath, string excludedPath)
         {
             RunTest(
@@ -249,19 +228,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             RidSpecificNativeLibraryImpl(
                 new TestSetup() { Rid = rid, HasRuntimeFallbacks = hasRuntimeFallbacks, ReadRidGraph = readRidGraph },
-                includedPath,
-                excludedPath);
-        }
-
-        [Theory]
-        [InlineData("net7.0")]
-        [InlineData("net8.0")]
-        public void RidSpecificNativeLibrary_ComputedRid_WithTfm(string? tfm)
-        {
-            (string includedPath, string excludedPath) = GetExpectedPathsforCurrentRid("linux/", "osx/", "win/");
-
-            RidSpecificAssemblyImpl(
-                new TestSetup() { Rid = null, Tfm = tfm, HasRuntimeFallbacks = true },
                 includedPath,
                 excludedPath);
         }
