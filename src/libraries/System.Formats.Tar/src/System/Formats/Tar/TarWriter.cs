@@ -283,12 +283,8 @@ namespace System.Formats.Tar
 
             switch (entry.Format)
             {
-                case TarEntryFormat.V7:
-                    entry._header.WriteAsV7(_archiveStream, buffer);
-                    break;
-
-                case TarEntryFormat.Ustar:
-                    entry._header.WriteAsUstar(_archiveStream, buffer);
+                case TarEntryFormat.V7 or TarEntryFormat.Ustar:
+                    entry._header.WriteAs(entry.Format, _archiveStream, buffer);
                     break;
 
                 case TarEntryFormat.Pax:
