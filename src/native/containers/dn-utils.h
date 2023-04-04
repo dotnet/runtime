@@ -15,6 +15,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <dn-rt.h>
+
 #if defined(_DEBUG)
 #include <assert.h>
 #define DN_ASSERT(x) assert(x)
@@ -34,14 +36,6 @@
 #define DN_CALLBACK_CALLTYPE __cdecl
 #else
 #define DN_CALLBACK_CALLTYPE
-#endif
-
-#if defined(__GNUC__) && (__GNUC__ > 2)
-#define DN_LIKELY(expr) (__builtin_expect ((expr) != 0, 1))
-#define DN_UNLIKELY(expr) (__builtin_expect ((expr) != 0, 0))
-#else
-#define DN_LIKELY(x) (x)
-#define DN_UNLIKELY(x) (x)
 #endif
 
 #define DN_UNREFERENCED_PARAMETER(expr) (void)(expr)
@@ -75,5 +69,20 @@ dn_safe_uint32_t_add (uint32_t lhs, uint32_t rhs, uint32_t *result)
 	*result = lhs + rhs;
 	return true;
 }
+
+DN_NORETURN DN_ATTR_FORMAT_PRINTF(1,2) static inline void
+dn_failfast_msg(const char* fmt, ...)
+{
+	va_list args;
+	va_start (args, fmt);
+	dn_rt_failfast_msgv(fmt, args);
+	va_end (args);
+}
+
+#ifdef DISABLE_ASSERT_MESSAGES
+#define dn_checkfail(cond, format, ...) (DN_LIKELY((cond)) ? 1 : (dn_rt_failfast_nomsg (__FILE__, __LINE__), 0))
+#else
+#define dn_checkfail(cond,format,...) (DN_LIKELY((cond)) ? 1 : (dn_failfast_msg ("* Assertion at %s:%d, condition `%s' not met, function:%s, " format "\n", __FILE__, __LINE__, #cond, __func__, ##__VA_ARGS__), 0))
+#endif
 
 #endif /* __DN_UTILS_H__ */

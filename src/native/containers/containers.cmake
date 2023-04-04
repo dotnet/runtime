@@ -12,9 +12,11 @@ list(APPEND SHARED_CONTAINER_SOURCES
 
 list(APPEND SHARED_CONTAINER_HEADERS
     dn-allocator.h
+    dn-compiler.h
     dn-fwd-list.h
     dn-list.h
     dn-queue.h
+    dn-rt.h
     dn-sort-frag.inc
     dn-umap.h
     dn-umap-t.h
