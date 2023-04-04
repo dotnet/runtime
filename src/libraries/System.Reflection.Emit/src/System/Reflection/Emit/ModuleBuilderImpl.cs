@@ -13,12 +13,15 @@ namespace System.Reflection.Emit
     {
         private readonly Assembly _coreAssembly;
         private readonly string _name;
-        private readonly Dictionary<string, Type> _coreTypes = new();
+        private Type?[]? _coreTypes;
         private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyRefStore = new();
         private readonly Dictionary<Type, TypeReferenceHandle> _typeRefStore = new();
         private readonly List<TypeBuilderImpl> _typeDefStore = new();
         private int _nextMethodDefRowId = 1;
         private int _nextFieldDefRowId = 1;
+        private bool _coreTypesFullPopulated;
+        private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
+                                                        typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string), typeof(nint), typeof(nuint) };
 
         internal ModuleBuilderImpl(string name, Assembly coreAssembly)
         {
@@ -26,20 +29,65 @@ namespace System.Reflection.Emit
             _name = name;
         }
 
-        internal Type GetTypeFromCoreAssembly(string name)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types are preserved via s_coreTypes")]
+         internal Type GetTypeFromCoreAssembly(CoreTypeId typeId)
         {
-            Type? type;
-
-            // TODO: Use Enum as the key for perf
-            if (!_coreTypes.TryGetValue(name, out type))
+            if (_coreTypes == null)
             {
-#pragma warning disable IL2026 // Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code
-                type = _coreAssembly.GetType(name, throwOnError: true)!;
-#pragma warning restore IL2026
-                _coreTypes.Add(name, type);
+                // Use s_coreTypes directly for runtime reflection
+                if (_coreAssembly == typeof(object).Assembly)
+                {
+                    _coreTypes = s_coreTypes;
+                    _coreTypesFullPopulated = true;
+                }
+                else
+                {
+                    _coreTypes = new Type[s_coreTypes.Length];
+                }
             }
 
-            return type;
+            int index = (int)typeId;
+            return _coreTypes[index] ?? (_coreTypes[index] = _coreAssembly.GetType(s_coreTypes[index].FullName!, throwOnError: true)!);
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types are preserved via s_coreTypes")]
+        internal CoreTypeId? GetTypeIdFromCoreTypes(Type type)
+        {
+            if (_coreTypes == null)
+            {
+                // Use s_coreTypes directly for runtime reflection
+                if (_coreAssembly == typeof(object).Assembly)
+                {
+                    _coreTypes = s_coreTypes;
+                    _coreTypesFullPopulated = true;
+                }
+                else
+                {
+                    _coreTypes = new Type[s_coreTypes.Length];
+                }
+            }
+
+            if (!_coreTypesFullPopulated)
+            {
+                for (int i = 0; i < _coreTypes.Length; i++)
+                {
+                    if (_coreTypes[i] == null)
+                    {
+                        _coreTypes[i] = _coreAssembly.GetType(s_coreTypes[i].FullName!, throwOnError: false)!;
+                    }
+                }
+                _coreTypesFullPopulated = true;
+            }
+
+            for (int i = 0; i < _coreTypes.Length; i++)
+            {
+                if (_coreTypes[i] == type)
+                {
+                    return (CoreTypeId)i;
+                }
+            }
+
+            return null;
         }
 
         internal void AppendMetadata(MetadataBuilder metadata)
@@ -82,7 +130,7 @@ namespace System.Reflection.Emit
 
                 foreach (FieldBuilderImpl field in typeBuilder._fieldDefStore)
                 {
-                    MetadataHelper.AddFieldDefinition(metadata, field);
+                    MetadataHelper.AddFieldDefinition(metadata, field, MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this));
                     _nextFieldDefRowId++;
                 }
             }
