@@ -829,7 +829,7 @@
   <PropertyGroup>
     <SigningCommand Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
     <![CDATA[
-      for APP_FILE in `find . -name *.app`; do cp embedded.mobileprovision $APP_FILE; sign $APP_FILE; done]]>
+      for APP_FILE in `find . -name *.app`; do cp embedded.mobileprovision $APP_FILE; sign $APP_FILE; done; ]]>
     </SigningCommand>
   </PropertyGroup>
 
@@ -866,8 +866,8 @@
     <XHarnessAppBundleToTest Include="@(LegacyPayloads->Metadata('PayloadZipFile'))" Condition="'$(TargetsAppleMobile)' == 'true'">
       <TestTarget>$(AppleTestTarget)</TestTarget>
       <TestTimeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</TestTimeout>
-      <CustomCommands> $(SigningCommand); dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
-      <CustomCommands Condition=" '%(TestGroup)' != '' ">$(SigningCommand); dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
+      <CustomCommands> $(SigningCommand) dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</CustomCommands>
+      <CustomCommands Condition=" '%(TestGroup)' != '' ">$(SigningCommand) dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</CustomCommands>
     </XHarnessAppBundleToTest>
 
     <XHarnessAppBundleToTest Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetsAppleMobile)' == 'true'">
