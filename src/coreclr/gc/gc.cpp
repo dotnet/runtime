@@ -15742,8 +15742,8 @@ void allocator::count_items (gc_heap* this_hp, size_t* fl_items_count, size_t* f
             num_fl_items++;
             // Get the heap its region belongs to see if we need to put it back. 
             heap_segment* region = gc_heap::region_of (free_item);
-            //dprintf (3, ("b#%2d FL %Ix region %Ix heap %d -> %d", 
-            //    i, free_item, (size_t)region, region->heap->heap_number, region->temp_heap->heap_number))
+            dprintf (3, ("b#%2d FL %Ix region %Ix heap %d -> %d", 
+                i, free_item, (size_t)region, this_hp->heap_number, region->heap->heap_number));
             if (region->heap != this_hp)
             {
                 num_fl_items_for_oh++;
@@ -15846,7 +15846,7 @@ void allocator::rethread_items (size_t* num_total_fl_items, size_t* num_total_fl
             // Get the heap its region belongs to see if we need to put it back. 
             heap_segment* region = gc_heap::region_of (free_item);
             dprintf (3, ("b#%2d FL %Ix region %Ix heap %d -> %d", 
-                i, free_item, (size_t)region, region->heap->heap_number, current_heap->heap_number));
+                i, free_item, (size_t)region, current_heap->heap_number, region->heap->heap_number));
             // need to keep track of heap and only check if it's not from our heap!!
             if (region->heap != current_heap)
             {
@@ -15870,6 +15870,11 @@ void allocator::rethread_items (size_t* num_total_fl_items, size_t* num_total_fl
                     else
                     {
                         free_list_slot (prev_item) = next_item;
+                    }
+                    if (alloc_list_tail_of (i) == free_item)
+                    {
+                        assert (next_item == nullptr);
+                        alloc_list_tail_of (i) = prev_item;
                     }
                     current_bucket_min_fl_list[hn].thread_item_no_prev (free_item);
                 }
@@ -24341,6 +24346,8 @@ bool gc_heap::redistribute_regions (int new_n_heaps)
         }
     }
 
+    dprintf (3, ("switching heap count from %d to %d heaps", old_n_heaps, new_n_heaps));
+
     for (int gen_idx = 0; gen_idx < total_generation_count; gen_idx++)
     {
         for (int i = 0; i < n_heaps; i++)
@@ -24367,11 +24374,14 @@ bool gc_heap::redistribute_regions (int new_n_heaps)
         }
     }
 
-    const ptrdiff_t DECOMMISSIONED_VALUE = 0xdec0dec0dec0dec0;
+    #define DECOMMISSIONED_VALUE 0xdec0dec0dec0dec0
+    const size_t DECOMMISSIONED_SIZE_T = DECOMMISSIONED_VALUE;
+    const ptrdiff_t DECOMMISSIONED_PTRDIFF_T = (ptrdiff_t)DECOMMISSIONED_VALUE;
     uint8_t* const DECOMMISSIONED_UINT8_T_P = (uint8_t*)DECOMMISSIONED_VALUE;
     PTR_heap_segment const DECOMMISSIONED_REGION_P = (PTR_heap_segment)DECOMMISSIONED_VALUE;
     const BOOL DECOMMISSIONED_BOOL = 0xdec0dec0;
     const BOOL DECOMMISSIONED_INT = (int)0xdec0dec0;
+    const float DECOMMISSIONED_FLOAT = (float)DECOMMISSIONED_VALUE;
     const ptrdiff_t UNINITIALIZED_VALUE  = 0xbaadbaadbaadbaad;
 
     if (n_heaps < new_n_heaps)
@@ -24536,22 +24546,22 @@ bool gc_heap::redistribute_regions (int new_n_heaps)
             assert (generation_allocation_context_start_region (gen) == DECOMMISSIONED_UINT8_T_P);
             assert (gen->plan_start_segment                          == DECOMMISSIONED_REGION_P);
 #endif //USE_REGIONS
-            assert (generation_free_list_allocated             (gen) == DECOMMISSIONED_VALUE);
-            assert (generation_end_seg_allocated               (gen) == DECOMMISSIONED_VALUE);
+            assert (generation_free_list_allocated             (gen) == DECOMMISSIONED_SIZE_T);
+            assert (generation_end_seg_allocated               (gen) == DECOMMISSIONED_SIZE_T);
             assert (generation_allocate_end_seg_p              (gen) == DECOMMISSIONED_BOOL);
-            assert (generation_condemned_allocated             (gen) == DECOMMISSIONED_VALUE);
-            assert (generation_sweep_allocated                 (gen) == DECOMMISSIONED_VALUE);
-            assert (generation_free_list_space                 (gen) == DECOMMISSIONED_VALUE);
-            assert (generation_free_obj_space                  (gen) == DECOMMISSIONED_VALUE);
-            assert (generation_allocation_size                 (gen) == DECOMMISSIONED_VALUE);
+            assert (generation_condemned_allocated             (gen) == DECOMMISSIONED_SIZE_T);
+            assert (generation_sweep_allocated                 (gen) == DECOMMISSIONED_SIZE_T);
+            assert (generation_free_list_space                 (gen) == DECOMMISSIONED_SIZE_T);
+            assert (generation_free_obj_space                  (gen) == DECOMMISSIONED_SIZE_T);
+            assert (generation_allocation_size                 (gen) == DECOMMISSIONED_SIZE_T);
 #ifndef USE_REGIONS
             assert (generation_plan_allocation_start           (gen) == DECOMMISSIONED_UINT8_T_P);
-            assert (generation_plan_allocation_start_size      (gen) == DECOMMISSIONED_VALUE);
+            assert (generation_plan_allocation_start_size      (gen) == DECOMMISSIONED_SIZE_T);
 #endif //!USE_REGIONS
 
-            assert (generation_pinned_allocated                (gen) == DECOMMISSIONED_VALUE);
-            assert (generation_pinned_allocation_compact_size  (gen) == DECOMMISSIONED_VALUE);
-            assert (generation_pinned_allocation_sweep_size    (gen) == DECOMMISSIONED_VALUE);
+            assert (generation_pinned_allocated                (gen) == DECOMMISSIONED_SIZE_T);
+            assert (generation_pinned_allocation_compact_size  (gen) == DECOMMISSIONED_SIZE_T);
+            assert (generation_pinned_allocation_sweep_size    (gen) == DECOMMISSIONED_SIZE_T);
             assert (gen->gen_num                                     == DECOMMISSIONED_INT);
 
 #ifdef DOUBLY_LINKED_FL
@@ -24597,35 +24607,35 @@ bool gc_heap::redistribute_regions (int new_n_heaps)
             dynamic_data* dd = hp->dynamic_data_of (gen_idx);
 
             // check if any of the fields have been modified
-            assert (dd_new_allocation                  (dd) == DECOMMISSIONED_VALUE);
-            assert (dd_gc_new_allocation               (dd) == DECOMMISSIONED_VALUE);
+            assert (dd_new_allocation                  (dd) == DECOMMISSIONED_PTRDIFF_T);
+            assert (dd_gc_new_allocation               (dd) == DECOMMISSIONED_PTRDIFF_T);
             assert (dd_surv                     (dd) == (float)DECOMMISSIONED_VALUE);
-            assert (dd_desired_allocation              (dd) == DECOMMISSIONED_VALUE);
+            assert (dd_desired_allocation              (dd) == DECOMMISSIONED_SIZE_T);
 
-            assert (dd_begin_data_size                 (dd) == DECOMMISSIONED_VALUE);
-            assert (dd_survived_size                   (dd) == DECOMMISSIONED_VALUE);
-            assert (dd_pinned_survived_size            (dd) == DECOMMISSIONED_VALUE);
-            assert (dd_artificial_pinned_survived_size (dd) == DECOMMISSIONED_VALUE);
-            assert (dd_added_pinned_size               (dd) == DECOMMISSIONED_VALUE);
+            assert (dd_begin_data_size                 (dd) == DECOMMISSIONED_SIZE_T);
+            assert (dd_survived_size                   (dd) == DECOMMISSIONED_SIZE_T);
+            assert (dd_pinned_survived_size            (dd) == DECOMMISSIONED_SIZE_T);
+            assert (dd_artificial_pinned_survived_size (dd) == DECOMMISSIONED_SIZE_T);
+            assert (dd_added_pinned_size               (dd) == DECOMMISSIONED_SIZE_T);
 
 #ifdef SHORT_PLUGS
-            assert (dd_padding_size                    (dd) == DECOMMISSIONED_VALUE);
+            assert (dd_padding_size                    (dd) == DECOMMISSIONED_SIZE_T);
 #endif //SHORT_PLUGS
 #if defined (RESPECT_LARGE_ALIGNMENT) || defined (FEATURE_STRUCTALIGN)
-            assert (dd_num_npinned_plugs               (dd) == DECOMMISSIONED_VALUE);
+            assert (dd_num_npinned_plugs               (dd) == DECOMMISSIONED_SIZE_T);
 #endif //RESPECT_LARGE_ALIGNMENT || FEATURE_STRUCTALIGN
-            assert (dd_current_size                    (dd) == DECOMMISSIONED_VALUE);
-            assert (dd_collection_count                (dd) == DECOMMISSIONED_VALUE);
-            assert (dd_promoted_size                   (dd) == DECOMMISSIONED_VALUE);
-            assert (dd_freach_previous_promotion       (dd) == DECOMMISSIONED_VALUE);
+            assert (dd_current_size                    (dd) == DECOMMISSIONED_SIZE_T);
+            assert (dd_collection_count                (dd) == DECOMMISSIONED_SIZE_T);
+            assert (dd_promoted_size                   (dd) == DECOMMISSIONED_SIZE_T);
+            assert (dd_freach_previous_promotion       (dd) == DECOMMISSIONED_SIZE_T);
 
-            assert (dd_fragmentation                   (dd) == DECOMMISSIONED_VALUE);
+            assert (dd_fragmentation                   (dd) == DECOMMISSIONED_SIZE_T);
 
-            assert (dd_gc_clock                        (dd) == DECOMMISSIONED_VALUE);
-            assert (dd_time_clock                      (dd) == DECOMMISSIONED_VALUE);
-            assert (dd_previous_time_clock             (dd) == DECOMMISSIONED_VALUE);
+            assert (dd_gc_clock                        (dd) == DECOMMISSIONED_SIZE_T);
+            assert (dd_time_clock                      (dd) == DECOMMISSIONED_SIZE_T);
+            assert (dd_previous_time_clock             (dd) == DECOMMISSIONED_SIZE_T);
 
-            assert (dd_gc_elapsed_time                 (dd) == DECOMMISSIONED_VALUE);
+            assert (dd_gc_elapsed_time                 (dd) == DECOMMISSIONED_SIZE_T);
 
             dynamic_data* heap0_dd = heap0->dynamic_data_of (gen_idx);
 
@@ -24730,22 +24740,22 @@ bool gc_heap::redistribute_regions (int new_n_heaps)
 #endif //USE_REGIONS
             //    allocator       free_list_allocator;
 
-            generation_free_list_allocated             (gen) = DECOMMISSIONED_VALUE;
-            generation_end_seg_allocated               (gen) = DECOMMISSIONED_VALUE;
+            generation_free_list_allocated             (gen) = DECOMMISSIONED_SIZE_T;
+            generation_end_seg_allocated               (gen) = DECOMMISSIONED_SIZE_T;
             generation_allocate_end_seg_p              (gen) = DECOMMISSIONED_BOOL;
-            generation_condemned_allocated             (gen) = DECOMMISSIONED_VALUE;
-            generation_sweep_allocated                 (gen) = DECOMMISSIONED_VALUE;
-            generation_free_list_space                 (gen) = DECOMMISSIONED_VALUE;
-            generation_free_obj_space                  (gen) = DECOMMISSIONED_VALUE;
-            generation_allocation_size                 (gen) = DECOMMISSIONED_VALUE;
+            generation_condemned_allocated             (gen) = DECOMMISSIONED_SIZE_T;
+            generation_sweep_allocated                 (gen) = DECOMMISSIONED_SIZE_T;
+            generation_free_list_space                 (gen) = DECOMMISSIONED_SIZE_T;
+            generation_free_obj_space                  (gen) = DECOMMISSIONED_SIZE_T;
+            generation_allocation_size                 (gen) = DECOMMISSIONED_SIZE_T;
 #ifndef USE_REGIONS
             generation_plan_allocation_start           (gen) = DECOMMISSIONED_UINT8_T_P;
-            generation_plan_allocation_start_size      (gen) = DECOMMISSIONED_VALUE;
+            generation_plan_allocation_start_size      (gen) = DECOMMISSIONED_SIZE_T;
 #endif //!USE_REGIONS
 
-            generation_pinned_allocated                (gen) = DECOMMISSIONED_VALUE;
-            generation_pinned_allocation_compact_size  (gen) = DECOMMISSIONED_VALUE;
-            generation_pinned_allocation_sweep_size    (gen) = DECOMMISSIONED_VALUE;
+            generation_pinned_allocated                (gen) = DECOMMISSIONED_SIZE_T;
+            generation_pinned_allocation_compact_size  (gen) = DECOMMISSIONED_SIZE_T;
+            generation_pinned_allocation_sweep_size    (gen) = DECOMMISSIONED_SIZE_T;
             gen->gen_num                                     = DECOMMISSIONED_INT;
 
 #ifdef DOUBLY_LINKED_FL
@@ -24757,35 +24767,35 @@ bool gc_heap::redistribute_regions (int new_n_heaps)
 
             // set some fields in the dynamic data to nonsensical values
             // to catch cases where we inadvertently use or modify them
-            dd_new_allocation                  (dd) = DECOMMISSIONED_VALUE;
-            dd_gc_new_allocation               (dd) = DECOMMISSIONED_VALUE;
+            dd_new_allocation                  (dd) = DECOMMISSIONED_SIZE_T;
+            dd_gc_new_allocation               (dd) = DECOMMISSIONED_PTRDIFF_T;
             dd_surv                     (dd) = (float)DECOMMISSIONED_VALUE;
-            dd_desired_allocation              (dd) = DECOMMISSIONED_VALUE;
+            dd_desired_allocation              (dd) = DECOMMISSIONED_SIZE_T;
 
-            dd_begin_data_size                 (dd) = DECOMMISSIONED_VALUE;
-            dd_survived_size                   (dd) = DECOMMISSIONED_VALUE;
-            dd_pinned_survived_size            (dd) = DECOMMISSIONED_VALUE;
-            dd_artificial_pinned_survived_size (dd) = DECOMMISSIONED_VALUE;
-            dd_added_pinned_size               (dd) = DECOMMISSIONED_VALUE;
+            dd_begin_data_size                 (dd) = DECOMMISSIONED_SIZE_T;
+            dd_survived_size                   (dd) = DECOMMISSIONED_SIZE_T;
+            dd_pinned_survived_size            (dd) = DECOMMISSIONED_SIZE_T;
+            dd_artificial_pinned_survived_size (dd) = DECOMMISSIONED_SIZE_T;
+            dd_added_pinned_size               (dd) = DECOMMISSIONED_SIZE_T;
 
 #ifdef SHORT_PLUGS
-            dd_padding_size                    (dd) = DECOMMISSIONED_VALUE;
+            dd_padding_size                    (dd) = DECOMMISSIONED_SIZE_T;
 #endif //SHORT_PLUGS
 #if defined (RESPECT_LARGE_ALIGNMENT) || defined (FEATURE_STRUCTALIGN)
-            dd_num_npinned_plugs               (dd) = DECOMMISSIONED_VALUE;
+            dd_num_npinned_plugs               (dd) = DECOMMISSIONED_SIZE_T;
 #endif //RESPECT_LARGE_ALIGNMENT || FEATURE_STRUCTALIGN
-            dd_current_size                    (dd) = DECOMMISSIONED_VALUE;
-            dd_collection_count                (dd) = DECOMMISSIONED_VALUE;
-            dd_promoted_size                   (dd) = DECOMMISSIONED_VALUE;
-            dd_freach_previous_promotion       (dd) = DECOMMISSIONED_VALUE;
+            dd_current_size                    (dd) = DECOMMISSIONED_SIZE_T;
+            dd_collection_count                (dd) = DECOMMISSIONED_SIZE_T;
+            dd_promoted_size                   (dd) = DECOMMISSIONED_SIZE_T;
+            dd_freach_previous_promotion       (dd) = DECOMMISSIONED_SIZE_T;
 
-            dd_fragmentation                   (dd) = DECOMMISSIONED_VALUE;
+            dd_fragmentation                   (dd) = DECOMMISSIONED_SIZE_T;
 
-            dd_gc_clock                        (dd) = DECOMMISSIONED_VALUE;
-            dd_time_clock                      (dd) = DECOMMISSIONED_VALUE;
-            dd_previous_time_clock             (dd) = DECOMMISSIONED_VALUE;
+            dd_gc_clock                        (dd) = DECOMMISSIONED_SIZE_T;
+            dd_time_clock                      (dd) = DECOMMISSIONED_SIZE_T;
+            dd_previous_time_clock             (dd) = DECOMMISSIONED_SIZE_T;
 
-            dd_gc_elapsed_time                 (dd) = DECOMMISSIONED_VALUE;
+            dd_gc_elapsed_time                 (dd) = DECOMMISSIONED_SIZE_T;
         }
 
         // clear the ephemeral segment
