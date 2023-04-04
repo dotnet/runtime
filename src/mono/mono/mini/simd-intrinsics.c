@@ -1097,11 +1097,6 @@ static guint16 sri_vector_methods [] = {
 	SN_AsUInt16,
 	SN_AsUInt32,
 	SN_AsUInt64,
-	SN_AsVector128,
-	SN_AsVector2,
-	SN_AsVector256,
-	SN_AsVector3,
-	SN_AsVector4,
 	SN_BitwiseAnd,
 	SN_BitwiseOr,
 	SN_Ceiling,
@@ -1150,8 +1145,6 @@ static guint16 sri_vector_methods [] = {
 	SN_ToScalar,
 	SN_ToVector128,
 	SN_ToVector128Unsafe,
-	SN_ToVector256,
-	SN_ToVector256Unsafe,
 	SN_WidenLower,
 	SN_WidenUpper,
 	SN_WithElement,
@@ -1216,11 +1209,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	if (!COMPILE_LLVM (cfg))
 		return NULL;
 #endif
-// FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
-#ifdef TARGET_ARM64
-	if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp))
-		return NULL;
-#endif
 
 	int id = lookup_intrins (sri_vector_methods, sizeof (sri_vector_methods), cmethod);
 	if (id == -1) {
@@ -1234,56 +1222,38 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
 #ifdef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg)) {
+		if (!strcmp (m_class_get_name (cfg->method->klass), "Vector128") || !strcmp (m_class_get_name (cfg->method->klass), "Vector"))
+			return NULL;
 		switch (id) {
-		case SN_Add:
-		case SN_Equals:
-		case SN_GreaterThan:
-		case SN_GreaterThanOrEqual:
-		case SN_LessThan:
-		case SN_LessThanOrEqual:
-		case SN_Negate:
-		case SN_OnesComplement:
-		case SN_EqualsAny:
-		case SN_GreaterThanAny:
-		case SN_GreaterThanOrEqualAny:
-		case SN_LessThanAny:
-		case SN_LessThanOrEqualAny:
-		case SN_EqualsAll:
-		case SN_GreaterThanAll:
-		case SN_GreaterThanOrEqualAll:
-		case SN_LessThanAll:
-		case SN_LessThanOrEqualAll:
-		case SN_Subtract:
-		case SN_BitwiseAnd:
-		case SN_BitwiseOr:
-		case SN_Xor:
-		case SN_As:
-		case SN_AsByte:
-		case SN_AsDouble:
-		case SN_AsInt16:
-		case SN_AsInt32:
-		case SN_AsInt64:
-		case SN_AsSByte:
-		case SN_AsSingle:
-		case SN_AsUInt16:
-		case SN_AsUInt32:
-		case SN_AsUInt64:
-		case SN_Max:
-		case SN_Min:
-		case SN_Sum:
-		case SN_ToScalar:
-		case SN_Floor:
-		case SN_Ceiling:
-		case SN_Divide:
-		case SN_Multiply:
+		case SN_Abs:
+		case SN_AndNot:
+		case SN_ConditionalSelect:
+		case SN_ConvertToDouble:
+		case SN_ConvertToInt32:
+		case SN_ConvertToInt64:
+		case SN_ConvertToSingle:
+		case SN_ConvertToUInt32:
+		case SN_ConvertToUInt64:
+		case SN_Create:
+		case SN_CreateScalar:
+		case SN_CreateScalarUnsafe:
+		case SN_Dot:
+		case SN_ExtractMostSignificantBits:
+		case SN_GetElement:
+		case SN_GetLower:
+		case SN_GetUpper:
+		case SN_Narrow:
+		case SN_Shuffle:
+		case SN_Sqrt:
+		case SN_ToVector128:
+		case SN_ToVector128Unsafe:
+		case SN_WidenLower:
+		case SN_WidenUpper:
+		case SN_WithElement:
+			return NULL;
+		default:
 			break;
-		default: 
-			return NULL;
 		}
-		MonoClass *arg0_class = mono_class_from_mono_type_internal (fsig->params [0]);
-		int class_size = mono_class_value_size (arg0_class, NULL);
-		if (class_size != 16)
-			return NULL;
 	}
 #endif
 
