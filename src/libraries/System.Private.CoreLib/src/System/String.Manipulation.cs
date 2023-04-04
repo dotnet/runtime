@@ -2154,7 +2154,7 @@ namespace System
         // Removes a set of characters from the beginning and end of this string.
         public unsafe string Trim(char trimChar)
         {
-            if (Length == 0 || (this[0] == trimChar && this[^1] == trimChar))
+            if (Length == 0 || (_firstChar != trimChar && this[^1] != trimChar))
             {
                 return this;
             }
