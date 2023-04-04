@@ -151,6 +151,7 @@ export class WasmBuilder {
     argumentCount!: number;
     activeBlocks!: number;
     base!: MintOpcodePtr;
+    frame: NativePointer = <any>0;
     traceBuf: Array<string> = [];
     branchTargets = new Set<MintOpcodePtr>();
     options!: JiterpreterOptions;

@@ -4,7 +4,7 @@
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
 import { Module, runtimeHelpers, INTERNAL } from "../imports";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
-import { _release_temp_frame, setU16 } from "../memory";
+import { setU16, _release_temp_frame } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
 import { find_entry_point } from "../run";
 import { conv_string_root, js_string_to_mono_string_root } from "../strings";
@@ -299,7 +299,7 @@ export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo:
     }
 }
 
-export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: boolean) : void{
+export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
     try{
         const input = get_uft16_string(src, srcLength);
         let result = toUpper ? input.toUpperCase() : input.toLowerCase();

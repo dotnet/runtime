@@ -1307,6 +1307,13 @@ MINI_OP(OP_GC_SAFE_POINT, "gc_safe_point", NONE, IREG, NONE)
  */
 MINI_OP(OP_GENERIC_CLASS_INIT, "generic_class_init", NONE, IREG, NONE)
 
+/*
+ * Call mini_init_method_rgctx () if needed.
+ * sreg1 is a MonoMethodRuntimeGenericContext.
+ * sreg2 is a MonoGSharedMethodInfo.
+ */
+MINI_OP(OP_INIT_MRGCTX, "init_mrgctx", NONE, IREG, IREG)
+
 /* Arch specific opcodes */
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 MINI_OP(OP_X86_TEST_NULL,          "x86_test_null", NONE, IREG, NONE)
@@ -1754,6 +1761,14 @@ MINI_OP3(OP_ARM64_SQRDMLAH_SCALAR, "arm64_sqrdmlah_scalar", XREG, XREG, XREG, XR
 MINI_OP3(OP_ARM64_SQRDMLSH, "arm64_sqrdmlsh", XREG, XREG, XREG, XREG)
 MINI_OP3(OP_ARM64_SQRDMLSH_BYSCALAR, "arm64_sqrdmlsh_byscalar", XREG, XREG, XREG, XREG)
 MINI_OP3(OP_ARM64_SQRDMLSH_SCALAR, "arm64_sqrdmlsh_scalar", XREG, XREG, XREG, XREG)
+
+/*
+ * sreg1 points to a memory area with the input vectors.
+ * inst_c0 is the number of vectors.
+ * inst_p1 points to an int array with the offsets inside the memory area.
+ */
+MINI_OP(OP_ARM64_TBL_INDIRECT, "arm64_tbl_indirect", XREG, IREG, XREG)
+MINI_OP3(OP_ARM64_TBX_INDIRECT, "arm64_tbx_indirect", XREG, IREG, XREG, XREG)
 
 #endif // TARGET_ARM64
 

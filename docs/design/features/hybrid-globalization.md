@@ -10,12 +10,21 @@ Hybrid mode does not use ICU data for some functions connected with globalizatio
 
 For WebAssembly, both on Browser and WASI, we are using Web API instead of some ICU data.
 
+**Case change**
+
+Affected public APIs:
+- TextInfo.ToLower,
+- TextInfo.ToUpper,
+- TextInfo.ToTitleCase.
+
+Case change with invariant culture uses `toUpperCase` / `toLoweCase` functions that do not guarantee a full match with the original invariant culture.
+
 **String comparison**
 
 Affected public APIs:
 - CompareInfo.Compare,
-- String.Compare
-- String.Equals
+- String.Compare,
+- String.Equals.
 
 The number of `CompareOptions` and `StringComparison` combinations is limited. Originally supported combinations can be found [here for CompareOptions](https://learn.microsoft.com/dotnet/api/system.globalization.compareoptions) and [here for StringComparison](https://learn.microsoft.com/dotnet/api/system.stringcomparison).
 

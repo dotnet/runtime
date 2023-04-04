@@ -665,10 +665,8 @@ GenTree* Lowering::LowerNode(GenTree* node)
             node->gtGetOp1()->SetRegOptional();
             break;
 
-        case GT_LCL_FLD_ADDR:
-        case GT_LCL_VAR_ADDR:
+        case GT_LCL_ADDR:
         {
-
             const GenTreeLclVarCommon* lclAddr = node->AsLclVarCommon();
             const LclVarDsc*           varDsc  = comp->lvaGetDesc(lclAddr);
             if (!varDsc->lvDoNotEnregister)
@@ -2615,7 +2613,7 @@ void Lowering::RehomeArgForFastTailCall(unsigned int lclNum,
     unsigned int tmpLclNum = BAD_VAR_NUM;
     for (GenTree* treeNode = lookForUsesStart; treeNode != callNode; treeNode = treeNode->gtNext)
     {
-        if (!treeNode->OperIsLocal() && !treeNode->OperIsLocalAddr())
+        if (!treeNode->OperIsLocal() && !treeNode->OperIs(GT_LCL_ADDR))
         {
             continue;
         }
@@ -4286,7 +4284,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         {
             ClassLayout*   layout = lclStore->GetLayout(comp);
             const unsigned lclNum = lclStore->GetLclNum();
-            GenTreeLclFld* addr   = comp->gtNewLclFldAddrNode(lclNum, lclStore->GetLclOffs(), TYP_BYREF);
+            GenTreeLclFld* addr   = comp->gtNewLclAddrNode(lclNum, lclStore->GetLclOffs(), TYP_BYREF);
             comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
 
             addr->gtFlags |= lclStore->gtFlags & (GTF_VAR_DEF | GTF_VAR_USEASG);
@@ -5020,8 +5018,8 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
     if (action == PushFrame)
     {
         // Thread->m_pFrame = &inlinedCallFrame;
-        data = new (comp, GT_LCL_FLD_ADDR)
-            GenTreeLclFld(GT_LCL_FLD_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
+        data = new (comp, GT_LCL_ADDR)
+            GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
     }
     else
     {
@@ -5101,8 +5099,8 @@ void Lowering::InsertPInvokeMethodProlog()
     const LclVarDsc* inlinedPInvokeDsc = comp->lvaGetDesc(comp->lvaInlinedPInvokeFrameVar);
     assert(inlinedPInvokeDsc->IsAddressExposed());
 #endif // DEBUG
-    GenTree* frameAddr = new (comp, GT_LCL_FLD_ADDR)
-        GenTreeLclFld(GT_LCL_FLD_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
+    GenTree* frameAddr = new (comp, GT_LCL_ADDR)
+        GenTreeLclFld(GT_LCL_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfFrameVptr);
 
     // Call runtime helper to fill in our InlinedCallFrame and push it on the Frame list:
     //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart, secretArg);
@@ -5283,8 +5281,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     if (comp->opts.ShouldUsePInvokeHelpers())
     {
         // First argument is the address of the frame variable.
-        GenTree* frameAddr =
-            new (comp, GT_LCL_VAR_ADDR) GenTreeLclVar(GT_LCL_VAR_ADDR, TYP_BYREF, comp->lvaInlinedPInvokeFrameVar);
+        GenTree* frameAddr = comp->gtNewLclVarAddrNode(comp->lvaInlinedPInvokeFrameVar, TYP_BYREF);
 
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
         // On x86 targets, PInvoke calls need the size of the stack args in InlinedCallFrame.m_Datum.
@@ -7294,15 +7291,14 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
         }
         break;
 
-        case GT_LCL_VAR_ADDR:
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
         {
             const GenTreeLclVarCommon* lclVarAddr = node->AsLclVarCommon();
             const LclVarDsc*           varDsc     = compiler->lvaGetDesc(lclVarAddr);
             if (((lclVarAddr->gtFlags & GTF_VAR_DEF) != 0) && varDsc->HasGCPtr())
             {
-                // Emitter does not correctly handle live updates for LCL_VAR_ADDR
-                // when they are not contained, for example, `STOREIND byref(GT_LCL_VAR_ADDR not-contained)`
+                // Emitter does not correctly handle live updates for LCL_ADDR
+                // when they are not contained, for example, `STOREIND byref(GT_LCL_ADDR not-contained)`
                 // would generate:
                 // add     r1, sp, 48   // r1 contains address of a lclVar V01.
                 // str     r0, [r1]     // a gc ref becomes live in V01, but emitter would not report it.
@@ -7436,9 +7432,15 @@ bool Lowering::IndirsAreEquivalent(GenTree* candidate, GenTree* storeInd)
     oper = pTreeA->OperGet();
     switch (oper)
     {
+        case GT_LCL_ADDR:
+            if (pTreeA->AsLclFld()->GetLclOffs() != 0)
+            {
+                // TODO-CQ: support arbitrary local addresses here.
+                return false;
+            }
+            FALLTHROUGH;
+
         case GT_LCL_VAR:
-        case GT_LCL_VAR_ADDR:
-        case GT_CLS_VAR_ADDR:
         case GT_CNS_INT:
             return NodesAreEquivalentLeaves(pTreeA, pTreeB);
 
@@ -7501,8 +7503,13 @@ bool Lowering::NodesAreEquivalentLeaves(GenTree* tree1, GenTree* tree2)
         case GT_CNS_INT:
             return tree1->AsIntCon()->IconValue() == tree2->AsIntCon()->IconValue() &&
                    tree1->IsIconHandle() == tree2->IsIconHandle();
+        case GT_LCL_ADDR:
+            if (tree1->AsLclFld()->GetLclOffs() != tree2->AsLclFld()->GetLclOffs())
+            {
+                return false;
+            }
+            FALLTHROUGH;
         case GT_LCL_VAR:
-        case GT_LCL_VAR_ADDR:
             return tree1->AsLclVarCommon()->GetLclNum() == tree2->AsLclVarCommon()->GetLclNum();
         case GT_CLS_VAR_ADDR:
             return tree1->AsClsVar()->gtClsVarHnd == tree2->AsClsVar()->gtClsVarHnd;

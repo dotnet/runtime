@@ -22,8 +22,8 @@ namespace System.Runtime.InteropServices.Marshalling
     /// We can skip the exposing the exception marshallers if we decide to not expose the VTable source generator.
     /// In that case, we'd hard-code the implementations of these marshallers into the COM source generator.
     /// </remarks>
-    [CustomMarshaller(typeof(Exception), MarshalMode.UnmanagedToManagedOut, typeof(ExceptionHResultMarshaller<>))]
-    public static class ExceptionHResultMarshaller<T>
+    [CustomMarshaller(typeof(Exception), MarshalMode.UnmanagedToManagedOut, typeof(ExceptionAsHResultMarshaller<>))]
+    public static class ExceptionAsHResultMarshaller<T>
         where T : unmanaged, INumber<T>
     {
         /// <summary>

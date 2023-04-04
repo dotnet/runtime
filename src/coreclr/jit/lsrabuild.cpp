@@ -1674,7 +1674,7 @@ int LinearScan::ComputeOperandDstCount(GenTree* operand)
     }
     if (operand->IsValue())
     {
-        // Operands that are values and are not contained consume all of their operands
+        // Operands that are values and are not contained, consume all of their operands
         // and produce one or more registers.
         return operand->GetRegisterDstCount(compiler);
     }
@@ -1859,6 +1859,12 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
                 regMaskTP calleeSaveMask = calleeSaveRegs(interval->registerType);
                 newRefPosition->registerAssignment =
                     getConstrainedRegMask(oldAssignment, calleeSaveMask, minRegCountForRef);
+#ifdef TARGET_ARM64
+                if (newRefPosition->isFirstRefPositionOfConsecutiveRegisters())
+                {
+                    newRefPosition->registerAssignment |= LsraLimitFPSetForConsecutive;
+                }
+#endif
                 if ((newRefPosition->registerAssignment != oldAssignment) && (newRefPosition->refType == RefTypeUse) &&
                     !interval->isLocalVar)
                 {
@@ -2151,6 +2157,8 @@ void LinearScan::buildIntervals()
         }
     }
 #endif // DEBUG
+
+    resetRegState();
 
 #if DOUBLE_ALIGN
     // We will determine whether we should double align the frame during
@@ -3062,9 +3070,9 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
 //           the defList, and build a use RefPosition for the associated Interval.
 //
 // Arguments:
-//    operand      - The node of interest
-//    candidates   - The register candidates for the use
-//    multiRegIdx  - The index of the multireg def/use
+//    operand             - The node of interest
+//    candidates          - The register candidates for the use
+//    multiRegIdx         - The index of the multireg def/use
 //
 // Return Value:
 //    The newly created use RefPosition

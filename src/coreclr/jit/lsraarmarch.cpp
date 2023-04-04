@@ -699,8 +699,8 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     }
 
                     const bool isSrcAddrLocal = src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ||
-                                                ((srcAddrOrFill != nullptr) && srcAddrOrFill->OperIsLocalAddr());
-                    const bool isDstAddrLocal = dstAddr->OperIsLocalAddr();
+                                                ((srcAddrOrFill != nullptr) && srcAddrOrFill->OperIs(GT_LCL_ADDR));
+                    const bool isDstAddrLocal = dstAddr->OperIs(GT_LCL_ADDR);
 
                     // CodeGen can use 16-byte SIMD ldp/stp for larger block sizes.
                     // This is the case, when both registers are either sp or fp.
