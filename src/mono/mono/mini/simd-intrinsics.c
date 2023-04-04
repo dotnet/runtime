@@ -4821,6 +4821,8 @@ emit_wasm_supported_intrinsics (
 						c0 = INTRINS_WASM_NARROW_SIGNED_V8;
 						break;
 				}
+
+				// continue with default emit
 				if (c0 != 0)
 						break;
 
@@ -4837,6 +4839,8 @@ emit_wasm_supported_intrinsics (
 						c0 = INTRINS_WASM_NARROW_UNSIGNED_V8;
 						break;
 				}
+
+				// continue with default emit
 				if (c0 != 0)
 						break;
 
@@ -4860,6 +4864,7 @@ emit_wasm_supported_intrinsics (
 			}
 		}
 
+		// default emit path for cases with op set
 		if (op != 0)
 			return emit_simd_ins_for_sig (cfg, klass, op, c0, arg0_type, fsig, args);
 	}

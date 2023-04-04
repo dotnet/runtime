@@ -1757,17 +1757,17 @@ MINI_OP3(OP_ARM64_SQRDMLSH_SCALAR, "arm64_sqrdmlsh_scalar", XREG, XREG, XREG, XR
 
 #endif // TARGET_ARM64
 
-MINI_OP(OP_SIMD_FCVTL, "convert_to_higher_precision", XREG, XREG, NONE)
-MINI_OP(OP_SIMD_FCVTL2, "convert_to_higher_precision_2", XREG, XREG, NONE)
-MINI_OP(OP_SIMD_USHLL, "unsigned_shift_left_long", XREG, XREG, IREG)
-MINI_OP(OP_SIMD_USHLL2, "unsigned_shift_left_long_2", XREG, XREG, IREG)
-MINI_OP(OP_SIMD_SSHLL, "signed_shift_left_long", XREG, XREG, IREG)
-MINI_OP(OP_SIMD_SSHLL2, "signed_shift_left_long_2", XREG, XREG, IREG)
-MINI_OP(OP_SIMD_SHL, "shl", XREG, XREG, IREG)
-MINI_OP(OP_SIMD_SSHR, "sshr", XREG, XREG, IREG)
-MINI_OP(OP_SIMD_USHR, "ushr", XREG, XREG, IREG)
-MINI_OP3(OP_SIMD_USRA, "usra", XREG, XREG, XREG, IREG)
-MINI_OP3(OP_SIMD_SSRA, "ssra", XREG, XREG, XREG, IREG)
+MINI_OP(OP_SIMD_FCVTL, "simd_convert_to_higher_precision", XREG, XREG, NONE)
+MINI_OP(OP_SIMD_FCVTL2, "simd_convert_to_higher_precision_2", XREG, XREG, NONE)
+MINI_OP(OP_SIMD_USHLL, "simd_unsigned_shift_left_long", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_USHLL2, "simd_unsigned_shift_left_long_2", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_SSHLL, "simd_signed_shift_left_long", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_SSHLL2, "simd_signed_shift_left_long_2", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_SHL, "simd_shl", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_SSHR, "simd_sshr", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_USHR, "simd_ushr", XREG, XREG, IREG)
+MINI_OP3(OP_SIMD_USRA, "simd_usra", XREG, XREG, XREG, IREG)
+MINI_OP3(OP_SIMD_SSRA, "simd_ssra", XREG, XREG, XREG, IREG)
 
 #if defined(TARGET_WASM)
 MINI_OP(OP_WASM_ONESCOMPLEMENT, "wasm_onescomplement", XREG, XREG, NONE)
