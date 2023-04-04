@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
+using System.Threading;
 using Internal.Runtime;
 
 namespace System.Runtime
@@ -774,11 +774,11 @@ namespace System.Runtime
             if (elementType != obj.GetMethodTable())
                 goto notExactMatch;
 
-doWrite:
+            doWrite:
             InternalCalls.RhpAssignRef(ref element, obj);
             return;
 
-assigningNull:
+        assigningNull:
             element = null;
             return;
 
@@ -1036,71 +1036,227 @@ assigningNull:
 
         // source type + target type + assignment variation -> true/false
         [System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute]
-        private static class CastCache
+        internal static unsafe class CastCache
         {
-            //
-            // Cache size parameters
-            //
+            private const int INITIAL_CACHE_SIZE = 2;
+            private static int[] s_table = CreateCastCache(INITIAL_CACHE_SIZE, throwOnFail: true)!;
 
-            // Start with small cache size so that the cache entries used by startup one-time only initialization
-            // will get flushed soon
-            private const int InitialCacheSize = 128; // MUST BE A POWER OF TWO
-            private const int DefaultCacheSize = 1024;
-            private const int MaximumCacheSize = 128 * 1024;
+            // TODO: VS
+            // [DebuggerDisplay("Source = {_source}; Target = {_targetAndResult & ~1}; Result = {_targetAndResult & 1}; VersionNum = {_version & ((1 << 29) - 1)}; Distance = {_version >> 29};")]
 
-            //
-            // Cache state
-            //
-            private static Entry[] s_cache = new Entry[InitialCacheSize];   // Initialize the cache eagerly to avoid null checks.
-            private static UnsafeGCHandle s_previousCache;
-            private static ulong s_tickCountOfLastOverflow = InternalCalls.RhpGetTickCount64();
-            private static int s_entries;
-            private static bool s_roundRobinFlushing;
-
-
-            private sealed class Entry
+            [StructLayout(LayoutKind.Sequential)]
+            private struct CastCacheEntry
             {
-                public Entry Next;
-                public Key Key;
-                public bool Result;     // @TODO: consider storing this bit in the Key -- there is room
+                // version has the following structure:
+                // [ distance:3bit |  versionNum:29bit ]
+                //
+                // distance is how many iterations the entry is from it ideal position.
+                // we use that for preemption.
+                //
+                // versionNum is a monotonicaly increasing numerical tag.
+                // Writer "claims" entry by atomically incrementing the tag. Thus odd number indicates an entry in progress.
+                // Upon completion of adding an entry the tag is incremented again making it even. Even number indicates a complete entry.
+                //
+                // Readers will read the version twice before and after retrieving the entry.
+                // To have a usable entry both reads must yield the same even version.
+                //
+                internal int _version;
+                internal nuint _source;
+                // pointers have unused lower bits due to alignment, we use one for the result
+                internal nuint _targetAndResult;
+            };
+
+            // TODO: VS this is to avoid dependency on BitOperations
+#if TARGET_64BIT
+            // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static ulong RotateLeft(ulong value, int offset)
+                => (value << offset) | (value >> (64 - offset));
+#else
+            // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static uint RotateLeft(uint value, int offset)
+                => (value << offset) | (value >> (32 - offset));
+#endif
+            private struct VolatileInt32 { public volatile int Value; }
+
+            // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int VolatileRead(ref int location) =>
+                Unsafe.As<int, VolatileInt32>(ref location).Value;
+
+            // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static int KeyToBucket(ref int tableData, nuint source, nuint target)
+            {
+                // upper bits of addresses do not vary much, so to reduce loss due to cancelling out,
+                // we do `rotl(source, <half-size>) ^ target` for mixing inputs.
+                // then we use fibonacci hashing to reduce the value to desired size.
+
+                int hashShift = HashShift(ref tableData);
+#if TARGET_64BIT
+                ulong hash = RotateLeft((ulong)source, 32) ^ (ulong)target;
+                return (int)((hash * 11400714819323198485ul) >> hashShift);
+#else
+                uint hash = RotateLeft((uint)source, 16) ^ (uint)target;
+                return (int)((hash * 2654435769u) >> hashShift);
+#endif
             }
 
-            private unsafe struct Key
+            // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static ref int TableData(int[] table)
             {
-                private IntPtr _sourceTypeAndVariation;
-                private IntPtr _targetType;
+                // element 0 is used for embedded aux data
+                // return ref MemoryMarshal.GetArrayDataReference(table);
+                return ref Unsafe.As<byte, int>(ref Unsafe.AddByteOffset(ref table.GetRawData(), (nint)sizeof(nint)));
+            }
 
-                public Key(MethodTable* pSourceType, MethodTable* pTargetType, AssignmentVariation variation)
+            // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static ref CastCacheEntry Element(ref int tableData, int index)
+            {
+                // element 0 is used for embedded aux data, skip it
+                return ref Unsafe.Add(ref Unsafe.As<int, CastCacheEntry>(ref tableData), index + 1);
+            }
+
+            // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static ref int HashShift(ref int tableData)
+            {
+                return ref tableData;
+            }
+
+            // TableMask is "size - 1"
+            // we need that more often that we need size
+            // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static ref int TableMask(ref int tableData)
+            {
+                return ref Unsafe.Add(ref tableData, 1);
+            }
+
+            private enum CastResult
+            {
+                CannotCast = 0,
+                CanCast = 1,
+                MaybeCast = 2
+            }
+
+            private static int[]? CreateCastCache(int size, bool throwOnFail = false)
+            {
+                // size must be positive
+                Debug.Assert(size > 1);
+                // size must be a power of two
+                Debug.Assert((size & (size - 1)) == 0);
+
+                int[]? table = null;
+                try
                 {
-                    Debug.Assert((((long)pSourceType) & 3) == 0, "misaligned MethodTable!");
-                    Debug.Assert(((uint)variation) <= 3, "variation enum has an unexpectedly large value!");
-
-                    _sourceTypeAndVariation = (IntPtr)(((byte*)pSourceType) + ((int)variation));
-                    _targetType = (IntPtr)pTargetType;
+                    table = new int[size + 1];
+                }
+                catch (OutOfMemoryException)
+                {
                 }
 
-                private static int GetHashCode(IntPtr intptr)
+                if (table == null)
                 {
-                    return unchecked((int)((long)intptr));
+                    size = INITIAL_CACHE_SIZE;
+                    try
+                    {
+                        table = new int[size + 1];
+                    }
+                    catch (OutOfMemoryException)
+                    {
+                    }
                 }
 
-                public int CalculateHashCode()
+                if (table == null)
                 {
-                    return ((GetHashCode(_targetType) >> 4) ^ GetHashCode(_sourceTypeAndVariation));
+                    // we do not OOM in casts, just return null meaning we can't resize.
+                    return table;
                 }
 
-                public bool Equals(ref Key other)
+                ref int tableData = ref TableData(table);
+
+                // set the table mask. we need it often, do not want to compute each time.
+                TableMask(ref tableData) = size - 1;
+
+                // Fibonacci hash reduces the value into desired range by shifting right by the number of leading zeroes in 'size-1'
+                int bitCnt = 0;
+
+                // software fallback for BitOperations.Log2. Size should be a small number anyways.
+                int mask = size - 1;
+                while (mask != 0)
                 {
-                    return (_sourceTypeAndVariation == other._sourceTypeAndVariation) && (_targetType == other._targetType);
+                    mask >>= 1;
+                    bitCnt++;
                 }
 
-                public AssignmentVariation Variation
-                {
-                    get { return (AssignmentVariation)(unchecked((int)(long)_sourceTypeAndVariation) & 3); }
-                }
+#if TARGET_64BIT
+                HashShift(ref tableData) = (byte)(63 - bitCnt);
+#else
+                HashShift(ref tableData) = (byte)(31 - bitCnt);
+#endif
 
-                public MethodTable* SourceType { get { return (MethodTable*)(((long)_sourceTypeAndVariation) & ~3L); } }
-                public MethodTable* TargetType { get { return (MethodTable*)_targetType; } }
+                return table;
+            }
+
+            // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static CastResult TryGet(nuint source, nuint target)
+            {
+                const int BUCKET_SIZE = 8;
+
+                // table is initialized and is not null.
+                ref int tableData = ref TableData(s_table);
+
+                int index = KeyToBucket(ref tableData, source, target);
+                for (int i = 0; i < BUCKET_SIZE;)
+                {
+                    ref CastCacheEntry pEntry = ref Element(ref tableData, index);
+
+                    // must read in this order: version -> [entry parts] -> version
+                    // if version is odd or changes, the entry is inconsistent and thus ignored
+                    int version = VolatileRead(ref pEntry._version);
+                    nuint entrySource = pEntry._source;
+
+                    // mask the lower version bit to make it even.
+                    // This way we can check if version is odd or changing in just one compare.
+                    version &= ~1;
+
+                    if (entrySource == source)
+                    {
+                        nuint entryTargetAndResult = pEntry._targetAndResult;
+                        // target never has its lower bit set.
+                        // a matching entryTargetAndResult would the have same bits, except for the lowest one, which is the result.
+                        entryTargetAndResult ^= target;
+                        if (entryTargetAndResult <= 1)
+                        {
+                            // make sure 'version' is loaded after 'source' and 'targetAndResults'
+                            //
+                            // We can either:
+                            // - use acquires for both _source and _targetAndResults or
+                            // - issue a load barrier before reading _version
+                            // benchmarks on available hardware show that use of a read barrier is cheaper.
+
+                            // TODO: VS
+                            // Interlocked.ReadMemoryBarrier();
+
+                            if (version != pEntry._version)
+                            {
+                                // oh, so close, the entry is in inconsistent state.
+                                // it is either changing or has changed while we were reading.
+                                // treat it as a miss.
+                                break;
+                            }
+
+                            return (CastResult)entryTargetAndResult;
+                        }
+                    }
+
+                    if (version == 0)
+                    {
+                        // the rest of the bucket is unclaimed, no point to search further
+                        break;
+                    }
+
+                    // quadratic reprobe
+                    i++;
+                    index = (index + i) & TableMask(ref tableData);
+                }
+                return CastResult.MaybeCast;
             }
 
             public static unsafe bool AreTypesAssignableInternal(MethodTable* pSourceType, MethodTable* pTargetType, AssignmentVariation variation, EETypePairList* pVisited)
@@ -1109,12 +1265,14 @@ assigningNull:
                 if (pSourceType == pTargetType)
                     return true;
 
-                Key key = new Key(pSourceType, pTargetType, variation);
-                Entry? entry = LookupInCache(s_cache, ref key);
-                if (entry == null)
-                    return CacheMiss(ref key, pVisited);
+                nuint sourceAndVariation = (nuint)pSourceType + (uint)variation;
+                CastResult result = TryGet(sourceAndVariation, (nuint)(pTargetType));
+                if (result != CastResult.MaybeCast)
+                {
+                    return result == CastResult.CanCast;
+                }
 
-                return entry.Result;
+                return CacheMiss(pSourceType, pTargetType, variation, pVisited);
             }
 
             // This method is an optimized and customized version of AreTypesAssignable that achieves better performance
@@ -1123,214 +1281,41 @@ assigningNull:
             //    of writing, this is true as its is only used if sourceType is from an object, and targetType is an interface.)
             // 2. Force inlining (This particular variant is only used in a small number of dispatch scenarios that are particularly
             //    high in performance impact.)
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            // [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static unsafe bool AreTypesAssignableInternal_SourceNotTarget_BoxedSource(MethodTable* pSourceType, MethodTable* pTargetType, EETypePairList* pVisited)
             {
                 Debug.Assert(pSourceType != pTargetType, "target is source");
-                Key key = new Key(pSourceType, pTargetType, AssignmentVariation.BoxedSource);
-                Entry? entry = LookupInCache(s_cache, ref key);
-                if (entry == null)
-                    return CacheMiss(ref key, pVisited);
-
-                return entry.Result;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static Entry? LookupInCache(Entry[] cache, ref Key key)
-            {
-                int entryIndex = key.CalculateHashCode() & (cache.Length - 1);
-                Entry entry = cache[entryIndex];
-                while (entry != null)
+                nuint sourceAndVariation = (nuint)pSourceType + (int)AssignmentVariation.BoxedSource;
+                CastResult result = TryGet(sourceAndVariation, (nuint)(pTargetType));
+                if (result != CastResult.MaybeCast)
                 {
-                    if (entry.Key.Equals(ref key))
-                        break;
-                    entry = entry.Next;
+                    return result == CastResult.CanCast;
                 }
-                return entry;
+
+                return CacheMiss(pSourceType, pTargetType, AssignmentVariation.BoxedSource, pVisited);
             }
 
-            private static unsafe bool CacheMiss(ref Key key, EETypePairList* pVisited)
+            private static unsafe bool CacheMiss(MethodTable* pSourceType, MethodTable* pTargetType, AssignmentVariation variation, EETypePairList* pVisited)
             {
                 //
                 // First, check if we previously visited the input types pair, to avoid infinite recursions
                 //
-                if (EETypePairList.Exists(pVisited, key.SourceType, key.TargetType))
+                if (EETypePairList.Exists(pVisited, pSourceType, pTargetType))
                     return false;
-
-                bool result = false;
-                bool previouslyCached = false;
-
-                //
-                // Try to find the entry in the previous version of the cache that is kept alive by weak reference
-                //
-                if (s_previousCache.IsAllocated)
-                {
-                    // Unchecked cast to avoid recursive dependency on array casting
-                    Entry[] previousCache = Unsafe.As<Entry[]>(s_previousCache.Target);
-                    if (previousCache != null)
-                    {
-                        Entry? previousEntry = LookupInCache(previousCache, ref key);
-                        if (previousEntry != null)
-                        {
-                            result = previousEntry.Result;
-                            previouslyCached = true;
-                        }
-                    }
-                }
 
                 //
                 // Call into the type cast code to calculate the result
                 //
-                if (!previouslyCached)
-                {
-                    EETypePairList newList = new EETypePairList(key.SourceType, key.TargetType, pVisited);
-                    result = TypeCast.AreTypesAssignableInternal(key.SourceType, key.TargetType, key.Variation, &newList);
-                }
+                EETypePairList newList = new EETypePairList(pSourceType, pTargetType, pVisited);
+                bool result = TypeCast.AreTypesAssignableInternal(pSourceType, pTargetType, variation, &newList);
 
                 //
-                // Update the cache under the lock
-                //
-                InternalCalls.RhpAcquireCastCacheLock();
-                try
-                {
-                    try
-                    {
-                        // Avoid duplicate entries
-                        Entry? existingEntry = LookupInCache(s_cache, ref key);
-                        if (existingEntry != null)
-                            return existingEntry.Result;
-
-                        // Resize cache as necessary
-                        Entry[] cache = ResizeCacheForNewEntryAsNecessary();
-
-                        int entryIndex = key.CalculateHashCode() & (cache.Length - 1);
-
-                        Entry newEntry = new Entry() { Key = key, Result = result, Next = cache[entryIndex] };
-
-                        // BEWARE: Array store check can lead to infinite recursion. We avoid this by making certain
-                        // that the cache trivially answers the case of equivalent types without triggering the cache
-                        // miss path. (See CastCache.AreTypesAssignableInternal)
-                        cache[entryIndex] = newEntry;
-                        return newEntry.Result;
-                    }
-                    catch (OutOfMemoryException)
-                    {
-                        // Entry allocation failed -- but we can still return the correct cast result.
-                        return result;
-                    }
-                }
-                finally
-                {
-                    InternalCalls.RhpReleaseCastCacheLock();
-                }
-            }
-
-            private static Entry[] ResizeCacheForNewEntryAsNecessary()
-            {
-                Entry[] cache = s_cache;
-
-                int entries = s_entries++;
-
-                // If the cache has spare space, we are done
-                if (2 * entries < cache.Length)
-                {
-                    if (s_roundRobinFlushing)
-                    {
-                        cache[2 * entries] = null;
-                        cache[2 * entries + 1] = null;
-                    }
-                    return cache;
-                }
-
-                //
-                // Now, we have cache that is overflowing with results. We need to decide whether to resize it or start
-                // flushing the old entries instead
+                // Update the cache
                 //
 
-                // Start over counting the entries
-                s_entries = 0;
+                // TODO: VS
 
-                // See how long it has been since the last time the cache was overflowing
-                ulong tickCount = InternalCalls.RhpGetTickCount64();
-                int tickCountSinceLastOverflow = (int)(tickCount - s_tickCountOfLastOverflow);
-                s_tickCountOfLastOverflow = tickCount;
-
-                bool shrinkCache = false;
-                bool growCache = false;
-
-                if (cache.Length < DefaultCacheSize)
-                {
-                    // If the cache have not reached the default size, just grow it without thinking about it much
-                    growCache = true;
-                }
-                else
-                {
-                    if (tickCountSinceLastOverflow < cache.Length)
-                    {
-                        // We 'overflow' when 2*entries == cache.Length, so we have cache.Length / 2 entries that were
-                        // filled in tickCountSinceLastOverflow ms, which is 2ms/entry
-
-                        // If the fill rate of the cache is faster than ~2ms per entry, grow it
-                        if (cache.Length < MaximumCacheSize)
-                            growCache = true;
-                    }
-                    else
-                    if (tickCountSinceLastOverflow > cache.Length * 16)
-                    {
-                        // We 'overflow' when 2*entries == cache.Length, so we have ((cache.Length*16) / 2) entries that
-                        // were filled in tickCountSinceLastOverflow ms, which is 32ms/entry
-
-                        // If the fill rate of the cache is slower than 32ms per entry, shrink it
-                        if (cache.Length > DefaultCacheSize)
-                            shrinkCache = true;
-                    }
-                    // Otherwise, keep the current size and just keep flushing the entries round robin
-                }
-
-                Entry[]? newCache = null;
-                if (growCache || shrinkCache)
-                {
-                    try
-                    {
-                        newCache = new Entry[shrinkCache ? (cache.Length / 2) : (cache.Length * 2)];
-                    }
-                    catch (OutOfMemoryException)
-                    {
-                        // Failed to allocate a bigger/smaller cache.  That is fine, keep the old one.
-                    }
-                }
-
-                if (newCache != null)
-                {
-                    s_roundRobinFlushing = false;
-
-                    // Keep the reference to the old cache in a weak handle. We will try to use it to avoid hitting the
-                    // cache miss path until the GC collects it.
-                    if (s_previousCache.IsAllocated)
-                    {
-                        s_previousCache.Target = cache;
-                    }
-                    else
-                    {
-                        try
-                        {
-                            s_previousCache = UnsafeGCHandle.Alloc(cache, GCHandleType.Weak);
-                        }
-                        catch (OutOfMemoryException)
-                        {
-                            // Failed to allocate the handle to utilize the old cache, that is fine, we will just miss
-                            // out on repopulating the new cache from the old cache.
-                            s_previousCache = default(UnsafeGCHandle);
-                        }
-                    }
-
-                    return s_cache = newCache;
-                }
-                else
-                {
-                    s_roundRobinFlushing = true;
-                    return cache;
-                }
+                return result;
             }
         }
     }
