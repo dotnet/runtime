@@ -45356,7 +45356,8 @@ HRESULT GCHeap::Initialize()
         }
         gc_heap::regions_range = align_on_page(gc_heap::regions_range);
     }
-    // TODO: Set config after config API is merged.
+
+    GCConfig::SetGCRegionRange(gc_heap::regions_range);
 #endif //USE_REGIONS
 
 #endif //HOST_64BIT
