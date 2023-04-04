@@ -1,6 +1,0 @@
-all:
-  name: All Linux Tests
-  dependencies:
-  - path: .yamato/test_linux_x64_release.yml
-  - path: .yamato/test_linux_x64_debug.yml
-

@@ -22,7 +22,7 @@ public class Program
                 BuildTargets retVal = BuildTargets.None;
                 foreach (Token token in result.Tokens)
                 {
-                    if (Enum.TryParse(token.Value, out BuildTargets val))
+                    if (Enum.TryParse(token.Value, ignoreCase: true, out BuildTargets val))
                         retVal |= val;
                     else
                         result.AddError($"'{token.Value}' is not a valid build target");
@@ -42,7 +42,7 @@ public class Program
                 TestTargets retVal = TestTargets.None;
                 foreach (Token token in result.Tokens)
                 {
-                    if (Enum.TryParse(token.Value, out TestTargets val))
+                    if (Enum.TryParse(token.Value, ignoreCase: true, out TestTargets val))
                         retVal |= val;
                     else
                         result.AddError($"'{token.Value}' is not a valid test target");
@@ -159,8 +159,14 @@ public class Program
                 if (tTargets.HasFlag(TestTargets.Embedding))
                     EmbeddingHost.Test(gConfig);
 
-                if (tTargets.HasFlag(TestTargets.CoreClr))
-                    CoreCLR.Test(gConfig);
+                if (tTargets.HasFlag(TestTargets.Classlibs))
+                    CoreCLR.TestClassLibraries(gConfig);
+
+                if (tTargets.HasFlag(TestTargets.Runtime))
+                    CoreCLR.TestUnityRuntime(gConfig);
+
+                if (tTargets.HasFlag(TestTargets.Pal))
+                    CoreCLR.TestUnityPal(gConfig);
 
                 Console.WriteLine("******************************");
                 Console.WriteLine("Unity: Tested CoreCLR successfully");
