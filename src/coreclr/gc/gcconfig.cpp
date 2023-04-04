@@ -64,10 +64,10 @@ GC_CONFIGURATION_KEYS
 
 void GCConfig::Initialize()
 {
-#define BOOL_CONFIG(name, private_key, public_key, unused_default, unused_doc)  \
-    s_Updated##name = s_##name##Provided = GCToEEInterface::GetBooleanConfigValue(private_key, public_key, &s_##name);
+#define BOOL_CONFIG(name, private_key, public_key, unused_default, unused_doc)                       \
+    s_##name##Provided = GCToEEInterface::GetBooleanConfigValue(private_key, public_key, &s_##name); \
+    s_Updated##name = s_##name; 
     
-
 #define INT_CONFIG(name, private_key, public_key, unused_default, unused_doc)   \
     GCToEEInterface::GetIntConfigValue(private_key, public_key, &s_##name);     \
     s_Updated##name = s_##name;                                                 
