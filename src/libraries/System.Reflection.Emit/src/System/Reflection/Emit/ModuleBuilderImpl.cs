@@ -13,14 +13,16 @@ namespace System.Reflection.Emit
     {
         private readonly Assembly _coreAssembly;
         private readonly string _name;
-        private Type[]? _coreTypes;
+        private Type?[]? _coreTypes;
         private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyRefStore = new();
         private readonly Dictionary<Type, TypeReferenceHandle> _typeRefStore = new();
         private readonly List<TypeBuilderImpl> _typeDefStore = new();
         private int _nextMethodDefRowId = 1;
         private int _nextFieldDefRowId = 1;
+        private bool _coreTypesFullPopulated;
         private static readonly Type[] s_coreTypes = { typeof(void), typeof(object), typeof(bool), typeof(char), typeof(sbyte), typeof(byte), typeof(short), typeof(ushort), typeof(int),
                                                         typeof(uint), typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(string), typeof(nint), typeof(nuint) };
+
         internal ModuleBuilderImpl(string name, Assembly coreAssembly)
         {
             _coreAssembly = coreAssembly;
@@ -36,19 +38,16 @@ namespace System.Reflection.Emit
                 if (_coreAssembly == typeof(object).Assembly)
                 {
                     _coreTypes = s_coreTypes;
+                    _coreTypesFullPopulated = true;
                 }
                 else
                 {
                     _coreTypes = new Type[s_coreTypes.Length];
-
-                    for (int i = 0; i < s_coreTypes.Length; i++)
-                    {
-                        _coreTypes[i] = _coreAssembly.GetType(s_coreTypes[i].FullName!, throwOnError: true)!;
-                    }
                 }
             }
 
-            return _coreTypes[(int)typeId];
+            int index = (int)typeId;
+            return _coreTypes[index] ?? (_coreTypes[index] = _coreAssembly.GetType(s_coreTypes[index].FullName!, throwOnError: true)!);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types are preserved via s_coreTypes")]
@@ -60,16 +59,24 @@ namespace System.Reflection.Emit
                 if (_coreAssembly == typeof(object).Assembly)
                 {
                     _coreTypes = s_coreTypes;
+                    _coreTypesFullPopulated = true;
                 }
                 else
                 {
                     _coreTypes = new Type[s_coreTypes.Length];
+                }
+            }
 
-                    for (int i = 0; i < s_coreTypes.Length; i++)
+            if (!_coreTypesFullPopulated)
+            {
+                for (int i = 0; i < _coreTypes.Length; i++)
+                {
+                    if (_coreTypes[i] == null)
                     {
-                        _coreTypes[i] = _coreAssembly.GetType(s_coreTypes[i].FullName!, throwOnError: true)!;
+                        _coreTypes[i] = _coreAssembly.GetType(s_coreTypes[i].FullName!, throwOnError: false)!;
                     }
                 }
+                _coreTypesFullPopulated = true;
             }
 
             for (int i = 0; i < _coreTypes.Length; i++)
