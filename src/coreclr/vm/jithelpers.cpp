@@ -1777,7 +1777,7 @@ EXTERN_C __thread void** t_threadStaticBlocks;
 //     possible.
 
 #include <optsmallperfcritical.h>
-HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLocalModule, DWORD dwClassDomainID, UINT32 staticBlockIndex)
+HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLocalModule, DWORD dwClassDomainID)
 {
     FCALL_CONTRACT;
 
