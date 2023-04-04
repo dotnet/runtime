@@ -21,7 +21,7 @@ namespace System.Reflection.Emit
             Type[]? parameterTypes, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
         {
             _module = module;
-            _returnType = returnType ?? _module.GetTypeFromCoreAssembly(CoreTypeId.Void)!;
+            _returnType = returnType ?? _module.GetTypeFromCoreAssembly(CoreTypeId.Void);
             _name = name;
             _attributes = attributes;
             _callingConventions = callingConventions;

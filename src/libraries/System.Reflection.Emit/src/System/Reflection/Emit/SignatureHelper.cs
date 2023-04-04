@@ -53,10 +53,12 @@ namespace System.Reflection.Emit
 
         private static void WriteSignatureTypeForReflectionType(SignatureTypeEncoder signature, Type type, ModuleBuilderImpl module)
         {
+            int id = module.GetTypeIdFromCoreTypes(type);
+
             // We need to translate from Reflection.Type to SignatureTypeEncoder.
-            if (Enum.TryParse(type.Name, out CoreTypeId typeId) && type.Equals(module.GetTypeFromCoreAssembly(typeId)))
+            if (id > -1)
             {
-                switch (typeId)
+                switch ((CoreTypeId)id)
                 {
                     case CoreTypeId.Boolean:
                         signature.Boolean();
@@ -115,24 +117,22 @@ namespace System.Reflection.Emit
 
     internal enum CoreTypeId
     {
-        Void = 0,
-        Object = 1,
-        Boolean = 2,
-        Char = 3,
-        SByte = 4,
-        Byte = 5,
-        Int16 = 6,
-        UInt16 = 7,
-        Int32 = 8,
-        UInt32 = 9,
-        Int64 = 10,
-        UInt64 = 11,
-        Single = 12,
-        Double = 13,
-        Decimal = 14,
-        DateTime = 15,
-        String = 16,
-        IntPtr = 17,
-        UIntPtr = 18,
+        Void,
+        Object,
+        Boolean,
+        Char,
+        SByte,
+        Byte,
+        Int16,
+        UInt16,
+        Int32,
+        UInt32,
+        Int64,
+        UInt64,
+        Single,
+        Double,
+        String,
+        IntPtr,
+        UIntPtr,
     }
 }
