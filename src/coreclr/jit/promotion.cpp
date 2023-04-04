@@ -560,7 +560,7 @@ public:
     {
         GenTree* tree = *use;
 
-        if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+        if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_LCL_ADDR))
         {
             GenTreeLclVarCommon* lcl = tree->AsLclVarCommon();
             LclVarDsc*           dsc = m_compiler->lvaGetDesc(lcl);
@@ -570,7 +570,7 @@ public:
                 ClassLayout*    accessLayout;
                 AccessKindFlags accessFlags;
 
-                if (lcl->OperIsLocalAddr())
+                if (lcl->OperIs(GT_LCL_ADDR))
                 {
                     assert(user->OperIs(GT_CALL) && dsc->IsHiddenBufferStructArg() &&
                            (user->AsCall()->gtArgs.GetRetBufferArg()->GetNode() == lcl));
@@ -837,7 +837,7 @@ public:
         if (call->IsOptimizingRetBufAsLocal())
         {
             assert(retBufArg != nullptr);
-            assert(retBufArg->GetNode()->OperIsLocalAddr());
+            assert(retBufArg->GetNode()->OperIs(GT_LCL_ADDR));
             GenTreeLclVarCommon* retBufLcl = retBufArg->GetNode()->AsLclVarCommon();
             unsigned             size      = m_compiler->typGetObjLayout(call->gtRetClsHnd)->GetSize();
 
