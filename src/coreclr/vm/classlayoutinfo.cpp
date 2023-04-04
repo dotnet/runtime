@@ -478,6 +478,8 @@ namespace
     #endif
     )
     {
+        STANDARD_VM_CONTRACT;
+
         HRESULT hr;
         mdFieldDef fd;
         ULONG maxRid = pInternalImport->GetCountWithTokenKind(mdtFieldDef);

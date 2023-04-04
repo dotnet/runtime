@@ -691,10 +691,8 @@ UINT FieldDesc::GetSize(MethodTable *pMTOfValueTypeField)
         LOG((LF_CLASSLOADER, LL_INFO10000, "FieldDesc::GetSize %s::%s\n", GetApproxEnclosingMethodTable()->GetDebugClassName(), m_debugName));
         CONSISTENCY_CHECK(GetFieldType() == ELEMENT_TYPE_VALUETYPE);
         TypeHandle t = (pMTOfValueTypeField != NULL) ? TypeHandle(pMTOfValueTypeField) : LookupApproxFieldTypeHandle();
-        if (!t.IsNull())
-        {
-            size = t.GetMethodTable()->GetNumInstanceFieldBytes();
-        }
+        _ASSERTE(!t.IsNull());
+        size = t.GetMethodTable()->GetNumInstanceFieldBytes();
     }
 
     return size;

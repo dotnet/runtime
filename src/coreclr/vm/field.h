@@ -324,7 +324,7 @@ public:
     // Return -1 if the type isn't loaded yet (i.e. if LookupFieldTypeHandle() would return null)
     UINT GetSize();
 
-    // Return -1 if the type is a structure and pMTOfValueTypeField is NULL and LookupFieldTypeHandle() returns null
+    // If the field is a valuetype, then either pMTOfValueTypeField must not be NULL or LookupFieldTypeHandle() must not return null
     UINT GetSize(MethodTable *pMTOfValueTypeField);
 
     // These routines encapsulate the operation of getting and setting
