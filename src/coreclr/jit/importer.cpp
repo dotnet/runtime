@@ -9541,6 +9541,38 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
+                switch (fieldInfo.fieldAccessor)
+                {
+                    case CORINFO_FIELD_INSTANCE:
+#ifdef FEATURE_READYTORUN
+                    case CORINFO_FIELD_INSTANCE_WITH_BASE:
+#endif
+                    case CORINFO_FIELD_STATIC_TLS:
+                    case CORINFO_FIELD_STATIC_ADDR_HELPER:
+                    case CORINFO_FIELD_INSTANCE_HELPER:
+                    case CORINFO_FIELD_INSTANCE_ADDR_HELPER:
+                        // Nothing now - handled later
+                        break;
+
+                    case CORINFO_FIELD_STATIC_ADDRESS:
+                    case CORINFO_FIELD_STATIC_RVA_ADDRESS:
+                    case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
+                    case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
+                    case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
+                    case CORINFO_FIELD_STATIC_RELOCATABLE:
+                        op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
+                                                         lclTyp);
+                        // TODO - more checks?  Is GTF_CALL_HOISTABLE guaranteed to be appropriate here?
+                        if (!(op1->gtFlags & GTF_CALL_HOISTABLE))
+                        {
+                            impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("value for stsfld with typeinit"));
+                        }
+                        break;
+
+                    default:
+                        assert(!"Unexpected fieldAccessor");
+                }
+
                 // Pull the value from the stack.
                 StackEntry se = impPopStack();
                 op2           = se.val;
@@ -9650,8 +9682,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
                     case CORINFO_FIELD_STATIC_RELOCATABLE:
-                        op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
-                                                         lclTyp);
+                        // Handled above
                         break;
 
                     default:
