@@ -18,7 +18,6 @@
     <Compile Include="TarFile\TarFile.ExtractToDirectoryAsync.File.Tests.cs" />
     <Compile Include="TarFile\TarFile.CreateFromDirectoryAsync.Stream.Tests.cs" />
     <Compile Include="TarFile\TarFile.CreateFromDirectoryAsync.File.Tests.cs" />
-    <Compile Include="TarFile\TarFile.CreateFromDirectoryAsync.File.Roundtrip.cs" />
     <Compile Include="TarFile\TarFile.CreateFromDirectory.File.Roundtrip.cs" />
     <Compile Include="TarEntry\TarEntry.Conversion.Tests.Base.cs" />
     <Compile Include="TarEntry\GnuTarEntry.Conversion.Tests.cs" />
