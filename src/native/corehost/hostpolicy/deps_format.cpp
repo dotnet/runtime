@@ -102,12 +102,11 @@ deps_json_t::rid_fallback_graph_t deps_json_t::get_rid_fallback_graph(const pal:
 }
 
 void deps_json_t::reconcile_libraries_with_targets(
-    const pal::string_t& deps_path,
     const json_parser_t::value_t& json,
     const std::function<bool(const pal::string_t&)>& library_has_assets_fn,
     const std::function<const vec_asset_t&(const pal::string_t&, size_t, bool*)>& get_assets_fn)
 {
-    pal::string_t deps_file = get_filename(deps_path);
+    pal::string_t deps_file = get_filename(m_deps_file);
 
     for (const auto& library : json[_X("libraries")].GetObject())
     {
@@ -317,11 +316,8 @@ namespace
 
 void deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets)
 {
-    const rid_fallback_graph_t* rid_fallback_graph = nullptr;
-    if (m_rid_resolution_options.use_fallback_graph)
-        rid_fallback_graph = m_rid_resolution_options.rid_fallback_graph == nullptr ? &m_rid_fallback_graph : m_rid_resolution_options.rid_fallback_graph;
-
-    const pal::string_t host_rid = get_current_rid(rid_fallback_graph);
+    assert(!m_rid_resolution_options.use_fallback_graph || m_rid_resolution_options.rid_fallback_graph != nullptr);
+    const pal::string_t host_rid = get_current_rid(m_rid_resolution_options.rid_fallback_graph);
 
     pal::string_t host_rid_no_arch;
     if (!m_rid_resolution_options.use_fallback_graph)
@@ -343,7 +339,7 @@ void deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets)
 
             pal::string_t matched_rid;
             bool found_match = m_rid_resolution_options.use_fallback_graph
-                ? try_get_matching_rid_with_fallback_graph(rid_assets, host_rid, *rid_fallback_graph, matched_rid)
+                ? try_get_matching_rid_with_fallback_graph(rid_assets, host_rid, *m_rid_resolution_options.rid_fallback_graph, matched_rid)
                 : try_get_matching_rid(rid_assets, host_rid, host_rid_no_arch, matched_rid);
             if (!found_match)
             {
@@ -483,7 +479,7 @@ void deps_json_t::process_targets(const json_parser_t::value_t& json, const pal:
     }
 }
 
-void deps_json_t::load_framework_dependent(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name)
+void deps_json_t::load_framework_dependent(const json_parser_t::value_t& json, const pal::string_t& target_name)
 {
     process_runtime_targets(json, target_name, &m_rid_assets);
     process_targets(json, target_name, &m_assets);
@@ -518,10 +514,10 @@ void deps_json_t::load_framework_dependent(const pal::string_t& deps_path, const
         return empty;
     };
 
-    reconcile_libraries_with_targets(deps_path, json, package_exists, get_relpaths);
+    reconcile_libraries_with_targets(json, package_exists, get_relpaths);
 }
 
-void deps_json_t::load_self_contained(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name)
+void deps_json_t::load_self_contained(const json_parser_t::value_t& json, const pal::string_t& target_name)
 {
     process_targets(json, target_name, &m_assets);
 
@@ -534,10 +530,7 @@ void deps_json_t::load_self_contained(const pal::string_t& deps_path, const json
         return m_assets.libs[package][type_index];
     };
 
-    reconcile_libraries_with_targets(deps_path, json, package_exists, get_relpaths);
-
-    if (m_rid_resolution_options.use_fallback_graph)
-        populate_rid_fallback_graph(json, m_rid_fallback_graph);
+    reconcile_libraries_with_targets(json, package_exists, get_relpaths);
 }
 
 bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ver) const
@@ -567,9 +560,8 @@ bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ve
 // Load the deps file and parse its "entry" lines which contain the "fields" of
 // the entry. Populate an array of these entries.
 //
-void deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_path)
+void deps_json_t::load(bool is_framework_dependent, std::function<void(const json_parser_t::value_t&)> post_process)
 {
-    m_deps_file = deps_path;
     m_file_exists = deps_file_exists(m_deps_file);
 
     if (!m_file_exists)
@@ -589,14 +581,44 @@ void deps_json_t::load(bool is_framework_dependent, const pal::string_t& deps_pa
         runtime_target.GetString() :
         runtime_target[_X("name")].GetString();
 
-    trace::verbose(_X("Loading deps file... [%s] as framework dependent=%d, use_fallback_graph=%d"), deps_path.c_str(), is_framework_dependent, m_rid_resolution_options.use_fallback_graph);
+    trace::verbose(_X("Loading deps file... [%s] as framework dependent=%d, use_fallback_graph=%d"), m_deps_file.c_str(), is_framework_dependent, m_rid_resolution_options.use_fallback_graph);
 
     if (is_framework_dependent)
     {
-        load_framework_dependent(deps_path, json.document(), name);
+        load_framework_dependent(json.document(), name);
     }
     else
     {
-        load_self_contained(deps_path, json.document(), name);
+        load_self_contained(json.document(), name);
     }
+
+    if (post_process)
+        post_process(json.document());
+}
+
+std::unique_ptr<deps_json_t> deps_json_t::load_self_contained(const pal::string_t& deps_path, rid_resolution_options_t& rid_resolution_options)
+{
+    std::unique_ptr<deps_json_t> deps = std::unique_ptr<deps_json_t>(new deps_json_t(deps_path, rid_resolution_options));
+    if (rid_resolution_options.use_fallback_graph)
+    {
+        assert(rid_resolution_options.rid_fallback_graph != nullptr && rid_resolution_options.rid_fallback_graph->empty());
+        deps->load(false,
+            [&](const json_parser_t::value_t& json)
+            {
+                populate_rid_fallback_graph(json, *rid_resolution_options.rid_fallback_graph);
+            });
+    }
+    else
+    {
+        deps->load(false);
+    }
+
+    return deps;
+}
+
+std::unique_ptr<deps_json_t> deps_json_t::load_framework_dependent(const pal::string_t& deps_path, const rid_resolution_options_t& rid_resolution_options)
+{
+    std::unique_ptr<deps_json_t> deps = std::unique_ptr<deps_json_t>(new deps_json_t(deps_path, rid_resolution_options));
+    deps->load(true);
+    return deps;
 }

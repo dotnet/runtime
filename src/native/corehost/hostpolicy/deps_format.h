@@ -28,17 +28,15 @@ public:
 
     struct rid_resolution_options_t
     {
+        // Whether or not the RID fallback graph should be used
+        // For framework-dependent, this indicates whether rid_fallback_graph should be used to filter
+        // RID-specific assets. For self-contained, this indicates whether the RID graph should be read
+        // from the deps file.
         bool use_fallback_graph;
-        const deps_json_t::rid_fallback_graph_t* rid_fallback_graph;
-    };
 
-    deps_json_t(bool is_framework_dependent, const pal::string_t& deps_path, const rid_resolution_options_t& rid_resolution_options)
-        : m_file_exists(false)
-        , m_valid(false)
-        , m_rid_resolution_options(rid_resolution_options)
-    {
-        load(is_framework_dependent, deps_path);
-    }
+        // The RID fallback graph to use
+        deps_json_t::rid_fallback_graph_t* rid_fallback_graph;
+    };
 
     const std::vector<deps_entry_t>& get_entries(deps_entry_t::asset_types type) const
     {
@@ -58,30 +56,38 @@ public:
         return m_valid;
     }
 
-    const rid_fallback_graph_t& get_rid_fallback_graph() const
-    {
-        return m_rid_fallback_graph;
-    }
-
     const pal::string_t& get_deps_file() const
     {
         return m_deps_file;
     }
 
 public: // static
+    // Load a self-contained deps file
+    // If rid_resolution_options specify to read the RID fallback graph, it will be updated with the fallback_graph.
+    static std::unique_ptr<deps_json_t> load_self_contained(const pal::string_t& deps_path, rid_resolution_options_t& rid_resolution_options);
+
+    // Load a framework-dependent deps file
+    static std::unique_ptr<deps_json_t> load_framework_dependent(const pal::string_t& deps_path, const rid_resolution_options_t& rid_resolution_options);
+
     // Get the RID fallback graph for a deps file.
     // Parse failures or non-existent files will return an empty fallback graph
     static rid_fallback_graph_t get_rid_fallback_graph(const pal::string_t& deps_path);
 
 private:
-    void load_self_contained(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name);
-    void load_framework_dependent(const pal::string_t& deps_path, const json_parser_t::value_t& json, const pal::string_t& target_name);
-    void load(bool is_framework_dependent, const pal::string_t& deps_path);
+    deps_json_t(const pal::string_t& deps_path, const rid_resolution_options_t& rid_resolution_options)
+        : m_deps_file(deps_path)
+        , m_file_exists(false)
+        , m_valid(false)
+        , m_rid_resolution_options(rid_resolution_options)
+    { }
+
+    void load(bool is_framework_dependent, std::function<void(const json_parser_t::value_t&)> post_process = {});
+    void load_self_contained(const json_parser_t::value_t& json, const pal::string_t& target_name);
+    void load_framework_dependent(const json_parser_t::value_t& json, const pal::string_t& target_name);
     void process_runtime_targets(const json_parser_t::value_t& json, const pal::string_t& target_name, rid_specific_assets_t* p_assets);
     void process_targets(const json_parser_t::value_t& json, const pal::string_t& target_name, deps_assets_t* p_assets);
 
     void reconcile_libraries_with_targets(
-        const pal::string_t& deps_path,
         const json_parser_t::value_t& json,
         const std::function<bool(const pal::string_t&)>& library_exists_fn,
         const std::function<const vec_asset_t&(const pal::string_t&, size_t, bool*)>& get_assets_fn);
@@ -93,13 +99,11 @@ private:
     deps_assets_t m_assets;
     rid_specific_assets_t m_rid_assets;
 
+    pal::string_t m_deps_file;
     bool m_file_exists;
     bool m_valid;
 
     const rid_resolution_options_t& m_rid_resolution_options;
-    rid_fallback_graph_t m_rid_fallback_graph;
-
-    pal::string_t m_deps_file;
 };
 
 #endif // __DEPS_FORMAT_H_
