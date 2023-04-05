@@ -31,7 +31,7 @@ namespace System.Threading.Tasks
         /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
         /// <returns>A task that represents the time delay.</returns>
         /// <exception cref="System.ArgumentNullException">The <paramref name="timeProvider"/> argument is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="delay"/> represents a negative time interval other than <see cref="Timeout.InfiniteTimeSpan"/>.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="delay"/> represents a negative time interval other than <see cref="Timeout.InfiniteTimeSpan"/>.</exception>
         public static Task Delay(this TimeProvider timeProvider, TimeSpan delay, CancellationToken cancellationToken = default)
         {
 #if NET8_0_OR_GREATER
@@ -106,7 +106,7 @@ namespace System.Threading.Tasks
         /// <returns>The <see cref="Task"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
         /// <exception cref="System.ArgumentNullException">The <paramref name="task"/> argument is null.</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="timeProvider"/> argument is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> represents a negative time interval other than <see cref="Timeout.InfiniteTimeSpan"/>.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> represents a negative time interval other than <see cref="Timeout.InfiniteTimeSpan"/>.</exception>
         public static Task WaitAsync(this Task task, TimeSpan timeout, TimeProvider timeProvider, CancellationToken cancellationToken = default)
         {
 #if NET8_0_OR_GREATER
@@ -207,7 +207,7 @@ namespace System.Threading.Tasks
         /// <returns>The <see cref="Task"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
         /// <exception cref="System.ArgumentNullException">The <paramref name="task"/> argument is null.</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="timeProvider"/> argument is null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> represents a negative time interval other than <see cref="Timeout.InfiniteTimeSpan"/>.</exception>
+        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> represents a negative time interval other than <see cref="Timeout.InfiniteTimeSpan"/>.</exception>
 #if NET8_0_OR_GREATER
         public static Task<TResult> WaitAsync<TResult>(this Task<TResult> task, TimeSpan timeout, TimeProvider timeProvider, CancellationToken cancellationToken = default)
             => task.WaitAsync(timeout, timeProvider, cancellationToken);
