@@ -5514,6 +5514,22 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<ulong>  Negate(Vector128<ulong>  value) { throw null; }
         public static Vector128<nint>   Negate(Vector128<nint>   value) { throw null; }
         public static Vector128<nuint>  Negate(Vector128<nuint>  value) { throw null; }
+        public static Vector128<short>  MultiplyWideningLower(Vector128<sbyte>  left, Vector128<sbyte>  right) { throw null; }
+        public static Vector128<ushort> MultiplyWideningLower(Vector128<byte>   left, Vector128<byte>   right) { throw null; }
+        public static Vector128<int>    MultiplyWideningLower(Vector128<short>  left, Vector128<short>  right) { throw null; }
+        public static Vector128<uint>   MultiplyWideningLower(Vector128<ushort> left, Vector128<ushort> right) { throw null; }
+        public static Vector128<long>   MultiplyWideningLower(Vector128<int>    left, Vector128<int>    right) { throw null; }
+        public static Vector128<ulong>  MultiplyWideningLower(Vector128<uint>   left, Vector128<uint>   right) { throw null; }
+        public static Vector128<short>  MultiplyWideningUpper(Vector128<sbyte>  left, Vector128<sbyte>  right) { throw null; }
+        public static Vector128<ushort> MultiplyWideningUpper(Vector128<byte>   left, Vector128<byte>   right) { throw null; }
+        public static Vector128<int>    MultiplyWideningUpper(Vector128<short>  left, Vector128<short>  right) { throw null; }
+        public static Vector128<uint>   MultiplyWideningUpper(Vector128<ushort> left, Vector128<ushort> right) { throw null; }
+        public static Vector128<long>   MultiplyWideningUpper(Vector128<int>    left, Vector128<int>    right) { throw null; }
+        public static Vector128<ulong>  MultiplyWideningUpper(Vector128<uint>   left, Vector128<uint>   right) { throw null; }
+        public static Vector128<short>  AddPairwiseWidening(Vector128<sbyte>  value) { throw null; }
+        public static Vector128<ushort> AddPairwiseWidening(Vector128<byte>   value) { throw null; }
+        public static Vector128<int>    AddPairwiseWidening(Vector128<short>  value) { throw null; }
+        public static Vector128<uint>   AddPairwiseWidening(Vector128<ushort> value) { throw null; }
         public static Vector128<sbyte>  ShiftLeft(Vector128<sbyte>  value, int count) { throw null; }
         public static Vector128<byte>   ShiftLeft(Vector128<byte>   value, int count) { throw null; }
         public static Vector128<short>  ShiftLeft(Vector128<short>  value, int count) { throw null; }
