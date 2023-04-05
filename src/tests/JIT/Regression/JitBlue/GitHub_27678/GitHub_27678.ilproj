@@ -2,6 +2,12 @@
   <PropertyGroup>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
+
+    <!-- * Assertion at
+         /__w/1/s/src/mono/mono/mini/memory-access.c:120, condition `size < MAX_INLINE_COPY_SIZE' not met -->
+    <MonoAotIncompatible>true</MonoAotIncompatible>
+    <!-- Needed for MonoAotIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).il" />
