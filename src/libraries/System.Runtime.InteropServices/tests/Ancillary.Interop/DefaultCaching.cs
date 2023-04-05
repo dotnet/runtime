@@ -11,7 +11,7 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         // We limit the concurrency level to 1 writer as we believe this is the most common scenario and limiting the concurrency level
         // significantly reduces memory overhead.
-        // We set the default capacity a similar CoreCLR's COM-interop's RCW cache size.
+        // We set the default capacity as a decent guess.
         private readonly ConcurrentDictionary<RuntimeTypeHandle, IIUnknownCacheStrategy.TableInfo> _cache = new(concurrencyLevel: 1, capacity: 16);
 
         IIUnknownCacheStrategy.TableInfo IIUnknownCacheStrategy.ConstructTableInfo(RuntimeTypeHandle handle, IIUnknownDerivedDetails details, void* ptr)
