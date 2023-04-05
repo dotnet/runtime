@@ -1,6 +1,7 @@
 project(mono)
 
 set(subdirs
+  containers
   eglib
   utils
   sgen

@@ -942,10 +942,6 @@ list(APPEND shared_container_sources
 
 addprefix(shared_container_sources ${SHARED_CONTAINERS_SOURCE_PATH} "${shared_container_sources}")
 
-add_library(shared_container_objects OBJECT ${shared_container_sources})
-target_include_directories(shared_container_objects PUBLIC ${SHARED_CONTAINERS_SOURCE_PATH})
-
-
 ### Mono runtime and components
 
 add_subdirectory(mono)
