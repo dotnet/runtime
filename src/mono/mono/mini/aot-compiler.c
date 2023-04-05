@@ -3770,8 +3770,6 @@ encode_signature (MonoAotCompile *acfg, MonoMethodSignature *sig, guint8 *buf, g
 	*endbuf = p;
 }
 
-#define MAX_IMAGE_INDEX 250
-
 static void
 encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8 **endbuf)
 {
@@ -3945,7 +3943,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		ji = (MonoJumpInfoToken *)g_hash_table_lookup (acfg->token_info_hash, method);
 		if (ji) {
 			image_index = get_image_index (acfg, ji->image);
-			g_assert (image_index < MAX_IMAGE_INDEX);
 			token = ji->token;
 
 			encode_value ((MONO_AOT_METHODREF_METHODSPEC << 24), p, &p);
@@ -3975,7 +3972,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			encode_klass_ref (acfg, method->klass, p, &p);
 			/* Encode the method */
 			image_index = get_image_index (acfg, m_class_get_image (method->klass));
-			g_assert (image_index < MAX_IMAGE_INDEX);
 			g_assert (declaring->token);
 			token = declaring->token;
 			g_assert (mono_metadata_token_table (token) == MONO_TABLE_METHOD);
@@ -3989,7 +3985,6 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 		ji = (MonoJumpInfoToken *)g_hash_table_lookup (acfg->token_info_hash, method);
 		if (ji) {
 			image_index = get_image_index (acfg, ji->image);
-			g_assert (image_index < MAX_IMAGE_INDEX);
 			token = ji->token;
 
 			encode_value ((MONO_AOT_METHODREF_METHODSPEC << 24), p, &p);
