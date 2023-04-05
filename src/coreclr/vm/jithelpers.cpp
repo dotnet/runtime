@@ -1815,26 +1815,27 @@ HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIn
 #ifdef HOST_WINDOWS
     FCALL_CONTRACT;
 
+    HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
+
     MethodTable * pMT = AppDomain::GetCurrentDomain()->LookupThreadStaticBlockType(staticBlockIndex);
     _ASSERTE(!pMT->HasGenericsStaticsInfo());
 
-    ENDFORBIDGC();
     staticBlock = HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
 
     if (t_threadStaticBlocksSize <= staticBlockIndex)
     {
-        UINT32 prevThreadStaticBlocksSize = t_threadStaticBlocksSize;
-        void** prevThreadStaticBlock = t_threadStaticBlocks;
+        UINT32 newThreadStaticBlocksSize = max(2 * t_threadStaticBlocksSize, staticBlockIndex + 1);
+        void** newThreadStaticBlocks = (void**) new PTR_BYTE[newThreadStaticBlocksSize * sizeof(PTR_BYTE)];
+        memset(newThreadStaticBlocks + t_threadStaticBlocksSize, 0, (newThreadStaticBlocksSize - t_threadStaticBlocksSize) * sizeof(PTR_BYTE));
 
-        t_threadStaticBlocksSize = max(2 * t_threadStaticBlocksSize, staticBlockIndex + 1);
-        t_threadStaticBlocks = (void**) new (nothrow) PTR_BYTE[t_threadStaticBlocksSize * sizeof(PTR_BYTE)];
-        memset(t_threadStaticBlocks, 0, t_threadStaticBlocksSize * sizeof(PTR_BYTE));
-
-        if (prevThreadStaticBlocksSize > 0)
+        if (t_threadStaticBlocksSize > 0)
         {
-            memcpy(t_threadStaticBlocks, prevThreadStaticBlock, prevThreadStaticBlocksSize);
-            delete prevThreadStaticBlock;
+            memcpy(newThreadStaticBlocks, t_threadStaticBlocks, t_threadStaticBlocksSize * sizeof(PTR_BYTE));
+            delete t_threadStaticBlocks;
         }
+
+        t_threadStaticBlocksSize = newThreadStaticBlocksSize;
+        t_threadStaticBlocks = newThreadStaticBlocks;
     }
 
     void* currentEntry = t_threadStaticBlocks[staticBlockIndex];
@@ -1847,6 +1848,7 @@ HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIn
         t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
     }
 
+    HELPER_METHOD_FRAME_END();
 #else
     _ASSERTE(!"JIT_GetSharedNonGCThreadStaticBaseOptimized not supported on non-windows.");
 #endif // HOST_WINDOWS
