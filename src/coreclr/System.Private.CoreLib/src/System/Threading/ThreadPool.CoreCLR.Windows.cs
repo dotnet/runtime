@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -116,7 +117,7 @@ namespace System.Threading
         {
             if (ThreadPool.UseWindowsThreadPool)
             {
-                WindowsThreadPool.GetMinThreads(workerThreads, completionPortThreads);
+                WindowsThreadPool.GetMinThreads(out workerThreads, out completionPortThreads);
             }
             else
             {
@@ -127,7 +128,7 @@ namespace System.Threading
         {
             if (ThreadPool.UseWindowsThreadPool)
             {
-                WindowsThreadPool.GetAvailableThreads(workerThreads, completionPortThreads);
+                WindowsThreadPool.GetAvailableThreads(out workerThreads, out completionPortThreads);
             }
             else
             {

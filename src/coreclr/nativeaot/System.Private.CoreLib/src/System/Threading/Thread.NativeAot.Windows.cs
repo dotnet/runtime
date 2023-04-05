@@ -225,7 +225,7 @@ namespace System.Threading
             return 0;
         }
 
-        private ApartmentState GetApartmentStateCore()
+        public ApartmentState GetApartmentState()
         {
             if (this != CurrentThread)
             {
@@ -245,7 +245,7 @@ namespace System.Threading
             }
         }
 
-        private bool SetApartmentStateUncheckedCore(ApartmentState state, bool throwOnError)
+        private bool SetApartmentStateUnchecked(ApartmentState state, bool throwOnError)
         {
             ApartmentState retState;
 
@@ -378,7 +378,7 @@ namespace System.Threading
         }
 
         // TODO: https://github.com/dotnet/runtime/issues/22161
-        // public void DisableComObjectEagerCleanup() { }
+        public void DisableComObjectEagerCleanup() { }
 
         private static Thread InitializeExistingThreadPoolThread()
         {
@@ -401,7 +401,7 @@ namespace System.Threading
             return InitializeExistingThreadPoolThread();
         }
 
-        private void InterruptCore() { throw new PlatformNotSupportedException(); }
+        public void Interrupt() { throw new PlatformNotSupportedException(); }
 
         //
         // Suppresses reentrant waits on the current thread, until a matching call to RestoreReentrantWaits.

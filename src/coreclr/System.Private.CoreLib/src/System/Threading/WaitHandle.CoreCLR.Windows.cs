@@ -14,12 +14,12 @@ namespace System.Threading
         internal static unsafe int WaitMultipleIgnoringSyncContext(Span<IntPtr> handles, bool waitAll, int millisecondsTimeout) =>
             ThreadPool.UseWindowsThreadPool ?
             WaitMultipleIgnoringSyncContextCore(handles, waitAll, millisecondsTimeout) :
-            WaitOnePortableCore(waitHandle, millisecondsTimeout);
+            WaitMultipleIgnoringSyncContextPortableCore(handles, waitAll, millisecondsTimeout);
 
         internal static unsafe int WaitOneCore(IntPtr handle, int millisecondsTimeout) =>
             ThreadPool.UseWindowsThreadPool ?
             WaitOneCoreCore(handle, millisecondsTimeout) :
-            WaitOnePortableCore(waitHandle, millisecondsTimeout);
+            WaitOnePortableCore(handle, millisecondsTimeout);
 
         internal static Exception ExceptionFromCreationError(int errorCode, string path) =>
             ExceptionFromCreationErrorCore(errorCode, path);
@@ -27,6 +27,6 @@ namespace System.Threading
         private static int SignalAndWaitCore(IntPtr handleToSignal, IntPtr handleToWaitOn, int millisecondsTimeout) =>
             ThreadPool.UseWindowsThreadPool ?
             SignalAndWaitCoreCore(handleToSignal, handleToWaitOn, millisecondsTimeout) :
-            SignalAndWaitPortableCore(waitHandleToSignal, waitHandleToWaitOn, millisecondsTimeout);
+            SignalAndWaitPortableCore(handleToSignal, handleToWaitOn, millisecondsTimeout);
     }
 }

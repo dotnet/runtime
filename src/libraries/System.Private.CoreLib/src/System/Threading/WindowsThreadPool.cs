@@ -149,13 +149,14 @@ namespace System.Threading
         [UnmanagedCallersOnly]
         private static void DispatchCallback(IntPtr instance, IntPtr context, IntPtr work)
         {
-            var wrapper = ThreadPoolCallbackWrapper.Enter();
+            // PR-Comment: Assuming this is no longer necessary, might be wrong about this
+            // var wrapper = ThreadPoolCallbackWrapper.Enter();
             Debug.Assert(s_work == work);
             Interlocked.Increment(ref s_workingThreadCounter.Count);
             ThreadPoolWorkQueue.Dispatch();
             Interlocked.Decrement(ref s_workingThreadCounter.Count);
             // We reset the thread after executing each callback
-            wrapper.Exit(resetThread: false);
+            // wrapper.Exit(resetThread: false);
         }
 
         internal static unsafe void RequestWorkerThread()

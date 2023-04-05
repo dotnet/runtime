@@ -33,6 +33,7 @@ namespace System.Threading
 
         private void PerformCallbackCore(bool timedOut)
         {
+            /* PR-Comment: Previous implementation
             bool lockAcquired;
             var spinner = new SpinWait();
 
@@ -68,8 +69,28 @@ namespace System.Threading
                     _lock.Release();
                 }
             }
+            */
 
-            _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(_callbackHelper, timedOut);
+            // If another thread is running Unregister, no need to restart the timer or clean up
+            lock (_lock!)
+            {
+                if (!_unregistering)
+                {
+                    if (_repeating)
+                    {
+                        // Allow this wait to fire again. Restart the timer before executing the callback.
+                        RestartWait();
+                    }
+                    else
+                    {
+                        // This wait will not be fired again. Free the GC handle to allow the GC to collect this object.
+                        Debug.Assert(_gcHandle.IsAllocated);
+                        _gcHandle.Free();
+                    }
+                }
+            }
+
+            _ThreadPoolWaitOrTimerCallback.PerformWaitOrTimerCallback(_callbackHelper!, timedOut);
         }
 
         private unsafe void RestartWaitCore()
@@ -84,13 +105,13 @@ namespace System.Threading
             }
 
             // We can use DangerousGetHandle because of DangerousAddRef in the constructor
-            Interop.Kernel32.SetThreadpoolWait(_tpWait, _waitHandle.DangerousGetHandle(), (IntPtr)pTimeout);
+            Interop.Kernel32.SetThreadpoolWait(_tpWait, _waitHandle!.DangerousGetHandle(), (IntPtr)pTimeout);
         }
 
         private bool UnregisterCore(WaitHandle waitObject)
         {
             // Hold the lock during the synchronous part of Unregister (as in CoreCLR)
-            using (LockHolder.Hold(_lock))
+            lock(_lock)
             {
                 if (!_unregistering)
                 {
