@@ -1810,40 +1810,45 @@ HCIMPLEND
 //      otherwise wouldn't be possible.
 HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
 {
+    void* staticBlock = nullptr;
+
+#ifdef HOST_WINDOWS
     FCALL_CONTRACT;
 
     MethodTable * pMT = AppDomain::GetCurrentDomain()->LookupThreadStaticBlockType(staticBlockIndex);
     _ASSERTE(!pMT->HasGenericsStaticsInfo());
 
     ENDFORBIDGC();
-    void* staticBlock = HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
+    staticBlock = HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
 
-#ifdef HOST_WINDOWS
-        if (t_threadStaticBlocksSize <= staticBlockIndex)
+    if (t_threadStaticBlocksSize <= staticBlockIndex)
+    {
+        UINT32 prevThreadStaticBlocksSize = t_threadStaticBlocksSize;
+        void** prevThreadStaticBlock = t_threadStaticBlocks;
+
+        t_threadStaticBlocksSize = max(2 * t_threadStaticBlocksSize, staticBlockIndex + 1);
+        t_threadStaticBlocks = (void**) new (nothrow) PTR_BYTE[t_threadStaticBlocksSize * sizeof(PTR_BYTE)];
+        memset(t_threadStaticBlocks, 0, t_threadStaticBlocksSize * sizeof(PTR_BYTE));
+
+        if (prevThreadStaticBlocksSize > 0)
         {
-            UINT32 prevThreadStaticBlocksSize = t_threadStaticBlocksSize;
-            void** prevThreadStaticBlock = t_threadStaticBlocks;
-
-            t_threadStaticBlocksSize = max(2 * t_threadStaticBlocksSize, staticBlockIndex + 1);
-            t_threadStaticBlocks = (void**) new (nothrow) PTR_BYTE[t_threadStaticBlocksSize * sizeof(PTR_BYTE)];
-            memset(t_threadStaticBlocks, 0, t_threadStaticBlocksSize * sizeof(PTR_BYTE));
-
-            if (prevThreadStaticBlocksSize > 0)
-            {
-                memcpy(t_threadStaticBlocks, prevThreadStaticBlock, prevThreadStaticBlocksSize);
-                delete prevThreadStaticBlock;
-            }
+            memcpy(t_threadStaticBlocks, prevThreadStaticBlock, prevThreadStaticBlocksSize);
+            delete prevThreadStaticBlock;
         }
+    }
 
-        void* currentEntry = t_threadStaticBlocks[staticBlockIndex];
-        // We could be coming here 2nd time after running the ctor when we try to get the static block.
-        // In such case, just avoid adding the same entry.
-        if (currentEntry != staticBlock)
-        {
-            _ASSERTE(currentEntry == nullptr);
-            t_threadStaticBlocks[staticBlockIndex] = staticBlock;
-            t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
-        }
+    void* currentEntry = t_threadStaticBlocks[staticBlockIndex];
+    // We could be coming here 2nd time after running the ctor when we try to get the static block.
+    // In such case, just avoid adding the same entry.
+    if (currentEntry != staticBlock)
+    {
+        _ASSERTE(currentEntry == nullptr);
+        t_threadStaticBlocks[staticBlockIndex] = staticBlock;
+        t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
+    }
+
+#else
+    _ASSERTE(!"JIT_GetSharedNonGCThreadStaticBaseOptimized not supported on non-windows.");
 #endif // HOST_WINDOWS
 
     return staticBlock;
