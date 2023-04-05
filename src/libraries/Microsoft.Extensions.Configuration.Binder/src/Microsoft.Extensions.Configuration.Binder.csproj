@@ -37,6 +37,12 @@
 
   <PropertyGroup>
     <IncludeMultiTargetRoslynComponentTargets>false</IncludeMultiTargetRoslynComponentTargets>
-    <RoslynComponentsAreOffByDefault>true</RoslynComponentsAreOffByDefault>
+    <EnableConfigurationBindingGeneratorTargetsFilePath>buildTransitive\EnableConfigurationBindingGenerator.targets</EnableConfigurationBindingGeneratorTargetsFilePath>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="$(EnableConfigurationBindingGeneratorTargetsFilePath)" PackagePath="buildTransitive\netstandard2.0\$(PackageId).targets" />
+    <Content Include="$(EnableConfigurationBindingGeneratorTargetsFilePath)" PackagePath="buildTransitive\$(NetCoreAppMinimum)\$(PackageId).targets" />
+    <Content Include="$(EnableConfigurationBindingGeneratorTargetsFilePath)" PackagePath="buildTransitive\$(NetFrameworkMinimum)\$(PackageId).targets" />
+  </ItemGroup>
 </Project>

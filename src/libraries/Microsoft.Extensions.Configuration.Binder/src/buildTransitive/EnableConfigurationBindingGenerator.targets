@@ -1,0 +1,17 @@
+<Project>
+    <Target Name="_Microsoft_Extensions_Configuration_BinderGatherAnalyzers">
+        <ItemGroup>
+            <_Microsoft_Extensions_Configuration_BinderAnalyzer Include="@(Analyzer)" Condition="'%(Analyzer.NuGetPackageId)' == 'Microsoft.Extensions.Configuration.Binder'" />
+        </ItemGroup>
+    </Target>
+
+    <Target Name="_Microsoft_Extensions_Configuration_BinderRemoveAnalyzer" 
+            Condition="'$(EnableConfigurationBindingGenerator)' != 'true'"
+            AfterTargets="ResolvePackageDependenciesForBuild;ResolveNuGetPackageAssets"
+            DependsOnTargets="_Microsoft_Extensions_Configuration_BinderGatherAnalyzers">
+
+        <ItemGroup>
+            <Analyzer Remove="@(_Microsoft_Extensions_Configuration_BinderAnalyzer)" />
+        </ItemGroup>
+    </Target>
+</Project>
