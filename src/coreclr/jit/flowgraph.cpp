@@ -596,7 +596,6 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 GenTree* isInitedValue;
                 if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
                 {
-                    assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
                     GenTree* baseAddr = gtNewIconHandleNode((size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR);
 
                     // Save it to a temp - we'll be using its value for the replacementNode.
@@ -607,13 +606,15 @@ PhaseStatus Compiler::fgExpandStaticInit()
                     }
 
                     // Don't fold ADD(CNS1, CNS2) here since the result won't be reloc-friendly for AOT
-                    isInitAdrNode = gtNewIndir(TYP_I_IMPL, gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr,
-                                                                         gtNewIconNode(isInitOffset)));
+                    isInitAdrNode = gtNewIndir(TYP_I_IMPL, (isInitOffset != 0) ? gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr,
+                                                                         gtNewIconNode(isInitOffset)) : baseAddr);
                     // 0 means "initialized" on NativeAOT
                     isInitedValue = gtNewIconNode(0, TYP_I_IMPL);
                 }
                 else
                 {
+                    assert(isInitOffset == 0);
+                    
                     isInitAdrNode =
                         gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR, false);
 
@@ -657,8 +658,6 @@ PhaseStatus Compiler::fgExpandStaticInit()
                         assert(staticBaseAddr.accessType == IAT_PVALUE);
                         replacementNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)staticBaseAddr.addr,
                                                                    GTF_ICON_GLOBAL_PTR, false);
-                        replacementNode->gtFlags &= ~GTF_EXCEPT;
-                        replacementNode->gtFlags |= (GTF_IND_NONFAULTING | GTF_GLOB_REF);
                     }
                 }
                 else
