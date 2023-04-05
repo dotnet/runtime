@@ -1047,14 +1047,18 @@ namespace System.Runtime
 #endif
             private const int BUCKET_SIZE = 8;
 
-#if TARGET_64BIT
-            private const int VERSION_NUM_SIZE = 64 - 3;
-#else
-            private const int VERSION_NUM_SIZE = 32 - 3;
-#endif
+            private const int VERSION_NUM_SIZE = 29;
             private const uint VERSION_NUM_MASK = (1 << VERSION_NUM_SIZE) - 1;
 
-            private static int[] s_table = CreateCastCache(INITIAL_CACHE_SIZE, throwOnFail: true)!;
+            // A trivial 2-elements table used for "flushing" the cache. Nothing is ever stored in this table.
+            // It is required that we are able to allocate this.
+            private static int[] s_sentinelTable = CreateCastCache(2, throwOnFail: true)!;
+
+            // when flushing, remember the last size.
+            private static int s_lastFlushSize = INITIAL_CACHE_SIZE;
+
+            // The actual storage.
+            private static int[] s_table = CreateCastCache(INITIAL_CACHE_SIZE) ?? s_sentinelTable;
 
             // TODO: VS
             // [DebuggerDisplay("Source = {_source}; Target = {_targetAndResult & ~1}; Result = {_targetAndResult & 1}; VersionNum = {_version & ((1 << 29) - 1)}; Distance = {_version >> 29};")]
@@ -1063,12 +1067,12 @@ namespace System.Runtime
             private struct CastCacheEntry
             {
                 // version has the following structure:
-                // [ distance:3bit |  versionNum:the rest ]
+                // [ distance:3bit |  versionNum:29bit ]
                 //
                 // distance is how many iterations the entry is from it ideal position.
                 // we use that for preemption.
                 //
-                // versionNum is a monotonicaly increasing numerical tag.
+                // versionNum is a monotonically increasing numerical tag.
                 // Writer "claims" entry by atomically incrementing the tag. Thus odd number indicates an entry in progress.
                 // Upon completion of adding an entry the tag is incremented again making it even. Even number indicates a complete entry.
                 //
@@ -1086,7 +1090,7 @@ namespace System.Runtime
                     _targetAndResult = target | (nuint)(result ? 1: 0);
                 }
             }
-            // TODO: VS this is to avoid dependency on BitOperations
+            // this is to avoid dependency on BitOperations
 #if TARGET_64BIT
             // [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static ulong RotateLeft(ulong value, int offset)
@@ -1328,21 +1332,17 @@ namespace System.Runtime
                 int bucket;
                 ref int tableData = ref *(int*)0;
 
-                // we do not need to flush cache on 64bit
-#if !TARGET_64BIT
-                if (TableMask(ref tableData) == 1)
-                {
-                    // 2-element table is used as a sentinel.
-                    // we did not allocate a real table yet or have flushed it.
-                    // try replacing the table, but do not insert anything.
-                    MaybeReplaceCacheWithLarger(s_lastFlushSize);
-                    return;
-                }
-#endif
-
                 do
                 {
                     tableData = ref TableData(s_table);
+                    if (TableMask(ref tableData) == 1)
+                    {
+                        // 2-element table is used as a sentinel.
+                        // we did not allocate a real table yet or have flushed it.
+                        // try replacing the table, but do not insert anything.
+                        MaybeReplaceCacheWithLarger(s_lastFlushSize);
+                        return;
+                    }
 
                     bucket = KeyToBucket(ref tableData, source, target);
                     int index = bucket;
@@ -1367,19 +1367,14 @@ namespace System.Runtime
                         // This way we will detect both if version is changing (odd) or has changed (even, but different).
                         version &= unchecked((uint)~1);
 
-#if !TARGET_64BIT
-                        On 32bit we need to check for version overflow and flush.
-                        Port the following code from the native implementation.
-
-                        //if ((version & VERSION_NUM_MASK) >= (VERSION_NUM_MASK - 2))
-                        //{
-                        //    // If exactly VERSION_NUM_MASK updates happens between here and publishing, we may not recognise a race.
-                        //    // It is extremely unlikely, but to not worry about the possibility, lets not allow version to go this high and just get a new cache.
-                        //    // This will not happen often.
-                        //    FlushCurrentCache();
-                        //    return;
-                        //}
-#endif
+                        if ((version & VERSION_NUM_MASK) >= (VERSION_NUM_MASK - 2))
+                        {
+                            // If exactly VERSION_NUM_MASK updates happens between here and publishing, we may not recognize a race.
+                            // It is extremely unlikely, but to not worry about the possibility, lets not allow version to go this high and just get a new cache.
+                            // This will not happen often.
+                            FlushCurrentCache();
+                            return;
+                        }
 
                         if (version == 0 || (version >> VERSION_NUM_SIZE) > i)
                         {
@@ -1416,14 +1411,11 @@ namespace System.Runtime
                 // reread tableData after TryGrow.
                 tableData = ref TableData(s_table);
 
-                // we do not need to flush cache on 64bit
-#if !TARGET_64BIT
                 if (TableMask(ref tableData) == 1)
                 {
                     // do not insert into a sentinel.
                     return;
                 }
-#endif
 
                 // pick a victim somewhat randomly within a bucket
                 // NB: ++ is not interlocked. We are ok if we lose counts here. It is just a number that changes.
@@ -1441,19 +1433,14 @@ namespace System.Runtime
                     // This way we will detect both if version is changing (odd) or has changed (even, but different).
                     version &= unchecked((uint)~1);
 
-#if !TARGET_64BIT
-                    On 32bit we need to check for version overflow and flush.
-                    Port the following code from the native implementation.
-
-                    //if ((version & VERSION_NUM_MASK) >= (VERSION_NUM_MASK - 2))
-                    //{
-                    //    // If exactly VERSION_NUM_MASK updates happens between here and publishing, we may not recognise a race.
-                    //    // It is extremely unlikely, but to not worry about the possibility, lets not allow version to go this high and just get a new cache.
-                    //    // This will not happen often.
-                    //    FlushCurrentCache();
-                    //    return;
-                    //}
-#endif
+                    if ((version & VERSION_NUM_MASK) >= (VERSION_NUM_MASK - 2))
+                    {
+                        // If exactly VERSION_NUM_MASK updates happens between here and publishing, we may not recognize a race.
+                        // It is extremely unlikely, but to not worry about the possibility, lets not allow version to go this high and just get a new cache.
+                        // This will not happen often.
+                        FlushCurrentCache();
+                        return;
+                    }
 
                     uint newVersion = (victimDistance << VERSION_NUM_SIZE) + (version & VERSION_NUM_MASK) + 1;
                     uint versionOrig = InterlockedCompareExchange(ref pEntry._version, newVersion, version);
@@ -1464,6 +1451,18 @@ namespace System.Runtime
                         VolatileWrite(ref pEntry._version, newVersion + 1);
                     }
                 }
+            }
+
+            private static void FlushCurrentCache()
+            {
+                ref int tableData = ref TableData(s_table);
+                int lastSize = CacheElementCount(ref tableData);
+                if (lastSize < INITIAL_CACHE_SIZE)
+                    lastSize = INITIAL_CACHE_SIZE;
+
+                s_lastFlushSize = lastSize;
+                // flushing is just replacing the table with a sentinel.
+                s_table = s_sentinelTable;
             }
 
             public static unsafe bool AreTypesAssignableInternal(MethodTable* pSourceType, MethodTable* pTargetType, AssignmentVariation variation, EETypePairList* pVisited)
