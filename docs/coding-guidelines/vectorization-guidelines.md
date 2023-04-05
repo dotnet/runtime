@@ -34,9 +34,9 @@ TL;DR: Go to [Summary](#summary)
 
 # Introduction to vectorization with Vector128 and Vector256
 
-Vectorization is the art of converting an algorithm from operating on a single value at a time to operating on a set of values (vector). It can greatly improve performance at a cost of increased code complexity.
+Vectorization is the art of converting an algorithm from operating on a single value per iteration to operating on a set of values (vector) per iteration. It can greatly improve performance at a cost of increased code complexity.
 
-In recent releases, .NET has introduced many new APIs for vectorization. The vast majority of them are hardware specific, so they require users to provide an implementation per processor architecture (x64 and/or arm64), with the option of using the most optimal instructions for hardware that is executing the code.
+In recent releases, .NET has introduced many new APIs for vectorization. The vast majority of them are hardware specific, so they require users to provide an implementation per processor architecture (such as x86, x64, Arm64, WASM, or other platforms), with the option of using the most optimal instructions for hardware that is executing the code.
 
 .NET 7 introduced a set of new APIs for `Vector128<T>` and `Vector256<T>` for writing hardware-agnostic, cross platform vectorized code. The purpose of this document is to introduce you to the new APIs and provide a set of best practices.
 
@@ -67,7 +67,7 @@ A single `Vector128` operation allows you to operate on: 16 (s)bytes, 8 (u)short
 `Vector256<T>` is twice as big as `Vector128<T>`, so when it is hardware accelerated, and the data is large enough, you should use it instead of `Vector128<T>`. To check the acceleration, use `Vector128.IsHardwareAccelerated` and `Vector256.IsHardwareAccelerated` properties.
 
 The size of the input also matters. It needs to be at least of the size of a single vector to be able to execute the vectorized code path. `Vector128<T>.Count` and `Vector256<T>.Count` return the number of elements of the given type T in a single vector.
-Both APIs are turned into constants by the Just-In-Time compiler (i.e. no method call is required to retrieve the information). In the case of pre-compiled code (NativeAOT), this is not true for the `IsHardwareAccelerated` property, as the required information is not available at compile time.
+Both `Count` and `IsHardwareAccelerated` are turned into constants by the Just-In-Time compiler (i.e. no method call is required to retrieve the information). In the case of pre-compiled code (NativeAOT), this is not true for the `IsHardwareAccelerated` property, as the required information is not available at compile time.
 
 That is why the code is very often structured like this:
 
@@ -346,7 +346,7 @@ Let's look at the following code:
 nuint elementOffset = 0;
 while (elementOffset < (nuint)buffer.Length)
 {
-    loaded = Vector128.LoadUnsafe(ref searchSpace, elementOffset);
+    loaded = Vector128.LoadUnsafe(ref searchSpace, elementOffset); // BUG!
 
     elementOffset += (nuint)Vector128<int>.Count;
 }
