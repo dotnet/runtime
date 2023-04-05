@@ -1753,11 +1753,11 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
     EE_TO_JIT_TRANSITION();
 }
 
-/*********************************************************************/
+
 
 #ifdef HOST_WINDOWS
-TypeIDMap CEEInfo::g_threadStaticBlockTypeIDMap;
 
+/*********************************************************************/
 uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
 {
     CONTRACTL {
@@ -1772,22 +1772,25 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
 
     FieldDesc* fieldDesc = (FieldDesc*)field;
     _ASSERTE(fieldDesc->IsThreadStatic());
-    typeIndex = CEEInfo::GetTypeIndex(fieldDesc->GetEnclosingMethodTable());
+
+    typeIndex = AppDomain::GetCurrentDomain()->GetThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+
     assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
     
     EE_TO_JIT_TRANSITION();
     return typeIndex;
 }
 
+/*********************************************************************/
 void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    JIT_TO_EE_TRANSITION();
+    JIT_TO_EE_TRANSITION_LEAF();
 
     pInfo->tlsIndex.addr = (void*)static_cast<uintptr_t>(_tls_index);
     pInfo->tlsIndex.accessType = IAT_VALUE;
@@ -1796,14 +1799,14 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_threadStaticBlocks);
     pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_maxThreadStaticBlocks);
     
-    EE_TO_JIT_TRANSITION();
+    JIT_TO_EE_TRANSITION_LEAF();
 }
 #else
 uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
 {
     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
@@ -1813,12 +1816,12 @@ uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field)
 void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
 {
     CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
+        NOTHROW;
+        GC_NOTRIGGER;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    JIT_TO_EE_TRANSITION();
+    JIT_TO_EE_TRANSITION_LEAF();
 
     pInfo->tlsIndex.addr = (UINT8*)0;
 
@@ -1826,7 +1829,7 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->offsetOfThreadStaticBlocks = 0;
     pInfo->offsetOfMaxThreadStaticBlocks = 0;
     
-    EE_TO_JIT_TRANSITION();
+    JIT_TO_EE_TRANSITION_LEAF();
 }
 #endif // HOST_WINDOWS
 

@@ -1867,7 +1867,7 @@ HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, DomainLocalModule *p
             t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
         }
 
-        _ASSERTE(CEEInfo::g_threadStaticBlockTypeIDMap.LookupType(staticBlockIndex));
+        _ASSERTE(AppDomain::GetCurrentDomain()->LookupThreadStaticBlockType(staticBlockIndex));
 #endif // HOST_WINDOWS
 
     return staticBlock;
