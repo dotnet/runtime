@@ -6,6 +6,7 @@
 #include "mini-runtime.h"
 
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-sigcontext.h>
 #include "mono/utils/mono-tls-inline.h"
 
@@ -68,9 +69,44 @@ mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
 }
 
 void
-mono_riscv_throw_exception (MonoObject *exc, host_mgreg_t pc, host_mgreg_t sp, host_mgreg_t *int_regs, gdouble *fp_regs, gboolean preserve_ips){
-	printf("mono_riscv_throw_exception\n");
-	NOT_IMPLEMENTED;
+mono_riscv_throw_exception (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_regs, gdouble *fp_regs, gboolean corlib, gboolean rethrow, gboolean preserve_ips){
+	ERROR_DECL (error);
+	MonoContext ctx;
+	MonoObject *exc = NULL;
+	guint32 ex_token_index, ex_token;
+	if (!corlib)
+		exc = (MonoObject*)arg;
+	else {
+		ex_token_index = (guint64)arg;
+		ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
+		exc = (MonoObject*)mono_exception_from_token (mono_defaults.corlib, ex_token);
+	}
+
+	/* Adjust pc so it points into the call instruction */
+	pc -= 4;
+
+	/* Initialize a ctx based on the arguments */
+	memset (&ctx, 0, sizeof (MonoContext));
+	memcpy (&(ctx.gregs [0]), int_regs, sizeof (host_mgreg_t) * RISCV_N_GREGS);
+	memcpy (&(ctx.fregs [0]), fp_regs, sizeof (host_mgreg_t) * RISCV_N_FREGS);
+
+	ctx.gregs[0] = pc;
+
+	if (mono_object_isinst_checked (exc, mono_defaults.exception_class, error)) {
+		MonoException *mono_ex = (MonoException*)exc;
+		if (!rethrow && !mono_ex->caught_in_unmanaged) {
+			mono_ex->stack_trace = NULL;
+			mono_ex->trace_ips = NULL;
+		} else if (preserve_ips) {
+			mono_ex->caught_in_unmanaged = TRUE;
+		}
+	}
+
+	mono_error_assert_ok (error);
+
+	mono_handle_exception (&ctx, exc);
+
+	mono_restore_context (&ctx);
 }
 
 gpointer
