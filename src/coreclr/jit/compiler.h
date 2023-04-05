@@ -9103,8 +9103,10 @@ public:
 
         if (type == UnrollKind::Memmove)
         {
+#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
             // Enable AVX512 support for Memmove:
             maxRegSize = compOpportunisticallyDependsOn(InstructionSet_AVX512F) ? ZMM_REGSIZE_BYTES : maxRegSize;
+#endif
 
             // NOTE: Memmove's unrolling is currently limited with LSRA -
             // up to LinearScan::MaxInternalCount number of temp regs, e.g. 5*16=80 bytes on arm64
