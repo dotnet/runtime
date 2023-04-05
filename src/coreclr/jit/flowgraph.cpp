@@ -606,15 +606,17 @@ PhaseStatus Compiler::fgExpandStaticInit()
                     }
 
                     // Don't fold ADD(CNS1, CNS2) here since the result won't be reloc-friendly for AOT
-                    isInitAdrNode = gtNewIndir(TYP_I_IMPL, (isInitOffset != 0) ? gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr,
-                                                                         gtNewIconNode(isInitOffset)) : baseAddr);
+                    isInitAdrNode =
+                        gtNewIndir(TYP_I_IMPL, (isInitOffset != 0) ? gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr,
+                                                                                   gtNewIconNode(isInitOffset))
+                                                                   : baseAddr);
                     // 0 means "initialized" on NativeAOT
                     isInitedValue = gtNewIconNode(0, TYP_I_IMPL);
                 }
                 else
                 {
                     assert(isInitOffset == 0);
-                    
+
                     isInitAdrNode =
                         gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR, false);
 
