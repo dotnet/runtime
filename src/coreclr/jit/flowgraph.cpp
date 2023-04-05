@@ -596,7 +596,6 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 GenTree* isInitedValue;
                 if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
                 {
-                    assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
                     GenTree* baseAddr = gtNewIconHandleNode((size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR);
 
                     // Save it to a temp - we'll be using its value for the replacementNode.
