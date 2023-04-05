@@ -66,6 +66,7 @@ namespace DebuggerTests
 
         public int Id { get; set; }
         public string driver;
+        
         public static string DebuggerTestAppPath
         {
             get
