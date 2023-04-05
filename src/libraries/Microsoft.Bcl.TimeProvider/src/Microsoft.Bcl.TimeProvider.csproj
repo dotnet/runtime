@@ -6,6 +6,7 @@
        Once this package has shipped a stable version, the following line
        should be removed in order to re-enable validation. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <!--<UseIntellisensePackageDocXmlFile>false</UseIntellisensePackageDocXmlFile>-->
     <PackageDescription>Provides support for system time abstraction primitives for .NET Framework and .NET Standard.
 
 Commonly Used Types:

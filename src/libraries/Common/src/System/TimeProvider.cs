@@ -49,6 +49,9 @@ namespace System
         /// </summary>
         public abstract DateTimeOffset UtcNow { get; }
 
+        private static readonly long s_minDateTicks = DateTime.MinValue.Ticks;
+        private static readonly long s_maxDateTicks = DateTime.MaxValue.Ticks;
+
         /// <summary>
         /// Gets a <see cref="DateTimeOffset"/> value that is set to the current date and time according to this <see cref="TimeProvider"/>'s
         /// notion of time based on <see cref="UtcNow"/>, with the offset set to the <see cref="LocalTimeZone"/>'s offset from Coordinated Universal Time (UTC).
@@ -61,9 +64,9 @@ namespace System
                 TimeSpan offset = LocalTimeZone.GetUtcOffset(utcDateTime);
 
                 long localTicks = utcDateTime.Ticks + offset.Ticks;
-                if ((ulong)localTicks > (ulong)DateTime.MaxValue.Ticks)
+                if ((ulong)localTicks > (ulong)s_maxDateTicks)
                 {
-                    localTicks = localTicks < DateTime.MinValue.Ticks ? DateTime.MinValue.Ticks : DateTime.MaxValue.Ticks;
+                    localTicks = localTicks < s_minDateTicks ? s_minDateTicks : s_maxDateTicks;
                 }
 
                 return new DateTimeOffset(localTicks, offset);
