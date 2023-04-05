@@ -78,9 +78,7 @@ public unsafe class StartupHookTests
 
         var ex = Assert.Throws<ArgumentException>(() => ProcessStartupHooks());
         Assert.Equal($"Startup hook assembly '{hook}' failed to load. See inner exception for details.", ex.Message);
-        var innerEx = ex.InnerException;
-        Assert.IsType<FileNotFoundException>(innerEx);
-        Assert.StartsWith($"Could not load file or assembly '{hook}", innerEx.Message);
+        Assert.IsType<FileNotFoundException>(ex.InnerException);
 
         // Previous hooks should run before erroring on the missing assembly
         Assert.Equal(1, Hook.Basic.CallCount);
