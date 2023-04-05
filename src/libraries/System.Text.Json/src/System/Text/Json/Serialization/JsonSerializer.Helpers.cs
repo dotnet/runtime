@@ -19,8 +19,7 @@ namespace System.Text.Json
         /// </summary>
         /// <remarks>
         /// The value of the property is backed by the "System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault"
-        /// <see cref="AppContext"/> setting and defaults to <see langword="true"/> if unset. For trimmed applications, disabling the feature switch
-        /// at link time will result in the property being substituted with a constant <see langword="false"/> value.
+        /// <see cref="AppContext"/> setting and defaults to <see langword="true"/> if unset.
         /// </remarks>
         public static bool IsReflectionEnabledByDefault { get; } =
             AppContext.TryGetSwitch(
