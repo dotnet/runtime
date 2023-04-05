@@ -511,9 +511,9 @@ enum GenTreeFlags : unsigned int
 
     GTF_JCMP_EQ                 = 0x80000000, // GTF_JCMP_EQ  -- Branch on equal rather than not equal
     GTF_JCMP_TST                = 0x40000000, // GTF_JCMP_TST -- Use bit test instruction rather than compare against zero instruction
-#if defined(TARGET_LOONGARCH64)
-    GTF_JCMP_MASK               = 0x3E000000, // For LoongArch64, Using the five bits[29:25] to encoding the GenCondition:code.
-#endif
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    GTF_JCMP_MASK               = 0x3E000000, // For LoongArch64 and RISCV64, Using the five bits[29:25] to encoding the GenCondition:code.
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     GTF_RET_MERGED              = 0x80000000, // GT_RETURN -- This is a return generated during epilog merging.
 

@@ -2128,7 +2128,8 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                     genJumpToThrowHlpBlk_la(SCK_DIV_BY_ZERO, INS_beq, divisorReg);
                 }
 
-                if (checkDividend)
+                ExceptionSetFlags exSetFlags = tree->OperExceptions(compiler);
+                if (checkDividend && ((exSetFlags & ExceptionSetFlags::ArithmeticException) != ExceptionSetFlags::None))
                 {
                     // Check if the divisor is not -1 branch to 'sdivLabel'
                     emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rsGetRsvdReg(), REG_R0, -1);
@@ -3306,26 +3307,8 @@ void CodeGen::genCkfinite(GenTree* treeNode)
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForCompare(GenTreeOp* jtree)
+void CodeGen::genCodeForCompare(GenTreeOp* tree)
 {
-    emitter* emit = GetEmitter();
-
-    GenTreeOp* tree = nullptr;
-    regNumber  targetReg;
-    genTreeOps op;
-    if (jtree->GetRegNum() == REG_NA)
-    {
-        tree      = jtree;
-        targetReg = rsGetRsvdReg();
-        assert(tree->GetRegNum() == REG_NA);
-    }
-    else
-    {
-        tree      = jtree;
-        targetReg = tree->GetRegNum();
-    }
-    assert(targetReg != REG_NA);
-
     GenTree*  op1     = tree->gtOp1;
     GenTree*  op2     = tree->gtOp2;
     var_types op1Type = genActualType(op1->TypeGet());
@@ -3334,11 +3317,12 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
     assert(!op1->isUsedFromMemory());
     assert(!op2->isUsedFromMemory());
 
-    genConsumeOperands(tree);
-
     emitAttr cmpSize = EA_ATTR(genTypeSize(op1Type));
 
     assert(genTypeSize(op1Type) == genTypeSize(op2Type));
+
+    emitter*  emit      = GetEmitter();
+    regNumber targetReg = tree->GetRegNum();
 
     if (varTypeIsFloating(op1Type))
     {
@@ -3347,6 +3331,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
     }
     else
     {
+        assert(targetReg != REG_NA);
+        assert(tree->TypeGet() != TYP_VOID);
         if (op1->isContainedIntOrIImmed())
         {
             op1 = tree->gtOp2;
@@ -3570,23 +3556,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
 }
 
 //------------------------------------------------------------------------
-// genCodeForJcc: Generate code for a GT_JCC node.
-//
-// Arguments:
-//    jcc - The node
-//
-void CodeGen::genCodeForJcc(GenTreeCC* jcc)
-{
-    emitter* emit = GetEmitter();
-
-    instruction ins = INS_invalid;
-
-    assert(jcc->OperIs(GT_JCC) && (instruction)jcc->GetRegNum() == INS_bnez);
-    emit->emitIns_J(INS_bnez, compiler->compCurBB->bbJumpDest, (int)(int64_t)rsGetRsvdReg());
-    jcc->SetRegNum(REG_NA);
-}
-
-//------------------------------------------------------------------------
 // genCodeForJumpCompare: Generates code for jmpCompare statement.
 //
 // A GT_JCMP node is created when a comparison and conditional branch
@@ -3602,48 +3571,171 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
 {
     assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
 
+    assert(tree->OperIs(GT_JCMP));
+    assert(tree->TypeGet() == TYP_VOID);
+    assert(tree->GetRegNum() == REG_NA);
+
     GenTree* op1 = tree->gtGetOp1();
     GenTree* op2 = tree->gtGetOp2();
-
-    assert(tree->OperIs(GT_JCMP));
-    assert(!varTypeIsFloating(tree));
     assert(!op1->isUsedFromMemory());
     assert(!op2->isUsedFromMemory());
-    assert(op2->IsCnsIntOrI());
-    assert(op2->isContained());
+    assert(!op1->isContainedIntOrIImmed());
+
+    var_types op1Type = genActualType(op1->TypeGet());
+    var_types op2Type = genActualType(op2->TypeGet());
+    assert(genTypeSize(op1Type) == genTypeSize(op2Type));
 
     genConsumeOperands(tree);
 
-    regNumber reg  = op1->GetRegNum();
-    emitAttr  attr = emitActualTypeSize(op1->TypeGet());
+    emitter*    emit = GetEmitter();
+    instruction ins  = INS_invalid;
+    int         regs = 0;
 
-    instruction ins;
-    int         regs;
-    ssize_t     imm = op2->AsIntCon()->gtIconVal;
-    assert(reg != REG_RA);
-    assert(reg != rsGetRsvdReg());
+    int cond = ((int)tree->gtFlags >> 25) & 0xf; // GenCondition::Code.
+    assert((((int)tree->gtFlags >> 25) & GenCondition::Float) == 0);
+    bool      IsUnsigned = (cond & GenCondition::Unsigned) != 0;
+    emitAttr  cmpSize    = EA_ATTR(genTypeSize(op1Type));
+    regNumber regOp1     = op1->GetRegNum();
 
-    if (attr == EA_4BYTE)
+    if (varTypeIsFloating(op1Type))
     {
-        imm = (int32_t)imm;
-        GetEmitter()->emitIns_R_R_I(INS_slliw, EA_4BYTE, rsGetRsvdReg(), reg, 0);
-        reg = rsGetRsvdReg();
+        NYI_RISCV64("genCodeForJumpCompare floating-----unimplemented on RISCV64 yet----");
     }
-
-    if (imm != 0)
+    else if (op2->isContainedIntOrIImmed())
     {
-        GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
-        regs = (int)reg << 5;
-        regs |= (int)REG_RA;
-        ins = (tree->gtFlags & GTF_JCMP_EQ) ? INS_beq : INS_bne;
+        ssize_t imm = op2->AsIntCon()->gtIconVal;
+        if (imm)
+        {
+            assert(regOp1 != REG_R0);
+            switch (cmpSize)
+            {
+                case EA_4BYTE:
+                    if (IsUnsigned)
+                    {
+                        imm = static_cast<uint32_t>(imm);
+
+                        regNumber tmpRegOp1 = rsGetRsvdReg();
+                        assert(regOp1 != tmpRegOp1);
+                        emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
+                        emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
+                        regOp1 = tmpRegOp1;
+                    }
+                    else
+                    {
+                        imm = static_cast<int32_t>(imm);
+                    }
+                    break;
+                case EA_8BYTE:
+                    break;
+                default:
+                    unreached();
+            }
+
+            emit->emitIns_I_la(EA_PTRSIZE, REG_RA, imm);
+            regs = (int)REG_RA << 5;
+        }
+
+        switch (cond)
+        {
+            case GenCondition::EQ:
+                regs |= ((int)regOp1);
+                ins = INS_beq;
+                break;
+            case GenCondition::NE:
+                regs |= ((int)regOp1);
+                ins = INS_bne;
+                break;
+            case GenCondition::UGE:
+            case GenCondition::SGE:
+                regs |= ((int)regOp1);
+                ins = IsUnsigned ? INS_bgeu : INS_bge;
+                break;
+            case GenCondition::UGT:
+            case GenCondition::SGT:
+                regs = imm ? ((((int)regOp1) << 5) | (int)REG_RA) : (((int)regOp1) << 5);
+                ins  = IsUnsigned ? INS_bltu : INS_blt;
+                break;
+            case GenCondition::ULT:
+            case GenCondition::SLT:
+                regs |= ((int)regOp1);
+                ins = IsUnsigned ? INS_bltu : INS_blt;
+                break;
+            case GenCondition::ULE:
+            case GenCondition::SLE:
+                regs = imm ? ((((int)regOp1) << 5) | (int)REG_RA) : (((int)regOp1) << 5);
+                ins  = IsUnsigned ? INS_bgeu : INS_bge;
+                break;
+            default:
+                NO_WAY("unexpected condition type");
+                break;
+        }
     }
     else
     {
-        regs = (int)reg;
-        ins  = (tree->gtFlags & GTF_JCMP_EQ) ? INS_beqz : INS_bnez;
-    }
+        regNumber regOp2 = op2->GetRegNum();
+        if (cmpSize == EA_4BYTE)
+        {
+            regNumber tmpRegOp1 = REG_RA;
+            regNumber tmpRegOp2 = rsGetRsvdReg();
+            assert(regOp1 != tmpRegOp2);
+            assert(regOp2 != tmpRegOp2);
 
-    GetEmitter()->emitIns_J(ins, compiler->compCurBB->bbJumpDest, regs); // 5-bits;
+            if (IsUnsigned)
+            {
+                emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp1, regOp1, 32);
+                emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp1, tmpRegOp1, 32);
+                emit->emitIns_R_R_I(INS_slli, EA_8BYTE, tmpRegOp2, regOp2, 32);
+                emit->emitIns_R_R_I(INS_srli, EA_8BYTE, tmpRegOp2, tmpRegOp2, 32);
+            }
+            else
+            {
+                emit->emitIns_R_R_I(INS_slliw, EA_8BYTE, tmpRegOp1, regOp1, 0);
+                emit->emitIns_R_R_I(INS_slliw, EA_8BYTE, tmpRegOp2, regOp2, 0);
+            }
+
+            regOp1 = tmpRegOp1;
+            regOp2 = tmpRegOp2;
+        }
+
+        switch (cond)
+        {
+            case GenCondition::EQ:
+                regs = (((int)regOp1) << 5) | (int)regOp2;
+                ins  = INS_beq;
+                break;
+            case GenCondition::NE:
+                regs = (((int)regOp1) << 5) | (int)regOp2;
+                ins  = INS_bne;
+                break;
+            case GenCondition::UGE:
+            case GenCondition::SGE:
+                regs = ((int)regOp1 | ((int)regOp2 << 5));
+                ins  = IsUnsigned ? INS_bgeu : INS_bge;
+                break;
+            case GenCondition::UGT:
+            case GenCondition::SGT:
+                regs = (((int)regOp1) << 5) | (int)regOp2;
+                ins  = IsUnsigned ? INS_bltu : INS_blt;
+                break;
+            case GenCondition::ULT:
+            case GenCondition::SLT:
+                regs = ((int)regOp1 | ((int)regOp2 << 5));
+                ins  = IsUnsigned ? INS_bltu : INS_blt;
+                break;
+            case GenCondition::ULE:
+            case GenCondition::SLE:
+                regs = (((int)regOp1) << 5) | (int)regOp2;
+                ins  = IsUnsigned ? INS_bgeu : INS_bge;
+                break;
+            default:
+                NO_WAY("unexpected condition type-regs");
+                break;
+        }
+    }
+    assert(ins != INS_invalid);
+    assert(regs != 0);
+
+    emit->emitIns_J(ins, compiler->compCurBB->bbJumpDest, regs); // 5-bits;
 }
 
 //---------------------------------------------------------------------
@@ -4324,36 +4416,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_LE:
         case GT_GE:
         case GT_GT:
-        case GT_CMP:
-            if (treeNode->GetRegNum() != REG_NA)
-            {
-                genCodeForCompare(treeNode->AsOp());
-            }
-            else
-            {
-                GenTree* treeNode_next = treeNode->gtNext;
-                while (treeNode_next)
-                {
-                    if (treeNode_next->OperIs(GT_JCC))
-                    {
-                        break;
-                    }
-                    treeNode_next = treeNode_next->gtNext;
-                };
-                assert(treeNode_next->OperIs(GT_JCC));
-                treeNode_next->SetRegNum((regNumber)INS_bnez);
-                // TODO-RISCV64-CQ: update JCC comparison
-                GenTreeCC*                  jcc         = treeNode_next->AsCC();
-                unsigned                    code        = jcc->gtCondition.GetCode();
-                static constexpr genTreeOps s_gtopers[] = {GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT};
-                assert((code & 0x7) <= 0x5);
-                treeNode->SetOper(s_gtopers[code & 0x7]);
-                genCodeForCompare(treeNode->AsOp());
-            }
-            break;
-
-        case GT_JCC:
-            genCodeForJcc(treeNode->AsCC());
+            genConsumeOperands(treeNode->AsOp());
+            genCodeForCompare(treeNode->AsOp());
             break;
 
         case GT_JCMP:

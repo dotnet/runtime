@@ -124,6 +124,64 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 }
 
 //------------------------------------------------------------------------
+// Lowering::LowerJTrue: Lowers a JTRUE node.
+//
+// Arguments:
+//    jtrue - the JTRUE node
+//
+// Return Value:
+//    The next node to lower (usually nullptr).
+//
+GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
+{
+    GenTree*     op = jtrue->gtGetOp1();
+    GenCondition cond;
+    GenTree*     cmpOp1;
+    GenTree*     cmpOp2;
+
+    if (op->OperIsCompare())
+    {
+        // We do not expect any other relops on LA64
+        assert(op->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
+
+        cond = GenCondition::FromRelop(op);
+
+        cmpOp1 = op->gtGetOp1();
+        cmpOp2 = op->gtGetOp2();
+
+        // We will fall through and turn this into a JCMP(op1, op2, kind), but need to remove the relop here.
+        BlockRange().Remove(op);
+    }
+    else
+    {
+        cond = GenCondition(GenCondition::NE);
+
+        cmpOp1 = op;
+        cmpOp2 = comp->gtNewZeroConNode(cmpOp1->TypeGet());
+
+        BlockRange().InsertBefore(jtrue, cmpOp2);
+
+        // Fall through and turn this into a JCMP(op1, 0, NE).
+    }
+
+    // for RISCV64's compare and condition-branch instructions,
+    // it's very similar to the IL instructions.
+    jtrue->SetOper(GT_JCMP);
+    jtrue->gtOp1 = cmpOp1;
+    jtrue->gtOp2 = cmpOp2;
+
+    jtrue->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ | GTF_JCMP_MASK);
+    jtrue->gtFlags |= (GenTreeFlags)(cond.GetCode() << 25);
+
+    if (cmpOp2->IsCnsIntOrI())
+    {
+        cmpOp2->SetContained();
+    }
+
+    return jtrue->gtNext;
+}
+
+//------------------------------------------------------------------------
 // LowerBinaryArithmetic: lowers the given binary arithmetic node.
 //
 // Arguments:

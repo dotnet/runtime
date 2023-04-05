@@ -2524,9 +2524,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 {
                     code |= ((code_t)id->idReg1()) << 15;
                     code |= ((code_t)id->idReg2()) << 20;
+                    code |= ((imm >> 11) & 0x1) << 7;
                     code |= ((imm >> 1) & 0xf) << 8;
                     code |= ((imm >> 5) & 0x3f) << 25;
-                    code |= ((imm >> 11) & 0x1) << 7;
                     code |= ((imm >> 12) & 0x1) << 31;
                 }
                 else
