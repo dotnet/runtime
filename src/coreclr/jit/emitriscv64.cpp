@@ -761,6 +761,11 @@ void emitter::emitIns_R_R_R(
         code |= ((reg1 & 0x1f) << 7);
         code |= ((reg2 & 0x1f) << 15);
         code |= ((reg3 & 0x1f) << 20);
+        if ((INS_fadd_s <= ins && INS_fsqrt_s >= ins) || (INS_fadd_d <= ins && INS_fsqrt_d >= ins))
+        {
+            // TODO-RISCV64-CQ: Check rounding mode
+            code |= 0x7 << 12;
+        }
     }
     else
     {

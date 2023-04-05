@@ -1990,17 +1990,22 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     emitAttr attr = emitActualTypeSize(tree);
     if (tree->OperIs(GT_NEG))
     {
-        if (attr == EA_4BYTE)
+        if (varTypeIsFloating(targetType))
         {
-            GetEmitter()->emitIns_R_R_R(INS_subw, attr, targetReg, REG_R0, operandReg);
+            regNumber tmpReg = REG_SCRATCH_FLT;
+            assert(tmpReg != operandReg);
+            GetEmitter()->emitIns_R_R(targetType == TYP_DOUBLE ? INS_fcvt_d_l : INS_fcvt_s_l, attr, tmpReg, REG_R0);
+            GetEmitter()->emitIns_R_R_R(targetType == TYP_DOUBLE ? INS_fsub_d : INS_fsub_s, attr, targetReg, tmpReg,
+                                        operandReg);
         }
         else
         {
-            GetEmitter()->emitIns_R_R_R(INS_sub, attr, targetReg, REG_R0, operandReg);
+            GetEmitter()->emitIns_R_R_R(attr == EA_4BYTE ? INS_subw : INS_sub, attr, targetReg, REG_R0, operandReg);
         }
     }
     else if (tree->OperIs(GT_NOT))
     {
+        assert(!varTypeIsFloating(targetType));
         GetEmitter()->emitIns_R_R_I(INS_xori, attr, targetReg, operandReg, -1);
     }
 
