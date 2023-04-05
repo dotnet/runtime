@@ -8908,6 +8908,78 @@ private:
 #endif
     }
 
+    //------------------------------------------------------------------------
+    // roundUpSIMDSize: rounds the given size up to the nearest SIMD size
+    //                  available on the target. Examples on XARCH:
+    //
+    //    size: 7 -> XMM
+    //    size: 30 -> YMM (or XMM if target doesn't support AVX)
+    //    size: 70 -> ZMM (or YMM or XMM depending on target)
+    //
+    // Arguments:
+    //    size   - size of the data to process with SIMD
+    //
+    // Notes:
+    //    It's only supposed to be used for scenarios where we can
+    //    perform an overlapped load/store.
+    //
+    unsigned int roundUpSIMDSize(unsigned size)
+    {
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+        auto maxSimdSize = maxSIMDStructBytes();
+        if (size <= XMM_REGSIZE_BYTES && maxSimdSize > XMM_REGSIZE_BYTES)
+        {
+            return XMM_REGSIZE_BYTES;
+        }
+        if (size <= YMM_REGSIZE_BYTES && maxSimdSize > YMM_REGSIZE_BYTES)
+        {
+            return YMM_REGSIZE_BYTES;
+        }
+        return maxSimdSize;
+#elif defined(TARGET_ARM64)
+        return FP_REGSIZE_BYTES;
+#else
+        assert(!"roundUpSIMDSize() unimplemented on target arch");
+        unreached();
+#endif
+    }
+
+    //------------------------------------------------------------------------
+    // roundDownSIMDSize: rounds the given size down to the nearest SIMD size
+    //                    available on the target. Examples on XARCH:
+    //
+    //    size: 7 -> 0
+    //    size: 30 -> XMM (not enough for AVX)
+    //    size: 60 -> YMM (or XMM if target doesn't support AVX)
+    //    size: 70 -> ZMM/YMM/XMM whatever the current system can offer
+    //
+    // Arguments:
+    //    size   - size of the data to process with SIMD
+    //
+    unsigned int roundDownSIMDSize(unsigned size)
+    {
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+        unsigned maxSimdSize = maxSIMDStructBytes();
+        if (size >= maxSimdSize)
+        {
+            // Size is bigger than max SIMD size the current target supports
+            return maxSimdSize;
+        }
+        if (size >= YMM_REGSIZE_BYTES && maxSimdSize >= YMM_REGSIZE_BYTES)
+        {
+            // Size is >= YMM but not enough for ZMM -> YMM
+            return YMM_REGSIZE_BYTES;
+        }
+        // Return 0 if size is even less than XMM, otherwise - XMM
+        return size >= XMM_REGSIZE_BYTES ? XMM_REGSIZE_BYTES : 0;
+#elif defined(TARGET_ARM64)
+        return size >= FP_REGSIZE_BYTES ? FP_REGSIZE_BYTES : 0;
+#else
+        assert(!"roundDownSIMDSize() unimplemented on target arch");
+        unreached();
+#endif
+    }
+
     unsigned int minSIMDStructBytes()
     {
         return emitTypeSize(TYP_SIMD8);
@@ -9031,6 +9103,9 @@ public:
 
         if (type == UnrollKind::Memmove)
         {
+            // Enable AVX512 support for Memmove:
+            maxRegSize = compOpportunisticallyDependsOn(InstructionSet_AVX512F) ? ZMM_REGSIZE_BYTES : maxRegSize;
+
             // NOTE: Memmove's unrolling is currently limited with LSRA -
             // up to LinearScan::MaxInternalCount number of temp regs, e.g. 5*16=80 bytes on arm64
             threshold = maxRegSize * 4;
