@@ -7,6 +7,8 @@ using System.Text;
 
 using Internal.TypeSystem;
 
+#nullable disable
+
 namespace Internal.TypeSystem
 {
     public static class CustomAttributeTypeNameParser
