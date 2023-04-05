@@ -17,30 +17,45 @@ The CoreCLR runtime and class libraries can be built and tested locally for Wind
 
 ### Building the CoreCLR runtime and class libraries
 
-To build locally, use the platform-specific script in .yamato/scripts:
+To build locally, use the platform-specific shell script in .yamato/scripts. Either `build_yamato.cmd` or `build_yamato.sh`:
+
+To view all possible arguments run:
+```
+> .yamato\scripts\build_yamato.cmd --h
+```
+
+Note: The defaults shown are specific to the system it is being run on.
 
 ```
-> .yamato\scripts\build_windows.cmd x64 Debug
+> .yamato\scripts\build_yamato.cmd --arch x64 --config Debug
 ```
 
-This will build the CoreCLR runtime and the class libraries for Windows, x64 architecture in the debug configuration.
+This will build the CoreCLR runtime and the class libraries for Windows, x64 architecture in the debug configuration. If you do not supply `arch` or `config` arguments the build will default to the current system architecture and Release. It also builds all targets by default if neither `--build` or `--test` arguments are supplied.
 
 ### Testing locally
 
 To test locally, use the platform-specific script in .yamato/scripts:
 
 ```
-.yamato\scripts\test_windows.cmd x64 Debug
+> .yamato\scripts\build_yamato.cmd --arch x64 --config Debug --test
 ```
 
 This will use the built artifacts from the build command above (Windows OS, x64 architecture, debug configuration) to run both Unity-specific tests and some tests we care about from CoreCLR.
 
 ### Building and testing together
 
-Use the scripts in the unity/test-scripts directory to run the build and tests together:
+The following will build all targets and then test all available targets
 
 ```
-unity/test-scripts/build_test_windows.cmd x64 Debug
+> .yamato\scripts\build_yamato.cmd --test --build
+```
+
+### Building or Testing a subset of avilable targets
+
+It is possible to provide a space separated list of desired targets to build and/or test to `build_yamato.cmd`'s `--test` and `--build` arguments like so:
+
+```
+> .yamato\scripts\build_yamato.cmd --build NullGC EmbeddingHost --test EmbeddingManaged
 ```
 
 ### Using a debug build of the CoreCLR runtime in Unity
