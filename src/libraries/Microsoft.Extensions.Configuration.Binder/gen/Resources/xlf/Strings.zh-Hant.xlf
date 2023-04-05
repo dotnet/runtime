@@ -4,12 +4,12 @@
     <body>
       <trans-unit id="Language VersionIsNotSupportedMessageFormat">
         <source>The project's language version has to be at least 'C# 11'.</source>
-        <target state="new">The project's language version has to be at least 'C# 11'.</target>
+        <target state="translated">專案的語言版本必須至少為 'C# 11'。</target>
         <note />
       </trans-unit>
       <trans-unit id="LanguageVersionIsNotSupportedTitle">
         <source>Language version is required to be at least C# 11</source>
-        <target state="new">Language version is required to be at least C# 11</target>
+        <target state="translated">語言版本要求至少為 C#11</target>
         <note />
       </trans-unit>
       <trans-unit id="PropertyNotSupportedMessageFormat">
@@ -19,7 +19,7 @@
       </trans-unit>
       <trans-unit id="PropertyNotSupportedTitle">
         <source>Did not generate binding logic for a property on a type</source>
-        <target state="new">Did not generate binding logic for a property on a type</target>
+        <target state="translated">未在類型上產生屬性的繫結邏輯</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">
@@ -29,7 +29,7 @@
       </trans-unit>
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate binding logic for a type</source>
-        <target state="new">Did not generate binding logic for a type</target>
+        <target state="translated">未產生類型的繫結邏輯</target>
         <note />
       </trans-unit>
     </body>

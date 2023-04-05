@@ -911,8 +911,6 @@ llvm_type_to_stack_type (MonoCompile *cfg, LLVMTypeRef type)
 		return LLVMInt32Type ();
 	else if (type == LLVMInt16Type ())
 		return LLVMInt32Type ();
-	else if (!cfg->r4fp && type == LLVMFloatType ())
-		return LLVMDoubleType ();
 	else
 		return type;
 }
@@ -5520,10 +5518,7 @@ get_float_const (MonoCompile *cfg, float val)
 	if (mono_isnan (val))
 		*(int *)&val = 0x7FC00000;
 #endif
-	if (cfg->r4fp)
-		return LLVMConstReal (LLVMFloatType (), val);
-	else
-		return LLVMConstFPExt (LLVMConstReal (LLVMFloatType (), val), LLVMDoubleType ());
+	return LLVMConstReal (LLVMFloatType (), val);
 }
 
 static LLVMValueRef
@@ -6602,24 +6597,12 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = LLVMBuildTrunc (builder, lhs, LLVMInt32Type (), dname);
 			break;
 		case OP_ICONV_TO_R4:
-		case OP_LCONV_TO_R4: {
-			LLVMValueRef v;
-			v = LLVMBuildSIToFP (builder, lhs, LLVMFloatType (), "");
-			if (cfg->r4fp)
-				values [ins->dreg] = v;
-			else
-				values [ins->dreg] = LLVMBuildFPExt (builder, v, LLVMDoubleType (), dname);
+		case OP_LCONV_TO_R4:
+			values [ins->dreg] = LLVMBuildSIToFP (builder, lhs, LLVMFloatType (), "");
 			break;
-		}
-		case OP_FCONV_TO_R4: {
-			LLVMValueRef v;
-			v = LLVMBuildFPTrunc (builder, lhs, LLVMFloatType (), "");
-			if (cfg->r4fp)
-				values [ins->dreg] = v;
-			else
-				values [ins->dreg] = LLVMBuildFPExt (builder, v, LLVMDoubleType (), dname);
+		case OP_FCONV_TO_R4:
+			values [ins->dreg] = LLVMBuildFPTrunc (builder, lhs, LLVMFloatType (), "");
 			break;
-		}
 		case OP_RCONV_TO_R8:
 			values [ins->dreg] = LLVMBuildFPExt (builder, lhs, LLVMDoubleType (), dname);
 			break;
@@ -6734,8 +6717,6 @@ MONO_RESTORE_WARNING
 				values [ins->dreg] = LLVMBuildSExt (builder, values [ins->dreg], LLVMInt32Type (), dname);
 			else if (zext)
 				values [ins->dreg] = LLVMBuildZExt (builder, values [ins->dreg], LLVMInt32Type (), dname);
-			else if (!cfg->r4fp && ins->opcode == OP_LOADR4_MEMBASE)
-				values [ins->dreg] = LLVMBuildFPExt (builder, values [ins->dreg], LLVMDoubleType (), dname);
 			break;
 		}
 
@@ -7690,10 +7671,10 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #if defined(TARGET_ARM64) || defined(TARGET_WASM)
-		case OP_FCVTL:
-		case OP_FCVTL2: {
+		case OP_SIMD_FCVTL:
+		case OP_SIMD_FCVTL2: {
 			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
-			gboolean high = ins->opcode == OP_FCVTL2;
+			gboolean high = ins->opcode == OP_SIMD_FCVTL2;
 			LLVMValueRef result = lhs;
 			if (high)
 				result = extract_high_elements (ctx, result);
@@ -7701,19 +7682,19 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
-		case OP_SHL:
-		case OP_SSHR:
-		case OP_SSRA:
-		case OP_USHR:
-		case OP_USRA: {
+		case OP_SIMD_SHL:
+		case OP_SIMD_SSHR:
+		case OP_SIMD_SSRA:
+		case OP_SIMD_USHR:
+		case OP_SIMD_USRA: {
 			gboolean right = FALSE;
 			gboolean add = FALSE;
 			gboolean arith = FALSE;
 			switch (ins->opcode) {
-			case OP_USHR: right = TRUE; break;
-			case OP_USRA: right = TRUE; add = TRUE; break;
-			case OP_SSHR: arith = TRUE; break;
-			case OP_SSRA: arith = TRUE; add = TRUE; break;
+			case OP_SIMD_USHR: right = TRUE; break;
+			case OP_SIMD_USRA: right = TRUE; add = TRUE; break;
+			case OP_SIMD_SSHR: arith = TRUE; break;
+			case OP_SIMD_SSRA: arith = TRUE; add = TRUE; break;
 			}
 			LLVMValueRef shiftarg = lhs;
 			LLVMValueRef shift = rhs;
@@ -7734,16 +7715,16 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
-		case OP_SSHLL:
-		case OP_SSHLL2:
-		case OP_USHLL:
-		case OP_USHLL2: {
+		case OP_SIMD_SSHLL:
+		case OP_SIMD_SSHLL2:
+		case OP_SIMD_USHLL:
+		case OP_SIMD_USHLL2: {
 			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
 			gboolean high = FALSE;
 			gboolean is_unsigned = FALSE;
 			switch (ins->opcode) {
-			case OP_SSHLL2: high = TRUE; break;
-			case OP_USHLL2: high = TRUE; case OP_USHLL: is_unsigned = TRUE; break;
+			case OP_SIMD_SSHLL2: high = TRUE; break;
+			case OP_SIMD_USHLL2: high = TRUE; case OP_SIMD_USHLL: is_unsigned = TRUE; break;
 			}
 			LLVMValueRef result = lhs;
 			if (high)
@@ -11356,6 +11337,63 @@ MONO_RESTORE_WARNING
 			if (scalar)
 				result = vector_from_scalar (ctx, ret_t, result);
 			values [ins->dreg] = result;
+			break;
+		}
+		case OP_ARM64_TBL_INDIRECT:
+		case OP_ARM64_TBX_INDIRECT: {
+			int nvectors = ins->inst_c0;
+			guint32 *offsets = (guint32*)ins->inst_p1;
+
+			LLVMValueRef args [16];
+
+			LLVMTypeRef etype = LLVMVectorType (LLVMInt8Type (), 16);
+
+			int aindex = 0;
+
+			LLVMValueRef table_val, default_values_val, indexes_val;
+			if (ins->opcode == OP_ARM64_TBX_INDIRECT) {
+				table_val = lhs;
+				default_values_val = rhs;
+				indexes_val = arg3;
+				args [aindex ++] = default_values_val;
+			} else {
+				table_val = lhs;
+				indexes_val = rhs;
+			}
+
+			/* Load input vectors from memory */
+			LLVMValueRef addr = convert (ctx, table_val, pointer_type (etype));
+			for (int i = 0; i < nvectors; ++i) {
+				g_assert (offsets [i] % 16 == 0);
+				LLVMValueRef index = const_int32 (offsets [i] / 16);
+				LLVMValueRef ptr = LLVMBuildGEP2 (builder, etype, addr, &index, 1, "");
+				args [aindex ++] = emit_load (builder, etype, ptr, "", FALSE);
+			}
+			args [aindex ++] = indexes_val;
+			g_assert (aindex < 16);
+
+			IntrinsicId iid = (IntrinsicId)0;
+			if (ins->opcode == OP_ARM64_TBL_INDIRECT) {
+				switch (nvectors) {
+				case 2: iid = INTRINS_AARCH64_ADV_SIMD_TBL2; break;
+				case 3: iid = INTRINS_AARCH64_ADV_SIMD_TBL3; break;
+				case 4: iid = INTRINS_AARCH64_ADV_SIMD_TBL4; break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
+			} else {
+				switch (nvectors) {
+				case 2: iid = INTRINS_AARCH64_ADV_SIMD_TBX2; break;
+				case 3: iid = INTRINS_AARCH64_ADV_SIMD_TBX3; break;
+				case 4: iid = INTRINS_AARCH64_ADV_SIMD_TBX4; break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
+			}
+			llvm_ovr_tag_t ovr_tag = (LLVMGetVectorSize (LLVMTypeOf (indexes_val)) == 8 ? INTRIN_vector64 : INTRIN_vector128) | INTRIN_int8;
+			values [ins->dreg] = call_overloaded_intrins (ctx, iid, ovr_tag, args, "");
 			break;
 		}
 		case OP_XOP_OVR_X_X: {

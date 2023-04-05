@@ -64,6 +64,10 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
             RandomizeLikelihoods();
             break;
 
+        case ProfileSynthesisOption::RepairLikelihoods:
+            RepairLikelihoods();
+            break;
+
         default:
             assert(!"unexpected profile synthesis option");
             break;

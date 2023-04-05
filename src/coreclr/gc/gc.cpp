@@ -8523,14 +8523,9 @@ uint32_t* translate_mark_array (uint32_t* ma)
 
 #ifdef FEATURE_BASICFREEZE
 // end must be page aligned addresses.
-void gc_heap::clear_mark_array (uint8_t* from, uint8_t* end, BOOL read_only/*=FALSE*/)
+void gc_heap::clear_mark_array (uint8_t* from, uint8_t* end)
 {
     assert (gc_can_use_concurrent);
-
-    if (!read_only)
-    {
-        assert (from == align_on_mark_word (from));
-    }
     assert (end == align_on_mark_word (end));
 
     uint8_t* current_lowest_address = background_saved_lowest_address;
@@ -9595,8 +9590,7 @@ void gc_heap::remove_ro_segment (heap_segment* seg)
 #ifdef BACKGROUND_GC
     if (gc_can_use_concurrent)
     {
-        clear_mark_array (align_lower_mark_word (max (heap_segment_mem (seg), lowest_address)),
-                          align_on_card_word (min (heap_segment_allocated (seg), highest_address)));
+        seg_clear_mark_array_bits_soh (seg);
     }
 #endif //BACKGROUND_GC
 
@@ -11084,7 +11078,7 @@ void gc_heap::seg_clear_mark_array_bits_soh (heap_segment* seg)
     uint8_t* range_end = 0;
     if (bgc_mark_array_range (seg, FALSE, &range_beg, &range_end))
     {
-        clear_mark_array (range_beg, align_on_mark_word (range_end), TRUE);
+        clear_mark_array (range_beg, align_on_mark_word (range_end));
     }
 }
 
@@ -22634,6 +22628,8 @@ void gc_heap::garbage_collect_pm_full_gc()
 
 void gc_heap::garbage_collect (int n)
 {
+    gc_pause_mode saved_settings_pause_mode = settings.pause_mode;
+
     //reset the number of alloc contexts
     alloc_contexts_used = 0;
 
@@ -23039,7 +23035,7 @@ void gc_heap::garbage_collect (int n)
 #endif //MULTIPLE_HEAPS
 
 done:
-    if (settings.pause_mode == pause_no_gc)
+    if (saved_settings_pause_mode == pause_no_gc)
         allocate_for_no_gc_after_gc();
 }
 

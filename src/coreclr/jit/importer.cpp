@@ -520,7 +520,7 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
 
                 assert(retBuf->TypeIs(TYP_I_IMPL, TYP_BYREF));
 
-                if (retBuf->OperIs(GT_LCL_VAR_ADDR))
+                if (retBuf->OperIs(GT_LCL_ADDR))
                 {
                     dstVarDsc = lvaGetDesc(retBuf->AsLclVarCommon());
                 }
@@ -1212,8 +1212,7 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
             return gtNewLclVarAddrNode(structVal->AsLclVar()->GetLclNum(), TYP_BYREF);
 
         case GT_LCL_FLD:
-            return gtNewLclFldAddrNode(structVal->AsLclFld()->GetLclNum(), structVal->AsLclFld()->GetLclOffs(),
-                                       TYP_BYREF);
+            return gtNewLclAddrNode(structVal->AsLclFld()->GetLclNum(), structVal->AsLclFld()->GetLclOffs(), TYP_BYREF);
 
         case GT_FIELD:
         {
@@ -2563,12 +2562,12 @@ CORINFO_CLASS_HANDLE Compiler::impGetObjectClass()
 /* static */
 void Compiler::impBashVarAddrsToI(GenTree* tree1, GenTree* tree2)
 {
-    if (tree1->OperIsLocalAddr())
+    if (tree1->OperIs(GT_LCL_ADDR))
     {
         tree1->gtType = TYP_I_IMPL;
     }
 
-    if (tree2 && tree2->OperIsLocalAddr())
+    if (tree2 && tree2->OperIs(GT_LCL_ADDR))
     {
         tree2->gtType = TYP_I_IMPL;
     }
@@ -6858,7 +6857,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // We had better assign it a value of the correct type
                 assertImp(
                     genActualType(lclTyp) == genActualType(op1->gtType) ||
-                    (genActualType(lclTyp) == TYP_I_IMPL && op1->OperIsLocalAddr()) ||
+                    (genActualType(lclTyp) == TYP_I_IMPL && op1->OperIs(GT_LCL_ADDR)) ||
                     (genActualType(lclTyp) == TYP_I_IMPL && (op1->gtType == TYP_BYREF || op1->gtType == TYP_REF)) ||
                     (genActualType(op1->gtType) == TYP_I_IMPL && lclTyp == TYP_BYREF) ||
                     (varTypeIsFloating(lclTyp) && varTypeIsFloating(op1->TypeGet())) ||
@@ -6977,7 +6976,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
 
                     op1->ChangeType(TYP_BYREF);
-                    op1->SetOper(GT_LCL_VAR_ADDR);
+                    op1->SetOper(GT_LCL_ADDR);
+                    op1->AsLclFld()->SetLclOffs(0);
                     goto _PUSH_ADRVAR;
                 }
 
@@ -7002,7 +7002,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = gtNewLclVarAddrNode(lclNum, TYP_BYREF);
 
             _PUSH_ADRVAR:
-                assert(op1->OperIs(GT_LCL_VAR_ADDR));
+                assert(op1->IsLclVarAddr());
 
                 tiRetVal = typeInfo(TI_BYTE).MakeByRef();
                 impPushOnStack(op1, tiRetVal);
@@ -12836,7 +12836,7 @@ bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
         op = op->AsField()->GetFldObj();
     }
 
-    if (op->OperIs(GT_LCL_VAR_ADDR))
+    if (op->OperIs(GT_LCL_ADDR))
     {
         if (lclVarTreeOut != nullptr)
         {
@@ -13535,7 +13535,7 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 assert(varTypeIsIntOrI(sigType));
 
                 /* If possible bash the BYREF to an int */
-                if (inlArgNode->OperIsLocalAddr())
+                if (inlArgNode->OperIs(GT_LCL_ADDR))
                 {
                     inlArgNode->gtType           = TYP_I_IMPL;
                     lclVarInfo[i].lclVerTypeInfo = typeInfo(varType2tiType(TYP_I_IMPL));
