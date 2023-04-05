@@ -2,6 +2,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!-- Makes assumptions about (not) loaded assemblies and relies on AppContext state -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Hook.cs" />
