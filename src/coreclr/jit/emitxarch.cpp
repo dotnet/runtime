@@ -599,7 +599,7 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
 // emitDoesInsModifyFlags: checks if the given instruction modifies flags
 //
 // Arguments:
-//    iins - instruction of interest
+//    ins - instruction of interest
 //
 // Return Value:
 //    true if the instruction modifies flags.
