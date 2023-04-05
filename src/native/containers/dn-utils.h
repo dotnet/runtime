@@ -15,7 +15,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <dn-rt.h>
+#include "dn-rt.h"
 
 #if defined(_DEBUG)
 #include <assert.h>

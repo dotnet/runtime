@@ -6,7 +6,7 @@
 
 #include <stdarg.h>
 
-#include <dn-compiler.h>
+#include "dn-compiler.h"
 
 DN_NORETURN static void
 dn_rt_failfast_msgv(const char* fmt, va_list ap);
@@ -20,7 +20,7 @@ dn_rt_failfast_nomsg(const char* file, int line);
 // TODO: add NativeAOT runtime impl
 #else
 // Mono
-#include <dn-rt-mono.h>
+#include "dn-rt-mono.h"
 #endif
 
 #endif /* __DN_RT_H__ */
