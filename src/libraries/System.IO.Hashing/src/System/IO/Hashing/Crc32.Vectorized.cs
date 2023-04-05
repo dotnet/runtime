@@ -27,7 +27,7 @@ namespace System.IO.Hashing
                 return Aes.PolynomialMultiplyWideningLower(left.GetLower(), right.GetLower());
             }
 
-            Debug.Fail("This path should be unreachable.");
+            ThrowHelper.ThrowUnreachableException();
             return default;
         }
 
@@ -44,7 +44,7 @@ namespace System.IO.Hashing
                 return Aes.PolynomialMultiplyWideningUpper(left, right);
             }
 
-            Debug.Fail("This path should be unreachable.");
+            ThrowHelper.ThrowUnreachableException();
             return default;
         }
 
@@ -61,7 +61,7 @@ namespace System.IO.Hashing
                 return Aes.PolynomialMultiplyWideningLower(left.GetLower(), right.GetUpper());
             }
 
-            Debug.Fail("This path should be unreachable.");
+            ThrowHelper.ThrowUnreachableException();
             return default;
         }
 
@@ -79,7 +79,7 @@ namespace System.IO.Hashing
                 return AdvSimd.ExtractVector128(operand.AsByte(), Vector128<byte>.Zero, numBytesToShift).AsUInt64();
             }
 
-            Debug.Fail("This path should be unreachable.");
+            ThrowHelper.ThrowUnreachableException();
             return default;
         }
 
