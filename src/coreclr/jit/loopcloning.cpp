@@ -2148,8 +2148,8 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         }
 #endif
 
-        // If the loop we're cloning contains a nested loop, we need to clear the pre-header bit on
-        // the nested loop pre-header block, since it will no longer be a loop pre-header. (This is because
+        // If the loop we're cloning contains nested loops, we need to clear the pre-header bit on
+        // any nested loop pre-header blocks, since they will no longer be loop pre-headers. (This is because
         // we don't add the slow loop or its child loops to the loop table. It would be simplest to
         // just re-build the loop table if we want to enable loop optimization of the slow path loops.)
         if ((newBlk->bbFlags & BBF_LOOP_PREHEADER) != 0)

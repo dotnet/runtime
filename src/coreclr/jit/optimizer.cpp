@@ -2718,7 +2718,7 @@ NO_MORE_LOOPS:
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
     }
 
-    // Create loop pre-header for every loop.
+    // Create a loop pre-header for every loop.
     bool modForPreHeader = false;
     for (unsigned loopInd = 0; loopInd < optLoopCount; loopInd++)
     {
@@ -2729,7 +2729,6 @@ NO_MORE_LOOPS:
     }
     if (modForPreHeader)
     {
-        // The predecessors were maintained in fgCreateLoopPreHeader; don't rebuild them.
         fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_DOMS);
     }
 
@@ -4599,8 +4598,6 @@ PhaseStatus Compiler::optUnrollLoops()
             // or the first cloned top.
             //
             // If the initBlock is a BBJ_COND drop the condition (and make initBlock a BBJ_NONE block).
-            //
-            // Also, make sure HEAD is a BBJ_NONE block.
             //
             if (initBlock->bbJumpKind == BBJ_COND)
             {
@@ -6952,7 +6949,7 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     ArrayStack<BasicBlock*> defExec(getAllocatorLoopHoist());
 
     // Add the pre-headers of any child loops to the list of blocks to consider for hoisting.
-    // Note that these are not definitely executed. However, it is a heuristic that they will
+    // Note that these are not necessarily definitely executed. However, it is a heuristic that they will
     // often provide good opportunities for further hoisting since we hoist from inside-out,
     // and the inner loop may have already hoisted something loop-invariant to them. If the child
     // loop pre-header block would be added anyway (by dominating the loop exit block), we don't
@@ -6962,6 +6959,32 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     // assumed that the order does not matter for correctness (since there is no execution order known).
     // Note that the order does matter for the hoisting profitability heuristics, as we might
     // run out of hoisting budget when processing the blocks.
+    //
+    // For example, consider this loop nest:
+    //
+    // for (....) { // loop L00
+    //    pre-header 1
+    //    for (...) { // loop L01
+    //    }
+    //    // pre-header 2
+    //    for (...) { // loop L02
+    //       // pre-header 3
+    //       for (...) { // loop L03
+    //       }
+    //    }
+    // }
+    //
+    // When processing the outer loop L00 (with an assumed single exit), we will push on the defExec stack
+    // pre-header 2, pre-header 1, the loop exit block, any IDom tree blocks leading to the entry block,
+    // and finally the entry block. (Note that the child loop iteration order of a loop is from "farthest"
+    // from the loop "head" to "nearest".) Blocks are considered for hoisting in the opposite order.
+    //
+    // Note that pre-header 3 is not pushed, since it is not a direct child. It would have been processed
+    // when loop L02 was considered for hoisting.
+    //
+    // The order of pushing pre-header 1 and pre-header 2 is based on the order in the loop table (which is
+    // convenient). But note that it is arbitrary because there is not guaranteed execution order amongst
+    // the child loops.
 
     int childLoopPreHeaders = 0;
     for (BasicBlock::loopNumber childLoop = pLoopDsc->lpChild; //

@@ -1937,8 +1937,8 @@ bool Compiler::fgCanCompactBlocks(BasicBlock* block, BasicBlock* bNext)
     }
 
     // Don't allow removing an empty loop pre-header.
-    // We can compact a pre-header into an empty `block`, as long as we propagate the BBF_LOOP_PREHEADER
-    // bit properly.
+    // We can compact a pre-header `bNext` into an empty `block` since BBF_COMPACT_UPD propagates
+    // BBF_LOOP_PREHEADER to `block`.
     if (optLoopsRequirePreHeaders)
     {
         if (((block->bbFlags & BBF_LOOP_PREHEADER) != 0) && (bNext->countOfInEdges() != 1))
@@ -2056,7 +2056,11 @@ void Compiler::fgCompactBlocks(BasicBlock* block, BasicBlock* bNext)
         JITDUMP("Second block has %u other incoming edges\n", bNext->countOfInEdges());
         assert(block->isEmpty());
 
-        // `block` can no longer be a loop pre-header (if it was before).
+        // When loops require pre-headers, `block` cannot be a pre-header.
+        // We should have screened this out in fgCanCompactBlocks().
+        //
+        // When pre-headers are not required, then if `block` was a pre-header,
+        // it no longer is.
         //
         assert(!optLoopsRequirePreHeaders || ((block->bbFlags & BBF_LOOP_PREHEADER) == 0));
         block->bbFlags &= ~BBF_LOOP_PREHEADER;

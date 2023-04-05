@@ -6511,7 +6511,7 @@ protected:
 public:
     LoopDsc*      optLoopTable;              // loop descriptor table
     bool          optLoopTableValid;         // info in loop table should be valid
-    bool          optLoopsRequirePreHeaders; // Do we require that all loops have pre-headers?
+    bool          optLoopsRequirePreHeaders; // Do we require that all loops (in the loop table) have pre-headers?
     unsigned char optLoopCount;              // number of tracked loops
     unsigned char loopAlignCandidates;       // number of loops identified for alignment
 
