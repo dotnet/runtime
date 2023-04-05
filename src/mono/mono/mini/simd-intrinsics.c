@@ -1216,13 +1216,13 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		return NULL;
 	}
 
-	if (!strcmp (m_class_get_name (cfg->method->klass), "Vector256") || !strcmp (m_class_get_name (cfg->method->klass), "Vector512"))
+	if (!strcmp (m_class_get_name (cmethod->klass), "Vector256") || !strcmp (m_class_get_name (cmethod->klass), "Vector512"))
 		return NULL; 
 		
 // FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
 #ifdef TARGET_ARM64
 	if (!COMPILE_LLVM (cfg)) {
-		if (!strcmp (m_class_get_name (cfg->method->klass), "Vector128") || !strcmp (m_class_get_name (cfg->method->klass), "Vector"))
+		if (!(!strcmp (m_class_get_name (cmethod->klass), "Vector128") || !strcmp (m_class_get_name (cmethod->klass), "Vector")))
 			return NULL;
 		switch (id) {
 		case SN_Abs:
@@ -1235,8 +1235,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_ConvertToUInt32:
 		case SN_ConvertToUInt64:
 		case SN_Create:
-		case SN_CreateScalar:
-		case SN_CreateScalarUnsafe:
 		case SN_Dot:
 		case SN_ExtractMostSignificantBits:
 		case SN_GetElement:
@@ -1430,9 +1428,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
 		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
-		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype))
-			return emit_simd_ins (cfg, klass, type_to_expand_op (etype->type), args [0]->dreg, -1);
-		else if (is_create_from_half_vectors_overload (fsig))
+		if (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype)) {
+			MonoInst* ins = emit_simd_ins (cfg, klass, type_to_expand_op (etype->type), args [0]->dreg, -1);
+			ins->inst_c1 = arg0_type;
+			return ins;
+		} else if (is_create_from_half_vectors_overload (fsig))
 			return emit_simd_ins (cfg, klass, OP_XCONCAT, args [0]->dreg, args [1]->dreg);
 		else if (is_elementwise_create_overload (fsig, etype))
 			return emit_vector_create_elementwise (cfg, fsig, fsig->ret, etype, args);
