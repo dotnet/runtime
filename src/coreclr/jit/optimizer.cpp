@@ -808,15 +808,32 @@ bool Compiler::optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenT
         return false;
     }
 
-    // We found an initializer in the `head` block. For this to be used, we need to make sure the
+    // We found an initializer in the `initBlock` block. For this to be used, we need to make sure the
     // "iterVar" initialization is never skipped. That is, every pred of ENTRY other than HEAD is in the loop.
+    // We allow one special case: the HEAD block is an empty predecessor to ENTRY, and the initBlock is the
+    // only predecessor to HEAD. This handles the case where we rebuild the loop table (after inserting
+    // pre-headers) and we still want to find the initializer before the pre-header block.
     for (BasicBlock* const predBlock : optLoopTable[loopInd].lpEntry->PredBlocks())
     {
-        if ((predBlock != initBlock) && !optLoopTable[loopInd].lpContains(predBlock))
+        if (!optLoopTable[loopInd].lpContains(predBlock))
         {
-            JITDUMP(FMT_LP ": initialization not guaranteed through `head` block; ignore constant initializer\n",
-                    loopInd);
-            return false;
+            bool initBlockOk = (predBlock == initBlock);
+            if (!initBlockOk)
+            {
+                if ((predBlock->bbJumpKind == BBJ_NONE) && (predBlock->bbNext == optLoopTable[loopInd].lpEntry) &&
+                    (predBlock->countOfInEdges() == 1) && (predBlock->firstStmt() == nullptr) &&
+                    (predBlock->bbPrev != nullptr) && predBlock->bbPrev->bbFallsThrough())
+                {
+                    initBlockOk = true;
+                }
+            }
+            if (!initBlockOk)
+            {
+                JITDUMP(FMT_LP ": initialization not guaranteed from " FMT_BB " through to entry block " FMT_BB
+                               " from pred " FMT_BB "; ignore constant initializer\n",
+                        loopInd, initBlock->bbNum, optLoopTable[loopInd].lpEntry->bbNum, predBlock->bbNum);
+                return false;
+            }
         }
     }
 
@@ -1132,12 +1149,13 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
 //      Extract the "init", "test" and "incr" nodes of the loop.
 //
 // Arguments:
-//      head    - Loop head block
-//      bottom  - Loop bottom block
-//      top     - Loop top block
-//      ppInit  - The init stmt of the loop if found.
-//      ppTest  - The test stmt of the loop if found.
-//      ppIncr  - The incr stmt of the loop if found.
+//      pInitBlock - [IN/OUT] *pInitBlock is the loop head block on entry, and is set to the initBlock on exit,
+//                   if `**ppInit` is non-null.
+//      bottom     - Loop bottom block
+//      top        - Loop top block
+//      ppInit     - The init stmt of the loop if found.
+//      ppTest     - The test stmt of the loop if found.
+//      ppIncr     - The incr stmt of the loop if found.
 //
 //  Return Value:
 //      The results are put in "ppInit", "ppTest" and "ppIncr" if the method
@@ -1146,9 +1164,8 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
 //      to nullptr. Return value will never be false if `init` is not found.
 //
 //  Operation:
-//      Check if the "test" stmt is last stmt in the loop "bottom". If found good,
-//      "test" stmt is found. Try to find the "incr" stmt. Check previous stmt of
-//      "test" to get the "incr" stmt. If it is not found it could be a loop of the
+//      Check if the "test" stmt is last stmt in the loop "bottom". Try to find the "incr" stmt.
+//      Check previous stmt of "test" to get the "incr" stmt. If it is not found it could be a loop of the
 //      below form.
 //
 //                     +-------<-----------------<-----------+
@@ -1165,8 +1182,9 @@ bool Compiler::optIsLoopTestEvalIntoTemp(Statement* testStmt, Statement** newTes
 //      the callers are expected to verify that "iterVar" is used in the test.
 //
 bool Compiler::optExtractInitTestIncr(
-    BasicBlock* head, BasicBlock* bottom, BasicBlock* top, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr)
+    BasicBlock** pInitBlock, BasicBlock* bottom, BasicBlock* top, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr)
 {
+    assert(pInitBlock != nullptr);
     assert(ppInit != nullptr);
     assert(ppTest != nullptr);
     assert(ppIncr != nullptr);
@@ -1218,7 +1236,22 @@ bool Compiler::optExtractInitTestIncr(
 
     // Find the last statement in the loop pre-header which we expect to be the initialization of
     // the loop iterator.
-    Statement* phdrStmt = head->firstStmt();
+    BasicBlock* initBlock = *pInitBlock;
+    Statement*  phdrStmt  = initBlock->firstStmt();
+    if (phdrStmt == nullptr)
+    {
+        // When we build the loop table, we canonicalize by introducing loop pre-headers for all loops.
+        // If we are rebuilding the loop table, we would already have the pre-header block introduced
+        // the first time, which might be empty if no hoisting has yet occurred. In this case, look a
+        // little harder for the possible loop initialization statement.
+        if ((initBlock->bbJumpKind == BBJ_NONE) && (initBlock->bbNext == top) && (initBlock->countOfInEdges() == 1) &&
+            (initBlock->bbPrev != nullptr) && initBlock->bbPrev->bbFallsThrough())
+        {
+            initBlock = initBlock->bbPrev;
+            phdrStmt  = initBlock->firstStmt();
+        }
+    }
+
     if (phdrStmt != nullptr)
     {
         Statement* initStmt = phdrStmt->GetPrevStmt();
@@ -1235,11 +1268,6 @@ bool Compiler::optExtractInitTestIncr(
                 // statements other than duplicated loop conditions.
                 doGetPrev = (initStmt->GetPrevStmt() != nullptr);
             }
-            else
-            {
-                // Must be a duplicated loop condition.
-                noway_assert(initStmt->GetRootNode()->gtOper == GT_JTRUE);
-            }
 #endif // DEBUG
             if (doGetPrev)
             {
@@ -1248,7 +1276,8 @@ bool Compiler::optExtractInitTestIncr(
             noway_assert(initStmt != nullptr);
         }
 
-        *ppInit = initStmt->GetRootNode();
+        *ppInit     = initStmt->GetRootNode();
+        *pInitBlock = initBlock;
     }
     else
     {
@@ -1372,24 +1401,25 @@ bool Compiler::optRecordLoop(
     //
     if (bottom->bbJumpKind == BBJ_COND)
     {
-        GenTree* init;
-        GenTree* test;
-        GenTree* incr;
-        if (!optExtractInitTestIncr(head, bottom, top, &init, &test, &incr))
+        GenTree*    init;
+        GenTree*    test;
+        GenTree*    incr;
+        BasicBlock* initBlock = head;
+        if (!optExtractInitTestIncr(&initBlock, bottom, top, &init, &test, &incr))
         {
             JITDUMP(FMT_LP ": couldn't find init/test/incr; not LPFLG_ITER loop\n", loopInd);
             goto DONE_LOOP;
         }
 
         unsigned iterVar = BAD_VAR_NUM;
-        if (!optComputeIterInfo(incr, head->bbNext, bottom, &iterVar))
+        if (!optComputeIterInfo(incr, top, bottom, &iterVar))
         {
             JITDUMP(FMT_LP ": increment expression not appropriate form, or not loop invariant; not LPFLG_ITER loop\n",
                     loopInd);
             goto DONE_LOOP;
         }
 
-        optPopulateInitInfo(loopInd, head, init, iterVar);
+        optPopulateInitInfo(loopInd, initBlock, init, iterVar);
 
         // Check that the iterator is used in the loop condition.
         if (!optCheckIterInLoopTest(loopInd, test, iterVar))
