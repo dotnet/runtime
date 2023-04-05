@@ -1276,6 +1276,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_Ceiling:
 		case SN_Divide:
 		case SN_Multiply:
+		case SN_Sqrt:
+		case SN_Abs:
 			break;
 		default: 
 			return NULL;
