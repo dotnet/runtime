@@ -4221,6 +4221,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo);
+    assert(threadStaticBlocksInfo.tlsIndex.accessType == IAT_VALUE);
 
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
@@ -4310,12 +4311,13 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                 GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(2)->GetNode();
 
                 void**   pIdAddr       = nullptr;
-                unsigned tlsIndexValue = threadStaticBlocksInfo.tlsIndex;
+                
+                size_t   tlsIndexValue = (size_t)threadStaticBlocksInfo.tlsIndex.addr;
                 GenTree* dllRef        = nullptr;
 
                 if (tlsIndexValue != 0)
                 {
-                    dllRef = gtNewIconNode(tlsIndexValue * TARGET_POINTER_SIZE, TYP_I_IMPL);
+                    dllRef = gtNewIconHandleNode(tlsIndexValue * TARGET_POINTER_SIZE, GTF_ICON_TLS_HDL);
                 }
 
                 // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]

@@ -1789,10 +1789,12 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 
     JIT_TO_EE_TRANSITION();
 
-    pInfo->tlsIndex = _tls_index;
+    pInfo->tlsIndex.addr = (void*)static_cast<uintptr_t>(_tls_index);
+    pInfo->tlsIndex.accessType = IAT_VALUE;
+
     pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
     pInfo->offsetOfThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_threadStaticBlocks);
-    pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_maxThreadStaticBlocks);        
+    pInfo->offsetOfMaxThreadStaticBlocks = CEEInfo::ThreadLocalOffset(&t_maxThreadStaticBlocks);
     
     EE_TO_JIT_TRANSITION();
 }
@@ -1818,10 +1820,11 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
 
     JIT_TO_EE_TRANSITION();
 
-    pInfo->tlsIndex = 0;
+    pInfo->tlsIndex.addr = (UINT8*)0;
+
     pInfo->offsetOfThreadLocalStoragePointer = 0;
     pInfo->offsetOfThreadStaticBlocks = 0;
-    pInfo->offsetOfMaxThreadStaticBlocks = 0;        
+    pInfo->offsetOfMaxThreadStaticBlocks = 0;
     
     EE_TO_JIT_TRANSITION();
 }

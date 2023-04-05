@@ -2860,19 +2860,21 @@ namespace Internal.JitInterface
             return PrintFromUtf16(field.Name, buffer, bufferSize, requiredBufferSize);
         }
 
-        // TODO: Fix this
         private uint getThreadLocalFieldInfo(CORINFO_FIELD_STRUCT_* fld)
         {
+            // Implemented for JIT only for now.
+
+            // This is present so compiler doesn't complain about method not being static.
             FieldDesc field = HandleToObject(fld);
-            return (uint)field.GetHashCode();
+            return (uint)(field.IsThreadStatic ? 0 : 0);
         }
 
         private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
         {
-            pInfo->tlsIndex = 5; // CreateConstLookupToSymbol(null);
-            pInfo->offsetOfThreadLocalStoragePointer = 0x58;
-            pInfo->offsetOfMaxThreadStaticBlocks = 23; // CreateConstLookupToSymbol(null);
-            pInfo->offsetOfThreadStaticBlocks = 32; // CreateConstLookupToSymbol(null);
+            // Implemented for JIT only for now.
+
+            // This is present so compiler doesn't complain about method not being static.
+            pInfo->tlsIndex = CreateConstLookupToSymbol(null);
         }
 
         private CORINFO_CLASS_STRUCT_* getFieldClass(CORINFO_FIELD_STRUCT_* field)

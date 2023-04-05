@@ -1781,7 +1781,6 @@ HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLoc
 {
     FCALL_CONTRACT;
 
-    //printf("Inside JIT_GetSharedNonGCThreadStaticBase: %u\n", staticBlockIndex);
     // Get the ModuleIndex
     ModuleIndex index = pDomainLocalModule->GetModuleIndex();
 

@@ -1155,10 +1155,10 @@ namespace Internal.JitInterface
 
     public unsafe struct CORINFO_THREAD_STATIC_BLOCKS_INFO
     {
-        public uint tlsIndex;
-        public uint offsetOfThreadLocalStoragePointer; // 0x58 on x64
-        public uint offsetOfMaxThreadStaticBlocks;
-        public uint offsetOfThreadStaticBlocks;
+        public CORINFO_CONST_LOOKUP tlsIndex;
+        public uint offsetOfThreadLocalStoragePointer;
+        public CORINFO_CONST_LOOKUP offsetOfMaxThreadStaticBlocks;
+        public CORINFO_CONST_LOOKUP offsetOfThreadStaticBlocks;
     };
 
     // System V struct passing
