@@ -7,6 +7,7 @@ using System.Xml;
 
 namespace System.Security.Cryptography.Xml
 {
+    [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
     public class SignedInfo : ICollection
     {
         private string? _id;

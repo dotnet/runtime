@@ -104,6 +104,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public abstract void LoadXml(XmlElement value);
         public abstract XmlElement GetXml();
     }

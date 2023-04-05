@@ -1,12 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Security.Cryptography.Xml
 {
     internal static class CryptoHelpers
     {
+        internal const string CreateFromNameUnreferencedCodeMessage = "The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.";
+
         private static readonly char[] _invalidChars = new char[] { ',', '`', '[', '*', '&' };
 
+        [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
         public static object? CreateFromKnownName(string name) =>
             name switch
             {
@@ -38,6 +43,7 @@ namespace System.Security.Cryptography.Xml
                 _ => null,
             };
 
+        [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
         public static T? CreateFromName<T>(string? name) where T : class
         {
             if (name == null || name.IndexOfAny(_invalidChars) >= 0)

@@ -94,6 +94,7 @@ namespace System.Security.Cryptography.Xml
             return cipherDataElement;
         }
 
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public void LoadXml(XmlElement value)
         {
             if (value is null)

@@ -202,6 +202,7 @@ namespace System.Security.Cryptography.Xml
             return referenceElement;
         }
 
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public void LoadXml(XmlElement value)
         {
             if (value is null)
@@ -332,6 +333,7 @@ namespace System.Security.Cryptography.Xml
             TransformChain.Add(transform);
         }
 
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         internal void UpdateHashValue(XmlDocument document, CanonicalXmlNodeList refList)
         {
             DigestValue = CalculateHashValue(document, refList);
@@ -339,6 +341,7 @@ namespace System.Security.Cryptography.Xml
 
         // What we want to do is pump the input through the TransformChain and then
         // hash the output of the chain document is the document context for resolving relative references
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         internal byte[]? CalculateHashValue(XmlDocument document, CanonicalXmlNodeList refList)
         {
             // refList is a list of elements that might be targets of references
