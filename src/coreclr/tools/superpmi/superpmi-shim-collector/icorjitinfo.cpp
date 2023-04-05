@@ -1089,7 +1089,7 @@ uint32_t interceptor_ICJI::getThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field)
 {
     mc->cr->AddCall("getThreadLocalFieldInfo");
     uint32_t result = original_ICorJitInfo->getThreadLocalFieldInfo(field);
-    mc->recGetThreadLocalFieldInfo(field);
+    mc->recGetThreadLocalFieldInfo(field, result);
     return result;
 }
 
