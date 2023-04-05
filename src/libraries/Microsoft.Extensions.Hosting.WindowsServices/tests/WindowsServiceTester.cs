@@ -9,6 +9,7 @@ using System.ServiceProcess;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
+using Xunit;
 
 namespace Microsoft.Extensions.Hosting
 {
@@ -45,6 +46,18 @@ namespace Microsoft.Extensions.Hosting
             }
             catch (ArgumentException)
             { }
+        }
+
+        public TimeSpan WaitForStatusTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+        public new void WaitForStatus(ServiceControllerStatus desiredStatus) =>
+            WaitForStatus(desiredStatus, WaitForStatusTimeout);
+
+        public new void WaitForStatus(ServiceControllerStatus desiredStatus, TimeSpan timeout)
+        {
+            base.WaitForStatus(desiredStatus, timeout);
+
+            Assert.Equal(Status, desiredStatus);
         }
 
         // the following overloads are necessary to ensure the compiler will produce the correct signature from a lambda.

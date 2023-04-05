@@ -111,7 +111,7 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
                 await Task.Run(Stop, cancellationToken).ConfigureAwait(false);
             }
 
-            // When the underlying service is stopped this will cause the ServiceBase.Run method to complete and return, which completes _serviceStopRequested.
+            // When the underlying service is stopped this will cause the ServiceBase.Run method to complete and return, which completes _serviceDispatcherStopped.
             await _serviceDispatcherStopped.Task.ConfigureAwait(false);
         }
 
