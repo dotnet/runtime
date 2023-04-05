@@ -12,6 +12,15 @@ DN_NORETURN static void
 dn_rt_failfast_msgv(const char* fmt, va_list ap);
 
 DN_NORETURN static void
-dn_rt_failfast_msg(const char* file, int line);
+dn_rt_failfast_nomsg(const char* file, int line);
+
+#if defined(FEATUERE_CORECLR)
+// TODO: add CoreCLR runtime impl
+#elif defined(FEATURE_NATIVEAOT)
+// TODO: add NativeAOT runtime impl
+#else
+// Mono
+#include <dn-rt-mono.h>
+#endif
 
 #endif /* __DN_RT_H__ */

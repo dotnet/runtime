@@ -1,8 +1,8 @@
 project(mono)
 
 set(subdirs
-  containers
   eglib
+  containers
   utils
   sgen
   metadata

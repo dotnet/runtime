@@ -929,19 +929,6 @@ if(NOT DISABLE_LIBS)
 endif()
 add_subdirectory("${CLR_SRC_NATIVE_DIR}/public" public_apis)
 
-### Paths and Targets for Shared Containers
-set(SHARED_CONTAINERS_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/containers/")
-include (${SHARED_CONTAINERS_SOURCE_PATH}containers.cmake)
-
-set(shared_container_sources "")
-
-list(APPEND shared_container_sources
-  ${SHARED_CONTAINER_SOURCES}
-  ${SHARED_CONTAINER_HEADERS}
-)
-
-addprefix(shared_container_sources ${SHARED_CONTAINERS_SOURCE_PATH} "${shared_container_sources}")
-
 ### Mono runtime and components
 
 add_subdirectory(mono)
