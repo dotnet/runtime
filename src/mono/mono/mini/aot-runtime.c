@@ -2413,59 +2413,6 @@ mono_aot_register_module (gpointer *aot_info)
 		mono_aot_unlock ();
 }
 
-static GHashTable *bundled_assemblies = NULL;
-
-static int bundles_added = 0;
-
-void
-mono_add_bundled_assembly (const char *name, const unsigned char *data, unsigned int size)
-{
-    if (!bundled_assemblies)
-        bundled_assemblies = g_hash_table_new (g_str_hash, g_str_equal);
-
-    MonoBundledAssembly *bundled_assembly = g_new0 (MonoBundledAssembly, 1);
-    bundled_assembly->name = g_strdup (name);
-    g_assert (bundled_assembly->name);
-    bundled_assembly->data = data;
-    bundled_assembly->size = size;
-    g_hash_table_insert (bundled_assemblies, (gpointer) name, bundled_assembly);
-    bundles_added++;
-}
-
-void
-mono_get_bundled_assembly (const char *name, const unsigned char **out_data, unsigned int *out_size)
-{
-    *out_data = NULL;
-    *out_size = 0;
-    MonoBundledAssembly *bundled_assembly;
-
-    if (g_hash_table_lookup_extended (bundled_assemblies, name, NULL, (gpointer *)&bundled_assembly)) {
-        *out_data = bundled_assembly->data;
-        *out_size = bundled_assembly->size;
-    }
-}
-
-static void
-populate_bundle (gpointer key, gpointer value, gpointer user_data)
-{
-    MonoBundledAssembly *bundled_assembly = (MonoBundledAssembly *)value;
-    MonoBundledAssembly **bundle = (MonoBundledAssembly **)user_data;
-    g_assert (bundles_added > 0);
-    bundle [bundles_added-- - 1] = bundled_assembly;
-}
-
-void
-mono_register_bundle (void)
-{
-    if (!bundled_assemblies)
-        return;
-
-    MonoBundledAssembly **bundle = g_new0 (MonoBundledAssembly*, bundles_added + 1);
-    g_hash_table_foreach (bundled_assemblies, populate_bundle, bundle);
-
-    mono_register_bundled_assemblies ((const MonoBundledAssembly **)bundle);
-}
-
 void
 mono_aot_init (void)
 {

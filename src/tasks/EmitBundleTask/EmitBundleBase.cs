@@ -60,7 +60,8 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
             var outputFile = registeredFile.GetMetadata("DestinationFile");
             var registeredName = group.Key;
             var symbolName = ToSafeSymbolName(outputFile);
-            return (registeredName, symbolName);
+            var fileType = GetFileType(registeredFile.ItemSpec);
+            return (registeredName, symbolName, fileType);
         }).ToList();
 
         Log.LogMessage(MessageImportance.Low, "Bundling {0} files for {1}", files.Count, BundleName);
@@ -148,9 +149,11 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
     public abstract bool Emit(string destinationFile, Action<Stream> inputProvider);
 
-    public static void GenerateRegisteredBundledObjects(string newFunctionName, string callbackFunctionName, ICollection<(string registeredName, string symbol)> files, StreamWriter outputUtf8Writer)
+    public static void GenerateRegisteredBundledObjects(string newFunctionName, string callbackFunctionName, ICollection<(string registeredName, string symbol, string type)> files, StreamWriter outputUtf8Writer)
     {
-        outputUtf8Writer.WriteLine($"int {callbackFunctionName}(const char* name, const unsigned char* data, unsigned int size);");
+        outputUtf8Writer.WriteLine("typedef enum {\n    BUNDLED_BLOB,\n    BUNDLED_ASSEMBLY,\n    BUNDLED_SATELLITE_ASSEMBLY,\n    BUNDLED_BINARY,\n    BUNDLED_RESOURCE_COUNT,\n} BundledResourceType;");
+        outputUtf8Writer.WriteLine($"int {callbackFunctionName}(const char *name, const char *culture, const unsigned char *data, unsigned int size, BundledResourceType type);");
+        outputUtf8Writer.WriteLine($"void mono_register_bundled_resources (void);");
         outputUtf8Writer.WriteLine();
 
         foreach (var tuple in files)
@@ -164,8 +167,10 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
         foreach (var tuple in files)
         {
-            outputUtf8Writer.WriteLine($"  {callbackFunctionName} (\"{tuple.registeredName}\", {tuple.symbol}, {tuple.symbol}_len);");
+            outputUtf8Writer.WriteLine($"  {callbackFunctionName} (\"{tuple.registeredName}\", 0, {tuple.symbol}, {tuple.symbol}_len, {tuple.type});");
         }
+
+        outputUtf8Writer.WriteLine($"  mono_register_bundled_resources ();");
 
         outputUtf8Writer.WriteLine("}");
     }
@@ -225,6 +230,23 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         }
 
         return sb.ToString();
+    }
+
+    private static string GetFileType(string destinationFileName)
+    {
+        if (destinationFileName.EndsWith(".resources.dll"))
+        {
+            return "BUNDLED_SATELLITE_ASSEMBLY";
+        }
+        if (destinationFileName.EndsWith(".dll"))
+        {
+            return "BUNDLED_ASSEMBLY";
+        }
+        if (destinationFileName.EndsWith(".bin"))
+        {
+            return "BUNDLED_BINARY";
+        }
+        return "BUNDLED_BLOB";
     }
 
     // Equivalent to "isalnum"

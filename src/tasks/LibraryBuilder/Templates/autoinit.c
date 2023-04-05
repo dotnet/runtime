@@ -18,7 +18,7 @@
 
 #include "library-builder.h"
 
-#if defined(BUNDLED_ASSEMBLIES)
+#if defined(BUNDLED_RESOURCES)
 
 static void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
@@ -37,7 +37,8 @@ initialize_runtimeconfig ()
     arg->kind = 1;
     const char *data;
     int data_len;
-    mono_get_bundled_assembly ("runtimeconfig.bin", &data, &data_len);
+    mono_get_bundled_resource_data ("runtimeconfig.bin", &data, &data_len);
+    arg->runtimeconfig.name = NULL;
     arg->runtimeconfig.data.data = data;
     arg->runtimeconfig.data.data_len = data_len;
     monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, NULL);
@@ -81,7 +82,7 @@ initialize_runtimeconfig (const char *bundle_path)
     }
 }
 
-#endif // BUNDLED_ASSEMBLIES
+#endif // BUNDLED_RESOURCES
 
 static void
 initialize_appctx_env_variables (const char *bundle_path)
@@ -141,9 +142,8 @@ runtime_init_callback ()
 {
     register_aot_modules ();
 
-#if defined(BUNDLED_ASSEMBLIES)
-    mono_register_assemblies_bundle ();
-    mono_register_bundle ();
+#if defined(BUNDLED_RESOURCES)
+    mono_register_resources_bundle ();
 #endif
 
     const char *assemblies_location = getenv ("%ASSEMBLIES_LOCATION%");

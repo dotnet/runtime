@@ -88,7 +88,7 @@ public class LibraryBuilderTask : AppBuilderTask
     /// <summary>
     /// Determines whether or not assemblies are bundled into the library
     /// </summary>
-    public bool BundlesAssemblies { get; set; }
+    public bool BundlesResources { get; set; }
 
     public bool StripDebugSymbols { get; set; }
 
@@ -314,9 +314,9 @@ public class LibraryBuilderTask : AppBuilderTask
             extraDefinitions.AppendLine("add_definitions(-DUSES_AOT_DATA=1)");
         }
 
-        if (BundlesAssemblies)
+        if (BundlesResources)
         {
-            extraDefinitions.AppendLine("add_definitions(-DBUNDLED_ASSEMBLIES=1)");
+            extraDefinitions.AppendLine("add_definitions(-DBUNDLED_RESOURCES=1)");
         }
 
         return extraDefinitions.ToString();

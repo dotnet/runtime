@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Logging
 #if defined(HOST_ANDROID)
 
 #include <android/log.h>
@@ -33,13 +34,19 @@
 
 #error Unsupported Host Platform. Ensure the hosting platform is supported by the LibraryBuilder and the appropriate logging functions are added.
 
-#endif // HOST_ANDROID ^ HOST_APPLE_MOBILE
+#endif // Logging
+
+// Platform specific native functions
+#if defined(HOST_WINDOWS)
+#define STR_CASE_CMP _stricmp
+#else
+#define STR_CASE_CMP strcasecmp
+#endif // Platform specific native functions
 
 void register_aot_modules (void);
 #if defined(BUNDLED_ASSEMBLIES)
-void mono_get_bundled_assembly (const char *name, const unsigned char **out_data, unsigned int *out_size);
-void mono_register_assemblies_bundle (void);
-void mono_register_bundle (void);
+void mono_get_bundled_resource_data (const char *name, const unsigned char **out_data, unsigned int *out_size);
+void mono_register_resources_bundle (void);
 #endif // BUNDLED_ASSEMBLIES
 void preload_assemblies_with_exported_symbols ();
 typedef void (*MonoRuntimeInitCallback) (void);

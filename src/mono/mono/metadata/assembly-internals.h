@@ -141,6 +141,30 @@ mono_assembly_get_image_internal (MonoAssembly *assembly);
 void
 mono_set_assemblies_path_direct (char **path);
 
+typedef enum {
+	BUNDLED_BLOB,
+	BUNDLED_ASSEMBLY,
+	BUNDLED_SATELLITE_ASSEMBLY,
+	BUNDLED_BINARY,
+	BUNDLED_RESOURCE_COUNT,
+} BundledResourceType;
+
+typedef struct BundledResource {
+	const char *culture; // Satellite assemblies
+	const unsigned char *data;
+	unsigned int size;
+	BundledResourceType type;
+} BundledResource;
+
+void
+mono_add_bundled_resource (const char *name, const char *culture, const unsigned char *data, unsigned int size, BundledResourceType type);
+
+void
+mono_get_bundled_resource_data (const char *name, const unsigned char **out_data, unsigned int *out_size);
+
+void
+mono_register_bundled_resources (void);
+
 MONO_COMPONENT_API
 gboolean
 mono_assembly_is_jit_optimizer_disabled (MonoAssembly *assembly);

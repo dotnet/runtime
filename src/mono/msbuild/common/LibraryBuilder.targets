@@ -17,15 +17,15 @@
 
     <ItemGroup>
       <_ExtraLibrarySources Include="$(_AotModuleTablePath)" />
-      <_ExtraLibrarySources Include="$(_AssembliesToBundleSourceFile)" />
-      <_ExtraLibrarySources Include="%(_AssembliesToBundleWithHashes.DestinationFile)" />
+      <_ExtraLibrarySources Include="$(_ResourcesToBundleSourceFile)" />
+      <_ExtraLibrarySources Include="%(_ResourcesToBundleWithHashes.DestinationFile)" />
       <_ExtraLinkerArgs Include="@(_CommonLinkerArgs)" />
     </ItemGroup>
 
     <LibraryBuilderTask
       Assemblies="@(_AssembliesToBundleInternal)"
       AssembliesLocation="$(AssembliesLocation)"
-      BundlesAssemblies="$(BundlesAssemblies)"
+      BundlesResources="$(BundlesResources)"
       ExtraLinkerArguments="@(_ExtraLinkerArgs)"
       ExtraSources="@(_ExtraLibrarySources)"
       IsSharedLibrary="$(_IsSharedLibrary)"
@@ -42,33 +42,33 @@
   </Target>
 
   <Target Name="_GenerateBundle"
-          Condition="'$(BundlesAssemblies)' == 'true'">
+          Condition="'$(BundlesResources)' == 'true'">
 
     <PropertyGroup>
-      <_AssembliesToBundleSourceFile>$(BundleDir)bundled_assemblies.c</_AssembliesToBundleSourceFile>
+      <_ResourcesToBundleSourceFile>$(BundleDir)bundled_resources.c</_ResourcesToBundleSourceFile>
     </PropertyGroup>
 
     <ItemGroup>
-      <_AssembliesToBundle Remove="@(_AssembliesToBundle)" />
-      <_AssembliesToBundle Include="@(_AssembliesToBundleInternal)" />
-      <_AssembliesToBundle Include="$(_ParsedRuntimeConfigFilePath)" />
+      <_ResourcesToBundle Remove="@(_ResourcesToBundle)" />
+      <_ResourcesToBundle Include="@(_AssembliesToBundleInternal)" />
+      <_ResourcesToBundle Include="$(_ParsedRuntimeConfigFilePath)" />
     </ItemGroup>
 
-    <GetFileHash Files="@(_AssembliesToBundle)">
-      <Output TaskParameter="Items" ItemName="_AssembliesToBundleWithHashes" />
+    <GetFileHash Files="@(_ResourcesToBundle)">
+      <Output TaskParameter="Items" ItemName="_ResourcesToBundleWithHashes" />
     </GetFileHash>
 
     <ItemGroup>
-      <_AssembliesToBundleWithHashes Update="@(_AssembliesToBundleWithHashes)">
-        <DestinationFile>$(BundleDir)%(_AssembliesToBundleWithHashes.Filename)%(_AssembliesToBundleWithHashes.Extension).$([System.String]::Copy(%(_AssembliesToBundleWithHashes.FileHash)).Substring(0, 8)).c</DestinationFile>
-      </_AssembliesToBundleWithHashes>
+      <_ResourcesToBundleWithHashes Update="@(_ResourcesToBundleWithHashes)">
+        <DestinationFile>$(BundleDir)%(_ResourcesToBundleWithHashes.Filename)%(_ResourcesToBundleWithHashes.Extension).$([System.String]::Copy(%(_ResourcesToBundleWithHashes.FileHash)).Substring(0, 8)).c</DestinationFile>
+      </_ResourcesToBundleWithHashes>
     </ItemGroup>
 
     <EmitBundleSourceFiles
-      FilesToBundle="@(_AssembliesToBundleWithHashes)"
-      BundleName="assemblies"
-      BundleFile="$(_AssembliesToBundleSourceFile)"
-      RegistrationCallbackFunctionName="mono_add_bundled_assembly"
+      FilesToBundle="@(_ResourcesToBundleWithHashes)"
+      BundleName="resources"
+      BundleFile="$(_ResourcesToBundleSourceFile)"
+      RegistrationCallbackFunctionName="mono_add_bundled_resource"
       />
   </Target>
 
