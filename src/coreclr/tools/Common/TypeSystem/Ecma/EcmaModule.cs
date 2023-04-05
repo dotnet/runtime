@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using System.Text;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -15,8 +14,8 @@ namespace Internal.TypeSystem.Ecma
 {
     public partial class EcmaModule : ModuleDesc
     {
-        private readonly PEReader _peReader;
-        protected readonly MetadataReader _metadataReader;
+        private PEReader _peReader;
+        protected MetadataReader _metadataReader;
 
         internal interface IEntityHandleObject
         {
@@ -283,110 +282,27 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        private TypeDefinitionHandle[] _typeDefinitionBuckets;
-        private volatile TypeDefinitionHandle[] _typeDefinitionBucketHeads;
-
-        private TypeDefinitionHandle[] InitializeFindNamedType()
-        {
-            TypeDefinitionHandle[] buckets = new TypeDefinitionHandle[_metadataReader.TypeDefinitions.Count + 1];
-            TypeDefinitionHandle[] bucketHeads = new TypeDefinitionHandle[(buckets.Length / 8) + 1];
-
-            MetadataReader reader = _metadataReader;
-            foreach (TypeDefinitionHandle typeHandle in reader.TypeDefinitions)
-            {
-                TypeDefinition typeDef = reader.GetTypeDefinition(typeHandle);
-                if (typeDef.Attributes.IsNested())
-                    continue;
-
-                var hashCode = default(HashCode);
-                AppendHashCode(ref hashCode, reader.GetBlobReader(typeDef.Namespace));
-                AppendHashCode(ref hashCode, reader.GetBlobReader(typeDef.Name));
-
-                ref TypeDefinitionHandle head = ref bucketHeads[(uint)hashCode.ToHashCode() % bucketHeads.Length];
-                ref TypeDefinitionHandle entry = ref buckets[MetadataTokens.GetRowNumber(typeHandle)];
-
-                entry = head;
-                head = typeHandle;
-            }
-
-            _typeDefinitionBuckets = buckets;
-            _typeDefinitionBucketHeads = bucketHeads;
-
-            return bucketHeads;
-
-            static unsafe void AppendHashCode(ref HashCode hashCode, BlobReader reader)
-            {
-                while (reader.RemainingBytes > 0)
-                    hashCode.Add(reader.ReadByte());
-            }
-        }
-
-        private TypeDefinitionHandle FindType(string nameSpace, string name)
-        {
-            var hashCodeBuilder = default(HashCode);
-            AppendHashCode(ref hashCodeBuilder, nameSpace);
-            AppendHashCode(ref hashCodeBuilder, name);
-
-            MetadataReader reader = _metadataReader;
-            MetadataStringComparer stringComparer = reader.StringComparer;
-
-            TypeDefinitionHandle[] bucketHeads = _typeDefinitionBucketHeads ?? InitializeFindNamedType();
-            TypeDefinitionHandle entry = bucketHeads[(uint)hashCodeBuilder.ToHashCode() % bucketHeads.Length];
-            while (!entry.IsNil)
-            {
-                var typeDefinition = reader.GetTypeDefinition(entry);
-                if (stringComparer.Equals(typeDefinition.Name, name) &&
-                    stringComparer.Equals(typeDefinition.Namespace, nameSpace))
-                {
-                    return entry;
-                }
-
-                entry = _typeDefinitionBuckets[MetadataTokens.GetRowNumber(entry)];
-            }
-
-            return default;
-
-            static void AppendHashCodeNonAscii(ref HashCode hashCode, ReadOnlySpan<char> s)
-            {
-                const int MaxStackAlloc = 1024;
-                int maxByteCount = Encoding.UTF8.GetMaxByteCount(s.Length);
-                Span<byte> utf8 = maxByteCount <= MaxStackAlloc ? stackalloc byte[MaxStackAlloc] : new byte[maxByteCount];
-                int actualBytes = Encoding.UTF8.GetBytes(s, utf8);
-
-                foreach (byte b in utf8.Slice(0, actualBytes))
-                    hashCode.Add(b);
-            }
-
-            static void AppendHashCode(ref HashCode hashCode, string s)
-            {
-                for (int i = 0; i < s.Length; i++)
-                {
-                    if (s[i] <= 0x7F)
-                    {
-                        hashCode.Add((byte)s[i]);
-                    }
-                    else
-                    {
-                        AppendHashCodeNonAscii(ref hashCode, ((ReadOnlySpan<char>)s).Slice(i));
-                        return;
-                    }
-                }
-            }
-        }
-
-
         public sealed override object GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
         {
             var currentModule = this;
             // src/coreclr/vm/clsload.cpp use the same restriction to detect a loop in the type forwarding.
             for (int typeForwardingChainSize = 0; typeForwardingChainSize <= 1024; typeForwardingChainSize++)
             {
-                TypeDefinitionHandle foundType = currentModule.FindType(nameSpace, name);
-                if (!foundType.IsNil)
-                    return currentModule.GetType(foundType);
-
                 var metadataReader = currentModule._metadataReader;
                 var stringComparer = metadataReader.StringComparer;
+                // TODO: More efficient implementation?
+                foreach (var typeDefinitionHandle in metadataReader.TypeDefinitions)
+                {
+                    var typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
+                    if (typeDefinition.Attributes.IsNested())
+                        continue;
+
+                    if (stringComparer.Equals(typeDefinition.Name, name) &&
+                        stringComparer.Equals(typeDefinition.Namespace, nameSpace))
+                    {
+                        return currentModule.GetType(typeDefinitionHandle);
+                    }
+                }
 
                 foreach (var exportedTypeHandle in metadataReader.ExportedTypes)
                 {
