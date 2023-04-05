@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using ArmCrc = System.Runtime.Intrinsics.Arm.Crc32;
 
@@ -16,13 +17,16 @@ namespace System.IO.Hashing
             // Compute in 8 byte chunks
             if (source.Length >= sizeof(ulong))
             {
-                ReadOnlySpan<ulong> longSource = MemoryMarshal.Cast<byte, ulong>(source);
-                for (int i = 0; i < longSource.Length; i++)
+                ref byte ptr = ref MemoryMarshal.GetReference(source);
+                int longLength = source.Length & ~0x7; // Exclude trailing bytes not a multiple of 8
+
+                for (int i = 0; i < longLength; i += sizeof(ulong))
                 {
-                    crc = ArmCrc.Arm64.ComputeCrc32(crc, longSource[i]);
+                    crc = ArmCrc.Arm64.ComputeCrc32(crc,
+                        Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref ptr, i)));
                 }
 
-                source = source.Slice(longSource.Length * sizeof(ulong));
+                source = source.Slice(longLength);
             }
 
             // Compute remaining bytes
@@ -41,13 +45,16 @@ namespace System.IO.Hashing
             // Compute in 4 byte chunks
             if (source.Length >= sizeof(uint))
             {
-                ReadOnlySpan<uint> intSource = MemoryMarshal.Cast<byte, uint>(source);
-                for (int i = 0; i < intSource.Length; i++)
+                ref byte ptr = ref MemoryMarshal.GetReference(source);
+                int intLength = source.Length & ~0x3; // Exclude trailing bytes not a multiple of 4
+
+                for (int i = 0; i < intLength; i += sizeof(uint))
                 {
-                    crc = ArmCrc.ComputeCrc32(crc, intSource[i]);
+                    crc = ArmCrc.ComputeCrc32(crc,
+                        Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref ptr, i)));
                 }
 
-                source = source.Slice(intSource.Length * sizeof(uint));
+                source = source.Slice(intLength);
             }
 
             // Compute remaining bytes
