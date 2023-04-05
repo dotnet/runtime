@@ -4647,7 +4647,7 @@ UINT32 BaseDomain::GetTypeID(PTR_MethodTable pMT) {
         PRECONDITION(pMT->GetDomain() == this);
     } CONTRACTL_END;
 
-    return m_typeIDMap.GetTypeID(pMT);
+    return m_typeIDMap.GetTypeID(pMT, true);
 }
 
 //------------------------------------------------------------------------
@@ -4688,7 +4688,7 @@ UINT32 BaseDomain::GetThreadStaticTypeIndex(PTR_MethodTable pMT)
         PRECONDITION(pMT->GetDomain() == this);
     } CONTRACTL_END;
 
-    return m_threadStaticBlockTypeIDMap.GetTypeID(pMT);
+    return m_threadStaticBlockTypeIDMap.GetTypeID(pMT, false);
 }
 
 //------------------------------------------------------------------------
