@@ -53,8 +53,6 @@ struct Access
     // Number of times this access is on the LHS of an assignment.
     unsigned CountAssignmentDestination = 0;
     unsigned CountCallArgs              = 0;
-    unsigned CountCallArgsByImplicitRef = 0;
-    unsigned CountCallArgsOnStack       = 0;
     unsigned CountReturns               = 0;
     unsigned CountPassedAsRetbuf        = 0;
 
@@ -62,8 +60,6 @@ struct Access
     weight_t CountAssignmentSourceWtd      = 0;
     weight_t CountAssignmentDestinationWtd = 0;
     weight_t CountCallArgsWtd              = 0;
-    weight_t CountCallArgsByImplicitRefWtd = 0;
-    weight_t CountCallArgsOnStackWtd       = 0;
     weight_t CountReturnsWtd               = 0;
     weight_t CountPassedAsRetbufWtd        = 0;
 
@@ -178,10 +174,8 @@ enum class AccessKindFlags : uint32_t
     IsCallArg               = 1,
     IsAssignmentSource      = 2,
     IsAssignmentDestination = 4,
-    IsCallArgByImplicitRef  = 8,
-    IsCallArgOnStack        = 16,
-    IsCallRetBuf            = 32,
-    IsReturned              = 64,
+    IsCallRetBuf            = 8,
+    IsReturned              = 16,
 };
 
 inline constexpr AccessKindFlags operator~(AccessKindFlags a)
@@ -283,18 +277,6 @@ public:
         {
             access->CountCallArgs++;
             access->CountCallArgsWtd += weight;
-
-            if ((flags & AccessKindFlags::IsCallArgByImplicitRef) != AccessKindFlags::None)
-            {
-                access->CountCallArgsByImplicitRef++;
-                access->CountCallArgsByImplicitRefWtd += weight;
-            }
-
-            if ((flags & AccessKindFlags::IsCallArgOnStack) != AccessKindFlags::None)
-            {
-                access->CountCallArgsOnStack++;
-                access->CountCallArgsOnStackWtd += weight;
-            }
         }
 
         if ((flags & AccessKindFlags::IsCallRetBuf) != AccessKindFlags::None)
@@ -408,7 +390,8 @@ public:
         }
 
         // TODO-CQ: Tune the following heuristics. Currently they are based on
-        // x64 code size although using BB weights when available.
+        // x64 code size although using BB weights when available. The mixing
+        // does not really make sense.
         weight_t costWithout = 0;
 
         // A normal access without promotion looks like:
@@ -497,10 +480,6 @@ public:
                    access.CountAssignmentDestinationWtd);
             printf("    # as call arg:                 (%u, " FMT_WT ")\n", access.CountCallArgs,
                    access.CountCallArgsWtd);
-            printf("    # as implicit by-ref call arg: (%u, " FMT_WT ")\n", access.CountCallArgsByImplicitRef,
-                   access.CountCallArgsByImplicitRefWtd);
-            printf("    # as on-stack call arg:        (%u, " FMT_WT ")\n", access.CountCallArgsOnStack,
-                   access.CountCallArgsOnStackWtd);
             printf("    # as retbuf:                   (%u, " FMT_WT ")\n", access.CountPassedAsRetbuf,
                    access.CountPassedAsRetbufWtd);
             printf("    # as returned value:           (%u, " FMT_WT ")\n\n", access.CountReturns,
@@ -655,17 +634,6 @@ private:
                     argSize = m_compiler->typGetObjLayout(arg.GetSignatureClassHandle())->GetSize();
                 }
 
-#ifdef WINDOWS_AMD64_ABI
-                if ((argSize != 1) && (argSize != 2) && (argSize != 4) && (argSize != 8))
-                {
-                    flags |= AccessKindFlags::IsCallArgByImplicitRef;
-                }
-
-                if (argIndex >= 4)
-                {
-                    flags |= AccessKindFlags::IsCallArgOnStack;
-                }
-#endif
                 break;
             }
         }
