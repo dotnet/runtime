@@ -1038,7 +1038,22 @@ namespace System.Runtime
         [System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute]
         internal static unsafe class CastCache
         {
-            private const int INITIAL_CACHE_SIZE = 2;
+#if DEBUG
+            private const int INITIAL_CACHE_SIZE = 8;    // MUST BE A POWER OF TWO
+            private const int MAXIMUM_CACHE_SIZE = 512;  // make this lower than release to make it easier to reach this in tests.
+#else
+            private const int INITIAL_CACHE_SIZE = 128;  // MUST BE A POWER OF TWO
+            private const int MAXIMUM_CACHE_SIZE = 4096; // 4096 * sizeof(CastCacheEntry) is 98304 bytes on 64bit. We will rarely need this much though.
+#endif
+            private const int BUCKET_SIZE = 8;
+
+#if TARGET_64BIT
+            private const int VERSION_NUM_SIZE = 64 - 3;
+#else
+            private const int VERSION_NUM_SIZE = 32 - 3;
+#endif
+            private const uint VERSION_NUM_MASK = (1 << VERSION_NUM_SIZE) - 1;
+
             private static int[] s_table = CreateCastCache(INITIAL_CACHE_SIZE, throwOnFail: true)!;
 
             // TODO: VS
@@ -1060,12 +1075,17 @@ namespace System.Runtime
                 // Readers will read the version twice before and after retrieving the entry.
                 // To have a usable entry both reads must yield the same even version.
                 //
-                internal int _version;
+                internal uint _version;
                 internal nuint _source;
                 // pointers have unused lower bits due to alignment, we use one for the result
                 internal nuint _targetAndResult;
-            };
 
+                internal void SetEntry(nuint source, nuint target, bool result)
+                {
+                    _source = source;
+                    _targetAndResult = target | (nuint)(result ? 1: 0);
+                }
+            }
             // TODO: VS this is to avoid dependency on BitOperations
 #if TARGET_64BIT
             // [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1077,10 +1097,25 @@ namespace System.Runtime
                 => (value << offset) | (value >> (32 - offset));
 #endif
             private struct VolatileInt32 { public volatile int Value; }
+            private struct VolatileUInt32 { public volatile uint Value; }
 
             // [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static int VolatileRead(ref int location) =>
+            private static int VolatileRead(ref int location) =>
                 Unsafe.As<int, VolatileInt32>(ref location).Value;
+
+            // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static uint VolatileRead(ref uint location) =>
+                Unsafe.As<uint, VolatileUInt32>(ref location).Value;
+
+            // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static void VolatileWrite(ref uint location, uint value)
+            {
+                Unsafe.As<uint, VolatileUInt32>(ref location).Value = value;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static uint InterlockedCompareExchange(ref uint location1, uint value, uint comparand) =>
+                (uint)Interlocked.CompareExchange(ref Unsafe.As<uint, int>(ref location1), (int)value, (int)comparand);
 
             // [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static int KeyToBucket(ref int tableData, nuint source, nuint target)
@@ -1120,6 +1155,12 @@ namespace System.Runtime
                 return ref tableData;
             }
 
+            // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static ref uint VictimCounter(ref int tableData)
+            {
+                return ref Unsafe.As<int, uint>(ref Unsafe.Add(ref tableData, 2));
+            }
+
             // TableMask is "size - 1"
             // we need that more often that we need size
             // [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1145,7 +1186,7 @@ namespace System.Runtime
                 int[]? table = null;
                 try
                 {
-                    table = new int[size + 1];
+                    table = new int[(size + 1) * sizeof(CastCacheEntry) / sizeof(int)];
                 }
                 catch (OutOfMemoryException)
                 {
@@ -1156,7 +1197,7 @@ namespace System.Runtime
                     size = INITIAL_CACHE_SIZE;
                     try
                     {
-                        table = new int[size + 1];
+                        table = new int[(size + 1) * sizeof(CastCacheEntry) / sizeof(int)];
                     }
                     catch (OutOfMemoryException)
                     {
@@ -1186,9 +1227,9 @@ namespace System.Runtime
                 }
 
 #if TARGET_64BIT
-                HashShift(ref tableData) = (byte)(63 - bitCnt);
+                HashShift(ref tableData) = (byte)(64 - bitCnt);
 #else
-                HashShift(ref tableData) = (byte)(31 - bitCnt);
+                HashShift(ref tableData) = (byte)(32 - bitCnt);
 #endif
 
                 return table;
@@ -1209,12 +1250,12 @@ namespace System.Runtime
 
                     // must read in this order: version -> [entry parts] -> version
                     // if version is odd or changes, the entry is inconsistent and thus ignored
-                    int version = VolatileRead(ref pEntry._version);
+                    uint version = VolatileRead(ref pEntry._version);
                     nuint entrySource = pEntry._source;
 
                     // mask the lower version bit to make it even.
                     // This way we can check if version is odd or changing in just one compare.
-                    version &= ~1;
+                    version &= unchecked((uint)~1);
 
                     if (entrySource == source)
                     {
@@ -1257,6 +1298,177 @@ namespace System.Runtime
                     index = (index + i) & TableMask(ref tableData);
                 }
                 return CastResult.MaybeCast;
+            }
+
+            private static int CacheElementCount(ref int tableData)
+            {
+                return TableMask(ref tableData) + 1;
+            }
+
+            private static bool MaybeReplaceCacheWithLarger(int size)
+            {
+                int[]? newTable = CreateCastCache(size);
+                if (newTable == null)
+                {
+                    return false;
+                }
+
+                s_table = newTable;
+                return true;
+            }
+
+            private static bool TryGrow(ref int tableData)
+            {
+                int newSize = CacheElementCount(ref tableData) * 2;
+                if (newSize <= MAXIMUM_CACHE_SIZE)
+                {
+                    return MaybeReplaceCacheWithLarger(newSize);
+                }
+
+                return false;
+            }
+
+            private static void TrySet(nuint source, nuint target, bool result)
+            {
+                int bucket;
+                ref int tableData = ref *(int*)0;
+
+                // we do not need to flush cache on 64bit
+#if !TARGET_64BIT
+                if (TableMask(ref tableData) == 1)
+                {
+                    // 2-element table is used as a sentinel.
+                    // we did not allocate a real table yet or have flushed it.
+                    // try replacing the table, but do not insert anything.
+                    MaybeReplaceCacheWithLarger(s_lastFlushSize);
+                    return;
+                }
+#endif
+
+                do
+                {
+                    tableData = ref TableData(s_table);
+
+                    bucket = KeyToBucket(ref tableData, source, target);
+                    int index = bucket;
+                    ref CastCacheEntry pEntry = ref Element(ref tableData, index);
+
+                    for (int i = 0; i < BUCKET_SIZE;)
+                    {
+                        // claim the entry if unused or is more distant than us from its origin.
+                        // Note - someone familiar with Robin Hood hashing will notice that
+                        //        we do the opposite - we are "robbing the poor".
+                        //        Robin Hood strategy improves average lookup in a lossles dictionary by reducing
+                        //        outliers via giving preference to more distant entries.
+                        //        What we have here is a lossy cache with outliers bounded by the bucket size.
+                        //        We improve average lookup by giving preference to the "richer" entries.
+                        //        If we used Robin Hood strategy we could eventually end up with all
+                        //        entries in the table being maximally "poor".
+
+                        // VolatileLoadWithoutBarrier is to ensure that the version cannot be re-fetched between here and CompareExchange.
+                        uint version = pEntry._version;
+
+                        // mask the lower version bit to make it even.
+                        // This way we will detect both if version is changing (odd) or has changed (even, but different).
+                        version &= unchecked((uint)~1);
+
+#if !TARGET_64BIT
+                        On 32bit we need to check for version overflow and flush.
+                        Port the following code from the native implementation.
+
+                        //if ((version & VERSION_NUM_MASK) >= (VERSION_NUM_MASK - 2))
+                        //{
+                        //    // If exactly VERSION_NUM_MASK updates happens between here and publishing, we may not recognise a race.
+                        //    // It is extremely unlikely, but to not worry about the possibility, lets not allow version to go this high and just get a new cache.
+                        //    // This will not happen often.
+                        //    FlushCurrentCache();
+                        //    return;
+                        //}
+#endif
+
+                        if (version == 0 || (version >> VERSION_NUM_SIZE) > i)
+                        {
+                            uint newVersion = ((uint)i << VERSION_NUM_SIZE) + (version & VERSION_NUM_MASK) + 1;
+                            uint versionOrig = InterlockedCompareExchange(ref pEntry._version, newVersion, version);
+                            if (versionOrig == version)
+                            {
+                                pEntry.SetEntry(source, target, result);
+
+                                // entry is in inconsistent state and cannot be read or written to until we
+                                // update the version, which is the last thing we do here
+                                VolatileWrite(ref pEntry._version, newVersion + 1);
+                                return;
+                            }
+                            // someone snatched the entry. try the next one in the bucket.
+                        }
+
+                        if (pEntry._source == source && ((pEntry._targetAndResult ^ target) <= 1))
+                        {
+                            // looks like we already have an entry for this.
+                            // duplicate entries are harmless, but a bit of a waste.
+                            return;
+                        }
+
+                        // quadratic reprobe
+                        i++;
+                        index += i;
+                        pEntry = ref Element(ref tableData, index & TableMask(ref tableData));
+                    }
+
+                    // bucket is full.
+                } while (TryGrow(ref tableData));
+
+                // reread tableData after TryGrow.
+                tableData = ref TableData(s_table);
+
+                // we do not need to flush cache on 64bit
+#if !TARGET_64BIT
+                if (TableMask(ref tableData) == 1)
+                {
+                    // do not insert into a sentinel.
+                    return;
+                }
+#endif
+
+                // pick a victim somewhat randomly within a bucket
+                // NB: ++ is not interlocked. We are ok if we lose counts here. It is just a number that changes.
+                uint victimDistance = VictimCounter(ref tableData)++ & (BUCKET_SIZE - 1);
+                // position the victim in a quadratic reprobe bucket
+                uint victim = (victimDistance * victimDistance + victimDistance) / 2;
+
+                {
+                    ref CastCacheEntry pEntry = ref Element(ref tableData, (bucket + (int)victim) & TableMask(ref tableData));
+
+                    // VolatileLoadWithoutBarrier is to ensure that the version cannot be re-fetched between here and CompareExchange.
+                    uint version = pEntry._version;
+
+                    // mask the lower version bit to make it even.
+                    // This way we will detect both if version is changing (odd) or has changed (even, but different).
+                    version &= unchecked((uint)~1);
+
+#if !TARGET_64BIT
+                    On 32bit we need to check for version overflow and flush.
+                    Port the following code from the native implementation.
+
+                    //if ((version & VERSION_NUM_MASK) >= (VERSION_NUM_MASK - 2))
+                    //{
+                    //    // If exactly VERSION_NUM_MASK updates happens between here and publishing, we may not recognise a race.
+                    //    // It is extremely unlikely, but to not worry about the possibility, lets not allow version to go this high and just get a new cache.
+                    //    // This will not happen often.
+                    //    FlushCurrentCache();
+                    //    return;
+                    //}
+#endif
+
+                    uint newVersion = (victimDistance << VERSION_NUM_SIZE) + (version & VERSION_NUM_MASK) + 1;
+                    uint versionOrig = InterlockedCompareExchange(ref pEntry._version, newVersion, version);
+
+                    if (versionOrig == version)
+                    {
+                        pEntry.SetEntry(source, target, result);
+                        VolatileWrite(ref pEntry._version, newVersion + 1);
+                    }
+                }
             }
 
             public static unsafe bool AreTypesAssignableInternal(MethodTable* pSourceType, MethodTable* pTargetType, AssignmentVariation variation, EETypePairList* pVisited)
@@ -1312,8 +1524,8 @@ namespace System.Runtime
                 //
                 // Update the cache
                 //
-
-                // TODO: VS
+                nuint sourceAndVariation = (nuint)pSourceType + (uint)variation;
+                TrySet(sourceAndVariation, (nuint)pTargetType, result);
 
                 return result;
             }
