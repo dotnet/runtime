@@ -282,28 +282,36 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        private volatile Dictionary<(string Name, string Namespace), TypeDefinitionHandle> _lookup;
+
+        private Dictionary<(string Name, string Namespace), TypeDefinitionHandle> CreateLookup()
+        {
+            var result = new Dictionary<(string Name, string Namespace), TypeDefinitionHandle>();
+
+            var metadataReader = _metadataReader;
+            foreach (var typeDefinitionHandle in metadataReader.TypeDefinitions)
+            {
+                var typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
+                if (typeDefinition.Attributes.IsNested())
+                    continue;
+
+                result.Add((metadataReader.GetString(typeDefinition.Name), metadataReader.GetString(typeDefinition.Namespace)), typeDefinitionHandle);
+            }
+
+            return _lookup = result;
+        }
+
         public sealed override object GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
         {
             var currentModule = this;
             // src/coreclr/vm/clsload.cpp use the same restriction to detect a loop in the type forwarding.
             for (int typeForwardingChainSize = 0; typeForwardingChainSize <= 1024; typeForwardingChainSize++)
             {
+                if ((currentModule._lookup ?? currentModule.CreateLookup()).TryGetValue((name, nameSpace), out TypeDefinitionHandle typeDefHandle))
+                    return currentModule.GetType(typeDefHandle);
+
                 var metadataReader = currentModule._metadataReader;
                 var stringComparer = metadataReader.StringComparer;
-                // TODO: More efficient implementation?
-                foreach (var typeDefinitionHandle in metadataReader.TypeDefinitions)
-                {
-                    var typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
-                    if (typeDefinition.Attributes.IsNested())
-                        continue;
-
-                    if (stringComparer.Equals(typeDefinition.Name, name) &&
-                        stringComparer.Equals(typeDefinition.Namespace, nameSpace))
-                    {
-                        return currentModule.GetType(typeDefinitionHandle);
-                    }
-                }
-
                 foreach (var exportedTypeHandle in metadataReader.ExportedTypes)
                 {
                     var exportedType = metadataReader.GetExportedType(exportedTypeHandle);
