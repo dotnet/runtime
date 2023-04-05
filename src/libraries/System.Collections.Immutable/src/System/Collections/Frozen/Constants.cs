@@ -43,7 +43,21 @@ namespace System.Collections.Frozen
         /// </remarks>
         public static bool IsKnownComparable<T>() =>
             // This list covers all of the IComparable<T> value types in Corelib that aren't containers (like ValueTuple).
-            typeof(T).IsPrimitive ||
+            typeof(T) == typeof(bool) ||
+            typeof(T) == typeof(sbyte) ||
+            typeof(T) == typeof(byte) ||
+            typeof(T) == typeof(char) ||
+            typeof(T) == typeof(short) ||
+            typeof(T) == typeof(ushort) ||
+            typeof(T) == typeof(int) ||
+            typeof(T) == typeof(uint) ||
+            typeof(T) == typeof(long) ||
+            typeof(T) == typeof(ulong) ||
+            typeof(T) == typeof(nint) ||
+            typeof(T) == typeof(nuint) ||
+            typeof(T) == typeof(decimal) ||
+            typeof(T) == typeof(float) ||
+            typeof(T) == typeof(double) ||
             typeof(T) == typeof(decimal) ||
             typeof(T) == typeof(TimeSpan) ||
             typeof(T) == typeof(DateTime) ||

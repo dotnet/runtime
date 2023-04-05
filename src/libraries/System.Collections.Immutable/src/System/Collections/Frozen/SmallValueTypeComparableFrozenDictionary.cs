@@ -13,7 +13,7 @@ namespace System.Collections.Frozen
     /// While not constrained in this manner, the <typeparamref name="TKey"/> must be an <see cref="IComparable{T}"/>.
     /// This implementation is only used for a set of types that have a known-good <see cref="IComparable{T}"/> implementation; it's not
     /// used for an <see cref="IComparable{T}"/> as we can't know for sure whether it's valid, e.g. if the TKey is a ValueTuple`2, it itself
-    /// is comparable, but it's items might not be such that trying to compare it will result in exception.
+    /// is comparable, but its items might not be such that trying to compare it will result in exception.
     /// </remarks>
     internal sealed class SmallValueTypeComparableFrozenDictionary<TKey, TValue> : FrozenDictionary<TKey, TValue>
         where TKey : notnull
