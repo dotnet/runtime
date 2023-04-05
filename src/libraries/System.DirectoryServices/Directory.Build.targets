@@ -2,7 +2,7 @@
   <Import Project="..\Directory.Build.targets" />
   <PropertyGroup>
     <!-- This assembly is inbox in .NETFramework, ensure that the AssemblyVersion
-         remains <= the desktop version -->
+         remains <= the .NETFramework version -->
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
   </PropertyGroup>
 </Project>
