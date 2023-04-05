@@ -253,9 +253,7 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins) const
     return (flags & INS_Flags_IsDstSrcSrcAVXInstruction) != 0;
 }
 
-// Returns true if the AVX instruction requires 3 operands and writes result
-// to mask register.
-bool emitter::IsThreeOperandInstructionMask(instruction ins) const
+bool emitter::IsThreeOperandAVXInstruction(instruction ins) const
 {
     if (!UseSimdEncoding())
     {
@@ -18291,7 +18289,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpmovd2m:
         case INS_vpmovq2m:
         {
-            result.insLatency += PERFSCORE_LATENCY_1C;
+            result.insLatency += PERFSCORE_LATENCY_3C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
         }
@@ -18310,7 +18308,6 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
-        // TODO-AVX512-XARCH double check
         case INS_vpcmpb:
         case INS_vpcmpw:
         case INS_vpcmpd:
@@ -18320,14 +18317,18 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_vpcmpud:
         case INS_vpcmpuq:
         {
-            result.insLatency += PERFSCORE_LATENCY_3C;
+            result.insLatency += PERFSCORE_LATENCY_4C;
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             break;
         }
 
-        // TODO-AVX512-XARCH double check
         case INS_vpmovm2b:
         case INS_vpmovm2w:
+        {
+            result.insLatency += PERFSCORE_LATENCY_3C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            break;
+        }
         case INS_vpmovm2d:
         case INS_vpmovm2q:
         {

@@ -952,7 +952,6 @@ protected:
                                          regNumber                 baseReg,
                                          regNumber                 offsReg,
                                          HWIntrinsicSwitchCaseBody emitSwCase);
-    instruction genMask2VectorIns(var_types baseType);
 #endif // defined(TARGET_XARCH)
 
 #ifdef TARGET_ARM64

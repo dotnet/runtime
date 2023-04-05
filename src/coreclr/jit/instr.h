@@ -141,7 +141,8 @@ enum insFlags : uint64_t
     // Avx
     INS_Flags_IsDstDstSrcAVXInstruction = 1ULL << 25,
     INS_Flags_IsDstSrcSrcAVXInstruction = 1ULL << 26,
-    INS_Flags_Is3OperandInstructionMask = 1ULL << 27,
+    INS_Flags_IsMskSrcSrcEvexInstruction = 1ULL << 27,
+    INS_Flags_Is3OperandInstructionMask = (INS_Flags_IsDstDstSrcAVXInstruction | INS_Flags_IsDstSrcSrcAVXInstruction | INS_Flags_IsMskSrcSrcEvexInstruction),
 
     // w and s bits
     INS_FLAGS_Has_Wbit = 1ULL << 28,
