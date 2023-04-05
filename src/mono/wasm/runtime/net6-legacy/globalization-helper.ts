@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { Module } from "../imports";
-import { mono_wasm_new_root } from "../roots";
+import { mono_wasm_new_external_root } from "../roots";
 import {MonoString } from "../types";
 import { Int32Ptr } from "../types/emscripten";
 import { js_string_to_mono_string_root } from "../strings";
 
-export function get_uft16_string(ptr: number, length: number): string{
+export function get_utf16_string(ptr: number, length: number): string{
     const view = new Uint16Array(Module.HEAPU16.buffer, ptr, length);
     let string = "";
     for (let i = 0; i < length; i++)
@@ -17,9 +17,8 @@ export function get_uft16_string(ptr: number, length: number): string{
 
 export function pass_exception_details(ex: any, exceptionMessage: Int32Ptr){
     const exceptionJsString = ex.message + "\n" + ex.stack;
-    const exceptionRoot = mono_wasm_new_root<MonoString>();
+    const exceptionRoot = mono_wasm_new_external_root<MonoString>(<any>exceptionMessage);
     js_string_to_mono_string_root(exceptionJsString, exceptionRoot);
-    exceptionRoot.copy_to_address(<any>exceptionMessage);
     exceptionRoot.release();
 }
 
@@ -34,9 +33,9 @@ export function compare_strings(string1: string, string2: string, locale: string
                 return -2;
             return string1.localeCompare(string2, locale); // a ≠ b, a ≠ á, a ≠ A
         case 8:
+            // 8: IgnoreKanaType works only for "ja"
             if (locale && locale.split("-")[0] !== "ja")
                 return -2;
-            // 8: IgnoreKanaType works only for "ja"
             return string1.localeCompare(string2, locale); // a ≠ b, a ≠ á, a ≠ A
         case 1:
             // 1: IgnoreCase

@@ -13,7 +13,7 @@ import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { mono_array_root_to_js_array, unbox_mono_obj_root } from "./cs-to-js";
 import { js_array_to_mono_array, js_to_mono_obj_root } from "./js-to-cs";
 import { Converter, BoundMethodToken, mono_method_resolve, mono_method_get_call_signature_ref, mono_bind_method } from "./method-binding";
-import { compare_strings, get_uft16_string, pass_exception_details } from "./globalization-helper";
+import { compare_strings, get_utf16_string, pass_exception_details } from "./globalization-helper";
 
 const boundMethodsByFqn: Map<string, Function> = new Map();
 
@@ -301,7 +301,7 @@ export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo:
 
 export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
     try{
-        const input = get_uft16_string(src, srcLength);
+        const input = get_utf16_string(src, srcLength);
         let result = toUpper ? input.toUpperCase() : input.toLowerCase();
         // Unicode defines some codepoints which expand into multiple codepoints,
         // originally we do not support this expansion
@@ -316,13 +316,13 @@ export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src:
     }
 }
 
-export function mono_wasm_change_case(exceptionMessage: Int32Ptr, culture: MonoStringRef, src: number, srcLength: number, dst: number, destLength: number, toUpper: boolean) : void{
+export function mono_wasm_change_case(exceptionMessage: Int32Ptr, culture: MonoStringRef, src: number, srcLength: number, dst: number, destLength: number, toUpper: number) : void{
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try{
         const cultureName = conv_string_root(cultureRoot);
         if (!cultureName)
             throw new Error("Cannot change case, the culture name is null.");
-        const input = get_uft16_string(src, srcLength);
+        const input = get_utf16_string(src, srcLength);
         let result = toUpper ? input.toLocaleUpperCase(cultureName) : input.toLocaleLowerCase(cultureName);
         if (result.length > destLength)
             result = input;
@@ -342,10 +342,10 @@ export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: Mo
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
     try{
         const cultureName = conv_string_root(cultureRoot);
-        const string1  = get_uft16_string(str1, str1Length);
-        const string2 = get_uft16_string(str2, str2Length);
+        const string1  = get_utf16_string(str1, str1Length);
+        const string2 = get_utf16_string(str2, str2Length);
         const casePicker = (options & 0x1f);
-        const locale = (cultureName && cultureName?.trim()) ? cultureName : undefined;
+        const locale = cultureName ? cultureName : undefined;
         const result = compare_strings(string1, string2, locale, casePicker);
         if (result == -2)
             throw new Error("$Invalid comparison option.");
