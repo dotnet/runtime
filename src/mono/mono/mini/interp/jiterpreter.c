@@ -731,6 +731,10 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 
 			return TRACE_CONTINUE;
 
+		case MINT_ENDFINALLY:
+			// May produce either a backwards branch or a bailout
+			return TRACE_CONDITIONAL_ABORT;
+
 		case MINT_ICALL_V_P:
 		case MINT_ICALL_V_V:
 		case MINT_ICALL_P_P:
@@ -748,7 +752,6 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_LEAVE_S_CHECK:
 			return TRACE_ABORT;
 
-		case MINT_ENDFINALLY:
 		case MINT_RETHROW:
 		case MINT_PROF_EXIT:
 		case MINT_PROF_EXIT_VOID:

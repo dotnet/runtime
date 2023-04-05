@@ -8434,6 +8434,17 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 			if (ins->opcode == MINT_TIER_PATCHPOINT_DATA) {
 				int native_offset = (int)(ip - td->new_code);
 				patchpoint_data_index = add_patchpoint_data (td, patchpoint_data_index, native_offset, -ins->data [0]);
+#if HOST_BROWSER
+			} else if (rtm->contains_traces && (
+				(ins->opcode == MINT_CALL_HANDLER_S) || (ins->opcode == MINT_CALL_HANDLER)
+			)) {
+				// While this formally isn't a backward branch target, we want to record
+				//  the offset of its following instruction so that the jiterpreter knows
+				//  to generate the necessary dispatch code to enable branching back to it.
+				ip = emit_compacted_instruction (td, ip, ins);
+				if (backward_branch_offsets_count < BACKWARD_BRANCH_OFFSETS_SIZE)
+					backward_branch_offsets[backward_branch_offsets_count++] = ip - td->new_code;
+#endif
 			} else {
 				ip = emit_compacted_instruction (td, ip, ins);
 			}
