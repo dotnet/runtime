@@ -60,7 +60,7 @@ parser.add_argument("-max_size", help="Max size of each partition in MB (for pmi
 
 is_windows = platform.system() == "Windows"
 
-legal_collection_types = [ "crossgen2", "pmi", "run" ]
+legal_collection_types = [ "crossgen2", "pmi", "run", "run_tiered", "run_pgo" ]
 
 directories_to_ignore = [
     "runtimes", # This appears to be the result of a nuget package that includes a bunch of native code
