@@ -51,7 +51,7 @@ namespace System.Threading
                 var secAttrs = new Interop.Kernel32.SECURITY_ATTRIBUTES
                 {
                     nLength = (uint)sizeof(Interop.Kernel32.SECURITY_ATTRIBUTES),
-                    lpSecurityDescriptor = (IntPtr)pSecurityDescriptor
+                    lpSecurityDescriptor = pSecurityDescriptor
                 };
 
                 SafeWaitHandle handle = Interop.Kernel32.CreateSemaphoreEx(
@@ -63,7 +63,7 @@ namespace System.Threading
                     (uint)SemaphoreRights.FullControl // Equivalent to SEMAPHORE_ALL_ACCESS
                 );
 
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
 
                 if (handle.IsInvalid)
                 {
@@ -142,7 +142,7 @@ namespace System.Threading
             result = null;
             SafeWaitHandle handle = Interop.Kernel32.OpenSemaphore((uint)rights, false, name);
 
-            int errorCode = Marshal.GetLastWin32Error();
+            int errorCode = Marshal.GetLastPInvokeError();
             if (handle.IsInvalid)
             {
                 handle.Dispose();

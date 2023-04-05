@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import cwraps from "../cwraps";
+import { legacy_c_functions as cwraps } from "../cwraps";
 import { Module } from "../imports";
 import { parseFQN } from "../invoke-cs";
 import { setI32, setU32, setF32, setF64, setU52, setI52, setB32, setI32_unchecked, setU32_unchecked, _zero_region, _create_temp_frame, getB32, getI32, getU32, getF32, getF64 } from "../memory";
@@ -64,7 +64,7 @@ export function _create_rebindable_named_function(name: string, argumentNames: s
     let uriPrefix = "", escapedFunctionIdentifier = "";
 
     if (name) {
-        uriPrefix = "//# sourceURL=https://mono-wasm.invalid/" + name + "\r\n";
+        uriPrefix = "//# sourceURL=https://dotnet.generated.invalid/" + name + "\r\n";
         escapedFunctionIdentifier = name;
     } else {
         escapedFunctionIdentifier = "unnamed";

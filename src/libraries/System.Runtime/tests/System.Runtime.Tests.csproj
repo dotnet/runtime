@@ -1,12 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn),1718,SYSLIB0013</NoWarn>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
     <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
+
+     <!-- some tests require full ICU data, force it -->
+    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
+    
+    <!-- The test is looking for debugger attributes we would have stripped with NativeAOT -->
+    <IlcKeepManagedDebuggerSupport>true</IlcKeepManagedDebuggerSupport>
   </PropertyGroup>
 
   <!-- 
@@ -22,13 +28,18 @@
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs" Link="Common\System\EnumTypes.cs" />
+    <Compile Include="$(CommonTestPath)System\FunctionPointerTests.cs" Link="Common\System\FunctionPointerTests.cs" />
+    <Compile Include="$(CommonTestPath)System\FunctionPointerCallingConventionTests.cs" Link="Common\System\FunctionPointerCallingConventionTests.cs" />
+    <Compile Include="$(CommonTestPath)System\FunctionPointerEqualityTests.cs" Link="Common\System\FunctionPointerEqualityTests.cs" />
     <Compile Include="$(CommonTestPath)System\MockType.cs" Link="Common\System\MockType.cs" />
+    <Compile Include="$(CommonTestPath)System\ModifiedTypeTests.cs" Link="Common\System\ModifiedTypeTests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs" Link="Common\System\Collections\CollectionAsserts.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\ICollection.Generic.Tests.cs" Link="Common\System\Collections\ICollection.Generic.Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Tests.cs" Link="Common\System\Collections\IEnumerable.Generic.Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\IList.Generic.Tests.cs" Link="Common\System\Collections\IList.Generic.Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\TestBase.Generic.cs" Link="Common\System\Collections\TestBase.Generic.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\TestBase.NonGeneric.cs" Link="Common\System\Collections\TestBase.NonGeneric.cs" />
+    <Compile Include="$(CommonTestPath)System\Diagnostics\DebuggerAttributes.cs" Link="Common\System\Diagnostics\DebuggerAttributes.cs" />
     <Compile Include="$(CommonTestPath)Tests\System\StringTests.cs" Link="Common\System\StringTests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\IDictionary.NonGeneric.Tests.cs" Link="Common\System\Collections\IDictionary.NonGeneric.Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\IList.NonGeneric.Tests.cs" Link="Common\System\Collections\IList.NonGeneric.Tests.cs" />
@@ -55,8 +66,10 @@
     <Compile Include="System\Attributes.cs" />
     <Compile Include="System\AttributeUsageAttributeTests.cs" />
     <Compile Include="System\BadImageFormatExceptionTests.cs" />
+    <Compile Include="System\StringTests.GenericMath.cs" />
     <Compile Include="System\BooleanTests.cs" />
     <Compile Include="System\BufferTests.cs" />
+    <Compile Include="System\BooleanTests.GenericMath.cs" />
     <Compile Include="System\ByteTests.cs" />
     <Compile Include="System\CharTests.cs" />
     <Compile Include="System\CLSCompliantAttributeTests.cs" />
@@ -111,6 +124,9 @@
     <Compile Include="System\NullableMetadataTests.cs" />
     <Compile Include="System\NullableTests.cs" />
     <Compile Include="System\NullReferenceExceptionTests.cs" />
+    <Compile Include="System\Numerics\IExponentialFunctionsTests.cs" />
+    <Compile Include="System\Numerics\IFloatingPointTests.cs" />
+    <Compile Include="System\Numerics\TotalOrderIeee754ComparerTests.cs" />
     <Compile Include="System\ObjectTests.cs" />
     <Compile Include="System\ObjectDisposedExceptionTests.cs" />
     <Compile Include="System\ObsoleteAttributeTests.cs" />
@@ -132,6 +148,7 @@
     <Compile Include="System\StringSplitExtensions.cs" />
     <Compile Include="System\StringTests.cs" />
     <Compile Include="System\SystemExceptionTests.cs" />
+    <Compile Include="System\Text\CompositeFormatTests.cs" />
     <Compile Include="System\TimeOnlyTests.cs" />
     <Compile Include="System\TimeoutExceptionTests.cs" />
     <Compile Include="System\TimeSpanTests.cs" />
@@ -142,7 +159,7 @@
     <Compile Include="System\TypeLoadExceptionTests.cs" />
     <Compile Include="System\TypeUnloadedExceptionTests.cs" />
     <Compile Include="System\TupleTests.cs" />
-    <Compile Include="System\UseResourceKeysTest.cs" />
+    <Compile Include="System\Type\FunctionPointerTests.Runtime.cs" />
     <Compile Include="System\UInt16Tests.cs" />
     <Compile Include="System\UInt32Tests.cs" />
     <Compile Include="System\UInt64Tests.cs" />
@@ -152,6 +169,7 @@
     <Compile Include="System\Uri.CreateStringTests.cs" />
     <Compile Include="System\Uri.CreateUriTests.cs" />
     <Compile Include="System\Uri.MethodsTests.cs" />
+    <Compile Include="System\UseResourceKeysTest.cs" />
     <Compile Include="System\ValueTypeTests.cs" />
     <Compile Include="System\VersionTests.cs" />
     <Compile Include="System\WeakReferenceTests.cs" />
@@ -175,6 +193,7 @@
     <Compile Include="System\Diagnostics\CodeAnalysis\SetsRequiredMembersAttributeTests.cs" />
     <Compile Include="System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttributeTests.cs" />
     <Compile Include="System\Diagnostics\StackTraceHiddenAttributeTests.cs" />
+    <Compile Include="System\Diagnostics\UnreachableExceptionTests.cs" />
     <Compile Include="System\IO\DirectoryNotFoundExceptionTests.cs" />
     <Compile Include="System\IO\DirectoryNotFoundException.InteropTests.cs" />
     <Compile Include="System\IO\EndOfStreamExceptionTests.cs" />
@@ -210,6 +229,7 @@
     <Compile Include="System\Reflection\CustomAttributesTestData.cs" />
     <Compile Include="System\Reflection\CustomAttribute_Named_Typed_ArgumentTests.cs" />
     <Compile Include="System\Reflection\DefaultMemberAttributeTests.cs" />
+    <Compile Include="System\Reflection\FunctionPointerTestsExtensions.cs" />
     <Compile Include="System\Reflection\InvokeRefReturn.cs" />
     <Compile Include="System\Reflection\InvokeWithRefLikeArgs.cs" />
     <Compile Include="System\Reflection\IsCollectibleTests.cs" />
@@ -256,12 +276,14 @@
     <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs" Link="Common\System\RandomDataGenerator.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="System\ExitCodeTests.Unix.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
+    <Compile Include="System\Numerics\GenericMathDimHelpers.cs" />
+    <Compile Include="System\Numerics\IBinaryNumberTests.cs" />
     <Compile Include="System\ByteTests.GenericMath.cs" />
     <Compile Include="System\CharTests.GenericMath.cs" />
     <Compile Include="System\DecimalTests.GenericMath.cs" />
@@ -288,7 +310,6 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeFeatureTests.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeWrappedExceptionTests.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfoTests.cs" />
-    <Compile Include="System\Text\ASCIIUtilityTests.cs" />
     <Compile Include="System\Text\EncodingTests.cs" />
     <Compile Include="System\Text\RuneTests.cs" />
     <Compile Include="System\Text\RuneTests.TestData.cs" />
@@ -317,11 +338,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <AnalyzerReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" />
-
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" ReferenceOutputAssembly="false" SetTargetFramework="TargetFramework=netstandard2.0" OutputItemType="Analyzer" />
+    
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <PackageReference Include="System.Runtime.Numerics.TestData" Version="$(SystemRuntimeNumericsTestDataVersion)" GeneratePathProperty="true" />
 
+    <ProjectReference Include="$(CommonPath)..\tests\System\TestILAssembly\TestILAssembly.ilproj" Link="Common\System\TestILAssembly\TestILAssembly.ilproj" />
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />

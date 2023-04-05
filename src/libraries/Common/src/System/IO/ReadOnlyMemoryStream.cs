@@ -143,12 +143,12 @@ namespace System.IO
 #endif
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToApm.Begin(ReadAsync(buffer, offset, count), callback, state);
+            TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count), callback, state);
 
         public override int EndRead(IAsyncResult asyncResult)
         {
             EnsureNotClosed();
-            return TaskToApm.End<int>(asyncResult);
+            return TaskToAsyncResult.End<int>(asyncResult);
         }
 
 #if !NETFRAMEWORK && !NETSTANDARD2_0

@@ -41,6 +41,7 @@
 
 
 
+#define INITIAL_NUM_STRUCT_ILSTUB_HASHTABLE_BUCKETS 32
 #define INITIAL_NUM_CMHELPER_HASHTABLE_BUCKETS 32
 #define INITIAL_NUM_CMINFO_HASHTABLE_BUCKETS 32
 #define DEBUG_CONTEXT_STR_LEN 2000
@@ -662,7 +663,7 @@ VOID ThrowInteropParamException(UINT resID, UINT paramIdx)
     if (paramIdx == 0)
         paramString.Set(W("return value"));
     else
-        paramString.Printf(W("parameter #%u"), paramIdx);
+        paramString.Printf("parameter #%u", paramIdx);
 
     SString errorString(W("Unknown error."));
     errorString.LoadResource(CCompRC::Error, resID);
@@ -822,6 +823,7 @@ EEMarshalingData::EEMarshalingData(LoaderAllocator* pAllocator, CrstBase *pCrst)
     CONTRACTL_END;
 
     LockOwner lock = {pCrst, IsOwnerOfCrst};
+    m_structILStubCache.Init(INITIAL_NUM_STRUCT_ILSTUB_HASHTABLE_BUCKETS, &lock);
     m_CMHelperHashtable.Init(INITIAL_NUM_CMHELPER_HASHTABLE_BUCKETS, &lock);
     m_SharedCMHelperToCMInfoMap.Init(INITIAL_NUM_CMINFO_HASHTABLE_BUCKETS, &lock);
 }
@@ -876,6 +878,23 @@ void EEMarshalingData::operator delete(void *pMem)
     LIMITED_METHOD_CONTRACT;
     // Instances of this class are always allocated on the loader heap so
     // the delete operator has nothing to do.
+}
+
+
+void EEMarshalingData::CacheStructILStub(MethodTable* pMT, MethodDesc* pStubMD)
+{
+    STANDARD_VM_CONTRACT;
+
+    CrstHolder lock(m_lock);
+
+    // Verify that the stub has not already been added by another thread.
+    HashDatum res = 0;
+    if (m_structILStubCache.GetValue(pMT, &res))
+    {
+        return;
+    }
+
+    m_structILStubCache.InsertValue(pMT, pStubMD);
 }
 
 
@@ -1058,10 +1077,46 @@ OleColorMarshalingInfo *EEMarshalingData::GetOleColorMarshalingInfo()
 
 namespace
 {
+    bool IsValidForGenericMarshalling(MethodTable* pMT, bool isFieldScenario, bool builtInMarshallingEnabled = true)
+    {
+        _ASSERTE(pMT != NULL);
+
+        // Not generic, so passes "generic" test
+        if (!pMT->HasInstantiation())
+            return true;
+
+        // We can't block generic types for field scenarios for back-compat reasons.
+        if (isFieldScenario)
+            return true;
+
+        // Built-in marshalling considers the blittability for a generic type.
+        if (builtInMarshallingEnabled && !pMT->IsBlittable())
+            return false;
+
+        // Generics (blittable when built-in is enabled) are allowed to be marshalled with the following exceptions:
+        // * Nullable<T>: We don't want to be locked into the default behavior as we may want special handling later
+        // * Span<T>: Not supported by built-in marshalling
+        // * ReadOnlySpan<T>: Not supported by built-in marshalling
+        // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
+        // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
+        // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
+        // * Vector512<T>: Represents the __m512 ABI primitive which requires currently unimplemented handling
+        // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for interop scenarios
+        return !pMT->HasSameTypeDefAs(g_pNullableClass)
+            && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__SPAN))
+            && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__READONLY_SPAN))
+            && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T))
+            && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T))
+            && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T))
+            && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR512T))
+            && !pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT));
+    }
+
     MarshalInfo::MarshalType GetDisabledMarshallerType(
         Module* pModule,
         SigPointer sig,
-        const SigTypeContext * pTypeContext,
+        const SigTypeContext* pTypeContext,
+        bool isFieldScenario,
         MethodTable** pMTOut,
         UINT* errorResIDOut)
     {
@@ -1129,6 +1184,16 @@ namespace
                 if (pMT->IsAutoLayoutOrHasAutoLayoutField())
                 {
                     *errorResIDOut = IDS_EE_BADMARSHAL_AUTOLAYOUT;
+                    return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
+                }
+                if (!IsValidForGenericMarshalling(pMT, isFieldScenario, false /* builtInMarshallingEnabled */))
+                {
+                    *errorResIDOut = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
+                    return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
+                }
+                if (pMT->IsInt128OrHasInt128Fields())
+                {
+                    *errorResIDOut = IDS_EE_BADMARSHAL_INT128_RESTRICTION;
                     return MarshalInfo::MARSHAL_TYPE_UNKNOWN;
                 }
                 *pMTOut = pMT;
@@ -1268,6 +1333,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
             pModule,
             sig,
             pTypeContext,
+            IsFieldScenario(),
             &m_pMT,
             &m_resID);
         m_args.m_pMT = m_pMT;
@@ -2261,26 +2327,22 @@ MarshalInfo::MarshalInfo(Module* pModule,
                 if (m_pMT == NULL)
                     break;
 
-                // Blittable generics are allowed to be marshalled with the following exceptions:
-                // * Nullable<T>: We don't want to be locked into the default behavior as we may want special handling later
-                // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
-                // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
-                // * Vector256<T>: Represents the __m256 ABI primitive which requires currently unimplemented handling
-                // * Vector<T>: Has a variable size (either __m128 or __m256) and isn't readily usable for interop scenarios
-                // We can't block these types for field scenarios for back-compat reasons.
-                if (m_pMT->HasInstantiation() && !IsFieldScenario()
-                    && (!m_pMT->IsBlittable()
-                        || (m_pMT->HasSameTypeDefAs(g_pNullableClass)
-                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__SPAN))
-                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__READONLY_SPAN))
-                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T))
-                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T))
-                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T))
-                        || m_pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT))
-                    )))
+                if (!IsValidForGenericMarshalling(m_pMT, IsFieldScenario()))
                 {
                     m_resID = IDS_EE_BADMARSHAL_GENERICS_RESTRICTION;
                     IfFailGoto(E_FAIL, lFail);
+                }
+
+                // * Int128: Represents the 128 bit integer ABI primitive type which requires currently unimplemented handling
+                // * UInt128: Represents the 128 bit integer ABI primitive type which requires currently unimplemented handling
+                // The field layout is correct, so field scenarios work, but these should not be passed by value as parameters
+                if (!IsFieldScenario() && !m_byref)
+                {
+                    if (m_pMT->IsInt128OrHasInt128Fields())
+                    {
+                        m_resID = IDS_EE_BADMARSHAL_INT128_RESTRICTION;
+                        IfFailGoto(E_FAIL, lFail);
+                    }
                 }
 
                 if (!m_pMT->HasLayout())

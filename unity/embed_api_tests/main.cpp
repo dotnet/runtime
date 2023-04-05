@@ -568,9 +568,9 @@ TEST(type_forwarder_lookup_results_in_identical_class)
 {
     MonoClass *directLookup = GetClassHelper(kTestDLLNameSpace, kTestClassName);
 #if defined(_DEBUG)
-    std::string testDllPath = abs_path_from_file("../forwarder-test/bin/Debug/net7.0/forwarder-test.dll");
+    std::string testDllPath = abs_path_from_file("../forwarder-test/bin/Debug/net8.0/forwarder-test.dll");
 #else
-    std::string testDllPath = abs_path_from_file("../forwarder-test/bin/Release/net7.0/forwarder-test.dll");
+    std::string testDllPath = abs_path_from_file("../forwarder-test/bin/Release/net8.0/forwarder-test.dll");
 #endif
     MonoAssembly *forwarderAssembly = mono_domain_assembly_open (g_domain, testDllPath.c_str());
     GET_AND_CHECK(forwarderImage, mono_assembly_get_image(forwarderAssembly));
@@ -2414,9 +2414,9 @@ void SetupMono(Mode mode)
 {
     g_Mode = mode;
 #if defined(_DEBUG)
-    std::string testDllPath = abs_path_from_file("../coreclr-test/bin/Debug/net7.0/coreclr-test.dll");
+    std::string testDllPath = abs_path_from_file("../coreclr-test/bin/Debug/net8.0/coreclr-test.dll");
 #else
-    std::string testDllPath = abs_path_from_file("../coreclr-test/bin/Release/net7.0/coreclr-test.dll");
+    std::string testDllPath = abs_path_from_file("../coreclr-test/bin/Release/net8.0/coreclr-test.dll");
 #endif
 
     std::string monoLibFolder;
@@ -2426,44 +2426,44 @@ void SetupMono(Mode mode)
 #if defined(__APPLE__)
 #if defined(_DEBUG)
 #ifdef __aarch64__
-        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Debug/runtimes/osx-arm64/lib/net7.0");
+        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Debug/runtimes/osx-arm64/lib/net8.0");
         g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Debug/runtimes/osx-arm64/native/libcoreclr.dylib");
 #else
-        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.osx-x64/Debug/runtimes/osx-x64/lib/net7.0");
+        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.osx-x64/Debug/runtimes/osx-x64/lib/net8.0");
         g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.osx-x64/Debug/runtimes/osx-x64/native/libcoreclr.dylib");
 #endif // __aarch64__
 #else
 #ifdef __aarch64__
-        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Release/runtimes/osx-arm64/lib/net7.0");
+        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Release/runtimes/osx-arm64/lib/net8.0");
         g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.osx-arm64/Release/runtimes/osx-arm64/native/libcoreclr.dylib");
 #else
-        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.osx-x64/Release/runtimes/osx-x64/lib/net7.0");
+        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.osx-x64/Release/runtimes/osx-x64/lib/net8.0");
         g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.osx-x64/Release/runtimes/osx-x64/native/libcoreclr.dylib");
 #endif // __aarch64__
 #endif
 #elif defined(__linux__)
 #if defined(_DEBUG)
-        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Debug/runtimes/linux-x64/lib/net7.0");
+        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Debug/runtimes/linux-x64/lib/net8.0");
         g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Debug/runtimes/linux-x64/native/libcoreclr.so");
 #else
-        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64/lib/net7.0");
+        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64/lib/net8.0");
         g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.linux-x64/Release/runtimes/linux-x64/native/libcoreclr.so");
 #endif
 #elif defined(WIN32)
 #if defined(_DEBUG)
 #ifdef _M_AMD64
-        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x64/Debug/runtimes/win-x64/lib/net7.0");
+        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x64/Debug/runtimes/win-x64/lib/net8.0");
         g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x64/Debug/runtimes/win-x64/native/coreclr.dll");
 #else
-        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x86/Debug/runtimes/win-x86/lib/net7.0");
+        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x86/Debug/runtimes/win-x86/lib/net8.0");
         g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x86/Debug/runtimes/win-x86/native/coreclr.dll");
 #endif
 #else
 #ifdef _M_AMD64
-        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x64/Release/runtimes/win-x64/lib/net7.0");
+        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x64/Release/runtimes/win-x64/lib/net8.0");
         g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x64/Release/runtimes/win-x64/native/coreclr.dll");
 #else
-        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x86/Release/runtimes/win-x86/lib/net7.0");
+        monoLibFolder = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x86/Release/runtimes/win-x86/lib/net8.0");
         g_monoDllPath = abs_path_from_file("../../artifacts/bin/microsoft.netcore.app.runtime.win-x86/Release/runtimes/win-x86/native/coreclr.dll");
 #endif
 #endif

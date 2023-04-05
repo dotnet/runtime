@@ -37,7 +37,7 @@ namespace System.Reflection
         private sealed class ManifestResourceStream : UnmanagedMemoryStream
         {
             // ensures the RuntimeAssembly is kept alive for as long as the stream lives
-            private RuntimeAssembly _manifestAssembly;
+            private readonly RuntimeAssembly _manifestAssembly;
 
             internal unsafe ManifestResourceStream(RuntimeAssembly manifestAssembly, byte* pointer, long length, long capacity, FileAccess access) : base(pointer, length, capacity, access)
             {

@@ -6,7 +6,7 @@ using System;
 
 public class Foo
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         Foo o = new Foo();
         Object a = 2.718281828458999;

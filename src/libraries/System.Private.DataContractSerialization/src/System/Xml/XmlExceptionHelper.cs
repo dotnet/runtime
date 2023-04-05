@@ -31,25 +31,23 @@ namespace System.Xml
         private static void ThrowXmlException(XmlDictionaryReader reader, string res, string? arg1, string? arg2, string? arg3)
         {
             string s = SR.Format(res, arg1, arg2, arg3);
-            IXmlLineInfo? lineInfo = reader as IXmlLineInfo;
-            if (lineInfo != null && lineInfo.HasLineInfo())
+            if (reader is IXmlLineInfo lineInfo && lineInfo.HasLineInfo())
             {
                 s += " " + SR.Format(SR.XmlLineInfo, lineInfo.LineNumber, lineInfo.LinePosition);
             }
 
-            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(s));
+            throw new XmlException(s);
         }
 
         [DoesNotReturn]
         public static void ThrowXmlException(XmlDictionaryReader reader, XmlException exception)
         {
             string s = exception.Message;
-            IXmlLineInfo? lineInfo = reader as IXmlLineInfo;
-            if (lineInfo != null && lineInfo.HasLineInfo())
+            if (reader is IXmlLineInfo lineInfo && lineInfo.HasLineInfo())
             {
                 s += " " + SR.Format(SR.XmlLineInfo, lineInfo.LineNumber, lineInfo.LinePosition);
             }
-            throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(s));
+            throw new XmlException(s);
         }
 
         private static string GetName(string prefix, string localName)
@@ -143,6 +141,12 @@ namespace System.Xml
         }
 
         [DoesNotReturn]
+        public static void ThrowMaxArrayLengthOrMaxItemsQuotaExceeded(XmlDictionaryReader reader, int maxQuota)
+        {
+            ThrowXmlException(reader, SR.XmlMaxArrayLengthOrMaxItemsQuotaExceeded, maxQuota.ToString(NumberFormatInfo.CurrentInfo));
+        }
+
+        [DoesNotReturn]
         public static void ThrowMaxBytesPerReadExceeded(XmlDictionaryReader reader, int maxBytesPerRead)
         {
             ThrowXmlException(reader, SR.XmlMaxBytesPerReadExceeded, maxBytesPerRead.ToString(NumberFormatInfo.CurrentInfo));
@@ -158,6 +162,12 @@ namespace System.Xml
         public static void ThrowMaxStringContentLengthExceeded(XmlDictionaryReader reader, int maxStringContentLength)
         {
             ThrowXmlException(reader, SR.XmlMaxStringContentLengthExceeded, maxStringContentLength.ToString(NumberFormatInfo.CurrentInfo));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowMaxNameTableCharCountExceeded(XmlDictionaryReader reader, int maxNameTableCharCount)
+        {
+            ThrowXmlException(reader, SR.XmlMaxNameTableCharCountExceeded, maxNameTableCharCount.ToString(NumberFormatInfo.CurrentInfo));
         }
 
         [DoesNotReturn]

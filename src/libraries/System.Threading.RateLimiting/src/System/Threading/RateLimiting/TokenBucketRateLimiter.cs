@@ -13,12 +13,16 @@ namespace System.Threading.RateLimiting
     /// </summary>
     public sealed class TokenBucketRateLimiter : ReplenishingRateLimiter
     {
-        private int _tokenCount;
+        private double _tokenCount;
         private int _queueCount;
         private long _lastReplenishmentTick;
         private long? _idleSince;
         private bool _disposed;
 
+        private long _failedLeasesCount;
+        private long _successfulLeasesCount;
+
+        private readonly double _fillRate;
         private readonly Timer? _renewTimer;
         private readonly TokenBucketRateLimiterOptions _options;
         private readonly Deque<RequestRegistration> _queue = new Deque<RequestRegistration>();
@@ -49,17 +53,21 @@ namespace System.Threading.RateLimiting
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (options.TokenLimit <= 0 || options.TokensPerPeriod <= 0)
+            if (options.TokenLimit <= 0)
             {
-                throw new ArgumentException($"Both {nameof(options.TokenLimit)} and {nameof(options.TokensPerPeriod)} must be set to values greater than 0.", nameof(options));
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThan0, nameof(options.TokenLimit)), nameof(options));
+            }
+            if (options.TokensPerPeriod <= 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThan0, nameof(options.TokensPerPeriod)), nameof(options));
             }
             if (options.QueueLimit < 0)
             {
-                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.", nameof(options));
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThanOrEqual0, nameof(options.QueueLimit)), nameof(options));
             }
-            if (options.ReplenishmentPeriod < TimeSpan.Zero)
+            if (options.ReplenishmentPeriod <= TimeSpan.Zero)
             {
-                throw new ArgumentException($"{nameof(options.ReplenishmentPeriod)} must be set to a value greater than or equal to TimeSpan.Zero.", nameof(options));
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThanTimeSpan0, nameof(options.ReplenishmentPeriod)), nameof(options));
             }
 
             _options = new TokenBucketRateLimiterOptions
@@ -73,6 +81,7 @@ namespace System.Threading.RateLimiting
             };
 
             _tokenCount = options.TokenLimit;
+            _fillRate = (double)options.TokensPerPeriod / options.ReplenishmentPeriod.Ticks;
 
             _idleSince = _lastReplenishmentTick = Stopwatch.GetTimestamp();
 
@@ -83,7 +92,17 @@ namespace System.Threading.RateLimiting
         }
 
         /// <inheritdoc/>
-        public override int GetAvailablePermits() => _tokenCount;
+        public override RateLimiterStatistics? GetStatistics()
+        {
+            ThrowIfDisposed();
+            return new RateLimiterStatistics()
+            {
+                CurrentAvailablePermits = (long)_tokenCount,
+                CurrentQueuedCount = _queueCount,
+                TotalFailedLeases = Interlocked.Read(ref _failedLeasesCount),
+                TotalSuccessfulLeases = Interlocked.Read(ref _successfulLeasesCount),
+            };
+        }
 
         /// <inheritdoc/>
         protected override RateLimitLease AttemptAcquireCore(int tokenCount)
@@ -99,9 +118,11 @@ namespace System.Threading.RateLimiting
             {
                 if (_tokenCount > 0)
                 {
+                    Interlocked.Increment(ref _successfulLeasesCount);
                     return SuccessfulLease;
                 }
 
+                Interlocked.Increment(ref _failedLeasesCount);
                 return CreateFailedTokenLease(tokenCount);
             }
 
@@ -112,6 +133,7 @@ namespace System.Threading.RateLimiting
                     return lease;
                 }
 
+                Interlocked.Increment(ref _failedLeasesCount);
                 return CreateFailedTokenLease(tokenCount);
             }
         }
@@ -130,6 +152,7 @@ namespace System.Threading.RateLimiting
             // Return SuccessfulAcquisition if requestedCount is 0 and resources are available
             if (tokenCount == 0 && _tokenCount > 0)
             {
+                Interlocked.Increment(ref _successfulLeasesCount);
                 return new ValueTask<RateLimitLease>(SuccessfulLease);
             }
 
@@ -157,11 +180,17 @@ namespace System.Threading.RateLimiting
                                 // Updating queue count is handled by the cancellation code
                                 _queueCount += oldestRequest.Count;
                             }
+                            else
+                            {
+                                Interlocked.Increment(ref _failedLeasesCount);
+                            }
+                            oldestRequest.CancellationTokenRegistration.Dispose();
                         }
                         while (_options.QueueLimit - _queueCount < tokenCount);
                     }
                     else
                     {
+                        Interlocked.Increment(ref _failedLeasesCount);
                         // Don't queue if queue limit reached and QueueProcessingOrder is OldestFirst
                         return new ValueTask<RateLimitLease>(CreateFailedTokenLease(tokenCount));
                     }
@@ -186,9 +215,9 @@ namespace System.Threading.RateLimiting
             }
         }
 
-        private RateLimitLease CreateFailedTokenLease(int tokenCount)
+        private TokenBucketLease CreateFailedTokenLease(int tokenCount)
         {
-            int replenishAmount = tokenCount - _tokenCount + _queueCount;
+            int replenishAmount = tokenCount - (int)_tokenCount + _queueCount;
             // can't have 0 replenish periods, that would mean it should be a successful lease
             // if TokensPerPeriod is larger than the replenishAmount needed then it would be 0
             Debug.Assert(_options.TokensPerPeriod > 0);
@@ -206,6 +235,7 @@ namespace System.Threading.RateLimiting
             {
                 if (tokenCount == 0)
                 {
+                    Interlocked.Increment(ref _successfulLeasesCount);
                     // Edge case where the check before the lock showed 0 available permits but when we got the lock some permits were now available
                     lease = SuccessfulLease;
                     return true;
@@ -218,6 +248,7 @@ namespace System.Threading.RateLimiting
                     _idleSince = null;
                     _tokenCount -= tokenCount;
                     Debug.Assert(_tokenCount >= 0);
+                    Interlocked.Increment(ref _successfulLeasesCount);
                     lease = SuccessfulLease;
                     return true;
                 }
@@ -254,7 +285,7 @@ namespace System.Threading.RateLimiting
             limiter!.ReplenishInternal(nowTicks);
         }
 
-        // Used in tests that test behavior with specific time intervals
+        // Used in tests to avoid dealing with real time
         private void ReplenishInternal(long nowTicks)
         {
             // method is re-entrant (from Timer), lock to avoid multiple simultaneous replenishes
@@ -265,45 +296,53 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                if ((long)((nowTicks - _lastReplenishmentTick) * TickFrequency) < _options.ReplenishmentPeriod.Ticks)
+                if (_tokenCount == _options.TokenLimit)
                 {
                     return;
                 }
 
-                _lastReplenishmentTick = nowTicks;
+                double add;
 
-                int availablePermits = _tokenCount;
-                TokenBucketRateLimiterOptions options = _options;
-                int maxPermits = options.TokenLimit;
-                int resourcesToAdd;
-
-                if (availablePermits < maxPermits)
+                // Trust the timer to be close enough to when we want to replenish, this avoids issues with Timer jitter where it might be .99 seconds instead of 1, and 1.1 seconds the next time etc.
+                if (_options.AutoReplenishment)
                 {
-                    resourcesToAdd = Math.Min(options.TokensPerPeriod, maxPermits - availablePermits);
+                    add = _options.TokensPerPeriod;
                 }
                 else
                 {
-                    // All tokens available, nothing to do
-                    return;
+                    add = _fillRate * (nowTicks - _lastReplenishmentTick) * TickFrequency;
                 }
+
+                _tokenCount = Math.Min(_options.TokenLimit, _tokenCount + add);
+
+                _lastReplenishmentTick = nowTicks;
 
                 // Process queued requests
                 Deque<RequestRegistration> queue = _queue;
 
-                _tokenCount += resourcesToAdd;
                 Debug.Assert(_tokenCount <= _options.TokenLimit);
                 while (queue.Count > 0)
                 {
                     RequestRegistration nextPendingRequest =
-                          options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
+                          _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
                           ? queue.PeekHead()
                           : queue.PeekTail();
 
-                    if (_tokenCount >= nextPendingRequest.Count)
+                    // Request was handled already, either via cancellation or being kicked from the queue due to a newer request being queued.
+                    // We just need to remove the item and let the next queued item be considered for completion.
+                    if (nextPendingRequest.Tcs.Task.IsCompleted)
+                    {
+                        nextPendingRequest =
+                            _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
+                            ? queue.DequeueHead()
+                            : queue.DequeueTail();
+                        nextPendingRequest.CancellationTokenRegistration.Dispose();
+                    }
+                    else if (_tokenCount >= nextPendingRequest.Count)
                     {
                         // Request can be fulfilled
                         nextPendingRequest =
-                            options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
+                            _options.QueueProcessingOrder == QueueProcessingOrder.OldestFirst
                             ? queue.DequeueHead()
                             : queue.DequeueTail();
 
@@ -317,6 +356,10 @@ namespace System.Threading.RateLimiting
                             _tokenCount += nextPendingRequest.Count;
                             // Updating queue count is handled by the cancellation code
                             _queueCount += nextPendingRequest.Count;
+                        }
+                        else
+                        {
+                            Interlocked.Increment(ref _successfulLeasesCount);
                         }
                         nextPendingRequest.CancellationTokenRegistration.Dispose();
                         Debug.Assert(_queueCount >= 0);

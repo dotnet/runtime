@@ -1256,12 +1256,6 @@ mono_gc_alloc_handle_array (MonoVTable *vtable, gsize size, gsize max_length, gs
 	return MONO_HANDLE_NEW (MonoArray, mono_gc_alloc_array (vtable, size, max_length, bounds_size));
 }
 
-MonoStringHandle
-mono_gc_alloc_handle_string (MonoVTable *vtable, gsize size, gint32 len)
-{
-	return MONO_HANDLE_NEW (MonoString, mono_gc_alloc_string (vtable, size, len));
-}
-
 MonoObjectHandle
 mono_gc_alloc_handle_mature (MonoVTable *vtable, gsize size)
 {

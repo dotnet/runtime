@@ -1502,18 +1502,15 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 				 * Align the size too so the code generated for passing vtypes in
 				 * registers doesn't overwrite random locals.
 				 */
-				size = (size + (align - 1)) & ~(align -1);
+				size = ALIGN_TO (size, align);
 			}
 
 			if (backward) {
-				offset += size;
-				offset += align - 1;
-				offset &= ~(align - 1);
+				offset = ALIGN_TO (offset + size, align);
 				slot = offset;
 			}
 			else {
-				offset += align - 1;
-				offset &= ~(align - 1);
+				offset = ALIGN_TO (offset, align);
 				slot = offset;
 				offset += size;
 			}
@@ -2358,7 +2355,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	if (cfg->method->dynamic)
 		jinfo = (MonoJitInfo *)g_malloc0 (mono_jit_info_size (flags, num_clauses, num_holes));
 	else
-		jinfo = (MonoJitInfo *)mono_mem_manager_alloc0 (cfg->mem_manager, mono_jit_info_size (flags, num_clauses, num_holes));
+		jinfo = mini_alloc_jinfo (cfg->jit_mm, mono_jit_info_size (flags, num_clauses, num_holes));
 	jinfo_try_holes_size += num_holes * sizeof (MonoTryBlockHoleJitInfo);
 
 	mono_jit_info_init (jinfo, cfg->method_to_register, cfg->native_code, cfg->code_len, flags, num_clauses, num_holes);
@@ -2983,8 +2980,6 @@ init_backend (MonoBackend *backend)
 #ifdef MONO_ARCH_GSHARED_SUPPORTED
 	backend->gshared_supported = 1;
 #endif
-	if (MONO_ARCH_USE_FPSTACK)
-		backend->use_fpstack = 1;
 // Does the ABI have a volatile non-parameter register, so tailcall
 // can pass context to generics or interfaces?
 	backend->have_volatile_non_param_register = MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER;
@@ -3180,8 +3175,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	cfg->jit_mm = jit_mm_for_method (cfg->method);
 	cfg->mem_manager = m_method_get_mem_manager (cfg->method);
 
-	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC) {
-		/* We can't have seq points inside gc critical regions */
+	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC || cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		/* We can't have seq points inside gc critical regions or native-to-managed wrapper */
 		cfg->gen_seq_points = FALSE;
 		cfg->gen_sdb_seq_points = FALSE;
 	}
@@ -3305,9 +3300,31 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	}
 
 	if (cfg->llvm_only && cfg->interp && !cfg->interp_entry_only && header->num_clauses) {
-		cfg->deopt = TRUE;
-		/* Can't reconstruct inlined state */
-		cfg->disable_inline = TRUE;
+		gboolean can_deopt = TRUE;
+		/*
+		 * Can't handle catch clauses inside finally clauses right now.
+		 * When the ENDFINALLY opcode of the outer clause is encountered
+		 * while executing the inner catch clause from run_with_il_state (),
+		 * it will assert since it doesn't know where to continue execution.
+		 */
+		for (guint i = 0; i < cfg->header->num_clauses; ++i) {
+			for (guint j = 0; j < cfg->header->num_clauses; ++j) {
+				MonoExceptionClause *clause1 = &cfg->header->clauses [i];
+				MonoExceptionClause *clause2 = &cfg->header->clauses [j];
+
+				if (i != j && clause1->try_offset >= clause2->try_offset && clause1->handler_offset <= clause2->handler_offset) {
+					if (clause1->flags == MONO_EXCEPTION_CLAUSE_NONE && clause2->flags != MONO_EXCEPTION_CLAUSE_NONE) {
+						can_deopt = FALSE;
+						break;
+					}
+				}
+			}
+		}
+		if (can_deopt) {
+			cfg->deopt = TRUE;
+			/* Can't reconstruct inlined state */
+			cfg->disable_inline = TRUE;
+		}
 	}
 
 #ifdef ENABLE_LLVM
@@ -4052,7 +4069,7 @@ mono_cfg_set_exception_invalid_program (MonoCompile *cfg, const char *msg)
 
 #endif /* DISABLE_JIT */
 
-gint64 mono_time_track_start ()
+gint64 mono_time_track_start (void)
 {
 	return mono_100ns_ticks ();
 }
@@ -4454,6 +4471,63 @@ mini_get_cpu_features (MonoCompile* cfg)
 	features |= MONO_CPU_ARM64_NEON;
 #endif
 
+#if defined(TARGET_WASM)
+	// All wasm VMs have this set
+	features |= MONO_CPU_WASM_BASE;
+#endif
 	// apply parameters passed via -mattr
 	return (features | mono_cpu_features_enabled) & ~mono_cpu_features_disabled;
+}
+
+int
+mini_primitive_type_size (MonoTypeEnum type)
+{
+	switch (type) {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		return 1;
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+		return 2;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_R4:
+		return 4;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R8:
+		return 8;
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		return TARGET_SIZEOF_VOID_P == 8 ? 8 : 4;
+	default:
+		g_assert_not_reached ();
+		return 0;
+	}
+}
+
+/*
+ * mini_get_simd_type_info:
+ *
+ *   Return the element type of a SIMD type. Set NELEMS to the number of elements.
+ */
+MonoTypeEnum
+mini_get_simd_type_info (MonoClass *klass, guint32 *nelems)
+{
+	*nelems = 0;
+
+	const char *klass_name = m_class_get_name (klass);
+	if (!strcmp (klass_name, "Vector4") || !strcmp (klass_name, "Quaternion") || !strcmp (klass_name, "Plane")) {
+		*nelems = 4;
+		return MONO_TYPE_R4;
+	} else if (!strcmp (klass_name, "Vector`1") || !strcmp (klass_name, "Vector64`1") || !strcmp (klass_name, "Vector128`1") || !strcmp (klass_name, "Vector256`1") || !strcmp (klass_name, "Vector512`1")) {
+		MonoType *etype = mono_class_get_generic_class (klass)->context.class_inst->type_argv [0];
+		int size = mono_class_value_size (klass, NULL);
+		*nelems = size / mini_primitive_type_size (etype->type);
+		return etype->type;
+	} else {
+		printf ("%s\n", klass_name);
+		NOT_IMPLEMENTED;
+		return MONO_TYPE_VOID;
+	}
 }

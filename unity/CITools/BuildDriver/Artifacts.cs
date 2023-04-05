@@ -15,7 +15,7 @@ static class Artifacts
 
         CopyUnityEmbedHostToArtifacts(gConfig);
 
-        Paths.RepoRoot.Combine("LICENSE.md").Copy(Utils.RuntimeArtifactDirectory(gConfig));
+        Paths.RepoRoot.Combine("LICENSE.TXT").Copy(Utils.RuntimeArtifactDirectory(gConfig).Combine("LICENSE.md"));
 
         return Utils.RuntimeArtifactDirectory(gConfig);
     }

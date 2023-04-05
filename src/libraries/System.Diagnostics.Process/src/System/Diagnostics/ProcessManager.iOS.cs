@@ -7,6 +7,7 @@ namespace System.Diagnostics
 {
     internal static partial class ProcessManager
     {
+#pragma warning disable IDE0060
         /// <summary>Gets the IDs of all processes on the current machine.</summary>
         public static int[] GetProcessIds()
         {
@@ -36,5 +37,6 @@ namespace System.Diagnostics
         {
             throw new PlatformNotSupportedException();
         }
+#pragma warning restore IDE0060
     }
 }

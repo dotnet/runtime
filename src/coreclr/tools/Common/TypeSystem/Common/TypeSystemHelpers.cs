@@ -363,7 +363,7 @@ namespace Internal.TypeSystem
                     // It is generally a bug to have instantiations over generic parameters
                     // in the system. Typical instantiations are represented as instantiations
                     // over own formals - so these should be signature variables instead.
-                    throw new ArgumentException();
+                    throw new InvalidOperationException();
 
                 default:
                     Debug.Assert(thisType is DefType);

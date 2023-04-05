@@ -170,6 +170,7 @@ namespace
             case 8:
             case 16:
             case 32:
+            case 64:
                 break;
             default:
                 COMPlusThrowHR(COR_E_INVALIDPROGRAM, BFA_METADATA_CORRUPT);
@@ -336,6 +337,16 @@ namespace
         return FALSE;
     }
 
+    BOOL TypeHasInt128Field(CorElementType corElemType, TypeHandle pNestedType)
+    {
+        if (corElemType == ELEMENT_TYPE_VALUETYPE)
+        {
+            _ASSERTE(!pNestedType.IsNull());
+            return pNestedType.GetMethodTable()->IsInt128OrHasInt128Fields();
+        }
+        return FALSE;
+    }
+
 #ifdef UNIX_AMD64_ABI
     void SystemVAmd64CheckForPassNativeStructInRegister(MethodTable* pMT, EEClassNativeLayoutInfo* pNativeLayoutInfo)
     {
@@ -462,6 +473,7 @@ namespace
         const SigTypeContext* pTypeContext,
         BOOL* fDisqualifyFromManagedSequential,
         BOOL* fHasAutoLayoutField,
+        BOOL* fHasInt128Field,
         LayoutRawFieldInfo* pFieldInfoArrayOut,
         BOOL* pIsBlittableOut,
         ULONG* cInstanceFields
@@ -540,6 +552,7 @@ namespace
                 pFieldInfoArrayOut->m_placement = GetFieldPlacementInfo(corElemType, typeHandleMaybe);
                 *fDisqualifyFromManagedSequential |= TypeHasGCPointers(corElemType, typeHandleMaybe);
                 *fHasAutoLayoutField |= TypeHasAutoLayoutField(corElemType, typeHandleMaybe);
+                *fHasInt128Field |= TypeHasInt128Field(corElemType, typeHandleMaybe);
 
                 if (!IsFieldBlittable(pModule, fd, fsig.GetArgProps(), pTypeContext, nativeTypeFlags))
                     *pIsBlittableOut = FALSE;
@@ -633,6 +646,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     // function exits.
     BOOL fDisqualifyFromManagedSequential;
     BOOL hasAutoLayoutField = FALSE;
+    BOOL hasInt128Field = FALSE;
 
     // Check if this type might be ManagedSequential. Only valuetypes marked Sequential can be
     // ManagedSequential. Other issues checked below might also disqualify the type.
@@ -647,9 +661,12 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         fDisqualifyFromManagedSequential = TRUE;
     }
 
-    if (pParentMT && !pParentMT->IsValueTypeClass() && pParentMT->IsAutoLayoutOrHasAutoLayoutField())
+    if (pParentMT && !pParentMT->IsValueTypeClass())
     {
-        hasAutoLayoutField = TRUE;
+        if (pParentMT->IsAutoLayoutOrHasAutoLayoutField())
+            hasAutoLayoutField = TRUE;
+        if (pParentMT->IsInt128OrHasInt128Fields())
+            hasInt128Field = TRUE;
     }
 
 
@@ -700,6 +717,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         pTypeContext,
         &fDisqualifyFromManagedSequential,
         &hasAutoLayoutField,
+        &hasInt128Field,
         pInfoArrayOut,
         &isBlittable,
         &cInstanceFields
@@ -713,6 +731,8 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     pEEClassLayoutInfoOut->SetIsBlittable(isBlittable);
 
     pEEClassLayoutInfoOut->SetHasAutoLayoutField(hasAutoLayoutField);
+
+    pEEClassLayoutInfoOut->SetIsInt128OrHasInt128Fields(hasInt128Field);
 
     S_UINT32 cbSortArraySize = S_UINT32(cTotalFields) * S_UINT32(sizeof(LayoutRawFieldInfo*));
     if (cbSortArraySize.IsOverflow())
@@ -968,7 +988,8 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__UINT128)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T)) ||
-            pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T)))
+            pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T)) ||
+            pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR512T)))
         {
             pNativeLayoutInfo->m_alignmentRequirement = pEEClassLayoutInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
         }

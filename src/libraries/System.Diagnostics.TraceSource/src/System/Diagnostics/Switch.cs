@@ -23,7 +23,7 @@ namespace System.Diagnostics
         private int _switchSetting;
         private volatile bool _initialized;
         private bool _initializing;
-        private volatile string _switchValueString = string.Empty;
+        private volatile string? _switchValueString = string.Empty;
         private readonly string _defaultValue;
         private object? _initializedLock;
 
@@ -137,7 +137,9 @@ namespace System.Diagnostics
                 if (!_initialized)
                 {
                     if (InitializeWithStatus())
+                    {
                         OnSwitchSettingChanged();
+                    }
                 }
                 return _switchSetting;
             }
@@ -163,12 +165,17 @@ namespace System.Diagnostics
 
         protected internal virtual string[]? GetSupportedAttributes() => null;
 
-        protected string Value
+        /// <summary>
+        /// The default value assigned in the constructor.
+        /// </summary>
+        public string DefaultValue => _defaultValue;
+
+        public string Value
         {
             get
             {
                 Initialize();
-                return _switchValueString;
+                return _switchValueString!;
             }
             set
             {
@@ -176,6 +183,17 @@ namespace System.Diagnostics
                 _switchValueString = value;
                 OnValueChanged();
             }
+        }
+
+        /// <summary>
+        ///  Occurs when a <see cref="Switch"/> needs to be initialized.
+        /// </summary>
+        public static event EventHandler<InitializingSwitchEventArgs>? Initializing;
+
+        internal void OnInitializing()
+        {
+            Initializing?.Invoke(null, new InitializingSwitchEventArgs(this));
+            TraceUtils.VerifyAttributes(Attributes, GetSupportedAttributes(), this);
         }
 
         private void Initialize()
@@ -194,12 +212,29 @@ namespace System.Diagnostics
                         return false;
                     }
 
-                    // This method is re-entrent during initialization, since calls to OnValueChanged() in subclasses could end up having InitializeWithStatus()
+                    // This method is re-entrant during initialization, since calls to OnValueChanged() in subclasses could end up having InitializeWithStatus()
                     // called again, we don't want to get caught in an infinite loop.
                     _initializing = true;
 
-                    _switchValueString = _defaultValue;
-                    OnValueChanged();
+                    _switchValueString = null;
+
+                    try
+                    {
+                        OnInitializing();
+                    }
+                    catch (Exception)
+                    {
+                        _initialized = false;
+                        _initializing = false;
+                        throw;
+                    }
+
+                    if (_switchValueString == null)
+                    {
+                        _switchValueString = _defaultValue;
+                        OnValueChanged();
+                    }
+
                     _initialized = true;
                     _initializing = false;
                 }
@@ -238,7 +273,10 @@ namespace System.Diagnostics
             }
         }
 
-        internal void Refresh()
+        /// <summary>
+        /// Refreshes the trace configuration data.
+        /// </summary>
+        public void Refresh()
         {
             lock (InitializedLock)
             {

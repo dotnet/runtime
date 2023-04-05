@@ -14,7 +14,7 @@ using System.Threading;
 
 namespace System.Net.Test.Common
 {
-    internal sealed class Http3LoopbackConnection : GenericLoopbackConnection
+    public sealed class Http3LoopbackConnection : GenericLoopbackConnection
     {
         public const long H3_NO_ERROR = 0x100;
         public const long H3_GENERAL_PROTOCOL_ERROR = 0x101;
@@ -48,6 +48,9 @@ namespace System.Net.Test.Common
 
         private Http3LoopbackStream _inboundControlStream;      // Inbound control stream from client
         private Http3LoopbackStream _outboundControlStream;     // Our outbound control stream
+
+        public Http3LoopbackStream OutboundControlStream => _outboundControlStream ?? throw new Exception("Control stream has not been opened yet");
+        public Http3LoopbackStream InboundControlStream => _inboundControlStream ?? throw new Exception("Inbound control stream has not been accepted yet");
 
         public Http3LoopbackConnection(QuicConnection connection)
         {
@@ -185,11 +188,11 @@ namespace System.Net.Test.Common
             return (controlStream, requestStream);
         }
 
-        public async Task EstablishControlStreamAsync()
+        public async Task EstablishControlStreamAsync(SettingsEntry[] settingsEntries)
         {
             _outboundControlStream = await OpenUnidirectionalStreamAsync();
             await _outboundControlStream.SendUnidirectionalStreamTypeAsync(Http3LoopbackStream.ControlStream);
-            await _outboundControlStream.SendSettingsFrameAsync();
+            await _outboundControlStream.SendSettingsFrameAsync(settingsEntries);
         }
 
         public override async Task<byte[]> ReadRequestBodyAsync()

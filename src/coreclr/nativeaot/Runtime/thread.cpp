@@ -17,7 +17,6 @@
 #include "holder.h"
 #include "Crst.h"
 #include "event.h"
-#include "RWLock.h"
 #include "threadstore.h"
 #include "threadstore.inl"
 #include "thread.inl"
@@ -76,6 +75,10 @@ void Thread::WaitForGC(PInvokeTransitionFrame* pTransitionFrame)
     {
         // set preemptive mode
         VolatileStoreWithoutBarrier(&m_pTransitionFrame, pTransitionFrame);
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+        ClearState(TSF_Redirected);
+#endif //FEATURE_SUSPEND_REDIRECTION
 
         RedhawkGCInterface::WaitForGCCompletion();
 
@@ -256,7 +259,10 @@ void Thread::Construct()
     // alloc_context ever needs different initialization, a matching change to the tls_CurrentThread
     // static initialization will need to be made.
 
-    m_uPalThreadIdForLogging = PalGetCurrentThreadIdForLogging();
+    m_pTransitionFrame = TOP_OF_STACK_MARKER;
+    m_pDeferredTransitionFrame = TOP_OF_STACK_MARKER;
+    m_hPalThread = INVALID_HANDLE_VALUE;
+
     m_threadId.SetToCurrentThread();
 
     HANDLE curProcessPseudo = PalGetCurrentProcess();
@@ -270,8 +276,6 @@ void Thread::Construct()
 
     if (!PalGetMaximumStackBounds(&m_pStackLow, &m_pStackHigh))
         RhFailFast();
-
-    m_pTEB = PalNtCurrentTeb();
 
 #ifdef STRESS_LOG
     if (StressLog::StressLogOn(~0u, 0))
@@ -301,14 +305,12 @@ bool Thread::IsInitialized()
 // -----------------------------------------------------------------------------------------------------------
 // GC support APIs - do not use except from GC itself
 //
-void Thread::SetGCSpecial(bool isGCSpecial)
+void Thread::SetGCSpecial()
 {
     if (!IsInitialized())
         Construct();
-    if (isGCSpecial)
-        SetState(TSF_IsGcSpecialThread);
-    else
-        ClearState(TSF_IsGcSpecialThread);
+
+    SetState(TSF_IsGcSpecialThread);
 }
 
 bool Thread::IsGCSpecial()
@@ -326,7 +328,7 @@ bool Thread::CatchAtSafePoint()
 
 uint64_t Thread::GetPalThreadIdForLogging()
 {
-    return m_uPalThreadIdForLogging;
+    return *(uint64_t*)&m_threadId;
 }
 
 bool Thread::IsCurrentThread()
@@ -336,12 +338,8 @@ bool Thread::IsCurrentThread()
 
 void Thread::Detach()
 {
-    // Thread::Destroy is called when the thread's "home" fiber dies.  We mark the thread as "detached" here
-    // so that we can validate, in our DLL_THREAD_DETACH handler, that the thread was already destroyed at that
-    // point.
-    SetDetached();
-
     RedhawkGCInterface::ReleaseAllocContext(GetAllocContext());
+    SetDetached();
 }
 
 void Thread::Destroy()
@@ -472,6 +470,18 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
             // Transition frame may contain callee saved registers that need to be reported as well
             PInvokeTransitionFrame* pTransitionFrame = GetTransitionFrame();
             ASSERT(pTransitionFrame != NULL);
+
+            if (pTransitionFrame == INTERRUPTED_THREAD_MARKER)
+            {
+                GetInterruptedContext()->ForEachPossibleObjectRef
+                (
+                    [&](size_t* pRef)
+                    {
+                        RedhawkGCInterface::EnumGcRefConservatively((PTR_RtuObjectRef)pRef, pfnEnumCallback, pvCallbackData);
+                    }
+                );
+            }
+
             if (pTransitionFrame < pLowerBound)
                 pLowerBound = pTransitionFrame;
 
@@ -587,6 +597,20 @@ void Thread::Hijack()
         return;
     }
 
+    if (IsGCSpecial())
+    {
+        // GC threads can not be forced to run preemptively, so we will not try.
+        return;
+    }
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+    // if the thread is redirected, leave it as-is.
+    if (IsStateSet(TSF_Redirected))
+    {
+        return;
+    }
+#endif //FEATURE_SUSPEND_REDIRECTION
+
     // PalHijack will call HijackCallback or make the target thread call it.
     // It may also do nothing if the target thread is in inconvenient state.
     PalHijack(m_hPalThread, this);
@@ -603,10 +627,20 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
     Thread* pThread = (Thread*) pThreadToHijack;
     if (pThread == NULL)
     {
-        pThread = ThreadStore::GetCurrentThread();
+        pThread = ThreadStore::GetCurrentThreadIfAvailable();
+        if (pThread == NULL)
+        {
+            ASSERT(!"a not attached thread got signaled");
+            // perhaps we share the signal with something else?
+            return;
+        }
 
-        ASSERT(pThread != NULL);
-        ASSERT(pThread != ThreadStore::GetSuspendingThread());
+        if (pThread == ThreadStore::GetSuspendingThread())
+        {
+            ASSERT(!"trying to suspend suspending thread");
+            // perhaps we share the signal with something else?
+            return;
+        }
     }
 
     // we have a thread stopped, and we do not know where exactly.
@@ -637,11 +671,13 @@ void Thread::HijackCallback(NATIVE_CONTEXT* pThreadContext, void* pThreadToHijac
     // we may be able to do GC stack walk right where the threads is now,
     // as long as the location is a GC safe point.
     ICodeManager* codeManager = runtime->GetCodeManagerForAddress(pvAddress);
-    if (codeManager->IsSafePoint(pvAddress))
+    if (runtime->IsConservativeStackReportingEnabled() ||
+        codeManager->IsSafePoint(pvAddress))
     {
         // we may not be able to unwind in some locations, such as epilogs.
         // such locations should not contain safe points.
-        ASSERT(codeManager->IsUnwindable(pvAddress));
+        // when scanning conservatively we do not need to unwind
+        ASSERT(codeManager->IsUnwindable(pvAddress) || runtime->IsConservativeStackReportingEnabled());
 
         // if we are not given a thread to hijack
         // perform in-line wait on the current thread
@@ -806,6 +842,8 @@ bool Thread::Redirect()
     if (!PalSetThreadContext(m_hPalThread, redirectionContext))
         return false;
 
+    // the thread will now inevitably try to suspend
+    SetState(TSF_Redirected);
     redirectionContext->SetIp(origIP);
 
     STRESS_LOG2(LF_STACKWALK, LL_INFO10000, "InternalRedirect: TgtThread = %llx, IP = %p\n",
@@ -887,53 +925,14 @@ void Thread::UnhijackWorker()
     m_uHijackedReturnValueFlags         = 0;
 }
 
-// @TODO: it would be very, very nice if we did not have to bleed knowledge of hijacking
-// and hijack state to other components in the runtime. For now, these are only used
-// when getting EH info during exception dispatch. We should find a better way to encapsulate
-// this.
 bool Thread::IsHijacked()
 {
-    // Note: this operation is only valid from the current thread. If one thread invokes
-    // this on another then it may be racing with other changes to the thread's hijack state.
-    ASSERT(ThreadStore::GetCurrentThread() == this);
+    ASSERT(((ThreadStore::GetCurrentThread() == this) && IsCurrentThreadInCooperativeMode()) ||
+        ThreadStore::GetCurrentThread()->IsGCSpecial() ||
+        ThreadStore::GetCurrentThread() == ThreadStore::GetSuspendingThread()
+    );
 
     return m_pvHijackedReturnAddress != NULL;
-}
-
-//
-// WARNING: This method must ONLY be called during stackwalks when we believe that all threads are
-// synchronized and there is no other thread racing with us trying to apply hijacks.
-//
-bool Thread::DangerousCrossThreadIsHijacked()
-{
-    // If we have a CachedTransitionFrame available, then we're in the proper state.  Otherwise, this method
-    // was called from an improper state.
-    ASSERT(GetTransitionFrame() != NULL);
-    return m_pvHijackedReturnAddress != NULL;
-}
-
-void * Thread::GetHijackedReturnAddress()
-{
-    // Note: this operation is only valid from the current thread. If one thread invokes
-    // this on another then it may be racing with other changes to the thread's hijack state.
-    ASSERT(IsHijacked());
-    ASSERT(ThreadStore::GetCurrentThread() == this);
-
-    return m_pvHijackedReturnAddress;
-}
-
-void * Thread::GetUnhijackedReturnAddress(void ** ppvReturnAddressLocation)
-{
-    ASSERT(ThreadStore::GetCurrentThread() == this);
-
-    void * pvReturnAddress;
-    if (m_ppvHijackedReturnAddressLocation == ppvReturnAddressLocation)
-        pvReturnAddress = m_pvHijackedReturnAddress;
-    else
-        pvReturnAddress = *ppvReturnAddressLocation;
-
-    ASSERT(GetRuntimeInstance()->IsManaged(pvReturnAddress));
-    return pvReturnAddress;
 }
 
 void Thread::SetState(ThreadStateFlags flags)
@@ -1084,6 +1083,23 @@ void Thread::SetDetached()
     SetState(TSF_Detached);
 }
 
+bool Thread::IsActivationPending()
+{
+    return IsStateSet(TSF_ActivationPending);
+}
+
+void Thread::SetActivationPending(bool isPending)
+{
+    if (isPending)
+    {
+        SetState(TSF_ActivationPending);
+    }
+    else
+    {
+        ClearState(TSF_ActivationPending);
+    }
+}
+
 #endif // !DACCESS_COMPILE
 
 void Thread::ValidateExInfoStack()
@@ -1101,20 +1117,6 @@ void Thread::ValidateExInfoStack()
     }
 #endif // _DEBUG
 #endif // !DACCESS_COMPILE
-}
-
-
-
-// Retrieve the start of the TLS storage block allocated for the given thread for a specific module identified
-// by the TLS slot index allocated to that module and the offset into the OS allocated block at which
-// Redhawk-specific data is stored.
-PTR_UInt8 Thread::GetThreadLocalStorage(uint32_t uTlsIndex, uint32_t uTlsStartOffset)
-{
-#if 0
-    return (*(uint8_t***)(m_pTEB + OFFSETOF__TEB__ThreadLocalStoragePointer))[uTlsIndex] + uTlsStartOffset;
-#else
-    return (*dac_cast<PTR_PTR_PTR_UInt8>(dac_cast<TADDR>(m_pTEB) + OFFSETOF__TEB__ThreadLocalStoragePointer))[uTlsIndex] + uTlsStartOffset;
-#endif
 }
 
 #ifndef DACCESS_COMPILE
@@ -1148,6 +1150,10 @@ FORCEINLINE bool Thread::InlineTryFastReversePInvoke(ReversePInvokeFrame * pFram
 
         return false; // bad transition
     }
+
+    // this is an ordinary transition to managed code
+    // GC threads should not do that
+    ASSERT(!IsGCSpecial());
 
     // save the previous transition frame
     pFrame->m_savedPInvokeTransitionFrame = m_pTransitionFrame;

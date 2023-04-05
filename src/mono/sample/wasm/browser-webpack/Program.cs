@@ -3,11 +3,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.JavaScript;
 
 namespace Sample
 {
-    public class Test
+    public partial class Test
     {
+        [JSExport]
         public static int Main()
         {
             return 42;

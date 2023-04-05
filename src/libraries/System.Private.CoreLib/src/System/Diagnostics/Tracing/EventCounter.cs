@@ -10,7 +10,7 @@ namespace System.Diagnostics.Tracing
     /// <summary>
     /// Provides the ability to collect statistics through EventSource
     ///
-    /// See https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.Tracing/documentation/EventCounterTutorial.md
+    /// See https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.Tracing/documentation/EventCounterTutorial.md
     /// for a tutorial guide.
     ///
     /// See https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.Tracing/tests/BasicEventSourceTest/TestEventCounter.cs
@@ -171,7 +171,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        protected void Flush()
+        private void Flush()
         {
             Debug.Assert(Monitor.IsEntered(this));
             for (int i = 0; i < _bufferedValues.Length; i++)

@@ -39,9 +39,9 @@ class CSwarm
 };
 
 
-class MainClass
+public class MainClass
 {
-    public static int Main(string[] args)
+    public static int Main()
     {
         CSwarm swarm = new CSwarm();
         return (100);

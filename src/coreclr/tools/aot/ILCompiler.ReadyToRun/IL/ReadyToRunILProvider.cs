@@ -85,11 +85,6 @@ namespace Internal.IL
                 return UnsafeIntrinsics.EmitIL(method);
             }
 
-            if (mdType.Name == "MemoryMarshal" && mdType.Namespace == "System.Runtime.InteropServices")
-            {
-                return MemoryMarshalIntrinsics.EmitIL(method);
-            }
-
             if (mdType.Name == "Volatile" && mdType.Namespace == "System.Threading")
             {
                 return VolatileIntrinsics.EmitIL(method);
@@ -171,7 +166,7 @@ namespace Internal.IL
                 }
 
                 // Check to see if there is an override for the EcmaMethodIL. If there is not
-                // then simply return the EcmaMethodIL. In theory this could call 
+                // then simply return the EcmaMethodIL. In theory this could call
                 // CreateCrossModuleInlineableTokensForILBody, but we explicitly do not want
                 // to do that. The reason is that this method is called during the multithreaded
                 // portion of compilation, and CreateCrossModuleInlineableTokensForILBody
@@ -224,7 +219,7 @@ namespace Internal.IL
             MutableModule _mutableModule;
 
             public ManifestModuleWrappedMethodIL() {}
-            
+
             public bool Initialize(MutableModule mutableModule, EcmaMethodIL wrappedMethod)
             {
                 bool failedToReplaceToken = false;

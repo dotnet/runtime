@@ -264,7 +264,7 @@ namespace System.Xml.XPath
                 {
                     if (tempNav.MoveToAttribute(XPathNavigatorReader.space, XmlReservedNs.NsXml))
                     {
-                        switch (XmlConvert.TrimString(tempNav.Value))
+                        switch (tempNav.Value.AsSpan().Trim(XmlConvert.WhitespaceChars))
                         {
                             case "default":
                                 return XmlSpace.Default;

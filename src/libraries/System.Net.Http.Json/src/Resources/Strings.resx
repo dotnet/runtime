@@ -129,4 +129,10 @@
   <data name="SerializeWrongType" xml:space="preserve">
     <value>The specified type {0} must derive from the specific value's type {1}.</value>
   </data>
+  <data name="net_http_request_timedout" xml:space="preserve">
+    <value>The request was canceled due to the configured HttpClient.Timeout of {0} seconds elapsing.</value>
+  </data>
+  <data name="net_http_content_buffersize_exceeded" xml:space="preserve">
+    <value>Cannot write more bytes to the buffer than the configured maximum buffer size: {0}.</value>
+  </data>
 </root>

@@ -20,7 +20,6 @@
 #include "eeprofinterfaces.h"
 #include "eeconfig.h"
 #include "corhost.h"
-#include "win32threadpool.h"
 #include "jitinterface.h"
 #include "eventtrace.h"
 #include "comutilnative.h"
@@ -29,12 +28,9 @@
 
 #include "wrappers.h"
 
-#include "nativeoverlapped.h"
-
 #include "appdomain.inl"
 #include "vmholder.h"
 #include "exceptmacros.h"
-#include "win32threadpool.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -136,8 +132,6 @@ PTR_ThreadLocalModule ThreadLocalBlock::GetTLMIfExists(MethodTable* pMT)
 
 BOOL Thread::s_fCleanFinalizedThread = FALSE;
 
-UINT64 Thread::s_workerThreadPoolCompletionCountOverflow = 0;
-UINT64 Thread::s_ioThreadPoolCompletionCountOverflow = 0;
 UINT64 Thread::s_monitorLockContentionCountOverflow = 0;
 
 CrstStatic g_DeadlockAwareCrst;
@@ -581,7 +575,7 @@ DWORD Thread::StartThread()
 #endif
 
     _ASSERTE (GetThreadHandle() != INVALID_HANDLE_VALUE);
-    DWORD dwRetVal = ::ResumeThread(GetThreadHandle());
+    DWORD dwRetVal = ClrResumeThread(GetThreadHandle());
     return dwRetVal;
 }
 
@@ -1056,11 +1050,9 @@ Thread* WINAPI CreateThreadBlockThrow()
     // We want to throw an exception for reverse p-invoke, and our assertion may fire if
     // a unmanaged caller does not setup an exception handler.
     CONTRACT_VIOLATION(ThrowsViolation); // WON'T FIX - This enables catastrophic failure exception in reverse P/Invoke - the only way we can communicate an error to legacy code.
-    Thread* pThread = NULL;
-    BEGIN_ENTRYPOINT_THROWS;
 
     HRESULT hr = S_OK;
-    pThread = SetupThreadNoThrow(&hr);
+    Thread* pThread = SetupThreadNoThrow(&hr);
     if (pThread == NULL)
     {
         // Creating Thread failed, and we need to throw an exception to report status.
@@ -1068,7 +1060,6 @@ Thread* WINAPI CreateThreadBlockThrow()
         ULONG_PTR arg = hr;
         RaiseException(EXCEPTION_EXX, 0, 1, &arg);
     }
-    END_ENTRYPOINT_THROWS;
 
     return pThread;
 }
@@ -1541,8 +1532,6 @@ Thread::Thread()
     m_AbortRequestLock = 0;
     m_fRudeAbortInitiated = FALSE;
 
-    m_pIOCompletionContext = NULL;
-
 #ifdef _DEBUG
     m_fRudeAborted = FALSE;
     m_dwAbortPoint = 0;
@@ -1600,8 +1589,6 @@ Thread::Thread()
     m_sfEstablisherOfActualHandlerFrame.Clear();
 #endif // FEATURE_EH_FUNCLETS
 
-    m_workerThreadPoolCompletionCount = 0;
-    m_ioThreadPoolCompletionCount = 0;
     m_monitorLockContentionCount = 0;
 
     m_pDomain = SystemDomain::System()->DefaultDomain();
@@ -1775,12 +1762,6 @@ void Thread::InitThread()
         {
             ThrowOutOfMemory();
         }
-    }
-
-    ret = Thread::AllocateIOCompletionContext();
-    if (!ret)
-    {
-        ThrowOutOfMemory();
     }
 }
 
@@ -1976,33 +1957,6 @@ FAILURE:
     return FALSE;
 }
 
-BOOL Thread::AllocateIOCompletionContext()
-{
-    WRAPPER_NO_CONTRACT;
-    PIOCompletionContext pIOC = new (nothrow) IOCompletionContext;
-
-    if(pIOC != NULL)
-    {
-        pIOC->lpOverlapped = NULL;
-        m_pIOCompletionContext = pIOC;
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
-}
-
-VOID Thread::FreeIOCompletionContext()
-{
-    WRAPPER_NO_CONTRACT;
-    if (m_pIOCompletionContext != NULL)
-    {
-        PIOCompletionContext pIOC = (PIOCompletionContext) m_pIOCompletionContext;
-        delete pIOC;
-        m_pIOCompletionContext = NULL;
-    }
-}
 
 void Thread::HandleThreadStartupFailure()
 {
@@ -2016,36 +1970,37 @@ void Thread::HandleThreadStartupFailure()
 
     _ASSERTE(GetThreadNULLOk() != NULL);
 
-    struct ProtectArgs
+    struct
     {
         OBJECTREF pThrowable;
         OBJECTREF pReason;
-    } args;
-    memset(&args, 0, sizeof(ProtectArgs));
+    } gc;
+    gc.pThrowable = NULL;
+    gc.pReason = NULL;
 
-    GCPROTECT_BEGIN(args);
+    GCPROTECT_BEGIN(gc);
 
     MethodTable *pMT = CoreLibBinder::GetException(kThreadStartException);
-    args.pThrowable = AllocateObject(pMT);
+    gc.pThrowable = AllocateObject(pMT);
 
     MethodDescCallSite exceptionCtor(METHOD__THREAD_START_EXCEPTION__EX_CTOR);
 
     if (m_pExceptionDuringStartup)
     {
-        args.pReason = CLRException::GetThrowableFromException(m_pExceptionDuringStartup);
+        gc.pReason = CLRException::GetThrowableFromException(m_pExceptionDuringStartup);
         Exception::Delete(m_pExceptionDuringStartup);
         m_pExceptionDuringStartup = NULL;
     }
 
     ARG_SLOT args1[] = {
-        ObjToArgSlot(args.pThrowable),
-        ObjToArgSlot(args.pReason),
+        ObjToArgSlot(gc.pThrowable),
+        ObjToArgSlot(gc.pReason),
     };
     exceptionCtor.Call(args1);
 
     GCPROTECT_END(); //Prot
 
-    RaiseTheExceptionInternalOnly(args.pThrowable, FALSE);
+    RaiseTheExceptionInternalOnly(gc.pThrowable, FALSE);
 }
 
 #ifndef TARGET_UNIX
@@ -2571,7 +2526,7 @@ int Thread::DecExternalCount(BOOL holdingLock)
             CONTRACT_VIOLATION(ModeViolation);
 
             // Clear the handle and leave the lock.
-            // We do not have to to DisablePreemptiveGC here, because
+            // We do not have to DisablePreemptiveGC here, because
             // we just want to put NULL into a handle.
             StoreObjectInHandle(m_StrongHndToExposedObject, NULL);
 
@@ -2675,8 +2630,6 @@ Thread::~Thread()
     {
         m_EventWait.CloseEvent();
     }
-
-    FreeIOCompletionContext();
 
     if (m_OSContext)
         delete m_OSContext;
@@ -3996,30 +3949,6 @@ DWORD Thread::Wait(CLREvent *pEvent, INT32 timeOut, PendingSync *syncInfo)
              (dwResult == WAIT_TIMEOUT));
 
     return dwResult;
-}
-
-void Thread::Wake(SyncBlock *psb)
-{
-    WRAPPER_NO_CONTRACT;
-
-    CLREvent* hEvent = NULL;
-    WaitEventLink *walk = &m_WaitEventLink;
-    while (walk->m_Next) {
-        if (walk->m_Next->m_WaitSB == psb) {
-            hEvent = walk->m_Next->m_EventWait;
-            // We are guaranteed that only one thread can change walk->m_Next->m_WaitSB
-            // since the thread is helding the syncblock.
-            walk->m_Next->m_WaitSB = (SyncBlock*)((DWORD_PTR)walk->m_Next->m_WaitSB | 1);
-            break;
-        }
-#ifdef _DEBUG
-        else if ((SyncBlock*)((DWORD_PTR)walk->m_Next & ~1) == psb) {
-            _ASSERTE (!"Can not wake a thread on the same SyncBlock more than once");
-        }
-#endif
-    }
-    PREFIX_ASSUME (hEvent != NULL);
-    hEvent->Set();
 }
 
 #define WAIT_INTERRUPT_THREADABORT 0x1
@@ -5384,12 +5313,6 @@ BOOL ThreadStore::RemoveThread(Thread *target)
         if (target->IsBackground())
             s_pThreadStore->m_BackgroundThreadCount--;
 
-        InterlockedExchangeAdd64(
-            (LONGLONG *)&Thread::s_workerThreadPoolCompletionCountOverflow,
-            target->m_workerThreadPoolCompletionCount);
-        InterlockedExchangeAdd64(
-            (LONGLONG *)&Thread::s_ioThreadPoolCompletionCountOverflow,
-            target->m_ioThreadPoolCompletionCount);
         InterlockedExchangeAdd64(
             (LONGLONG *)&Thread::s_monitorLockContentionCountOverflow,
             target->m_monitorLockContentionCount);
@@ -7581,13 +7504,6 @@ void ManagedThreadBase::KickOff(ADCallBackFcnType pTarget, LPVOID args)
     ManagedThreadBase_FullTransition(pTarget, args, ManagedThread);
 }
 
-// The IOCompletion, QueueUserWorkItem, RegisterWaitForSingleObject cases in the ThreadPool
-void ManagedThreadBase::ThreadPool(ADCallBackFcnType pTarget, LPVOID args)
-{
-    WRAPPER_NO_CONTRACT;
-    ManagedThreadBase_FullTransition(pTarget, args, ThreadPoolThread);
-}
-
 // The Finalizer thread establishes exception handling at its base, but defers all the AppDomain
 // transitions.
 void ManagedThreadBase::FinalizerBase(ADCallBackFcnType pTarget)
@@ -7899,40 +7815,6 @@ UINT64 Thread::GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCoun
     while ((pThread = ThreadStore::GetAllThreadList(pThread, 0, 0)) != NULL)
     {
         total += *GetThreadLocalCountRef(pThread, threadLocalCountOffset);
-    }
-
-    return total;
-}
-
-UINT64 Thread::GetTotalThreadPoolCompletionCount()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPoolForIO());
-
-    bool usePortableThreadPool = ThreadpoolMgr::UsePortableThreadPool();
-
-    // enumerate all threads, summing their local counts.
-    ThreadStoreLockHolder tsl;
-
-    UINT64 total = GetIOThreadPoolCompletionCountOverflow();
-    if (!usePortableThreadPool)
-    {
-        total += GetWorkerThreadPoolCompletionCountOverflow();
-    }
-
-    Thread *pThread = NULL;
-    while ((pThread = ThreadStore::GetAllThreadList(pThread, 0, 0)) != NULL)
-    {
-        if (!usePortableThreadPool)
-        {
-            total += pThread->m_workerThreadPoolCompletionCount;
-        }
-        total += pThread->m_ioThreadPoolCompletionCount;
     }
 
     return total;
@@ -8383,7 +8265,7 @@ Thread::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
 
     DAC_ENUM_DTHIS();
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
         if (m_pDomain.IsValid())
         {
@@ -8459,10 +8341,15 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
     }
     else
     {
+        // Skip any thread that doesn't have a OS thread id because DacGetThreadContext is going to throw an exception.
+        if (GetOSThreadId() == 0)
+        {
+            return;
+        }
         DacGetThreadContext(this, &context);
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
         AppDomain::GetCurrentDomain()->EnumMemoryRegions(flags, true);
     }

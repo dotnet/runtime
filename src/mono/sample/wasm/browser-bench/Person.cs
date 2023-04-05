@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 
 namespace Sample
 {
@@ -35,4 +36,16 @@ namespace Sample
             };
         }
     }
+
+    class TextContainer
+    {
+        public string Text { get; set; }
+    }
+
+    [JsonSerializable(typeof(TextContainer))]
+    [JsonSerializable(typeof(Person))]
+    [JsonSerializable(typeof(List<Person>))]
+    [JsonSerializable(typeof(Dictionary<string, object>))]
+    partial class TestSerializerContext : JsonSerializerContext { }
+
 }

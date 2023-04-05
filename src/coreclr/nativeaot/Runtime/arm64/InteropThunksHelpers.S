@@ -27,7 +27,7 @@ POINTER_SIZE = 0x08
         // need to save and restore them, too
         GETTHUNKDATA_ETLS_9
 #else
-        INLINE_GET_TLS_VAR x9, tls_thunkData
+        INLINE_GET_TLS_VAR x9, C_FUNC(tls_thunkData)
 #endif
 
         // x9  = base address of TLS data
@@ -58,7 +58,7 @@ POINTER_SIZE = 0x08
     //
     LEAF_ENTRY RhGetCurrentThunkContext, _TEXT
 
-        INLINE_GET_TLS_VAR x1, tls_thunkData
+        INLINE_GET_TLS_VAR x1, C_FUNC(tls_thunkData)
 
         ldr x0, [x1]
 

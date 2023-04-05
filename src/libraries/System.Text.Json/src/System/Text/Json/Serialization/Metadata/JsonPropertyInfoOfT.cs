@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
@@ -10,8 +11,6 @@ namespace System.Text.Json.Serialization.Metadata
     /// <summary>
     /// Represents a strongly-typed property to prevent boxing and to create a direct delegate to the getter\setter.
     /// </summary>
-    /// <typeparamref name="T"/> is the <see cref="JsonConverter{T}.TypeToConvert"/> for either the property's converter,
-    /// or a type's converter, if the current instance is a <see cref="JsonTypeInfo.PropertyInfoForTypeInfo"/>.
     internal sealed class JsonPropertyInfo<T> : JsonPropertyInfo
     {
         private Func<object, T>? _typedGet;
@@ -113,6 +112,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal override object? DefaultValue => default(T);
         internal override bool PropertyTypeCanBeNull => default(T) is null;
+        internal override JsonParameterInfo CreateJsonParameterInfo(JsonParameterInfoValues parameterInfoValues)
+            => new JsonParameterInfo<T>(parameterInfoValues, this);
 
         internal new JsonConverter<T> EffectiveConverter
         {
@@ -125,91 +126,10 @@ namespace System.Text.Json.Serialization.Metadata
 
         private JsonConverter<T>? _typedEffectiveConverter;
 
-        private protected override void DetermineMemberAccessors(MemberInfo memberInfo)
-        {
-            Debug.Assert(memberInfo is FieldInfo or PropertyInfo);
-
-            switch (memberInfo)
-            {
-                case PropertyInfo propertyInfo:
-                    bool useNonPublicAccessors = propertyInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
-
-                    MethodInfo? getMethod = propertyInfo.GetMethod;
-                    if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
-                    {
-                        Get = Options.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
-                    }
-
-                    MethodInfo? setMethod = propertyInfo.SetMethod;
-                    if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
-                    {
-                        Set = Options.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
-                    }
-
-                    break;
-
-                case FieldInfo fieldInfo:
-                    Debug.Assert(fieldInfo.IsPublic);
-
-                    Get = Options.MemberAccessorStrategy.CreateFieldGetter<T>(fieldInfo);
-
-                    if (!fieldInfo.IsInitOnly)
-                    {
-                        Set = Options.MemberAccessorStrategy.CreateFieldSetter<T>(fieldInfo);
-                    }
-
-                    break;
-
-                default:
-                    Debug.Fail($"Invalid MemberInfo type: {memberInfo.MemberType}");
-                    break;
-            }
-        }
-
-        internal JsonPropertyInfo(JsonPropertyInfoValues<T> propertyInfo, JsonSerializerOptions options)
-            : this(propertyInfo.DeclaringType, declaringTypeInfo: null, options)
-        {
-            string? name;
-
-            // Property name settings.
-            if (propertyInfo.JsonPropertyName != null)
-            {
-                name = propertyInfo.JsonPropertyName;
-            }
-            else if (options.PropertyNamingPolicy == null)
-            {
-                name = propertyInfo.PropertyName;
-            }
-            else
-            {
-                name = options.PropertyNamingPolicy.ConvertName(propertyInfo.PropertyName);
-            }
-
-            // Compat: We need to do validation before we assign Name so that we get InvalidOperationException rather than ArgumentNullException
-            if (name == null)
-            {
-                ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(this);
-            }
-
-            Name = name;
-            MemberName = propertyInfo.PropertyName;
-            MemberType = propertyInfo.IsProperty ? MemberTypes.Property : MemberTypes.Field;
-            SrcGen_IsPublic = propertyInfo.IsPublic;
-            SrcGen_HasJsonInclude = propertyInfo.HasJsonInclude;
-            IsExtensionData = propertyInfo.IsExtensionData;
-            CustomConverter = propertyInfo.Converter;
-
-            if (propertyInfo.IgnoreCondition != JsonIgnoreCondition.Always)
-            {
-                Get = propertyInfo.Getter!;
-                Set = propertyInfo.Setter;
-            }
-
-            IgnoreCondition = propertyInfo.IgnoreCondition;
-            JsonTypeInfo = propertyInfo.PropertyTypeInfo;
-            NumberHandling = propertyInfo.NumberHandling;
-        }
-
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        internal override void DetermineReflectionPropertyAccessors(MemberInfo memberInfo)
+            => DefaultJsonTypeInfoResolver.DeterminePropertyAccessors<T>(this, memberInfo);
         private protected override void DetermineEffectiveConverter(JsonTypeInfo jsonTypeInfo)
         {
             Debug.Assert(jsonTypeInfo is JsonTypeInfo<T>);
@@ -221,7 +141,6 @@ namespace System.Text.Json.Serialization.Metadata
 
             _effectiveConverter = converter;
             _typedEffectiveConverter = converter;
-            ConverterStrategy = converter.ConverterStrategy;
         }
 
         internal override object? GetValueAsObject(object obj)
@@ -249,7 +168,7 @@ namespace System.Text.Json.Serialization.Metadata
                 value is not null &&
                 !state.IsContinuation &&
                 // .NET types that are serialized as JSON primitive values don't need to be tracked for cycle detection e.g: string.
-                ConverterStrategy != ConverterStrategy.Value &&
+                EffectiveConverter.ConverterStrategy != ConverterStrategy.Value &&
                 state.ReferenceResolver.ContainsReferenceForCycleDetection(value))
             {
                 // If a reference cycle is detected, treat value as null.
@@ -334,7 +253,7 @@ namespace System.Text.Json.Serialization.Metadata
             return success;
         }
 
-        internal override bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader)
+        internal override bool ReadJsonAndSetMember(object obj, scoped ref ReadStack state, ref Utf8JsonReader reader)
         {
             bool success;
 
@@ -387,7 +306,7 @@ namespace System.Text.Json.Serialization.Metadata
             return success;
         }
 
-        internal override bool ReadJsonAsObject(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
+        internal override bool ReadJsonAsObject(scoped ref ReadStack state, ref Utf8JsonReader reader, out object? value)
         {
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;

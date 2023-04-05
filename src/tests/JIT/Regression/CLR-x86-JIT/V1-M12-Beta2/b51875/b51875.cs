@@ -8,7 +8,7 @@ using System.Collections;
 
 namespace Test
 {
-    internal struct AA
+    public struct AA
     {
         public static int Main1()
         {

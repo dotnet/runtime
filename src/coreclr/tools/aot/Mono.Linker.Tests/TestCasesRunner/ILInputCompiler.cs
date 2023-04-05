@@ -42,7 +42,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
 		}
 
-		private string BuildArguments (CompilerOptions options)
+		private static string BuildArguments (CompilerOptions options)
 		{
 			var args = new StringBuilder ();
 #if NETCOREAPP

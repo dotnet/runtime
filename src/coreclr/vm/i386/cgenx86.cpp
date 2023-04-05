@@ -1106,8 +1106,34 @@ extern "C" DWORD __stdcall xmmYmmStateSupport()
 }
 #pragma warning(pop)
 
+#pragma warning(push)
+#pragma warning(disable: 4035)
+extern "C" DWORD __stdcall avx512StateSupport()
+{
+    // No CONTRACT
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+
+    __asm
+    {
+        mov     ecx, 0                  ; Specify xcr0
+        xgetbv                          ; result in EDX:EAX
+        and eax, 0E6H
+        cmp eax, 0E6H                  ; check OS has enabled XMM, YMM and ZMM state support
+        jne     not_supported
+        mov     eax, 1
+        jmp     done
+    not_supported:
+        mov     eax, 0
+    done:
+    }
+}
+#pragma warning(pop)
+
+
 #else // !TARGET_UNIX
 
+#if !__has_builtin(__cpuid)
 void __cpuid(int cpuInfo[4], int function_id)
 {
     // Based on the Clang implementation provided in cpuid.h:
@@ -1118,7 +1144,9 @@ void __cpuid(int cpuInfo[4], int function_id)
         : "0"(function_id)
     );
 }
+#endif
 
+#if !__has_builtin(__cpuidex)
 void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
 {
     // Based on the Clang implementation provided in cpuid.h:
@@ -1129,6 +1157,7 @@ void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
         : "0"(function_id), "2"(subFunction_id)
     );
 }
+#endif
 
 extern "C" DWORD __stdcall xmmYmmStateSupport()
 {
@@ -1140,6 +1169,18 @@ extern "C" DWORD __stdcall xmmYmmStateSupport()
         );
     // check OS has enabled both XMM and YMM state support
     return ((eax & 0x06) == 0x06) ? 1 : 0;
+}
+
+extern "C" DWORD __stdcall avx512StateSupport()
+{
+    DWORD eax;
+    __asm("  xgetbv\n" \
+        : "=a"(eax) /*output in eax*/\
+        : "c"(0) /*inputs - 0 in ecx*/\
+        : "edx" /* registers that are clobbered*/
+        );
+    // check OS has enabled XMM, YMM and ZMM state support
+    return ((eax & 0x0E6) == 0x0E6) ? 1 : 0;
 }
 
 #endif // !TARGET_UNIX

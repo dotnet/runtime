@@ -723,14 +723,6 @@ class InterpreterCEEInfo: public CEEInfo
     CEEJitInfo m_jitInfo;
 public:
     InterpreterCEEInfo(CORINFO_METHOD_HANDLE meth): CEEInfo((MethodDesc*)meth), m_jitInfo((MethodDesc*)meth, NULL, NULL, CORJIT_FLAGS::CORJIT_FLAG_SPEED_OPT) { }
-
-    // Certain methods are unimplemented by CEEInfo (they hit an assert).  They are implemented by CEEJitInfo, yet
-    // don't seem to require any of the CEEJitInfo state we can't provide.  For those case, delegate to the "partial"
-    // CEEJitInfo m_jitInfo.
-    void addActiveDependency(CORINFO_MODULE_HANDLE moduleFrom,CORINFO_MODULE_HANDLE moduleTo)
-    {
-        m_jitInfo.addActiveDependency(moduleFrom, moduleTo);
-    }
 };
 
 extern INT64 F_CALL_CONV InterpretMethod(InterpreterMethodInfo* methInfo, BYTE* ilArgs, void* stubContext);

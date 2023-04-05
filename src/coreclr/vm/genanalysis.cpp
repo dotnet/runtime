@@ -77,7 +77,7 @@ bool gcGenAnalysisDump = false;
 /* static */ void GenAnalysis::EnableGenerationalAwareSession()
 {
     WCHAR outputPath[MAX_PATH];
-    AppendPid(GENAWARE_TRACE_FILE_NAME, outputPath, MAX_PATH);
+    ReplacePid(GENAWARE_TRACE_FILE_NAME, outputPath, MAX_PATH);
 
     NewArrayHolder<COR_PRF_EVENTPIPE_PROVIDER_CONFIG> pProviders;
     int providerCnt = 1;

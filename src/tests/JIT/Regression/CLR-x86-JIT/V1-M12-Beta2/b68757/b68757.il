@@ -9,7 +9,7 @@
 .assembly extern legacy library mscorlib {}
 .assembly 'b68757' {}
 .assembly extern xunit.core {}
-.class private bug1
+.class public bug1
 {
   .class auto ansi nested public beforefieldinit CL1
          extends [mscorlib]System.Object

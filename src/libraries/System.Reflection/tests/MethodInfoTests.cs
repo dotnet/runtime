@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Reflection.Tests
 {
@@ -205,7 +206,6 @@ namespace System.Reflection.Tests
         [InlineData("DummyMethod1", "DummyMethod1", true)]
         //Verify two different MethodInfo objects are not equal
         [InlineData("DummyMethod1", "DummyMethod2", false)]
-
         public void Equality1(string str1, string str2, bool expected)
         {
             MethodInfo mi1 = GetMethod(typeof(MethodInfoTests), str1);
@@ -763,6 +763,48 @@ namespace System.Reflection.Tests
             Assert.Throws<ArgumentException>(() => method.Invoke(null, new object?[] { Type.Missing }));
         }
 
+        public static IEnumerable<object[]> MethodNameAndArguments()
+        {
+            yield return new object[] { nameof(Sample.DefaultString), "Hello", "Hi" };
+            yield return new object[] { nameof(Sample.DefaultNullString), null, "Hi" };
+            yield return new object[] { nameof(Sample.DefaultNullableInt), 3, 5 };
+            yield return new object[] { nameof(Sample.DefaultNullableEnum), YesNo.Yes, YesNo.No };
+        }
+
+        [Theory]
+        [MemberData(nameof(MethodNameAndArguments))]
+        public static void InvokeCopiesBackMissingArgument(string methodName, object defaultValue, object passingValue)
+        {
+            MethodInfo method = typeof(Sample).GetMethod(methodName);
+            object[] args = new object[] { Missing.Value };
+
+            Assert.Equal(defaultValue, method.Invoke(null, args));
+            Assert.Equal(defaultValue, args[0]);
+
+            args[0] = passingValue;
+
+            Assert.Equal(passingValue, method.Invoke(null, args));
+            Assert.Equal(passingValue, args[0]);
+
+            args[0] = null;
+            Assert.Null(method.Invoke(null, args));
+            Assert.Null(args[0]);
+        }
+
+        [Fact]
+        public static void InvokeCopiesBackMissingParameterAndArgument()
+        {
+            MethodInfo method = typeof(Sample).GetMethod(nameof(Sample.DefaultMissing));
+            object[] args = new object[] { Missing.Value };
+
+            Assert.Null(method.Invoke(null, args));
+            Assert.Null(args[0]);
+
+            args[0] = null;
+            Assert.Null(method.Invoke(null, args));
+            Assert.Null(args[0]);
+        }
+
         [Fact]
         public void ValueTypeMembers_WithOverrides()
         {
@@ -850,6 +892,36 @@ namespace System.Reflection.Tests
         {
             Assembly asm = (Assembly)mi.Invoke(null, null);
             Assert.Contains("TestAssembly", asm.ToString());
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71883", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]        
+        private static unsafe void TestFunctionPointers()
+        {
+            void* fn = FunctionPointerMethods.GetFunctionPointer();
+
+            // Sanity checks for direct invocation.
+            Assert.True(FunctionPointerMethods.GetFunctionPointer()(42));
+            Assert.True(FunctionPointerMethods.CallFcnPtr_IntPtr((IntPtr)fn, 42));
+            Assert.True(FunctionPointerMethods.CallFcnPtr_Void(fn, 42));
+            Assert.False(FunctionPointerMethods.GetFunctionPointer()(41));
+            Assert.False(FunctionPointerMethods.CallFcnPtr_IntPtr((IntPtr)fn, 41));
+            Assert.False(FunctionPointerMethods.CallFcnPtr_Void(fn, 41));
+
+            MethodInfo m;
+
+            m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.CallFcnPtr_FP));
+            //  System.ArgumentException : Object of type 'System.IntPtr' cannot be converted to type 'System.Boolean(System.Int32)'
+            Assert.Throws<ArgumentException>(() => m.Invoke(null, new object[] { (IntPtr)fn, 42 }));
+            Assert.Throws<ArgumentException>(() => m.Invoke(null, new object[] { (IntPtr)fn, 41 }));
+
+            m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.CallFcnPtr_IntPtr));
+            Assert.True((bool)m.Invoke(null, new object[] { (IntPtr)fn, 42 }));
+            Assert.False((bool)m.Invoke(null, new object[] { (IntPtr)fn, 41 }));
+
+            m = GetMethod(typeof(FunctionPointerMethods), nameof(FunctionPointerMethods.CallFcnPtr_Void));
+            Assert.True((bool)m.Invoke(null, new object[] { (IntPtr)fn, 42 }));
+            Assert.False((bool)m.Invoke(null, new object[] { (IntPtr)fn, 41 }));
         }
 
         //Methods for Reflection Metadata
@@ -1087,6 +1159,16 @@ namespace System.Reflection.Tests
         {
             return "";
         }
+
+        public static string DefaultString(string value = "Hello") => value;
+
+        public static string DefaultNullString(string value = null) => value;
+
+        public static YesNo? DefaultNullableEnum(YesNo? value = YesNo.Yes) => value;
+
+        public static int? DefaultNullableInt(int? value = 3) => value;
+
+        public static Missing DefaultMissing(Missing value = null) => value;
     }
 
     public class SampleG<T>
@@ -1239,6 +1321,31 @@ namespace System.Reflection.Tests
         {
             return yesNo;
         }
+    }
+
+    public static class FunctionPointerMethods
+    {
+        public static bool CallMe(int i)
+        {
+            return i == 42;
+        }
+
+        public static unsafe bool CallFcnPtr_FP(delegate*<int, bool> fn, int value)
+        {
+            return fn(value);
+        }
+
+        public static unsafe bool CallFcnPtr_IntPtr(IntPtr fn, int value)
+        {
+            return ((delegate*<int, bool>)fn)(value);
+        }
+
+        public static unsafe bool CallFcnPtr_Void(void* fn, int value)
+        {
+            return ((delegate*<int, bool>)fn)(value);
+        }
+
+        public static unsafe delegate*<int, bool> GetFunctionPointer() => &CallMe;
     }
 #pragma warning restore 0414
 }

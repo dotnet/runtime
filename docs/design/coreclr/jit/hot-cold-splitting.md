@@ -21,7 +21,7 @@ The below sections describe various improvements made to the JIT's hot/cold spli
 
 Without runtime support for hot/cold splitting in .NET as of summer 2022, testing the JIT's existing hot/cold splitting
 support is not as simple as turning the feature on. A new "fake" splitting mode, enabled by the
-`COMPlus_JitFakeProcedureSplitting` environment variable, removes this dependency on runtime support. This mode allows
+`DOTNET_JitFakeProcedureSplitting` environment variable, removes this dependency on runtime support. This mode allows
 the JIT to execute its hot/cold splitting workflow without changing the runtime's behavior. This workflow proceeds as
 follows:
 
@@ -41,7 +41,7 @@ are adjacent, the JIT generates unwind info once for the entire function.
 While enabling fake-splitting also enables `opts.compProcedureSplitting`, there is no guarantee the JIT will fake-split
 a function unless `Compiler::fgDetermineFirstColdBlock` finds a splitting point; without PGO data, the JIT's heuristics
 may be too conservative for extensive testing. To aid regression testing, the JIT also has a stress-splitting mode now,
-under `COMPlus_JitStressProcedureSplitting`. When `opts.compProcedureSplitting` and stress-splitting are both enabled,
+under `DOTNET_JitStressProcedureSplitting`. When `opts.compProcedureSplitting` and stress-splitting are both enabled,
 the JIT splits every function after its first basic block; in other words, `fgFirstColdBlock` is always
 `fgFirstBB->bbNext`. The rest of the hot/cold splitting workflow is the same: The JIT emits instructions to handle the
 split code sections and, if fake-splitting, utilizes only one memory buffer.

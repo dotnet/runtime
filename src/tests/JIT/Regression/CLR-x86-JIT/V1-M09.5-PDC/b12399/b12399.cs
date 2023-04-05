@@ -4,7 +4,7 @@
 
 using System;
 
-class foo
+public class foo
 {
     static double nan = 0.0 / 0.0;
     static double d = 1.1;

@@ -202,7 +202,8 @@ def main(main_args):
                 "--seconds-to-run", str(run_duration),
                 "--output-events-to", summary_file_path,
                 "--host", path_to_corerun,
-                "--parallelism", "-1"],
+                "--parallelism", "-1",
+                "--known-errors", "dotnet/runtime"],
                 _exit_on_fail=True, _output_file=upload_fuzzer_output_path)
 
             exit_evt.set()

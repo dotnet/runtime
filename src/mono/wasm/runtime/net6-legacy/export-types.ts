@@ -1,4 +1,7 @@
-import { MonoArray, MonoObject, MonoObjectRef, MonoString, WasmRoot, WasmRootBuffer, MemOffset, NumberOrPointer } from "../types";
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+import { MemOffset, MonoArray, MonoObject, MonoObjectRef, MonoString, NumberOrPointer, WasmRoot, WasmRootBuffer } from "../types";
 import { VoidPtr } from "../types/emscripten";
 
 /**
@@ -108,10 +111,6 @@ export type MONOType = {
      */
     mono_wasm_load_config: (configFilePath: string) => Promise<void>;
     /**
-     * @deprecated Please use runMain instead
-     */
-    mono_load_runtime_and_bcl_args: Function;
-    /**
      * @deprecated Please use [JSImportAttribute] or [JSExportAttribute] for interop instead.
      */
     mono_wasm_new_root_buffer: (capacity: number, name?: string) => WasmRootBuffer;
@@ -134,7 +133,7 @@ export type MONOType = {
     /**
      * @deprecated Please use runMainAndExit instead
      */
-    mono_run_main_and_exit: (main_assembly_name: string, args: string[]) => Promise<void>;
+    mono_run_main_and_exit: (main_assembly_name: string, args: string[]) => Promise<number>;
     /**
      * @deprecated Please use config.assets instead
      */
@@ -248,3 +247,5 @@ export type MONOType = {
      */
     getF64: (offset: MemOffset) => number;
 };
+
+export { MonoArray, MonoObject, MonoString };

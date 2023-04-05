@@ -5,10 +5,8 @@ parameters:
   osSubgroup: ''
   container: ''
   crossBuild: false
-  crossrootfsDir: ''
   dependOnEvaluatePaths: false
   timeoutInMinutes: ''
-  stagedBuild: false
   variables: {}
   pool: ''
   condition: true
@@ -23,9 +21,7 @@ jobs:
     osSubgroup: ${{ parameters.osSubgroup }}
     container: ${{ parameters.container }}
     crossBuild: ${{ parameters.crossBuild }}
-    crossrootfsDir: ${{ parameters.crossrootfsDir }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
-    stagedBuild: ${{ parameters.stagedBuild }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     name: ${{ format('format_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     displayName: ${{ format('Formatting {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
@@ -34,11 +30,7 @@ jobs:
     variables:
 
     - ${{ each variable in parameters.variables }}:
-      - ${{ if ne(variable.name, '') }}:
-        - name: ${{ variable.name }}
-          value: ${{ variable.value }}
-      - ${{ if ne(variable.group, '') }}:
-        - group: ${{ variable.group }}
+      - ${{insert}}: ${{ variable }}
 
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: PythonScript
@@ -55,7 +47,7 @@ jobs:
       displayName: 'Install .NET SDK'
       inputs:
         packageType: 'sdk'
-        version: '3.x'
+        version: '6.x'
         includePreviewVersions: true
         installationPath: $(Agent.ToolsDirectory)/dotnet
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitformat.py -c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)

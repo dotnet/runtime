@@ -475,6 +475,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test to verify that we can still use a view after the associated map has been disposed.
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/83197", TestPlatforms.Browser)]
         public void UseAfterMMFDisposal()
         {
             foreach (MemoryMappedFile mmf in CreateSampleMaps(8192))

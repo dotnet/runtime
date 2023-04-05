@@ -254,62 +254,16 @@ namespace Internal.Runtime.TypeLoader
             return name;
         }
 
-        public static string GetFullName(this ScopeDefinitionHandle scopeDefHandle, MetadataReader reader)
+        private static string GetFullName(this ScopeDefinitionHandle scopeDefHandle, MetadataReader reader)
         {
             var scopeDef = scopeDefHandle.GetScopeDefinition(reader);
-
-            Debug.Assert(!scopeDef.Name.IsNull(reader));
-
-            var assemblyName = new AssemblyName
-            {
-                Name = scopeDef.Name.GetConstantStringValue(reader).Value,
-                CultureName = scopeDef.Culture.IsNull(reader) ? null : scopeDef.Culture.GetConstantStringValue(reader).Value,
-                Version = new Version(scopeDef.MajorVersion, scopeDef.MinorVersion, scopeDef.BuildNumber, scopeDef.RevisionNumber)
-            };
-
-            if (scopeDef.PublicKey.Count > 0)
-            {
-                var pkt = new byte[scopeDef.PublicKey.Count];
-                int index = 0;
-                foreach (var b in scopeDef.PublicKey)
-                    pkt[index++] = b;
-                assemblyName.SetPublicKeyToken(pkt);
-            }
-            else
-            {
-                assemblyName.SetPublicKeyToken(Array.Empty<byte>());
-            }
-
-            return assemblyName.FullName;
+            return scopeDef.Name.GetConstantStringValue(reader).Value;
         }
 
-        public static string GetFullName(this ScopeReferenceHandle scopeRefHandle, MetadataReader reader)
+        private static string GetFullName(this ScopeReferenceHandle scopeRefHandle, MetadataReader reader)
         {
             var scopeRef = scopeRefHandle.GetScopeReference(reader);
-
-            Debug.Assert(!scopeRef.Name.IsNull(reader));
-
-            var assemblyName = new AssemblyName
-            {
-                Name = scopeRef.Name.GetConstantStringValue(reader).Value,
-                CultureName = scopeRef.Culture.IsNull(reader) ? null : scopeRef.Culture.GetConstantStringValue(reader).Value,
-                Version = new Version(scopeRef.MajorVersion, scopeRef.MinorVersion, scopeRef.BuildNumber, scopeRef.RevisionNumber)
-            };
-
-            if (scopeRef.PublicKeyOrToken.Count > 0)
-            {
-                var pkt = new byte[scopeRef.PublicKeyOrToken.Count];
-                int index = 0;
-                foreach (var b in scopeRef.PublicKeyOrToken)
-                    pkt[index++] = b;
-                assemblyName.SetPublicKeyToken(pkt);
-            }
-            else
-            {
-                assemblyName.SetPublicKeyToken(Array.Empty<byte>());
-            }
-
-            return assemblyName.FullName;
+            return scopeRef.Name.GetConstantStringValue(reader).Value;
         }
     }
 }

@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem
 {
-    partial class MethodDelegator
+    public partial class MethodDelegator
     {
         public override string DiagnosticName => _wrappedMethod.DiagnosticName;
     }

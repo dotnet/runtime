@@ -10,7 +10,7 @@
 // *****************************************************************************
 // WARNING!!!: These values and code are also used by SOS in the diagnostics
 // repo. Should updated in a backwards and forwards compatible way.
-// See: https://github.com/dotnet/diagnostics/blob/master/src/inc/gcinfodumper.h
+// See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/gcinfodumper.h
 // *****************************************************************************
 
 //

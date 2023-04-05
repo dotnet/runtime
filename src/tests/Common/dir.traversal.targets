@@ -93,7 +93,7 @@
     <MSBuild Targets="$(DefaultCopyAllNativeTestProjectBinariesTarget)"
              Projects="@(Project)"
              Condition="'$(SerializeProjects)'!='true'"
-             Properties="BuildAllProjects=true"
+             Properties="BuildAllProjects=true;SkipChmodOfGeneratedCommandScript=true"
              BuildInParallel="true"
              ContinueOnError="ErrorAndContinue" />
 

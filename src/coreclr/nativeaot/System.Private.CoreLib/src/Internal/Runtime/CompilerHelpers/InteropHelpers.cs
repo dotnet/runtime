@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ObjectiveC;
 using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
@@ -55,8 +56,8 @@ namespace Internal.Runtime.CompilerHelpers
 
         public static unsafe string ByValAnsiStringToString(byte* buffer, int length)
         {
-            int end = SpanHelpers.IndexOf(ref *(byte*)buffer, 0, length);
-            if (end != -1)
+            int end = new ReadOnlySpan<byte>(buffer, length).IndexOf((byte)0);
+            if (end >= 0)
             {
                 length = end;
             }
@@ -77,8 +78,8 @@ namespace Internal.Runtime.CompilerHelpers
 
         internal static unsafe string UnicodeToStringFixedArray(ushort* buffer, int length)
         {
-            int end = SpanHelpers.IndexOf(ref *(char*)buffer, '\0', length);
-            if (end != -1)
+            int end = new ReadOnlySpan<char>(buffer, length).IndexOf('\0');
+            if (end >= 0)
             {
                 length = end;
             }
@@ -341,6 +342,17 @@ namespace Internal.Runtime.CompilerHelpers
         {
             byte* methodName = (byte*)pCell->MethodName;
             IntPtr pTarget;
+
+#if FEATURE_OBJCMARSHAL
+#pragma warning disable CA1416
+            if (pCell->IsObjectiveCMessageSend && ObjectiveCMarshal.TryGetGlobalMessageSendCallback(pCell->ObjectiveCMessageSendFunction, out pTarget))
+            {
+                Debug.Assert(pTarget != IntPtr.Zero);
+                pCell->Target = pTarget;
+                return;
+            }
+#pragma warning restore CA1416
+#endif
 
 #if TARGET_WINDOWS
             CharSet charSetMangling = pCell->CharSetMangling;
@@ -613,7 +625,11 @@ namespace Internal.Runtime.CompilerHelpers
             public IntPtr Target;
             public IntPtr MethodName;
             public ModuleFixupCell* Module;
-            public CharSet CharSetMangling;
+            private int Flags;
+
+            public CharSet CharSetMangling => (CharSet)(Flags & MethodFixupCellFlagsConstants.CharSetMask);
+            public bool IsObjectiveCMessageSend => (Flags & MethodFixupCellFlagsConstants.IsObjectiveCMessageSendMask) != 0;
+            public int ObjectiveCMessageSendFunction => (Flags & MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionMask) >> MethodFixupCellFlagsConstants.ObjectiveCMessageSendFunctionShift;
         }
 
         internal unsafe struct CustomMarshallerKey : IEquatable<CustomMarshallerKey>

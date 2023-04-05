@@ -295,7 +295,7 @@ namespace System.Data.OleDb
 
         private void ProcessResults(OleDbHResult hr)
         {
-            Exception? e = OleDbConnection.ProcessResults(hr, _parentConnection, this);
+            Exception? e = OleDbConnection.ProcessResults(hr, _parentConnection);
             if (null != e)
             { throw e; }
         }

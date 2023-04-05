@@ -53,16 +53,6 @@ namespace System.Globalization
         //
         internal int MaxYear => m_maxYear;
 
-        internal static readonly int[] DaysToMonth365 =
-        {
-            0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365
-        };
-
-        internal static readonly int[] DaysToMonth366 =
-        {
-            0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366
-        };
-
         private readonly int m_maxYear;
         private readonly int m_minYear;
         private readonly Calendar m_Cal;
@@ -197,7 +187,7 @@ namespace System.Globalization
         {
             if (year >= 1 && year <= 9999 && month >= 1 && month <= 12)
             {
-                int[] days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
+                ReadOnlySpan<int> days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
                 if (day >= 1 && (day <= days[month] - days[month - 1]))
                 {
                     int y = year - 1;
@@ -271,7 +261,7 @@ namespace System.Globalization
                 m = 12 + (i + 1) % 12;
                 y += (i - 11) / 12;
             }
-            int[] daysArray = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
+            ReadOnlySpan<int> daysArray = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365;
             int days = (daysArray[m] - daysArray[m - 1]);
 
             if (d > days)
@@ -338,7 +328,7 @@ namespace System.Globalization
             {
                 ThrowHelper.ThrowArgumentOutOfRange_Month(month);
             }
-            int[] days = ((year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365);
+            ReadOnlySpan<int> days = ((year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? GregorianCalendar.DaysToMonth366 : GregorianCalendar.DaysToMonth365);
             return days[month] - days[month - 1];
         }
 
@@ -525,16 +515,11 @@ namespace System.Globalization
 
         public int ToFourDigitYear(int year, int twoDigitYearMax)
         {
-            if (year < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(year),
-                    SR.ArgumentOutOfRange_NeedPosNum);
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(year);
 
             if (year < 100)
             {
-                int y = year % 100;
-                return (twoDigitYearMax / 100 - (y > twoDigitYearMax % 100 ? 1 : 0)) * 100 + y;
+                return (twoDigitYearMax / 100 - (year > twoDigitYearMax % 100 ? 1 : 0)) * 100 + year;
             }
 
             if (year < m_minYear || year > m_maxYear)
@@ -543,6 +528,7 @@ namespace System.Globalization
                             nameof(year),
                             SR.Format(SR.ArgumentOutOfRange_Range, m_minYear, m_maxYear));
             }
+
             // If the year value is above 100, just return the year value.  Don't have to do
             // the TwoDigitYearMax comparison.
             return year;

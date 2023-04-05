@@ -36,6 +36,10 @@ namespace ILCompiler
             {
                 instanceFieldSize = new LayoutInt(32);
             }
+            else if (targetDetails.MaximumSimdVectorLength == SimdVectorLength.Vector512Bit)
+            {
+                instanceFieldSize = new LayoutInt(64);
+            }
             else
             {
                 Debug.Assert(targetDetails.MaximumSimdVectorLength == SimdVectorLength.None);
@@ -52,7 +56,7 @@ namespace ILCompiler
             };
         }
 
-        public unsafe override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType defType, StaticLayoutKind layoutKind)
+        public override unsafe ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType defType, StaticLayoutKind layoutKind)
         {
             return _fallbackAlgorithm.ComputeStaticFieldLayout(defType, layoutKind);
         }

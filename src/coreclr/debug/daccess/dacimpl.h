@@ -279,7 +279,6 @@ class MetaEnum
 {
 public:
     MetaEnum(void)
-        : m_domainIter(FALSE)
     {
         Clear();
         m_appDomain = NULL;
@@ -355,7 +354,6 @@ public:
     ULONG32 m_kind;
     HENUMInternal m_enum;
     AppDomain* m_appDomain;
-    AppDomainIterator m_domainIter;
     mdToken m_lastToken;
 
     static HRESULT New(Module* mod,
@@ -502,13 +500,11 @@ public:
 
 struct ProcessModIter
 {
-    AppDomainIterator m_domainIter;
     bool m_nextDomain;
     AppDomain::AssemblyIterator m_assemIter;
     Assembly* m_curAssem;
 
     ProcessModIter(void)
-        : m_domainIter(FALSE)
     {
         SUPPORTS_DAC;
         m_nextDomain = true;
@@ -518,33 +514,29 @@ struct ProcessModIter
     Assembly * NextAssem()
     {
         SUPPORTS_DAC;
-        for (;;)
+
+        if (m_nextDomain)
         {
-            if (m_nextDomain)
+            m_nextDomain = false;
+
+            if (AppDomain::GetCurrentDomain() == nullptr)
             {
-                if (!m_domainIter.Next())
-                {
-                    break;
-                }
-
-                m_nextDomain = false;
-
-                m_assemIter = m_domainIter.GetDomain()->IterateAssembliesEx((AssemblyIterationFlags)(
-                    kIncludeLoaded | kIncludeExecution));
+                return NULL;
             }
 
-            CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-            if (!m_assemIter.Next(pDomainAssembly.This()))
-            {
-                m_nextDomain = true;
-                continue;
-            }
-
-            // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
-            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
-            return pAssembly;
+            m_assemIter = AppDomain::GetCurrentDomain()->IterateAssembliesEx((AssemblyIterationFlags)(
+                kIncludeLoaded | kIncludeExecution));
         }
-        return NULL;
+
+        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+        if (!m_assemIter.Next(pDomainAssembly.This()))
+        {
+            return NULL;
+        }
+
+        // Note: DAC doesn't need to keep the assembly alive - see code:CollectibleAssemblyHolder#CAH_DAC
+        CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
+        return pAssembly;
     }
 
     Module* NextModule(void)
@@ -823,7 +815,8 @@ class ClrDataAccess
       public ISOSDacInterface9,
       public ISOSDacInterface10,
       public ISOSDacInterface11,
-      public ISOSDacInterface12
+      public ISOSDacInterface12,
+      public ISOSDacInterface13
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1213,6 +1206,12 @@ public:
         CLRDATA_ADDRESS *allocPtr,
         CLRDATA_ADDRESS *allocLimit);
 
+    // ISOSDacInterface13
+    virtual HRESULT STDMETHODCALLTYPE TraverseLoaderHeap(CLRDATA_ADDRESS loaderHeapAddr, LoaderHeapKind kind, VISITHEAP pCallback);        
+    virtual HRESULT STDMETHODCALLTYPE GetDomainLoaderAllocator(CLRDATA_ADDRESS domainAddress, CLRDATA_ADDRESS *pLoaderAllocator);
+    virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocatorHeapNames(int count, const char **ppNames, int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocator, int count, CLRDATA_ADDRESS *pLoaderHeaps, LoaderHeapKind *pKinds, int *pNeeded);
+
     //
     // ClrDataAccess.
     //
@@ -1328,6 +1327,7 @@ public:
 
     HRESULT EnumMemCollectImages();
     HRESULT EnumMemCLRStatic(CLRDataEnumMemoryFlags flags);
+    HRESULT EnumMemDumpJitManagerInfo(IN CLRDataEnumMemoryFlags flags);
     HRESULT EnumMemCLRHeapCrticalStatic(CLRDataEnumMemoryFlags flags);
     HRESULT EnumMemDumpModuleList(CLRDataEnumMemoryFlags flags);
     HRESULT EnumMemDumpAppDomainInfo(CLRDataEnumMemoryFlags flags);
@@ -1336,6 +1336,19 @@ public:
 
     bool ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess = true);
     bool DacUpdateMemoryRegion(TADDR addr, TSIZE_T bufferSize, BYTE* buffer);
+
+    inline bool IsLogMessageEnabled()
+    {
+        return m_logMessageCb != NULL;
+    }
+
+    void LogMessage(LPCSTR message)
+    {
+        if (m_logMessageCb != NULL)
+        {
+            m_logMessageCb->LogMessage(message);
+        }
+    }
 
     void ClearDumpStats();
     JITNotification* GetHostJitNotificationTable();
@@ -1448,6 +1461,7 @@ private:
     MDImportsCache m_mdImports;
     ICLRDataEnumMemoryRegionsCallback* m_enumMemCb;
     ICLRDataEnumMemoryRegionsCallback2* m_updateMemCb;
+    ICLRDataLoggingCallback* m_logMessageCb;
     CLRDataEnumMemoryFlags m_enumMemFlags;
     JITNotification* m_jitNotificationTable;
     GcNotification*  m_gcNotificationTable;
@@ -3933,9 +3947,7 @@ public:
     static HRESULT CdEnd(CLRDATA_ENUM handle);
 
     MethodDesc* m_methodDesc;
-    AppDomain* m_givenAppDomain;
-    bool m_givenAppDomainUsed;
-    AppDomainIterator m_domainIter;
+    bool m_appDomainUsed;
     AppDomain* m_appDomain;
     LoadedMethodDescIterator m_methodIter;
 };

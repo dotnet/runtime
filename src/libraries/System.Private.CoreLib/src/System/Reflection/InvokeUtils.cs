@@ -4,21 +4,22 @@
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection
 {
     internal static class InvokeUtils
     {
         // This method is similar to the NativeAot method ConvertOrWidenPrimitivesEnumsAndPointersIfPossible().
-        public static object ConvertOrWiden(Type srcType, CorElementType srcElementType, object srcObject, Type dstType, CorElementType dstElementType)
+        public static object ConvertOrWiden(Type srcType, object srcObject, Type dstType, CorElementType dstElementType)
         {
             object dstObject;
 
             if (dstType.IsPointer)
             {
-                if (TryConvertPointer(srcObject, out IntPtr dstIntPtr))
+                if (TryConvertPointer(srcObject, out object? dstPtr))
                 {
-                    return dstIntPtr;
+                    return dstPtr;
                 }
 
                 Debug.Fail($"Unexpected CorElementType: {dstElementType}. Not a valid widening target.");
@@ -28,8 +29,7 @@ namespace System.Reflection
             switch (dstElementType)
             {
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    bool boolValue = Convert.ToBoolean(srcObject);
-                    dstObject = dstType.IsEnum ? Enum.ToObject(dstType, boolValue ? 1 : 0) : boolValue;
+                    dstObject = Convert.ToBoolean(srcObject);
                     break;
 
                 case CorElementType.ELEMENT_TYPE_CHAR:
@@ -109,18 +109,18 @@ namespace System.Reflection
             return dstObject;
         }
 
-        private static bool TryConvertPointer(object srcObject, out IntPtr dstIntPtr)
+        private static bool TryConvertPointer(object srcObject, [NotNullWhen(true)] out object? dstPtr)
         {
-            if (srcObject is IntPtr srcIntPtr)
+            if (srcObject is IntPtr or UIntPtr)
             {
-                dstIntPtr = srcIntPtr;
+                dstPtr = srcObject;
                 return true;
             }
 
             // The source pointer should already have been converted to an IntPtr.
             Debug.Assert(srcObject is not Pointer);
 
-            dstIntPtr = IntPtr.Zero;
+            dstPtr = null;
             return false;
         }
     }

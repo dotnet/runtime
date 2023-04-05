@@ -96,7 +96,7 @@ namespace System.ServiceModel.Syndication
         public XmlReader GetReaderAtElementExtensions()
         {
             XmlBuffer extensionsBuffer = GetOrCreateBufferOverExtensions();
-            XmlReader reader = extensionsBuffer.GetReader(0);
+            XmlDictionaryReader reader = extensionsBuffer.GetReader(0);
             reader.ReadStartElement();
             return reader;
         }
@@ -205,7 +205,7 @@ namespace System.ServiceModel.Syndication
             }
 
             XmlBuffer newBuffer = new XmlBuffer(int.MaxValue);
-            using (XmlWriter writer = newBuffer.OpenSection(XmlDictionaryReaderQuotas.Max))
+            using (XmlDictionaryWriter writer = newBuffer.OpenSection(XmlDictionaryReaderQuotas.Max))
             {
                 writer.WriteStartElement(Rss20Constants.ExtensionWrapperTag);
                 for (int i = 0; i < Count; ++i)

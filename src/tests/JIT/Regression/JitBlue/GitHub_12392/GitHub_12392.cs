@@ -8,10 +8,10 @@ namespace Test
 {
     // This is a regression test for a bug in fgMorphRecognizeBoxNullable.
     // See the comment in Setting<T>.HasValue for details.
-    class Program
+    public class Program
     {
 
-        static int Main(string[] args)
+        public static int Main()
         {
             Test t = new Test();
             if (!t.TestMethod())

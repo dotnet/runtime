@@ -86,7 +86,6 @@ static gboolean v7_supported = FALSE;
 static gboolean v7s_supported = FALSE;
 static gboolean v7k_supported = FALSE;
 static gboolean thumb_supported = FALSE;
-static gboolean thumb2_supported = FALSE;
 /*
  * Whenever to use the ARM EABI
  */
@@ -880,7 +879,6 @@ mono_arch_init (void)
 	thumb_supported = TRUE;
 #else
 	thumb_supported = mono_hwcap_arm_has_thumb;
-	thumb2_supported = mono_hwcap_arm_has_thumb2;
 #endif
 
 	/* Format: armv(5|6|7[s])[-thumb[2]] */
@@ -897,7 +895,6 @@ mono_arch_init (void)
 		}
 
 		thumb_supported = strstr (cpu_arch, "thumb") != NULL;
-		thumb2_supported = strstr (cpu_arch, "thumb2") != NULL;
 		g_free (cpu_arch);
 	}
 }
@@ -3041,25 +3038,8 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 			if (MONO_TYPE_IS_REFERENCE (t)) {
 				p->regs [slot] = (host_mgreg_t)(gsize)*arg;
 				break;
-			} else {
-				if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
-					MonoClass *klass = mono_class_from_mono_type_internal (t);
-					guint8 *nullable_buf;
-					int size;
-
-					size = mono_class_value_size (klass, NULL);
-					nullable_buf = g_alloca (size);
-					g_assert (nullable_buf);
-
-					/* The argument pointed to by arg is either a boxed vtype or null */
-					mono_nullable_init (nullable_buf, (MonoObject*)arg, klass);
-
-					arg = (gpointer*)nullable_buf;
-					/* Fall though */
-				} else {
-					/* Fall though */
-				}
 			}
+			/* Fall though */
 		case MONO_TYPE_VALUETYPE:
 			g_assert (ainfo->storage == RegTypeStructByVal);
 
@@ -6316,8 +6296,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (cinfo->ret.storage == RegTypeStructByAddr) {
 		ArgInfo *ainfo = &cinfo->ret;
 		inst = cfg->vret_addr;
-		g_assert (arm_is_imm12 (inst->inst_offset));
-		ARM_STR_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+		if (arm_is_imm12 (inst->inst_offset)) {
+			ARM_STR_IMM (code, ainfo->reg, inst->inst_basereg, inst->inst_offset);
+		} else {
+			code = mono_arm_emit_load_imm (code, ARMREG_LR, inst->inst_offset);
+			ARM_STR_REG_REG (code, ainfo->reg, inst->inst_basereg, ARMREG_LR);
+		}
 	}
 
 	if (sig->call_convention == MONO_CALL_VARARG) {
@@ -7443,7 +7427,6 @@ mono_arch_set_target (char *mtriple)
 		v7_supported = TRUE;
 		v7s_supported = TRUE;
 		thumb_supported = TRUE;
-		thumb2_supported = TRUE;
 	}
 	if (strstr (mtriple, "darwin") || strstr (mtriple, "ios")) {
 		v5_supported = TRUE;

@@ -16,6 +16,8 @@ namespace System.IO
         internal const char PathSeparator = ':';
         internal const string DirectorySeparatorCharAsString = "/";
         internal const string ParentDirectoryPrefix = @"../";
+        internal const string DirectorySeparators = DirectorySeparatorCharAsString;
+        internal static ReadOnlySpan<byte> Utf8DirectorySeparators => "/"u8;
 
         internal static int GetRootLength(ReadOnlySpan<char> path)
         {

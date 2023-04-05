@@ -16,12 +16,12 @@ namespace System.Text.Json
         internal const string TypePropertyName = "$type";
         internal const string ValuesPropertyName = "$values";
 
-        internal static readonly byte[] s_idPropertyName = Encoding.UTF8.GetBytes(IdPropertyName);
-        internal static readonly byte[] s_refPropertyName = Encoding.UTF8.GetBytes(RefPropertyName);
-        internal static readonly byte[] s_typePropertyName = Encoding.UTF8.GetBytes(TypePropertyName);
-        internal static readonly byte[] s_valuesPropertyName = Encoding.UTF8.GetBytes(ValuesPropertyName);
+        private static readonly byte[] s_idPropertyName = "$id"u8.ToArray();
+        private static readonly byte[] s_refPropertyName = "$ref"u8.ToArray();
+        private static readonly byte[] s_typePropertyName = "$type"u8.ToArray();
+        private static readonly byte[] s_valuesPropertyName = "$values"u8.ToArray();
 
-        internal static bool TryReadMetadata(JsonConverter converter, JsonTypeInfo jsonTypeInfo, ref Utf8JsonReader reader, ref ReadStack state)
+        internal static bool TryReadMetadata(JsonConverter converter, JsonTypeInfo jsonTypeInfo, ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
             Debug.Assert(state.Current.ObjectState == StackFrameObjectState.StartToken);
             Debug.Assert(state.Current.CanContainMetadata);
@@ -285,7 +285,7 @@ namespace System.Text.Json
 
         internal static bool TryHandleReferenceFromJsonElement(
             ref Utf8JsonReader reader,
-            ref ReadStack state,
+            scoped ref ReadStack state,
             JsonElement element,
             [NotNullWhen(true)] out object? referenceValue)
         {
@@ -349,7 +349,7 @@ namespace System.Text.Json
 
         internal static bool TryHandleReferenceFromJsonNode(
             ref Utf8JsonReader reader,
-            ref ReadStack state,
+            scoped ref ReadStack state,
             JsonNode jsonNode,
             [NotNullWhen(true)] out object? referenceValue)
         {
@@ -425,7 +425,7 @@ namespace System.Text.Json
             return refMetadataFound;
         }
 
-        internal static void ValidateMetadataForObjectConverter(JsonConverter converter, ref Utf8JsonReader reader, ref ReadStack state)
+        internal static void ValidateMetadataForObjectConverter(ref ReadStack state)
         {
             if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Values))
             {
@@ -434,7 +434,7 @@ namespace System.Text.Json
             }
         }
 
-        internal static void ValidateMetadataForArrayConverter(JsonConverter converter, ref Utf8JsonReader reader, ref ReadStack state)
+        internal static void ValidateMetadataForArrayConverter(JsonConverter converter, ref Utf8JsonReader reader, scoped ref ReadStack state)
         {
             switch (reader.TokenType)
             {

@@ -35,7 +35,7 @@ public class Paths
                 return "windows";
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                return "Linux";
+                return "linux";
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 return "OSX";

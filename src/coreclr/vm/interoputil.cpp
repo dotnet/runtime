@@ -94,7 +94,6 @@ HRESULT GetHRFromCLRErrorInfo(IErrorInfo* pErr)
     SimpleComCallWrapper* pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pErr);
     return pSimpleWrap->IErrorInfo_hr();
 }
-#endif // FEATURE_COMINTEROP
 
 HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
 {
@@ -108,9 +107,7 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
 
     HRESULT hr = E_FAIL;
 
-#ifdef FEATURE_COMINTEROP
     Exception* pException = NULL;
-#endif
 
     GCPROTECT_BEGIN(pThrownObject)
     {
@@ -120,28 +117,6 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
             hr = EnsureComStartedNoThrow();
             if (SUCCEEDED(hr) && pThrownObject != NULL)
             {
-#ifdef _DEBUG
-                EX_TRY
-                {
-                    StackSString message;
-                    GetExceptionMessage(pThrownObject, message);
-
-                    if (g_pConfig->ShouldExposeExceptionsInCOMToConsole())
-                    {
-                        PrintToStdOutW(W(".NET exception in COM\n"));
-                        if (!message.IsEmpty())
-                            PrintToStdOutW(message.GetUnicode());
-                        else
-                            PrintToStdOutW(W("No exception info available"));
-                    }
-                }
-                EX_CATCH
-                {
-                }
-                EX_END_CATCH (SwallowAllExceptions);
-#endif
-
-#ifdef FEATURE_COMINTEROP
                 IErrorInfo* pErr = NULL;
                 EX_TRY
                 {
@@ -165,7 +140,6 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
                     hr = GET_EXCEPTION()->GetHR();
                 }
                 EX_END_CATCH(SwallowAllExceptions);
-#endif // FEATURE_COMINTEROP
             }
         }
         EX_CATCH
@@ -179,7 +153,6 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
     return hr;
 }
 
-#if FEATURE_COMINTEROP
 //-------------------------------------------------------------------
  // Used to populate ExceptionData with COM data
 //-------------------------------------------------------------------
@@ -1066,6 +1039,7 @@ CorClassIfaceAttr ReadClassInterfaceTypeCustomAttribute(TypeHandle type)
     return DEFAULT_CLASS_INTERFACE_TYPE;
 }
 
+#ifdef FEATURE_COMINTEROP
 //--------------------------------------------------------------------------------
 // GetErrorInfo helper, enables and disables GC during call-outs
 HRESULT SafeGetErrorInfo(IErrorInfo **ppIErrInfo)
@@ -1081,7 +1055,6 @@ HRESULT SafeGetErrorInfo(IErrorInfo **ppIErrInfo)
 
     *ppIErrInfo = NULL;
 
-#ifdef FEATURE_COMINTEROP
     GCX_PREEMP();
 
     HRESULT hr = S_OK;
@@ -1096,12 +1069,9 @@ HRESULT SafeGetErrorInfo(IErrorInfo **ppIErrInfo)
     EX_END_CATCH(SwallowAllExceptions);
 
     return hr;
-#else // FEATURE_COMINTEROP
-    // Indicate no error object
-    return S_FALSE;
-#endif
 }
 
+#endif // FEATURE_COMINTEROP
 
 #include <optsmallperfcritical.h>
 //--------------------------------------------------------------------------------
@@ -1316,11 +1286,8 @@ static void ReleaseRCWsInCaches(LPVOID pCtxCookie)
     }
     CONTRACTL_END;
 
-    // Go through all the app domains and for each one release all the
-    // RCW's that live in the current context.
-    AppDomainIterator i(TRUE);
-    while (i.Next())
-        i.GetDomain()->ReleaseRCWs(pCtxCookie);
+    // Release all the RCW's that live in the AppDomain.
+    AppDomain::GetCurrentDomain()->ReleaseRCWs(pCtxCookie);
 
     if (!g_fEEShutDown)
     {
@@ -3967,7 +3934,7 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg
     HRESULT             hr          = S_OK;
     SafeComHolder<IUnknown> pUnk        = NULL;
     int                 cch         = 0;
-    WCHAR               wszIID[64];
+    CHAR                szIID[GUID_STR_BUFFER_LEN];
 
     hr = SafeQueryInterface(pItf, IID_IUnknown, &pUnk);
 
@@ -3975,22 +3942,22 @@ VOID LogInteropQI(IUnknown* pItf, REFIID iid, HRESULT hrArg, _In_z_ LPCSTR szMsg
     {
         pCurrCtx = GetCurrentCtxCookie();
 
-        cch = StringFromGUID2(iid, wszIID, sizeof(wszIID) / sizeof(WCHAR));
+        cch = GuidToLPSTR(iid, szIID);
         _ASSERTE(cch > 0);
 
         if (SUCCEEDED(hrArg))
         {
             LOG((LF_INTEROP,
                 LL_EVERYTHING,
-                "Succeeded QI: Unk = %p, Itf = %p, CurrCtx = %p, IID = %S, Msg: %s\n",
-                (IUnknown*)pUnk, pItf, pCurrCtx, wszIID, szMsg));
+                "Succeeded QI: Unk = %p, Itf = %p, CurrCtx = %p, IID = %s, Msg: %s\n",
+                (IUnknown*)pUnk, pItf, pCurrCtx, szIID, szMsg));
         }
         else
         {
             LOG((LF_INTEROP,
                 LL_EVERYTHING,
-                "Failed QI: Unk = %p, Itf = %p, CurrCtx = %p, IID = %S, HR = %p, Msg: %s\n",
-                (IUnknown*)pUnk, pItf, pCurrCtx, wszIID, hrArg, szMsg));
+                "Failed QI: Unk = %p, Itf = %p, CurrCtx = %p, IID = %s, HR = %p, Msg: %s\n",
+                (IUnknown*)pUnk, pItf, pCurrCtx, szIID, hrArg, szMsg));
         }
     }
 }

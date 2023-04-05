@@ -173,31 +173,31 @@ namespace System.Security.Authentication.ExtendedProtection
                 return inputServiceName;
             }
 
-            string prefix = inputServiceName.Substring(0, slashIndex + 1); // Includes slash
+            ReadOnlySpan<char> prefix = inputServiceName.AsSpan(0, slashIndex + 1); // Includes slash
             string hostPortAndDistinguisher = inputServiceName.Substring(slashIndex + 1); // Excludes slash
 
-            if (string.IsNullOrWhiteSpace(hostPortAndDistinguisher))
+            if (hostPortAndDistinguisher.Length == 0)
             {
                 return inputServiceName;
             }
 
-            string host = hostPortAndDistinguisher;
-            string port = string.Empty;
-            string distinguisher = string.Empty;
+            ReadOnlySpan<char> host = hostPortAndDistinguisher;
+            ReadOnlySpan<char> port = default;
+            ReadOnlySpan<char> distinguisher = default;
 
             // Check for the absence of a port or distinguisher.
             UriHostNameType hostType = Uri.CheckHostName(hostPortAndDistinguisher);
             if (hostType == UriHostNameType.Unknown)
             {
-                string hostAndPort = hostPortAndDistinguisher;
+                ReadOnlySpan<char> hostAndPort = hostPortAndDistinguisher;
 
                 // Check for distinguisher.
                 int nextSlashIndex = hostPortAndDistinguisher.IndexOf('/');
                 if (nextSlashIndex >= 0)
                 {
                     // host:port/distinguisher or host/distinguisher
-                    hostAndPort = hostPortAndDistinguisher.Substring(0, nextSlashIndex); // Excludes Slash
-                    distinguisher = hostPortAndDistinguisher.Substring(nextSlashIndex); // Includes Slash
+                    hostAndPort = hostPortAndDistinguisher.AsSpan(0, nextSlashIndex); // Excludes Slash
+                    distinguisher = hostPortAndDistinguisher.AsSpan(nextSlashIndex); // Includes Slash
                     host = hostAndPort; // We don't know if there is a port yet.
                     // No need to validate the distinguisher.
                 }
@@ -207,8 +207,8 @@ namespace System.Security.Authentication.ExtendedProtection
                 if (colonIndex >= 0)
                 {
                     // host:port
-                    host = hostAndPort.Substring(0, colonIndex); // Excludes colon
-                    port = hostAndPort.Substring(colonIndex + 1); // Excludes colon
+                    host = hostAndPort.Slice(0, colonIndex); // Excludes colon
+                    port = hostAndPort.Slice(colonIndex + 1); // Excludes colon
 
                     // Loosely validate the port just to make sure it was a port and not something else.
                     if (!ushort.TryParse(port, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
@@ -217,10 +217,14 @@ namespace System.Security.Authentication.ExtendedProtection
                     }
 
                     // Re-include the colon for the final output.  Do not change the port format.
-                    port = hostAndPort.Substring(colonIndex);
+                    port = hostAndPort.Slice(colonIndex);
                 }
 
-                hostType = Uri.CheckHostName(host); // Re-validate the host.
+                // Re-validate the host.
+                hostType = Uri.CheckHostName(
+                    host.Length == hostPortAndDistinguisher.Length ?
+                        hostPortAndDistinguisher :
+                        host.ToString());
             }
 
             if (hostType != UriHostNameType.Dns)
@@ -237,7 +241,8 @@ namespace System.Security.Authentication.ExtendedProtection
             Uri? constructedUri;
 
             // We need to avoid any unexpected exceptions on this code path.
-            if (!Uri.TryCreate(UriScheme.Http + UriScheme.SchemeDelimiter + host, UriKind.Absolute, out constructedUri))
+            const string HttpSchemeAndDelimiter = UriScheme.Http + UriScheme.SchemeDelimiter;
+            if (!Uri.TryCreate(string.Concat(HttpSchemeAndDelimiter, host), UriKind.Absolute, out constructedUri))
             {
                 return inputServiceName;
             }
@@ -245,7 +250,7 @@ namespace System.Security.Authentication.ExtendedProtection
             string normalizedHost = constructedUri.GetComponents(
                 UriComponents.NormalizedHost, UriFormat.SafeUnescaped);
 
-            string normalizedServiceName = prefix + normalizedHost + port + distinguisher;
+            string normalizedServiceName = string.Concat(prefix, normalizedHost, port, distinguisher);
 
             // Don't return the new one unless we absolutely have to.  It may have only changed casing.
             if (string.Equals(inputServiceName, normalizedServiceName, StringComparison.OrdinalIgnoreCase))

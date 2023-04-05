@@ -115,9 +115,9 @@ namespace System.Text.RegularExpressions
                     else
                     {
                         // The set may match multiple characters.  Search for that.
-                        FixedDistanceSets = new List<(char[]? Chars, string Set, int Distance)>()
+                        FixedDistanceSets = new List<FixedDistanceSet>()
                         {
-                            (chars, charClass, 0)
+                            new FixedDistanceSet(chars, charClass, 0)
                         };
                         FindMode = FindNextStartingPositionMode.LeadingSet_RightToLeft;
                         _asciiLookups = new uint[1][];
@@ -129,7 +129,7 @@ namespace System.Text.RegularExpressions
             // We're now left-to-right only and looking for sets.
 
             // Build up a list of all of the sets that are a fixed distance from the start of the expression.
-            List<(char[]? Chars, string Set, int Distance)>? fixedDistanceSets = RegexPrefixAnalyzer.FindFixedDistanceSets(root, thorough: !interpreter);
+            List<FixedDistanceSet>? fixedDistanceSets = RegexPrefixAnalyzer.FindFixedDistanceSets(root, thorough: !interpreter);
             Debug.Assert(fixedDistanceSets is null || fixedDistanceSets.Count != 0);
 
             // See if we can make a string of at least two characters long out of those sets.  We should have already caught
@@ -194,12 +194,12 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>true iff <see cref="TryFindNextStartingPosition"/> might advance the position.</summary>
+        /// <summary>true iff <see cref="TryFindNextStartingPositionLeftToRight"/> might advance the position.</summary>
         public bool IsUseful =>
             FindMode != FindNextStartingPositionMode.NoSearch || // there's a searching scheme available
             LeadingAnchor == RegexNodeKind.Bol; // there's a leading BOL anchor we can otherwise search for
 
-        /// <summary>Gets the selected mode for performing the next <see cref="TryFindNextStartingPosition"/> operation</summary>
+        /// <summary>Gets the selected mode for performing the next <see cref="TryFindNextStartingPositionLeftToRight"/> or <see cref="TryFindNextStartingPositionRightToLeft"/> operation</summary>
         public FindNextStartingPositionMode FindMode { get; } = FindNextStartingPositionMode.NoSearch;
 
         /// <summary>Gets the leading anchor (e.g. RegexNodeKind.Bol) if one exists and was computed.</summary>
@@ -227,13 +227,37 @@ namespace System.Text.RegularExpressions
 
         /// <summary>When in fixed distance set mode, gets the set and how far it is from the start of the pattern.</summary>
         /// <remarks>The case-insensitivity of the 0th entry will always match the mode selected, but subsequent entries may not.</remarks>
-        public List<(char[]? Chars, string Set, int Distance)>? FixedDistanceSets { get; }
+        public List<FixedDistanceSet>? FixedDistanceSets { get; }
+
+        /// <summary>Data about a character class at a fixed offset from the start of any match to a pattern.</summary>
+        public struct FixedDistanceSet
+        {
+            public FixedDistanceSet(char[]? chars, string set, int distance)
+            {
+                Chars = chars;
+                Set = set;
+                Distance = distance;
+            }
+
+            /// <summary>The character class description.</summary>
+            public string Set;
+            /// <summary>Whether the <see cref="Set"/> is negated.</summary>
+            public bool Negated;
+            /// <summary>Small list of all of the characters that make up the set, if known; otherwise, null.</summary>
+            public char[]? Chars;
+            /// <summary>The distance of the set from the beginning of the match.</summary>
+            public int Distance;
+            /// <summary>As an alternative to <see cref="Chars"/>, a description of the single range the set represents, if it does.</summary>
+            public (char LowInclusive, char HighInclusive)? Range;
+            /// <summary>As an alternative to <see cref="Chars"/>, a description of the set of ASCII characters it represents, if it does.</summary>
+            public char[]? AsciiSet;
+        }
 
         /// <summary>When in literal after set loop node, gets the literal to search for and the RegexNode representing the leading loop.</summary>
         public (RegexNode LoopNode, (char Char, string? String, char[]? Chars) Literal)? LiteralAfterLoop { get; }
 
         /// <summary>Analyzes a list of fixed-distance sets to extract a case-sensitive string at a fixed distance.</summary>
-        private static (string String, int Distance)? FindFixedDistanceString(List<(char[]? Chars, string Set, int Distance)> fixedDistanceSets)
+        private static (string String, int Distance)? FindFixedDistanceString(List<FixedDistanceSet> fixedDistanceSets)
         {
             (string String, int Distance)? best = null;
 
@@ -251,7 +275,7 @@ namespace System.Text.RegularExpressions
                 for (int i = 0; i < fixedDistanceSets.Count + 1; i++)
                 {
                     char[]? chars = i < fixedDistanceSets.Count ? fixedDistanceSets[i].Chars : null;
-                    bool invalidChars = chars is not { Length: 1 };
+                    bool invalidChars = chars is not { Length: 1 } || fixedDistanceSets[i].Negated;
 
                     // If the current set ends a sequence (or we've walked off the end), see whether
                     // what we've gathered constitues a valid string, and if it's better than the
@@ -293,96 +317,21 @@ namespace System.Text.RegularExpressions
         /// <param name="pos">The position in <paramref name="textSpan"/>.  This is updated with the found position.</param>
         /// <param name="start">The index in <paramref name="textSpan"/> to consider the start for start anchor purposes.</param>
         /// <returns>true if a position to attempt a match was found; false if none was found.</returns>
-        public bool TryFindNextStartingPosition(ReadOnlySpan<char> textSpan, ref int pos, int start)
+        public bool TryFindNextStartingPositionRightToLeft(ReadOnlySpan<char> textSpan, ref int pos, int start)
         {
             // Return early if we know there's not enough input left to match.
-            if (!_rightToLeft)
+            if (pos < MinRequiredLength)
             {
-                if (pos > textSpan.Length - MinRequiredLength)
-                {
-                    pos = textSpan.Length;
-                    return false;
-                }
-            }
-            else
-            {
-                if (pos < MinRequiredLength)
-                {
-                    pos = 0;
-                    return false;
-                }
+                pos = 0;
+                return false;
             }
 
-            // Optimize the handling of a Beginning-Of-Line (BOL) anchor (only for left-to-right).  BOL is special, in that unlike
-            // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
-            // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
-            // to boost our position to the next line, and then continue normally with any searches.
-            if (LeadingAnchor == RegexNodeKind.Bol)
-            {
-                // If we're not currently positioned at the beginning of a line (either
-                // the beginning of the string or just after a line feed), find the next
-                // newline and position just after it.
-                Debug.Assert(!_rightToLeft);
-                int posm1 = pos - 1;
-                if ((uint)posm1 < (uint)textSpan.Length && textSpan[posm1] != '\n')
-                {
-                    int newline = textSpan.Slice(pos).IndexOf('\n');
-                    if ((uint)newline > textSpan.Length - 1 - pos)
-                    {
-                        pos = textSpan.Length;
-                        return false;
-                    }
-
-                    // We've updated the position.  Make sure there's still enough room in the input for a possible match.
-                    pos = newline + 1 + pos;
-                    if (pos > textSpan.Length - MinRequiredLength)
-                    {
-                        pos = textSpan.Length;
-                        return false;
-                    }
-                }
-            }
+            Debug.Assert(LeadingAnchor != RegexNodeKind.Bol, "BOL isn't enabled for RTL");
 
             switch (FindMode)
             {
                 // There's an anchor.  For some, we can simply compare against the current position.
                 // For others, we can jump to the relevant location.
-
-                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
-                    if (pos != 0)
-                    {
-                        // If we're not currently at the beginning, we'll never be, so fail immediately.
-                        pos = textSpan.Length;
-                        return false;
-                    }
-                    return true;
-
-                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
-                    if (pos != start)
-                    {
-                        // If we're not currently at the start, we'll never be, so fail immediately.
-                        pos = textSpan.Length;
-                        return false;
-                    }
-                    return true;
-
-                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
-                    if (pos < textSpan.Length - 1)
-                    {
-                        // If we're not currently at the end (or a newline just before it), skip ahead
-                        // since nothing until then can possibly match.
-                        pos = textSpan.Length - 1;
-                    }
-                    return true;
-
-                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
-                    if (pos < textSpan.Length)
-                    {
-                        // If we're not currently at the end (or a newline just before it), skip ahead
-                        // since nothing until then can possibly match.
-                        pos = textSpan.Length;
-                    }
-                    return true;
 
                 case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning:
                     if (pos != 0)
@@ -426,34 +375,7 @@ namespace System.Text.RegularExpressions
                     }
                     return true;
 
-                case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ:
-                    if (pos < textSpan.Length - MinRequiredLength - 1)
-                    {
-                        pos = textSpan.Length - MinRequiredLength - 1;
-                    }
-                    return true;
-
-                case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End:
-                    if (pos < textSpan.Length - MinRequiredLength)
-                    {
-                        pos = textSpan.Length - MinRequiredLength;
-                    }
-                    return true;
-
                 // There's a case-sensitive prefix.  Search for it with ordinal IndexOf.
-
-                case FindNextStartingPositionMode.LeadingString_LeftToRight:
-                    {
-                        int i = textSpan.Slice(pos).IndexOf(LeadingPrefix.AsSpan());
-                        if (i >= 0)
-                        {
-                            pos += i;
-                            return true;
-                        }
-
-                        pos = textSpan.Length;
-                        return false;
-                    }
 
                 case FindNextStartingPositionMode.LeadingString_RightToLeft:
                     {
@@ -485,9 +407,153 @@ namespace System.Text.RegularExpressions
 
                 // There's a set at the beginning of the pattern.  Search for it.
 
+                case FindNextStartingPositionMode.LeadingSet_RightToLeft:
+                    {
+                        ref uint[]? startingAsciiLookup = ref _asciiLookups![0];
+                        string set = FixedDistanceSets![0].Set;
+
+                        ReadOnlySpan<char> span = textSpan.Slice(0, pos);
+                        for (int i = span.Length - 1; i >= 0; i--)
+                        {
+                            if (RegexCharClass.CharInClass(span[i], set, ref startingAsciiLookup))
+                            {
+                                pos = i + 1;
+                                return true;
+                            }
+                        }
+
+                        pos = 0;
+                        return false;
+                    }
+
+                // Nothing special to look for.  Just return true indicating this is a valid position to try to match.
+
+                default:
+                    Debug.Assert(FindMode == FindNextStartingPositionMode.NoSearch);
+                    return true;
+            }
+        }
+
+        /// <summary>Try to advance to the next starting position that might be a location for a match.</summary>
+        /// <param name="textSpan">The text to search.</param>
+        /// <param name="pos">The position in <paramref name="textSpan"/>.  This is updated with the found position.</param>
+        /// <param name="start">The index in <paramref name="textSpan"/> to consider the start for start anchor purposes.</param>
+        /// <returns>true if a position to attempt a match was found; false if none was found.</returns>
+        public bool TryFindNextStartingPositionLeftToRight(ReadOnlySpan<char> textSpan, ref int pos, int start)
+        {
+            // Return early if we know there's not enough input left to match.
+            if (pos > textSpan.Length - MinRequiredLength)
+            {
+                pos = textSpan.Length;
+                return false;
+            }
+
+            // Optimize the handling of a Beginning-Of-Line (BOL) anchor.  BOL is special, in that unlike
+            // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
+            // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
+            // to boost our position to the next line, and then continue normally with any searches.
+            if (LeadingAnchor == RegexNodeKind.Bol)
+            {
+                // If we're not currently positioned at the beginning of a line (either
+                // the beginning of the string or just after a line feed), find the next
+                // newline and position just after it.
+                int posm1 = pos - 1;
+                if ((uint)posm1 < (uint)textSpan.Length && textSpan[posm1] != '\n')
+                {
+                    int newline = textSpan.Slice(pos).IndexOf('\n');
+                    if ((uint)newline > textSpan.Length - 1 - pos)
+                    {
+                        pos = textSpan.Length;
+                        return false;
+                    }
+
+                    // We've updated the position.  Make sure there's still enough room in the input for a possible match.
+                    pos = newline + 1 + pos;
+                    if (pos > textSpan.Length - MinRequiredLength)
+                    {
+                        pos = textSpan.Length;
+                        return false;
+                    }
+                }
+            }
+
+            switch (FindMode)
+            {
+                // There's an anchor.  For some, we can simply compare against the current position.
+                // For others, we can jump to the relevant location.
+
+                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
+                    // If we're not currently at the beginning, we'll never be, so fail immediately.
+                    if (pos == 0)
+                    {
+                        return true;
+                    }
+                    pos = textSpan.Length;
+                    return false;
+
+                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
+                    // If we're not currently at the start, we'll never be, so fail immediately.
+                    if (pos == start)
+                    {
+                        return true;
+                    }
+                    pos = textSpan.Length;
+                    return false;
+
+                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
+                    if (pos < textSpan.Length - 1)
+                    {
+                        // If we're not currently at the end (or a newline just before it), skip ahead
+                        // since nothing until then can possibly match.
+                        pos = textSpan.Length - 1;
+                    }
+                    return true;
+
+                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
+                    if (pos < textSpan.Length)
+                    {
+                        // If we're not currently at the end (or a newline just before it), skip ahead
+                        // since nothing until then can possibly match.
+                        pos = textSpan.Length;
+                    }
+                    return true;
+
+                case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_EndZ:
+                    if (pos < textSpan.Length - MinRequiredLength - 1)
+                    {
+                        pos = textSpan.Length - MinRequiredLength - 1;
+                    }
+                    return true;
+
+                case FindNextStartingPositionMode.TrailingAnchor_FixedLength_LeftToRight_End:
+                    if (pos < textSpan.Length - MinRequiredLength)
+                    {
+                        pos = textSpan.Length - MinRequiredLength;
+                    }
+                    return true;
+
+                // There's a case-sensitive prefix.  Search for it with ordinal IndexOf.
+
+                case FindNextStartingPositionMode.LeadingString_LeftToRight:
+                    {
+                        int i = textSpan.Slice(pos).IndexOf(LeadingPrefix.AsSpan());
+                        if (i >= 0)
+                        {
+                            pos += i;
+                            return true;
+                        }
+
+                        pos = textSpan.Length;
+                        return false;
+                    }
+
+                // There's a set at the beginning of the pattern.  Search for it.
+
                 case FindNextStartingPositionMode.LeadingSet_LeftToRight:
                     {
-                        (char[]? chars, string set, _) = FixedDistanceSets![0];
+                        FixedDistanceSet primarySet = FixedDistanceSets![0];
+                        char[]? chars = primarySet.Chars;
+                        string set = primarySet.Set;
 
                         ReadOnlySpan<char> span = textSpan.Slice(pos);
                         if (chars is not null)
@@ -513,25 +579,6 @@ namespace System.Text.RegularExpressions
                         }
 
                         pos = textSpan.Length;
-                        return false;
-                    }
-
-                case FindNextStartingPositionMode.LeadingSet_RightToLeft:
-                    {
-                        ref uint[]? startingAsciiLookup = ref _asciiLookups![0];
-                        string set = FixedDistanceSets![0].Set;
-
-                        ReadOnlySpan<char> span = textSpan.Slice(0, pos);
-                        for (int i = span.Length - 1; i >= 0; i--)
-                        {
-                            if (RegexCharClass.CharInClass(span[i], set, ref startingAsciiLookup))
-                            {
-                                pos = i + 1;
-                                return true;
-                            }
-                        }
-
-                        pos = 0;
                         return false;
                     }
 
@@ -571,16 +618,17 @@ namespace System.Text.RegularExpressions
 
                 case FindNextStartingPositionMode.FixedDistanceSets_LeftToRight:
                     {
-                        List<(char[]? Chars, string Set, int Distance)> sets = FixedDistanceSets!;
-                        (char[]? primaryChars, string primarySet, int primaryDistance) = sets[0];
+                        List<FixedDistanceSet> sets = FixedDistanceSets!;
+                        FixedDistanceSet primarySet = sets[0];
+
                         int endMinusRequiredLength = textSpan.Length - Math.Max(1, MinRequiredLength);
 
-                        if (primaryChars is not null)
+                        if (primarySet.Chars is not null)
                         {
                             for (int inputPosition = pos; inputPosition <= endMinusRequiredLength; inputPosition++)
                             {
-                                int offset = inputPosition + primaryDistance;
-                                int index = textSpan.Slice(offset).IndexOfAny(primaryChars);
+                                int offset = inputPosition + primarySet.Distance;
+                                int index = textSpan.Slice(offset).IndexOfAny(primarySet.Chars);
                                 if (index < 0)
                                 {
                                     break;
@@ -588,7 +636,7 @@ namespace System.Text.RegularExpressions
 
                                 index += offset; // The index here will be offset indexed due to the use of span, so we add offset to get
                                                  // real position on the string.
-                                inputPosition = index - primaryDistance;
+                                inputPosition = index - primarySet.Distance;
                                 if (inputPosition > endMinusRequiredLength)
                                 {
                                     break;
@@ -596,9 +644,9 @@ namespace System.Text.RegularExpressions
 
                                 for (int i = 1; i < sets.Count; i++)
                                 {
-                                    (_, string nextSet, int nextDistance) = sets[i];
-                                    char c = textSpan[inputPosition + nextDistance];
-                                    if (!RegexCharClass.CharInClass(c, nextSet, ref _asciiLookups![i]))
+                                    FixedDistanceSet nextSet = sets[i];
+                                    char c = textSpan[inputPosition + nextSet.Distance];
+                                    if (!RegexCharClass.CharInClass(c, nextSet.Set, ref _asciiLookups![i]))
                                     {
                                         goto Bumpalong;
                                     }
@@ -616,17 +664,17 @@ namespace System.Text.RegularExpressions
 
                             for (int inputPosition = pos; inputPosition <= endMinusRequiredLength; inputPosition++)
                             {
-                                char c = textSpan[inputPosition + primaryDistance];
-                                if (!RegexCharClass.CharInClass(c, primarySet, ref startingAsciiLookup))
+                                char c = textSpan[inputPosition + primarySet.Distance];
+                                if (!RegexCharClass.CharInClass(c, primarySet.Set, ref startingAsciiLookup))
                                 {
                                     goto Bumpalong;
                                 }
 
                                 for (int i = 1; i < sets.Count; i++)
                                 {
-                                    (_, string nextSet, int nextDistance) = sets[i];
-                                    c = textSpan[inputPosition + nextDistance];
-                                    if (!RegexCharClass.CharInClass(c, nextSet, ref _asciiLookups![i]))
+                                    FixedDistanceSet nextSet = sets[i];
+                                    c = textSpan[inputPosition + nextSet.Distance];
+                                    if (!RegexCharClass.CharInClass(c, nextSet.Set, ref _asciiLookups![i]))
                                     {
                                         goto Bumpalong;
                                     }

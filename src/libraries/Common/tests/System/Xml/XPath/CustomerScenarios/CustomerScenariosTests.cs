@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using System;
-using System.Xml;
 using System.Xml.XPath;
 using XPathTests.Common;
+using Xunit;
 
 namespace XPathTests.FunctionalTests
 {
@@ -18,8 +16,11 @@ namespace XPathTests.FunctionalTests
         /// Expected: The last line element of the first section of the last chapter of the context node.
         /// Chapter[last()]/Section[1]/Line[last()]
         /// </summary>
-        [Fact]
-        public static void CustomerScenariosTest301()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void CustomerScenariosTest301(Utils.NavigatorKind kind)
         {
             var xml = "xpC001.xml";
             var startingNodePath = "/Book";
@@ -35,15 +36,18 @@ namespace XPathTests.FunctionalTests
                     Value = "Porsche 911"
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: The last line element of the first section of the last chapter of the doc.
         /// /Book/Chapter[last()]/Section[1]/Line[last()]
         /// </summary>
-        [Fact]
-        public static void CustomerScenariosTest302()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void CustomerScenariosTest302(Utils.NavigatorKind kind)
         {
             var xml = "xpC001.xml";
             var startingNodePath = "/Book";
@@ -59,15 +63,18 @@ namespace XPathTests.FunctionalTests
                     Value = "Porsche 911"
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects the second chapter element child if that child has a name attribute with value ""Chapter2"".
         /// Chapter[2][@name="Chapter2"]
         /// </summary>
-        [Fact]
-        public static void CustomerScenariosTest303()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void CustomerScenariosTest303(Utils.NavigatorKind kind)
         {
             var xml = "xpC001.xml";
             var startingNodePath = "/Book";
@@ -85,15 +92,18 @@ namespace XPathTests.FunctionalTests
                         "\n        \n            Almond Chicken\n            Sesame Chicken\n            Crispy Duck\n        \n        \n            Mashed potatoes with overcooked veggies and fat meat topped with some rich gravy\n            That's it!\n        \n        \n            Triple Bacon Cheeseburger\n            Double Bacon Cheeseburger\n            Bacon Cheeseburger\n        \n    "
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: The 2nd to 4th chapter child node of the context node.
         /// Chapter[position() >= 2 and position() <= 4]
         /// </summary>
-        [Fact]
-        public static void CustomerScenariosTest304()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
+        public static void CustomerScenariosTest304(Utils.NavigatorKind kind)
         {
             var xml = "xpC001.xml";
             var startingNodePath = "/Book";
@@ -122,7 +132,7 @@ namespace XPathTests.FunctionalTests
                         "\n        \n            BMW M5\n            Mercedes S Class\n            Porsche 911\n        \n        \n            Acura CL 3.2\n            Lexus RX300\n            Infiniti QX4\n        \n        \n    "
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
     }
 }

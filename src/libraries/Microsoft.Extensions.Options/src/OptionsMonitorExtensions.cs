@@ -14,6 +14,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Registers a listener to be called whenever <typeparamref name="TOptions"/> changes.
         /// </summary>
+        /// <typeparam name="TOptions">The type of options instance being monitored.</typeparam>
         /// <param name="monitor">The IOptionsMonitor.</param>
         /// <param name="listener">The action to be invoked when <typeparamref name="TOptions"/> has changed.</param>
         /// <returns>An <see cref="IDisposable"/> which should be disposed to stop listening for changes.</returns>

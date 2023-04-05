@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.DataContracts;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -9,6 +10,7 @@ namespace System.Runtime.Serialization.Json
     {
         private readonly JsonEnumDataContractCriticalHelper _helper;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public JsonEnumDataContract(EnumDataContract traditionalDataContract)
             : base(new JsonEnumDataContractCriticalHelper(traditionalDataContract))
@@ -18,6 +20,7 @@ namespace System.Runtime.Serialization.Json
 
         public bool IsULong => _helper.IsULong;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
@@ -35,6 +38,7 @@ namespace System.Runtime.Serialization.Json
             return enumValue;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
@@ -52,6 +56,7 @@ namespace System.Runtime.Serialization.Json
         {
             private readonly bool _isULong;
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             public JsonEnumDataContractCriticalHelper(EnumDataContract traditionalEnumDataContract)
                 : base(traditionalEnumDataContract)

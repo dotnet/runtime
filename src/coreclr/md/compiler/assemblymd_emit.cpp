@@ -41,13 +41,6 @@ STDMETHODIMP RegMeta::DefineAssembly(         // S_OK or error.
     if (szName == NULL || pMetaData == NULL || pma == NULL)
         return E_INVALIDARG;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "RegMeta::DefineAssembly(0x%08x, 0x%08x, 0x%08x, %S, 0x%08x, 0x%08x, 0x%08x)\n",
-        pbPublicKey, cbPublicKey, ulHashAlgId, MDSTR(szName), pMetaData,
-        dwAssemblyFlags, pma));
-
-    START_MD_PERF();
     LOCKWRITE();
 
     _ASSERTE(szName && pMetaData && pma);
@@ -94,10 +87,6 @@ STDMETHODIMP RegMeta::DefineAssembly(         // S_OK or error.
     IfFailGo(_SetAssemblyProps(*pma, pbPublicKey, cbPublicKey, ulHashAlgId, szName, pMetaData, dwAssemblyFlags));
 
 ErrExit:
-
-    STOP_MD_PERF(DefineAssembly);
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }   // RegMeta::DefineAssembly
 
@@ -122,13 +111,6 @@ STDMETHODIMP RegMeta::DefineAssemblyRef(      // S_OK or error.
     if (szName == NULL || pmar == NULL || pMetaData == NULL)
         return E_INVALIDARG;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "RegMeta::DefineAssemblyRef(0x%08x, 0x%08x, %S, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        pbPublicKeyOrToken, cbPublicKeyOrToken, MDSTR(szName), pMetaData, pbHashValue,
-        cbHashValue, dwAssemblyRefFlags, pmar));
-
-    START_MD_PERF();
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -187,9 +169,6 @@ STDMETHODIMP RegMeta::DefineAssemblyRef(      // S_OK or error.
 ErrExit:
     SetCallerExternal();
 
-    STOP_MD_PERF(DefineAssemblyRef);
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }   // RegMeta::DefineAssemblyRef
 
@@ -205,15 +184,9 @@ STDMETHODIMP RegMeta::DefineFile(             // S_OK or error.
 {
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     FileRec     *pRecord = NULL;
     RID         iRecord;
 
-    LOG((LOGMD, "RegMeta::DefineFile(%S, %#08x, %#08x, %#08x, %#08x)\n",
-        MDSTR(szName), pbHashValue, cbHashValue, dwFileFlags, pmf));
-
-    START_MD_PERF();
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -259,10 +232,6 @@ STDMETHODIMP RegMeta::DefineFile(             // S_OK or error.
     // Set rest of the attributes.
     IfFailGo(_SetFileProps(*pmf, pbHashValue, cbHashValue, dwFileFlags));
 ErrExit:
-
-    STOP_MD_PERF(DefineFile);
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }   // RegMeta::DefineFile
 
@@ -278,19 +247,12 @@ STDMETHODIMP RegMeta::DefineExportedType(     // S_OK or error.
 {
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     ExportedTypeRec  *pRecord = NULL;
     RID         iRecord;
     LPSTR       szNameUTF8;
     LPCSTR      szTypeNameUTF8;
     LPCSTR      szTypeNamespaceUTF8;
 
-    LOG((LOGMD, "RegMeta::DefineExportedType(%S, %#08x, %08x, %#08x, %#08x)\n",
-        MDSTR(szName), tkImplementation, tkTypeDef,
-         dwExportedTypeFlags, pmct));
-
-    START_MD_PERF();
     LOCKWRITE();
 
     // Validate name for prefix.
@@ -359,10 +321,6 @@ STDMETHODIMP RegMeta::DefineExportedType(     // S_OK or error.
     IfFailGo(_SetExportedTypeProps(*pmct, tkImplementation, tkTypeDef,
                              dwExportedTypeFlags));
 ErrExit:
-
-    STOP_MD_PERF(DefineExportedType);
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }   // RegMeta::DefineExportedType
 
@@ -378,15 +336,9 @@ STDMETHODIMP RegMeta::DefineManifestResource( // S_OK or error.
 {
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     ManifestResourceRec *pRecord = NULL;
     RID       iRecord;
 
-    LOG((LOGMD, "RegMeta::DefineManifestResource(%S, %#08x, %#08x, %#08x, %#08x)\n",
-        MDSTR(szName), tkImplementation, dwOffset, dwResourceFlags, pmmr));
-
-    START_MD_PERF();
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -438,10 +390,6 @@ STDMETHODIMP RegMeta::DefineManifestResource( // S_OK or error.
                                 dwOffset, dwResourceFlags));
 
 ErrExit:
-
-    STOP_MD_PERF(DefineManifestResource);
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }   // RegMeta::DefineManifestResource
 
@@ -459,14 +407,8 @@ STDMETHODIMP RegMeta::SetAssemblyProps(       // S_OK or error.
 {
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     _ASSERTE(TypeFromToken(ma) == mdtAssembly && RidFromToken(ma));
 
-    LOG((LOGMD, "RegMeta::SetAssemblyProps(%#08x, %#08x, %#08x, %#08x %S, %#08x, %#08x)\n",
-        ma, pbPublicKey, cbPublicKey, ulHashAlgId, MDSTR(szName), pMetaData, dwAssemblyFlags));
-
-    START_MD_PERF();
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -474,9 +416,6 @@ STDMETHODIMP RegMeta::SetAssemblyProps(       // S_OK or error.
     IfFailGo(_SetAssemblyProps(ma, pbPublicKey, cbPublicKey, ulHashAlgId, szName, pMetaData, dwAssemblyFlags));
 
 ErrExit:
-    STOP_MD_PERF(SetAssemblyProps);
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP SetAssemblyProps()
 
@@ -495,15 +434,8 @@ STDMETHODIMP RegMeta::SetAssemblyRefProps(    // S_OK or error.
 {
     HRESULT hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
     _ASSERTE(TypeFromToken(ar) == mdtAssemblyRef && RidFromToken(ar));
 
-    LOG((LOGMD, "RegMeta::SetAssemblyRefProps(0x%08x, 0x%08x, 0x%08x, %S, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
-        ar, pbPublicKeyOrToken, cbPublicKeyOrToken, MDSTR(szName), pMetaData, pbHashValue, cbHashValue,
-        dwAssemblyRefFlags));
-
-    START_MD_PERF();
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -519,9 +451,6 @@ STDMETHODIMP RegMeta::SetAssemblyRefProps(    // S_OK or error.
         dwAssemblyRefFlags));
 
 ErrExit:
-    STOP_MD_PERF(SetAssemblyRefProps);
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }   // RegMeta::SetAssemblyRefProps
 
@@ -536,14 +465,8 @@ STDMETHODIMP RegMeta::SetFileProps(           // S_OK or error.
 {
     HRESULT     hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-
     _ASSERTE(TypeFromToken(file) == mdtFile && RidFromToken(file));
 
-    LOG((LOGMD, "RegMeta::SetFileProps(%#08x, %#08x, %#08x, %#08x)\n",
-        file, pbHashValue, cbHashValue, dwFileFlags));
-    START_MD_PERF();
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -551,10 +474,6 @@ STDMETHODIMP RegMeta::SetFileProps(           // S_OK or error.
     IfFailGo( _SetFileProps(file, pbHashValue, cbHashValue, dwFileFlags) );
 
 ErrExit:
-
-    STOP_MD_PERF(SetFileProps);
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }   // RegMeta::SetFileProps
 
@@ -569,22 +488,11 @@ STDMETHODIMP RegMeta::SetExportedTypeProps(        // S_OK or error.
 {
     HRESULT     hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-
-    LOG((LOGMD, "RegMeta::SetExportedTypeProps(%#08x, %#08x, %#08x, %#08x)\n",
-        ct, tkImplementation, tkTypeDef, dwExportedTypeFlags));
-
-    START_MD_PERF();
     LOCKWRITE();
 
     IfFailGo( _SetExportedTypeProps( ct, tkImplementation, tkTypeDef, dwExportedTypeFlags) );
 
 ErrExit:
-
-    STOP_MD_PERF(SetExportedTypeProps);
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 }   // RegMeta::SetExportedTypeProps
 
@@ -599,26 +507,15 @@ STDMETHODIMP RegMeta::SetManifestResourceProps(// S_OK or error.
 {
     HRESULT     hr = S_OK;
 
-    BEGIN_ENTRYPOINT_NOTHROW;
-
-    LOG((LOGMD, "RegMeta::SetManifestResourceProps(%#08x, %#08x, %#08x, %#08x)\n",
-        mr, tkImplementation, dwOffset,
-        dwResourceFlags));
-
     _ASSERTE(TypeFromToken(tkImplementation) == mdtFile ||
               TypeFromToken(tkImplementation) == mdtAssemblyRef ||
               tkImplementation == mdTokenNil);
 
-    START_MD_PERF();
     LOCKWRITE();
 
     IfFailGo( _SetManifestResourceProps( mr, tkImplementation, dwOffset, dwResourceFlags) );
 
 ErrExit:
-
-    STOP_MD_PERF(SetManifestResourceProps);
-    END_ENTRYPOINT_NOTHROW;
-
     return hr;
 } // STDMETHODIMP RegMeta::SetManifestResourceProps()
 

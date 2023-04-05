@@ -543,32 +543,13 @@ MetaEnum::NextDomainToken(AppDomain** appDomain,
         return NextToken(token, NULL, NULL);
     }
 
-    //
-    // Splay tokens across all app domains.
-    //
-
-    while (true)
+    // Need to fetch a token.
+    if ((status = NextToken(token, NULL, NULL)) != S_OK)
     {
-        if (m_lastToken == mdTokenNil)
-        {
-            // Need to fetch a token.
-            if ((status = NextToken(token, NULL, NULL)) != S_OK)
-            {
-                return status;
-            }
-
-            m_domainIter.Init();
-        }
-
-        if (m_domainIter.Next())
-        {
-            break;
-        }
-
-        m_lastToken = mdTokenNil;
+        return status;
     }
 
-    *appDomain = m_domainIter.GetDomain();
+    *appDomain = AppDomain::GetCurrentDomain();
     *token = m_lastToken;
 
     return S_OK;
@@ -622,33 +603,14 @@ MetaEnum::NextDomainTokenByName(_In_opt_ LPCUTF8 namespaceName,
         return NextTokenByName(namespaceName, name, nameFlags, token);
     }
 
-    //
-    // Splay tokens across all app domains.
-    //
-
-    while (true)
+    // Need to fetch a token.
+    if ((status = NextTokenByName(namespaceName, name, nameFlags,
+                                    token)) != S_OK)
     {
-        if (m_lastToken == mdTokenNil)
-        {
-            // Need to fetch a token.
-            if ((status = NextTokenByName(namespaceName, name, nameFlags,
-                                          token)) != S_OK)
-            {
-                return status;
-            }
-
-            m_domainIter.Init();
-        }
-
-        if (m_domainIter.Next())
-        {
-            break;
-        }
-
-        m_lastToken = mdTokenNil;
+        return status;
     }
 
-    *appDomain = m_domainIter.GetDomain();
+    *appDomain = AppDomain::GetCurrentDomain();
     *token = m_lastToken;
 
     return S_OK;
@@ -1366,35 +1328,16 @@ SplitName::CdNextDomainField(ClrDataAccess* dac,
                            0, NULL, NULL, NULL, NULL);
     }
 
-    //
-    // Splay fields across all app domains.
-    //
-
-    while (true)
+    // Need to fetch a field.
+    if ((status = CdNextField(dac, handle, NULL, NULL, NULL,
+                                0, NULL, NULL, NULL, NULL)) != S_OK)
     {
-        if (!split->m_lastField)
-        {
-            // Need to fetch a field.
-            if ((status = CdNextField(dac, handle, NULL, NULL, NULL,
-                                      0, NULL, NULL, NULL, NULL)) != S_OK)
-            {
-                return status;
-            }
-
-            split->m_metaEnum.m_domainIter.Init();
-        }
-
-        if (split->m_metaEnum.m_domainIter.Next())
-        {
-            break;
-        }
-
-        split->m_lastField = NULL;
+        return status;
     }
 
     return ClrDataValue::
         NewFromFieldDesc(dac,
-                         split->m_metaEnum.m_domainIter.GetDomain(),
+                         AppDomain::GetCurrentDomain(),
                          split->m_fieldEnum.IsFieldFromParentClass() ?
                          CLRDATA_VALUE_IS_INHERITED : 0,
                          split->m_lastField,
@@ -3155,6 +3098,7 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
 
     m_enumMemCb = NULL;
     m_updateMemCb = NULL;
+    m_logMessageCb = NULL;
     m_enumMemFlags = (CLRDataEnumMemoryFlags)-1;    // invalid
     m_jitNotificationTable = NULL;
     m_gcNotificationTable  = NULL;
@@ -3175,7 +3119,7 @@ ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLe
 
     // Verification asserts are disabled by default because some debuggers (cdb/windbg) probe likely locations
     // for DAC and having this assert pop up all the time can be annoying.  We let derived classes enable
-    // this if they want.  It can also be overridden at run-time with COMPlus_DbgDACAssertOnMismatch,
+    // this if they want.  It can also be overridden at run-time with DOTNET_DbgDACAssertOnMismatch,
     // see ClrDataAccess::VerifyDlls for details.
     m_fEnableDllVerificationAsserts = false;
 #endif
@@ -3282,6 +3226,10 @@ ClrDataAccess::QueryInterface(THIS_
     else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface12)))
     {
         ifaceRet = static_cast<ISOSDacInterface12*>(this);
+    }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface13)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface13*>(this);
     }
     else
     {
@@ -3729,16 +3677,9 @@ ClrDataAccess::StartEnumAppDomains(
 
     EX_TRY
     {
-        AppDomainIterator* iter = new (nothrow) AppDomainIterator(FALSE);
-        if (iter)
-        {
-            *handle = TO_CDENUM(iter);
-            status = S_OK;
-        }
-        else
-        {
-            status = E_OUTOFMEMORY;
-        }
+        // Only one app domain - use 1 to indicate there there is a next value
+        *handle = 1;
+        status = S_OK;
     }
     EX_CATCH
     {
@@ -3764,12 +3705,12 @@ ClrDataAccess::EnumAppDomain(
 
     EX_TRY
     {
-        AppDomainIterator* iter = FROM_CDENUM(AppDomainIterator, *handle);
-        if (iter->Next())
+        if (*handle == 1)
         {
             *appDomain = new (nothrow)
-                ClrDataAppDomain(this, iter->GetDomain());
+                ClrDataAppDomain(this, AppDomain::GetCurrentDomain());
             status = *appDomain ? S_OK : E_OUTOFMEMORY;
+            *handle = 0;
         }
         else
         {
@@ -3799,8 +3740,7 @@ ClrDataAccess::EndEnumAppDomains(
 
     EX_TRY
     {
-        AppDomainIterator* iter = FROM_CDENUM(AppDomainIterator, handle);
-        delete iter;
+        // Nothing to do - we don't actually create an iterator for app domains
         status = S_OK;
     }
     EX_CATCH
@@ -4461,8 +4401,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
                 else
                 {
                     // Find a likely domain, because it's the shared domain.
-                    AppDomainIterator adi(FALSE);
-                    appDomain = adi.GetDomain();
+                    appDomain = AppDomain::GetCurrentDomain();
                 }
 
                 pubMethodInst =
@@ -4526,8 +4465,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
                 else
                 {
                     // Find a likely domain, because it's the shared domain.
-                    AppDomainIterator adi(FALSE);
-                    appDomain = adi.GetDomain();
+                    appDomain = AppDomain::GetCurrentDomain();
                 }
 
                 pubMethodInst =
@@ -6109,7 +6047,7 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
 
     // Bounds info.
     ULONG32 countMapCopy;
-    NewHolder<ICorDebugInfo::OffsetMapping> mapCopy(NULL);
+    NewArrayHolder<ICorDebugInfo::OffsetMapping> mapCopy(NULL);
 
     BOOL success = DebugInfoManager::GetBoundariesAndVars(
         request,
@@ -6245,24 +6183,15 @@ bool ClrDataAccess::ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess /*= 
     {
         if (!IsFullyReadable(addr, size))
         {
-            if (!fExpectSuccess)
+            if (fExpectSuccess)
             {
-                // We know the read might fail (eg. we're trying to find mapped pages in
-                // a module image), so just skip this block silently.
-                // Note that the EnumMemoryRegion callback won't necessarily do anything if any part of
-                // the region is unreadable, and so there is no point in calling it.  For cases where we expect
-                // the read might fail, but we want to report any partial blocks, we have to break up the region
-                // into pages and try reporting each page anyway
-                return true;
+                // We're reporting bogus memory, so the target must be corrupt (or there is a issue). We should abort
+                // reporting and continue with the next data structure (where the exception is caught),
+                // just like we would for a DAC read error (otherwise we might do something stupid
+                // like get into an infinite loop, or otherwise waste time with corrupt data).
+                TARGET_CONSISTENCY_CHECK(false, "Found unreadable memory while reporting memory regions for dump gathering");
+                return false;
             }
-
-            // We're reporting bogus memory, so the target must be corrupt (or there is a issue). We should abort
-            // reporting and continue with the next data structure (where the exception is caught),
-            // just like we would for a DAC read error (otherwise we might do something stupid
-            // like get into an infinite loop, or otherwise waste time with corrupt data).
-
-            TARGET_CONSISTENCY_CHECK(false, "Found unreadable memory while reporting memory regions for dump gathering");
-            return false;
         }
     }
 
@@ -6274,9 +6203,7 @@ bool ClrDataAccess::ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess /*= 
     // data structure at all.  Hopefully experience will help guide this going forward.
     // @dbgtodo : Extend dump-gathering API to allow a dump-log to be included.
     const TSIZE_T kMaxMiniDumpRegion = 4*1024*1024 - 3;    // 4MB-3
-    if( size > kMaxMiniDumpRegion
-        && (m_enumMemFlags == CLRDATA_ENUM_MEM_MINI
-          || m_enumMemFlags == CLRDATA_ENUM_MEM_TRIAGE))
+    if (size > kMaxMiniDumpRegion && (m_enumMemFlags == CLRDATA_ENUM_MEM_MINI || m_enumMemFlags == CLRDATA_ENUM_MEM_TRIAGE))
     {
         TARGET_CONSISTENCY_CHECK( false, "Dump target consistency failure - truncating minidump data structure");
         size = kMaxMiniDumpRegion;
@@ -6362,6 +6289,27 @@ bool ClrDataAccess::DacUpdateMemoryRegion(TADDR addr, TSIZE_T bufferSize, BYTE* 
     }
 
     return true;
+}
+
+//
+// DacLogMessage - logs a message to an external DAC client
+//
+// Parameters:
+//   message - message to log
+//
+void DacLogMessage(LPCSTR format, ...)
+{
+    SUPPORTS_DAC_HOST_ONLY;
+
+    if (g_dacImpl->IsLogMessageEnabled())
+    {
+        va_list args;
+        va_start(args, format);
+        char buffer[1024];
+        _vsnprintf_s(buffer, sizeof(buffer), _TRUNCATE, format, args);
+        g_dacImpl->LogMessage(buffer);
+        va_end(args);
+    }
 }
 
 //
@@ -6874,7 +6822,7 @@ void ClrDataAccess::SetTargetConsistencyChecks(bool fEnableAsserts)
 // Notes:
 //     The implementation of ASSERT accesses this via code:DacTargetConsistencyAssertsEnabled
 //
-//     By default, this is disabled, unless COMPlus_DbgDACEnableAssert is set (see code:ClrDataAccess::ClrDataAccess).
+//     By default, this is disabled, unless DOTNET_DbgDACEnableAssert is set (see code:ClrDataAccess::ClrDataAccess).
 //     This is necessary for compatibility.  For example, SOS expects to be able to scan for
 //     valid MethodTables etc. (which may cause ASSERTs), and also doesn't want ASSERTs when working
 //     with targets with corrupted memory.
@@ -7169,7 +7117,9 @@ CLRDataCreateInstance(REFIID iid,
     {
         return hr;
     }
-
+#ifdef LOGGING
+    InitializeLogging();
+#endif
     hr = pClrDataAccess->QueryInterface(iid, iface);
 
     pClrDataAccess->Release();
@@ -7847,10 +7797,6 @@ void CALLBACK DacHandleWalker::EnumCallbackSOS(PTR_UNCHECKED_OBJECTREF handle, u
     data.Type = param->Type;
     if (param->Type == HNDTYPE_DEPENDENT)
         data.Secondary = GetDependentHandleSecondary(handle.GetAddr()).GetAddr();
-#ifdef FEATURE_COMINTEROP
-    else if (param->Type == HNDTYPE_WEAK_NATIVE_COM)
-        data.Secondary = HndGetHandleExtraInfo(handle.GetAddr());
-#endif // FEATURE_COMINTEROP
     else
         data.Secondary = 0;
     data.AppDomain = param->AppDomain;

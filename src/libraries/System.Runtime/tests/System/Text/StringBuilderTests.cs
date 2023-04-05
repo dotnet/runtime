@@ -862,12 +862,12 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(null, obj1, obj2, obj3, obj4)); // Format is null
             AssertExtensions.Throws<ArgumentNullException>("args", () => builder.AppendFormat("", null)); // Args is null
             AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(null, (object[])null)); // Both format and args are null
-            AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(formatter, null, obj1)); // Format is null
-            AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(formatter, null, obj1, obj2)); // Format is null
-            AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(formatter, null, obj1, obj2, obj3)); // Format is null
-            AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(formatter, null, obj1, obj2, obj3, obj4)); // Format is null
+            AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(formatter, (string)null, obj1)); // Format is null
+            AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(formatter, (string)null, obj1, obj2)); // Format is null
+            AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(formatter, (string)null, obj1, obj2, obj3)); // Format is null
+            AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(formatter, (string)null, obj1, obj2, obj3, obj4)); // Format is null
             AssertExtensions.Throws<ArgumentNullException>("args", () => builder.AppendFormat(formatter, "", null)); // Args is null
-            AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(formatter, null, null)); // Both format and args are null
+            AssertExtensions.Throws<ArgumentNullException>("format", () => builder.AppendFormat(formatter, (string)null, null)); // Both format and args are null
 
             Assert.Throws<FormatException>(() => builder.AppendFormat("{-1}", obj1)); // Format has value < 0
             Assert.Throws<FormatException>(() => builder.AppendFormat("{-1}", obj1, obj2)); // Format has value < 0

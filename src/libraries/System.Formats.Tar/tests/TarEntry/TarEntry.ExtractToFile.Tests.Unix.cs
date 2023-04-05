@@ -23,7 +23,7 @@ namespace System.Formats.Tar.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [MemberData(nameof(GetFormatsAndSpecialFiles))]
         public void Extract_SpecialFiles(TarEntryFormat format, TarEntryType entryType)
         {
@@ -36,7 +36,7 @@ namespace System.Formats.Tar.Tests
             Verify_Extract_SpecialFiles(destination, entry, entryType);
         }
 
-        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
+        [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
         [MemberData(nameof(GetFormatsAndSpecialFiles))]
         public async Task Extract_SpecialFiles_Async(TarEntryFormat format, TarEntryType entryType)
         {
@@ -67,6 +67,7 @@ namespace System.Formats.Tar.Tests
                 entry.DeviceMajor = TestCharacterDeviceMajor;
                 entry.DeviceMinor = TestCharacterDeviceMinor;
             }
+            entry.Mode = TestPermission1;
 
             return (entryName, destination, entry);
         }
@@ -106,6 +107,8 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal((int)major, entry.DeviceMajor);
                 Assert.Equal((int)minor, entry.DeviceMinor);
             }
+
+            AssertFileModeEquals(destination, TestPermission1);
         }
     }
 }

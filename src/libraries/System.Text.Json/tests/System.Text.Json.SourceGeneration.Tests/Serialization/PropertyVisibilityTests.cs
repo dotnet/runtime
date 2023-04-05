@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Serialization.Tests;
 using System.Threading.Tasks;
 using Xunit;
@@ -13,7 +14,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public partial class PropertyVisibilityTests_Metadata : PropertyVisibilityTests
     {
         public PropertyVisibilityTests_Metadata()
-            : this(new StringSerializerWrapper(PropertyVisibilityTestsContext_Metadata.Default, (options) => new PropertyVisibilityTestsContext_Metadata(options)))
+            : this(new StringSerializerWrapper(PropertyVisibilityTestsContext_Metadata.Default))
         {
         }
 
@@ -60,27 +61,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Theory]
-        [InlineData(typeof(ClassWithInitOnlyProperty))]
-        [InlineData(typeof(StructWithInitOnlyProperty))]
-        public override async Task InitOnlyProperties(Type type)
-        {
-            PropertyInfo property = type.GetProperty("MyInt");
-
-            // Init-only properties can be serialized.
-            object obj = Activator.CreateInstance(type);
-            property.SetValue(obj, 1);
-            Assert.Equal(@"{""MyInt"":1}", await Serializer.SerializeWrapper(obj, type));
-
-            // Deserializing init-only properties is not supported.
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type));
-        }
-
-        [Theory]
         [InlineData(typeof(Class_PropertyWith_PrivateInitOnlySetter_WithAttribute))]
         [InlineData(typeof(Class_PropertyWith_InternalInitOnlySetter_WithAttribute))]
         [InlineData(typeof(Class_PropertyWith_ProtectedInitOnlySetter_WithAttribute))]
         public override async Task NonPublicInitOnlySetter_With_JsonInclude(Type type)
         {
+            bool isDeserializationSupported = type == typeof(Class_PropertyWith_InternalInitOnlySetter_WithAttribute);
+
             PropertyInfo property = type.GetProperty("MyInt");
 
             // Init-only properties can be serialized.
@@ -88,8 +75,16 @@ namespace System.Text.Json.SourceGeneration.Tests
             property.SetValue(obj, 1);
             Assert.Equal(@"{""MyInt"":1}", await Serializer.SerializeWrapper(obj, type));
 
-            // Deserializing init-only properties is not supported.
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type));
+            // Deserializing JsonInclude is only supported for internal properties
+            if (isDeserializationSupported)
+            {
+                obj = await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type);
+                Assert.Equal(1, (int)type.GetProperty("MyInt").GetValue(obj));
+            }
+            else
+            {
+                await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type));
+            }
         }
 
         [Fact]
@@ -167,6 +162,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithMissingObjectProperty))]
         [JsonSerializable(typeof(ClassWithInitOnlyProperty))]
         [JsonSerializable(typeof(StructWithInitOnlyProperty))]
+        [JsonSerializable(typeof(ClassWithCustomNamedInitOnlyProperty))]
+        [JsonSerializable(typeof(StructWithCustomNamedInitOnlyProperty))]
         [JsonSerializable(typeof(MyClassWithValueTypeInterfaceProperty))]
         [JsonSerializable(typeof(ClassWithNonPublicProperties))]
         [JsonSerializable(typeof(ClassWithProperty_IgnoreConditionAlways))]
@@ -278,6 +275,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TypeWith_IgnoredPropWith_BadConverter))]
         [JsonSerializable(typeof(ClassWithIgnoredCallbacks))]
         [JsonSerializable(typeof(ClassWithCallbacks))]
+        [JsonSerializable(typeof(ISimpleInterfaceHierarchy.IDerivedInterface1))]
+        [JsonSerializable(typeof(ISimpleInterfaceHierarchy.IDerivedInterface2))]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IDerivedInterface1), TypeInfoPropertyName = "IDiamondInterfaceHierarchyIDerivedInterface1")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IDerivedInterface2), TypeInfoPropertyName = "IDiamondInterfaceHierarchyIDerivedInterface2")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IJoinInterface))]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflict.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictIJoinInterface")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflictUsingAttribute.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictUsingAttributeIJoinInterface")]
         internal sealed partial class PropertyVisibilityTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -286,7 +290,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public partial class PropertyVisibilityTests_Default : PropertyVisibilityTests_Metadata
     {
         public PropertyVisibilityTests_Default()
-            : base(new StringSerializerWrapper(PropertyVisibilityTestsContext_Default.Default, (options) => new PropertyVisibilityTestsContext_Default(options)))
+            : base(new StringSerializerWrapper(PropertyVisibilityTestsContext_Default.Default))
         {
         }
 
@@ -326,6 +330,66 @@ namespace System.Text.Json.SourceGeneration.Tests
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(Activator.CreateInstance(type), type));
         }
 
+        [Fact]
+        public static void PublicContexAndTestClassWithPropertiesWithDifferentAccesibilities()
+        {
+            JsonSerializerOptions options = new()
+            {
+                IncludeFields = true,
+            };
+
+            options.AddContext<PublicContext>();
+
+            PublicClassWithDifferentAccessibilitiesProperties obj = new()
+            {
+                PublicProperty = new(),
+                PublicField = new(),
+            };
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("""{"PublicProperty":{},"PublicField":{}}""", json);
+
+            var deserialized = JsonSerializer.Deserialize<PublicClassWithDifferentAccessibilitiesProperties>(json, options);
+            Assert.NotNull(deserialized.PublicProperty);
+            Assert.NotNull(deserialized.PublicField);
+
+            json = "{}";
+            deserialized = JsonSerializer.Deserialize<PublicClassWithDifferentAccessibilitiesProperties>(json, options);
+            Assert.Null(deserialized.PublicProperty);
+            Assert.Null(deserialized.PublicField);
+        }
+
+        [Fact]
+        public static void PublicContexAndJsonConverter()
+        {
+            JsonConverter obj = JsonMetadataServices.BooleanConverter;
+
+            string json = JsonSerializer.Serialize(obj, PublicContext.Default.Options);
+            Assert.Equal("{}", json);
+
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<JsonConverter>(json, PublicContext.Default.Options));
+        }
+
+        [Fact]
+        public static void PublicContexAndJsonSerializerOptions()
+        {
+            JsonSerializerOptions obj = new()
+            {
+                DefaultBufferSize = 123,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                IncludeFields = true,
+            };
+
+            string json = JsonSerializer.Serialize(obj, PublicContext.Default.Options);
+
+            JsonSerializerOptions deserialized = JsonSerializer.Deserialize<JsonSerializerOptions>(json, PublicContext.Default.Options);
+            Assert.Equal(obj.DefaultBufferSize, deserialized.DefaultBufferSize);
+            Assert.Equal(obj.DefaultIgnoreCondition, deserialized.DefaultIgnoreCondition);
+            Assert.Equal(obj.IncludeFields, deserialized.IncludeFields);
+            Assert.Equal(obj.IgnoreReadOnlyFields, deserialized.IgnoreReadOnlyFields);
+            Assert.Equal(obj.MaxDepth, deserialized.MaxDepth);
+        }
+
         [JsonSerializable(typeof(ClassWithNewSlotField))]
         [JsonSerializable(typeof(int))]
         [JsonSerializable(typeof(object))]
@@ -342,6 +406,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithMissingObjectProperty))]
         [JsonSerializable(typeof(ClassWithInitOnlyProperty))]
         [JsonSerializable(typeof(StructWithInitOnlyProperty))]
+        [JsonSerializable(typeof(ClassWithCustomNamedInitOnlyProperty))]
+        [JsonSerializable(typeof(StructWithCustomNamedInitOnlyProperty))]
         [JsonSerializable(typeof(MyClassWithValueTypeInterfaceProperty))]
         [JsonSerializable(typeof(ClassWithNonPublicProperties))]
         [JsonSerializable(typeof(ClassWithProperty_IgnoreConditionAlways))]
@@ -453,6 +519,13 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(TypeWith_IgnoredPropWith_BadConverter))]
         [JsonSerializable(typeof(ClassWithIgnoredCallbacks))]
         [JsonSerializable(typeof(ClassWithCallbacks))]
+        [JsonSerializable(typeof(ISimpleInterfaceHierarchy.IDerivedInterface1))]
+        [JsonSerializable(typeof(ISimpleInterfaceHierarchy.IDerivedInterface2))]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IDerivedInterface1), TypeInfoPropertyName = "IDiamondInterfaceHierarchyIDerivedInterface1")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IDerivedInterface2), TypeInfoPropertyName = "IDiamondInterfaceHierarchyIDerivedInterface2")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchy.IJoinInterface))]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflict.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictIJoinInterface")]
+        [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflictUsingAttribute.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictUsingAttributeIJoinInterface")]
         internal sealed partial class PropertyVisibilityTestsContext_Default : JsonSerializerContext
         {
         }

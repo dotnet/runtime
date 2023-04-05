@@ -115,12 +115,6 @@ private:
                 transformer.Run();
                 count++;
             }
-            else if (compiler->doesMethodHaveExpRuntimeLookup() && ContainsExpRuntimeLookup(stmt))
-            {
-                ExpRuntimeLookupTransformer transformer(compiler, block, stmt);
-                transformer.Run();
-                count++;
-            }
         }
 
         return count;
@@ -157,28 +151,6 @@ private:
     {
         GenTree* candidate = stmt->GetRootNode();
         return candidate->IsCall() && candidate->AsCall()->IsGuardedDevirtualizationCandidate();
-    }
-
-    //------------------------------------------------------------------------
-    // ContainsExpRuntimeLookup: check if this statement contains a dictionary
-    // with dynamic dictionary expansion that we want to transform in CFG.
-    //
-    // Return Value:
-    //    true if contains, false otherwise.
-    //
-    bool ContainsExpRuntimeLookup(Statement* stmt)
-    {
-        GenTree* candidate = stmt->GetRootNode();
-        if (candidate->OperIs(GT_ASG))
-        {
-            candidate = candidate->gtGetOp2();
-        }
-        if (candidate->OperIs(GT_CALL))
-        {
-            GenTreeCall* call = candidate->AsCall();
-            return call->IsExpRuntimeLookup();
-        }
-        return false;
     }
 
     class Transformer
@@ -279,9 +251,27 @@ private:
         //
         virtual void ChainFlow()
         {
-            assert(!compiler->fgComputePredsDone);
+            assert(compiler->fgPredsComputed);
+
+            // currBlock
+            compiler->fgRemoveRefPred(remainderBlock, currBlock);
+
+            if (checkBlock != currBlock)
+            {
+                compiler->fgAddRefPred(checkBlock, currBlock);
+            }
+
+            // checkBlock
             checkBlock->bbJumpDest = elseBlock;
-            thenBlock->bbJumpDest  = remainderBlock;
+            compiler->fgAddRefPred(elseBlock, checkBlock);
+            compiler->fgAddRefPred(thenBlock, checkBlock);
+
+            // thenBlock
+            thenBlock->bbJumpDest = remainderBlock;
+            compiler->fgAddRefPred(remainderBlock, thenBlock);
+
+            // elseBlock
+            compiler->fgAddRefPred(remainderBlock, elseBlock);
         }
 
         Compiler*    compiler;
@@ -450,11 +440,9 @@ private:
 
     class GuardedDevirtualizationTransformer final : public Transformer
     {
-        unsigned m_targetLclNum;
-
     public:
         GuardedDevirtualizationTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
-            : Transformer(compiler, block, stmt), m_targetLclNum(BAD_VAR_NUM), returnTemp(BAD_VAR_NUM)
+            : Transformer(compiler, block, stmt), returnTemp(BAD_VAR_NUM)
         {
         }
 
@@ -540,27 +528,43 @@ private:
             checkBlock             = currBlock;
             checkBlock->bbJumpKind = BBJ_COND;
 
-            CallArg* thisArg  = origCall->gtArgs.GetThisArg();
-            GenTree* thisTree = thisArg->GetNode();
-
-            // Create temp for this if the tree is costly.
-            if (thisTree->IsLocal())
+            // Find last arg with a side effect. All args with any effect
+            // before that will need to be spilled.
+            CallArg* lastSideEffArg = nullptr;
+            for (CallArg& arg : origCall->gtArgs.Args())
             {
-                thisTree = compiler->gtCloneExpr(thisTree);
+                if ((arg.GetNode()->gtFlags & GTF_SIDE_EFFECT) != 0)
+                {
+                    lastSideEffArg = &arg;
+                }
             }
-            else
+
+            if (lastSideEffArg != nullptr)
             {
-                const unsigned thisTempNum = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt this temp"));
-                GenTree*       asgTree     = compiler->gtNewTempAssign(thisTempNum, thisTree);
-                Statement*     asgStmt     = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
-                compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
+                for (CallArg& arg : origCall->gtArgs.Args())
+                {
+                    GenTree* argNode = arg.GetNode();
+                    if (((argNode->gtFlags & GTF_ALL_EFFECT) != 0) || compiler->gtHasLocalsWithAddrOp(argNode))
+                    {
+                        SpillArgToTempBeforeGuard(&arg);
+                    }
 
-                thisTree = compiler->gtNewLclvNode(thisTempNum, TYP_REF);
-
-                // Propagate the new this to the call. Must be a new expr as the call
-                // will live on in the else block and thisTree is used below.
-                thisArg->SetEarlyNode(compiler->gtNewLclvNode(thisTempNum, TYP_REF));
+                    if (&arg == lastSideEffArg)
+                    {
+                        break;
+                    }
+                }
             }
+
+            CallArg* thisArg = origCall->gtArgs.GetThisArg();
+            // We spill 'this' if it is complex, regardless of side effects. It
+            // is going to be used multiple times due to the guard.
+            if (!thisArg->GetNode()->IsLocal())
+            {
+                SpillArgToTempBeforeGuard(thisArg);
+            }
+
+            GenTree* thisTree = compiler->gtCloneExpr(thisArg->GetNode());
 
             // Remember the current last statement. If we're doing a chained GDV, we'll clone/copy
             // all the code in the check block up to and including this statement.
@@ -591,24 +595,9 @@ private:
                 // which case the check will be moved into the success case of
                 // a previous GDV and thus may not execute when we hit the cold
                 // path.
-                // TODO-GDV: Consider duplicating the store at the end of the
-                // cold case for the previous GDV. Then we can reuse the target
-                // if the second check of a chained GDV fails.
-                bool reuseTarget = (origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) == 0;
                 if (origCall->IsVirtualVtable())
                 {
                     GenTree* tarTree = compiler->fgExpandVirtualVtableCallTarget(origCall);
-
-                    if (reuseTarget)
-                    {
-                        m_targetLclNum = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt call target temp"));
-
-                        GenTree*   asgTree = compiler->gtNewTempAssign(m_targetLclNum, tarTree);
-                        Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
-                        compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
-
-                        tarTree = compiler->gtNewLclvNode(m_targetLclNum, TYP_I_IMPL);
-                    }
 
                     CORINFO_METHOD_HANDLE methHnd = guardedInfo->guardedMethodHandle;
                     CORINFO_CONST_LOOKUP  lookup;
@@ -619,35 +608,12 @@ private:
                 }
                 else
                 {
-                    // Reusing the call target for delegates is more
-                    // complicated. Essentially we need to do the
-                    // transformation done in LowerDelegateInvoke by converting
-                    // the call to CT_INDIRECT and reusing the target address.
-                    // We will do that transformation in CreateElse, but here
-                    // we need to stash the target.
-                    CLANG_FORMAT_COMMENT_ANCHOR;
-#ifdef TARGET_ARM
-                    // Not impossible to support, but would additionally
-                    // require us to load the wrapper delegate cell when
-                    // expanding.
-                    reuseTarget &= (origCall->gtCallMoreFlags & GTF_CALL_M_WRAPPER_DELEGATE_INV) == 0;
-#endif
-
                     GenTree* offset =
                         compiler->gtNewIconNode((ssize_t)compiler->eeGetEEInfo()->offsetOfDelegateFirstTarget,
                                                 TYP_I_IMPL);
                     GenTree* tarTree = compiler->gtNewOperNode(GT_ADD, TYP_BYREF, thisTree, offset);
                     tarTree          = compiler->gtNewIndir(TYP_I_IMPL, tarTree);
-
-                    if (reuseTarget)
-                    {
-                        m_targetLclNum = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt call target temp"));
-
-                        GenTree*   asgTree = compiler->gtNewTempAssign(m_targetLclNum, tarTree);
-                        Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
-                        compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
-                        tarTree = compiler->gtNewLclvNode(m_targetLclNum, TYP_I_IMPL);
-                    }
+                    tarTree->gtFlags |= GTF_IND_INVARIANT;
 
                     CORINFO_METHOD_HANDLE methHnd = guardedInfo->guardedMethodHandle;
                     CORINFO_CONST_LOOKUP  lookup;
@@ -664,6 +630,22 @@ private:
         }
 
         //------------------------------------------------------------------------
+        // SpillArgToTempBeforeGuard: spill an argument into a temp in the guard/check block.
+        //
+        // Parameters
+        //   arg - The arg to create a temp and assignment for.
+        //
+        void SpillArgToTempBeforeGuard(CallArg* arg)
+        {
+            unsigned   tmpNum  = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
+            GenTree*   asgTree = compiler->gtNewTempAssign(tmpNum, arg->GetNode());
+            Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
+            compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
+
+            arg->SetEarlyNode(compiler->gtNewLclvNode(tmpNum, genActualType(arg->GetNode())));
+        }
+
+        //------------------------------------------------------------------------
         // FixupRetExpr: set up to repair return value placeholder from call
         //
         virtual void FixupRetExpr()
@@ -675,15 +657,8 @@ private:
             // Note implicit by-ref returns should have already been converted
             // so any struct copy we induce here should be cheap.
             InlineCandidateInfo* const inlineInfo = origCall->gtInlineCandidateInfo;
-            GenTree* const             retExpr    = inlineInfo->retExpr;
 
-            // Sanity check the ret expr if non-null: it should refer to the original call.
-            if (retExpr != nullptr)
-            {
-                assert(retExpr->AsRetExpr()->gtInlineCandidate == origCall);
-            }
-
-            if (origCall->TypeGet() != TYP_VOID)
+            if (!origCall->TypeIs(TYP_VOID))
             {
                 // If there's a spill temp already associated with this inline candidate,
                 // use that instead of allocating a new temp.
@@ -731,12 +706,12 @@ private:
 
                 GenTree* tempTree = compiler->gtNewLclvNode(returnTemp, origCall->TypeGet());
 
-                JITDUMP("Bashing GT_RET_EXPR [%06u] to refer to temp V%02u\n", compiler->dspTreeID(retExpr),
+                JITDUMP("Linking GT_RET_EXPR [%06u] to refer to temp V%02u\n", compiler->dspTreeID(inlineInfo->retExpr),
                         returnTemp);
 
-                retExpr->ReplaceWith(tempTree, compiler);
+                inlineInfo->retExpr->gtSubstExpr = tempTree;
             }
-            else if (retExpr != nullptr)
+            else if (inlineInfo->retExpr != nullptr)
             {
                 // We still oddly produce GT_RET_EXPRs for some void
                 // returning calls. Just bash the ret expr to a NOP.
@@ -745,8 +720,9 @@ private:
                 // benefit they provide is stitching back larger trees for failed inlines
                 // of void-returning methods. But then the calls likely sit in commas and
                 // the benefit of a larger tree is unclear.
-                JITDUMP("Bashing GT_RET_EXPR [%06u] for VOID return to NOP\n", compiler->dspTreeID(retExpr));
-                retExpr->gtBashToNOP();
+                JITDUMP("Linking GT_RET_EXPR [%06u] for VOID return to NOP\n",
+                        compiler->dspTreeID(inlineInfo->retExpr));
+                inlineInfo->retExpr->gtSubstExpr = compiler->gtNewNothingNode();
             }
             else
             {
@@ -761,7 +737,6 @@ private:
         {
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
             thenBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
-
             InlineCandidateInfo* inlineInfo = origCall->gtInlineCandidateInfo;
             CORINFO_CLASS_HANDLE clsHnd     = inlineInfo->guardedClassHandle;
 
@@ -886,7 +861,7 @@ private:
 
                 // Re-establish this call as an inline candidate.
                 //
-                GenTree* oldRetExpr              = inlineInfo->retExpr;
+                GenTreeRetExpr* oldRetExpr       = inlineInfo->retExpr;
                 inlineInfo->clsHandle            = compiler->info.compCompHnd->getMethodClass(methodHnd);
                 inlineInfo->exactContextHnd      = context;
                 inlineInfo->preexistingSpillTemp = returnTemp;
@@ -895,24 +870,24 @@ private:
                 // If there was a ret expr for this call, we need to create a new one
                 // and append it just after the call.
                 //
-                // Note the original GT_RET_EXPR has been bashed to a temp.
+                // Note the original GT_RET_EXPR has been linked to a temp.
                 // we set all this up in FixupRetExpr().
                 if (oldRetExpr != nullptr)
                 {
-                    GenTree* retExpr =
-                        compiler->gtNewInlineCandidateReturnExpr(call, call->TypeGet(), thenBlock->bbFlags);
-                    inlineInfo->retExpr = retExpr;
+                    inlineInfo->retExpr = compiler->gtNewInlineCandidateReturnExpr(call, call->TypeGet());
+
+                    GenTree* newRetExpr = inlineInfo->retExpr;
 
                     if (returnTemp != BAD_VAR_NUM)
                     {
-                        retExpr = compiler->gtNewTempAssign(returnTemp, retExpr);
+                        newRetExpr = compiler->gtNewTempAssign(returnTemp, newRetExpr);
                     }
                     else
                     {
                         // We should always have a return temp if we return results by value
                         assert(origCall->TypeGet() == TYP_VOID);
                     }
-                    compiler->fgNewStmtAtEnd(thenBlock, retExpr);
+                    compiler->fgNewStmtAtEnd(thenBlock, newRetExpr);
                 }
             }
         }
@@ -936,38 +911,6 @@ private:
             {
                 GenTree* assign = compiler->gtNewTempAssign(returnTemp, call);
                 newStmt->SetRootNode(assign);
-            }
-
-            if (m_targetLclNum != BAD_VAR_NUM)
-            {
-                if (call->IsVirtualVtable())
-                {
-                    // We already loaded the target once for the check, so reuse it from the temp.
-                    call->gtControlExpr = compiler->gtNewLclvNode(m_targetLclNum, TYP_I_IMPL);
-                    call->SetExpandedEarly();
-                }
-                else if (call->IsDelegateInvoke())
-                {
-                    // Target was saved into a temp during check. We expand the
-                    // delegate call to a CT_INDIRECT call that uses the target
-                    // directly, somewhat similarly to LowerDelegateInvoke.
-                    call->gtCallType   = CT_INDIRECT;
-                    call->gtCallAddr   = compiler->gtNewLclvNode(m_targetLclNum, TYP_I_IMPL);
-                    call->gtCallCookie = nullptr;
-                    call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
-
-                    GenTree* thisOffset =
-                        compiler->gtNewIconNode((ssize_t)compiler->eeGetEEInfo()->offsetOfDelegateInstance, TYP_I_IMPL);
-                    CallArg* thisArg     = call->gtArgs.GetThisArg();
-                    GenTree* delegateObj = thisArg->GetNode();
-
-                    assert(delegateObj->OperIsLocal());
-                    GenTree* newThis =
-                        compiler->gtNewOperNode(GT_ADD, TYP_BYREF, compiler->gtCloneExpr(delegateObj), thisOffset);
-                    newThis = compiler->gtNewIndir(TYP_REF, newThis);
-
-                    thisArg->SetEarlyNode(newThis);
-                }
             }
 
             compiler->fgInsertStmtAtEnd(elseBlock, newStmt);
@@ -1048,8 +991,10 @@ private:
             // Finally, rewire the cold block to jump to the else block,
             // not fall through to the check block.
             //
+            compiler->fgRemoveRefPred(checkBlock, coldBlock);
             coldBlock->bbJumpKind = BBJ_ALWAYS;
             coldBlock->bbJumpDest = elseBlock;
+            compiler->fgAddRefPred(elseBlock, coldBlock);
         }
 
         // When the current candidate hads sufficiently high likelihood, scan
@@ -1080,10 +1025,10 @@ private:
             unsigned       chainLikelihood   = 0;
             GenTreeCall*   chainedCall       = nullptr;
 
-            // Helper class to check a statement for uncloneable nodes and count
+            // Helper class to check/fix a statement for clonability and count
             // the total number of nodes
             //
-            class UnclonableVisitor final : public GenTreeVisitor<UnclonableVisitor>
+            class ClonabilityVisitor final : public GenTreeVisitor<ClonabilityVisitor>
             {
             public:
                 enum
@@ -1094,8 +1039,8 @@ private:
                 GenTree* m_unclonableNode;
                 unsigned m_nodeCount;
 
-                UnclonableVisitor(Compiler* compiler)
-                    : GenTreeVisitor<UnclonableVisitor>(compiler), m_unclonableNode(nullptr), m_nodeCount(0)
+                ClonabilityVisitor(Compiler* compiler)
+                    : GenTreeVisitor(compiler), m_unclonableNode(nullptr), m_nodeCount(0)
                 {
                 }
 
@@ -1115,6 +1060,16 @@ private:
                     }
                     else if (node->OperIs(GT_RET_EXPR))
                     {
+                        // If this is a RET_EXPR that we already know how to substitute then it is the
+                        // "fixed-up" RET_EXPR from a previous GDV candidate. In that case we can
+                        // substitute it right here to make it eligibile for cloning.
+                        if (node->AsRetExpr()->gtSubstExpr != nullptr)
+                        {
+                            assert(node->AsRetExpr()->gtInlineCandidate->IsGuarded());
+                            *use = node->AsRetExpr()->gtSubstExpr;
+                            return fgWalkResult::WALK_CONTINUE;
+                        }
+
                         m_unclonableNode = node;
                         return fgWalkResult::WALK_ABORT;
                     }
@@ -1160,19 +1115,20 @@ private:
 
                 // See if this statement's tree is one that we can clone.
                 //
-                UnclonableVisitor unclonableVisitor(compiler);
-                unclonableVisitor.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
+                ClonabilityVisitor clonabilityVisitor(compiler);
+                clonabilityVisitor.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
 
-                if (unclonableVisitor.m_unclonableNode != nullptr)
+                if (clonabilityVisitor.m_unclonableNode != nullptr)
                 {
-                    JITDUMP("  node [%06u] can't be cloned\n", compiler->dspTreeID(unclonableVisitor.m_unclonableNode));
+                    JITDUMP("  node [%06u] can't be cloned\n",
+                            compiler->dspTreeID(clonabilityVisitor.m_unclonableNode));
                     break;
                 }
 
                 // Looks like we can clone this, so keep scouting.
                 //
                 chainStatementDup++;
-                chainNodeDup += unclonableVisitor.m_nodeCount;
+                chainNodeDup += clonabilityVisitor.m_nodeCount;
             }
         }
 
@@ -1237,173 +1193,6 @@ private:
         }
     };
 
-    // Runtime lookup with dynamic dictionary expansion transformer,
-    // it expects helper runtime lookup call with additional arguments that are:
-    // result handle, nullCheck tree, sizeCheck tree.
-    // before:
-    //   current block
-    //   {
-    //     previous statements
-    //     transforming statement
-    //     {
-    //       ASG lclVar, call with GTF_CALL_M_EXP_RUNTIME_LOOKUP flag set and additional arguments.
-    //     }
-    //     subsequent statements
-    //   }
-    //
-    // after:
-    //   current block
-    //   {
-    //     previous statements
-    //   } BBJ_NONE check block
-    //   check block
-    //   {
-    //     jump to else if the handle fails size check
-    //   } BBJ_COND check block2, else block
-    //   check block2
-    //   {
-    //     jump to else if the handle fails null check
-    //   } BBJ_COND then block, else block
-    //   then block
-    //   {
-    //     return handle
-    //   } BBJ_ALWAYS remainder block
-    //   else block
-    //   {
-    //     do a helper call
-    //   } BBJ_NONE remainder block
-    //   remainder block
-    //   {
-    //     subsequent statements
-    //   }
-    //
-    class ExpRuntimeLookupTransformer final : public Transformer
-    {
-    public:
-        ExpRuntimeLookupTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
-            : Transformer(compiler, block, stmt)
-        {
-            GenTreeOp* asg = stmt->GetRootNode()->AsOp();
-            resultLclNum   = asg->gtOp1->AsLclVar()->GetLclNum();
-            origCall       = GetCall(stmt);
-            checkBlock2    = nullptr;
-        }
-
-    protected:
-        virtual const char* Name() override
-        {
-            return "ExpRuntimeLookup";
-        }
-
-        //------------------------------------------------------------------------
-        // GetCall: find a call in a statement.
-        //
-        // Arguments:
-        //    callStmt - the statement with the call inside.
-        //
-        // Return Value:
-        //    call tree node pointer.
-        virtual GenTreeCall* GetCall(Statement* callStmt) override
-        {
-            GenTree* tree = callStmt->GetRootNode();
-            assert(tree->OperIs(GT_ASG));
-            GenTreeCall* call = tree->gtGetOp2()->AsCall();
-            return call;
-        }
-
-        //------------------------------------------------------------------------
-        // ClearFlag: clear runtime exp lookup flag from the original call.
-        //
-        virtual void ClearFlag() override
-        {
-            origCall->ClearExpRuntimeLookup();
-        }
-
-        // FixupRetExpr: no action needed.
-        virtual void FixupRetExpr() override
-        {
-        }
-
-        //------------------------------------------------------------------------
-        // CreateCheck: create check blocks, that checks dictionary size and does null test.
-        //
-        virtual void CreateCheck() override
-        {
-            CallArg* nullCheck = origCall->gtArgs.GetArgByIndex(0);
-            CallArg* sizeCheck = origCall->gtArgs.GetArgByIndex(1);
-            origCall->gtArgs.Remove(nullCheck);
-            origCall->gtArgs.Remove(sizeCheck);
-            // The first argument is the handle now.
-            checkBlock = CreateAndInsertBasicBlock(BBJ_COND, currBlock);
-
-            assert(sizeCheck->GetEarlyNode()->OperIs(GT_LE));
-            GenTree*   sizeJmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck->GetNode());
-            Statement* sizeJmpStmt = compiler->fgNewStmtFromTree(sizeJmpTree, stmt->GetDebugInfo());
-            compiler->fgInsertStmtAtEnd(checkBlock, sizeJmpStmt);
-
-            checkBlock2 = CreateAndInsertBasicBlock(BBJ_COND, checkBlock);
-            assert(nullCheck->GetEarlyNode()->OperIs(GT_EQ));
-            GenTree*   nullJmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, nullCheck->GetNode());
-            Statement* nullJmpStmt = compiler->fgNewStmtFromTree(nullJmpTree, stmt->GetDebugInfo());
-            compiler->fgInsertStmtAtEnd(checkBlock2, nullJmpStmt);
-        }
-
-        //------------------------------------------------------------------------
-        // CreateThen: create then block, that is executed if the checks succeed.
-        // This simply returns the handle.
-        //
-        virtual void CreateThen() override
-        {
-            thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock2);
-
-            CallArg* resultHandle = origCall->gtArgs.GetArgByIndex(0);
-            // The first argument is the real first argument for the call now.
-            origCall->gtArgs.Remove(resultHandle);
-
-            GenTree*   asg     = compiler->gtNewTempAssign(resultLclNum, resultHandle->GetNode());
-            Statement* asgStmt = compiler->gtNewStmt(asg, stmt->GetDebugInfo());
-            compiler->fgInsertStmtAtEnd(thenBlock, asgStmt);
-        }
-
-        //------------------------------------------------------------------------
-        // CreateElse: create else block, that is executed if the checks fail.
-        //
-        virtual void CreateElse() override
-        {
-            elseBlock          = CreateAndInsertBasicBlock(BBJ_NONE, thenBlock);
-            GenTree*   asg     = compiler->gtNewTempAssign(resultLclNum, origCall);
-            Statement* asgStmt = compiler->gtNewStmt(asg, stmt->GetDebugInfo());
-            compiler->fgInsertStmtAtEnd(elseBlock, asgStmt);
-        }
-
-        //------------------------------------------------------------------------
-        // SetWeights: set weights for new blocks.
-        //
-        virtual void SetWeights() override
-        {
-            remainderBlock->inheritWeight(currBlock);
-            checkBlock->inheritWeight(currBlock);
-            checkBlock2->inheritWeightPercentage(checkBlock, HIGH_PROBABILITY);
-            thenBlock->inheritWeightPercentage(currBlock, HIGH_PROBABILITY);
-            elseBlock->inheritWeightPercentage(currBlock, 100 - HIGH_PROBABILITY);
-        }
-
-        //------------------------------------------------------------------------
-        // ChainFlow: link new blocks into correct cfg.
-        //
-        virtual void ChainFlow() override
-        {
-            assert(!compiler->fgComputePredsDone);
-            checkBlock->bbJumpDest  = elseBlock;
-            checkBlock2->bbJumpDest = elseBlock;
-            thenBlock->bbJumpDest   = remainderBlock;
-        }
-
-    private:
-        BasicBlock* checkBlock2;
-        unsigned    resultLclNum;
-    };
-
     Compiler* compiler;
 };
 
@@ -1422,7 +1211,6 @@ Compiler::fgWalkResult Compiler::fgDebugCheckForTransformableIndirectCalls(GenTr
         GenTreeCall* call = tree->AsCall();
         assert(!call->IsFatPointerCandidate());
         assert(!call->IsGuardedDevirtualizationCandidate());
-        assert(!call->IsExpRuntimeLookup());
     }
     return WALK_CONTINUE;
 }
@@ -1434,7 +1222,6 @@ Compiler::fgWalkResult Compiler::fgDebugCheckForTransformableIndirectCalls(GenTr
 void Compiler::CheckNoTransformableIndirectCallsRemain()
 {
     assert(!doesMethodHaveFatPointer());
-    assert(!doesMethodHaveExpRuntimeLookup());
 
     for (BasicBlock* const block : Blocks())
     {
@@ -1458,7 +1245,7 @@ void Compiler::CheckNoTransformableIndirectCallsRemain()
 PhaseStatus Compiler::fgTransformIndirectCalls()
 {
     int count = 0;
-    if (doesMethodHaveFatPointer() || doesMethodHaveGuardedDevirtualization() || doesMethodHaveExpRuntimeLookup())
+    if (doesMethodHaveFatPointer() || doesMethodHaveGuardedDevirtualization())
     {
         IndirectCallTransformer indirectCallTransformer(this);
         count = indirectCallTransformer.Run();
@@ -1473,7 +1260,6 @@ PhaseStatus Compiler::fgTransformIndirectCalls()
         }
 
         clearMethodHasFatPointer();
-        clearMethodHasExpRuntimeLookup();
     }
     else
     {

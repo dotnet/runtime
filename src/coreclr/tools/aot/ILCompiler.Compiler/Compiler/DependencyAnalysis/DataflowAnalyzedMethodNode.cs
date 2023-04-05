@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
-using Internal.Runtime;
 using Internal.IL;
 
 using ILCompiler.Dataflow;
@@ -27,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(!CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(methodIL.OwningMethod));
             _methodIL = methodIL;
         }
-        
+
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
@@ -45,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override string GetName(NodeFactory factory)
         {
-            return "Dataflow analysis for " + factory.NameMangler.GetMangledMethodName(_methodIL.OwningMethod).ToString();
+            return "Dataflow analysis for " + _methodIL.OwningMethod.ToString();
         }
 
         public override bool InterestingForDynamicDependencyAnalysis => false;

@@ -599,7 +599,6 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/43754", TestPlatforms.Android)]
         public static void ThreadPoolCanPickUpOneOrMoreWorkItemsWhenThreadIsAvailable()
         {
             int processorCount = Environment.ProcessorCount;
@@ -629,7 +628,9 @@ namespace System.Threading.ThreadPools.Tests
                 ThreadPool.QueueUserWorkItem(blockingWorkItem);
             }
 
-            allBlockingWorkItemsStarted.CheckedWait();
+            if (processorCount > 1)
+                allBlockingWorkItemsStarted.CheckedWait();
+
             for (int i = 0; i < processorCount; ++i)
             {
                 ThreadPool.QueueUserWorkItem(testWorkItem);

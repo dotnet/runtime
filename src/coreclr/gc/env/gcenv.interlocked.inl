@@ -11,15 +11,12 @@
 #endif // _MSC_VER
 
 #ifndef _MSC_VER
-__forceinline void Interlocked::ArmInterlockedOperationBarrier()
+__forceinline void Interlocked::InterlockedOperationBarrier()
 {
-#ifdef HOST_ARM64
-    // See PAL_ArmInterlockedOperationBarrier() in the PAL
+#if defined(HOST_ARM64) || defined(HOST_LOONGARCH64)
+    // See PAL_InterlockedOperationBarrier() in the PAL
     __sync_synchronize();
-#endif // HOST_ARM64
-#ifdef HOST_LOONGARCH64
-    __sync_synchronize();
-#endif //HOST_LOONGARCH64
+#endif
 }
 #endif // !_MSC_VER
 
@@ -36,7 +33,7 @@ __forceinline T Interlocked::Increment(T volatile *addend)
     return _InterlockedIncrement((long*)addend);
 #else
     T result = __sync_add_and_fetch(addend, 1);
-    ArmInterlockedOperationBarrier();
+    InterlockedOperationBarrier();
     return result;
 #endif
 }
@@ -54,7 +51,7 @@ __forceinline T Interlocked::Decrement(T volatile *addend)
     return _InterlockedDecrement((long*)addend);
 #else
     T result = __sync_sub_and_fetch(addend, 1);
-    ArmInterlockedOperationBarrier();
+    InterlockedOperationBarrier();
     return result;
 #endif
 }
@@ -73,7 +70,7 @@ __forceinline T Interlocked::Exchange(T volatile *destination, T value)
     return _InterlockedExchange((long*)destination, value);
 #else
     T result = __atomic_exchange_n(destination, value, __ATOMIC_ACQ_REL);
-    ArmInterlockedOperationBarrier();
+    InterlockedOperationBarrier();
     return result;
 #endif
 }
@@ -94,7 +91,7 @@ __forceinline T Interlocked::CompareExchange(T volatile *destination, T exchange
     return _InterlockedCompareExchange((long*)destination, exchange, comparand);
 #else
     T result = __sync_val_compare_and_swap(destination, comparand, exchange);
-    ArmInterlockedOperationBarrier();
+    InterlockedOperationBarrier();
     return result;
 #endif
 }
@@ -113,7 +110,7 @@ __forceinline T Interlocked::ExchangeAdd(T volatile *addend, T value)
     return _InterlockedExchangeAdd((long*)addend, value);
 #else
     T result = __sync_fetch_and_add(addend, value);
-    ArmInterlockedOperationBarrier();
+    InterlockedOperationBarrier();
     return result;
 #endif
 }
@@ -126,7 +123,7 @@ __forceinline T Interlocked::ExchangeAdd64(T volatile* addend, T value)
     return _InterlockedExchangeAdd64((int64_t*)addend, value);
 #else
     T result = __sync_fetch_and_add(addend, value);
-    ArmInterlockedOperationBarrier();
+    InterlockedOperationBarrier();
     return result;
 #endif
 }
@@ -144,7 +141,7 @@ __forceinline T Interlocked::ExchangeAddPtr(T volatile* addend, T value)
 #endif
 #else
     T result = __sync_fetch_and_add(addend, value);
-    ArmInterlockedOperationBarrier();
+    InterlockedOperationBarrier();
     return result;
 #endif
 }
@@ -161,7 +158,7 @@ __forceinline void Interlocked::And(T volatile *destination, T value)
     _InterlockedAnd((long*)destination, value);
 #else
     __sync_and_and_fetch(destination, value);
-    ArmInterlockedOperationBarrier();
+    InterlockedOperationBarrier();
 #endif
 }
 
@@ -177,7 +174,7 @@ __forceinline void Interlocked::Or(T volatile *destination, T value)
     _InterlockedOr((long*)destination, value);
 #else
     __sync_or_and_fetch(destination, value);
-    ArmInterlockedOperationBarrier();
+    InterlockedOperationBarrier();
 #endif
 }
 
@@ -198,7 +195,7 @@ __forceinline T Interlocked::ExchangePointer(T volatile * destination, T value)
 #endif
 #else
     T result = (T)(TADDR)__atomic_exchange_n((void* volatile *)destination, value, __ATOMIC_ACQ_REL);
-    ArmInterlockedOperationBarrier();
+    InterlockedOperationBarrier();
     return result;
 #endif
 }
@@ -214,7 +211,7 @@ __forceinline T Interlocked::ExchangePointer(T volatile * destination, std::null
 #endif
 #else
     T result = (T)(TADDR)__atomic_exchange_n((void* volatile *)destination, value, __ATOMIC_ACQ_REL);
-    ArmInterlockedOperationBarrier();
+    InterlockedOperationBarrier();
     return result;
 #endif
 }
@@ -238,7 +235,7 @@ __forceinline T Interlocked::CompareExchangePointer(T volatile *destination, T e
 #endif
 #else
     T result = (T)(TADDR)__sync_val_compare_and_swap((void* volatile *)destination, comparand, exchange);
-    ArmInterlockedOperationBarrier();
+    InterlockedOperationBarrier();
     return result;
 #endif
 }
@@ -254,7 +251,7 @@ __forceinline T Interlocked::CompareExchangePointer(T volatile *destination, T e
 #endif
 #else
     T result = (T)(TADDR)__sync_val_compare_and_swap((void* volatile *)destination, (void*)comparand, (void*)exchange);
-    ArmInterlockedOperationBarrier();
+    InterlockedOperationBarrier();
     return result;
 #endif
 }

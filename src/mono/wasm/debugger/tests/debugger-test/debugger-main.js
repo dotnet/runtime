@@ -22,7 +22,7 @@ try {
         },
     }));
     App.runtime = runtime;
-    App.init()
+    await App.init();
 } catch (err) {
     console.log(`WASM ERROR ${err}`);
 }

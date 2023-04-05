@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Mono.Cecil;
@@ -118,7 +119,9 @@ namespace Mono.Linker.Tests.Extensions
 		public static PropertyDefinition GetPropertyDefinition (this MethodDefinition method)
 		{
 			if (!method.IsSetter && !method.IsGetter)
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
 				throw new ArgumentException ();
+#pragma warning restore CA2208 // Instantiate argument exceptions correctly
 
 			var propertyName = method.Name.Substring (4);
 			return method.DeclaringType.Properties.First (p => p.Name == propertyName);
@@ -132,7 +135,7 @@ namespace Mono.Linker.Tests.Extensions
 				builder.Append ($"<#{method.GenericParameters.Count}>");
 			}
 
-			builder.Append ("(");
+			builder.Append ('(');
 
 			if (method.HasParameters) {
 				for (int i = 0; i < method.Parameters.Count - 1; i++) {
@@ -144,7 +147,7 @@ namespace Mono.Linker.Tests.Extensions
 				builder.Append (method.Parameters[method.Parameters.Count - 1].ParameterType);
 			}
 
-			builder.Append (")");
+			builder.Append (')');
 
 			return builder.ToString ();
 		}
@@ -200,7 +203,7 @@ namespace Mono.Linker.Tests.Extensions
 			}
 
 			// Append parameters
-			sb.Append ("(");
+			sb.Append ('(');
 			if (method.HasParameters) {
 				for (int i = 0; i < method.Parameters.Count - 1; i++)
 					sb.Append (method.Parameters[i].ParameterType.GetDisplayNameWithoutNamespace ()).Append (", ");
@@ -208,7 +211,7 @@ namespace Mono.Linker.Tests.Extensions
 				sb.Append (method.Parameters[method.Parameters.Count - 1].ParameterType.GetDisplayNameWithoutNamespace ());
 			}
 
-			sb.Append (")");
+			sb.Append (')');
 
 			// Insert generic parameters
 			if (method.HasGenericParameters) {
@@ -250,7 +253,7 @@ namespace Mono.Linker.Tests.Extensions
 			var builder = new StringBuilder ();
 			if (field.DeclaringType != null) {
 				builder.Append (field.DeclaringType.GetDisplayName ());
-				builder.Append (".");
+				builder.Append ('.');
 			}
 
 			builder.Append (field.Name);
@@ -308,6 +311,7 @@ namespace Mono.Linker.Tests.Extensions
 					break;
 				}
 
+				type = type.GetElementType ();
 				if (type.DeclaringType is not TypeReference declaringType)
 					break;
 
@@ -328,7 +332,7 @@ namespace Mono.Linker.Tests.Extensions
 			sb.Insert (0, '<');
 		}
 
-		static void PrependGenericArguments (Stack<TypeReference> genericArguments, int argumentsToTake, StringBuilder sb)
+		private static void PrependGenericArguments (Stack<TypeReference> genericArguments, int argumentsToTake, StringBuilder sb)
 		{
 			sb.Insert (0, '>').Insert (0, genericArguments.Pop ().GetDisplayNameWithoutNamespace ().ToString ());
 			while (--argumentsToTake > 0)
@@ -337,7 +341,7 @@ namespace Mono.Linker.Tests.Extensions
 			sb.Insert (0, '<');
 		}
 
-		static void AppendArrayType (ArrayType arrayType, StringBuilder sb)
+		private static void AppendArrayType (ArrayType arrayType, StringBuilder sb)
 		{
 			void parseArrayDimensions (ArrayType at)
 			{

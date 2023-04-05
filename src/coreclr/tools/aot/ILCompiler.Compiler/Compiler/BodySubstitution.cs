@@ -12,10 +12,10 @@ namespace ILCompiler
     {
         private object _value;
 
-        private readonly static object Throw = new object();
+        private static readonly object Throw = new object();
 
-        public readonly static BodySubstitution ThrowingBody = new BodySubstitution(Throw);
-        public readonly static BodySubstitution EmptyBody = new BodySubstitution(null);
+        public static readonly BodySubstitution ThrowingBody = new BodySubstitution(Throw);
+        public static readonly BodySubstitution EmptyBody = new BodySubstitution(null);
 
         public object Value
         {

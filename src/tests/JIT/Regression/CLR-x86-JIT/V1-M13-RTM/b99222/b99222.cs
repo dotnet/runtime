@@ -26,13 +26,13 @@ public struct AA
     public unsafe static B* get_pb(AA* px) { return &px->m_b; }
 }
 
-internal class TestApp
+public class TestApp
 {
     private static unsafe int test_3_0_0(AA* px)
     {
         return AA.get_pb(px)->m_bval;
     }
-    private static unsafe int Main()
+    public static unsafe int Main()
     {
         AA loc_x = new AA(0, 100);
         test_3_0_0(&loc_x);

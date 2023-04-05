@@ -40,6 +40,11 @@ PALEXPORT int32_t SystemNative_FUTimens(intptr_t fd, TimeSpec* times);
 PALEXPORT uint64_t SystemNative_GetTimestamp(void);
 
 /**
+ * Gets system boot time ticks. (Linux only)
+ */
+PALEXPORT int64_t SystemNative_GetBootTimeTicks(void);
+
+/**
  * The main purpose of this function is to compute the overall CPU utilization
  * for the CLR thread pool to regulate the number of worker threads.
  * Since there is no consistent API on Unix to get the CPU utilization
@@ -48,4 +53,4 @@ PALEXPORT uint64_t SystemNative_GetTimestamp(void);
  * returned is sum of utilization across all processors, e.g. this function will
  * return 200 when two cores are running at 100%.
  */
-PALEXPORT int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo);
+PALEXPORT double SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo);

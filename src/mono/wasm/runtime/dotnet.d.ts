@@ -5,6 +5,24 @@
 
 //! This is not considered public API with backward compatibility guarantees. 
 
+interface DotnetHostBuilder {
+    withConfig(config: MonoConfig): DotnetHostBuilder;
+    withConfigSrc(configSrc: string): DotnetHostBuilder;
+    withApplicationArguments(...args: string[]): DotnetHostBuilder;
+    withEnvironmentVariable(name: string, value: string): DotnetHostBuilder;
+    withEnvironmentVariables(variables: {
+        [i: string]: string;
+    }): DotnetHostBuilder;
+    withVirtualWorkingDirectory(vfsPath: string): DotnetHostBuilder;
+    withDiagnosticTracing(enabled: boolean): DotnetHostBuilder;
+    withDebugging(level: number): DotnetHostBuilder;
+    withMainAssembly(mainAssemblyName: string): DotnetHostBuilder;
+    withApplicationArgumentsFromQuery(): DotnetHostBuilder;
+    withStartupMemoryCache(value: boolean): DotnetHostBuilder;
+    create(): Promise<RuntimeAPI>;
+    run(): Promise<number>;
+}
+
 declare interface NativePointer {
     __brandNativePointer: "NativePointer";
 }
@@ -21,6 +39,7 @@ declare interface EmscriptenModule {
     HEAP8: Int8Array;
     HEAP16: Int16Array;
     HEAP32: Int32Array;
+    HEAP64: BigInt64Array;
     HEAPU8: Uint8Array;
     HEAPU16: Uint16Array;
     HEAPU32: Uint32Array;
@@ -28,8 +47,8 @@ declare interface EmscriptenModule {
     HEAPF64: Float64Array;
     _malloc(size: number): VoidPtr;
     _free(ptr: VoidPtr): void;
-    print(message: string): void;
-    printErr(message: string): void;
+    out(message: string): void;
+    err(message: string): void;
     ccall<T>(ident: string, returnType?: string | null, argTypes?: string[], args?: any[], opts?: any): T;
     cwrap<T extends Function>(ident: string, returnType: string, argTypes?: string[], opts?: any): T;
     cwrap<T extends Function>(ident: string, ...args: any[]): T;
@@ -40,14 +59,11 @@ declare interface EmscriptenModule {
     UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
-    FS_readFile(filename: string, opts: any): any;
-    removeRunDependency(id: string): void;
-    addRunDependency(id: string): void;
+    addFunction(fn: Function, signature: string): number;
     stackSave(): VoidPtr;
     stackRestore(stack: VoidPtr): void;
     stackAlloc(size: number): VoidPtr;
-    ready: Promise<unknown>;
-    instantiateWasm?: (imports: WebAssembly.Imports, successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void) => any;
+    instantiateWasm?: InstantiateWasmCallBack;
     preInit?: (() => any)[] | (() => any);
     preRun?: (() => any)[] | (() => any);
     onRuntimeInitialized?: () => any;
@@ -56,29 +72,71 @@ declare interface EmscriptenModule {
         (error: any): void;
     };
 }
+type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => void;
+type InstantiateWasmCallBack = (imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any;
 declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
 
-declare type MonoConfig = {
+type MonoConfig = {
+    /**
+     * The subfolder containing managed assemblies and pdbs. This is relative to dotnet.js script.
+     */
     assemblyRootFolder?: string;
+    /**
+     * A list of assets to load along with the runtime.
+     */
     assets?: AssetEntry[];
+    /**
+     * Additional search locations for assets.
+     */
+    remoteSources?: string[];
+    /**
+     * It will not fail the startup is .pdb files can't be downloaded
+     */
+    ignorePdbLoadErrors?: boolean;
+    /**
+     * We are throttling parallel downloads in order to avoid net::ERR_INSUFFICIENT_RESOURCES on chrome. The default value is 16.
+     */
+    maxParallelDownloads?: number;
+    /**
+     * We are making up to 2 more delayed attempts to download same asset. Default true.
+     */
+    enableDownloadRetry?: boolean;
+    /**
+     * Name of the assembly with main entrypoint
+     */
+    mainAssemblyName?: string;
+    /**
+     * Configures the runtime's globalization mode
+     */
+    globalizationMode?: GlobalizationMode;
     /**
      * debugLevel > 0 enables debugging and sets the debug log level to debugLevel
      * debugLevel == 0 disables debugging and enables interpreter optimizations
      * debugLevel < 0 enabled debugging and disables debug logging.
      */
     debugLevel?: number;
-    maxParallelDownloads?: number;
-    globalizationMode?: GlobalizationMode;
+    /**
+    * Enables diagnostic log messages during startup
+    */
     diagnosticTracing?: boolean;
-    remoteSources?: string[];
+    /**
+     * Dictionary-style Object containing environment variables
+     */
     environmentVariables?: {
         [i: string]: string;
     };
-    runtimeOptions?: string[];
-    aotProfilerOptions?: AOTProfilerOptions;
-    coverageProfilerOptions?: CoverageProfilerOptions;
-    ignorePdbLoadErrors?: boolean;
-    waitForDebugger?: number;
+    /**
+     * initial number of workers to add to the emscripten pthread pool
+     */
+    pthreadPoolSize?: number;
+    /**
+     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is false.
+     */
+    startupMemoryCache?: boolean;
+    /**
+     * hash of assets
+     */
+    assetsHash?: string;
 };
 interface ResourceRequest {
     name: string;
@@ -86,27 +144,44 @@ interface ResourceRequest {
     resolvedUrl?: string;
     hash?: string;
 }
-interface AssetEntry extends ResourceRequest {
-    virtualPath?: string;
-    culture?: string;
-    loadRemote?: boolean;
-    isOptional?: boolean;
-    buffer?: ArrayBuffer;
-    pending?: LoadingResource;
+interface LoadingResource {
+    name: string;
+    url: string;
+    response: Promise<Response>;
 }
-declare type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm";
-declare type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
+interface AssetEntry extends ResourceRequest {
+    /**
+     * If specified, overrides the path of the asset in the virtual filesystem and similar data structures once downloaded.
+     */
+    virtualPath?: string;
+    /**
+     * Culture code
+     */
+    culture?: string;
+    /**
+     * If true, an attempt will be made to load the asset from each location in MonoConfig.remoteSources.
+     */
+    loadRemote?: boolean;
+    /**
+     * If true, the runtime startup would not fail if the asset download was not successful.
+     */
+    isOptional?: boolean;
+    /**
+     * If provided, runtime doesn't have to fetch the data.
+     * Runtime would set the buffer to null after instantiation to free the memory.
+     */
+    buffer?: ArrayBuffer;
+    /**
+     * It's metadata + fetch-like Promise<Response>
+     * If provided, the runtime doesn't have to initiate the download. It would just await the response.
+     */
+    pendingDownload?: LoadingResource;
+}
+type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "symbols";
+type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
 "invariant" | //  operate in invariant globalization mode.
 "auto";
-declare type AOTProfilerOptions = {
-    writeAt?: string;
-    sendTo?: string;
-};
-declare type CoverageProfilerOptions = {
-    writeAt?: string;
-    sendTo?: string;
-};
-declare type DotnetModuleConfig = {
+type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig;
     configSrc?: string;
@@ -116,15 +191,9 @@ declare type DotnetModuleConfig = {
     exports?: string[];
     downloadResource?: (request: ResourceRequest) => LoadingResource | undefined;
 } & Partial<EmscriptenModule>;
-interface LoadingResource {
-    name: string;
-    url: string;
-    response: Promise<Response>;
-}
-
-declare type APIType = {
+type APIType = {
     runMain: (mainAssemblyName: string, args: string[]) => Promise<number>;
-    runMainAndExit: (mainAssemblyName: string, args: string[]) => Promise<void>;
+    runMainAndExit: (mainAssemblyName: string, args: string[]) => Promise<number>;
     setEnvironmentVariable: (name: string, value: string) => void;
     getAssemblyExports(assemblyName: string): Promise<any>;
     setModuleImports(moduleName: string, moduleImports: any): void;
@@ -154,7 +223,7 @@ declare type APIType = {
     getHeapF32: (offset: NativePointer) => number;
     getHeapF64: (offset: NativePointer) => number;
 };
-declare type DotnetPublicAPI = {
+type RuntimeAPI = {
     /**
      * @deprecated Please use API object instead. See also MONOType in dotnet-legacy.d.ts
      */
@@ -168,20 +237,22 @@ declare type DotnetPublicAPI = {
     runtimeId: number;
     runtimeBuildInfo: {
         productVersion: string;
+        gitHash: string;
         buildConfiguration: string;
     };
 } & APIType;
+type ModuleAPI = {
+    dotnet: DotnetHostBuilder;
+    exit: (code: number, reason?: any) => void;
+};
+declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI>;
+type CreateDotnetRuntimeType = typeof createDotnetRuntime;
 
 interface IDisposable {
     dispose(): void;
     get isDisposed(): boolean;
 }
-declare const enum MemoryViewType {
-    Byte = 0,
-    Int32 = 1,
-    Double = 2
-}
-interface IMemoryView {
+interface IMemoryView extends IDisposable {
     /**
      * copies elements from provided source to the wasm memory.
      * target has to have the elements of the same type as the underlying C# array.
@@ -201,56 +272,11 @@ interface IMemoryView {
     get byteLength(): number;
 }
 
-declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: DotnetPublicAPI) => DotnetModuleConfig)): Promise<DotnetPublicAPI>;
-declare type CreateDotnetRuntimeType = typeof createDotnetRuntime;
 declare global {
-    function getDotnetRuntime(runtimeId: number): DotnetPublicAPI | undefined;
+    function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
 }
 
-/**
- * Span class is JS wrapper for System.Span<T>. This view doesn't own the memory, nor pin the underlying array.
- * It's ideal to be used on call from C# with the buffer pinned there or with unmanaged memory.
- * It is disposed at the end of the call to JS.
- */
-declare class Span implements IMemoryView, IDisposable {
-    dispose(): void;
-    get isDisposed(): boolean;
-    set(source: TypedArray, targetOffset?: number | undefined): void;
-    copyTo(target: TypedArray, sourceOffset?: number | undefined): void;
-    slice(start?: number | undefined, end?: number | undefined): TypedArray;
-    get length(): number;
-    get byteLength(): number;
-}
-/**
- * ArraySegment class is JS wrapper for System.ArraySegment<T>.
- * This wrapper would also pin the underlying array and hold GCHandleType.Pinned until this JS instance is collected.
- * User could dispose it manually.
- */
-declare class ArraySegment implements IMemoryView, IDisposable {
-    dispose(): void;
-    get isDisposed(): boolean;
-    set(source: TypedArray, targetOffset?: number | undefined): void;
-    copyTo(target: TypedArray, sourceOffset?: number | undefined): void;
-    slice(start?: number | undefined, end?: number | undefined): TypedArray;
-    get length(): number;
-    get byteLength(): number;
-}
-/**
- * Represents proxy to the System.Exception
- */
-declare class ManagedError extends Error implements IDisposable {
-    get stack(): string | undefined;
-    dispose(): void;
-    get isDisposed(): boolean;
-    toString(): string;
-}
-/**
- * Represents proxy to the System.Object
- */
-declare class ManagedObject implements IDisposable {
-    dispose(): void;
-    get isDisposed(): boolean;
-    toString(): string;
-}
+declare const dotnet: ModuleAPI["dotnet"];
+declare const exit: ModuleAPI["exit"];
 
-export { APIType, ArraySegment, AssetBehaviours, AssetEntry, CreateDotnetRuntimeType, DotnetModuleConfig, DotnetPublicAPI, EmscriptenModule, IMemoryView, LoadingResource, ManagedError, ManagedObject, MemoryViewType, MonoConfig, NativePointer, ResourceRequest, Span, createDotnetRuntime as default };
+export { AssetEntry, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

@@ -33,6 +33,14 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Fact]
+        public static void Empty_Idempotent()
+        {
+            Assert.NotNull(ReadOnlyObservableCollection<int>.Empty);
+            Assert.Equal(0, ReadOnlyObservableCollection<int>.Empty.Count);
+            Assert.Same(ReadOnlyObservableCollection<int>.Empty, ReadOnlyObservableCollection<int>.Empty);
+        }
+
+        [Fact]
         public static void GetItemTests()
         {
             string[] anArray = new string[] { "one", "two", "three", "four", "five" };

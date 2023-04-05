@@ -102,7 +102,7 @@ namespace System.Net.Quic.Tests
                         }
                         catch (Exception ex)
                         {
-                            _output?.WriteLine($"Failed to {ex.Message}");
+                            _output?.WriteLine($"Failed to connect: {ex.Message}");
                             throw;
                         }
                     }));
@@ -152,15 +152,6 @@ namespace System.Net.Quic.Tests
                     disposable.DisposeAsync().GetAwaiter().GetResult();
                 }
             }
-        }
-
-        [OuterLoop("May take several seconds")]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73377")]
-        public override Task Parallel_ReadWriteMultipleStreamsConcurrently()
-        {
-            return Task.CompletedTask;
         }
     }
 }

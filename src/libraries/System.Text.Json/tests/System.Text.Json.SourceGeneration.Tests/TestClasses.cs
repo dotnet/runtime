@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Primitives;
 
 namespace System.Text.Json.SourceGeneration.Tests.RepeatedTypes
 {
@@ -225,5 +226,65 @@ namespace System.Text.Json.SourceGeneration.Tests
                 public T2 DataT2 { get; set; }
             }
         }
+    }
+
+    public class PublicClassWithDifferentAccessibilitiesProperties
+    {
+        public PublicTestClass PublicProperty { get; set; }
+        internal PublicTestClass.InternalNestedClass InternalProperty1 { get; set; }
+        protected ProtectedClass ProtectedProperty1 { get; set; }
+        protected ProtectedInternalClass ProtectedProperty2 { get; set; }
+        internal InternalTestClass InternalProperty2 { get; set; }
+        internal InternalTestClass.PublicClass InternalProperty3 { get; set; }
+        internal InternalTestClass.ProtectedInternalClass InternalProperty4 { get; set; }
+        private InternalTestClass PrivateProperty1 { get; set; }
+        private PrivateClass PrivateProperty2 { get; set; }
+        private PrivateClass2 PrivateProperty3 { get; set; }
+        PrivateClass2 PrivateProperty4 { get; set; }
+        private PrivateProtectedClass PrivateProperty5 { get; set; }
+
+        public PublicTestClass PublicField;
+
+#pragma warning disable CS0414 // The field ... is assigned but its value is never used.
+        internal PublicTestClass.InternalNestedClass InternalField1 = null;
+        protected ProtectedClass ProtectedField1 = null;
+        protected ProtectedInternalClass ProtectedField2 = null;
+        internal InternalTestClass InternalField2 = null;
+        internal InternalTestClass.PublicClass InternalField3 = null;
+        internal InternalTestClass.ProtectedInternalClass InternalField4 = null;
+        private InternalTestClass PrivateField1 = null;
+        private PrivateClass PrivateField2 = null;
+        private PrivateClass2 PrivateField3 = null;
+        PrivateClass2 PrivateField4 = null;
+        private PrivateProtectedClass PrivateField5 = null;
+#pragma warning restore
+
+        private class PrivateClass { }
+        protected class ProtectedClass { }
+        protected internal class ProtectedInternalClass { }
+        private protected class PrivateProtectedClass { }
+        class PrivateClass2 { }
+    }
+
+    internal class InternalTestClass
+    {
+        public class PublicClass { }
+        protected internal class ProtectedInternalClass { }
+    }
+
+    public class PublicTestClass
+    {
+        internal class InternalNestedClass { }
+    }
+
+    public sealed class ClassWithStringValues
+    {
+        public StringValues StringValuesProperty { get; set; }
+    }
+
+    public class ClassWithDictionaryProperty
+    {
+        public ClassWithDictionaryProperty(Dictionary<string, object?> property) => DictionaryProperty = property;
+        public Dictionary<string, object?> DictionaryProperty { get; }
     }
 }

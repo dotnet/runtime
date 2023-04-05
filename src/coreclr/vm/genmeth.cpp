@@ -67,7 +67,6 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
                                     MethodDesc *pTemplateMD,
                                     DWORD classification,
                                     BOOL fNativeCodeSlot,
-                                    BOOL fComPlusCallInfo,
                                     AllocMemTracker *pamTracker)
 {
     CONTRACTL
@@ -92,7 +91,6 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
                                      classification,
                                      TRUE /* fNonVtableSlot*/,
                                      fNativeCodeSlot,
-                                     fComPlusCallInfo,
                                      pMT,
                                      pamTracker);
 
@@ -120,11 +118,17 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
         pMD->SetIsIntrinsic();
     }
 
+#ifdef EnC_SUPPORTED
+    if (pTemplateMD->IsEnCAddedMethod())
+    {
+        pMD->SetIsEnCAddedMethod();
+    }
+#endif // EnC_SUPPORTED
+
     pMD->SetMemberDef(token);
     pMD->SetSlot(pTemplateMD->GetSlot());
 
 #ifdef _DEBUG
-    pMD->m_pszDebugMethodName = pTemplateMD->m_pszDebugMethodName;
     //<NICE> more info here</NICE>
     pMD->m_pszDebugMethodSignature = "<generic method signature>";
     pMD->m_pszDebugClassName  = "<generic method class name>";
@@ -382,8 +386,8 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                     TypeString::AppendMethodDebug(name, pGenericMDescInRepMT);
                     DWORD dictionarySlotSize;
                     DWORD dictionaryAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(pGenericMDescInRepMT->GetNumGenericMethodArgs(), pDL, &dictionarySlotSize);
-                    LOG((LF_JIT, LL_INFO1000, "GENERICS: Created new dictionary layout for dictionary of slot size %d / alloc size %d for %S\n",
-                        dictionarySlotSize, dictionaryAllocSize, name.GetUnicode()));
+                    LOG((LF_JIT, LL_INFO1000, "GENERICS: Created new dictionary layout for dictionary of slot size %d / alloc size %d for %s\n",
+                        dictionarySlotSize, dictionaryAllocSize, name.GetUTF8()));
                 }
 #endif // _DEBUG
             }
@@ -407,8 +411,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             }
         }
 
-        BOOL forComInterop = FALSE;
-
         // Create a new singleton chunk for the new instantiated method descriptor
         // Notice that we've passed in the method table pointer; this gets
         // used in some of the subsequent setup methods for method descs.
@@ -418,7 +420,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                                                              pGenericMDescInRepMT,
                                                              mcInstantiated,
                                                              !pWrappedMD, // This is pesimistic estimate for fNativeCodeSlot
-                                                             forComInterop,
                                                              &amt));
 
         // Initialize the MD the way it needs to be
@@ -899,7 +900,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                  pMDescInCanonMT,
                                                  mcInstantiated,
                                                  FALSE /* fNativeCodeSlot */,
-                                                 FALSE /* fComPlusCallInfo */,
                                                  &amt);
 
                     // Indicate that this is a stub method which takes a BOXed this pointer.
@@ -981,7 +981,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                  pNonUnboxingStub,
                                                  mcInstantiated,
                                                  FALSE /* fNativeCodeSlot */,
-                                                 FALSE /* fComPlusCallInfo */,
                                                  &amt);
 
                     pResultMD->SetIsUnboxingStub();
@@ -1358,19 +1357,21 @@ MethodDesc * MethodDesc::FindOrCreateTypicalSharedInstantiation(BOOL allowCreate
 }
 
 //@GENERICSVER: Set the typical (ie. formal) instantiation
-void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport *pIMDII,
+void InstantiatedMethodDesc::SetupGenericMethodDefinition(IMDInternalImport* pIMDII,
                                                           LoaderAllocator* pAllocator,
-                                                          AllocMemTracker *pamTracker,
-                                                          Module *pModule,
+                                                          AllocMemTracker* pamTracker,
+                                                          Module* pModule,
                                                           mdMethodDef tok)
 {
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(CheckPointer(pModule));
         PRECONDITION(CheckPointer(pIMDII));
+        PRECONDITION(CheckPointer(pAllocator));
+        PRECONDITION(CheckPointer(pamTracker));
+        PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
 

@@ -3,7 +3,10 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using System.Globalization;
 using System.Threading.Tasks;
 using Xunit;
@@ -120,6 +123,40 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal("SYSLIB1042", Assert.Single(diagnostics).Id);
         }
 
+        [Theory]
+        [InlineData("null")]
+        [InlineData("\"xxxxxxxxxxxxxxxxxxxx-ThisIsNotAValidCultureName-xxxxxxxxxxxxxxxxxxxx\"")]
+        public async Task Diagnostic_InvalidCultureName(string cultureName)
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@$"
+                using System.Text.RegularExpressions;
+                partial class C
+                {{
+                    [GeneratedRegex(""(?i)ab"", RegexOptions.None, {cultureName})]
+                    private static partial Regex InvalidPattern();
+                }}
+            ");
+
+            Assert.Equal("SYSLIB1042", Assert.Single(diagnostics).Id);
+        }
+
+        [Theory]
+        [InlineData("(?i)abc", "RegexOptions.CultureInvariant")]
+        [InlineData("abc", "RegexOptions.CultureInvariant | RegexOptions.IgnoreCase")]
+        public async Task Diagnostic_InvalidOptionsForCaseInsensitive(string pattern, string options)
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@$"
+                using System.Text.RegularExpressions;
+                partial class C
+                {{
+                    [GeneratedRegex(""{pattern}"", {options}, ""en-US"")]
+                    private static partial Regex InvalidPattern();
+                }}
+            ");
+
+            Assert.Equal("SYSLIB1042", Assert.Single(diagnostics).Id);
+        }
+
         [Fact]
         public async Task Diagnostic_MethodMustReturnRegex()
         {
@@ -215,7 +252,7 @@ namespace System.Text.RegularExpressions.Tests
                     [GeneratedRegex(""ab"")]
                     private static partial Regex InvalidLangVersion();
                 }
-            ", langVersion: version);
+            ", langVersion: version, compile: true);
 
             Assert.Equal("SYSLIB1044", Assert.Single(diagnostics).Id);
         }
@@ -289,13 +326,13 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public async Task Diagnostic_CustomGeneratedRegexAttribute_FourArgCtor()
+        public async Task Diagnostic_CustomGeneratedRegexAttribute_FiveArgCtor()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RegexGeneratorHelper.RunGenerator(@"
                 using System.Text.RegularExpressions;
                 partial class C
                 {
-                    [GeneratedRegex(""a"", RegexOptions.None, -1, ""b""]
+                    [GeneratedRegex(""a"", RegexOptions.None, -1, ""en-Us"", ""b""]
                     private static partial Regex InvalidCtor();
                 }
 
@@ -402,22 +439,28 @@ namespace System.Text.RegularExpressions.Tests
             ", compile: true));
         }
 
+        public static IEnumerable<object[]> Valid_ClassWithNamespace_ConfigurationOptions_MemberData() =>
+            from pattern in new[] { "", "ab", "ab*c|de*?f|(ghi){1,3}", "\\\\w\\\\W\\\\b\\\\B\\\\d\\\\D\\\\s\\\\S" }
+            from options in new[] { RegexOptions.None, RegexOptions.IgnoreCase, RegexOptions.ECMAScript, RegexOptions.RightToLeft }
+            from allowUnsafe in new[] { false, true }
+            from checkOverflow in new[] { false, true }
+            select new object[] { pattern, options, allowUnsafe, checkOverflow };
+
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task Valid_ClassWithNamespace(bool allowUnsafe)
+        [MemberData(nameof(Valid_ClassWithNamespace_ConfigurationOptions_MemberData))]
+        public async Task Valid_ClassWithNamespace_ConfigurationOptions(string pattern, RegexOptions options, bool allowUnsafe, bool checkOverflow)
         {
-            Assert.Empty(await RegexGeneratorHelper.RunGenerator(@"
+            Assert.Empty(await RegexGeneratorHelper.RunGenerator($@"
                 using System.Text.RegularExpressions;
                 namespace A
-                {
+                {{
                     partial class C
-                    {
-                        [GeneratedRegex(""ab"")]
+                    {{
+                        [GeneratedRegex(""{pattern}"", RegexOptions.{options})]
                         private static partial Regex Valid();
-                    }
-                }
-            ", compile: true, allowUnsafe: allowUnsafe));
+                    }}
+                }}
+            ", compile: true, allowUnsafe: allowUnsafe, checkOverflow: checkOverflow));
         }
 
         [Fact]
@@ -804,6 +847,37 @@ namespace System.Text.RegularExpressions.Tests
                     [GeneratedRegex($""{""ab""}{""cd""}"")]
                     public static partial Regex Valid();
                 }", compile: true));
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [OuterLoop("Takes several seconds")]
+        public void Deterministic_SameRegexProducesSameSource()
+        {
+            string first = Generate();
+            for (int trials = 0; trials < 3; trials++)
+            {
+                Assert.Equal(first, Generate());
+            }
+
+            static string Generate()
+            {
+                const string Code =
+                    @"using System.Text.RegularExpressions;
+                    partial class C
+                    {
+                        [GeneratedRegex(""(?<Name>\w+) (?<Street>\w+), (?<City>\w+) (?<State>[A-Z]{2}) (?<Zip>[0-9]{5})"")]
+                        public static partial Regex Valid();
+                    }";
+
+                // Generate the source in a new process so that any process-specific randomization is different between runs,
+                // e.g. hash code randomization for strings.
+
+                using RemoteInvokeHandle handle = RemoteExecutor.Invoke(
+                    async () => Console.WriteLine(await RegexGeneratorHelper.GenerateSourceText(Code)),
+                    new RemoteInvokeOptions { StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } });
+
+                return handle.Process.StandardOutput.ReadToEnd();
+            }
         }
     }
 }

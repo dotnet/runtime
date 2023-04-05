@@ -315,6 +315,33 @@ namespace Microsoft.Interop
                     StubCodeContext.Stage.Unmarshal));
         }
 
+        protected StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context)
+        {
+            string nativeSpanIdentifier = MarshallerHelpers.GetNativeSpanIdentifier(info, context);
+            StatementSyntax contentsCleanupStatements = GenerateContentsMarshallingStatement(info, context,
+                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                        IdentifierName(MarshallerHelpers.GetNativeSpanIdentifier(info, context)),
+                        IdentifierName("Length")),
+                        StubCodeContext.Stage.Cleanup);
+
+            if (contentsCleanupStatements.IsKind(SyntaxKind.EmptyStatement))
+            {
+                return EmptyStatement();
+            }
+
+            return Block(
+                LocalDeclarationStatement(VariableDeclaration(
+                GenericName(
+                    Identifier(TypeNames.System_Span),
+                    TypeArgumentList(SingletonSeparatedList(_unmanagedElementType))),
+                SingletonSeparatedList(
+                    VariableDeclarator(
+                        Identifier(nativeSpanIdentifier))
+                    .WithInitializer(EqualsValueClause(
+                        GetUnmanagedValuesDestination(info, context)))))),
+                contentsCleanupStatements);
+        }
+
         protected StatementSyntax GenerateContentsMarshallingStatement(
             TypePositionInfo info,
             StubCodeContext context,
@@ -344,13 +371,13 @@ namespace Microsoft.Interop
                 elementStatements.AddRange(_elementMarshaller.Generate(localElementInfo, elementSubContext));
             }
 
-            if (elementStatements.Any())
+            if (elementStatements.Count != 0)
             {
                 StatementSyntax marshallingStatement = Block(
                     List(_elementMarshaller.Generate(localElementInfo, elementSetupSubContext)
                         .Concat(elementStatements)));
 
-                if (_elementMarshaller.AsNativeType(_elementInfo) is PointerTypeSyntax elementNativeType)
+                if (_elementMarshaller.AsNativeType(_elementInfo).Syntax is PointerTypeSyntax elementNativeType)
                 {
                     PointerNativeTypeAssignmentRewriter rewriter = new(elementSetupSubContext.GetIdentifiers(localElementInfo).native, elementNativeType);
                     marshallingStatement = (StatementSyntax)rewriter.Visit(marshallingStatement);
@@ -362,48 +389,6 @@ namespace Microsoft.Interop
             }
 
             return EmptyStatement();
-        }
-
-        /// <summary>
-        /// Rewrite assignment expressions to the native identifier to cast to IntPtr.
-        /// This handles the case where the native type of a non-blittable managed type is a pointer,
-        /// which are unsupported in generic type parameters.
-        /// </summary>
-        private sealed class PointerNativeTypeAssignmentRewriter : CSharpSyntaxRewriter
-        {
-            private readonly string _nativeIdentifier;
-            private readonly PointerTypeSyntax _nativeType;
-
-            public PointerNativeTypeAssignmentRewriter(string nativeIdentifier, PointerTypeSyntax nativeType)
-            {
-                _nativeIdentifier = nativeIdentifier;
-                _nativeType = nativeType;
-            }
-
-            public override SyntaxNode VisitAssignmentExpression(AssignmentExpressionSyntax node)
-            {
-                if (node.Left.ToString() == _nativeIdentifier)
-                {
-                    return node.WithRight(
-                        CastExpression(MarshallerHelpers.SystemIntPtrType, node.Right));
-                }
-                if (node.Right.ToString() == _nativeIdentifier)
-                {
-                    return node.WithRight(CastExpression(_nativeType, node.Right));
-                }
-
-                return base.VisitAssignmentExpression(node);
-            }
-
-            public override SyntaxNode? VisitArgument(ArgumentSyntax node)
-            {
-                if (node.Expression.ToString() == _nativeIdentifier)
-                {
-                    return node.WithExpression(
-                        CastExpression(_nativeType, node.Expression));
-                }
-                return base.VisitArgument(node);
-            }
         }
     }
 }

@@ -27,7 +27,7 @@ namespace System.Collections.Immutable.Tests
         public void EnumeratorTest()
         {
             IComparer<double> comparer = null;
-            var set = this.Empty<double>();
+            IImmutableSet<double> set = this.Empty<double>();
             var sortedSet = set as ISortKeyCollection<double>;
             if (sortedSet != null)
             {
@@ -82,7 +82,7 @@ namespace System.Collections.Immutable.Tests
             var expectedSet = new HashSet<T>(set);
             expectedSet.ExceptWith(valuesToRemove);
 
-            var actualSet = set.Except(valuesToRemove);
+            IImmutableSet<T> actualSet = set.Except(valuesToRemove);
             CollectionAssertAreEquivalent(expectedSet.ToList(), actualSet.ToList());
 
             this.VerifyAvlTreeState(actualSet);
@@ -96,7 +96,7 @@ namespace System.Collections.Immutable.Tests
             var expectedSet = new HashSet<T>(set);
             expectedSet.SymmetricExceptWith(otherCollection);
 
-            var actualSet = set.SymmetricExcept(otherCollection);
+            IImmutableSet<T> actualSet = set.SymmetricExcept(otherCollection);
             CollectionAssertAreEquivalent(expectedSet.ToList(), actualSet.ToList());
 
             this.VerifyAvlTreeState(actualSet);
@@ -112,7 +112,7 @@ namespace System.Collections.Immutable.Tests
             var expected = new HashSet<T>(set);
             expected.IntersectWith(values);
 
-            var actual = set.Intersect(values);
+            IImmutableSet<T> actual = set.Intersect(values);
             CollectionAssertAreEquivalent(expected.ToList(), actual.ToList());
 
             this.VerifyAvlTreeState(actual);
@@ -126,7 +126,7 @@ namespace System.Collections.Immutable.Tests
             var expected = new HashSet<T>(set);
             expected.UnionWith(values);
 
-            var actual = set.Union(values);
+            IImmutableSet<T> actual = set.Union(values);
             CollectionAssertAreEquivalent(expected.ToList(), actual.ToList());
 
             this.VerifyAvlTreeState(actual);
@@ -134,7 +134,7 @@ namespace System.Collections.Immutable.Tests
 
         private void VerifyAvlTreeState<T>(IImmutableSet<T> set)
         {
-            var rootNode = this.GetRootNode(set);
+            IBinaryTree rootNode = this.GetRootNode(set);
             rootNode.VerifyBalanced();
             rootNode.VerifyHeightIsWithinTolerance(set.Count);
         }

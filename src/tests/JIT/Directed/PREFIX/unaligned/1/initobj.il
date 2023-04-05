@@ -25,7 +25,7 @@
 	//-------------------------
 	// Entry point - Main     -
 	//-------------------------
-	.method public static int32 main(class [mscorlib]System.String[]) {
+	.method public static int32 main() {
 	.entrypoint
 	.locals	(value class valClass, int32)
 	.maxstack	10

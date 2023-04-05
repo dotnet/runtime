@@ -261,15 +261,17 @@ namespace System.Text.Json.Serialization.Tests
         public static void InvalidRootOnWrite()
         {
             int[,] arr = null;
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize<int[,]>(arr));
+            string json = JsonSerializer.Serialize<int[,]>(arr);
+            Assert.Equal("null", json);
 
             var options = new JsonSerializerOptions
             {
                 IgnoreNullValues = true
             };
 
-            // We still throw when we have an unsupported root.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize<int[,]>(arr, options));
+            // We still serialize when we have an unsupported root.
+            json = JsonSerializer.Serialize<int[,]>(arr, options);
+            Assert.Equal("null", json);
         }
     }
 }

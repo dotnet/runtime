@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 
@@ -105,12 +106,12 @@ namespace System.Reflection.TypeLoading.Ecma
         public static IList<CustomAttributeTypedArgument> ToApiForm(this IList<CustomAttributeTypedArgument<RoType>> catgs)
         {
             int count = catgs.Count;
-            CustomAttributeTypedArgument[] cats = new CustomAttributeTypedArgument[count];
+            CustomAttributeTypedArgument[] cats = count != 0 ? new CustomAttributeTypedArgument[count] : Array.Empty<CustomAttributeTypedArgument>();
             for (int i = 0; i < count; i++)
             {
                 cats[i] = catgs[i].ToApiForm();
             }
-            return cats.ToReadOnlyCollection();
+            return Array.AsReadOnly(cats);
         }
 
         /// <summary>
@@ -136,12 +137,12 @@ namespace System.Reflection.TypeLoading.Ecma
         public static IList<CustomAttributeNamedArgument> ToApiForm(this IList<CustomAttributeNamedArgument<RoType>> cangs, Type attributeType)
         {
             int count = cangs.Count;
-            CustomAttributeNamedArgument[] cans = new CustomAttributeNamedArgument[count];
+            CustomAttributeNamedArgument[] cans = count != 0 ? new CustomAttributeNamedArgument[count] : Array.Empty<CustomAttributeNamedArgument>();
             for (int i = 0; i < count; i++)
             {
                 cans[i] = cangs[i].ToApiForm(attributeType);
             }
-            return cans.ToReadOnlyCollection();
+            return Array.AsReadOnly(cans);
         }
 
         /// <summary>
@@ -172,7 +173,7 @@ namespace System.Reflection.TypeLoading.Ecma
         //
         // Logic ported from ParseNativeTypeInfo()
         //
-        // https://github.com/dotnet/coreclr/blob/ab9b4511180d1dfde09d1480c29a7bbacf3587dd/src/vm/mlinfo.cpp#L512
+        // https://github.com/dotnet/runtime/blob/b908ecf514f32c7ba7d59ecc28fa3fdd64a10a1a/src/coreclr/vm/mlinfo.cpp#L469
         //
         public static MarshalAsAttribute ToMarshalAsAttribute(this BlobHandle blobHandle, EcmaModule module)
         {

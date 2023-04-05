@@ -14,11 +14,11 @@ namespace System.Net.Http.Json
 
         internal static MediaTypeHeaderValue GetDefaultMediaType() => new("application/json") { CharSet = "utf-8" };
 
-        internal static Encoding? GetEncoding(string? charset)
+        internal static Encoding? GetEncoding(HttpContent content)
         {
             Encoding? encoding = null;
 
-            if (charset != null)
+            if (content.Headers.ContentType?.CharSet is string charset)
             {
                 try
                 {

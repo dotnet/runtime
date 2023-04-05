@@ -12,6 +12,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <mutex>
+#include <algorithm>
+#include <vector>
 #include <unordered_map>
 
 #include "gcenv.base.h"
@@ -35,6 +37,15 @@ static const char* sUnityGC = "UnityGC";
 #else
 #define UNITYGC_EXPORT
 #endif
+
+class heap_segment
+{
+public:
+    uint8_t*        allocated;
+    uint8_t*        committed;
+    uint8_t*        reserved;
+    uint8_t*        mem;
+};
 
 class GCHeap : public IGCHeap
 {
@@ -365,7 +376,10 @@ public:
     // Returns true if this pointer points into a GC heap, false otherwise.
     virtual bool IsHeapPointer(void* object, bool small_heap_only = false)
     {
-        return m_pGlobalHeapStart <= object && object <= m_pGlobalHeapCurrent;
+        bool ret = m_pGlobalHeapStart <= object && object <= m_pGlobalHeapCurrent;
+        if (!ret)
+            return IsInFrozenSegment((Object*)object);
+        return ret;
     }
 
     // Return the generation that has been condemned by the current GC.
@@ -674,24 +688,53 @@ public:
     ===========================================================================
     */
 
+   std::vector<heap_segment*> m_segment_infos;
+
     // Registers a frozen segment with the GC.
     virtual segment_handle RegisterFrozenSegment(segment_info *pseginfo)
     {
-        assert(0);
-        return NULL;
-    }
+        heap_segment * seg = (heap_segment*)malloc(sizeof(heap_segment));
+        if (!seg)
+        {
+            return NULL;
+        }
+
+        uint8_t* base_mem = (uint8_t*)pseginfo->pvMem;
+        seg->mem = base_mem + pseginfo->ibFirstObject;
+        seg->allocated = base_mem + pseginfo->ibAllocated;
+        seg->committed = base_mem + pseginfo->ibCommit;
+        seg->reserved = base_mem + pseginfo->ibReserved;
+
+        m_segment_infos.push_back(seg);
+        return reinterpret_cast< segment_handle >(seg);
+        }
 
     // Unregisters a frozen segment.
     virtual void UnregisterFrozenSegment(segment_handle seg)
     {
-        assert(0);
+        heap_segment* sInfo = reinterpret_cast< heap_segment* >(seg);
+        auto foundItem = std::find(m_segment_infos.begin(), m_segment_infos.end(), sInfo);
+        assert(foundItem == m_segment_infos.end());
+        m_segment_infos.erase(foundItem);
+        free(sInfo);
     }
 
     // Indicates whether an object is in a frozen segment.
     virtual bool IsInFrozenSegment(Object *object)
     {
-        assert(0);
+        for (auto item = m_segment_infos.begin(), __end = m_segment_infos.end(); item != __end; ++item)
+        {
+            if((*item)->mem <= ((uint8_t*)object) && (*item)->reserved >= ((uint8_t*)object))
+                return true;
+        }
         return false;
+    }
+
+    virtual void UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed)
+    {
+        heap_segment* sInfo = reinterpret_cast< heap_segment* >(seg);
+        sInfo->committed = committed;
+        sInfo->allocated = allocated;
     }
 
     /*

@@ -11,7 +11,7 @@ internal class Foo : IDisposable
     }
 }
 
-class GitHub_18332
+public class GitHub_18332
 {
     // In Aargh there is a finally with two distinct exit paths.
     // Finally cloning may choose the non-fall through ("wibble") exit
@@ -41,7 +41,7 @@ class GitHub_18332
         return "wobble";
     }
     
-    public static int Main(string[] args)
+    public static int Main()
     {
         string expected = "wobble";
         string actual = Aargh();

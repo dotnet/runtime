@@ -77,5 +77,25 @@ namespace System.Diagnostics.Tests
 
             return result;
         }
+
+        public static T RetryOnAllPlatformsWithClosingResources<T>(Func<T> func)
+        {
+            // Harden the tests increasing the retry count and the timeout.
+            T result = default;
+            RetryHelper.Execute(() =>
+            {
+                try
+                {
+                    result = func();
+                }
+                catch
+                {
+                    PerformanceCounter.CloseSharedResources();
+                    throw;
+                }
+            }, maxAttempts: 10, (iteration) => iteration * 300);
+
+            return result;
+        }
     }
 }

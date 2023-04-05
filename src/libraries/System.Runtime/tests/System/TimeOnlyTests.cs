@@ -87,6 +87,77 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("ticks", () => new TimeOnly(-1));
         }
 
+        [Theory]
+        [InlineData(12, 59)]
+        [InlineData(14, 2)]
+        [InlineData(1, 13)]
+        public static void DeconstructionTest_Hour_Minute(int hour, int minute)
+        {
+            var time = new TimeOnly(hour, minute);
+            (int obtainedHour, int obtainedMinute) = time;
+
+            Assert.Equal(hour, obtainedHour);
+            Assert.Equal(minute, obtainedMinute);
+        }
+
+        [Theory]
+        [InlineData(12, 59, 31)]
+        [InlineData(14, 2, 2)]
+        [InlineData(1, 13, 1)]
+        public static void DeconstructionTest_Hour_Minute_Second(int hour, int minute, int second)
+        {
+            var time = new TimeOnly(hour, minute, second);
+            (int obtainedHour, int obtainedMinute, int obtainedSecond) = time;
+
+            Assert.Equal(hour, obtainedHour);
+            Assert.Equal(minute, obtainedMinute);
+            Assert.Equal(second, obtainedSecond);
+        }
+
+        [Theory]
+        [InlineData(12, 59, 31, 1)]
+        [InlineData(14, 2, 29, 2)]
+        [InlineData(1, 13, 1, 100)]
+        public static void DeconstructionTest_Hour_Minute_Second_Millisecond(int hour, int minute, int second, int millisecond)
+        {
+            var time = new TimeOnly(hour, minute, second, millisecond);
+            (int obtainedHour, int obtainedMinute, int obtainedSecond, int obtainedMillisecond) = time;
+
+            Assert.Equal(hour, obtainedHour);
+            Assert.Equal(minute, obtainedMinute);
+            Assert.Equal(second, obtainedSecond);
+            Assert.Equal(millisecond, obtainedMillisecond);
+        }
+
+        [Theory]
+        [InlineData(12, 59, 31, 1, 7)]
+        [InlineData(14, 2, 29, 2, 3)]
+        [InlineData(1, 13, 1, 100, 2)]
+        public static void DeconstructionTest_Hour_Minute_Second_Millisecond_Microsecond(int hour, int minute, int second, int millisecond, int microsecond)
+        {
+            var time = new TimeOnly(hour, minute, second, millisecond, microsecond);
+            (int obtainedHour, int obtainedMinute, int obtainedSecond, int obtainedMillisecond, int obtainedMicrosecond) = time;
+
+            Assert.Equal(hour, obtainedHour);
+            Assert.Equal(minute, obtainedMinute);
+            Assert.Equal(second, obtainedSecond);
+            Assert.Equal(millisecond, obtainedMillisecond);
+            Assert.Equal(microsecond, obtainedMicrosecond);
+        }
+
+        [Fact]
+        public static void DeconstructionTest_Hour_Minute_Second_Millisecond_Microsecond_Now()
+        {
+            var time = TimeOnly.FromDateTime(DateTime.Now);
+            (int obtainedHour, int obtainedMinute, int obtainedSecond, int obtainedMillisecond, int obtainedMicrosecond) = time;
+
+            Assert.Equal(time.Hour, obtainedHour);
+            Assert.Equal(time.Minute, obtainedMinute);
+            Assert.Equal(time.Second, obtainedSecond);
+            Assert.Equal(time.Millisecond, obtainedMillisecond);
+            Assert.Equal(time.Microsecond, obtainedMicrosecond);
+        }
+
         [Fact]
         public static void AddTest()
         {

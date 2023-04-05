@@ -108,13 +108,13 @@ namespace System
 
             if (dstEEType.IsPointer)
             {
-                Exception exception = ConvertPointerIfPossible(srcObject, dstEEType, semantics, out IntPtr dstIntPtr);
+                Exception exception = ConvertPointerIfPossible(srcObject, dstEEType, semantics, out object dstPtr);
                 if (exception != null)
                 {
                     dstObject = null;
                     return exception;
                 }
-                dstObject = dstIntPtr;
+                dstObject = dstPtr;
                 return null;
             }
 
@@ -134,8 +134,7 @@ namespace System
             switch (dstCorElementType)
             {
                 case CorElementType.ELEMENT_TYPE_BOOLEAN:
-                    bool boolValue = Convert.ToBoolean(srcObject);
-                    dstObject = dstEEType.IsEnum ? Enum.ToObject(dstEEType, boolValue ? 1 : 0) : boolValue;
+                    dstObject = Convert.ToBoolean(srcObject);
                     break;
 
                 case CorElementType.ELEMENT_TYPE_CHAR:
@@ -215,11 +214,11 @@ namespace System
             return null;
         }
 
-        private static Exception ConvertPointerIfPossible(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, out IntPtr dstIntPtr)
+        private static Exception ConvertPointerIfPossible(object srcObject, EETypePtr dstEEType, CheckArgumentSemantics semantics, out object dstPtr)
         {
-            if (srcObject is IntPtr srcIntPtr)
+            if (srcObject is IntPtr or UIntPtr)
             {
-                dstIntPtr = srcIntPtr;
+                dstPtr = srcObject;
                 return null;
             }
 
@@ -227,12 +226,12 @@ namespace System
             {
                 if (dstEEType == typeof(void*).TypeHandle.ToEETypePtr() || RuntimeImports.AreTypesAssignable(pSourceType: srcPointer.GetPointerType().TypeHandle.ToEETypePtr(), pTargetType: dstEEType))
                 {
-                    dstIntPtr = srcPointer.GetPointerValue();
+                    dstPtr = srcPointer.GetPointerValue();
                     return null;
                 }
             }
 
-            dstIntPtr = IntPtr.Zero;
+            dstPtr = null;
             return CreateChangeTypeException(srcObject.GetEETypePtr(), dstEEType, semantics);
         }
 
@@ -244,7 +243,7 @@ namespace System
                 case CheckArgumentSemantics.SetFieldDirect:
                     return CreateChangeTypeArgumentException(srcEEType, dstEEType);
                 case CheckArgumentSemantics.ArraySet:
-                    return CreateChangeTypeInvalidCastException(srcEEType, dstEEType);
+                    return CreateChangeTypeInvalidCastException();
                 default:
                     Debug.Fail("Unexpected CheckArgumentSemantics value: " + semantics);
                     throw new InvalidOperationException();
@@ -259,7 +258,7 @@ namespace System
             return new ArgumentException(SR.Format(SR.Arg_ObjObjEx, Type.GetTypeFromHandle(new RuntimeTypeHandle(srcEEType)), destinationTypeName));
         }
 
-        private static InvalidCastException CreateChangeTypeInvalidCastException(EETypePtr srcEEType, EETypePtr dstEEType)
+        private static InvalidCastException CreateChangeTypeInvalidCastException()
         {
             return new InvalidCastException(SR.InvalidCast_StoreArrayElement);
         }

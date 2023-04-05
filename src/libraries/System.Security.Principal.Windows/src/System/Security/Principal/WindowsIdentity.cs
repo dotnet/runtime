@@ -270,7 +270,7 @@ namespace System.Security.Principal
                     IntPtr.Zero,
                     0,
                     out _) &&
-                Marshal.GetLastWin32Error() == Interop.Errors.ERROR_INVALID_HANDLE)
+                Marshal.GetLastPInvokeError() == Interop.Errors.ERROR_INVALID_HANDLE)
             {
                 throw new ArgumentException(SR.Argument_InvalidImpersonationToken);
             }
@@ -875,7 +875,7 @@ namespace System.Security.Principal
         {
             hr = 0;
             if (!Interop.Advapi32.OpenProcessToken(Interop.Kernel32.GetCurrentProcess(), desiredAccess, out SafeAccessTokenHandle safeTokenHandle))
-                hr = GetHRForWin32Error(Marshal.GetLastWin32Error());
+                hr = GetHRForWin32Error(Marshal.GetLastPInvokeError());
             return safeTokenHandle;
         }
 
@@ -915,7 +915,7 @@ namespace System.Security.Principal
                                                               safeLocalAllocHandle,
                                                               0,
                                                               out uint dwLength);
-                int dwErrorCode = Marshal.GetLastWin32Error();
+                int dwErrorCode = Marshal.GetLastPInvokeError();
                 switch (dwErrorCode)
                 {
                     case Interop.Errors.ERROR_BAD_LENGTH: // special case for TokenSessionId. Falling through

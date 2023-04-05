@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -29,6 +31,40 @@ namespace System.Diagnostics
         private bool _needFileInfo;
 
         /// <summary>
+        /// Will be true if we attempted to retrieve the associated MethodBase but couldn't.
+        /// </summary>
+        private bool _noMethodBaseAvailable;
+
+        /// <summary>
+        /// Returns the method the frame is executing
+        /// </summary>
+        [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
+        public virtual MethodBase? GetMethod()
+        {
+            TryInitializeMethodBase();
+            return _method;
+        }
+
+        private bool TryInitializeMethodBase()
+        {
+            if (_noMethodBaseAvailable || _ipAddress == IntPtr.Zero || _ipAddress == Exception.EdiSeparator)
+                return false;
+
+            if (_method != null)
+                return true;
+
+            IntPtr methodStartAddress = _ipAddress - _nativeOffset;
+            Debug.Assert(RuntimeImports.RhFindMethodStartAddress(_ipAddress) == methodStartAddress);
+            DeveloperExperience.Default.TryGetMethodBase(methodStartAddress, out _method);
+            if (_method == null)
+            {
+                _noMethodBaseAvailable = true;
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Constructs a StackFrame corresponding to a given IP address.
         /// </summary>
         internal StackFrame(IntPtr ipAddress, bool needFileInfo)
@@ -55,7 +91,6 @@ namespace System.Diagnostics
                 _nativeOffset = (int)((nint)_ipAddress - (nint)methodStartAddress);
 
                 DeveloperExperience.Default.TryGetILOffsetWithinMethod(_ipAddress, out _ilOffset);
-                DeveloperExperience.Default.TryGetMethodBase(methodStartAddress, out _method);
 
                 if (needFileInfo)
                 {
@@ -98,7 +133,7 @@ namespace System.Diagnostics
         /// </summary>
         internal bool HasMethod()
         {
-            return _method != null;
+            return TryInitializeMethodBase();
         }
 
         /// <summary>
@@ -128,15 +163,16 @@ namespace System.Diagnostics
             {
                 // Passing a default string for "at" in case SR.UsingResourceKeys() is true
                 // as this is a special case and we don't want to have "Word_At" on stack traces.
-                string word_At = SR.GetResourceString(nameof(SR.Word_At), defaultString: "at");
+                string word_At = SR.UsingResourceKeys() ? "at" : SR.Word_At;
                 builder.Append("   ").Append(word_At).Append(' ');
                 builder.AppendLine(DeveloperExperience.Default.CreateStackTraceString(_ipAddress, _needFileInfo));
             }
             if (_isLastFrameFromForeignExceptionStackTrace)
             {
                 // Passing default for Exception_EndStackTraceFromPreviousThrow in case SR.UsingResourceKeys is set.
-                builder.AppendLine(SR.GetResourceString(nameof(SR.Exception_EndStackTraceFromPreviousThrow),
-                    defaultString: "--- End of stack trace from previous location ---"));
+                builder.AppendLine(SR.UsingResourceKeys() ?
+                    "--- End of stack trace from previous location ---" :
+                    SR.Exception_EndStackTraceFromPreviousThrow);
             }
         }
     }

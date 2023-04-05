@@ -5,7 +5,7 @@ using System;
 using System.Linq;
 public partial class Math
 { //Only append content to this class as the test suite depends on line info
-    public static int IntAdd(int a, int b)
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static int IntAdd(int a, int b)
     {
         int c = a + b;
         int d = c + b;
@@ -14,7 +14,7 @@ public partial class Math
         return e;
     }
 
-    public static int UseComplex(int a, int b)
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static int UseComplex(int a, int b)
     {
         var complex = new Simple.Complex(10, "xx");
         int c = a + b;
@@ -27,7 +27,7 @@ public partial class Math
 
     delegate bool IsMathNull(Math m);
 
-    public static int DelegatesTest()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static int DelegatesTest()
     {
         Func<Math, bool> fn_func = (Math m) => m == null;
         Func<Math, bool> fn_func_null = null;
@@ -54,7 +54,7 @@ public partial class Math
         return res ? 0 : 1;
     }
 
-    public static int GenericTypesTest()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static int GenericTypesTest()
     {
         var list = new System.Collections.Generic.Dictionary<Math[], IsMathNull>();
         System.Collections.Generic.Dictionary<Math[], IsMathNull> list_null = null;
@@ -79,7 +79,7 @@ public partial class Math
 
     static bool IsMathNullDelegateTarget(Math m) => m == null;
 
-    public static void OuterMethod()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void OuterMethod()
     {
         Console.WriteLine($"OuterMethod called");
         var nim = new Math.NestedInMath();
@@ -100,7 +100,7 @@ public partial class Math
         return i - 2;
     }
 
-    public class NestedInMath
+    public partial class NestedInMath
     {
         public int InnerMethod(int i)
         {
@@ -136,7 +136,7 @@ public partial class Math
             Console.WriteLine($"str: {str}");
         }
 
-        public static async System.Threading.Tasks.Task<bool> AsyncTest(string s, int i)
+        [System.Runtime.InteropServices.JavaScript.JSExport] public static async System.Threading.Tasks.Task<bool> AsyncTest(string s, int i)
         {
             var li = 10 + i;
             var ls = s + "test";
@@ -148,7 +148,7 @@ public partial class Math
 
     public static void PrimitiveTypesTest()
     {
-        char c0 = '€';
+        char c0 = '\u20AC';
         char c1 = 'A';
         // TODO: other types!
         // just trying to ensure vars don't get optimized out
@@ -321,9 +321,9 @@ public partial class Math
 
 }
 
-public class DebuggerTest
+public partial class DebuggerTest
 {
-    public static void run_all()
+    [System.Runtime.InteropServices.JavaScript.JSExport] public static void run_all()
     {
         locals();
     }
@@ -532,7 +532,7 @@ public class LoadDebuggerTest {
     }
 }
 
-public class HiddenSequencePointTest {
+public partial class HiddenSequencePointTest {
     public static void StepOverHiddenSP()
     {
         Console.WriteLine("first line");
@@ -604,7 +604,7 @@ public class LoadDebuggerTestALC {
             Console.WriteLine($"Loaded - {loadedAssembly}");
 
         }
-        public static void RunMethod(string className, string methodName)
+        public static void RunMethod(string className, string methodName, string methodName2, string methodName3)
         {
             var ty = typeof(System.Reflection.Metadata.MetadataUpdater);
             var mi = ty.GetMethod("GetCapabilities", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static, Array.Empty<Type>());
@@ -624,13 +624,13 @@ public class LoadDebuggerTestALC {
             ApplyUpdate(loadedAssembly, 1);
 
             myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
-            myMethod = myType.GetMethod(methodName);
+            myMethod = myType.GetMethod(methodName2);
             myMethod.Invoke(null, null);
 
             ApplyUpdate(loadedAssembly, 2);
 
             myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
-            myMethod = myType.GetMethod(methodName);
+            myMethod = myType.GetMethod(methodName3);
             myMethod.Invoke(null, null);
         }
 
@@ -987,6 +987,8 @@ public class TestHotReloadUsingSDB {
 
         public static void RunMethod(string className, string methodName)
         {
+            if (loadedAssembly is null)
+                throw new InvalidOperationException($"{nameof(loadedAssembly)} is null!");
             var myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
             var myMethod = myType.GetMethod(methodName);
             myMethod.Invoke(null, null);
@@ -1257,3 +1259,344 @@ public class InspectIntPtr
         System.Diagnostics.Debugger.Break();
     }
 }
+
+public partial class HiddenSequencePointTest {
+    public static void StepOverHiddenSP3()
+    {
+        MethodWithHiddenLinesAtTheEnd3();
+        System.Diagnostics.Debugger.Break();
+    }
+    public static void MethodWithHiddenLinesAtTheEnd3()
+    {
+        Console.WriteLine ($"MethodWithHiddenLinesAtTheEnd");
+#line hidden
+        Console.WriteLine ($"debugger shouldn't be able to step here");
+    }
+#line default
+}
+
+public class ClassInheritsFromClassWithoutDebugSymbols : DebuggerTests.ClassWithoutDebugSymbolsToInherit
+{
+    public static void Run()
+    {
+        var myVar = new ClassInheritsFromClassWithoutDebugSymbols();
+        myVar.CallMethod();
+    }
+
+    public void CallMethod()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+    public int myField2;
+    public int myField;
+}
+
+[System.Diagnostics.DebuggerNonUserCode]
+public class ClassNonUserCodeToInherit
+{
+    private int propA {get;}
+    public int propB {get;}
+    protected int propC {get;}
+    private int d;
+    public int e;
+    protected int f;
+    private int G
+    {
+        get {return f + 1;}
+    }
+    private int H => f;
+
+    public ClassNonUserCodeToInherit()
+    {
+        propA = 10;
+        propB = 20;
+        propC = 30;
+        d = 40;
+        e = 50;
+        f = 60;
+        Console.WriteLine(propA);
+        Console.WriteLine(propB);
+        Console.WriteLine(propC);
+        Console.WriteLine(d);
+        Console.WriteLine(e);
+        Console.WriteLine(f);
+    }
+}
+
+public class ClassInheritsFromNonUserCodeClass : ClassNonUserCodeToInherit
+{
+    public static void Run()
+    {
+        var myVar = new ClassInheritsFromNonUserCodeClass();
+        myVar.CallMethod();
+    }
+
+    public void CallMethod()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public int myField2;
+    public int myField;
+}
+
+public class ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass : DebuggerTests.ClassNonUserCodeToInheritThatInheritsFromNormalClass
+{
+    public static void Run()
+    {
+        var myVar = new ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass();
+        myVar.CallMethod();
+    }
+
+    public void CallMethod()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public int myField;
+}
+public class ReadOnlySpanTest
+{
+    struct S1 {
+        internal double d1, d2;
+    }
+
+    ref struct R1 {
+        internal ref double d1; // 8
+        internal ref object o1; // += sizeof(MonoObject*)
+        internal object o2;  // skip
+        internal ref S1 s1; //+= instance_size(S1)
+        internal S1 s2; // skip
+        public R1(ref double d1, ref object o1, ref S1 s1) {
+            this.d1 = ref d1;
+            this.o1 = ref o1;
+            this.s1 = ref s1;
+        }
+        internal double Run()
+        {
+            return s1.d1;
+        }
+    }
+
+    ref struct R1Sample2 {
+        public ref double d1;
+        public R1Sample2(ref double d1) {
+            this.d1 = ref d1;
+        }
+    }
+
+    ref struct R2Sample2 {
+        R1Sample2 r1;
+        public R2Sample2 (ref double d1) {
+            r1 = new R1Sample2 (ref d1);
+        }
+
+        public void Modify(double newDouble) {
+            r1.d1 = newDouble;
+        }
+
+        public double Run() {
+            return r1.d1;
+        }
+    }
+
+    public static void Run()
+    {
+        Invoke(new string[] {"TEST"});
+        ReadOnlySpan<object> var1 = new ReadOnlySpan<object>();
+        System.Diagnostics.Debugger.Break();
+    }
+    public static void Invoke(object[] parameters)
+    {
+        CheckArguments(parameters);
+    }
+    public static void CheckArguments(ReadOnlySpan<object> parameters)
+    {
+        double d1 = 123.0;
+        object o1 = new String("hi");
+        var s1 = new S1();
+        s1.d1 = 10;
+        s1.d2 = 20;
+        R1 myR1 = new R1(ref d1, ref o1, ref s1);
+        myR1.o2 = new String("hi");
+        myR1.s2 = new S1();
+        myR1.s2.d1 = 30;
+        myR1.s2.d2 = 40;
+        double xyz = 123.0;
+        R2Sample2 r2 = new R2Sample2(ref xyz);
+        xyz = 456.0;
+        System.Diagnostics.Debugger.Break();
+    }
+}
+
+public class ToStringOverriden
+{
+    class ToStringOverridenA {
+        public override string ToString()
+        {
+            return "helloToStringOverridenA";
+        }
+    }
+    class ToStringOverridenB: ToStringOverridenA {}
+
+    class ToStringOverridenC {}
+    class ToStringOverridenD: ToStringOverridenC
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenD";
+        }
+    }
+
+    struct ToStringOverridenE
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenE";
+        }
+    }
+
+    class ToStringOverridenF
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenF";
+        }
+    }
+    class ToStringOverridenG: ToStringOverridenF
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenG";
+        }
+    }
+
+    class ToStringOverridenH
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenH";
+        }
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenHWrong";
+        }
+    }
+
+    class ToStringOverridenI
+    {
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenIWrong";
+        }
+    }
+
+    struct ToStringOverridenJ
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenJ";
+        }
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenJWrong";
+        }
+    }
+
+    struct ToStringOverridenK
+    {
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenKWrong";
+        }
+    }
+
+    record ToStringOverridenL
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenL";
+        }
+    }
+
+    record ToStringOverridenM
+    {
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenMWrong";
+        }
+    }
+
+    record ToStringOverridenN
+    {
+        public override string ToString()
+        {
+            return "helloToStringOverridenN";
+        }
+        public string ToString(bool withParms = true)
+        {
+            return "helloToStringOverridenNWrong";
+        }
+    }
+
+    public override string ToString()
+    {
+        return "helloToStringOverriden";
+    }
+    public static void Run()
+    {
+        var a = new ToStringOverriden();
+        var b = new ToStringOverridenB();
+        var c = new ToStringOverridenD();
+        var d = new ToStringOverridenE();
+        ToStringOverridenA e = new ToStringOverridenB();
+        object f = new ToStringOverridenB();
+        var g = new ToStringOverridenG();
+        var h = new ToStringOverridenH();
+        var i = new ToStringOverridenI();
+        var j = new ToStringOverridenJ();
+        var k = new ToStringOverridenK();
+        var l = new ToStringOverridenL();
+        var m = new ToStringOverridenM();
+        var n = new ToStringOverridenN();
+        System.Diagnostics.Debugger.Break();
+    }
+}
+public class TestLoadSymbols
+{
+    public static void Run()
+    {
+        var array = new Newtonsoft.Json.Linq.JArray();
+        var text = new Newtonsoft.Json.Linq.JValue("Manual text");
+        var date = new Newtonsoft.Json.Linq.JValue(new DateTime(2000, 5, 23));
+
+        System.Diagnostics.Debugger.Break();
+
+        array.Add(text);
+        array.Add(date);
+    }
+}
+
+public class MultiThreadedTest
+{
+    public static void Run()
+    {
+        System.Collections.Generic.List<System.Threading.Thread> myThreads = new();
+        for (int i = 0 ; i < 3; i++)
+        {
+            var t = new System.Threading.Thread (() => Write("y"));
+            myThreads.Add(t);
+            t.Start();
+        }
+        foreach (System.Threading.Thread curThread in myThreads)
+        {
+            curThread.Join();
+        }
+    }
+    static void Write(string input)
+    {
+        var currentThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+        Console.WriteLine($"Thread:{currentThread} - {input}");
+    }
+}
+

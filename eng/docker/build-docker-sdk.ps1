@@ -9,7 +9,7 @@ Param(
   [switch][Alias('w')]$buildWindowsContainers
 )
 
-$dotNetVersion="7.0"
+$dotNetVersion="8.0"
 $ErrorActionPreference = "Stop"
 
 $REPO_ROOT_DIR=$(git -C "$PSScriptRoot" rev-parse --show-toplevel)

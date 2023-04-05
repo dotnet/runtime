@@ -9,7 +9,7 @@
 }
 .assembly extern xunit.core {}
 
-.class private auto ansi beforefieldinit Runtime_45250.Program
+.class public auto ansi beforefieldinit Runtime_45250.Program
        extends [System.Runtime]System.Object
 {
   .class auto ansi nested private beforefieldinit Func`1<T>
@@ -74,8 +74,8 @@
     IL_0012:  ret
   }
 
-  .method private hidebysig static int32
-          Main(string[] args) cil managed
+  .method public hidebysig static int32
+          Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
