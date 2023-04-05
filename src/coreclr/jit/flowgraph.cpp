@@ -506,18 +506,11 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 }
 
                 GenTreeCall* call = tree->AsCall();
-                if (call->IsTailCall())
-                {
-                    // It is very unlikely, but just in case
-                    continue;
-                }
-
-                JITDUMP("Expanding static initialization for '%s', call: [%06d] in " FMT_BB "\n",
-                        eeGetClassName(call->gtRetClsHnd), dspTreeID(tree), block->bbNum)
+                assert(!call->IsTailCall());
 
                 if (call->gtInitClsHnd == NO_CLASS_HANDLE)
                 {
-                    assert(!"helper call was created without gtRetClsHnd");
+                    assert(!"helper call was created without gtInitClsHnd");
                     continue;
                 }
 
@@ -536,6 +529,9 @@ PhaseStatus Compiler::fgExpandStaticInit()
                     JITDUMP("getStaticBaseAddress returned false - bail out.\n")
                     continue;
                 }
+
+                JITDUMP("Expanding static initialization for '%s', call: [%06d] in " FMT_BB "\n",
+                        eeGetClassName(call->gtRetClsHnd), dspTreeID(tree), block->bbNum)
 
                 DebugInfo debugInfo = stmt->GetDebugInfo();
 
@@ -639,7 +635,7 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 // that only accepts a single argument
                 BasicBlock* helperCallBb = fgNewBBFromTreeAfter(BBJ_NONE, isInitedBb, call, debugInfo, true);
 
-                GenTree* replacementNode;
+                GenTree* replacementNode = nullptr;
                 if (retValKind == SHRV_STATIC_BASE_PTR)
                 {
                     // Replace the call with a constant pointer to the statics base
@@ -662,13 +658,15 @@ PhaseStatus Compiler::fgExpandStaticInit()
                                                                    GTF_ICON_GLOBAL_PTR, false);
                     }
                 }
+
+                if (replacementNode == nullptr)
+                {
+                    (*callUse)->gtBashToNOP();
+                }
                 else
                 {
-                    // Helper's return value is not used
-                    replacementNode = gtNewNothingNode();
+                    *callUse = replacementNode;
                 }
-
-                *callUse = replacementNode;
 
                 fgMorphStmtBlockOps(block, stmt);
                 gtUpdateStmtSideEffects(stmt);
