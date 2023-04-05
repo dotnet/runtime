@@ -335,25 +335,30 @@ namespace Internal.TypeSystem.Ecma
                         {
                             return null;
                         }
-                        if (implementation is EcmaModule ecmaModule)
+                        else if (implementation is EcmaModule ecmaModule)
                         {
                             currentModule = ecmaModule;
                         }
-                        if (implementation is ModuleDesc moduleDesc)
+                        else if (implementation is ModuleDesc moduleDesc)
                         {
                             return moduleDesc.GetType(nameSpace, name, notFoundBehavior);
                         }
-                        if (implementation is ResolutionFailure)
+                        else if (implementation is ResolutionFailure)
                         {
                             // No need to check notFoundBehavior - the callee already handled ReturnNull and Throw
                             return implementation;
                         }
-                        // TODO
+                        else
+                        {
+                            // TODO
+                            throw new NotImplementedException();
+                        }
+                    }
+                    else
+                    {
+                        // TODO:
                         throw new NotImplementedException();
                     }
-
-                    // TODO:
-                    throw new NotImplementedException();
                 }
             }
 
