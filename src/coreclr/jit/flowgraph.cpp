@@ -613,6 +613,8 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 }
                 else
                 {
+                    assert(isInitOffset == 0);
+                    
                     isInitAdrNode =
                         gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR, false);
 
