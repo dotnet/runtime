@@ -6421,28 +6421,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
 
     if (compiler->opts.compDbgEnC)
     {
-        // what we have to preserve is called the "frame header" (see comments in VM\eetwain.cpp)
-        // which is:
-        //  -return address
-        //  -saved off RBP
-        //  -saved 'this' pointer and bool for synchronized methods
-
-        // 4 slots for RBP + return address + RSI + RDI
-        int preservedAreaSize = 4 * REGSIZE_BYTES;
-
-        if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
-        {
-            if (!(compiler->info.compFlags & CORINFO_FLG_STATIC))
-            {
-                preservedAreaSize += REGSIZE_BYTES;
-            }
-
-            preservedAreaSize += TARGET_POINTER_SIZE;
-        }
-
-        // Used to signal both that the method is compiled for EnC, and also the size of the block at the top of the
-        // frame
-        gcInfoEncoder->SetSizeOfEditAndContinuePreservedArea(preservedAreaSize);
+        NYI_RISCV64("compDbgEnc in genCreateAndStoreGCInfo-----unimplemented/unused on RISCV64 yet----");
     }
 
     if (compiler->opts.IsReversePInvoke())
