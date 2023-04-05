@@ -11,24 +11,20 @@ using System.Threading.Tasks;
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
-    /// Converts the exception to the default value of the unmanaged type.
+    /// Marshaller that swallows the exception.
     /// </summary>
-    /// <typeparam name="T">The unmanaged type</typeparam>
-    [CustomMarshaller(typeof(Exception), MarshalMode.UnmanagedToManagedOut, typeof(ExceptionDefaultMarshaller<>))]
-    public static class ExceptionDefaultMarshaller<T>
-        where T : unmanaged
+    [CustomMarshaller(typeof(Exception), MarshalMode.UnmanagedToManagedOut, typeof(ExceptionAsVoidMarshaller))]
+    public static class ExceptionAsVoidMarshaller
     {
         /// <summary>
-        /// Converts the exception to the default value of the unmanaged type.
+        /// Swallow the exception and return nothing.
         /// </summary>
-        /// <param name="e">The exception</param>
-        /// <returns>The default value of <typeparamref name="T"/>.</returns>
-        public static T ConvertToUnmanaged(Exception e)
+        /// <param name="e">The exception.</param>
+        public static void ConvertToUnmanaged(Exception e)
         {
             // Use GetHRForException to ensure the runtime sets up the IErrorInfo object
             // and calls SetErrorInfo if the platform supports it.
             _ = Marshal.GetHRForException(e);
-            return default;
         }
     }
 }

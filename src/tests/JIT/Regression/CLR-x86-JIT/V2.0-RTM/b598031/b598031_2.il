@@ -8,19 +8,29 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'test2' {}
+.assembly 'b598031_2' {}
 .assembly extern xunit.core {}
 
 .class public auto ansi beforefieldinit switchdefaultonly1
        extends [mscorlib]System.Object
 {
-  .method public hidebysig static int32 
-          Main(string[] args) cil managed
+  .method public hidebysig static int32
+          Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
     .entrypoint
+    .locals init ([0] int32 V_0)
+      ldc.i4.0
+      newarr [mscorlib]System.String
+      call int32 switchdefaultonly1::MainX(string[])
+      ret
+  }
+
+  .method public hidebysig static int32
+          MainX(string[] args) cil managed noinlining
+  {
     // Code size       44 (0x2c)
     .maxstack  2
     .locals init ([0] int32 V_0)

@@ -10,26 +10,26 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    internal sealed record NativeThisInfo(TypeSyntax UnwrapperType) : MarshallingInfo;
+    internal sealed record ObjectUnwrapperInfo(TypeSyntax UnwrapperType) : MarshallingInfo;
 
-    internal sealed class NativeToManagedThisMarshallerFactory : IMarshallingGeneratorFactory
+    internal sealed class ObjectUnwrapperMarshallerFactory : IMarshallingGeneratorFactory
     {
         private readonly IMarshallingGeneratorFactory _inner;
-        public NativeToManagedThisMarshallerFactory(IMarshallingGeneratorFactory inner)
+        public ObjectUnwrapperMarshallerFactory(IMarshallingGeneratorFactory inner)
         {
             _inner = inner;
         }
 
         public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
-            => info.MarshallingAttributeInfo is NativeThisInfo ? new Marshaller() : _inner.Create(info, context);
+            => info.MarshallingAttributeInfo is ObjectUnwrapperInfo ? new Marshaller() : _inner.Create(info, context);
 
         private sealed class Marshaller : IMarshallingGenerator
         {
             public ManagedTypeInfo AsNativeType(TypePositionInfo info) => new PointerTypeInfo("void*", "void*", false);
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
             {
-                Debug.Assert(info.MarshallingAttributeInfo is NativeThisInfo);
-                TypeSyntax unwrapperType = ((NativeThisInfo)info.MarshallingAttributeInfo).UnwrapperType;
+                Debug.Assert(info.MarshallingAttributeInfo is ObjectUnwrapperInfo);
+                TypeSyntax unwrapperType = ((ObjectUnwrapperInfo)info.MarshallingAttributeInfo).UnwrapperType;
                 if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
                 {
                     yield break;

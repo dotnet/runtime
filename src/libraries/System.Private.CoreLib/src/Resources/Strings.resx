@@ -241,9 +241,6 @@
   <data name="Arg_CannotUnloadAppDomainException" xml:space="preserve">
     <value>Attempt to unload the AppDomain failed.</value>
   </data>
-  <data name="Arg_CATypeResolutionFailed" xml:space="preserve">
-    <value>Failed to resolve type from string "{0}" which was embedded in custom attribute blob.</value>
-  </data>
   <data name="Arg_COMAccess" xml:space="preserve">
     <value>Must specify property Set or Get or method call for a COM Object.</value>
   </data>

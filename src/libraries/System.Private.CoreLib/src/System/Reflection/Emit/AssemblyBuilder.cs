@@ -17,11 +17,6 @@ namespace System.Reflection.Emit
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            if (name[0] == '\0')
-            {
-                throw new ArgumentException(SR.Argument_InvalidName, nameof(name));
-            }
-
             return DefineDynamicModuleCore(name);
         }
 

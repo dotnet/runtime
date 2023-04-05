@@ -955,6 +955,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
+            case NI_Vector128_GetUpper:
+            {
+                const int byteIndex = 8;
+                GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op1Reg, byteIndex, INS_OPTS_16B);
+                break;
+            }
+
             case NI_Vector128_AsVector3:
             {
                 // AsVector3 can be a no-op when it's already in the right register, otherwise
@@ -995,6 +1002,110 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                                           (emitSize == EA_8BYTE) ? INS_OPTS_8B : INS_OPTS_16B);
                 break;
 
+            case NI_AdvSimd_VectorTableLookup:
+            case NI_AdvSimd_Arm64_VectorTableLookup:
+            {
+                unsigned regCount = 0;
+                if (intrin.op1->OperIsFieldList())
+                {
+                    GenTreeFieldList* fieldList  = intrin.op1->AsFieldList();
+                    GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                    op1Reg                       = firstField->GetRegNum();
+                    INDEBUG(regNumber argReg = op1Reg);
+                    for (GenTreeFieldList::Use& use : fieldList->Uses())
+                    {
+                        regCount++;
+#ifdef DEBUG
+
+                        GenTree* argNode = use.GetNode();
+                        assert(argReg == argNode->GetRegNum());
+                        argReg = REG_NEXT(argReg);
+#endif
+                    }
+                }
+                else
+                {
+                    regCount = 1;
+                    op1Reg   = intrin.op1->GetRegNum();
+                }
+
+                switch (regCount)
+                {
+                    case 2:
+                        ins = INS_tbl_2regs;
+                        break;
+                    case 3:
+                        ins = INS_tbl_3regs;
+                        break;
+                    case 4:
+                        ins = INS_tbl_4regs;
+                        break;
+                    default:
+                        assert(regCount == 1);
+                        assert(ins == INS_tbl);
+                        break;
+                }
+
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
+            case NI_AdvSimd_VectorTableLookupExtension:
+            case NI_AdvSimd_Arm64_VectorTableLookupExtension:
+            {
+                assert(isRMW);
+                unsigned regCount = 0;
+                op1Reg            = intrin.op1->GetRegNum();
+                op3Reg            = intrin.op3->GetRegNum();
+                assert(targetReg != op3Reg);
+                if (intrin.op2->OperIsFieldList())
+                {
+                    GenTreeFieldList* fieldList  = intrin.op2->AsFieldList();
+                    GenTree*          firstField = fieldList->Uses().GetHead()->GetNode();
+                    op2Reg                       = firstField->GetRegNum();
+                    INDEBUG(regNumber argReg = op2Reg);
+                    for (GenTreeFieldList::Use& use : fieldList->Uses())
+                    {
+                        regCount++;
+#ifdef DEBUG
+
+                        GenTree* argNode = use.GetNode();
+
+                        // registers should be consecutive
+                        assert(argReg == argNode->GetRegNum());
+                        // and they should not interfere with targetReg
+                        assert(targetReg != argReg);
+                        argReg = REG_NEXT(argReg);
+#endif
+                    }
+                }
+                else
+                {
+                    regCount = 1;
+                    op2Reg   = intrin.op2->GetRegNum();
+                }
+
+                switch (regCount)
+                {
+                    case 2:
+                        ins = INS_tbx_2regs;
+                        break;
+                    case 3:
+                        ins = INS_tbx_3regs;
+                        break;
+                    case 4:
+                        ins = INS_tbx_4regs;
+                        break;
+                    default:
+                        assert(regCount == 1);
+                        assert(ins == INS_tbx);
+                        break;
+                }
+
+                GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(node), targetReg, op1Reg, /* canSkip */ true);
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op2Reg, op3Reg, opt);
+                break;
+            }
             default:
                 unreached();
         }

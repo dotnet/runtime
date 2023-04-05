@@ -2781,7 +2781,7 @@ void CodeGen::genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm
                 wbKind = varDsc->lvIsParam ? CWBKind_ByRefArg : CWBKind_OtherByRefLocal;
             }
         }
-        else if (tgtAddr->OperIsLocalAddr())
+        else if (tgtAddr->OperIs(GT_LCL_ADDR))
         {
             // Ideally, we should have eliminated the barrier for this case.
             wbKind = CWBKind_AddrOfLocal;
@@ -5345,7 +5345,7 @@ void CodeGen::genFinalizeFrame()
 
 #if defined(TARGET_XARCH)
     // Compute the count of callee saved float regs saved on stack.
-    // On Amd64 we push only integer regs. Callee saved float (xmm6-xmm15)
+    // On Amd64 we push only integer regs. Callee saved float (xmm6-xmm31)
     // regs are stack allocated and preserved in their stack locations.
     compiler->compCalleeFPRegsSavedMask = maskCalleeRegsPushed & RBM_FLT_CALLEE_SAVED;
     maskCalleeRegsPushed &= ~RBM_FLT_CALLEE_SAVED;
@@ -9441,4 +9441,31 @@ bool CodeGen::genCanOmitNormalizationForBswap16(GenTree* tree)
     }
 
     return (cast->gtCastType == TYP_USHORT) || (cast->gtCastType == TYP_SHORT);
+}
+
+//----------------------------------------------------------------------
+// genCodeForReuseVal: Generate code for a node marked with re-using a register.
+//
+// Arguments:
+//   tree - The node marked with re-using a register
+//
+// Remarks:
+//   Generates nothing, except for when the node is a CNS_INT(0) where
+//   we will define a new label to propagate GC info. We want to do this
+//   because if the node is a CNS_INT(0) and is re-using a register,
+//   that register could have been used for a CNS_INT(ref null) that is GC
+//   tracked.
+//
+void CodeGen::genCodeForReuseVal(GenTree* treeNode)
+{
+    assert(treeNode->IsReuseRegVal());
+
+    // For now, this is only used for constant nodes.
+    assert(treeNode->OperIs(GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC));
+    JITDUMP("  TreeNode is marked ReuseReg\n");
+
+    if (treeNode->IsIntegralConst(0) && GetEmitter()->emitCurIGnonEmpty())
+    {
+        genDefineTempLabel(genCreateTempLabel());
+    }
 }

@@ -369,7 +369,12 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     {
         NOTHROW;
         PRECONDITION(dwSize != 0);
-        PRECONDITION(flAllocationType == MEM_RESERVE);  // ORed with MEM_RESERVE_EXECUTABLE on Unix
+
+#ifdef HOST_UNIX
+        PRECONDITION(flAllocationType == (MEM_RESERVE | MEM_RESERVE_EXECUTABLE));
+#else
+        PRECONDITION(flAllocationType == MEM_RESERVE);
+#endif
     }
     CONTRACTL_END;
 

@@ -27,6 +27,6 @@ namespace System.Collections.Frozen
         /// SmallValueTypeDefaultComparerFrozenDictionary/Set to the
         /// hashing ValueTypeDefaultComparerFrozenDictionary/Set.
         /// </remarks>
-        public const int MaxItemsInSmallComparableValueTypeFrozenCollection = 10;
+        public const int MaxItemsInSmallValueTypeFrozenCollection = 10;
     }
 }
