@@ -1063,7 +1063,7 @@ namespace System.Runtime
             private struct CastCacheEntry
             {
                 // version has the following structure:
-                // [ distance:3bit |  versionNum:29bit ]
+                // [ distance:3bit |  versionNum:the rest ]
                 //
                 // distance is how many iterations the entry is from it ideal position.
                 // we use that for preemption.
@@ -1096,12 +1096,7 @@ namespace System.Runtime
             private static uint RotateLeft(uint value, int offset)
                 => (value << offset) | (value >> (32 - offset));
 #endif
-            private struct VolatileInt32 { public volatile int Value; }
             private struct VolatileUInt32 { public volatile uint Value; }
-
-            // [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static int VolatileRead(ref int location) =>
-                Unsafe.As<int, VolatileInt32>(ref location).Value;
 
             // [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private static uint VolatileRead(ref uint location) =>
