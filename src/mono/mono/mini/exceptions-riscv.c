@@ -302,8 +302,6 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
                         MonoContext *ctx, MonoContext *new_ctx, MonoLMF **lmf,
                         host_mgreg_t **save_locations, StackFrameInfo *frame)
 {
-	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
-
 	memset (frame, 0, sizeof (StackFrameInfo));
 	frame->ji = ji;
 
@@ -315,7 +313,6 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 		guint8 *cfa;
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
-
 
 		if (ji->is_trampoline)
 			frame->type = FRAME_TYPE_TRAMPOLINE;
@@ -332,6 +329,8 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 		for (int i = 0; i < 10; i++)
 			(regs + MONO_MAX_IREGS) [i] = *((host_mgreg_t*)&new_ctx->fregs [RISCV_F18 + i]);
 
+		gpointer ip = MINI_FTNPTR_TO_ADDR (MONO_CONTEXT_GET_IP (ctx));
+
 		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, (guint8 *)ji->code_start,
 		                                      (guint8 *)ji->code_start + ji->code_size, (guint8 *)ip, NULL, regs,
 		                                      MONO_MAX_IREGS + 12 + 1, save_locations, MONO_MAX_IREGS, (guint8 **)&cfa);
@@ -339,21 +338,23 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 		if (!success)
 			return FALSE;
 
-		memcpy (&new_ctx->gregs, regs, sizeof (host_mgreg_t) * 32);
+		memcpy (&new_ctx->gregs, regs, sizeof (host_mgreg_t) * MONO_MAX_IREGS);
 		for (int i = 0; i < 2; i++)
 			*((host_mgreg_t*)&new_ctx->fregs [RISCV_F8 + i]) = (regs + MONO_MAX_IREGS) [i];
 		for (int i = 0; i < 10; i++)
-			*((host_mgreg_t*)&new_ctx->fregs [RISCV_F18 + i]) = (regs + MONO_MAX_IREGS) [i];
+			*((host_mgreg_t *)&new_ctx->fregs [RISCV_F18 + i]) = (regs + MONO_MAX_IREGS) [2 + i];
 
+		new_ctx->gregs [0] = regs [RISCV_RA];
 		new_ctx->gregs [RISCV_SP] = (host_mgreg_t)(gsize)cfa;
 
-		if (*lmf && (*lmf)->gregs [RISCV_FP] && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->gregs [RISCV_SP])) {
+		if (*lmf && (*lmf)->gregs [MONO_ARCH_LMF_REG_SP] &&
+		    (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->gregs [MONO_ARCH_LMF_REG_SP])) {
 			/* remove any unused lmf */
 			*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~(TARGET_SIZEOF_VOID_P - 1));
 		}
 
-		/* we substract 1, so that the pc points into the call instruction */
-		new_ctx->gregs [RISCV_ZERO]--;
+		/* we subtract 1, so that the PC points into the call instruction */
+		new_ctx->gregs [0]--;
 
 		return TRUE;
 	} else if (*lmf) {
@@ -365,10 +366,14 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 		if (!ji)
 			return FALSE;
 
-		memcpy (&new_ctx->gregs, (*lmf)->gregs, sizeof (host_mgreg_t) * RISCV_N_GREGS);
+		g_assert (MONO_ARCH_LMF_REGS == ((MONO_ARCH_CALLEE_SAVED_REGS) | (1 << RISCV_SP)));
+
+		memcpy (&new_ctx->gregs [0], &(*lmf)->gregs [0], sizeof (host_mgreg_t) * RISCV_N_GREGS);
+		// new_ctx->gregs [RISCV_FP] = (*lmf)->gregs [MONO_ARCH_LMF_REG_FP];
+		// new_ctx->gregs [RISCV_SP] = (*lmf)->gregs [MONO_ARCH_LMF_REG_SP];
 		new_ctx->gregs [0] = (*lmf)->pc; // use [0] as pc reg since x0 is hard-wired zero
 
-		/* we substract 1, so that the IP points into the call instruction */
+		/* we subtract 1, so that the PC points into the call instruction */
 		new_ctx->gregs [0]--;
 
 		*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~(TARGET_SIZEOF_VOID_P - 1));
