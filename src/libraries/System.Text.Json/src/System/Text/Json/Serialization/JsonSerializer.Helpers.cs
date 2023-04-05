@@ -94,7 +94,7 @@ namespace System.Text.Json
                 JsonNumberHandling.AllowNamedFloatingPointLiterals));
 
         internal static bool IsValidCreationHandlingValue(JsonObjectCreationHandling handling) =>
-            handling == JsonObjectCreationHandling.Replace || handling == JsonObjectCreationHandling.Populate;
+            handling is JsonObjectCreationHandling.Replace or JsonObjectCreationHandling.Populate;
 
         internal static bool IsValidUnmappedMemberHandlingValue(JsonUnmappedMemberHandling handling) =>
             handling is JsonUnmappedMemberHandling.Skip or JsonUnmappedMemberHandling.Disallow;

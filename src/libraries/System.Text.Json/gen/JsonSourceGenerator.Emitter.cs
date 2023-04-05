@@ -1177,7 +1177,7 @@ private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonS
     {typeInfoPropertyTypeRef}? {JsonTypeInfoReturnValueLocalVariableName} = null;
     {WrapWithCheckForCustomConverter(metadataInitSource, typeCompilableName)}
 
-    // OriginatingResolver should be the last property set by the source generator.
+    { /* NB OriginatingResolver should be the last property set by the source generator. */ ""}
     {JsonTypeInfoReturnValueLocalVariableName}.{OriginatingResolverPropertyName} = this;
 
     return {JsonTypeInfoReturnValueLocalVariableName};

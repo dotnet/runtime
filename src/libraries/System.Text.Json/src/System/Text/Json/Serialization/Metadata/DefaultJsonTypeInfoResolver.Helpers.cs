@@ -39,15 +39,11 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo(type, converter, options);
             typeInfo.NumberHandling = GetNumberHandlingForType(typeInfo.Type);
-            JsonObjectCreationHandling? preferredCreationHandling = GetObjectCreationHandlingForType(typeInfo.Type);
+            typeInfo.PreferredPropertyObjectCreationHandling = GetObjectCreationHandlingForType(typeInfo.Type);
+
             if (typeInfo.Kind == JsonTypeInfoKind.Object)
             {
                 typeInfo.UnmappedMemberHandling = GetUnmappedMemberHandling(typeInfo.Type);
-                typeInfo.PreferredPropertyObjectCreationHandling = preferredCreationHandling;
-            }
-            else if (preferredCreationHandling != null)
-            {
-                ThrowHelper.ThrowInvalidOperationException_ObjectCreationHandlingAttributeOnWrongJsonTypeInfoKind(type);
             }
 
             typeInfo.PopulatePolymorphismMetadata();

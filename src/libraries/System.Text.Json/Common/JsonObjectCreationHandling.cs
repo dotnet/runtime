@@ -5,7 +5,7 @@ namespace System.Text.Json.Serialization
 {
 
     /// <summary>
-    /// Indicates if the member will be populated or replaced during deserialization.
+    /// Indicates how .NET properties or fields should be populated during deserialization.
     /// </summary>
 #if BUILDING_SOURCE_GENERATOR
     internal

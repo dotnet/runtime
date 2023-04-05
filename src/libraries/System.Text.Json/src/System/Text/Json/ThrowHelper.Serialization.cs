@@ -64,12 +64,6 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_ObjectCreationHandlingAttributeOnWrongJsonTypeInfoKind(Type declaredType)
-        {
-            throw new InvalidOperationException(SR.Format(SR.ObjectCreationHandlingAttributeOnWrongJsonTypeInfoKind, declaredType));
-        }
-
-        [DoesNotReturn]
         public static void ThrowInvalidOperationException_ObjectCreationHandlingPopulateNotSupportedByConverter(JsonPropertyInfo propertyInfo)
         {
             throw new InvalidOperationException(SR.Format(SR.ObjectCreationHandlingPopulateNotSupportedByConverter, propertyInfo.Name, propertyInfo.DeclaringType));

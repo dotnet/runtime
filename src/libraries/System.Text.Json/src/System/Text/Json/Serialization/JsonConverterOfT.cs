@@ -178,7 +178,7 @@ namespace System.Text.Json.Serialization
         /// <remarks>Note that the value of <seealso cref="HandleNull"/> determines if the converter handles null JSON tokens.</remarks>
         public abstract T? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options);
 
-        internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value, out bool populatedValue)
+        internal bool TryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value, out bool isPopulatedValue)
         {
             // For perf and converter simplicity, handle null here instead of forwarding to the converter.
             if (reader.TokenType == JsonTokenType.Null && !HandleNullOnRead && !state.IsContinuation)
@@ -189,7 +189,7 @@ namespace System.Text.Json.Serialization
                 }
 
                 value = default;
-                populatedValue = default;
+                isPopulatedValue = false;
                 return true;
             }
 
@@ -234,12 +234,9 @@ namespace System.Text.Json.Serialization
                         ref reader);
                 }
 
-                populatedValue = default;
+                isPopulatedValue = false;
                 return true;
             }
-
-            JsonPropertyInfo? propertyInfo = state.Current.JsonPropertyInfo;
-            object? parentObj = state.Current.ReturnValue;
 
             Debug.Assert(IsInternalConverter);
             bool isContinuation = state.IsContinuation;
@@ -256,9 +253,12 @@ namespace System.Text.Json.Serialization
                 Debug.Assert(this is ObjectConverter or ObjectConverterSlim);
                 success = OnTryRead(ref reader, typeToConvert, options, ref state, out value);
                 Debug.Assert(success);
-                populatedValue = default;
+                isPopulatedValue = false;
                 return true;
             }
+
+            JsonPropertyInfo? propertyInfo = state.Current.JsonPropertyInfo;
+            object? parentObj = state.Current.ReturnValue;
 
 #if DEBUG
             // DEBUG: ensure push/pop operations preserve stack integrity
@@ -306,7 +306,7 @@ namespace System.Text.Json.Serialization
             }
 #endif
 
-            populatedValue = state.Current.IsPopulating;
+            isPopulatedValue = state.Current.IsPopulating;
             state.Pop(success);
 #if DEBUG
             Debug.Assert(ReferenceEquals(originalJsonTypeInfo, state.Current.JsonTypeInfo));

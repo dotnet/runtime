@@ -61,7 +61,7 @@ namespace System.Text.Json
         private ConverterList? _converters;
         private JsonIgnoreCondition _defaultIgnoreCondition;
         private JsonNumberHandling _numberHandling;
-        private JsonObjectCreationHandling _prefferedObjectCreationHandling;
+        private JsonObjectCreationHandling _preferredObjectCreationHandling;
         private JsonUnknownTypeHandling _unknownTypeHandling;
         private JsonUnmappedMemberHandling _unmappedMemberHandling;
 
@@ -112,7 +112,7 @@ namespace System.Text.Json
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
             _numberHandling = options._numberHandling;
-            _prefferedObjectCreationHandling = options._prefferedObjectCreationHandling;
+            _preferredObjectCreationHandling = options._preferredObjectCreationHandling;
             _unknownTypeHandling = options._unknownTypeHandling;
             _unmappedMemberHandling = options._unmappedMemberHandling;
 
@@ -413,7 +413,7 @@ namespace System.Text.Json
         /// </remarks>
         public JsonObjectCreationHandling PreferredObjectCreationHandling
         {
-            get => _prefferedObjectCreationHandling;
+            get => _preferredObjectCreationHandling;
             set
             {
                 VerifyMutable();
@@ -423,7 +423,7 @@ namespace System.Text.Json
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
-                _prefferedObjectCreationHandling = value;
+                _preferredObjectCreationHandling = value;
             }
         }
 

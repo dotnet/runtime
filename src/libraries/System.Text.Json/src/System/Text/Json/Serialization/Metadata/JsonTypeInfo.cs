@@ -520,14 +520,17 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (Kind != JsonTypeInfoKind.Object)
+                if (value is not null)
                 {
-                    ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
-                }
+                    if (Kind != JsonTypeInfoKind.Object)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
+                    }
 
-                if (value is not null && !JsonSerializer.IsValidCreationHandlingValue(value.Value))
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                    if (!JsonSerializer.IsValidCreationHandlingValue(value.Value))
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(value));
+                    }
                 }
 
                 _preferredPropertyObjectCreationHandling = value;

@@ -7,17 +7,25 @@ using System.Text.Json.Serialization.Metadata;
 namespace System.Text.Json.Serialization;
 
 /// <summary>
-/// When placed on a field or property, indicates if member will replaced or populated.
-/// When placed on a type with <see cref="JsonObjectCreationHandling.Populate"/> indicates that all members which are capable of being populated will be.
+/// Determines how deserialization will handle object creation for properties.
 /// </summary>
 /// <remarks>
-/// For attributes placed on fields and properties with default resolvers this will be reflected with <see cref="JsonPropertyInfo.ObjectCreationHandling"/>.
-/// For attributes placed on types this will be reflected with <see cref="JsonTypeInfo.PreferredPropertyObjectCreationHandling"/>.
-/// Note the attribute corresponds only to the preferred values of properties.
+/// When placed on a field or property, indicates if member will replaced or populated
+/// and when default resolvers are used this will be mapped to <see cref="JsonPropertyInfo.ObjectCreationHandling"/>.
+///
+/// When placed on a type with <see cref="JsonObjectCreationHandling.Populate"/> indicates that all members
+/// which are capable of being populated will be and when default resolvers are used this will be mapped to <see cref="JsonTypeInfo.PreferredPropertyObjectCreationHandling"/>.
+///
+/// Note the attribute corresponds only to the preferred values of creation handling for properties when placed on a type.
+/// For example when <see cref="JsonObjectCreationHandlingAttribute"/> with <see cref="JsonObjectCreationHandling.Populate"/> is placed on a class
+/// and property is not capable of being populated, it will be replaced.
+/// That may be true if i.e. value type doesn't have a setter or property is of type <see cref="IEnumerable{T}"/>.
+///
 /// Only property type is taken into consideration. For example if property is of type
-/// <see cref="IEnumerable{T}"/> but it is assigned <see cref="List{T}"/> it will not be populated
+/// <see cref="IEnumerable{T}"/> has runtime value of type <see cref="List{T}"/> it will not be populated
 /// because <see cref="IEnumerable{T}"/> is not capable of populating.
-/// Additionally value types require a setter to be populated in which case populating means
+///
+/// Value types require a setter to be populated in which case populating means
 /// that deserialization will happen on the copy of the value type and assigned back with setter when deserialization is finished.
 /// </remarks>
 [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface, AllowMultiple = false)]

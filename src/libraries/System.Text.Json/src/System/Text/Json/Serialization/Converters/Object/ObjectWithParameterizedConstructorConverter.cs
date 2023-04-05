@@ -27,7 +27,9 @@ namespace System.Text.Json.Serialization.Converters
 
             if (jsonTypeInfo.CreateObject != null || state.Current.IsPopulating)
             {
-                // Contract customization: fall back to default object converter if user has set a default constructor delegate.
+                // Fall back to default object converter in following cases:
+                // - if user has set a default constructor delegate with contract customization
+                // - we're continuing populating an object.
                 return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
             }
 
@@ -151,6 +153,10 @@ namespace System.Text.Json.Serialization.Converters
                     return success;
                 }
 
+                // We need to populate before we started reading constructor arguments.
+                // Metadata is disallowed with Populate option and therefore ordering here is irrelevant.
+                // Since state.Current.IsPopulating is being checked early on in this method the continuation
+                // will be handled there.
                 if (state.Current.ParentProperty?.TryPopulate(ref state) == true)
                 {
                     object populatedObject = state.Current.ReturnValue!;
