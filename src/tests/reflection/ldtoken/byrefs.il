@@ -80,12 +80,12 @@
     }
 }
 
-.class private auto ansi beforefieldinit MyType1
+.class private auto ansi sealed beforefieldinit MyType1
        extends [mscorlib]System.ValueType
 {
 }
 
-.class private auto ansi beforefieldinit MyType2
+.class private auto ansi sealed beforefieldinit MyType2
        extends [mscorlib]System.ValueType
 {
 }

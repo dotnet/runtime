@@ -6718,6 +6718,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     compBasicBlockID = 0;
 #endif
 
+#ifdef TARGET_ARM64
+    info.compNeedsConsecutiveRegisters = false;
+#endif
+
     /* Initialize emitter */
 
     if (!compIsForInlining())
@@ -9605,9 +9609,8 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
         switch (op)
         {
             case GT_LCL_VAR:
-            case GT_LCL_VAR_ADDR:
             case GT_LCL_FLD:
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
             case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
                 if (tree->gtFlags & GTF_VAR_DEF)
@@ -9918,13 +9921,13 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             case GT_STORE_BLK:
             case GT_STORE_DYN_BLK:
 
-                if (tree->gtFlags & GTF_BLK_VOLATILE)
+                if (tree->gtFlags & GTF_IND_VOLATILE)
                 {
-                    chars += printf("[BLK_VOLATILE]");
+                    chars += printf("[IND_VOLATILE]");
                 }
-                if (tree->AsBlk()->IsUnaligned())
+                if (tree->gtFlags & GTF_IND_UNALIGNED)
                 {
-                    chars += printf("[BLK_UNALIGNED]");
+                    chars += printf("[IND_UNALIGNED]");
                 }
                 break;
 
