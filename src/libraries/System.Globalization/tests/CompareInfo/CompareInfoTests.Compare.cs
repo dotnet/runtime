@@ -405,7 +405,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Compare_Advanced_TestData))]
-        private void Compare_Advanced(CompareInfo compareInfo, string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options, int expected)
+        public void Compare_Advanced(CompareInfo compareInfo, string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options, int expected)
         {
             if (offset1 + length1 == (string1?.Length ?? 0) && offset2 + length2 == (string2?.Length ?? 0))
             {
