@@ -812,6 +812,17 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
     return false;
 }
 
+//------------------------------------------------------------------------
+// IsRedundantCmp: determines if there is a 'cmp' instruction that is redundant with the given inputs
+//
+// Arguments:
+//    size - size of 'cmp'
+//    reg1 - op1 register of 'cmp'
+//    reg2 - op2 register of 'cmp'
+//
+// Return Value:
+//    true if there is a redundant 'cmp'
+//
 bool emitter::IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2)
 {
     // Only allow GPRs.
