@@ -5295,3 +5295,52 @@ HRESULT ClrDataAccess::GetGlobalAllocationContext(
     SOSDacLeave();
     return hr;
 }
+
+HRESULT ClrDataAccess::GetHandleTableMemoryRegions(ISOSMemoryEnum** ppEnum)
+{
+    if (!ppEnum)
+        return E_POINTER;
+
+    SOSDacEnter();
+
+    DacHandleTableMemoryEnumerator* htEnum = new (nothrow) DacHandleTableMemoryEnumerator();
+    if (htEnum)
+    {
+        hr = htEnum->QueryInterface(__uuidof(ISOSMemoryEnum), (void**)ppEnum);
+        if (FAILED(hr))
+            delete ppEnum;
+    }
+    else
+    {
+        hr = E_OUTOFMEMORY;
+    }
+
+    SOSDacLeave();
+    return hr;
+}
+
+HRESULT ClrDataAccess::GetGCBookkeepingMemoryRegions(ISOSMemoryEnum** ppEnum)
+{
+    if (!ppEnum)
+        return E_POINTER;
+
+    return E_NOTIMPL;
+}
+
+HRESULT ClrDataAccess::GetGCFreeRegions(ISOSMemoryEnum** ppEnum)
+{
+    if (!ppEnum)
+        return E_POINTER;
+
+    return E_NOTIMPL;
+}
+
+HRESULT ClrDataAccess::LockedFlush()
+{
+    SOSDacEnter();
+
+    Flush();
+
+    SOSDacLeave();
+    return hr;
+}

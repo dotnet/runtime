@@ -172,6 +172,31 @@ interface ISOSStackRefEnum  : ISOSEnum
 }
 
 
+cpp_quote("#ifndef _SOS_MemoryRegion_")
+cpp_quote("#define _SOS_MemoryRegion_")
+
+typedef struct _SOSMemoryRegion
+{
+    CLRDATA_ADDRESS Start;
+    CLRDATA_ADDRESS Size;
+    CLRDATA_ADDRESS ExtraData;  // API specific extra data.
+} SOSMemoryRegion;
+
+cpp_quote("#endif // _SOS_MemoryRegion_")
+
+[
+    object,
+    local,
+    uuid(E4B860EC-337A-40C0-A591-F09A9680690F)
+]
+interface ISOSMemoryEnum : ISOSEnum
+{
+    HRESULT Next([in] unsigned int count,
+                 [out, size_is(count), length_is(*pNeeded)] SOSMemoryRegion memRegion[],
+                 [out] unsigned int *pNeeded);
+}
+
+
 [
     object,
     local,
@@ -465,7 +490,7 @@ interface ISOSDacInterface12 : IUnknown
 [
     object,
     local,
-    uuid(3176a8ed-597b-4f54-a71f-83695c6a8c5d)
+    uuid(3176a8ed-597b-4f54-a71f-83695c6a8c5e)
 ]
 interface ISOSDacInterface13 : IUnknown
 {
@@ -473,4 +498,8 @@ interface ISOSDacInterface13 : IUnknown
     HRESULT GetDomainLoaderAllocator(CLRDATA_ADDRESS domainAddress, CLRDATA_ADDRESS *pLoaderAllocator);
     HRESULT GetLoaderAllocatorHeapNames(int count, const char **ppNames, int *pNeeded);
     HRESULT GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocator, int count, CLRDATA_ADDRESS *pLoaderHeaps, LoaderHeapKind *pKinds, int *pNeeded);
+    HRESULT GetHandleTableMemoryRegions(ISOSMemoryEnum **ppEnum);
+    HRESULT GetGCBookkeepingMemoryRegions(ISOSMemoryEnum **ppEnum);
+    HRESULT GetGCFreeRegions(ISOSMemoryEnum **ppEnum);
+    HRESULT LockedFlush();
 }

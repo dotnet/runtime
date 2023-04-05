@@ -22,10 +22,10 @@
 // This value cannot change and should not be used in new DAC APIs. New APIs can query GcDacVars.total_generation_count
 // variable which is dynamically initialized at runtime
 
-
 #define NUMBERGENERATIONS               4
-#define INITIAL_HANDLE_TABLE_ARRAY_SIZE 10
-#define HANDLE_MAX_INTERNAL_TYPES       12
+
+
+#include "handletableconstants.h"
 
 // Analogue for the GC heap_segment class, containing information regarding a single
 // heap segment.
@@ -64,6 +64,21 @@ public:
     uint8_t** m_FillPointers[NUMBERGENERATIONS + ExtraSegCount];
 };
 
+class dac_handle_table_segment {
+public:
+    uint8_t rgGeneration[HANDLE_BLOCKS_PER_SEGMENT * sizeof(uint32_t) / sizeof(uint8_t)];
+    uint8_t rgAllocation[HANDLE_BLOCKS_PER_SEGMENT];
+    uint32_t rgFreeMask[HANDLE_MASKS_PER_SEGMENT];
+    uint8_t rgBlockType[HANDLE_BLOCKS_PER_SEGMENT];
+    uint8_t rgUserData[HANDLE_BLOCKS_PER_SEGMENT];
+    uint8_t rgLocks[HANDLE_BLOCKS_PER_SEGMENT];
+    uint8_t rgTail[HANDLE_MAX_INTERNAL_TYPES];
+    uint8_t rgHint[HANDLE_MAX_INTERNAL_TYPES];
+    uint32_t rgFreeCount[HANDLE_MAX_INTERNAL_TYPES];
+    DPTR(dac_handle_table_segment) pNextSegment;
+ };
+
+
 class dac_handle_table {
 public:
     // We do try to keep everything that the DAC knows about as close to the
@@ -71,6 +86,7 @@ public:
     // HandleTable has rgTypeFlags at offset 0 for performance reasons and
     // we don't want to disrupt that.
     uint32_t padding[HANDLE_MAX_INTERNAL_TYPES];
+    DPTR(dac_handle_table_segment) pSegmentList;
 };
 
 class dac_handle_table_bucket {

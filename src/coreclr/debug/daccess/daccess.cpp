@@ -7654,7 +7654,6 @@ void DacHandleWalker::WalkHandles()
                         {
                             if (mask & 1)
                             {
-                                dac_handle_table *pTable = hTable;
                                 PTR_AppDomain pDomain = AppDomain::GetCurrentDomain();
                                 param.AppDomain = TO_CDADDR(pDomain.GetAddr());
                                 param.Type = handleType;
@@ -8284,4 +8283,84 @@ HRESULT DacStackReferenceErrorEnum::Next(unsigned int count, SOSStackRefError re
 
     *pFetched = i;
     return i < count ? S_FALSE : S_OK;
+}
+
+
+HRESULT DacMemoryEnumerator::Skip(unsigned int count)
+{
+    mIteratorIndex += count;
+    return S_OK;
+}
+
+HRESULT DacMemoryEnumerator::Reset()
+{
+    mIteratorIndex = 0;
+    return S_OK;
+}
+
+HRESULT DacMemoryEnumerator::GetCount(unsigned int* pCount)
+{
+    if (!pCount)
+        return E_POINTER;
+
+    mRegions.GetCount();
+    return S_OK;
+}
+
+HRESULT DacMemoryEnumerator::Next(unsigned int count, SOSMemoryRegion regions[], unsigned int* pFetched)
+{
+    if (!pFetched)
+        return E_POINTER;
+
+    if (!regions)
+        return E_POINTER;
+
+    unsigned int i = 0;
+    while (i < count && mIteratorIndex < mRegions.GetCount())
+    {
+        regions[i++] = mRegions.Get(mIteratorIndex++);
+    }
+
+    *pFetched = i;
+    return i < count ? S_FALSE : S_OK;
+}
+
+HRESULT DacHandleTableMemoryEnumerator::Init()
+{
+    int max_slots = 1;
+
+#ifdef FEATURE_SVR_GC
+    if (GCHeapUtilities::IsServerHeap())
+        max_slots = GCHeapCount();
+#endif // FEATURE_SVR_GC
+
+    for (dac_handle_table_map *map = g_gcDacGlobals->handle_table_map; map; map = map->pNext)
+    {
+        for (int i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; ++i)
+        {
+            if (map->pBuckets[i] != NULL)
+            {
+                for (int j = 0; j < max_slots ; ++j)
+                {
+                    DPTR(dac_handle_table) pTable = map->pBuckets[i]->pTable[j];
+                    DPTR(dac_handle_table_segment) pFirstSegment = pTable->pSegmentList;
+                    DPTR(dac_handle_table_segment) curr = pFirstSegment;
+
+                    do
+                    {                        
+                        SOSMemoryRegion mem = {0};
+                        mem.Start = curr.GetAddr();
+                        mem.Size = HANDLE_SEGMENT_SIZE;
+                        mem.ExtraData = j; // heap number
+
+                        mRegions.Add(mem);
+
+                        curr = curr->pNextSegment;
+                    } while (curr != nullptr && curr != pFirstSegment);
+                }
+            }
+        }
+    }
+
+    return S_OK;
 }
