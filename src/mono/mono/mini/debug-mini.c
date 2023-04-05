@@ -80,6 +80,7 @@ mono_debug_open_method (MonoCompile *cfg)
 
 	info->jit = jit = g_new0 (MonoDebugMethodJitInfo, 1);
 	info->line_numbers = dn_vector_alloc_t (MonoDebugLineNumberEntry);
+	dn_checkfail (info->line_numbers != NULL, "Allocation failed");
 	jit->num_locals = header->num_locals;
 	jit->locals = g_new0 (MonoDebugVarInfo, jit->num_locals);
 }

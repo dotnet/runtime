@@ -10818,6 +10818,7 @@ retry:
 	td->sp = td->stack;
 	td->max_stack_height = 0;
 	td->line_numbers = dn_vector_alloc_t (MonoDebugLineNumberEntry);
+	dn_checkfail (td->line_numbers != NULL, "Allocation failed");
 	td->current_il_offset = -1;
 
 	generate_code (td, method, header, generic_context, error);
