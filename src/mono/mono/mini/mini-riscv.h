@@ -286,6 +286,9 @@ enum {
 	MONO_R_RISCV_JALR = 10,
 };
 
+void
+mono_riscv_throw_exception (MonoObject *exc, host_mgreg_t pc, host_mgreg_t sp, host_mgreg_t *int_regs, gdouble *fp_regs, gboolean preserve_ips);
+
 __attribute__ ((warn_unused_result)) guint8 *
 mono_riscv_emit_imm (guint8 *code, int rd, gsize imm);
 
