@@ -1808,37 +1808,15 @@ HCIMPLEND
 //      Even though we always check if the class constructor has been run, we have a separate
 //      helper ID for the "no ctor" version because it allows the JIT to do some reordering that
 //      otherwise wouldn't be possible.
-HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, DomainLocalModule *pDomainLocalModule, DWORD dwClassDomainID, UINT32 staticBlockIndex)
+HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIndex)
 {
     FCALL_CONTRACT;
 
-    // Get the ModuleIndex
-    ModuleIndex index = pDomainLocalModule->GetModuleIndex();
+    MethodTable * pMT = AppDomain::GetCurrentDomain()->LookupThreadStaticBlockType(staticBlockIndex);
+    _ASSERTE(!pMT->HasGenericsStaticsInfo());
 
-    // Get the relevant ThreadLocalModule
-    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
-
-    void* staticBlock = nullptr;
-
-    // If the TLM has been allocated and the class has been marked as initialized,
-    // get the pointer to the non-GC statics base and return
-    if (pThreadLocalModule != NULL && pThreadLocalModule->IsPrecomputedClassInitialized(dwClassDomainID))
-    {
-        staticBlock = (void*)pThreadLocalModule->GetPrecomputedNonGCStaticsBasePointer();
-    }
-    else
-    {
-
-        // If the TLM was not allocated or if the class was not marked as initialized
-        // then we have to go through the slow path
-
-        // Obtain the MethodTable
-        MethodTable * pMT = pDomainLocalModule->GetMethodTableFromClassDomainID(dwClassDomainID);
-        _ASSERTE(!pMT->HasGenericsStaticsInfo());
-
-        ENDFORBIDGC();
-        staticBlock = HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
-    }
+    ENDFORBIDGC();
+    void* staticBlock = HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
 
 #ifdef HOST_WINDOWS
         if (t_threadStaticBlocksSize <= staticBlockIndex)
@@ -1866,8 +1844,6 @@ HCIMPL3(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, DomainLocalModule *p
             t_threadStaticBlocks[staticBlockIndex] = staticBlock;
             t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
         }
-
-        _ASSERTE(AppDomain::GetCurrentDomain()->LookupThreadStaticBlockType(staticBlockIndex));
 #endif // HOST_WINDOWS
 
     return staticBlock;

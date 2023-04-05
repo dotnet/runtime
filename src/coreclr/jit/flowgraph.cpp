@@ -722,12 +722,14 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             // type = TYP_BYREF;
             break;
 
+        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
+            FALLTHROUGH;
+
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
             bNeedClassID = false;
             FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
-        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
             callFlags |= GTF_CALL_HOISTABLE;
             FALLTHROUGH;
 
@@ -784,14 +786,11 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             opClassIDArg = gtNewIconNode(clsID, TYP_INT);
         }
 
-        if (helper != CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
-        {
-            result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg);
-        }
-        else
-        {
-            result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg, gtNewIconNode(typeIndex, TYP_UINT));
-        }
+        result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg);
+    }
+    else if (helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
+    {
+        result = gtNewHelperCallNode(helper, type, gtNewIconNode(typeIndex, TYP_UINT));
     }
     else
     {
@@ -4258,7 +4257,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                 DISPTREE(tree);
                 JITDUMP("\n");
 
-                assert(call->gtArgs.CountArgs() == 3);
+                assert(call->gtArgs.CountArgs() == 1);
 
                 // Split block right before the call tree
                 BasicBlock* prevBb       = block;
@@ -4306,9 +4305,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                     gtUpdateStmtSideEffects(stmt);
                 }
 
-                GenTree* arg0                            = call->gtArgs.GetArgByIndex(0)->GetNode();
-                GenTree* arg1                            = call->gtArgs.GetArgByIndex(1)->GetNode();
-                GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(2)->GetNode();
+                GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
 
                 void** pIdAddr = nullptr;
 
