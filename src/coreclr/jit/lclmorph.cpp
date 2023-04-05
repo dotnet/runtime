@@ -650,6 +650,34 @@ public:
                 PopValue();
                 break;
 
+            case GT_SUB:
+            {
+                Value& rhs = TopValue(0);
+                Value& lhs = TopValue(1);
+                if (m_compiler->opts.OptimizationEnabled() && lhs.IsAddress() && rhs.IsAddress() &&
+                    (lhs.LclNum() == rhs.LclNum()) && (rhs.Offset() <= lhs.Offset()) &&
+                    FitsIn<int>(lhs.Offset() - rhs.Offset()))
+                {
+                    // TODO-Bug: Due to inlining we may end up with incorrectly typed SUB trees here.
+                    assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
+
+                    ssize_t result = (ssize_t)(lhs.Offset() - rhs.Offset());
+                    node->BashToConst(result, TYP_I_IMPL);
+                    INDEBUG(lhs.Consume());
+                    INDEBUG(rhs.Consume());
+                    PopValue();
+                    PopValue();
+                    m_stmtModified = true;
+                    break;
+                }
+
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                break;
+            }
+
             case GT_FIELD_ADDR:
                 if (node->AsField()->IsInstance())
                 {

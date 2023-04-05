@@ -131,10 +131,9 @@ namespace System.Collections.Frozen
                 // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
                 if (ReferenceEquals(comparer, EqualityComparer<T>.Default))
                 {
-                    if (default(T) is IComparable<T> &&
-                        source.Count <= Constants.MaxItemsInSmallComparableValueTypeFrozenCollection)
+                    if (source.Count <= Constants.MaxItemsInSmallValueTypeFrozenCollection)
                     {
-                        return (FrozenSet<T>)(object)new SmallComparableValueTypeFrozenSet<T>(source);
+                        return (FrozenSet<T>)(object)new SmallValueTypeDefaultComparerFrozenSet<T>(source);
                     }
 
                     if (typeof(T) == typeof(int))

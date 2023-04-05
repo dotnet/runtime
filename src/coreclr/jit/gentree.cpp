@@ -4472,7 +4472,10 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                     op2op1->gtFlags |= GTF_ADDRMODE_NO_CSE;
                     op2op1 = op2op1->AsOp()->gtOp1;
                 }
-                assert(op1->gtEffectiveVal() == base);
+
+                // if genCreateAddrMode reported base as nullptr it means that op1 is effectively null address
+                assert((op1->gtEffectiveVal() == base) ||
+                       (base == nullptr && op1->gtEffectiveVal()->IsIntegralConst(0)));
                 assert(op2op1 == idx);
             }
         }

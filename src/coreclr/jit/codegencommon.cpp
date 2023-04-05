@@ -9442,3 +9442,30 @@ bool CodeGen::genCanOmitNormalizationForBswap16(GenTree* tree)
 
     return (cast->gtCastType == TYP_USHORT) || (cast->gtCastType == TYP_SHORT);
 }
+
+//----------------------------------------------------------------------
+// genCodeForReuseVal: Generate code for a node marked with re-using a register.
+//
+// Arguments:
+//   tree - The node marked with re-using a register
+//
+// Remarks:
+//   Generates nothing, except for when the node is a CNS_INT(0) where
+//   we will define a new label to propagate GC info. We want to do this
+//   because if the node is a CNS_INT(0) and is re-using a register,
+//   that register could have been used for a CNS_INT(ref null) that is GC
+//   tracked.
+//
+void CodeGen::genCodeForReuseVal(GenTree* treeNode)
+{
+    assert(treeNode->IsReuseRegVal());
+
+    // For now, this is only used for constant nodes.
+    assert(treeNode->OperIs(GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC));
+    JITDUMP("  TreeNode is marked ReuseReg\n");
+
+    if (treeNode->IsIntegralConst(0) && GetEmitter()->emitCurIGnonEmpty())
+    {
+        genDefineTempLabel(genCreateTempLabel());
+    }
+}

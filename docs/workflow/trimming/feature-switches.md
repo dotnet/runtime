@@ -29,6 +29,7 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 | NullabilityInfoContextSupport | System.Reflection.NullabilityInfoContext.IsSupported | Nullable attributes can be trimmed when set to false |
 | DynamicCodeSupport | System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported | Changes RuntimeFeature.IsDynamicCodeSupported to false to allow testing AOT-safe fallback code without publishing for Native AOT. |
 | _AggressiveAttributeTrimming | System.AggressiveAttributeTrimming | When set to true, aggressively trims attributes to allow for the most size savings possible, even if it could result in runtime behavior changes |
+| JsonSerializerIsReflectionEnabledByDefault | System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault | When set to false, disables using reflection as the default contract resolver in System.Text.Json |
 
 Any feature-switch which defines property can be set in csproj file or
 on the command line as any other MSBuild property. Those without predefined property name
