@@ -4310,8 +4310,8 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                 GenTree* arg1                            = call->gtArgs.GetArgByIndex(1)->GetNode();
                 GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(2)->GetNode();
 
-                void**   pIdAddr       = nullptr;
-                
+                void** pIdAddr = nullptr;
+
                 size_t   tlsIndexValue = (size_t)threadStaticBlocksInfo.tlsIndex.addr;
                 GenTree* dllRef        = nullptr;
 
