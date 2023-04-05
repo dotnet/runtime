@@ -38,17 +38,21 @@ Vectorization is the art of converting an algorithm from operating on a single v
 
 In recent releases, .NET has introduced many new APIs for vectorization. The vast majority of them are hardware specific, so they require users to provide an implementation per processor architecture (such as x86, x64, Arm64, WASM, or other platforms), with the option of using the most optimal instructions for hardware that is executing the code.
 
-.NET 7 introduced a set of new APIs for `Vector128<T>` and `Vector256<T>` for writing hardware-agnostic, cross platform vectorized code. The purpose of this document is to introduce you to the new APIs and provide a set of best practices.
+.NET 7 introduced a set of new APIs for `Vector64<T>`, `Vector128<T>` and `Vector256<T>` for writing hardware-agnostic, cross platform vectorized code (`Vector512<T>` is being introduced in .NET 8). The purpose of this document is to introduce you to the new APIs and provide a set of best practices.
 
 ## Code structure
 
-`Vector128<T>` represents a 128-bit vector of type `T`. `T` is constrained to specific primitive types:
+`Vector128<T>` is the "common denominator" across all platforms that support vectorization (and this is expected to always be the case). It represents a 128-bit vector of type `T`.
+
+`T` is constrained to specific primitive types:
 
 * `byte` and `sbyte` (8 bits).
 * `short` and `ushort` (16 bits).
 * `int`, `uint` and `float` (32 bits).
 * `long`, `ulong` and `double` (64 bits).
-* `nint` and `unit` (32 or 64 bits, depending on the architecture)
+* `nint` and `unit` (32 or 64 bits, depending on the architecture, available in .NET 7+)
+
+.NET 8 is introducing a `Vector128<T>.IsSupported` that helps identify whether a given `T` will throw or not to help identify what works per runtime, including from generic contexts.
 
 A single `Vector128` operation allows you to operate on: 16 (s)bytes, 8 (u)shorts, 4 (u)ints/floats, or 2 (u)longs/double(s).
 
@@ -64,10 +68,14 @@ A single `Vector128` operation allows you to operate on: 16 (s)bytes, 8 (u)short
 -----------------------------------------------------------------
 ```
 
-`Vector256<T>` is twice as big as `Vector128<T>`, so when it is hardware accelerated, and the data is large enough, you should use it instead of `Vector128<T>`. To check the acceleration, use `Vector128.IsHardwareAccelerated` and `Vector256.IsHardwareAccelerated` properties.
+`Vector256<T>` is twice as big as `Vector128<T>`, so when it is hardware accelerated, and the data is large enough and the benchmarks prove that it offers better performance, you should use it instead of `Vector128<T>`. Namely, `Vector256<T>` on x86/x64 is mostly treated as `2x Vector128<T>` and while there are some operations that can "cross lanes", they can sometimes be more expensive or have other hidden costs.
 
-The size of the input also matters. It needs to be at least of the size of a single vector to be able to execute the vectorized code path. `Vector128<T>.Count` and `Vector256<T>.Count` return the number of elements of the given type T in a single vector.
+To check the acceleration, use `Vector128.IsHardwareAccelerated` and `Vector256.IsHardwareAccelerated` properties.
+
+The size of the input also matters. It needs to be at least of the size of a single vector to be able to execute the vectorized code path (there are some advanced tricks that can allow you to operate on smaller inputs, but we won't describe them here). `Vector128<T>.Count` and `Vector256<T>.Count` return the number of elements of the given type T in a single vector.
 Both `Count` and `IsHardwareAccelerated` are turned into constants by the Just-In-Time compiler (i.e. no method call is required to retrieve the information). In the case of pre-compiled code (NativeAOT), this is not true for the `IsHardwareAccelerated` property, as the required information is not available at compile time.
+
+**Note:** When `Vector256` is accelerated then `Vector128` and `Vector64` are also accelerated.
 
 That is why the code is very often structured like this:
 
@@ -89,6 +97,26 @@ void CodeStructure(ReadOnlySpan<byte> buffer)
 }
 ```
 
+To reduce the number of comparisons for small inputs, we can re-arrange it in the following way:
+
+```cs
+void OptimalCodeStructure(ReadOnlySpan<byte> buffer)
+{
+    if (!Vector128.IsHardwareAccelerated || buffer.Length < Vector128<byte>.Count)
+    { 
+        // scalar code path
+    } 
+    else if (!Vector256.IsHardwareAccelerated || buffer.Length < Vector256<byte>.Count)
+    { 
+        // Vector128 code path
+    } 
+    else
+    { 
+        // Vector256 code path
+    }
+}
+```
+
 **Both vector types provide almost identical features**, but arm64 hardware does not support `Vector256` yet, so for the sake of simplicity we will be using `Vector128` in all examples and assuming **little endian** architecture. Which means that all examples used in this document assume that they are being executed as part of the following `if` block:
 
 ```cs
@@ -104,7 +132,7 @@ Such a code structure requires us to **test all possible code paths**:
 
 * `Vector256` is accelerated:
   * The input is large enough to benefit from vectorization with `Vector256`.
-  * The input is not large enough to benefit from vectorization with `Vector256`, but it can benefit from vectorization with `Vector128` (when `Vector256` is accelerated then `Vector128` and smaller vectors are also).
+  * The input is not large enough to benefit from vectorization with `Vector256`, but it can benefit from vectorization with `Vector128`.
   * The input is too small to benefit from any kind of vectorization.
 * `Vector128` is accelerated
   * The input is large enough to benefit from vectorization with `Vector128`.
@@ -120,6 +148,8 @@ Assuming that we run the tests on an `x64` machine that supports `Vector256`, we
 * no custom settings
 * `DOTNET_EnableAVX2=0`
 * `DOTNET_EnableHWIntrinsic=0`
+
+The alternative is running tests on enough variation of hardware to cover all the paths.
 
 ### Benchmarking
 
@@ -231,7 +261,7 @@ Explaining benchmark design guidelines is outside of the scope of this document,
 
 The alternative is to enable memory randomization. Before every iteration, the harness is going to allocate random-size objects, keep them alive and re-run the setup that should allocate the actual memory.
 
-You can read more about it [here](https://github.com/dotnet/BenchmarkDotNet/pull/1587). It requires an understanding of what distribution is and how to read it. It's also out of scope of this document, but [Pro .NET Benchmarking](https://aakinshin.net/prodotnetbenchmarking/) has two chapters dedicated to statistics and can help you get a very good understanding of the subject.
+You can read more about it [here](https://github.com/dotnet/BenchmarkDotNet/pull/1587). It requires an understanding of what distribution is and how to read it. It's also out of scope of this document, but a book on statistics, such as [Pro .NET Benchmarking](https://aakinshin.net/prodotnetbenchmarking/) can help you get a very good understanding of the subject.
 
 No matter how you are going to benchmark your code, you need to keep in mind that **the larger the input, the more you can benefit from vectorization**. If your code uses small buffers, performance might even get worse.
 
@@ -287,7 +317,7 @@ int Sum(Span<int> buffer)
 
 **Note:** Use `ref MemoryMarshal.GetReference(span)` instead of `ref span[0]` and `ref MemoryMarshal.GetArrayDataReference(array)` instead of `ref array[0]` to handle empty buffer scenarios (which would throw `IndexOutOfRangeException`). If the buffer is empty, these methods return a reference to the location where the 0th element would have been stored. Such a reference may or may not be null. You can use it for pinning but you must never dereference it.
 
-**Note:** The `GetReference` method has an overload that accepts a `ReadOnlySpan` and returns mutable reference. Please use it with caution!
+**Note:** The `GetReference` method has an overload that accepts a `ReadOnlySpan` and returns mutable reference. Please use it with caution! To get a `readonly` reference, you need to use [ReadOnlySpan<T>.GetPinnableReference](https://learn.microsoft.com/dotnet/api/system.readonlyspan-1.getpinnablereference).
 
 **Note:** Please keep in mind that `Vector128.Sum` is a static method. `Vectior128<T>` and `Vector256<T>` provide both instance and static methods (operators like `+` are just static methods in C#). `Vector128` and `Vector256` are non-generic static classes with static methods only. It's important to know about their existence when searching for methods.
 
@@ -308,7 +338,8 @@ bool Contains(Span<int> buffer, int searched)
 
     ref int searchSpace = ref MemoryMarshal.GetReference(buffer);
     nuint oneVectorAwayFromEnd = (nuint)(buffer.Length - Vector128<int>.Count);
-    for (nuint elementOffset = 0; elementOffset <= oneVectorAwayFromEnd; elementOffset += (nuint)Vector128<int>.Count)
+    nuint elementOffset = 0;
+    for (; elementOffset <= oneVectorAwayFromEnd; elementOffset += (nuint)Vector128<int>.Count)
     {
         loaded = Vector128.LoadUnsafe(ref searchSpace, elementOffset);
         // compare the loaded vector with searched value vector
@@ -319,7 +350,7 @@ bool Contains(Span<int> buffer, int searched)
     }
 
     // If any elements remain, process the last vector in the search space.
-    if (buffer.Length % Vector128<int>.Count != 0)
+    if (elementOffset != (uint)buffer.Length)
     {
         loaded = Vector128.LoadUnsafe(ref searchSpace, oneVectorAwayFromEnd);
         if (Vector128.Equals(loaded, values) != Vector128<int>.Zero)
@@ -373,7 +404,7 @@ public static class Vector128
 }
 ```
 
-The first three overloads require a pointer to the source. To be able to use a pointer in a safe way, the buffer needs to be pinned first. This is because the GC cannot track unmanaged pointers. It needs help to ensure that it doesn't move the memory while you're using it, as the pointers would silently become invalid. The tricky part here is doing the pointer arithmetic right:
+The first three overloads require a pointer to the source. To be able to use a pointer to a managed buffer in a safe way, the buffer needs to be pinned first. This is because the GC cannot track unmanaged pointers. It needs help to ensure that it doesn't move the memory while you're using it, as the pointers would silently become invalid. The tricky part here is doing the pointer arithmetic right:
 
 ```cs
 unsafe int UnmanagedPointersSum(Span<int> buffer)
@@ -418,6 +449,8 @@ The fourth method expects only a managed reference (`ref T source`). We don't ne
 ```cs
 int ManagedReferencesSum(int[] buffer)
 {
+    Debug.Assert(Vector128.IsHardwareAccelerated && buffer.Length >= Vector128<int>.Count);
+
     ref int current = ref MemoryMarshal.GetArrayDataReference(buffer);
     ref int end = ref Unsafe.Add(ref current, buffer.Length);
     ref int oneVectorAwayFromEnd = ref Unsafe.Subtract(ref end, Vector128<int>.Count);
@@ -444,7 +477,7 @@ int ManagedReferencesSum(int[] buffer)
 }
 ```
 
-**Note:** `Unsafe` does not expose a method called "IsGreaterOrEqualThan", so we are using a negation of `Unsafe.IsAddressGreaterThan` to achieve desired effect.
+**Note:** `Unsafe` does not expose a method called `IsLessThanOrEqualTo`, so we are using a negation of `Unsafe.IsAddressGreaterThan` to achieve desired effect.
 
 **Pointer arithmetic can always go wrong, even if you are an experienced engineer and get a very detailed code review from .NET architects**. In [#73768](https://github.com/dotnet/runtime/pull/73768) a GC hole was introduced. The code looked simple:
 
@@ -479,7 +512,7 @@ while (!Unsafe.IsAddressLessThan(ref currentSearchSpace, ref searchSpace));
 
 Which could return true because `currentSearchSpace` was invalid and not updated. If you are interested in more details, you can check the [issue](https://github.com/dotnet/runtime/issues/75792#issuecomment-1249973858) and the [fix](https://github.com/dotnet/runtime/pull/75857).
 
-That is why **we recommend using the overload that takes a managed reference and an element offset. It does not require pinning or doing any pointer arithmetic!**
+That is why **we recommend using the overload that takes a managed reference and an element offset. It does not require pinning or doing any pointer arithmetic. It still requires care as passing an incorrect offset results in a GC hole.**
 
 ```cs
 public static Vector128<T> LoadUnsafe<T>(ref T source, nuint elementOffset) where T : struct;
@@ -520,7 +553,7 @@ public static void StoreUnsafe<T>(this Vector128<T> source, ref T destination, n
 
 ### Casting
 
-As mentioned before, `Vector128<T>` and `Vector256<T>` are constrained to a specific set of primitive types. `char` is not one of them, but it does not mean that we can't implement vectorized text operations with the new APIs. For primitive types of the same size (and value types that don't contain references), casting is the solution.
+As mentioned before, `Vector128<T>` and `Vector256<T>` are constrained to a specific set of primitive types. Currently, `char` is not one of them, but it does not mean that we can't implement vectorized text operations with the new APIs. For primitive types of the same size (and value types that don't contain references), casting is the solution.
 
 [Unsafe.As<TFrom, TTo>](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.unsafe.as#system-runtime-compilerservices-unsafe-as-2(-0@)) can be used to get a reference to supported type:
 
@@ -554,7 +587,7 @@ void PointerToReference(char* pUtf16Buffer, byte* pAsciiBuffer)
 }
 ```
 
-We should avoid doing this in the opposite direction, as most engineers will assume that unmanaged pointers are already pinned.
+It's only safe to convert a managed reference to a pointer if it's known that the reference is already pinned. If it's not, the moment after you get the pointer it could be invalid.
 
 ## Mindset
 
@@ -652,6 +685,8 @@ Even such a simple problem can be solved in at least 5 different ways. Using sop
 ## Toolchain
 
 `Vector128`, `Vector128<T>`, `Vector256` and `Vector256<T>` expose a LOT of APIs. We are constrained by time, so we won't describe all of them with examples. Instead, we have grouped them into categories to give you an overview of their capabilities. It's not required to remember what each of these methods is doing, but it's important to remember what kind of operations they allow for and check the details when needed.
+
+**Note:** all of these methods have "software fallbacks", which are executed when they cannot be vectorized on given platform.
 
 ### Creation
 
