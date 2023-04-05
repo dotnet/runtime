@@ -1226,8 +1226,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
 
     if (EA_IS_RELOC(size))
     {
-        assert(genIsValidIntReg(reg));
-        emit->emitIns_R_AI(INS_jalr, size, reg, imm); // for example: EA_PTR_DSP_RELOC
+        NYI_RISCV64("EA_IS_RELOC in instGen_Set_Reg_To_Imm-----unimplemented on RISCV64 yet----");
     }
     else
     {
@@ -1275,7 +1274,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
             // Make sure we use "daddiu reg, zero, 0x00"  only for positive zero (0.0)
             // and not for negative zero (-0.0)
-            if (*(__int64*)&constValue == 0)
+            if (FloatingPointUtils::isPositiveZero(constValue))
             {
                 // A faster/smaller way to generate 0.0
                 // We will just zero out the entire vector register for both float and double
@@ -1640,31 +1639,12 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
         emitAttr attr = emitActualTypeSize(targetType);
         if (varTypeUsesFloatArgReg(treeNode))
         {
-            if (attr == EA_4BYTE)
-            {
-                GetEmitter()->emitIns_R_R_R(INS_fsgnj_s, attr, retReg, op1->GetRegNum(), op1->GetRegNum());
-            }
-            else
-            {
-                GetEmitter()->emitIns_R_R_R(INS_fsgnj_d, attr, retReg, op1->GetRegNum(), op1->GetRegNum());
-            }
+            GetEmitter()->emitIns_R_R_R(attr == EA_4BYTE ? INS_fsgnj_s : INS_fsgnj_d, attr, retReg, op1->GetRegNum(),
+                                        op1->GetRegNum());
         }
         else
         {
-            if (attr == EA_4BYTE)
-            {
-                if ((treeNode->gtFlags & GTF_UNSIGNED) != 0)
-                {
-                    GetEmitter()->emitIns_R_R_I(INS_slli, EA_PTRSIZE, retReg, op1->GetRegNum(), 32);
-                    GetEmitter()->emitIns_R_R_I(INS_srli, EA_PTRSIZE, retReg, retReg, 32);
-                }
-                else
-                {
-                    GetEmitter()->emitIns_R_R_I(INS_addiw, attr, retReg, op1->GetRegNum(), 0);
-                }
-            }
-            else
-                GetEmitter()->emitIns_R_R_I(INS_addi, attr, retReg, op1->GetRegNum(), 0);
+            GetEmitter()->emitIns_R_R_I(attr == EA_4BYTE ? INS_addiw : INS_addi, attr, retReg, op1->GetRegNum(), 0);
         }
     }
 }
@@ -2714,7 +2694,7 @@ instruction CodeGen::genGetInsForOper(GenTree* treeNode)
                     else
                     {
                         assert(attr == EA_4BYTE);
-                        ins = INS_addi;
+                        ins = INS_addiw;
                     }
                 }
                 else
@@ -3420,26 +3400,6 @@ void CodeGen::genCodeForCompare(GenTreeOp* jtree)
                     break;
                 case EA_8BYTE:
                     break;
-                case EA_1BYTE:
-                    if (IsUnsigned)
-                    {
-                        imm = static_cast<uint8_t>(imm);
-                    }
-                    else
-                    {
-                        imm = static_cast<int8_t>(imm);
-                    }
-                    break;
-                // case EA_2BYTE:
-                //    if (IsUnsigned)
-                //    {
-                //        imm = static_cast<uint16_t>(imm);
-                //    }
-                //    else
-                //    {
-                //        imm = static_cast<int16_t>(imm);
-                //    }
-                //    break;
                 default:
                     unreached();
             }
@@ -5028,7 +4988,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
 
     emitter*             emit     = GetEmitter();
     GenTreeIntConCommon* intConst = nullptr;
-    if (arrIndex->isContainedIntOrIImmed())
+    if (arrIndex->IsCnsIntOrI())
     {
         src1 = arrLen;
         src2 = arrIndex;
@@ -5053,7 +5013,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
         src2 = arrLen;
         reg1 = src1->GetRegNum();
 
-        if (src2->isContainedIntOrIImmed())
+        if (src2->IsCnsIntOrI())
         {
             reg2        = rsGetRsvdReg();
             ssize_t imm = src2->AsIntConCommon()->IconValue();
@@ -5773,7 +5733,7 @@ void CodeGen::genCall(GenTreeCall* call)
             regNumber allocReg = splitNode->GetRegNumByIdx(0);
             var_types regType  = splitNode->GetRegType(0);
 
-            // For LA64's ABI, the split is only using the A7 and stack for passing arg.
+            // For RISCV64's ABI, the split is only using the A7 and stack for passing arg.
             assert(argReg == REG_A7);
             assert(emitter::isGeneralRegister(allocReg));
             assert(abiInfo.NumRegs == 1);
@@ -6413,7 +6373,7 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
                 preservedAreaSize += REGSIZE_BYTES;
             }
 
-            preservedAreaSize += 1; // bool for synchronized methods
+            preservedAreaSize += TARGET_POINTER_SIZE;
         }
 
         // Used to signal both that the method is compiled for EnC, and also the size of the block at the top of the

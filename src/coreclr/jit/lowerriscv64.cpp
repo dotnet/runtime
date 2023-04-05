@@ -77,7 +77,6 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_LE:
             case GT_GE:
             case GT_GT:
-            case GT_BOUNDS_CHECK:
                 return emitter::isValidSimm12(immVal);
             case GT_AND:
             case GT_OR:
