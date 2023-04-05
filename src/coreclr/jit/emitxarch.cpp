@@ -838,6 +838,10 @@ bool emitter::IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2)
         {
             case INS_cmp:
             {
+                // We only care about 'cmp reg, reg'.
+                if (id->idInsFmt() != IF_RRD_RRD)
+                    return PEEPHOLE_ABORT;
+
                 if ((id->idReg1() == reg1) && (id->idReg2() == reg2))
                 {
                     result = (size == id->idOpSize());
