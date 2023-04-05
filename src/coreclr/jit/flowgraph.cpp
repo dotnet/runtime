@@ -657,8 +657,6 @@ PhaseStatus Compiler::fgExpandStaticInit()
                         assert(staticBaseAddr.accessType == IAT_PVALUE);
                         replacementNode = gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)staticBaseAddr.addr,
                                                                    GTF_ICON_GLOBAL_PTR, false);
-                        replacementNode->gtFlags &= ~GTF_EXCEPT;
-                        replacementNode->gtFlags |= (GTF_IND_NONFAULTING | GTF_GLOB_REF);
                     }
                 }
                 else
