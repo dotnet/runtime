@@ -9,8 +9,8 @@ namespace UnityEmbedHost.Generator;
 
 static class Utils
 {
-    public static bool HasAttribute(this IMethodSymbol methodSymbol, string attributeName)
-        => methodSymbol.GetAttributes().HasAttribute(attributeName);
+    public static bool HasAttribute(this ISymbol symbol, string attributeName)
+        => symbol.GetAttributes().HasAttribute(attributeName);
 
     public static bool HasAttribute(this ImmutableArray<AttributeData> attributes, string attributeName)
         => attributes.FirstOrDefault(attr => attr.AttributeClass!.Name == attributeName) != null;

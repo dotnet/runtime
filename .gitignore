@@ -364,8 +364,3 @@ src/coreclr/System.Private.CoreLib/common
 .dotnet-daily/
 run-stress-*
 test:.cs
-
-# Unity emebdding API tests
-unity/embed_api_tests/ALL_BUILD.*
-unity/embed_api_tests/ZERO_CHECK.*
-unity/embed_api_tests/mono_test_app.*

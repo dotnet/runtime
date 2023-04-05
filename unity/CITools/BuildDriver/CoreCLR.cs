@@ -46,16 +46,7 @@ public class CoreCLR
         Utils.RunProcess(sInfo, gConfig);
     }
 
-    public static void Test(GlobalConfig gConfig)
-    {
-        TestClassLibraries(gConfig);
-
-        TestUnityRuntime(gConfig);
-
-        TestUnityPal(gConfig);
-    }
-
-    private static void TestUnityPal(GlobalConfig gConfig)
+    public static void TestUnityPal(GlobalConfig gConfig)
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             return;
@@ -75,7 +66,7 @@ public class CoreCLR
         Utils.RunProcess(psi, gConfig);
     }
 
-    private static void TestUnityRuntime(GlobalConfig gConfig)
+    public static void TestUnityRuntime(GlobalConfig gConfig)
     {
         Console.WriteLine("******************************");
         Console.WriteLine("Unity: Running runtime tests");
@@ -96,7 +87,7 @@ public class CoreCLR
         Utils.RunProcess(psi, gConfig);
     }
 
-    private static void TestClassLibraries(GlobalConfig gConfig)
+    public static void TestClassLibraries(GlobalConfig gConfig)
     {
         Console.WriteLine("******************************");
         Console.WriteLine("Unity: Running class library tests");

@@ -30,6 +30,7 @@ EXPORTS
         MetaDataGetDispenser
 
         ; mono
+        mono_unity_initialize_host_apis
         coreclr_array_length
         coreclr_class_from_systemtypeinstance
         mono_add_internal_call
