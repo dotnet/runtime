@@ -13,6 +13,7 @@ namespace System.Threading
     //
     // Windows-specific implementation of ThreadPool
     //
+    // PR-Comment: This implementation was previously in ThreadPool.Windows.cs
 #if !FEATURE_WASM_THREADS
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
 #endif

@@ -20,7 +20,8 @@ namespace System.Threading
     {
         private static void RegisteredWaitCallbackCore(IntPtr instance, IntPtr context, IntPtr wait, uint waitResult)
         {
-            var wrapper = ThreadPoolCallbackWrapper.Enter();
+            // PR-Comment: Assuming this is no longer necessary, might be wrong about this
+            // var wrapper = ThreadPoolCallbackWrapper.Enter();
             GCHandle handle = (GCHandle)context;
             RegisteredWaitHandle registeredWaitHandle = (RegisteredWaitHandle)handle.Target!;
             Debug.Assert((handle == registeredWaitHandle._gcHandle) && (wait == registeredWaitHandle._tpWait));
@@ -28,7 +29,7 @@ namespace System.Threading
             bool timedOut = (waitResult == (uint)Interop.Kernel32.WAIT_TIMEOUT);
             registeredWaitHandle.PerformCallback(timedOut);
             ThreadPool.IncrementCompletedWorkItemCount();
-            wrapper.Exit();
+            // wrapper.Exit();
         }
 
         private void PerformCallbackCore(bool timedOut)
