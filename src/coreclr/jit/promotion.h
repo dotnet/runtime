@@ -4,7 +4,9 @@
 #ifndef _PROMOTION_H
 #define _PROMOTION_H
 
-class Compiler;
+#include "compiler.h"
+#include "vector.h"
+
 struct Replacement;
 
 class Promotion
