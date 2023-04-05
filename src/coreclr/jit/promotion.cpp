@@ -390,8 +390,8 @@ public:
         }
 
         // TODO-CQ: Tune the following heuristics. Currently they are based on
-        // x64 code size although using BB weights when available. The mixing
-        // does not really make sense.
+        // x64 code size although using BB weights when available. This mixing
+        // does not make sense.
         weight_t costWithout = 0;
 
         // A normal access without promotion looks like:
@@ -822,7 +822,7 @@ public:
     //   user - The user of the local.
     //
     // Notes:
-    //   This usually amounts to making replacing like
+    //   This usually amounts to making a replacement like
     //
     //       LCL_FLD int V00 [+8] -> LCL_VAR int V10.
     //
@@ -853,7 +853,7 @@ public:
         }
         else
         {
-            ClassLayout* accessLayout = varTypeIsStruct(accessType) ? lcl->GetLayout(m_compiler) : nullptr;
+            ClassLayout* accessLayout = accessType == TYP_STRUCT ? lcl->GetLayout(m_compiler) : nullptr;
             unsigned     accessSize   = accessLayout != nullptr ? accessLayout->GetSize() : genTypeSize(accessType);
             for (const Replacement& rep : replacements)
             {
@@ -953,7 +953,7 @@ public:
     //   replacements into a struct local.
     //
     // Parameters:
-    //   use  - The use, which will be updated with a cascasing comma trees of assignments
+    //   use  - The use, which will be updated with a cascading comma trees of assignments
     //   lcl  - The struct local
     //   offs - The starting offset into the struct local of the overlapping range to write back to
     //   size - The size of the overlapping range
@@ -1000,7 +1000,7 @@ public:
 
     //------------------------------------------------------------------------
     // MarkForReadBack:
-    //   Mark that replacements in the specified struct locals need to be read
+    //   Mark that replacements in the specified struct local need to be read
     //   back before their next use.
     //
     // Parameters:
@@ -1124,6 +1124,7 @@ PhaseStatus Promotion::Run()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    // Make all replacements we decided on.
     ReplaceVisitor replacer(this, replacements);
     for (BasicBlock* bb : m_compiler->Blocks())
     {
@@ -1169,6 +1170,8 @@ PhaseStatus Promotion::Run()
         }
     }
 
+    // Insert initial IR to read arguments/OSR locals into replacement locals,
+    // and add necessary explicit zeroing.
     Statement* prevStmt = nullptr;
     for (unsigned lclNum = 0; lclNum < numLocals; lclNum++)
     {
@@ -1239,7 +1242,7 @@ void Promotion::ExplicitlyZeroInitReplacementLocals(unsigned                    
 
         if (!m_compiler->fgVarNeedsExplicitZeroInit(rep.LclNum, false, false))
         {
-            // Other downstream code (e.g. recursive tailcalls-to-loops) may
+            // Other downstream code (e.g. recursive-tailcalls-to-loops opt) may
             // still need to insert further explicit zero initing.
             m_compiler->lvaGetDesc(rep.LclNum)->lvSuppressedZeroInit = true;
             continue;
@@ -1256,6 +1259,7 @@ void Promotion::ExplicitlyZeroInitReplacementLocals(unsigned                    
 // Promotion::InsertInitStatement:
 //   Insert a new statement after the specified statement in the scratch block,
 //   or at the beginning of the scratch block if no other statements were
+//   inserted yet.
 //
 // Parameters:
 //   prevStmt - [in, out] Previous statement to insert after
