@@ -10,7 +10,7 @@ using Internal.TypeSystem;
 
 namespace System.Reflection
 {
-    internal unsafe ref partial struct TypeNameParser
+    internal partial struct TypeNameParser
     {
         private TypeSystemContext _context;
         private ModuleDesc _callingModule;
@@ -20,7 +20,7 @@ namespace System.Reflection
         public static TypeDesc ResolveType(string name, ModuleDesc callingModule,
             TypeSystemContext context, List<ModuleDesc> referencedModules, out bool typeWasNotFoundInAssemblyNorBaseLibrary)
         {
-            var parser = new System.Reflection.TypeNameParser(name)
+            var parser = new TypeNameParser(name)
             {
                 _context = context,
                 _callingModule = callingModule,
@@ -68,11 +68,9 @@ namespace System.Reflection
                 module = _callingModule;
             }
 
-            Type type;
-
             if (module != null)
             {
-                type = GetTypeCore(module, typeName, nestedTypeNames);
+                Type type = GetTypeCore(module, typeName, nestedTypeNames);
                 if (type != null)
                 {
                     _referencedModules?.Add(module);
@@ -83,7 +81,7 @@ namespace System.Reflection
             // If it didn't resolve and wasn't assembly-qualified, we also try core library
             if (assemblyNameIfAny == null)
             {
-                type = GetTypeCore(_context.SystemModule, typeName, nestedTypeNames);
+                Type type = GetTypeCore(_context.SystemModule, typeName, nestedTypeNames);
                 if (type != null)
                 {
                     _referencedModules?.Add(_context.SystemModule);
@@ -114,21 +112,7 @@ namespace System.Reflection
 
         private static Type GetTypeCore(ModuleDesc module, string typeName, ReadOnlySpan<string> nestedTypeNames)
         {
-            string typeNamespace, name;
-
-            int separator = typeName.LastIndexOf('.');
-            if (separator <= 0)
-            {
-                typeNamespace = "";
-                name = typeName;
-            }
-            else
-            {
-                if (typeName[separator - 1] == '.')
-                    separator--;
-                typeNamespace = typeName.Substring(0, separator);
-                name = typeName.Substring(separator + 1);
-            }
+            (string typeNamespace, string name) = SplitFullTypeName(typeName);
 
             MetadataType type = module.GetType(typeNamespace, name, throwIfNotFound: false);
             if (type == null)
