@@ -2605,6 +2605,7 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
             unsigned    curSimdSize = simdSize;
             do
             {
+                assert(curSimdSize >= XMM_REGSIZE_BYTES);
                 if (load)
                 {
                     // vmovdqu  ymm, ymmword ptr[src + offset]

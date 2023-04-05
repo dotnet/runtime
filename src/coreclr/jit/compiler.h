@@ -9027,6 +9027,14 @@ private:
     {
         return false;
     }
+    unsigned int roundUpSIMDSize(unsigned size)
+    {
+        return 0;
+    }
+    unsigned int roundDownSIMDSize(unsigned size)
+    {
+        return 0;
+    }
 #endif // FEATURE_SIMD
 
 public:
