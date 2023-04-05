@@ -8,15 +8,33 @@ namespace System.Threading
 {
     public abstract partial class WaitHandle
     {
-        private static int WaitOneCore(IntPtr waitHandle, int millisecondsTimeout) => WaitOnePortableCore(waitHandle, millisecondsTimeout);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern int WaitOneCore(IntPtr waitHandle, int millisecondsTimeout);
 
-        internal static unsafe int WaitMultipleIgnoringSyncContext(Span<IntPtr> waitHandles, bool waitAll, int millisecondsTimeout) =>
-            WaitMultipleIgnoringSyncContextPortableCore(waitHandles, waitAll, millisecondsTimeout);
+        internal static unsafe int WaitMultipleIgnoringSyncContext(Span<IntPtr> waitHandles, bool waitAll, int millisecondsTimeout)
+        {
+            fixed (IntPtr* pWaitHandles = &MemoryMarshal.GetReference(waitHandles))
+            {
+                return WaitMultipleIgnoringSyncContext(pWaitHandles, waitHandles.Length, waitAll, millisecondsTimeout);
+            }
+        }
 
-        private static int SignalAndWaitCore(IntPtr waitHandleToSignal, IntPtr waitHandleToWaitOn, int millisecondsTimeout) =>
-            SignalAndWaitPortableCore(waitHandleToSignal, waitHandleToWaitOn, millisecondsTimeout);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern unsafe int WaitMultipleIgnoringSyncContext(IntPtr* waitHandles, int numHandles, bool waitAll, int millisecondsTimeout);
 
-        private static int SignalAndWaitNative(IntPtr waitHandleToSignal, IntPtr waitHandleToWaitOn, int millisecondsTimeout) =>
-            SignalAndWaitNativePortableCore(waitHandleToSignal, waitHandleToWaitOn, millisecondsTimeout);
+        private static int SignalAndWaitCore(IntPtr waitHandleToSignal, IntPtr waitHandleToWaitOn, int millisecondsTimeout)
+        {
+            int ret = SignalAndWaitNative(waitHandleToSignal, waitHandleToWaitOn, millisecondsTimeout);
+
+            if (ret == Interop.Errors.ERROR_TOO_MANY_POSTS)
+            {
+                throw new InvalidOperationException(SR.Threading_WaitHandleTooManyPosts);
+            }
+
+            return ret;
+        }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        private static extern int SignalAndWaitNative(IntPtr waitHandleToSignal, IntPtr waitHandleToWaitOn, int millisecondsTimeout);
     }
 }
