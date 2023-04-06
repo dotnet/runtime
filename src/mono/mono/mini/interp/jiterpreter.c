@@ -719,8 +719,6 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 
 		case MINT_BR:
 		case MINT_BR_S:
-		case MINT_LEAVE:
-		case MINT_LEAVE_S:
 		case MINT_CALL_HANDLER:
 		case MINT_CALL_HANDLER_S:
 			// Detect backwards branches

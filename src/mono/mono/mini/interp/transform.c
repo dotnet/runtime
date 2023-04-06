@@ -758,9 +758,6 @@ handle_branch (TransformData *td, int long_op, int offset)
 		}
 	}
 
-	if (long_op == MINT_LEAVE || long_op == MINT_LEAVE_CHECK)
-		target_bb->eh_block = TRUE;
-
 	fixup_newbb_stack_locals (td, target_bb);
 	if (offset > 0)
 		init_bb_stack_state (td, target_bb);
@@ -7279,8 +7276,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				/* LEAVE instructions in catch clauses need to check for abort exceptions */
 				handle_branch (td, MINT_LEAVE_CHECK, target_offset);
 			} else {
-				handle_branch (td, MINT_LEAVE, target_offset);
+				handle_branch (td, MINT_BR, target_offset);
 			}
+			td->last_ins->info.target_bb->eh_block = TRUE;
 
 			if (*td->ip == CEE_LEAVE)
 				td->ip += 5;
@@ -8124,8 +8122,6 @@ get_short_brop (int opcode)
 	if (MINT_IS_UNCONDITIONAL_BRANCH (opcode)) {
 		if (opcode == MINT_BR)
 			return MINT_BR_S;
-		else if (opcode == MINT_LEAVE)
-			return MINT_LEAVE_S;
 		else if (opcode == MINT_LEAVE_CHECK)
 			return MINT_LEAVE_S_CHECK;
 		else if (opcode == MINT_CALL_HANDLER)
@@ -8574,6 +8570,8 @@ interp_reorder_bblocks (TransformData *td)
 {
 	InterpBasicBlock *bb;
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+		if (bb->eh_block)
+			continue;
 		InterpInst *first = interp_first_ins (bb);
 		if (!first)
 			continue;
