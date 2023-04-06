@@ -18,38 +18,12 @@
 
 #include "library-builder.h"
 
-#if defined(BUNDLED_RESOURCES)
-
 static void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 {
-    free (args);
-    free (user_data);
-}
+    if (args->kind == 0)
+        free ((void *)args->runtimeconfig.name.path);
 
-static void
-initialize_runtimeconfig ()
-{
-    MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
-    if (!arg)
-        LOG_ERROR ("Out of memory.\n");
-
-    arg->kind = 1;
-    const char *data;
-    int data_len;
-    mono_get_bundled_resource_data ("runtimeconfig.bin", &data, &data_len);
-    arg->runtimeconfig.name = NULL;
-    arg->runtimeconfig.data.data = data;
-    arg->runtimeconfig.data.data_len = data_len;
-    monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, NULL);
-}
-
-#else
-
-static void
-cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
-{
-    free ((void *)args->runtimeconfig.name.path);
     free (args);
     free (user_data);
 }
@@ -57,32 +31,41 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 static void
 initialize_runtimeconfig (const char *bundle_path)
 {
-    char *file_name = "runtimeconfig.bin";
-    size_t str_len = sizeof (char) * (strlen (bundle_path) + strlen (file_name) + 2); // +1 "/", +1 null-terminating char
-    char *file_path = (char *)malloc (str_len);
-    if (!file_path)
+    MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
+    if (!arg)
         LOG_ERROR ("Out of memory.\n");
 
-    int num_char = snprintf (file_path, str_len, "%s/%s", bundle_path, file_name);
-    if (num_char <= 0 || num_char >= str_len)
-        LOG_ERROR ("Encoding error while formatting '%s' and '%s' into \"%%s/%%s\".\n", bundle_path, file_name);
+    const char *file_name = "runtimeconfig.bin";
+    const char *data;
+    int data_len;
+    mono_get_bundled_resource_data (file_name, &data, &data_len);
 
-    struct stat buffer;
-
-    if (stat (file_path, &buffer) == 0) {
-        MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
-        if (!arg)
+    if (data) {
+        arg->kind = 1;
+        arg->runtimeconfig.data.data = data;
+        arg->runtimeconfig.data.data_len = data_len;
+    } else {
+        size_t str_len = sizeof (char) * (strlen (bundle_path) + strlen (file_name) + 2); // +1 "/", +1 null-terminating char
+        char *file_path = (char *)malloc (str_len);
+        if (!file_path)
             LOG_ERROR ("Out of memory.\n");
+
+        int num_char = snprintf (file_path, str_len, "%s/%s", bundle_path, file_name);
+        if (num_char <= 0 || num_char >= str_len)
+            LOG_ERROR ("Encoding error while formatting '%s' and '%s' into \"%%s/%%s\".\n", bundle_path, file_name);
+
+        struct stat buffer;
+        if (stat (file_path, &buffer) != 0) {
+            free (file_path);
+            return;
+        }
 
         arg->kind = 0;
         arg->runtimeconfig.name.path = file_path;
-        monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, NULL);
-    } else {
-        free (file_path);
     }
-}
 
-#endif // BUNDLED_RESOURCES
+    monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, NULL);
+}
 
 static void
 initialize_appctx_env_variables (const char *bundle_path)
