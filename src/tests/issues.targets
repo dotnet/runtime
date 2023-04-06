@@ -2197,6 +2197,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/StringMarshalling/VBByRefStr/VBByRefStrTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/65698</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/opt/Vectorization/StackallocBlkTests/*">
+            <Issue>https://github.com/dotnet/runtime/issues/84398</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/callconv/PlatformDefaultMemberFunction/PlatformDefaultMemberFunctionTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/50440</Issue>
         </ExcludeList>
