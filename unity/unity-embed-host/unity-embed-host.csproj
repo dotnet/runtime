@@ -8,6 +8,9 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>$(IntermediateOutputPath)</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TestingUnityCoreClr)' == '1' Or '$(TestingUnityCoreClr)' == 'true'">
+    <DefineConstants>$(DefineConstants);TESTING_UNITY_CORECLR</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\UnityEmbedHost.Generator\UnityEmbedHost.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
