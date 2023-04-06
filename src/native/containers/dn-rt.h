@@ -30,27 +30,7 @@ dn_rt_failfast_nomsg(const char* file, int line)
 }
 
 #elif defined(FEATURE_NATIVEAOT)
-#include "common.h"
-#include "gcenv.base.h"
-#include "CommonTypes.h"
-#include "CommonMacros.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
-#include "rhassert.h"
-// TODO: add NativeAOT runtime impl
-DN_NORETURN static inline void
-dn_rt_failfast_msgv(const char* fmt, va_list ap)
-{
-	RhFailFast();
-	UNREACHABLE();
-}
-
-DN_NORETURN static inline void
-dn_rt_failfast_nomsg(const char* file, int line)
-{
-	RhFailFast();
-	UNREACHABLE();
-}
+#include <eventpipe/dn-rt-aot.h>
 #else
 // Mono
 #include "dn-rt-mono.h"
