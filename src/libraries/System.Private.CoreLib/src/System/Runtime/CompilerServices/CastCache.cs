@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -84,16 +85,6 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-#if TARGET_64BIT
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ulong RotateLeft(ulong value, int offset)
-            => (value << offset) | (value >> (64 - offset));
-#else
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint RotateLeft(uint value, int offset)
-            => (value << offset) | (value >> (32 - offset));
-#endif
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int KeyToBucket(ref int tableData, nuint source, nuint target)
         {
@@ -103,10 +94,10 @@ namespace System.Runtime.CompilerServices
 
             int hashShift = HashShift(ref tableData);
 #if TARGET_64BIT
-            ulong hash = RotateLeft((ulong)source, 32) ^ (ulong)target;
+            ulong hash = BitOperations.RotateLeft((ulong)source, 32) ^ (ulong)target;
             return (int)((hash * 11400714819323198485ul) >> hashShift);
 #else
-            uint hash = RotateLeft((uint)source, 16) ^ (uint)target;
+            uint hash = BitOperations.RotateLeft((uint)source, 16) ^ (uint)target;
             return (int)((hash * 2654435769u) >> hashShift);
 #endif
         }
@@ -247,7 +238,7 @@ namespace System.Runtime.CompilerServices
             {
                 table = new int[(size + 1) * sizeof(CastCacheEntry) / sizeof(int)];
             }
-            catch (OutOfMemoryException)
+            catch (OutOfMemoryException) when (!throwOnFail)
             {
             }
 
@@ -274,21 +265,8 @@ namespace System.Runtime.CompilerServices
             TableMask(ref tableData) = size - 1;
 
             // Fibonacci hash reduces the value into desired range by shifting right by the number of leading zeroes in 'size-1'
-            int bitCnt = 0;
-
-            // software fallback for BitOperations.Log2. Size should be a small number anyways.
-            int mask = size - 1;
-            while (mask != 0)
-            {
-                mask >>= 1;
-                bitCnt++;
-            }
-
-#if TARGET_64BIT
-            HashShift(ref tableData) = (byte)(64 - bitCnt);
-#else
-            HashShift(ref tableData) = (byte)(32 - bitCnt);
-#endif
+            byte shift = (byte)BitOperations.LeadingZeroCount(size - 1);
+            HashShift(ref tableData) = shift;
 
             return table;
         }
