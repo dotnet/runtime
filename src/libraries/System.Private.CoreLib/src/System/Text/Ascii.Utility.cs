@@ -69,6 +69,7 @@ namespace System.Text
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool FirstCharInUInt32IsAscii(uint value)
         {
             return (BitConverter.IsLittleEndian && (value & 0xFF80u) == 0)

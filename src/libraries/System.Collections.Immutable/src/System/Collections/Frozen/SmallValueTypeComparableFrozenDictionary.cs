@@ -8,25 +8,22 @@ using System.Runtime.CompilerServices;
 
 namespace System.Collections.Frozen
 {
-    /// <summary>Provides a frozen dictionary to use when the key is a comparable value type, the default comparer is used, and the item count is small.</summary>
+    /// <summary>Provides a frozen dictionary to use when the key is a value type, the default comparer is used, and the item count is small.</summary>
     /// <remarks>
-    /// No hashing involved, just a linear scan through the keys.  This implementation is close in nature to that of <see cref="SmallComparableValueTypeFrozenDictionary{TKey, TValue}"/>,
-    /// except that this implementation sorts the keys in order to a) extract a max that it can compare against at the beginning of each match in order to
-    /// immediately rule out keys too large to be contained, and b) early-exits from the linear scan when a comparison determines the key is too
-    /// small to be contained.
+    /// While not constrained in this manner, the <typeparamref name="TKey"/> must be an <see cref="IComparable{T}"/>.
+    /// This implementation is only used for a set of types that have a known-good <see cref="IComparable{T}"/> implementation; it's not
+    /// used for an <see cref="IComparable{T}"/> as we can't know for sure whether it's valid, e.g. if the TKey is a ValueTuple`2, it itself
+    /// is comparable, but its items might not be such that trying to compare it will result in exception.
     /// </remarks>
-    internal sealed class SmallComparableValueTypeFrozenDictionary<TKey, TValue> : FrozenDictionary<TKey, TValue>
+    internal sealed class SmallValueTypeComparableFrozenDictionary<TKey, TValue> : FrozenDictionary<TKey, TValue>
         where TKey : notnull
     {
         private readonly TKey[] _keys;
         private readonly TValue[] _values;
         private readonly TKey _max;
 
-        internal SmallComparableValueTypeFrozenDictionary(Dictionary<TKey, TValue> source) : base(EqualityComparer<TKey>.Default)
+        internal SmallValueTypeComparableFrozenDictionary(Dictionary<TKey, TValue> source) : base(EqualityComparer<TKey>.Default)
         {
-            // TKey is logically constrained to `where TKey : struct, IComparable<TKey>`, but we can't actually write that
-            // constraint currently and still have this be used from the calling context that has an unconstrained TKey.
-            // So, we assert it here instead. The implementation relies on {Equality}Comparer<TKey>.Default to sort things out.
             Debug.Assert(default(TKey) is IComparable<TKey>);
             Debug.Assert(default(TKey) is not null);
             Debug.Assert(typeof(TKey).IsValueType);
@@ -36,8 +33,8 @@ namespace System.Collections.Frozen
 
             _keys = source.Keys.ToArray();
             _values = source.Values.ToArray();
-            Array.Sort(_keys, _values);
 
+            Array.Sort(_keys, _values);
             _max = _keys[_keys.Length - 1];
         }
 

@@ -297,6 +297,15 @@ Histogram bbCntTable(bbCntBuckets);
 unsigned  bbSizeBuckets[] = {1, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 0};
 Histogram bbOneBBSizeTable(bbSizeBuckets);
 
+unsigned  domsChangedIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
+Histogram domsChangedIterationTable(domsChangedIterationBuckets);
+
+unsigned  computeReachabilitySetsIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
+Histogram computeReachabilitySetsIterationTable(computeReachabilitySetsIterationBuckets);
+
+unsigned  computeReachabilityIterationBuckets[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0};
+Histogram computeReachabilityIterationTable(computeReachabilityIterationBuckets);
+
 #endif // COUNT_BASIC_BLOCKS
 
 /*****************************************************************************
@@ -1258,17 +1267,6 @@ void DisplayNowayAssertMap()
 
 #endif // MEASURE_NOWAY
 
-/*****************************************************************************
- * variables to keep track of how many iterations we go in a dataflow pass
- */
-
-#if DATAFLOW_ITER
-
-unsigned CSEiterCount; // counts the # of iteration for the CSE dataflow
-unsigned CFiterCount;  // counts the # of iteration for the Const Folding dataflow
-
-#endif // DATAFLOW_ITER
-
 #if MEASURE_BLOCK_SIZE
 size_t genFlowNodeSize;
 size_t genFlowNodeCnt;
@@ -1560,6 +1558,25 @@ void Compiler::compShutdown()
     fprintf(fout, "--------------------------------------------------\n");
     bbOneBBSizeTable.dump(fout);
     fprintf(fout, "--------------------------------------------------\n");
+
+    fprintf(fout, "--------------------------------------------------\n");
+    fprintf(fout, "fgComputeDoms `while (change)` iterations:\n");
+    fprintf(fout, "--------------------------------------------------\n");
+    domsChangedIterationTable.dump(fout);
+    fprintf(fout, "--------------------------------------------------\n");
+
+    fprintf(fout, "--------------------------------------------------\n");
+    fprintf(fout, "fgComputeReachabilitySets `while (change)` iterations:\n");
+    fprintf(fout, "--------------------------------------------------\n");
+    computeReachabilitySetsIterationTable.dump(fout);
+    fprintf(fout, "--------------------------------------------------\n");
+
+    fprintf(fout, "--------------------------------------------------\n");
+    fprintf(fout, "fgComputeReachability `while (change)` iterations:\n");
+    fprintf(fout, "--------------------------------------------------\n");
+    computeReachabilityIterationTable.dump(fout);
+    fprintf(fout, "--------------------------------------------------\n");
+
 #endif // COUNT_BASIC_BLOCKS
 
 #if COUNT_LOOPS
@@ -1588,14 +1605,6 @@ void Compiler::compShutdown()
     fprintf(fout, "--------------------------------------------------\n");
 
 #endif // COUNT_LOOPS
-
-#if DATAFLOW_ITER
-
-    fprintf(fout, "---------------------------------------------------\n");
-    fprintf(fout, "Total number of iterations in the CSE dataflow loop is %5u\n", CSEiterCount);
-    fprintf(fout, "Total number of iterations in the  CF dataflow loop is %5u\n", CFiterCount);
-
-#endif // DATAFLOW_ITER
 
 #if MEASURE_NODE_SIZE
 
@@ -4994,8 +5003,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Dominator and reachability sets are no longer valid.
     // The loop table is no longer valid.
-    fgDomsComputed    = false;
-    optLoopTableValid = false;
+    fgDomsComputed            = false;
+    optLoopTableValid         = false;
+    optLoopsRequirePreHeaders = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
@@ -6707,6 +6717,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     compGenTreeID    = 0;
     compStatementID  = 0;
     compBasicBlockID = 0;
+#endif
+
+#ifdef TARGET_ARM64
+    info.compNeedsConsecutiveRegisters = false;
 #endif
 
     /* Initialize emitter */
@@ -9596,9 +9610,8 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
         switch (op)
         {
             case GT_LCL_VAR:
-            case GT_LCL_VAR_ADDR:
             case GT_LCL_FLD:
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
             case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
                 if (tree->gtFlags & GTF_VAR_DEF)
@@ -9909,13 +9922,13 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             case GT_STORE_BLK:
             case GT_STORE_DYN_BLK:
 
-                if (tree->gtFlags & GTF_BLK_VOLATILE)
+                if (tree->gtFlags & GTF_IND_VOLATILE)
                 {
-                    chars += printf("[BLK_VOLATILE]");
+                    chars += printf("[IND_VOLATILE]");
                 }
-                if (tree->AsBlk()->IsUnaligned())
+                if (tree->gtFlags & GTF_IND_UNALIGNED)
                 {
-                    chars += printf("[BLK_UNALIGNED]");
+                    chars += printf("[IND_UNALIGNED]");
                 }
                 break;
 

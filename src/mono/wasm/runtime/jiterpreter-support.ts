@@ -50,6 +50,8 @@ export const enum BailoutReason {
     CallDelegate,
     Debugging,
     Icall,
+    UnexpectedRetIp,
+    LeaveCheck,
 }
 
 export const BailoutReasonNames = [
@@ -78,6 +80,8 @@ export const BailoutReasonNames = [
     "CallDelegate",
     "Debugging",
     "Icall",
+    "UnexpectedRetIp",
+    "LeaveCheck",
 ];
 
 type FunctionType = [
@@ -151,11 +155,13 @@ export class WasmBuilder {
     argumentCount!: number;
     activeBlocks!: number;
     base!: MintOpcodePtr;
+    frame: NativePointer = <any>0;
     traceBuf: Array<string> = [];
     branchTargets = new Set<MintOpcodePtr>();
     options!: JiterpreterOptions;
     constantSlots: Array<number> = [];
     backBranchOffsets: Array<MintOpcodePtr> = [];
+    callHandlerReturnAddresses: Array<MintOpcodePtr> = [];
     nextConstantSlot = 0;
 
     compressImportNames = false;
@@ -201,6 +207,7 @@ export class WasmBuilder {
         for (let i = 0; i < this.constantSlots.length; i++)
             this.constantSlots[i] = 0;
         this.backBranchOffsets.length = 0;
+        this.callHandlerReturnAddresses.length = 0;
 
         this.allowNullCheckOptimization = this.options.eliminateNullChecks;
     }
@@ -1008,6 +1015,7 @@ class Cfg {
     blockStack: Array<MintOpcodePtr> = [];
     backDispatchOffsets: Array<MintOpcodePtr> = [];
     dispatchTable = new Map<MintOpcodePtr, number>();
+    observedBranchTargets = new Set<MintOpcodePtr>();
     trace = 0;
 
     constructor (builder: WasmBuilder) {
@@ -1024,6 +1032,7 @@ class Cfg {
         this.lastSegmentEnd = 0;
         this.overheadBytes = 10; // epilogue
         this.dispatchTable.clear();
+        this.observedBranchTargets.clear();
         this.trace = trace;
         this.backDispatchOffsets.length = 0;
     }
@@ -1070,6 +1079,7 @@ class Cfg {
     }
 
     branch (target: MintOpcodePtr, isBackward: boolean, isConditional: boolean) {
+        this.observedBranchTargets.add(target);
         this.appendBlob();
         this.segments.push({
             type: "branch",
@@ -1139,13 +1149,19 @@ class Cfg {
             this.backDispatchOffsets.length = 0;
             // First scan the back branch target table and union it with the block stack
             // This filters down to back branch targets that are reachable inside this trace
+            // Further filter it down by only including targets we have observed a branch to
+            //  this helps for cases where the branch opcodes targeting the location were not
+            //  compiled due to an abort or some other reason
             for (let i = 0; i < this.backBranchTargets.length; i++) {
                 const offset = (this.backBranchTargets[i] * 2) + <any>this.startOfBody;
                 const breakDepth = this.blockStack.indexOf(offset);
-                if (breakDepth >= 0) {
-                    this.dispatchTable.set(offset, this.backDispatchOffsets.length + 1);
-                    this.backDispatchOffsets.push(offset);
-                }
+                if (breakDepth < 0)
+                    continue;
+                if (!this.observedBranchTargets.has(offset))
+                    continue;
+
+                this.dispatchTable.set(offset, this.backDispatchOffsets.length + 1);
+                this.backDispatchOffsets.push(offset);
             }
 
             if (this.backDispatchOffsets.length === 0) {
