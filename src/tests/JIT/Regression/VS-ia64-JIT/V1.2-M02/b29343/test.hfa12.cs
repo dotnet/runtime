@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 namespace JitTest.HFA
 {
@@ -15,7 +16,7 @@ namespace JitTest.HFA
             public float f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12;//, f13, f14, f15;
         }
 
-        public static void Init(out HFA12 hfa)
+        internal static void Init(out HFA12 hfa)
         {
             hfa.f1 = 1;
             hfa.f2 = 2;
@@ -32,7 +33,7 @@ namespace JitTest.HFA
         }
 
 
-        public static void Print0(HFA12 hfa)
+        internal static void Print0(HFA12 hfa)
         {
             System.Console.WriteLine(" -- Print0");
             System.Console.WriteLine("f1 = {0}", hfa.f1);
@@ -49,7 +50,7 @@ namespace JitTest.HFA
             System.Console.WriteLine("f12 = {0}", hfa.f12);
         }
 
-        public static void Print1(float v1, HFA12 hfa)
+        internal static void Print1(float v1, HFA12 hfa)
         {
             System.Console.WriteLine(" -- Print1");
             System.Console.WriteLine("f1 = {0}", hfa.f1);
@@ -67,7 +68,8 @@ namespace JitTest.HFA
         }
 
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
 
             HFA12 hfa11;

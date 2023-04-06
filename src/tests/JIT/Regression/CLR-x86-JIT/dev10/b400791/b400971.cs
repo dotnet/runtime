@@ -7,6 +7,7 @@
 */
 
 using System;
+using Xunit;
 
 public class ByRef_GCHole
 {
@@ -37,7 +38,8 @@ public class ByRef_GCHole
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         ByRef_GCHole h;
 

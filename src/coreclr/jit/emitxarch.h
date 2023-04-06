@@ -105,9 +105,9 @@ static bool IsKInstruction(instruction ins);
 
 static regNumber getBmiRegNumber(instruction ins);
 static regNumber getSseShiftRegNumber(instruction ins);
-bool IsVexEncodedInstruction(instruction ins) const;
-bool IsEvexEncodedInstruction(instruction ins) const;
-bool IsVexOrEvexEncodedInstruction(instruction ins) const;
+bool IsVexEncodableInstruction(instruction ins) const;
+bool IsEvexEncodableInstruction(instruction ins) const;
+bool IsVexOrEvexEncodableInstruction(instruction ins) const;
 
 code_t insEncodeMIreg(const instrDesc* id, regNumber reg, emitAttr size, code_t code);
 
@@ -137,6 +137,8 @@ static bool IsJmpInstruction(instruction ins);
 bool AreUpper32BitsZero(regNumber reg);
 bool AreUpper32BitsSignExtended(regNumber reg);
 #endif // TARGET_64BIT
+
+bool IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2);
 
 bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition cond);
 bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondition cond);
@@ -812,12 +814,14 @@ inline bool emitIsUncondJump(instrDesc* jmp)
 // Returns:
 //    `true` if the instruction does embedded broadcast.
 //
-inline bool HasEmbeddedBroadcast(instrDesc* id)
+inline bool HasEmbeddedBroadcast(const instrDesc* id) const
 {
     return false;
 }
 
 inline bool HasHighSIMDReg(const instrDesc* id) const;
 inline bool IsHighSIMDReg(regNumber) const;
+
+inline bool HasMaskReg(const instrDesc* id) const;
 
 #endif // TARGET_XARCH

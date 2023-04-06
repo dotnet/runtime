@@ -285,7 +285,7 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
 //
 GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tgtAddr)
 {
-    if (tgtAddr->IsLocalAddrExpr() != nullptr)
+    if (tgtAddr->OperIs(GT_LCL_ADDR))
     {
         // No need for a GC barrier when writing to a local variable.
         return GCInfo::WBF_NoBarrier;

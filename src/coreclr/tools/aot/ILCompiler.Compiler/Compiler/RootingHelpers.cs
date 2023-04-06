@@ -28,20 +28,14 @@ namespace ILCompiler
         {
             rootProvider.AddReflectionRoot(type, reason);
 
-            InstantiatedType fallbackNonCanonicalOwningType = null;
-
             // Instantiate generic types over something that will be useful at runtime
             if (type.IsGenericDefinition)
             {
-                Instantiation canonInst = TypeExtensions.GetInstantiationThatMeetsConstraints(type.Instantiation, allowCanon: true);
-                if (canonInst.IsNull)
+                Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(type.Instantiation, allowCanon: true);
+                if (inst.IsNull)
                     return;
 
-                Instantiation concreteInst = TypeExtensions.GetInstantiationThatMeetsConstraints(type.Instantiation, allowCanon: false);
-                if (!concreteInst.IsNull)
-                    fallbackNonCanonicalOwningType = ((MetadataType)type).MakeInstantiatedType(concreteInst);
-
-                type = ((MetadataType)type).MakeInstantiatedType(canonInst);
+                type = ((MetadataType)type).MakeInstantiatedType(inst);
 
                 rootProvider.AddReflectionRoot(type, reason);
             }
@@ -57,30 +51,15 @@ namespace ILCompiler
 
             if (type.IsDefType)
             {
-                foreach (var method in type.GetMethods())
+                foreach (var method in type.ConvertToCanonForm(CanonicalFormKind.Specific).GetMethods())
                 {
                     if (method.HasInstantiation)
                     {
-                        // Make a non-canonical instantiation.
-                        // We currently have a file format limitation that requires generic methods to be concrete.
-                        // A rooted canonical method body is not visible to the reflection mapping tables.
-                        Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(method.Instantiation, allowCanon: false);
-
+                        Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(method.Instantiation, allowCanon: true);
                         if (inst.IsNull)
-                        {
-                            // Can't root anything useful
-                        }
-                        else if (!method.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                        {
-                            // Owning type is not canonical, can use the instantiation directly.
-                            TryRootMethod(rootProvider, method.MakeInstantiatedMethod(inst), reason);
-                        }
-                        else if (fallbackNonCanonicalOwningType != null)
-                        {
-                            // We have a fallback non-canonical type we can root a body on
-                            MethodDesc alternateMethod = method.Context.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), fallbackNonCanonicalOwningType);
-                            TryRootMethod(rootProvider, alternateMethod.MakeInstantiatedMethod(inst), reason);
-                        }
+                            continue;
+
+                        TryRootMethod(rootProvider, method.MakeInstantiatedMethod(inst), reason);
                     }
                     else
                     {
@@ -172,7 +151,7 @@ namespace ILCompiler
             if (method.OwningType.IsGenericDefinition || method.OwningType.ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
             {
                 TypeDesc owningType = method.OwningType.GetTypeDefinition();
-                Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(owningType.Instantiation, allowCanon: !method.HasInstantiation);
+                Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(owningType.Instantiation, allowCanon: true);
                 if (inst.IsNull)
                 {
                     return false;
@@ -187,7 +166,7 @@ namespace ILCompiler
             {
                 method = method.GetMethodDefinition();
 
-                Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(method.Instantiation, allowCanon: false);
+                Instantiation inst = TypeExtensions.GetInstantiationThatMeetsConstraints(method.Instantiation, allowCanon: true);
                 if (inst.IsNull)
                 {
                     return false;

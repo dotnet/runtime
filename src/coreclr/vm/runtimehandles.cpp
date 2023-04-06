@@ -1321,73 +1321,6 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CanCastTo, ReflectClassBaseObject *pType
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeByNameUsingCARules(LPCWSTR pwzClassName, QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retType)
-{
-    QCALL_CONTRACT;
-
-    TypeHandle typeHandle;
-
-    BEGIN_QCALL;
-
-    if (!pwzClassName)
-        COMPlusThrowArgumentNull(W("className"),W("ArgumentNull_String"));
-
-    typeHandle = TypeName::GetTypeUsingCASearchRules(pwzClassName, pModule->GetAssembly());
-
-    GCX_COOP();
-    retType.Set(typeHandle.GetManagedClassObject());
-
-    END_QCALL;
-
-    return;
-}
-
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeByName(LPCWSTR pwzClassName, BOOL bThrowOnError, BOOL bIgnoreCase,
-                                               QCall::StackCrawlMarkHandle pStackMark,
-                                               QCall::ObjectHandleOnStack pAssemblyLoadContext,
-                                               QCall::ObjectHandleOnStack retType,
-                                               QCall::ObjectHandleOnStack keepAlive)
-{
-    QCALL_CONTRACT;
-
-    TypeHandle typeHandle;
-
-    BEGIN_QCALL;
-
-    if (!pwzClassName)
-            COMPlusThrowArgumentNull(W("className"),W("ArgumentNull_String"));
-
-    {
-        AssemblyBinder * pBinder = NULL;
-
-        if (*pAssemblyLoadContext.m_ppObject != NULL)
-        {
-            GCX_COOP();
-            ASSEMBLYLOADCONTEXTREF * pAssemblyLoadContextRef = reinterpret_cast<ASSEMBLYLOADCONTEXTREF *>(pAssemblyLoadContext.m_ppObject);
-
-            INT_PTR nativeAssemblyBinder = (*pAssemblyLoadContextRef)->GetNativeAssemblyBinder();
-
-            pBinder = reinterpret_cast<AssemblyBinder *>(nativeAssemblyBinder);
-        }
-
-
-        typeHandle = TypeName::GetTypeManaged(pwzClassName, NULL, bThrowOnError, bIgnoreCase, /*bProhibitAsmQualifiedName =*/ FALSE,
-                                              SystemDomain::GetCallersAssembly(pStackMark),
-                                              (OBJECTREF*)keepAlive.m_ppObject,
-                                              pBinder);
-    }
-
-    if (!typeHandle.IsNull())
-    {
-        GCX_COOP();
-        retType.Set(typeHandle.GetManagedClassObject());
-    }
-
-    END_QCALL;
-
-    return;
-}
-
 FCIMPL6(FC_BOOL_RET, RuntimeTypeHandle::SatisfiesConstraints, PTR_ReflectClassBaseObject pParamTypeUNSAFE, TypeHandle *typeContextArgs, INT32 typeContextCount, TypeHandle *methodContextArgs, INT32 methodContextCount, PTR_ReflectClassBaseObject pArgumentTypeUNSAFE);
 {
     CONTRACTL {
@@ -1645,6 +1578,29 @@ extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemory(QCall:
     END_QCALL;
 
     return allocatedMemory;
+}
+
+extern "C" void QCALLTYPE RuntimeTypeHandle_RegisterCollectibleTypeDependency(QCall::TypeHandle pTypeHandle, QCall::AssemblyHandle pAssembly)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    LoaderAllocator* pLoaderAllocator = pTypeHandle.AsTypeHandle().GetLoaderAllocator();
+
+    if (pLoaderAllocator->IsCollectible())
+    {
+        if ((pAssembly == NULL) || !pAssembly->GetLoaderAllocator()->IsCollectible())
+        {
+            COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
+        }
+        else
+        {
+            pAssembly->GetLoaderAllocator()->EnsureReference(pLoaderAllocator);
+        }
+    }
+
+    END_QCALL;
 }
 
 //***********************************************************************************

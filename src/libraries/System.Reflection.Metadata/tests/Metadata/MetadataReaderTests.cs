@@ -3095,7 +3095,7 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(new AssemblyName(a.FullName).ToString(), name.ToString());
 
 #pragma warning disable SYSLIB0037 // AssemblyName.ProcessorArchitecture is obsolete
-                Assert.Equal(ProcessorArchitecture.MSIL, name.ProcessorArchitecture);
+                Assert.Equal(ProcessorArchitecture.None, name.ProcessorArchitecture);
 #pragma warning restore SYSLIB0037
             }
         }

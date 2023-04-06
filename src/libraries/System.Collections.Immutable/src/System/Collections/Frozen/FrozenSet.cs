@@ -131,17 +131,28 @@ namespace System.Collections.Frozen
                 // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
                 if (ReferenceEquals(comparer, EqualityComparer<T>.Default))
                 {
-                    if (default(T) is IComparable<T> &&
-                        source.Count <= Constants.MaxItemsInSmallComparableValueTypeFrozenCollection)
+                    if (source.Count <= Constants.MaxItemsInSmallValueTypeFrozenCollection)
                     {
-                        return (FrozenSet<T>)(object)new SmallComparableValueTypeFrozenSet<T>(source);
+                        // If the type is a something we know we can efficiently compare, use a specialized implementation
+                        // that will enable quickly ruling out values outside of the range of keys stored.
+                        if (Constants.IsKnownComparable<T>())
+                        {
+                            return (FrozenSet<T>)(object)new SmallValueTypeComparableFrozenSet<T>(source);
+                        }
+
+                        // Otherwise, use an implementation optimized for a small number of value types using the default comparer.
+                        return (FrozenSet<T>)(object)new SmallValueTypeDefaultComparerFrozenSet<T>(source);
                     }
 
+                    // Use a hash-based implementation.
+
+                    // For Int32 values, we can reuse the item storage as the hash storage, saving on space and extra indirection.
                     if (typeof(T) == typeof(int))
                     {
                         return (FrozenSet<T>)(object)new Int32FrozenSet((HashSet<int>)(object)source);
                     }
 
+                    // Fallback to an implementation usable with any value type and the default comparer.
                     return new ValueTypeDefaultComparerFrozenSet<T>(source);
                 }
             }

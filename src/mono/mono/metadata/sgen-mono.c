@@ -55,8 +55,6 @@ static guint64 los_array_remsets;
 
 /* If set, mark stacks conservatively, even if precise marking is possible */
 static gboolean conservative_stack_mark = FALSE;
-/* If set, check that there are no references to the domain left at domain unload */
-gboolean sgen_mono_xdomain_checks = FALSE;
 
 /* Functions supplied by the runtime to be called by the GC */
 static MonoGCCallbacks gc_callbacks;
@@ -509,17 +507,6 @@ mono_gc_register_for_finalization (MonoObject *obj, MonoFinalizationProc user_da
 	sgen_object_register_for_finalization (obj, user_data);
 }
 
-static gboolean
-object_in_domain_predicate (MonoObject *obj, void *user_data)
-{
-	MonoDomain *domain = (MonoDomain *)user_data;
-	if (mono_object_domain (obj) == domain) {
-		SGEN_LOG (5, "Unregistering finalizer for object: %p (%s)", obj, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (obj)));
-		return TRUE;
-	}
-	return FALSE;
-}
-
 /**
  * mono_gc_finalizers_for_domain:
  * \param domain the unloading appdomain
@@ -531,13 +518,7 @@ object_in_domain_predicate (MonoObject *obj, void *user_data)
 void
 mono_gc_finalize_domain (MonoDomain *domain)
 {
-	sgen_finalize_if (object_in_domain_predicate, domain);
-}
-
-void
-mono_gc_suspend_finalizers (void)
-{
-	sgen_set_suspend_finalizers ();
+	sgen_finalize_all ();
 }
 
 /*
@@ -557,35 +538,6 @@ typedef struct {
 } Ephemeron;
 
 static EphemeronLinkNode *ephemeron_list;
-
-/* LOCKING: requires that the GC lock is held */
-static MONO_PERMIT (need (sgen_gc_locked)) void
-null_ephemerons_for_domain (MonoDomain *domain)
-{
-	EphemeronLinkNode *current = ephemeron_list, *prev = NULL;
-
-	while (current) {
-		MonoObject *object = (MonoObject*)current->array;
-
-		if (object)
-			SGEN_ASSERT (0, object->vtable, "Can't have objects without vtables.");
-
-		if (object && object->vtable->domain == domain) {
-			EphemeronLinkNode *tmp = current;
-
-			if (prev)
-				prev->next = current->next;
-			else
-				ephemeron_list = current->next;
-
-			current = current->next;
-			sgen_free_internal (tmp, INTERNAL_MEM_EPHEMERON_LINK);
-		} else {
-			prev = current;
-			current = current->next;
-		}
-	}
-}
 
 /* LOCKING: requires that the GC lock is held */
 void
@@ -726,172 +678,6 @@ mono_gc_ephemeron_array_add (MonoObject *obj)
 
 	UNLOCK_GC;
 	return TRUE;
-}
-
-/*
- * Appdomain handling
- */
-
-static gboolean
-need_remove_object_for_domain (GCObject *start, MonoDomain *domain)
-{
-	if (mono_object_domain (start) == domain) {
-		SGEN_LOG (4, "Need to cleanup object %p", start);
-		sgen_binary_protocol_cleanup (start, (gpointer)SGEN_LOAD_VTABLE (start), sgen_safe_object_get_size ((GCObject*)start));
-		return TRUE;
-	}
-	return FALSE;
-}
-
-static void
-process_object_for_domain_clearing (GCObject *start, MonoDomain *domain)
-{
-	MonoVTable *vt = SGEN_LOAD_VTABLE (start);
-	if (vt->klass == mono_defaults.internal_thread_class)
-		g_assert (mono_object_domain (start) == mono_get_root_domain ());
-}
-
-static gboolean
-clear_domain_process_object (GCObject *obj, MonoDomain *domain)
-{
-	gboolean remove;
-
-	process_object_for_domain_clearing (obj, domain);
-	remove = need_remove_object_for_domain (obj, domain);
-
-	if (remove && obj->synchronisation) {
-		MonoGCHandle dislink = mono_monitor_get_object_monitor_gchandle (obj);
-		if (dislink)
-			mono_gchandle_free_internal (dislink);
-	}
-
-	return remove;
-}
-
-static void
-clear_domain_process_minor_object_callback (GCObject *obj, size_t size, MonoDomain *domain)
-{
-	if (clear_domain_process_object (obj, domain)) {
-		CANARIFY_SIZE (size);
-		memset (obj, 0, size);
-	}
-}
-
-static void
-clear_domain_process_major_object_callback (GCObject *obj, size_t size, MonoDomain *domain)
-{
-	clear_domain_process_object (obj, domain);
-}
-
-static void
-clear_domain_free_major_non_pinned_object_callback (GCObject *obj, size_t size, MonoDomain *domain)
-{
-	if (need_remove_object_for_domain (obj, domain))
-		sgen_major_collector.free_non_pinned_object (obj, size);
-}
-
-static void
-clear_domain_free_major_pinned_object_callback (GCObject *obj, size_t size, MonoDomain *domain)
-{
-	if (need_remove_object_for_domain (obj, domain))
-		sgen_major_collector.free_pinned_object (obj, size);
-}
-
-static void
-clear_domain_process_los_object_callback (GCObject *obj, size_t size, MonoDomain *domain)
-{
-	clear_domain_process_object (obj, domain);
-}
-
-static gboolean
-clear_domain_free_los_object_callback (GCObject *obj, size_t size, MonoDomain *domain)
-{
-	return need_remove_object_for_domain (obj, domain);
-}
-
-static void
-sgen_finish_concurrent_work (const char *reason, gboolean stw)
-{
-	if (sgen_get_concurrent_collection_in_progress ())
-		sgen_perform_collection (0, GENERATION_OLD, reason, TRUE, stw);
-	SGEN_ASSERT (0, !sgen_get_concurrent_collection_in_progress (), "We just ordered a synchronous collection.  Why are we collecting concurrently?");
-
-	sgen_major_collector.finish_sweeping ();
-}
-
-/*
- * When appdomains are unloaded we can easily remove objects that have finalizers,
- * but all the others could still be present in random places on the heap.
- * We need a sweep to get rid of them even though it's going to be costly
- * with big heaps.
- * The reason we need to remove them is because we access the vtable and class
- * structures to know the object size and the reference bitmap: once the domain is
- * unloaded the point to random memory.
- */
-void
-mono_gc_clear_domain (MonoDomain * domain)
-{
-	int i;
-
-	LOCK_GC;
-
-	sgen_binary_protocol_domain_unload_begin (domain);
-
-	sgen_stop_world (0, FALSE);
-
-	sgen_finish_concurrent_work ("clear domain", FALSE);
-
-	sgen_process_fin_stage_entries ();
-
-	sgen_clear_nursery_fragments ();
-
-	FOREACH_THREAD_ALL (info) {
-		mono_handle_stack_free_domain (info->client_info.info.handle_stack, domain);
-	} FOREACH_THREAD_END
-
-	if (sgen_mono_xdomain_checks && domain != mono_get_root_domain ()) {
-		sgen_scan_for_registered_roots_in_domain (domain, ROOT_TYPE_NORMAL);
-		sgen_scan_for_registered_roots_in_domain (domain, ROOT_TYPE_WBARRIER);
-		sgen_check_for_xdomain_refs ();
-	}
-
-	/*Ephemerons and dislinks must be processed before LOS since they might end up pointing
-	to memory returned to the OS.*/
-	null_ephemerons_for_domain (domain);
-	sgen_null_links_for_domain (domain);
-
-	for (i = GENERATION_NURSERY; i < GENERATION_MAX; ++i)
-		sgen_remove_finalizers_if (object_in_domain_predicate, domain, i);
-
-	sgen_scan_area_with_callback (sgen_nursery_section->data, sgen_nursery_section->end_data,
-			(IterateObjectCallbackFunc)clear_domain_process_minor_object_callback, domain, FALSE, TRUE);
-
-	/* We need two passes over major and large objects because
-	   freeing such objects might give their memory back to the OS
-	   (in the case of large objects) or obliterate its vtable
-	   (pinned objects with major-copying or pinned and non-pinned
-	   objects with major-mark&sweep), but we might need to
-	   dereference a pointer from an object to another object if
-	   the first object is a proxy. */
-	sgen_major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)clear_domain_process_major_object_callback, domain);
-
-	sgen_los_iterate_objects ((IterateObjectCallbackFunc)clear_domain_process_los_object_callback, domain);
-	sgen_los_iterate_objects_free ((IterateObjectResultCallbackFunc)clear_domain_free_los_object_callback, domain);
-
-	sgen_major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_NON_PINNED, (IterateObjectCallbackFunc)clear_domain_free_major_non_pinned_object_callback, domain);
-	sgen_major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_PINNED, (IterateObjectCallbackFunc)clear_domain_free_major_pinned_object_callback, domain);
-
-	if (domain == mono_get_root_domain ()) {
-		sgen_pin_stats_report ();
-		sgen_object_layout_dump (stdout);
-	}
-
-	sgen_restart_world (0, FALSE);
-
-	sgen_binary_protocol_domain_unload_end (domain);
-	sgen_binary_protocol_flush_buffers (FALSE);
-
-	UNLOCK_GC;
 }
 
 /*
@@ -2770,31 +2556,6 @@ mono_gchandle_get_target_internal (MonoGCHandle gchandle)
 	return sgen_gchandle_get_target (MONO_GC_HANDLE_TO_UINT (gchandle));
 }
 
-static gpointer
-null_link_if_in_domain (gpointer hidden, GCHandleType handle_type, int max_generation, gpointer user)
-{
-	MonoDomain *unloading_domain = (MonoDomain *)user;
-	MonoDomain *obj_domain;
-	gboolean is_weak = MONO_GC_HANDLE_TYPE_IS_WEAK (handle_type);
-	if (MONO_GC_HANDLE_IS_OBJECT_POINTER (hidden)) {
-		MonoObject *obj = (MonoObject *)MONO_GC_REVEAL_POINTER (hidden, is_weak);
-		obj_domain = mono_object_domain (obj);
-	} else {
-		obj_domain = (MonoDomain *)MONO_GC_REVEAL_POINTER (hidden, is_weak);
-	}
-	if (unloading_domain->domain_id == obj_domain->domain_id)
-		return NULL;
-	return hidden;
-}
-
-void
-sgen_null_links_for_domain (MonoDomain *domain)
-{
-	guint type;
-	for (type = HANDLE_TYPE_MIN; type < HANDLE_TYPE_MAX; ++type)
-		sgen_gchandle_iterate ((GCHandleType)type, GENERATION_OLD, null_link_if_in_domain, domain);
-}
-
 void
 mono_gchandle_set_target (MonoGCHandle gchandle, MonoObject *obj)
 {
@@ -2919,15 +2680,6 @@ sgen_client_description_for_internal_mem_type (int type)
 	}
 }
 
-void
-sgen_client_pre_collection_checks (void)
-{
-	if (sgen_mono_xdomain_checks) {
-		sgen_clear_nursery_fragments ();
-		sgen_check_for_xdomain_refs ();
-	}
-}
-
 gboolean
 sgen_client_vtable_is_inited (MonoVTable *vt)
 {
@@ -3012,9 +2764,7 @@ sgen_client_print_gc_params_usage (void)
 gboolean
 sgen_client_handle_gc_debug (const char *opt)
 {
-	if (!strcmp (opt, "xdomain-checks")) {
-		sgen_mono_xdomain_checks = TRUE;
-	} else if (!strcmp (opt, "do-not-finalize")) {
+	if (!strcmp (opt, "do-not-finalize")) {
 		mono_do_not_finalize = TRUE;
 	} else if (g_str_has_prefix (opt, "do-not-finalize=")) {
 		opt = strchr (opt, '=') + 1;
@@ -3040,7 +2790,6 @@ sgen_client_handle_gc_debug (const char *opt)
 void
 sgen_client_print_gc_debug_usage (void)
 {
-	fprintf (stderr, "  xdomain-checks\n");
 	fprintf (stderr, "  do-not-finalize\n");
 	fprintf (stderr, "  log-finalizers\n");
 	fprintf (stderr, "  no-managed-allocator\n");
@@ -3101,24 +2850,6 @@ mono_gc_base_init (void)
 	sgen_gc_init ();
 
 	gc_inited = TRUE;
-}
-
-void
-mono_gc_base_cleanup (void)
-{
-	/*
-	 * Note we don't fully cleanup the GC here, but the threads mainly.
-	 *
-	 * We need to finish any work on the sgen threads before shutting down
-	 * the sgen threadpool. After this point we can still trigger GCs as
-	 * part of domain free, but they should all be forced and not use the
-	 * threadpool.
-	 */
-	sgen_finish_concurrent_work ("cleanup", TRUE);
-	sgen_thread_pool_shutdown ();
-
-	// We should have consumed any outstanding moves.
-	g_assert (sgen_pointer_queue_is_empty (&moved_objects_queue));
 }
 
 gboolean
