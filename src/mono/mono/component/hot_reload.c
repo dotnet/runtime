@@ -10,6 +10,7 @@
 
 #include "mono/component/hot_reload-internals.h"
 
+#include <dn-vector.h>
 #include <glib.h>
 #include <mono/metadata/image.h>
 #include "mono/metadata/assembly-internals.h"
@@ -1801,24 +1802,26 @@ skeleton_add_member (MonoAddedDefSkeleton *sk, uint32_t member_token)
 }
 
 typedef struct Pass2Context {
-	GArray *skeletons; /* Skeleton for each new added type definition */
-	GArray *nested_class_worklist; /* List of tokens in the NestedClass table to re-visit at the end of the pass */
+	dn_vector_t /* of MonoAddedDefSkeleton */ *skeletons; /* Skeleton for each new added type definition */
+	dn_vector_t /* of uint32_t */ *nested_class_worklist; /* List of tokens in the NestedClass table to re-visit at the end of the pass */
 } Pass2Context;
 
 static void
 pass2_context_init (Pass2Context *ctx)
 {
-	ctx->skeletons = g_array_new (FALSE, TRUE, sizeof(MonoAddedDefSkeleton));
-	ctx->nested_class_worklist = g_array_new (FALSE, TRUE, sizeof(uint32_t));
+	ctx->skeletons = dn_vector_alloc_t (MonoAddedDefSkeleton);
+	dn_checkfail (ctx->skeletons, "Allocation failed");
+	ctx->nested_class_worklist = dn_vector_alloc_t (uint32_t);
+	dn_checkfail (ctx->nested_class_worklist, "Allocation failed");
 }
 
 static void
 pass2_context_destroy (Pass2Context *ctx)
 {
 	if (ctx->skeletons)
-		g_array_free (ctx->skeletons, TRUE);
+		dn_vector_free (ctx->skeletons);
 	if (ctx->nested_class_worklist)
-		g_array_free (ctx->nested_class_worklist, TRUE);
+		dn_vector_free (ctx->nested_class_worklist);
 }
 
 static void
@@ -1827,14 +1830,14 @@ pass2_context_add_skeleton (Pass2Context *ctx, uint32_t typedef_token)
 	MonoAddedDefSkeleton sk = {0, };
 	g_assert (mono_metadata_token_table (typedef_token) == MONO_TABLE_TYPEDEF);
 	sk.typedef_token = typedef_token;
-	g_array_append_val (ctx->skeletons, sk);
+	dn_vector_push_back (ctx->skeletons, sk);
 }
 
 static MonoAddedDefSkeleton*
 pass2_context_get_skeleton (Pass2Context *ctx, uint32_t typedef_token)
 {
-	for (int i = 0 ; i < ctx->skeletons->len; ++i) {
-		MonoAddedDefSkeleton *sk = &((MonoAddedDefSkeleton*)ctx->skeletons->data)[i];
+	for (uint32_t i = 0 ; i < dn_vector_size (ctx->skeletons); ++i) {
+		MonoAddedDefSkeleton *sk = dn_vector_index_t (ctx->skeletons, MonoAddedDefSkeleton, i);
 		if (sk->typedef_token == typedef_token)
 			return sk;
 	}
@@ -1865,9 +1868,9 @@ baseline_info_consume_skeletons (Pass2Context *ctx, MonoImage *base_image, Basel
 	mono_image_lock (base_image);
 	if (!base_info->skeletons)
 		base_info->skeletons = g_array_new (FALSE, TRUE, sizeof(MonoAddedDefSkeleton));
-	g_array_append_vals (base_info->skeletons, ctx->skeletons->data, ctx->skeletons->len);
+	g_array_append_vals (base_info->skeletons, dn_vector_data_t (ctx->skeletons, MonoAddedDefSkeleton), dn_vector_size (ctx->skeletons));
 	mono_image_unlock (base_image);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pass2: Added %d type definition skeletons.  Total now %d.", ctx->skeletons->len, base_info->skeletons->len);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pass2: Added %d type definition skeletons.  Total now %d.", dn_vector_size (ctx->skeletons), base_info->skeletons->len);
 	return TRUE;
 }
 
@@ -1981,7 +1984,7 @@ add_nested_class_to_worklist (Pass2Context *ctx, MonoImage *image_base, uint32_t
 		return;
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: adding nested class row 0x%08x (enclosing: 0x%08x, nested: 0x%08x) to worklist", log_token, cols[MONO_NESTED_CLASS_ENCLOSING], cols[MONO_NESTED_CLASS_NESTED]);
 
-	g_array_append_val (ctx->nested_class_worklist, log_token);
+	dn_vector_push_back (ctx->nested_class_worklist, log_token);
 }
 
 /**
@@ -1996,9 +1999,9 @@ pass2_update_nested_classes (Pass2Context *ctx, MonoImage *image_base, MonoError
 {
 	if (!ctx->nested_class_worklist)
 		return TRUE;
-	GArray *arr = ctx->nested_class_worklist;
-	for (int i = 0; i < arr->len; ++i) {
-		uint32_t log_token = g_array_index (arr, uint32_t, i);
+	dn_vector_t *arr = ctx->nested_class_worklist;
+	for (uint32_t i = 0; i < dn_vector_size (arr); ++i) {
+		uint32_t log_token = *dn_vector_index_t (arr, uint32_t, i);
 
 		uint32_t cols[MONO_TABLE_NESTEDCLASS];
 		mono_metadata_decode_row (&image_base->tables[MONO_TABLE_NESTEDCLASS], mono_metadata_token_index (log_token) - 1, cols, MONO_NESTED_CLASS_SIZE);
