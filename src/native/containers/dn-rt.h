@@ -15,7 +15,9 @@ DN_NORETURN static void
 dn_rt_failfast_nomsg(const char* file, int line);
 
 #if defined(FEATURE_CORECLR)
+#ifdef TARGET_UNIX
 #include "pal.h"
+#endif // TARGET_UNIX
 // TODO: add CoreCLR runtime impl
 DN_NORETURN static inline void
 dn_rt_failfast_msgv(const char* fmt, va_list ap)
