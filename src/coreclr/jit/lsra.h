@@ -644,7 +644,10 @@ public:
     // This does the dataflow analysis and builds the intervals
     void buildIntervals();
 
-    // This is where the actual assignment is done
+// This is where the actual assignment is done
+#ifdef TARGET_ARM64
+    template <bool hasConsecutiveRegister = false>
+#endif
     void allocateRegisters();
 
     // This is the resolution phase, where cross-block mismatches are fixed up
@@ -789,6 +792,9 @@ private:
 #elif defined(TARGET_ARM64)
     static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_V0 | RBM_V1 | RBM_V2 | RBM_V8 | RBM_V9);
+    // LsraLimitFPSetForConsecutive is used for stress mode and gives few extra registers to satisfy
+    // the requirements for allocating consecutive registers.
+    static const regMaskTP LsraLimitFPSetForConsecutive = (RBM_V3 | RBM_V5 | RBM_V7);
 #elif defined(TARGET_X86)
     static const regMaskTP LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EDI);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
@@ -1179,7 +1185,9 @@ private:
 #ifdef DEBUG
     const char* getScoreName(RegisterScore score);
 #endif
+    template <bool needsConsecutiveRegisters = false>
     regNumber allocateReg(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+    template <bool needsConsecutiveRegisters = false>
     regNumber assignCopyReg(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
@@ -1207,10 +1215,21 @@ private:
 
     void spillGCRefs(RefPosition* killRefPosition);
 
-    /*****************************************************************************
-    * Register selection
-    ****************************************************************************/
-    regMaskTP getFreeCandidates(regMaskTP candidates, var_types regType)
+/*****************************************************************************
+* Register selection
+****************************************************************************/
+
+#if defined(TARGET_ARM64)
+    bool canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
+    void assignConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
+    regMaskTP getConsecutiveCandidates(regMaskTP candidates, RefPosition* refPosition, regMaskTP* busyCandidates);
+    regMaskTP filterConsecutiveCandidates(regMaskTP    candidates,
+                                          unsigned int registersNeeded,
+                                          regMaskTP*   allConsecutiveCandidates);
+    regMaskTP filterConsecutiveCandidatesForSpill(regMaskTP consecutiveCandidates, unsigned int registersNeeded);
+#endif // TARGET_ARM64
+
+    regMaskTP getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
     {
         regMaskTP result = candidates & m_AvailableRegs;
 #ifdef TARGET_ARM
@@ -1239,6 +1258,7 @@ private:
         RegisterSelection(LinearScan* linearScan);
 
         // Perform register selection and update currentInterval or refPosition
+        template <bool hasConsecutiveRegister = false>
         FORCEINLINE regMaskTP select(Interval*    currentInterval,
                                      RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
@@ -1383,6 +1403,21 @@ private:
                                       var_types        type,
                                       VARSET_VALARG_TP sharedCriticalLiveSet,
                                       regMaskTP        terminatorConsumedRegs);
+
+#ifdef TARGET_ARM64
+    typedef JitHashTable<RefPosition*, JitPtrKeyFuncs<RefPosition>, RefPosition*> NextConsecutiveRefPositionsMap;
+    NextConsecutiveRefPositionsMap* nextConsecutiveRefPositionMap;
+    NextConsecutiveRefPositionsMap* getNextConsecutiveRefPositionsMap()
+    {
+        if (nextConsecutiveRefPositionMap == nullptr)
+        {
+            nextConsecutiveRefPositionMap =
+                new (getAllocator(compiler)) NextConsecutiveRefPositionsMap(getAllocator(compiler));
+        }
+        return nextConsecutiveRefPositionMap;
+    }
+    FORCEINLINE RefPosition* getNextConsecutiveRefPosition(RefPosition* refPosition);
+#endif
 
 #ifdef DEBUG
     void dumpVarToRegMap(VarToRegMap map);
@@ -1882,7 +1917,6 @@ private:
     bool checkContainedOrCandidateLclVar(GenTreeLclVar* lclNode);
 
     RefPosition* BuildUse(GenTree* operand, regMaskTP candidates = RBM_NONE, int multiRegIdx = 0);
-
     void setDelayFree(RefPosition* use);
     int BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
     int BuildCastUses(GenTreeCast* cast, regMaskTP candidates);
@@ -1967,6 +2001,9 @@ private:
 
 #ifdef FEATURE_HW_INTRINSICS
     int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount);
+#ifdef TARGET_ARM64
+    int BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode = nullptr);
+#endif
 #endif // FEATURE_HW_INTRINSICS
 
     int BuildPutArgStk(GenTreePutArgStk* argNode);
@@ -2350,6 +2387,14 @@ public:
     // would be 0..MAX_MULTIREG_COUNT-1.
     unsigned char multiRegIdx : 2;
 
+#ifdef TARGET_ARM64
+    // If this refposition needs consecutive register assignment
+    unsigned char needsConsecutive : 1;
+
+    // How many consecutive registers does this and subsequent refPositions need
+    unsigned char regCount : 3;
+#endif // TARGET_ARM64
+
     // Last Use - this may be true for multiple RefPositions in the same Interval
     unsigned char lastUse : 1;
 
@@ -2435,6 +2480,10 @@ public:
         , registerAssignment(RBM_NONE)
         , refType(refType)
         , multiRegIdx(0)
+#ifdef TARGET_ARM64
+        , needsConsecutive(false)
+        , regCount(0)
+#endif
         , lastUse(false)
         , reload(false)
         , spillAfter(false)
@@ -2587,6 +2636,19 @@ public:
     {
         return (isFixedRefOfRegMask(genRegMask(regNum)));
     }
+
+#ifdef TARGET_ARM64
+    /// For consecutive registers, returns true if this RefPosition is
+    /// the first of the series.
+    FORCEINLINE bool isFirstRefPositionOfConsecutiveRegisters()
+    {
+        if (needsConsecutive)
+        {
+            return regCount != 0;
+        }
+        return false;
+    }
+#endif // TARGET_ARM64
 
 #ifdef DEBUG
     // operator= copies everything except 'rpNum', which must remain unique

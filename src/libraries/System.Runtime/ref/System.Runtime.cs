@@ -301,13 +301,15 @@ namespace System
         public virtual object? ActualValue { get { throw null; } }
         public override string Message { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public static void ThrowIfZero<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.Numerics.INumberBase<T> { throw null; }
-        public static void ThrowIfNegative<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.Numerics.INumberBase<T> { throw null; }
-        public static void ThrowIfNegativeOrZero<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void ThrowIfEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(value))] string? paramName = null) where T : System.IEquatable<T>? { throw null; }
         public static void ThrowIfGreaterThan<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.IComparable<T> { throw null; }
         public static void ThrowIfGreaterThanOrEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.IComparable<T> { throw null; }
         public static void ThrowIfLessThan<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.IComparable<T> { throw null; }
         public static void ThrowIfLessThanOrEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.IComparable<T> { throw null; }
+        public static void ThrowIfNegative<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void ThrowIfNegativeOrZero<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.Numerics.INumberBase<T> { throw null; }
+        public static void ThrowIfNotEqual<T>(T value, T other, [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(value))] string? paramName = null) where T : System.IEquatable<T>? { throw null; }
+        public static void ThrowIfZero<T>(T value, [System.Runtime.CompilerServices.CallerArgumentExpressionAttribute(nameof(value))] string? paramName = null) where T : System.Numerics.INumberBase<T> { throw null; }
     }
     public partial class ArithmeticException : System.SystemException
     {
@@ -3862,6 +3864,10 @@ namespace System
     {
         static abstract TSelf Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider);
         static abstract bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TSelf result);
+    }
+    public partial interface IUtf8SpanFormattable
+    {
+        bool TryFormat(System.Span<byte> destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider);
     }
     public partial class Lazy<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>
     {
@@ -14435,6 +14441,29 @@ namespace System.Text.Unicode
     {
         public static System.Buffers.OperationStatus FromUtf16(System.ReadOnlySpan<char> source, System.Span<byte> destination, out int charsRead, out int bytesWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true) { throw null; }
         public static System.Buffers.OperationStatus ToUtf16(System.ReadOnlySpan<byte> source, System.Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true) { throw null; }
+        public static bool TryWrite(System.Span<byte> destination, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("destination")] ref System.Text.Unicode.Utf8.TryWriteInterpolatedStringHandler handler, out int bytesWritten) { throw null; }
+        public static bool TryWrite(System.Span<byte> destination, IFormatProvider? provider, [System.Runtime.CompilerServices.InterpolatedStringHandlerArgumentAttribute("destination", "provider")] ref System.Text.Unicode.Utf8.TryWriteInterpolatedStringHandler handler, out int bytesWritten) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Runtime.CompilerServices.InterpolatedStringHandlerAttribute]
+        public ref struct TryWriteInterpolatedStringHandler
+        {
+            private readonly object _dummy;
+            private readonly int _dummyPrimitive;
+            public TryWriteInterpolatedStringHandler(int literalLength, int formattedCount, System.Span<byte> destination, out bool shouldAppend) { throw null; }
+            public TryWriteInterpolatedStringHandler(int literalLength, int formattedCount, System.Span<byte> destination, IFormatProvider? provider, out bool shouldAppend) { throw null; }
+            public bool AppendLiteral(string value) { throw null; }
+            public bool AppendFormatted(scoped System.ReadOnlySpan<char> value) { throw null; }
+            public bool AppendFormatted(scoped System.ReadOnlySpan<char> value, int alignment = 0, string? format = null) { throw null; }
+            public bool AppendFormatted(scoped System.ReadOnlySpan<byte> utf8Value) { throw null; }
+            public bool AppendFormatted(scoped System.ReadOnlySpan<byte> utf8Value, int alignment = 0, string? format = null) { throw null; }
+            public bool AppendFormatted<T>(T value) { throw null; }
+            public bool AppendFormatted<T>(T value, string? format) { throw null; }
+            public bool AppendFormatted<T>(T value, int alignment) { throw null; }
+            public bool AppendFormatted<T>(T value, int alignment, string? format) { throw null; }
+            public bool AppendFormatted(object? value, int alignment = 0, string? format = null) { throw null; }
+            public bool AppendFormatted(string? value) { throw null; }
+            public bool AppendFormatted(string? value, int alignment = 0, string? format = null) { throw null; }
+        }
     }
 }
 namespace System.Threading

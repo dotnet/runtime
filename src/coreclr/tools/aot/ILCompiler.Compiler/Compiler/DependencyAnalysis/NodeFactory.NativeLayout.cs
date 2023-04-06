@@ -176,6 +176,8 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         yield return _factory.NativeLayout.TemplateTypeLayout(arrayCanonicalType);
                     }
+
+                    yield return _factory.MaximallyConstructableType(arrayCanonicalType);
                 }
 
                 while (type.IsParameterizedType)

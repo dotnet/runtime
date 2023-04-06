@@ -387,7 +387,7 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 			case SN_Multiply:
 			case SN_op_Multiply: {
 #ifdef TARGET_ARM64
-				if (!COMPILE_LLVM (cfg) && (arg_type == MONO_TYPE_I8 || arg_type == MONO_TYPE_U8))
+				if (!COMPILE_LLVM (cfg) && (arg_type == MONO_TYPE_I8 || arg_type == MONO_TYPE_U8 || arg_type == MONO_TYPE_I || arg_type == MONO_TYPE_U))
 					return NULL;
 #endif
 				if (fsig->params [1]->type != MONO_TYPE_GENERICINST) 
@@ -438,6 +438,12 @@ emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignat
 #else
 	return NULL;
 #endif
+}
+
+static gboolean
+type_is_simd_vector (MonoType *type)
+{
+	return type->type == MONO_TYPE_GENERICINST && m_class_is_simd_type (mono_class_from_mono_type_internal (type));
 }
 
 static gboolean
@@ -1270,6 +1276,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		case SN_Ceiling:
 		case SN_Divide:
 		case SN_Multiply:
+		case SN_Sqrt:
+		case SN_Abs:
 			break;
 		default: 
 			return NULL;
@@ -1856,11 +1864,11 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		int op = id == SN_WidenLower ? OP_XLOWER : OP_XUPPER;
 		MonoInst *lower_or_upper_half = emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
 		if (type_enum_is_float (arg0_type)) {
-			return emit_simd_ins (cfg, klass, OP_FCVTL, lower_or_upper_half->dreg, -1);
+			return emit_simd_ins (cfg, klass, OP_SIMD_FCVTL, lower_or_upper_half->dreg, -1);
 		} else {
 			int zero = alloc_ireg (cfg);
 			MONO_EMIT_NEW_ICONST (cfg, zero, 0);
-			op = type_enum_is_unsigned (arg0_type) ? OP_USHLL : OP_SSHLL;
+			op = type_enum_is_unsigned (arg0_type) ? OP_SIMD_USHLL : OP_SIMD_SSHLL;
 			return emit_simd_ins (cfg, klass, op, lower_or_upper_half->dreg, zero);
 		}
 #else
@@ -1944,32 +1952,10 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return NULL;
 #endif
 
-// FIXME: This limitation could be removed once everything here are supported by mini JIT on arm64
+// FIXME: Support Vector64 for mini JIT on arm64
 #ifdef TARGET_ARM64
-	if (!COMPILE_LLVM (cfg)) {
+	if (!COMPILE_LLVM (cfg) && (size != 16))
 		return NULL;
-		if (size != 16)
-			return NULL;
-		switch (id) {
-		case SN_get_One:
-		case SN_get_Zero:
-		case SN_op_OnesComplement:
-		case SN_op_UnaryNegation:
-		case SN_op_UnaryPlus:
-		case SN_op_Addition:
-		case SN_op_Subtraction:
-		case SN_op_BitwiseAnd:
-		case SN_op_BitwiseOr:
-		case SN_op_ExclusiveOr:
-		case SN_op_Equality:
-		case SN_op_Inequality:
-		case SN_op_Division:
-		case SN_op_Multiply:
-			break;
-		default:
-			return NULL;
-		}
-	}
 #endif
 
 	switch (id) {
@@ -2946,9 +2932,9 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_CompareLessThanScalar, OP_XCOMPARE_SCALAR, CMP_LT, OP_XCOMPARE_SCALAR, CMP_LT_UN, OP_XCOMPARE_FP_SCALAR, CMP_LT},
 	{SN_CompareTest, OP_ARM64_CMTST},
 	{SN_CompareTestScalar, OP_ARM64_CMTST},
-	{SN_ConvertToDouble, OP_CVT_SI_FP, None, OP_CVT_UI_FP, None, OP_FCVTL},
+	{SN_ConvertToDouble, OP_CVT_SI_FP, None, OP_CVT_UI_FP, None, OP_SIMD_FCVTL},
 	{SN_ConvertToDoubleScalar, OP_CVT_SI_FP_SCALAR, None, OP_CVT_UI_FP_SCALAR},
-	{SN_ConvertToDoubleUpper, OP_FCVTL2},
+	{SN_ConvertToDoubleUpper, OP_SIMD_FCVTL2},
 	{SN_ConvertToInt32RoundAwayFromZero, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTAS},
 	{SN_ConvertToInt32RoundAwayFromZeroScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTAS},
 	{SN_ConvertToInt32RoundToEven, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FCVTNS},
@@ -3180,14 +3166,14 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_ShiftArithmeticScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_SSHL},
 	{SN_ShiftLeftAndInsert, OP_ARM64_SLI},
 	{SN_ShiftLeftAndInsertScalar, OP_ARM64_SLI},
-	{SN_ShiftLeftLogical, OP_SHL},
+	{SN_ShiftLeftLogical, OP_SIMD_SHL},
 	{SN_ShiftLeftLogicalSaturate},
 	{SN_ShiftLeftLogicalSaturateScalar},
 	{SN_ShiftLeftLogicalSaturateUnsigned, OP_ARM64_SQSHLU},
 	{SN_ShiftLeftLogicalSaturateUnsignedScalar, OP_ARM64_SQSHLU_SCALAR},
-	{SN_ShiftLeftLogicalScalar, OP_SHL},
-	{SN_ShiftLeftLogicalWideningLower, OP_SSHLL, None, OP_USHLL},
-	{SN_ShiftLeftLogicalWideningUpper, OP_SSHLL2, None, OP_USHLL2},
+	{SN_ShiftLeftLogicalScalar, OP_SIMD_SHL},
+	{SN_ShiftLeftLogicalWideningLower, OP_SIMD_SSHLL, None, OP_SIMD_USHLL},
+	{SN_ShiftLeftLogicalWideningUpper, OP_SIMD_SSHLL2, None, OP_SIMD_USHLL2},
 	{SN_ShiftLogical, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_USHL},
 	{SN_ShiftLogicalRounded, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_URSHL},
 	{SN_ShiftLogicalRoundedSaturate, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_UQRSHL},
@@ -3198,9 +3184,9 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_ShiftLogicalScalar, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_USHL},
 	{SN_ShiftRightAndInsert, OP_ARM64_SRI},
 	{SN_ShiftRightAndInsertScalar, OP_ARM64_SRI},
-	{SN_ShiftRightArithmetic, OP_SSHR},
-	{SN_ShiftRightArithmeticAdd, OP_SSRA},
-	{SN_ShiftRightArithmeticAddScalar, OP_SSRA},
+	{SN_ShiftRightArithmetic, OP_SIMD_SSHR},
+	{SN_ShiftRightArithmeticAdd, OP_SIMD_SSRA},
+	{SN_ShiftRightArithmeticAddScalar, OP_SIMD_SSRA},
 	{SN_ShiftRightArithmeticNarrowingSaturateLower, OP_ARM64_XNSHIFT, INTRINS_AARCH64_ADV_SIMD_SQSHRN},
 	{SN_ShiftRightArithmeticNarrowingSaturateScalar, OP_ARM64_XNSHIFT_SCALAR, INTRINS_AARCH64_ADV_SIMD_SQSHRN},
 	{SN_ShiftRightArithmeticNarrowingSaturateUnsignedLower, OP_ARM64_XNSHIFT, INTRINS_AARCH64_ADV_SIMD_SQSHRUN},
@@ -3217,10 +3203,10 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_ShiftRightArithmeticRoundedNarrowingSaturateUnsignedUpper, OP_ARM64_XNSHIFT2, INTRINS_AARCH64_ADV_SIMD_SQRSHRUN},
 	{SN_ShiftRightArithmeticRoundedNarrowingSaturateUpper, OP_ARM64_XNSHIFT2, INTRINS_AARCH64_ADV_SIMD_SQRSHRN},
 	{SN_ShiftRightArithmeticRoundedScalar, OP_ARM64_SRSHR},
-	{SN_ShiftRightArithmeticScalar, OP_SSHR},
-	{SN_ShiftRightLogical, OP_USHR},
-	{SN_ShiftRightLogicalAdd, OP_USRA},
-	{SN_ShiftRightLogicalAddScalar, OP_USRA},
+	{SN_ShiftRightArithmeticScalar, OP_SIMD_SSHR},
+	{SN_ShiftRightLogical, OP_SIMD_USHR},
+	{SN_ShiftRightLogicalAdd, OP_SIMD_USRA},
+	{SN_ShiftRightLogicalAddScalar, OP_SIMD_USRA},
 	{SN_ShiftRightLogicalNarrowingLower, OP_ARM64_SHRN},
 	{SN_ShiftRightLogicalNarrowingSaturateLower, OP_ARM64_XNSHIFT, INTRINS_AARCH64_ADV_SIMD_UQSHRN},
 	{SN_ShiftRightLogicalNarrowingSaturateScalar, OP_ARM64_XNSHIFT_SCALAR, INTRINS_AARCH64_ADV_SIMD_UQSHRN},
@@ -3235,7 +3221,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_ShiftRightLogicalRoundedNarrowingSaturateUpper, OP_ARM64_XNSHIFT2, INTRINS_AARCH64_ADV_SIMD_UQRSHRN},
 	{SN_ShiftRightLogicalRoundedNarrowingUpper, OP_ARM64_XNSHIFT2, INTRINS_AARCH64_ADV_SIMD_RSHRN},
 	{SN_ShiftRightLogicalRoundedScalar, OP_ARM64_URSHR},
-	{SN_ShiftRightLogicalScalar, OP_USHR},
+	{SN_ShiftRightLogicalScalar, OP_SIMD_USHR},
 	{SN_SignExtendWideningLower, OP_ARM64_SXTL},
 	{SN_SignExtendWideningUpper, OP_ARM64_SXTL2},
 	{SN_Sqrt, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT},
@@ -3260,8 +3246,8 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_TransposeOdd, OP_ARM64_TRN2},
 	{SN_UnzipEven, OP_ARM64_UZP1},
 	{SN_UnzipOdd, OP_ARM64_UZP2},
-	{SN_VectorTableLookup, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1},
-	{SN_VectorTableLookupExtension, OP_XOP_OVR_X_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBX1},
+	{SN_VectorTableLookup},
+	{SN_VectorTableLookupExtension},
 	{SN_Xor, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_XOR},
 	{SN_ZeroExtendWideningLower, OP_ARM64_UXTL},
 	{SN_ZeroExtendWideningUpper, OP_ARM64_UXTL2},
@@ -3564,6 +3550,63 @@ emit_arm64_intrinsics (
 			MonoInst *ret = emit_simd_ins (cfg, ret_klass, opcode, args [0]->dreg, args [1]->dreg);
 			ret->sreg3 = scalar->dreg;
 			return ret;
+		}
+        case SN_VectorTableLookup:
+        case SN_VectorTableLookupExtension: {
+			if (type_is_simd_vector (fsig->params [0]) && type_is_simd_vector (fsig->params [1])) {
+				if (id == SN_VectorTableLookup)
+					return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBL1, 0, fsig, args);
+				else
+					return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X_X_X, INTRINS_AARCH64_ADV_SIMD_TBX1, 0, fsig, args);
+			}
+
+			MonoInst *ins, *addr;
+			int tuple_argindex;
+
+			if (id == SN_VectorTableLookup)
+				/* VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) */
+				tuple_argindex = 0;
+			else
+				/* VectorTableLookupExtension(Vector128<byte> defaultValues, (Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes */
+				tuple_argindex = 1;
+
+			/*
+			 * These intrinsics have up to 5 inputs, and our IR can't model that, so save the inputs to the stack and have
+			 * the LLVM implementation read them back.
+			 */
+			MonoType *tuple_type = fsig->params [tuple_argindex];
+			g_assert (tuple_type->type == MONO_TYPE_GENERICINST);
+			MonoClass *tclass = mono_class_from_mono_type_internal (tuple_type);
+			mono_class_init_internal (tclass);
+
+			MonoClassField *fields = m_class_get_fields (tclass);
+			int nfields = mono_class_get_field_count (tclass);
+			guint32 *offsets = mono_mempool_alloc0 (cfg->mempool, nfields * sizeof (guint32));
+			for (uint32_t i = 0; i < mono_class_get_field_count (tclass); ++i)
+				offsets [i] = mono_field_get_offset (&fields [i]) - MONO_ABI_SIZEOF (MonoObject);
+
+			int vreg = alloc_xreg (cfg);
+			NEW_VARLOADA_VREG (cfg, addr, vreg, tuple_type);
+			MONO_ADD_INS (cfg->cbb, addr);
+
+			EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, tuple_type, addr->dreg, 0, args [tuple_argindex]->dreg);
+
+			MONO_INST_NEW (cfg, ins, id == SN_VectorTableLookup ? OP_ARM64_TBL_INDIRECT : OP_ARM64_TBX_INDIRECT);
+			ins->dreg = alloc_xreg (cfg);
+			ins->sreg1 = addr->dreg;
+			if (id == SN_VectorTableLookup) {
+				/* byteIndexes */
+				ins->sreg2 = args [1]->dreg;
+			} else {
+				/* defaultValues */
+				ins->sreg2 = args [0]->dreg;
+				/* byteIndexes */
+				ins->sreg3 = args [2]->dreg;
+			}
+			ins->inst_c0 = nfields;
+			ins->inst_p1 = offsets;
+			MONO_ADD_INS (cfg->cbb, ins);
+			return ins;
 		}
 		default:
 			g_assert_not_reached ();
@@ -4707,24 +4750,24 @@ static SimdIntrinsic wasmbase_methods [] = {
 
 static SimdIntrinsic packedsimd_methods [] = {
 	{SN_Add},
-	{SN_And},
-	{SN_Bitmask},
+	{SN_And, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_AND},
+	{SN_Bitmask, OP_WASM_SIMD_BITMASK},
 	{SN_CompareEqual},
 	{SN_CompareNotEqual},
 	{SN_ConvertNarrowingSignedSaturate},
 	{SN_ConvertNarrowingUnsignedSaturate},
-	{SN_Dot},
+	{SN_Dot, OP_XOP_X_X_X, INTRINS_WASM_DOT},
 	{SN_ExtractLane},
 	{SN_Multiply},
 	{SN_Negate},
 	{SN_ReplaceLane},
-	{SN_ShiftLeft},
-	{SN_ShiftRightArithmetic},
-	{SN_ShiftRightLogical},
-	{SN_Shuffle},
+	{SN_ShiftLeft, OP_SIMD_SHL},
+	{SN_ShiftRightArithmetic, OP_SIMD_SSHR},
+	{SN_ShiftRightLogical, OP_SIMD_USHR},
+	{SN_Shuffle, OP_WASM_SIMD_SHUFFLE},
 	{SN_Splat},
 	{SN_Subtract},
-	{SN_Swizzle},
+	{SN_Swizzle, OP_WASM_SIMD_SWIZZLE},
 	{SN_get_IsSupported},
 };
 
@@ -4796,6 +4839,9 @@ emit_wasm_supported_intrinsics (
 		    id == SN_Splat && !MONO_TYPE_IS_VECTOR_PRIMITIVE(fsig->params [0]))
 			return NULL;
 
+		uint16_t op = info->default_op;
+		uint16_t c0 = info->default_instc0;
+
 		switch (id) {
 			case SN_Add:
 			case SN_Subtract:
@@ -4803,47 +4849,49 @@ emit_wasm_supported_intrinsics (
 				return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
 			case SN_Negate:
 				return emit_simd_ins_for_unary_op (cfg, klass, fsig, args, arg0_type, id);
-			case SN_And:
-				return emit_simd_ins_for_sig (cfg, klass, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_AND, arg0_type, fsig, args);
-			case SN_Bitmask:
-				return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_BITMASK, -1, -1, fsig, args);
 			case SN_CompareEqual:
 				return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_EQ, arg0_type, fsig, args);
 			case SN_CompareNotEqual:
 				return emit_simd_ins_for_sig (cfg, klass, type_enum_is_float (arg0_type) ? OP_XCOMPARE_FP : OP_XCOMPARE, CMP_NE, arg0_type, fsig, args);
 			case SN_ConvertNarrowingSignedSaturate: {
-				int intrins = -1;
+				op = OP_XOP_X_X_X;
+
 				switch (arg0_type) {
 				case MONO_TYPE_I2:
-						intrins = INTRINS_WASM_NARROW_SIGNED_V16;
+						c0 = INTRINS_WASM_NARROW_SIGNED_V16;
 						break;
 				case MONO_TYPE_I4:
-						intrins = INTRINS_WASM_NARROW_SIGNED_V8;
+						c0 = INTRINS_WASM_NARROW_SIGNED_V8;
 						break;
 				}
-				if (intrins != -1)
-						return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, intrins, arg0_type, fsig, args);
+
+				// continue with default emit
+				if (c0 != 0)
+						break;
 
 				return NULL;
 			}
 			case SN_ConvertNarrowingUnsignedSaturate: {
-				int intrins = -1;
+				op = OP_XOP_X_X_X;
+
 				switch (arg0_type) {
 				case MONO_TYPE_I2:
-						intrins = INTRINS_WASM_NARROW_UNSIGNED_V16;
+						c0 = INTRINS_WASM_NARROW_UNSIGNED_V16;
 						break;
 				case MONO_TYPE_I4:
-						intrins = INTRINS_WASM_NARROW_UNSIGNED_V8;
+						c0 = INTRINS_WASM_NARROW_UNSIGNED_V8;
 						break;
 				}
-				if (intrins != -1)
-						return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, intrins, arg0_type, fsig, args);
+
+				// continue with default emit
+				if (c0 != 0)
+						break;
 
 				return NULL;
 			}
 			case SN_ExtractLane: {
-				int extract_op = type_to_xextract_op (arg0_type);
-				return emit_simd_ins_for_sig (cfg, klass, extract_op, -1, arg0_type, fsig, args);
+				op = type_to_xextract_op (arg0_type);
+				break;
 			}
 			case SN_ReplaceLane: {
 				int insert_op = type_to_xinsert_op (arg0_type);
@@ -4852,25 +4900,18 @@ emit_wasm_supported_intrinsics (
 				ins->inst_c1 = arg0_type;
 				return ins;
 			}
-			case SN_ShiftLeft:
-				return emit_simd_ins_for_sig (cfg, klass, OP_SHL, -1, -1, fsig, args);
-			case SN_ShiftRightArithmetic:
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSHR, -1, -1, fsig, args);
-			case SN_ShiftRightLogical:
-				return emit_simd_ins_for_sig (cfg, klass, OP_USHR, -1, -1, fsig, args);
 			case SN_Splat: {
 				MonoType *etype = get_vector_t_elem_type (fsig->ret);
 				g_assert (fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], etype));
 				return emit_simd_ins (cfg, klass, type_to_expand_op (etype->type), args [0]->dreg, -1);
 			}
-			case SN_Dot:
-				return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, INTRINS_WASM_DOT, -1, fsig, args);
-			case SN_Shuffle:
-				return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_SHUFFLE, -1, -1, fsig, args);
-			case SN_Swizzle:
-				return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_SWIZZLE, -1, -1, fsig, args);
 		}
+
+		// default emit path for cases with op set
+		if (op != 0)
+			return emit_simd_ins_for_sig (cfg, klass, op, c0, arg0_type, fsig, args);
 	}
+
 	g_assert_not_reached ();
 
 	return NULL;
