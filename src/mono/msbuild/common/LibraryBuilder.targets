@@ -13,6 +13,8 @@
       <_IsSharedLibrary Condition="'$(NativeLib)' == 'shared'">true</_IsSharedLibrary>
       <_UsesCustomRuntimeInitCallback>false</_UsesCustomRuntimeInitCallback>
       <_UsesCustomRuntimeInitCallback Condition="$(CustomRuntimeInitCallback) != ''">true</_UsesCustomRuntimeInitCallback>
+      <_BundlesResources>$(BundlesResources)</_BundlesResources>
+      <_BundlesResources Condition="'$(_BundlesResources)' == ''">true</_BundlesResources>
     </PropertyGroup>
 
     <ItemGroup>
@@ -25,7 +27,7 @@
     <LibraryBuilderTask
       Assemblies="@(_AssembliesToBundleInternal)"
       AssembliesLocation="$(AssembliesLocation)"
-      BundlesResources="$(BundlesResources)"
+      BundlesResources="$(_BundlesResources)"
       ExtraLinkerArguments="@(_ExtraLinkerArgs)"
       ExtraSources="@(_ExtraLibrarySources)"
       IsSharedLibrary="$(_IsSharedLibrary)"
@@ -42,7 +44,7 @@
   </Target>
 
   <Target Name="_GenerateBundle"
-          Condition="'$(BundlesResources)' == 'true'">
+          Condition="'$(BundlesResources)' != 'false'">
 
     <PropertyGroup>
       <_ResourcesToBundleSourceFile>$(BundleDir)bundled_resources.c</_ResourcesToBundleSourceFile>
