@@ -314,7 +314,7 @@ struct _BaselineInfo {
 	GHashTable *method_params; /* maps methoddef tokens to a MonoClassMetadataUpdateMethodParamInfo* */
 
 	/* Skeletons for all newly-added types from every generation. Accessing the array requires the image lock. */
-	GArray *skeletons;
+	dn_vector_t /* of MonoAddedDefSkeleton */ *skeletons;
 };
 
 
@@ -451,7 +451,7 @@ baseline_info_destroy (BaselineInfo *info)
 	}
 
 	if (info->skeletons)
-		g_array_free (info->skeletons, TRUE);
+		dn_vector_free (info->skeletons);
 
 	if (info->member_parent)
 		g_hash_table_destroy (info->member_parent);
@@ -1866,11 +1866,13 @@ static gboolean
 baseline_info_consume_skeletons (Pass2Context *ctx, MonoImage *base_image, BaselineInfo *base_info, MonoError *error)
 {
 	mono_image_lock (base_image);
-	if (!base_info->skeletons)
-		base_info->skeletons = g_array_new (FALSE, TRUE, sizeof(MonoAddedDefSkeleton));
-	g_array_append_vals (base_info->skeletons, dn_vector_data_t (ctx->skeletons, MonoAddedDefSkeleton), dn_vector_size (ctx->skeletons));
+	if (!base_info->skeletons) {
+		base_info->skeletons = dn_vector_alloc_t (MonoAddedDefSkeleton);
+		dn_checkfail (base_info->skeletons, "Allocation failed");
+	}
+	_dn_vector_append_range (base_info->skeletons, (const uint8_t*)dn_vector_data_t (ctx->skeletons, MonoAddedDefSkeleton), dn_vector_size (ctx->skeletons));
 	mono_image_unlock (base_image);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pass2: Added %d type definition skeletons.  Total now %d.", dn_vector_size (ctx->skeletons), base_info->skeletons->len);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "pass2: Added %d type definition skeletons.  Total now %d.", dn_vector_size (ctx->skeletons), dn_vector_size (base_info->skeletons));
 	return TRUE;
 }
 
@@ -1882,8 +1884,8 @@ hot_reload_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, 
 		return FALSE;
 	gboolean found = FALSE;
 	mono_image_lock (base_image);
-	for (int i = 0; i < info->skeletons->len; ++i) {
-		MonoAddedDefSkeleton *sk = &((MonoAddedDefSkeleton*)info->skeletons->data)[i];
+	for (uint32_t i = 0; i < dn_vector_size (info->skeletons); ++i) {
+		MonoAddedDefSkeleton *sk = dn_vector_index_t (info->skeletons, MonoAddedDefSkeleton, i);
 		if (sk->typedef_token == typedef_token) {
 			found = TRUE;
 			g_assert (first_method_idx);
@@ -1909,8 +1911,8 @@ hot_reload_get_typedef_skeleton_properties (MonoImage *base_image, uint32_t type
 		return FALSE;
 	gboolean found = FALSE;
 	mono_image_lock (base_image);
-	for (int i = 0; i < info->skeletons->len; ++i) {
-		MonoAddedDefSkeleton *sk = &((MonoAddedDefSkeleton*)info->skeletons->data)[i];
+	for (uint32_t i = 0; i < dn_vector_size (info->skeletons); ++i) {
+		MonoAddedDefSkeleton *sk = dn_vector_index_t (info->skeletons, MonoAddedDefSkeleton, i);
 		if (sk->typedef_token == typedef_token) {
 			found = TRUE;
 			g_assert (first_prop_idx);
@@ -1932,8 +1934,8 @@ hot_reload_get_typedef_skeleton_events (MonoImage *base_image, uint32_t typedef_
 		return FALSE;
 	gboolean found = FALSE;
 	mono_image_lock (base_image);
-	for (int i = 0; i < info->skeletons->len; ++i) {
-		MonoAddedDefSkeleton *sk = &((MonoAddedDefSkeleton*)info->skeletons->data)[i];
+	for (uint32_t i = 0; i < dn_vector_size (info->skeletons); ++i) {
+		MonoAddedDefSkeleton *sk = dn_vector_index_t (info->skeletons, MonoAddedDefSkeleton, i);
 		if (sk->typedef_token == typedef_token) {
 			found = TRUE;
 			g_assert (first_event_idx);
