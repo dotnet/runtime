@@ -223,7 +223,14 @@ namespace System
                 public bool Change(TimeSpan dueTime, TimeSpan period)
                 {
                     (uint duration, uint periodTime) = CheckAndGetValues(dueTime, period);
-                    return _timer.Change(duration, periodTime);
+                    try
+                    {
+                        return _timer.Change(duration, periodTime);
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        return false;
+                    }
                 }
 
                 public void Dispose() => _timer.Dispose();
