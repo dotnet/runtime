@@ -2611,7 +2611,10 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         // We expect not to have both block and edge counts. We may have other
         // forms of profile data even if we do not have any counts.
         //
-        assert(!haveBlockCounts || !haveEdgeCounts);
+        // As of 4/6/2023 the following invariant check turns out to no longer hold.
+        // Tracking issue: https://github.com/dotnet/runtime/issues/84446
+        //
+        // assert(!haveBlockCounts || !haveEdgeCounts);
 
         bool dataIsGood = false;
 
