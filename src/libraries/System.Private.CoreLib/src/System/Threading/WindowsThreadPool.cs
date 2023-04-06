@@ -14,7 +14,7 @@ namespace System.Threading
     // Windows-specific implementation of ThreadPool
     //
     // PR-Comment: Making it internal just to make it build
-    public static class WindowsThreadPool
+    internal static class WindowsThreadPool
     {
         internal const bool IsWorkerTrackingEnabledInConfig = false;
 
@@ -83,11 +83,13 @@ namespace System.Threading
             return threadLocalCompletionCountObject;
         }
 
+#pragma warning disable IDE0060
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
             // Not supported at present
             return false;
         }
+#pragma warning restore IDE0060
 
         public static void GetMaxThreads(out int workerThreads, out int completionPortThreads)
         {
@@ -97,11 +99,13 @@ namespace System.Threading
             completionPortThreads = MaxThreadCount;
         }
 
+#pragma warning disable IDE0060
         public static bool SetMinThreads(int workerThreads, int completionPortThreads)
         {
             // Not supported at present
             return false;
         }
+#pragma warning restore IDE0060
 
         public static void GetMinThreads(out int workerThreads, out int completionPortThreads)
         {
@@ -196,7 +200,6 @@ namespace System.Threading
         private static unsafe void NativeOverlappedCallback(nint overlappedPtr) =>
             IOCompletionCallbackHelper.PerformSingleIOCompletionCallback(0, 0, (NativeOverlapped*)overlappedPtr);
 
-        [CLSCompliant(false)]
         [SupportedOSPlatform("windows")]
         public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped)
         {
@@ -218,10 +221,12 @@ namespace System.Threading
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
         }
 
+#pragma warning disable IDE0060
         [SupportedOSPlatform("windows")]
         public static bool BindHandle(SafeHandle osHandle)
         {
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
         }
+#pragma warning restore IDE0060
     }
 }
