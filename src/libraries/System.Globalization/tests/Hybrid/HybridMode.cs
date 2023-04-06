@@ -80,11 +80,6 @@ namespace System.Globalization.Tests
 
         internal static int[] GetCurrencyNegativePatterns(string localeName)
         {
-            // CentOS uses an older ICU than Ubuntu, which means the "Linux" values need to allow for
-            // multiple values, since we can't tell which version of ICU we are using, or whether we are
-            // on CentOS or Ubuntu.
-            // When multiple values are returned, the "older" ICU value is returned last.
-
             switch (localeName)
             {
                 case "en-US":
