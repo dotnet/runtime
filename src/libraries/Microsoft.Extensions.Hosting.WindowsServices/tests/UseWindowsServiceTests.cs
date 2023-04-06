@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Hosting
             Assert.IsType<ConsoleLifetime>(lifetime);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [ConditionalFact(typeof(AdminHelpers), nameof(AdminHelpers.IsProcessElevated))]
         public void CanCreateService()
         {
             using var serviceTester = WindowsServiceTester.Create(() =>
