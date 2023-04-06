@@ -9,10 +9,11 @@ void
 dn_rt_mono_failfast_msgv (const char *format, va_list ap)
 {
 	g_logv (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, ap);
+	g_assert_not_reached ();
 }
 
 void
-dn_rt_mono_failfast_nosmg (const char *file, int line)
+dn_rt_mono_failfast_nomsg (const char *file, int line)
 {
 	mono_assertion_message_disabled (file, line);
 }
