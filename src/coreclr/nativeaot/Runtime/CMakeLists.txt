@@ -148,6 +148,7 @@ else()
   list(APPEND COMMON_RUNTIME_SOURCES
     unix/PalRedhawkUnix.cpp
     ${GC_DIR}/unix/gcenv.unix.cpp
+    ${GC_DIR}/unix/numasupport.cpp
     ${GC_DIR}/unix/events.cpp
     ${GC_DIR}/unix/cgroup.cpp
   )
@@ -276,11 +277,3 @@ endif()
 if(FEATURE_PERFTRACING)
   add_subdirectory(eventpipe)
 endif()
-
-if (CLR_CMAKE_TARGET_UNIX)
-  add_library(numasupportdynamic STATIC ${GC_DIR}/unix/numasupport.dynamic.cpp)
-  install_static_library(numasupportdynamic aotsdk nativeaot)
-
-  add_library(numasupportstatic STATIC ${GC_DIR}/unix/numasupport.static.cpp)
-  install_static_library(numasupportstatic aotsdk nativeaot)
-endif(CLR_CMAKE_TARGET_UNIX)
