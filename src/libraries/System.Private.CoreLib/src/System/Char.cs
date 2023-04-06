@@ -81,7 +81,8 @@ namespace System
         };
 
         // Return true for all characters below or equal U+00ff, which is ASCII + Latin-1 Supplement.
-        private static bool IsLatin1(char c) => (uint)c < (uint)Latin1CharInfo.Length;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsLatin1(char c) => c < Latin1CharInfo.Length;
 
         // Return true for all characters below or equal U+007f, which is ASCII.
 
