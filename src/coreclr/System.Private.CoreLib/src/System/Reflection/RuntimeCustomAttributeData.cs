@@ -568,12 +568,8 @@ namespace System.Reflection
         }
         private static RuntimeType ResolveType(RuntimeModule scope, string typeName)
         {
-            RuntimeType type = RuntimeTypeHandle.GetTypeByNameUsingCARules(typeName, scope);
-
-            if (type is null)
-                throw new InvalidOperationException(
-                    SR.Format(SR.Arg_CATypeResolutionFailed, typeName));
-
+            RuntimeType type = TypeNameParser.GetTypeReferencedByCustomAttribute(typeName, scope);
+            Debug.Assert(type is not null);
             return type;
         }
         #endregion
@@ -1859,12 +1855,12 @@ namespace System.Reflection
                 out int sizeConst, out string? marshalTypeName, out string? marshalCookie, out int iidParamIndex);
 
             RuntimeType? safeArrayUserDefinedType = string.IsNullOrEmpty(safeArrayUserDefinedTypeName) ? null :
-                RuntimeTypeHandle.GetTypeByNameUsingCARules(safeArrayUserDefinedTypeName, scope);
+                TypeNameParser.GetTypeReferencedByCustomAttribute(safeArrayUserDefinedTypeName, scope);
             RuntimeType? marshalTypeRef = null;
 
             try
             {
-                marshalTypeRef = marshalTypeName is null ? null : RuntimeTypeHandle.GetTypeByNameUsingCARules(marshalTypeName, scope);
+                marshalTypeRef = marshalTypeName is null ? null : TypeNameParser.GetTypeReferencedByCustomAttribute(marshalTypeName, scope);
             }
             catch (TypeLoadException)
             {

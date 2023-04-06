@@ -1142,14 +1142,8 @@ namespace System.Text.RegularExpressions
             0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
         };
 
-        /// <summary>Determines whether a character is considered a word character for the purposes of testing the \w set.</summary>
-        public static bool IsWordChar(char ch)
-        {
-            // This is the same as IsBoundaryWordChar, except that IsBoundaryWordChar also
-            // returns true for \u200c and \u200d.
-
-           // Mask of Unicode categories that combine to form [\\w]"
-           const int WordCategories =
+         /// <summary>Mask of Unicode categories that combine to form [\\w]</summary>
+         private const int WordCategoriesMask =
                1 << (int)UnicodeCategory.UppercaseLetter |
                1 << (int)UnicodeCategory.LowercaseLetter |
                1 << (int)UnicodeCategory.TitlecaseLetter |
@@ -1159,14 +1153,20 @@ namespace System.Text.RegularExpressions
                1 << (int)UnicodeCategory.DecimalDigitNumber |
                1 << (int)UnicodeCategory.ConnectorPunctuation;
 
-           // Bitmap for whether each character 0 through 127 is in [\\w]",
-           ReadOnlySpan<byte> ascii = WordCharAsciiLookup;
+        /// <summary>Determines whether a character is considered a word character for the purposes of testing the \w set.</summary>
+        public static bool IsWordChar(char ch)
+        {
+            // This is the same as IsBoundaryWordChar, except that IsBoundaryWordChar also
+            // returns true for \u200c and \u200d.
 
-           // If the char is ASCII, look it up in the bitmap. Otherwise, query its Unicode category.",
-           int chDiv8 = ch >> 3;
-           return (uint)chDiv8 < (uint)ascii.Length ?
-               (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :
-               (WordCategories & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;
+            // Bitmap for whether each character 0 through 127 is in [\\w]
+            ReadOnlySpan<byte> ascii = WordCharAsciiLookup;
+
+            // If the char is ASCII, look it up in the bitmap. Otherwise, query its Unicode category.
+            int chDiv8 = ch >> 3;
+            return (uint)chDiv8 < (uint)ascii.Length ?
+                (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :
+                (WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;
         }
 
         /// <summary>Determines whether a character is considered a word character for the purposes of testing a word character boundary.</summary>
@@ -1178,25 +1178,14 @@ namespace System.Text.RegularExpressions
             // ZERO WIDTH NON-JOINER and U+200D ZERO WIDTH JOINER.
             const char ZeroWidthNonJoiner = '\u200C', ZeroWidthJoiner = '\u200D';
 
-            // Mask of Unicode categories that combine to form [\\w]"
-            const int WordCategories =
-                1 << (int)UnicodeCategory.UppercaseLetter |
-                1 << (int)UnicodeCategory.LowercaseLetter |
-                1 << (int)UnicodeCategory.TitlecaseLetter |
-                1 << (int)UnicodeCategory.ModifierLetter |
-                1 << (int)UnicodeCategory.OtherLetter |
-                1 << (int)UnicodeCategory.NonSpacingMark |
-                1 << (int)UnicodeCategory.DecimalDigitNumber |
-                1 << (int)UnicodeCategory.ConnectorPunctuation;
-
-            // Bitmap for whether each character 0 through 127 is in [\\w]",
+            // Bitmap for whether each character 0 through 127 is in [\\w]
             ReadOnlySpan<byte> ascii = WordCharAsciiLookup;
 
-            // If the char is ASCII, look it up in the bitmap. Otherwise, query its Unicode category.",
+            // If the char is ASCII, look it up in the bitmap. Otherwise, query its Unicode category.
             int chDiv8 = ch >> 3;
             return (uint)chDiv8 < (uint)ascii.Length ?
                 (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :
-                ((WordCategories & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0 ||
+                ((WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0 ||
                  (ch == ZeroWidthJoiner | ch == ZeroWidthNonJoiner));
         }
 
