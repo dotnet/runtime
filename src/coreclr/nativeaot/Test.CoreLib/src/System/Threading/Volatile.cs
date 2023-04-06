@@ -19,5 +19,11 @@ namespace System.Threading
         {
             Unsafe.As<uint, VolatileUInt32>(ref location).Value = value;
         }
+
+        private struct VolatileUIntPtr { public volatile UIntPtr Value; }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static UIntPtr Read(ref UIntPtr location) =>
+            Unsafe.As<UIntPtr, VolatileUIntPtr>(ref location).Value;
     }
 }

@@ -1056,7 +1056,7 @@ namespace System.Runtime
         //    of writing, this is true as its is only used if sourceType is from an object, and targetType is an interface.)
         // 2. Force inlining (This particular variant is only used in a small number of dispatch scenarios that are particularly
         //    high in performance impact.)
-        // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool AreTypesAssignableInternal_SourceNotTarget_BoxedSource(MethodTable* pSourceType, MethodTable* pTargetType, EETypePairList* pVisited)
         {
             Debug.Assert(pSourceType != pTargetType, "target is source");
@@ -1070,6 +1070,7 @@ namespace System.Runtime
             return CacheMiss(pSourceType, pTargetType, AssignmentVariation.BoxedSource, pVisited);
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static unsafe bool CacheMiss(MethodTable* pSourceType, MethodTable* pTargetType, AssignmentVariation variation, EETypePairList* pVisited)
         {
             //

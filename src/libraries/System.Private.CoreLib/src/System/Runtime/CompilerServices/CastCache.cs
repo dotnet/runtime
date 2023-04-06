@@ -44,7 +44,13 @@ namespace System.Runtime.CompilerServices
         private static int s_lastFlushSize = INITIAL_CACHE_SIZE;
 
         // The actual storage.
-        private static int[] s_table = CreateCastCache(INITIAL_CACHE_SIZE) ?? s_sentinelTable;
+        // Initialize to the sentinel in DEBUG as if just flushed, to ensure the sentinel can be handled in Set.
+        private static int[] s_table =
+#if !DEBUG
+            CreateCastCache(INITIAL_CACHE_SIZE) ??
+#endif
+            s_sentinelTable;
+
 #endif // CORECLR
 
         private const int BUCKET_SIZE = 8;
@@ -77,7 +83,6 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        // this is to avoid dependency on BitOperations
 #if TARGET_64BIT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ulong RotateLeft(ulong value, int offset)
@@ -88,7 +93,7 @@ namespace System.Runtime.CompilerServices
             => (value << offset) | (value >> (32 - offset));
 #endif
 
-        // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int KeyToBucket(ref int tableData, nuint source, nuint target)
         {
             // upper bits of addresses do not vary much, so to reduce loss due to cancelling out,
@@ -105,45 +110,46 @@ namespace System.Runtime.CompilerServices
 #endif
         }
 
-        // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ref int TableData(int[] table)
         {
             // element 0 is used for embedded aux data
-            // return ref MemoryMarshal.GetArrayDataReference(table);
+            //
+            // AuxData: { hashShift, tableMask, victimCounter }
             return ref Unsafe.As<byte, int>(ref Unsafe.AddByteOffset(ref table.GetRawData(), (nint)sizeof(nint)));
         }
 
-        // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ref int HashShift(ref int tableData)
+        {
+            return ref tableData;
+        }
+
+        // TableMask is "size - 1"
+        // we need that more often that we need size
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ref int TableMask(ref int tableData)
+        {
+            return ref Unsafe.Add(ref tableData, 1);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ref uint VictimCounter(ref int tableData)
+        {
+            return ref Unsafe.As<int, uint>(ref Unsafe.Add(ref tableData, 2));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ref CastCacheEntry Element(ref int tableData, int index)
         {
             // element 0 is used for embedded aux data, skip it
             return ref Unsafe.Add(ref Unsafe.As<int, CastCacheEntry>(ref tableData), index + 1);
         }
 
-        // [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref int HashShift(ref int tableData)
-        {
-            return ref tableData;
-        }
-
-        // [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref uint VictimCounter(ref int tableData)
-        {
-            return ref Unsafe.As<int, uint>(ref Unsafe.Add(ref tableData, 2));
-        }
-
-        // TableMask is "size - 1"
-        // we need that more often that we need size
-        // [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref int TableMask(ref int tableData)
-        {
-            return ref Unsafe.Add(ref tableData, 1);
-        }
-
-        // [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static CastResult TryGet(nuint source, nuint target)
         {
-            // table is initialized and is not null.
+            // table is always initialized and is not null.
             ref int tableData = ref TableData(s_table!);
 
             int index = KeyToBucket(ref tableData, source, target);
@@ -151,10 +157,18 @@ namespace System.Runtime.CompilerServices
             {
                 ref CastCacheEntry pEntry = ref Element(ref tableData, index);
 
-                // must read in this order: version -> [entry parts] -> version
+                // we must read in this order: version -> [entry parts] -> version
                 // if version is odd or changes, the entry is inconsistent and thus ignored
                 uint version = Volatile.Read(ref pEntry._version);
+
+#if CORECLR
+                // in CoreCLR we do ordinary reads of the entry parts and
+                // Interlocked.ReadMemoryBarrier() before reading the version
                 nuint entrySource = pEntry._source;
+#else
+                // must read this before reading the version again
+                nuint entrySource = Volatile.Read(ref pEntry._source);
+#endif
 
                 // mask the lower version bit to make it even.
                 // This way we can check if version is odd or changing in just one compare.
@@ -162,21 +176,31 @@ namespace System.Runtime.CompilerServices
 
                 if (entrySource == source)
                 {
+
+#if CORECLR
+                    // in CoreCLR we do ordinary reads of the entry parts and
+                    // Interlocked.ReadMemoryBarrier() before reading the version
                     nuint entryTargetAndResult = pEntry._targetAndResult;
+#else
+                    // must read this before reading the version again
+                    nuint entryTargetAndResult = Volatile.Read(ref pEntry._targetAndResult);
+#endif
+
                     // target never has its lower bit set.
                     // a matching entryTargetAndResult would the have same bits, except for the lowest one, which is the result.
                     entryTargetAndResult ^= target;
                     if (entryTargetAndResult <= 1)
                     {
-                        // make sure 'version' is loaded after 'source' and 'targetAndResults'
+                        // make sure the second read of 'version' happens after reading 'source' and 'targetAndResults'
                         //
                         // We can either:
                         // - use acquires for both _source and _targetAndResults or
                         // - issue a load barrier before reading _version
-                        // benchmarks on available hardware show that use of a read barrier is cheaper.
+                        // benchmarks on available hardware (Jan 2020) show that use of a read barrier is cheaper.
 
-                        // TODO: VS
-                        // Interlocked.ReadMemoryBarrier();
+#if CORECLR
+                        Interlocked.ReadMemoryBarrier();
+#endif
 
                         if (version != pEntry._version)
                         {
@@ -203,7 +227,13 @@ namespace System.Runtime.CompilerServices
             return CastResult.MaybeCast;
         }
 
+        // the rest is the support for updating the cache.
+        // in CoreClr the cache is only updated in the native code
+        //
+        // The following helpers must match native implementations in castcache.h and castcache.cpp
 #if !CORECLR
+
+        // we generally do not OOM in casts, just return null unless throwOnFail is specified.
         private static int[]? CreateCastCache(int size, bool throwOnFail = false)
         {
             // size must be positive
@@ -234,7 +264,6 @@ namespace System.Runtime.CompilerServices
 
             if (table == null)
             {
-                // we do not OOM in casts, just return null meaning we can't resize.
                 return table;
             }
 
@@ -426,6 +455,6 @@ namespace System.Runtime.CompilerServices
 
             return false;
         }
-#endif
+#endif   // !CORECLR
     }
 }
