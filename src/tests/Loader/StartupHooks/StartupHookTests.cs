@@ -7,11 +7,16 @@ using System.Reflection;
 
 using Xunit;
 
+[ConditionalClass(typeof(StartupHookTests), nameof(StartupHookTests.IsSupported))]
 public unsafe class StartupHookTests
 {
     private const string StartupHookKey = "STARTUP_HOOKS";
 
-    private static delegate*<void> ProcessStartupHooks = (delegate*<void>)typeof(object).Assembly.GetType("System.StartupHookProvider", throwOnError: true).GetMethod("ProcessStartupHooks", BindingFlags.NonPublic | BindingFlags.Static).MethodHandle.GetFunctionPointer();
+    private static Type s_startupHookProvider = typeof(object).Assembly.GetType("System.StartupHookProvider", throwOnError: true);
+
+    private static delegate*<void> ProcessStartupHooks = (delegate*<void>)s_startupHookProvider.GetMethod("ProcessStartupHooks", BindingFlags.NonPublic | BindingFlags.Static).MethodHandle.GetFunctionPointer();
+
+    public static bool IsSupported = ((delegate*<bool>)s_startupHookProvider.GetProperty(nameof(IsSupported), BindingFlags.NonPublic | BindingFlags.Static).GetMethod.MethodHandle.GetFunctionPointer())();
 
     [Fact]
     public static void ValidHookName()
