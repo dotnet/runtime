@@ -565,7 +565,15 @@ namespace System.Text.Unicode
 
                     while (true)
                     {
-                        length *= 2;
+                        int newLength = length * 2;
+                        if ((uint)newLength > Array.MaxLength)
+                        {
+                            newLength = length == Array.MaxLength ?
+                                Array.MaxLength + 1 : // force OOM
+                                Array.MaxLength;
+                        }
+                        length = newLength;
+
                         char[] array = ArrayPool<char>.Shared.Rent(length);
                         try
                         {
