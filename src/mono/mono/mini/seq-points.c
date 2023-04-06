@@ -10,7 +10,7 @@
  */
 
 #include <config.h>
-#include <dn-vector.h>
+#include <dn-vector-ptr.h>
 #include "mini.h"
 #include "mini-runtime.h"
 #include "seq-points.h"
@@ -36,8 +36,8 @@ recursively_make_pred_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
 	const gpointer MONO_SEQ_SEEN_LOOP = GINT_TO_POINTER(-1);
 
 
-	dn_vector_t predecessors = {0,};
-	dn_vector_init_t (&predecessors, MonoInst*);
+	dn_vector_ptr_t predecessors = {0,};
+	dn_vector_ptr_init (&predecessors);
 	GHashTable *seen = g_hash_table_new_full (g_direct_hash, NULL, NULL, NULL);
 
 	// Insert/remove sentinel into the memoize table to detect loops containing bb
@@ -48,7 +48,7 @@ recursively_make_pred_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		// This bb has the last seq point, append it and continue
 		if (in_bb->last_seq_point != NULL) {
-			dn_vector_push_back (&predecessors, in_bb->last_seq_point);
+			dn_vector_ptr_push_back (&predecessors, in_bb->last_seq_point);
 			continue;
 		}
 
@@ -68,7 +68,7 @@ recursively_make_pred_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
 		// Union sequence points with incoming bb's
 		for (guint j = 0; j < in_bb->num_pred_seq_points; j++) {
 			if (!g_hash_table_lookup (seen, in_bb->pred_seq_points [j])) {
-				dn_vector_push_back (&predecessors, in_bb->pred_seq_points [j]);
+				dn_vector_ptr_push_back (&predecessors, in_bb->pred_seq_points [j]);
 				g_hash_table_insert (seen, in_bb->pred_seq_points [j], (gpointer)&MONO_SEQ_SEEN_LOOP);
 			}
 		}
@@ -77,17 +77,17 @@ recursively_make_pred_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	g_hash_table_destroy (seen);
 
-	if (!dn_vector_empty (&predecessors)) {
-		uint32_t count = dn_vector_size (&predecessors);
+	if (!dn_vector_ptr_empty (&predecessors)) {
+		uint32_t count = dn_vector_ptr_size (&predecessors);
 		bb->pred_seq_points = (MonoInst **)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoInst *) * count);
 		bb->num_pred_seq_points = count;
 
 		for (guint newer = 0; newer < bb->num_pred_seq_points; newer++) {
-			bb->pred_seq_points [newer] = *dn_vector_index_t (&predecessors, MonoInst*, newer);
+			bb->pred_seq_points [newer] = *dn_vector_ptr_index_t (&predecessors, MonoInst*, newer);
 		}
 	}
 
-	dn_vector_dispose (&predecessors);
+	dn_vector_ptr_dispose (&predecessors);
 }
 
 static void
