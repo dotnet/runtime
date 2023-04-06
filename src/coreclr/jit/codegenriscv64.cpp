@@ -5036,10 +5036,10 @@ void CodeGen::genRangeCheck(GenTree* oper)
     noway_assert(oper->OperIs(GT_BOUNDS_CHECK));
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
-    GenTree* src1 = bndsChk->GetIndex();
-    GenTree* src2 = bndsChk->GetArrayLength();
-    regNumber    reg1 = src1->GetRegNum();
-    regNumber    reg2 = src2->GetRegNum();
+    GenTree*  src1 = bndsChk->GetIndex();
+    GenTree*  src2 = bndsChk->GetArrayLength();
+    regNumber reg1 = src1->GetRegNum();
+    regNumber reg2 = src2->GetRegNum();
 
     genConsumeRegs(src1);
     genConsumeRegs(src2);
