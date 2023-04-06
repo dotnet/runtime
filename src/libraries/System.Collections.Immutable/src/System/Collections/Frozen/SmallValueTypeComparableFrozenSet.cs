@@ -8,23 +8,20 @@ using System.Linq;
 
 namespace System.Collections.Frozen
 {
-    /// <summary>Provides a frozen set to use when the item is a comparable value type, the default comparer is used, and the item count is small.</summary>
+    /// <summary>Provides a frozen set to use when the item is a value type, the default comparer is used, and the item count is small.</summary>
     /// <remarks>
-    /// No hashing involved, just a linear scan through the items.  This implementation is close in nature to that of <see cref="ValueTypeDefaultComparerFrozenSet{T}"/>,
-    /// except that this implementation sorts the values in order to a) extract a max that it can compare against at the beginning of each match in order to
-    /// immediately rule out values too large to be contained, and b) early-exits from the linear scan when a comparison determines the value is too
-    /// small to be contained.
+    /// While not constrained in this manner, the <typeparamref name="T"/> must be an <see cref="IComparable{T}"/>.
+    /// This implementation is only used for a set of types that have a known-good <see cref="IComparable{T}"/> implementation; it's not
+    /// used for an <see cref="IComparable{T}"/> as we can't know for sure whether it's valid, e.g. if the T is a ValueTuple`2, it itself
+    /// is comparable, but its items might not be such that trying to compare it will result in exception.
     /// </remarks>
-    internal sealed class SmallComparableValueTypeFrozenSet<T> : FrozenSetInternalBase<T, SmallComparableValueTypeFrozenSet<T>.GSW>
+    internal sealed class SmallValueTypeComparableFrozenSet<T> : FrozenSetInternalBase<T, SmallValueTypeComparableFrozenSet<T>.GSW>
     {
         private readonly T[] _items;
         private readonly T _max;
 
-        internal SmallComparableValueTypeFrozenSet(HashSet<T> source) : base(EqualityComparer<T>.Default)
+        internal SmallValueTypeComparableFrozenSet(HashSet<T> source) : base(EqualityComparer<T>.Default)
         {
-            // T is logically constrained to `where T : struct, IComparable<T>`, but we can't actually write that
-            // constraint currently and still have this be used from the calling context that has an unconstrained T.
-            // So, we assert it here instead. The implementation relies on {Equality}Comparer<T>.Default to sort things out.
             Debug.Assert(default(T) is IComparable<T>);
             Debug.Assert(default(T) is not null);
             Debug.Assert(typeof(T).IsValueType);
@@ -33,8 +30,8 @@ namespace System.Collections.Frozen
             Debug.Assert(ReferenceEquals(source.Comparer, EqualityComparer<T>.Default));
 
             _items = source.ToArray();
-            Array.Sort(_items);
 
+            Array.Sort(_items);
             _max = _items[_items.Length - 1];
         }
 
@@ -67,8 +64,8 @@ namespace System.Collections.Frozen
 
         internal struct GSW : IGenericSpecializedWrapper
         {
-            private SmallComparableValueTypeFrozenSet<T> _set;
-            public void Store(FrozenSet<T> set) => _set = (SmallComparableValueTypeFrozenSet<T>)set;
+            private SmallValueTypeComparableFrozenSet<T> _set;
+            public void Store(FrozenSet<T> set) => _set = (SmallValueTypeComparableFrozenSet<T>)set;
 
             public int Count => _set.Count;
             public IEqualityComparer<T> Comparer => _set.Comparer;

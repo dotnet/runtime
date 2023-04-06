@@ -76,11 +76,7 @@ namespace Internal.Runtime.InteropServices
                 string typeName = MarshalToString(typeNameNative, nameof(typeNameNative));
                 string methodName = MarshalToString(methodNameNative, nameof(methodNameNative));
 
-                if (reserved != IntPtr.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(reserved));
-                }
-
+                ArgumentOutOfRangeException.ThrowIfNotEqual(reserved, IntPtr.Zero);
                 ArgumentNullException.ThrowIfNull(functionHandle);
 
                 // Set up the AssemblyLoadContext for this delegate.
@@ -119,15 +115,8 @@ namespace Internal.Runtime.InteropServices
             {
                 string assemblyPath = MarshalToString(assemblyPathNative, nameof(assemblyPathNative));
 
-                if (loadContext != IntPtr.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(loadContext));
-                }
-
-                if (reserved != IntPtr.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(reserved));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotEqual(loadContext, IntPtr.Zero);
+                ArgumentOutOfRangeException.ThrowIfNotEqual(reserved, IntPtr.Zero);
 
                 LoadAssemblyLocal(assemblyPath);
             }
@@ -215,16 +204,8 @@ namespace Internal.Runtime.InteropServices
                 string typeName = MarshalToString(typeNameNative, nameof(typeNameNative));
                 string methodName = MarshalToString(methodNameNative, nameof(methodNameNative));
 
-                if (loadContext != IntPtr.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(loadContext));
-                }
-
-                if (reserved != IntPtr.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(reserved));
-                }
-
+                ArgumentOutOfRangeException.ThrowIfNotEqual(loadContext, IntPtr.Zero);
+                ArgumentOutOfRangeException.ThrowIfNotEqual(reserved, IntPtr.Zero);
                 ArgumentNullException.ThrowIfNull(functionHandle);
 
 #pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml

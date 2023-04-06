@@ -5571,7 +5571,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 // Check word by word
                 int targetPosition = 0;                 // Where we are in the target string
                 int thisPosition = Index;         // Where we are in this string
-                int wsIndex = target.AsSpan(targetPosition).IndexOfAny(' ', '\u00A0');
+                int wsIndex = target.AsSpan(targetPosition).IndexOfAny("\u0020\u00A0\u202F");
                 if (wsIndex < 0)
                 {
                     return false;
@@ -5615,7 +5615,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         matchLength++;
                     }
 
-                    wsIndex = target.AsSpan(targetPosition).IndexOfAny(' ', '\u00A0');
+                    wsIndex = target.AsSpan(targetPosition).IndexOfAny("\u0020\u00A0\u202F");
                     if (wsIndex < 0)
                     {
                         break;
@@ -5678,7 +5678,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             {
                 return false;
             }
-            if (Value[Index] == ch)
+            if ((Value[Index] == ch) ||
+                (ch == ' ' && IsSpaceReplacingChar(Value[Index])))
             {
                 m_current = ch;
                 return true;
@@ -5686,6 +5687,8 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             Index--;
             return false;
         }
+
+        private static bool IsSpaceReplacingChar(char c) => c == '\u00a0' || c == '\u202f';
 
         //
         //  Actions: From the current position, try matching the longest word in the specified string array.

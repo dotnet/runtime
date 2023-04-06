@@ -2606,18 +2606,35 @@ PhaseStatus Compiler::fgIncorporateProfileData()
 
     fgPgoHaveWeights = haveBlockCounts || haveEdgeCounts;
 
-    // We expect not to have both block and edge counts. We may have other
-    // forms of profile data even if we do not have any counts.
-    //
-    assert(!haveBlockCounts || !haveEdgeCounts);
+    if (fgPgoHaveWeights)
+    {
+        // We expect not to have both block and edge counts. We may have other
+        // forms of profile data even if we do not have any counts.
+        //
+        assert(!haveBlockCounts || !haveEdgeCounts);
 
-    if (haveBlockCounts)
-    {
-        fgIncorporateBlockCounts();
-    }
-    else if (haveEdgeCounts)
-    {
-        fgIncorporateEdgeCounts();
+        bool dataIsGood = false;
+
+        if (haveBlockCounts)
+        {
+            dataIsGood = fgIncorporateBlockCounts();
+        }
+        else if (haveEdgeCounts)
+        {
+            dataIsGood = fgIncorporateEdgeCounts();
+        }
+
+        // Profile incorporation may have tossed out all PGO data if it
+        // encountered major issues. This is perhaps too drastic. Consider
+        // at least keeping the class profile data, or perhaps enable full synthesis.
+        //
+        // If profile incorporation hit fixable problems, run synthesis in repair mode.
+        //
+        if (fgPgoHaveWeights && !dataIsGood)
+        {
+            JITDUMP("\nIncorporated count data had inconsistencies; repairing profile...\n");
+            ProfileSynthesis::Run(this, ProfileSynthesisOption::RepairLikelihoods);
+        }
     }
 
 #ifdef DEBUG
@@ -2667,6 +2684,9 @@ void Compiler::fgSetProfileWeight(BasicBlock* block, weight_t profileWeight)
 // fgIncorporateBlockCounts: read block count based profile data
 //   and set block weights
 //
+// Returns:
+//   True if data is in good shape
+//
 // Notes:
 //   Since we are now running before the importer, we do not know which
 //   blocks will be imported, and we should not see any internal blocks.
@@ -2680,7 +2700,7 @@ void Compiler::fgSetProfileWeight(BasicBlock* block, weight_t profileWeight)
 //   Find some other mechanism for handling cases where handler entry
 //   blocks must be in the hot section.
 //
-void Compiler::fgIncorporateBlockCounts()
+bool Compiler::fgIncorporateBlockCounts()
 {
     for (BasicBlock* const block : Blocks())
     {
@@ -2691,6 +2711,10 @@ void Compiler::fgIncorporateBlockCounts()
             fgSetProfileWeight(block, profileWeight);
         }
     }
+
+    // For now assume data is always good.
+    //
+    return true;
 }
 
 //------------------------------------------------------------------------
@@ -2871,6 +2895,7 @@ private:
     bool m_negativeCount;
     bool m_failedToConverge;
     bool m_allWeightsZero;
+    bool m_entryWeightZero;
 
 public:
     EfficientEdgeCountReconstructor(Compiler* comp)
@@ -2889,6 +2914,7 @@ public:
         , m_negativeCount(false)
         , m_failedToConverge(false)
         , m_allWeightsZero(true)
+        , m_entryWeightZero(false)
     {
     }
 
@@ -2914,6 +2940,24 @@ public:
     void FailedToConverge()
     {
         m_failedToConverge = true;
+    }
+
+    void EntryWeightZero()
+    {
+        m_entryWeightZero = true;
+    }
+
+    // Are there are reparable issues with the reconstruction?
+    //
+    // Ideally we'd also have || !m_negativeCount here, but this
+    // leads to lots of diffs in async methods.
+    //
+    // Looks like we might first need to resolve reconstruction
+    // shortcomings with irreducible loops.
+    //
+    bool IsGood() const
+    {
+        return !m_entryWeightZero;
     }
 
     void VisitBlock(BasicBlock*) override
@@ -3381,52 +3425,15 @@ void EfficientEdgeCountReconstructor::Solve()
 
     JITDUMP("\nSolver: converged in %u passes\n", nPasses);
 
-    // If, after solving, the entry weight ends up as zero, set it to
-    // the max of the weight of successor edges or join-free successor
-    // block weight. We do this so we can determine a plausible scale
-    // count.
-    //
-    // This can happen for methods that do not return (say they always
-    // throw, or had not yet returned when we snapped the counts).
-    //
-    // Note we know there are nonzero counts elsewhere in the method, otherwise
-    // m_allWeightsZero would be true and we would have bailed out above.
+    // If, after solving, the entry weight ends up as zero, note
+    // this so we can run a profile repair immediately.
     //
     BlockInfo* const firstInfo = BlockToInfo(m_comp->fgFirstBB);
     if (firstInfo->m_weight == BB_ZERO_WEIGHT)
     {
         assert(!m_allWeightsZero);
-
-        weight_t newWeight = BB_ZERO_WEIGHT;
-
-        for (Edge* edge = firstInfo->m_outgoingEdges; edge != nullptr; edge = edge->m_nextOutgoingEdge)
-        {
-            if (edge->m_weightKnown)
-            {
-                newWeight = max(newWeight, edge->m_weight);
-            }
-
-            BlockInfo* const targetBlockInfo  = BlockToInfo(edge->m_targetBlock);
-            Edge* const      targetBlockEdges = targetBlockInfo->m_incomingEdges;
-
-            if (targetBlockInfo->m_weightKnown && (targetBlockEdges->m_nextIncomingEdge == nullptr))
-            {
-                newWeight = max(newWeight, targetBlockInfo->m_weight);
-            }
-        }
-
-        if (newWeight == BB_ZERO_WEIGHT)
-        {
-            // TODO -- throw out profile data or trigger repair/synthesis.
-            //
-            JITDUMP("Entry block weight and neighborhood was zero\n");
-        }
-        else
-        {
-            JITDUMP("Entry block weight was zero, setting entry weight to neighborhood max " FMT_WT "\n", newWeight);
-        }
-
-        firstInfo->m_weight = newWeight;
+        JITDUMP("\nSolver: entry block weight is zero\n");
+        EntryWeightZero();
     }
 }
 
@@ -3436,9 +3443,6 @@ void EfficientEdgeCountReconstructor::Solve()
 //
 void EfficientEdgeCountReconstructor::Propagate()
 {
-    // We don't expect mismatches or convergence failures.
-    //
-
     // Mismatches are currently expected as the flow for static pgo doesn't prevent them now.
     //    assert(!m_mismatch);
 
@@ -3939,6 +3943,10 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
 // fgIncorporateEdgeCounts: read sparse edge count based profile data
 //   and set block weights
 //
+// Returns:
+//    true if incorporated profile is in good shape (consistent, etc).
+//    false if some repair seems necessary
+//
 // Notes:
 //   Because edge counts are sparse, we need to solve for the missing
 //   edge counts; in the process, we also determine block counts.
@@ -3948,7 +3956,7 @@ void EfficientEdgeCountReconstructor::MarkInterestingSwitches(BasicBlock* block,
 //   Since we have edge weights here, we might as well set them
 //   (or likelihoods)
 //
-void Compiler::fgIncorporateEdgeCounts()
+bool Compiler::fgIncorporateEdgeCounts()
 {
     JITDUMP("\nReconstructing block counts from sparse edge instrumentation\n");
 
@@ -3957,6 +3965,8 @@ void Compiler::fgIncorporateEdgeCounts()
     WalkSpanningTree(&e);
     e.Solve();
     e.Propagate();
+
+    return e.IsGood();
 }
 
 //------------------------------------------------------------------------

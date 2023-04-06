@@ -71,7 +71,9 @@ namespace System.Reflection.Emit
         protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotImplementedException();
         protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
 
-        protected override void SetParentCore([DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type? parent)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2074:DynamicallyAccessedMembers",
+            Justification = "TODO: Need to figure out how to preserve System.Object public constructor")]
+        protected override void SetParentCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
         {
             if (parent != null)
             {
@@ -86,9 +88,7 @@ namespace System.Reflection.Emit
             {
                 if ((_attributes & TypeAttributes.Interface) != TypeAttributes.Interface)
                 {
-#pragma warning disable IL2074 // Value stored in field does not satisfy 'DynamicallyAccessedMembersAttribute' requirements. The return value of the source method does not have matching annotations.
-                    _typeParent = _module.GetTypeFromCoreAssembly("System.Object");
-#pragma warning restore IL2074
+                    _typeParent = _module.GetTypeFromCoreAssembly(CoreTypeId.Object);
                 }
                 else
                 {
