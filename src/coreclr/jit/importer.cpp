@@ -9577,6 +9577,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             isHoistable ||
                             info.compCompHnd->getClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BEFOREFIELDINIT;
 
+                        if (!isHoistable)
                         {
                             impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("value for stsfld with typeinit"));
                         }
