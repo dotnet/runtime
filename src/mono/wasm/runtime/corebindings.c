@@ -74,7 +74,7 @@ void bindings_initialize_internals (void)
 	// Blazor specific custom routines - see dotnet_support.js for backing code
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
 #endif /* ENABLE_LEGACY_JS_INTEROP */
-	mono_add_internal_call ("System.Globalization.TextInfoInterop::ChangeCaseInvariantJS", mono_wasm_change_case_invariant);
-	mono_add_internal_call ("System.Globalization.TextInfoInterop::ChangeCaseJS", mono_wasm_change_case);
-	mono_add_internal_call ("System.Globalization.CompareInfoInterop::CompareStringJS", mono_wasm_compare_string);
+	mono_add_internal_call ("Interop/JsGlobalization::ChangeCaseInvariant", mono_wasm_change_case_invariant);
+	mono_add_internal_call ("Interop/JsGlobalization::ChangeCase", mono_wasm_change_case);
+	mono_add_internal_call ("Interop/JsGlobalization::CompareString", mono_wasm_compare_string);
 }

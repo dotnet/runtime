@@ -3,16 +3,9 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
-    internal static unsafe class CompareInfoInterop
-    {
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe int CompareStringJS(out string exceptionMessage, in string culture, char* str1, int str1Len, char* str2, int str2Len, global::System.Globalization.CompareOptions options);
-    }
-
     public partial class CompareInfo
     {
         private unsafe int JsCompareString(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
@@ -36,7 +29,7 @@ namespace System.Globalization
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
             fixed (char* pString2 = &MemoryMarshal.GetReference(string2))
             {
-                cmpResult = CompareInfoInterop.CompareStringJS(out exceptionMessage, cultureName, pString1, string1.Length, pString2, string2.Length, options);
+                cmpResult = Interop.JsGlobalization.CompareString(out exceptionMessage, cultureName, pString1, string1.Length, pString2, string2.Length, options);
             }
 
             if (!string.IsNullOrEmpty(exceptionMessage))
