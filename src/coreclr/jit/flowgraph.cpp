@@ -729,7 +729,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, Gen
     }
 
     // Clear gtInitClsHnd as a mark that we've already visited this call
-    call->gtInitClsHnd = nullptr;
+    call->gtInitClsHnd = NO_CLASS_HANDLE;
     return true;
 }
 
@@ -1125,8 +1125,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
     if (IsStaticHelperEligibleForExpansion(result))
     {
-        // Keep class handle attached to the helper call since it's difficult to restore it
-        // from arguments/EntryPoint
+        // Keep class handle attached to the helper call since it's difficult to restore it.
         result->gtInitClsHnd = cls;
     }
     result->gtFlags |= callFlags;
