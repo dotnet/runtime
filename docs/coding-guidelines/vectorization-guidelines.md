@@ -38,7 +38,7 @@ Vectorization is the art of converting an algorithm from operating on a single v
 
 In recent releases, .NET has introduced many new APIs for vectorization. The vast majority of them are hardware specific, so they require users to provide an implementation per processor architecture (such as x86, x64, Arm64, WASM, or other platforms), with the option of using the most optimal instructions for hardware that is executing the code.
 
-.NET 7 introduced a set of new APIs for `Vector64<T>`, `Vector128<T>` and `Vector256<T>` for writing hardware-agnostic, cross platform vectorized code (`Vector512<T>` is being introduced in .NET 8). The purpose of this document is to introduce you to the new APIs and provide a set of best practices.
+.NET 7 introduced a set of new APIs for `Vector64<T>`, `Vector128<T>` and `Vector256<T>` for writing hardware-agnostic, cross platform vectorized code. Similarly, .NET 8 introduced `Vector512<T>`. The purpose of this document is to introduce you to the new APIs and provide a set of best practices.
 
 ## Code structure
 
@@ -50,9 +50,9 @@ In recent releases, .NET has introduced many new APIs for vectorization. The vas
 * `short` and `ushort` (16 bits).
 * `int`, `uint` and `float` (32 bits).
 * `long`, `ulong` and `double` (64 bits).
-* `nint` and `unit` (32 or 64 bits, depending on the architecture, available in .NET 7+)
+* `nint` and `nuint` (32 or 64 bits, depending on the architecture, available in .NET 7+)
 
-.NET 8 is introducing a `Vector128<T>.IsSupported` that helps identify whether a given `T` will throw or not to help identify what works per runtime, including from generic contexts.
+.NET 8 introduced a `Vector128<T>.IsSupported` that indicates whether a given `T` will throw to help identify what works per runtime, including from generic contexts.
 
 A single `Vector128` operation allows you to operate on: 16 (s)bytes, 8 (u)shorts, 4 (u)ints/floats, or 2 (u)longs/double(s).
 
@@ -601,7 +601,7 @@ Before we start working on the implementation, let's list all edge cases for our
 
 * It does not need to throw any argument exceptions, as `ReadOnlySpan` is `struct` and it can never be `null` or invalid.
 * It should return `true` for an empty buffer.
-* It should detect invalid characters in the entire buffer, including the remainder.
+* It should detect invalid characters in the entire buffer, regardless of the buffer's length or whether its length is an even multiple of a vector width.
 * It should not read any bytes that don't belong to the provided buffer.
 
 ### Scalar solution
@@ -1012,7 +1012,7 @@ public static unsafe Vector128<ushort> Narrow(Vector128<uint> lower, Vector128<u
 public static unsafe Vector128<uint> Narrow(Vector128<ulong> lower, Vector128<ulong> upper)
 ```
 
-In contrary to [Sse2.PackUnsignedSaturate](https://learn.microsoft.com/dotnet/api/system.runtime.intrinsics.x86.sse2.packunsignedsaturate) and [AdvSimd.Arm64.UnzipEven](https://learn.microsoft.com/dotnet/api/system.runtime.intrinsics.arm.advsimd.arm64.unzipeven), `Narrow` applies a mask via AND to cut anything above the max value of returned vector:
+In contrast to [Sse2.PackUnsignedSaturate](https://learn.microsoft.com/dotnet/api/system.runtime.intrinsics.x86.sse2.packunsignedsaturate) and [AdvSimd.Arm64.UnzipEven](https://learn.microsoft.com/dotnet/api/system.runtime.intrinsics.arm.advsimd.arm64.unzipeven), `Narrow` applies a mask via AND to cut anything above the max value of returned vector:
 
 
 ```cs
