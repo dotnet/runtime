@@ -9783,6 +9783,10 @@ const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
 #endif // TARGET_AMD64
 
 #ifdef TARGET_X86
+    if (isMaskReg(reg))
+    {
+        return rn;
+    }
     assert(strlen(rn) >= 3);
 
     switch (EA_SIZE(attr))
