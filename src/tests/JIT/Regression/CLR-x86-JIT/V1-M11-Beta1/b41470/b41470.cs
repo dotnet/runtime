@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -10,7 +11,8 @@ namespace Test
     {
         static void Method1(float param2) { }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             ulong local3 = 168u;
             try { Method1((float)local3 + App.m_afForward5[0]); }

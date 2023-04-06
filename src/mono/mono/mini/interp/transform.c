@@ -758,9 +758,6 @@ handle_branch (TransformData *td, int long_op, int offset)
 		}
 	}
 
-	if (long_op == MINT_LEAVE || long_op == MINT_LEAVE_CHECK)
-		target_bb->eh_block = TRUE;
-
 	fixup_newbb_stack_locals (td, target_bb);
 	if (offset > 0)
 		init_bb_stack_state (td, target_bb);
@@ -3480,6 +3477,9 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		if (!target_method) {
 			if (td->verbose_level > 1)
 				g_print("Disabling inlining because we have no target_method for call in %s\n", td->method->name);
+			return FALSE;
+		} else if (td->method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE) {
+			// This scenario causes https://github.com/dotnet/runtime/issues/83792
 			return FALSE;
 		} else if (has_doesnotreturn_attribute(target_method)) {
 			/*
@@ -7276,8 +7276,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				/* LEAVE instructions in catch clauses need to check for abort exceptions */
 				handle_branch (td, MINT_LEAVE_CHECK, target_offset);
 			} else {
-				handle_branch (td, MINT_LEAVE, target_offset);
+				handle_branch (td, MINT_BR, target_offset);
 			}
+			td->last_ins->info.target_bb->eh_block = TRUE;
 
 			if (*td->ip == CEE_LEAVE)
 				td->ip += 5;
@@ -8121,8 +8122,6 @@ get_short_brop (int opcode)
 	if (MINT_IS_UNCONDITIONAL_BRANCH (opcode)) {
 		if (opcode == MINT_BR)
 			return MINT_BR_S;
-		else if (opcode == MINT_LEAVE)
-			return MINT_LEAVE_S;
 		else if (opcode == MINT_LEAVE_CHECK)
 			return MINT_LEAVE_S_CHECK;
 		else if (opcode == MINT_CALL_HANDLER)
@@ -8431,6 +8430,17 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 			if (ins->opcode == MINT_TIER_PATCHPOINT_DATA) {
 				int native_offset = (int)(ip - td->new_code);
 				patchpoint_data_index = add_patchpoint_data (td, patchpoint_data_index, native_offset, -ins->data [0]);
+#if HOST_BROWSER
+			} else if (rtm->contains_traces && (
+				(ins->opcode == MINT_CALL_HANDLER_S) || (ins->opcode == MINT_CALL_HANDLER)
+			)) {
+				// While this formally isn't a backward branch target, we want to record
+				//  the offset of its following instruction so that the jiterpreter knows
+				//  to generate the necessary dispatch code to enable branching back to it.
+				ip = emit_compacted_instruction (td, ip, ins);
+				if (backward_branch_offsets_count < BACKWARD_BRANCH_OFFSETS_SIZE)
+					backward_branch_offsets[backward_branch_offsets_count++] = ip - td->new_code;
+#endif
 			} else {
 				ip = emit_compacted_instruction (td, ip, ins);
 			}
@@ -8560,6 +8570,8 @@ interp_reorder_bblocks (TransformData *td)
 {
 	InterpBasicBlock *bb;
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+		if (bb->eh_block)
+			continue;
 		InterpInst *first = interp_first_ins (bb);
 		if (!first)
 			continue;
@@ -9911,10 +9923,10 @@ interp_super_instructions (TransformData *td)
 					}
 				}
 			} else if (MINT_IS_BINOP_SHIFT (opcode)) {
-				// ldc + sh -> sh.imm
 				gint16 imm;
 				int sreg_imm = ins->sregs [1];
 				if (get_sreg_imm (td, sreg_imm, &imm, MINT_TYPE_I2)) {
+					// ldc + sh -> sh.imm
 					int shift_op = MINT_SHR_UN_I4_IMM + (opcode - MINT_SHR_UN_I4);
 					InterpInst *new_inst = interp_insert_ins (td, ins, shift_op);
 					new_inst->dreg = ins->dreg;
@@ -9926,6 +9938,38 @@ interp_super_instructions (TransformData *td)
 					if (td->verbose_level) {
 						g_print ("superins: ");
 						dump_interp_inst (new_inst);
+					}
+				} else if (opcode == MINT_SHL_I4 || opcode == MINT_SHL_I8) {
+					int amount_var = ins->sregs [1];
+					InterpInst *amount_def = td->locals [amount_var].def;
+					if (amount_def != NULL && td->local_ref_count [amount_var] == 1 && amount_def->opcode == MINT_AND_I4) {
+						int mask_var = amount_def->sregs [1];
+						if (get_sreg_imm (td, mask_var, &imm, MINT_TYPE_I2)) {
+							// ldc + and + shl -> shl_and_imm
+							int new_opcode = -1;
+							if (opcode == MINT_SHL_I4 && imm == 31)
+								new_opcode = MINT_SHL_AND_I4;
+							else if (opcode == MINT_SHL_I8 && imm == 63)
+								new_opcode = MINT_SHL_AND_I8;
+
+							if (new_opcode != -1) {
+								InterpInst *new_inst = interp_insert_ins (td, ins, new_opcode);
+								new_inst->dreg = ins->dreg;
+								new_inst->sregs [0] = ins->sregs [0];
+								new_inst->sregs [1] = amount_def->sregs [0];
+
+								local_ref_count [amount_var]--;
+								local_ref_count [mask_var]--;
+
+								interp_clear_ins (td->locals [mask_var].def);
+								interp_clear_ins (amount_def);
+								interp_clear_ins (ins);
+								if (td->verbose_level) {
+									g_print ("superins: ");
+									dump_interp_inst (new_inst);
+								}
+							}
+						}
 					}
 				}
 			} else if (opcode == MINT_DIV_UN_I4 || opcode == MINT_DIV_UN_I8) {

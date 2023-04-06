@@ -1307,6 +1307,13 @@ MINI_OP(OP_GC_SAFE_POINT, "gc_safe_point", NONE, IREG, NONE)
  */
 MINI_OP(OP_GENERIC_CLASS_INIT, "generic_class_init", NONE, IREG, NONE)
 
+/*
+ * Call mini_init_method_rgctx () if needed.
+ * sreg1 is a MonoMethodRuntimeGenericContext.
+ * sreg2 is a MonoGSharedMethodInfo.
+ */
+MINI_OP(OP_INIT_MRGCTX, "init_mrgctx", NONE, IREG, IREG)
+
 /* Arch specific opcodes */
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 MINI_OP(OP_X86_TEST_NULL,          "x86_test_null", NONE, IREG, NONE)
@@ -1479,6 +1486,10 @@ MINI_OP(OP_XCOMPARE_SCALAR, "xcompare_scalar", XREG, XREG, XREG)
 MINI_OP(OP_XCOMPARE_FP, "xcompare_fp", XREG, XREG, XREG)
 MINI_OP(OP_XCOMPARE_FP_SCALAR, "xcompare_fp_scalar", XREG, XREG, XREG)
 
+/* Extract from XREG into IREG.
+ *   inst_c0 - specific instruction, one of SIMD_EXTR_... */
+MINI_OP(OP_XEXTRACT, "xextract", IREG, XREG, NONE)
+
 /*
  * Generic SIMD operations, the rest of the JIT doesn't care about the exact operation.
  */
@@ -1486,6 +1497,7 @@ MINI_OP(OP_XBINOP, "xbinop", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_FORCEINT, "xbinop_forceint", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_SCALAR, "xbinop_scalar", XREG, XREG, XREG)
 MINI_OP(OP_XBINOP_BYSCALAR, "xbinop_byscalar", XREG, XREG, XREG)
+
 /* inst_c0 contains an INTRINS_ enum, inst_c1 might contain additional data */
 MINI_OP(OP_XOP, "xop", NONE, NONE, NONE)
 MINI_OP(OP_XOP_X_I, "xop_x_i", XREG, IREG, NONE)
@@ -1610,12 +1622,6 @@ MINI_OP(OP_ARM64_SRSHR, "arm64_srshr", XREG, XREG, IREG)
 MINI_OP(OP_ARM64_URSHR, "arm64_urshr", XREG, XREG, IREG)
 MINI_OP3(OP_ARM64_SRSRA, "arm64_srsra", XREG, XREG, XREG, IREG)
 MINI_OP3(OP_ARM64_URSRA, "arm64_ursra", XREG, XREG, XREG, IREG)
-
-MINI_OP(OP_ARM64_SHL, "arm64_shl", XREG, XREG, IREG)
-MINI_OP(OP_ARM64_SSHR, "arm64_sshr", XREG, XREG, IREG)
-MINI_OP(OP_ARM64_USHR, "arm64_ushr", XREG, XREG, IREG)
-MINI_OP3(OP_ARM64_USRA, "arm64_usra", XREG, XREG, XREG, IREG)
-MINI_OP3(OP_ARM64_SSRA, "arm64_ssra", XREG, XREG, XREG, IREG)
 
 /* Narrowing arm64 shifts that aren't decomposed into urshl or srshl. */
 MINI_OP(OP_ARM64_XNSHIFT_SCALAR, "arm64_xrshift_scalar", XREG, XREG, IREG)
@@ -1756,14 +1762,27 @@ MINI_OP3(OP_ARM64_SQRDMLSH, "arm64_sqrdmlsh", XREG, XREG, XREG, XREG)
 MINI_OP3(OP_ARM64_SQRDMLSH_BYSCALAR, "arm64_sqrdmlsh_byscalar", XREG, XREG, XREG, XREG)
 MINI_OP3(OP_ARM64_SQRDMLSH_SCALAR, "arm64_sqrdmlsh_scalar", XREG, XREG, XREG, XREG)
 
+/*
+ * sreg1 points to a memory area with the input vectors.
+ * inst_c0 is the number of vectors.
+ * inst_p1 points to an int array with the offsets inside the memory area.
+ */
+MINI_OP(OP_ARM64_TBL_INDIRECT, "arm64_tbl_indirect", XREG, IREG, XREG)
+MINI_OP3(OP_ARM64_TBX_INDIRECT, "arm64_tbx_indirect", XREG, IREG, XREG, XREG)
+
 #endif // TARGET_ARM64
 
-MINI_OP(OP_FCVTL, "convert_to_higher_precision", XREG, XREG, NONE)
-MINI_OP(OP_FCVTL2, "convert_to_higher_precision_2", XREG, XREG, NONE)
-MINI_OP(OP_USHLL, "unsigned_shift_left_long", XREG, XREG, IREG)
-MINI_OP(OP_USHLL2, "unsigned_shift_left_long_2", XREG, XREG, IREG)
-MINI_OP(OP_SSHLL, "signed_shift_left_long", XREG, XREG, IREG)
-MINI_OP(OP_SSHLL2, "signed_shift_left_long_2", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_FCVTL, "simd_convert_to_higher_precision", XREG, XREG, NONE)
+MINI_OP(OP_SIMD_FCVTL2, "simd_convert_to_higher_precision_2", XREG, XREG, NONE)
+MINI_OP(OP_SIMD_USHLL, "simd_unsigned_shift_left_long", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_USHLL2, "simd_unsigned_shift_left_long_2", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_SSHLL, "simd_signed_shift_left_long", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_SSHLL2, "simd_signed_shift_left_long_2", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_SHL, "simd_shl", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_SSHR, "simd_sshr", XREG, XREG, IREG)
+MINI_OP(OP_SIMD_USHR, "simd_ushr", XREG, XREG, IREG)
+MINI_OP3(OP_SIMD_USRA, "simd_usra", XREG, XREG, XREG, IREG)
+MINI_OP3(OP_SIMD_SSRA, "simd_ssra", XREG, XREG, XREG, IREG)
 
 #if defined(TARGET_WASM)
 MINI_OP(OP_WASM_ONESCOMPLEMENT, "wasm_onescomplement", XREG, XREG, NONE)
