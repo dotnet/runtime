@@ -1379,6 +1379,8 @@ public:
     void sort_by_committed_and_age();
     static bool is_on_free_list (heap_segment* region, region_free_list free_list[count_free_region_kinds]);
 };
+
+static_assert(sizeof(region_free_list) == sizeof(dac_region_free_list));
 #endif
 
 enum bookkeeping_element

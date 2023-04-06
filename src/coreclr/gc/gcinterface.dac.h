@@ -42,6 +42,17 @@ public:
     class dac_gc_heap* heap;
 };
 
+class dac_region_free_list {
+public:
+    size_t  num_free_regions;
+    size_t  size_free_regions;
+    size_t  size_committed_in_free_regions;
+    size_t  num_free_regions_added;
+    size_t  num_free_regions_removed;
+    DPTR(dac_heap_segment) head_free_region;
+    DPTR(dac_heap_segment) tail_free_region;
+};
+
 // Analogue for the GC generation class, containing information about the start segment
 // of a generation and its allocation context.
 class dac_generation {
@@ -49,12 +60,14 @@ public:
 #define ALL_FIELDS
 #define DEFINE_FIELD(field_name, field_type) field_type field_name;
 #define DEFINE_DPTR_FIELD(field_name, field_type) DPTR(field_type) field_name;
+#define DEFINE_MISSING_FIELD(field_name)
 
 #include "dac_generation_fields.h"
 
 #undef DEFINE_DPTR_FIELD
 #undef DEFINE_FIELD
 #undef ALL_FIELDS
+#undef DEFINE_MISSING_FIELD
 };
 
 // Analogue for the GC CFinalize class, containing information about the finalize queue.
@@ -169,6 +182,7 @@ public:
 #define DEFINE_FIELD(field_name, field_type) field_type field_name;
 #define DEFINE_DPTR_FIELD(field_name, field_type) DPTR(field_type) field_name;
 #define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) field_type field_name[array_length];
+#define DEFINE_MISSING_FIELD(field_name)
 
 #include "dac_gcheap_fields.h"
 
@@ -176,6 +190,7 @@ public:
 #undef DEFINE_DPTR_FIELD
 #undef DEFINE_FIELD
 #undef ALL_FIELDS
+#undef DEFINE_MISSING_FIELD
 
     // The generation table must always be last, because the size of this array
     // (stored inline in the gc_heap class) can vary.
@@ -191,7 +206,7 @@ public:
     dac_generation generation_table[1];
 };
 
-#define GENERATION_TABLE_FIELD_INDEX 18
+#define GENERATION_TABLE_FIELD_INDEX 19
 
 // Unlike other DACized structures, these types are loaded manually in the debugger.
 // To avoid misuse, pointers to them are explicitly casted to these unused type.
@@ -233,6 +248,7 @@ struct GcDacVars {
   size_t generation_size;
   size_t total_generation_count;
   int total_bookkeeping_elements;
+  int count_free_region_kinds;
 #ifdef DACCESS_COMPILE
  #define GC_DAC_VAR(type, name)       DPTR(type) name;
  #define GC_DAC_PTR_VAR(type, name)   DPTR(type*) name;

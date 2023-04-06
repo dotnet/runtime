@@ -3240,7 +3240,9 @@ EXTERN_C const IID IID_ISOSDacInterface13;
             ISOSMemoryEnum **ppEnum) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE GetGCFreeRegions( 
-            ISOSMemoryEnum **ppEnum) = 0;
+            unsigned int count,
+            CLRDATA_ADDRESS region[  ],
+            unsigned int *pNeeded) = 0;
         
         virtual HRESULT STDMETHODCALLTYPE LockedFlush( void) = 0;
     };
@@ -3248,31 +3250,64 @@ EXTERN_C const IID IID_ISOSDacInterface13;
     
 #else 	/* C style interface */
 
+
     typedef struct ISOSDacInterface13Vtbl
     {
         BEGIN_INTERFACE
         
-        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ISOSDacInterface13 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
-        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ISOSDacInterface13 * This);
         
-        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ISOSDacInterface13 * This);
         
-        DECLSPEC_XFGVIRT(ISOSDacInterface13, TraverseLoaderHeap)
         HRESULT ( STDMETHODCALLTYPE *TraverseLoaderHeap )( 
             ISOSDacInterface13 * This,
             CLRDATA_ADDRESS loaderHeapAddr,
             LoaderHeapKind kind,
             VISITHEAP pCallback);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetDomainLoaderAllocator )( 
+            ISOSDacInterface13 * This,
+            CLRDATA_ADDRESS domainAddress,
+            CLRDATA_ADDRESS *pLoaderAllocator);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetLoaderAllocatorHeapNames )( 
+            ISOSDacInterface13 * This,
+            int count,
+            const unsigned char **ppNames,
+            int *pNeeded);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetLoaderAllocatorHeaps )( 
+            ISOSDacInterface13 * This,
+            CLRDATA_ADDRESS loaderAllocator,
+            int count,
+            CLRDATA_ADDRESS *pLoaderHeaps,
+            LoaderHeapKind *pKinds,
+            int *pNeeded);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetHandleTableMemoryRegions )( 
+            ISOSDacInterface13 * This,
+            ISOSMemoryEnum **ppEnum);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetGCBookkeepingMemoryRegions )( 
+            ISOSDacInterface13 * This,
+            ISOSMemoryEnum **ppEnum);
+        
+        HRESULT ( STDMETHODCALLTYPE *GetGCFreeRegions )( 
+            ISOSDacInterface13 * This,
+            unsigned int count,
+            CLRDATA_ADDRESS region[  ],
+            unsigned int *pNeeded);
+        
+        HRESULT ( STDMETHODCALLTYPE *LockedFlush )( 
+            ISOSDacInterface13 * This);
         
         END_INTERFACE
     } ISOSDacInterface13Vtbl;

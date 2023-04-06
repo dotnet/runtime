@@ -18,10 +18,19 @@ DEFINE_FIELD       (background_saved_highest_address,   uint8_t*)
 #if defined(ALL_FIELDS) || !defined(USE_REGIONS)
 DEFINE_DPTR_FIELD  (saved_sweep_ephemeral_seg,          dac_heap_segment)
 DEFINE_FIELD       (saved_sweep_ephemeral_start,        uint8_t*)
+
+#if defined(ALL_FIELDS)
+DEFINE_DPTR_FIELD (free_regions,                        dac_region_free_list)
+#else
+DEFINE_MISSING_FIELD(free_regions)
+#endif // ALL_FIELDS
+
 #else
 DEFINE_MISSING_FIELD(saved_sweep_ephemeral_seg)
 DEFINE_MISSING_FIELD(saved_sweep_ephemeral_start)
-#endif
+DEFINE_ARRAY_FIELD (free_regions,                       dac_region_free_list, count_free_region_kinds)
+#endif // defined(ALL_FIELDS) || !defined(USE_REGIONS)
+
 #else
 DEFINE_MISSING_FIELD(mark_array)
 DEFINE_MISSING_FIELD(next_sweep_obj)
@@ -29,4 +38,5 @@ DEFINE_MISSING_FIELD(background_saved_lowest_address)
 DEFINE_MISSING_FIELD(background_saved_highest_address)
 DEFINE_MISSING_FIELD(saved_sweep_ephemeral_seg)
 DEFINE_MISSING_FIELD(saved_sweep_ephemeral_start)
-#endif
+DEFINE_MISSING_FIELD(free_regions)
+#endif // defined(ALL_FIELDS) || defined(BACKGROUND_GC)

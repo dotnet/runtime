@@ -5350,12 +5350,65 @@ HRESULT ClrDataAccess::GetGCBookkeepingMemoryRegions(ISOSMemoryEnum** ppEnum)
     return hr;
 }
 
-HRESULT ClrDataAccess::GetGCFreeRegions(ISOSMemoryEnum** ppEnum)
+void ClrDataAccess::AddFreeRegion(DPTR(dac_region_free_list) free_list, unsigned int count, CLRDATA_ADDRESS regions[], unsigned int& index)
 {
-    if (!ppEnum)
+    if (free_list != nullptr)
+    {
+        DPTR(dac_heap_segment) seg = free_list->head_free_region;
+        while (seg != nullptr)
+        {
+            if (regions && index < count)
+                regions[index++] = seg.GetAddr();
+            else
+                index++;
+
+            seg = seg->next;
+            if (seg == free_list->head_free_region)
+                break;
+        }
+    }
+}
+
+HRESULT ClrDataAccess::GetGCFreeRegions(unsigned int count, CLRDATA_ADDRESS regions[], unsigned int *pNeeded)
+{
+    if (!pNeeded)
         return E_POINTER;
 
-    return E_NOTIMPL;
+    SOSDacEnter();
+
+    unsigned int index = 0;
+    if (g_gcDacGlobals->global_free_huge_regions != nullptr)
+    {
+        AddFreeRegion(DPTR(dac_region_free_list)(TO_TADDR(*g_gcDacGlobals->global_free_huge_regions)), count, regions, index);
+    }
+
+    if (g_gcDacGlobals->global_regions_to_decommit != nullptr)
+    {
+        DPTR(dac_region_free_list) regionList(g_gcDacGlobals->global_regions_to_decommit);
+        for (int i = 0; i < g_gcDacGlobals->count_free_region_kinds; i++, regionList++)
+            AddFreeRegion(regionList, count, regions, index);
+    }
+    
+#if defined(FEATURE_SVR_GC)
+    if (GCHeapUtilities::IsServerHeap())
+    {
+        GetServerFreeRegions(count, regions, index);
+    }
+    else
+#endif //FEATURE_SVR_GC
+    {
+        DPTR(dac_region_free_list) regionList(g_gcDacGlobals->free_regions);
+        for (int i = 0; i < g_gcDacGlobals->count_free_region_kinds; i++, regionList++)
+            AddFreeRegion(regionList, count, regions, index);
+    }
+
+    if (regions)
+        *pNeeded = min(index, count);
+    else
+        *pNeeded = index;
+    
+    SOSDacLeave();
+    return hr;
 }
 
 HRESULT ClrDataAccess::LockedFlush()

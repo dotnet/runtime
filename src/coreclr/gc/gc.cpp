@@ -49302,6 +49302,9 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->total_bookkeeping_elements = total_bookkeeping_elements;
 #ifdef USE_REGIONS
     gcDacVars->minor_version_number |= 1;
+    gcDacVars->count_free_region_kinds = count_free_region_kinds;
+    gcDacVars->global_regions_to_decommit = reinterpret_cast<dac_region_free_list**>(&gc_heap::global_regions_to_decommit);
+    gcDacVars->global_free_huge_regions = reinterpret_cast<dac_region_free_list**>(&gc_heap::global_free_huge_regions);
 #endif //USE_REGIONS
 #ifndef BACKGROUND_GC
     gcDacVars->minor_version_number |= 2;
@@ -49327,6 +49330,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #ifdef USE_REGIONS
     gcDacVars->saved_sweep_ephemeral_seg = 0;
     gcDacVars->saved_sweep_ephemeral_start = 0;
+    gcDacVars->free_regions = reinterpret_cast<dac_region_free_list**>(&gc_heap::free_regions);
 #else
     gcDacVars->saved_sweep_ephemeral_seg = reinterpret_cast<dac_heap_segment**>(&gc_heap::saved_sweep_ephemeral_seg);
     gcDacVars->saved_sweep_ephemeral_start = &gc_heap::saved_sweep_ephemeral_start;
@@ -49363,8 +49367,4 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->generation_field_offsets = reinterpret_cast<int**>(&generation_field_offsets);
     gcDacVars->bookkeeping_covered_start = &gc_heap::bookkeeping_covered_start;
     gcDacVars->card_table_element_layout = reinterpret_cast<size_t**>(&gc_heap::card_table_element_layout);
-
-    // Dac takes a dependency on card_table_element_layout[0] being the size of card_table_info for walking
-    // backwards from card_table_info::next_card_table to the beginning of the next card_table_info.
-    assert(gc_heap::card_table_element_layout[0] == sizeof(card_table_info));
 }

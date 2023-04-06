@@ -1213,7 +1213,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocator, int count, CLRDATA_ADDRESS *pLoaderHeaps, LoaderHeapKind *pKinds, int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE GetHandleTableMemoryRegions(ISOSMemoryEnum **ppEnum);
     virtual HRESULT STDMETHODCALLTYPE GetGCBookkeepingMemoryRegions(ISOSMemoryEnum **ppEnum);
-    virtual HRESULT STDMETHODCALLTYPE GetGCFreeRegions(ISOSMemoryEnum **ppEnum);
+    virtual HRESULT STDMETHODCALLTYPE GetGCFreeRegions(unsigned int count, CLRDATA_ADDRESS region[], unsigned int *pNeeded);
     virtual HRESULT STDMETHODCALLTYPE LockedFlush();
 
     //
@@ -1337,6 +1337,9 @@ public:
     HRESULT EnumMemDumpAppDomainInfo(CLRDataEnumMemoryFlags flags);
     HRESULT EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags);
     HRESULT EnumMemCLRMainModuleInfo();
+
+    void AddFreeRegion(DPTR(dac_region_free_list) free_list, unsigned int count, CLRDATA_ADDRESS regions[], unsigned int &index);
+    void GetServerFreeRegions(unsigned int count, CLRDATA_ADDRESS regions[], unsigned int &index);
 
     bool ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess = true);
     bool DacUpdateMemoryRegion(TADDR addr, TSIZE_T bufferSize, BYTE* buffer);

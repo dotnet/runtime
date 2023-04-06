@@ -8328,7 +8328,13 @@ HRESULT DacMemoryEnumerator::Next(unsigned int count, SOSMemoryRegion regions[],
 
 HRESULT DacGCBookkeepingEnumerator::Init()
 {
+    if (g_gcDacGlobals->bookkeeping_covered_start == nullptr)
+        return E_FAIL;
+
     TADDR ctiAddr = TO_TADDR(*g_gcDacGlobals->bookkeeping_covered_start);
+    if (ctiAddr == 0)
+        return E_FAIL;
+
     DPTR(dac_card_table_info) card_table_info(ctiAddr);
 
     SOSMemoryRegion mem = {0};

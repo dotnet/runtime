@@ -500,6 +500,6 @@ interface ISOSDacInterface13 : IUnknown
     HRESULT GetLoaderAllocatorHeaps(CLRDATA_ADDRESS loaderAllocator, int count, CLRDATA_ADDRESS *pLoaderHeaps, LoaderHeapKind *pKinds, int *pNeeded);
     HRESULT GetHandleTableMemoryRegions(ISOSMemoryEnum **ppEnum);
     HRESULT GetGCBookkeepingMemoryRegions(ISOSMemoryEnum **ppEnum);
-    HRESULT GetGCFreeRegions(ISOSMemoryEnum **ppEnum);
+    HRESULT GetGCFreeRegions(unsigned int count, CLRDATA_ADDRESS region[], unsigned int *pNeeded);
     HRESULT LockedFlush();
 }
