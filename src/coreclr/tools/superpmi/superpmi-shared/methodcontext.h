@@ -787,6 +787,10 @@ public:
     void dmpGetLoongArch64PassStructInRegisterFlags(DWORDLONG key, DWORD value);
     DWORD repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
 
+    void recGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value);
+    void dmpGetRISCV64PassStructInRegisterFlags(DWORDLONG key, DWORD value);
+    DWORD repGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
+
     void recGetRelocTypeHint(void* target, WORD result);
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
     WORD repGetRelocTypeHint(void* target);
@@ -1152,16 +1156,17 @@ enum mcPackets
     Packet_IsIntrinsic = 192,
     Packet_UpdateEntryPointForTailCall = 193,
     Packet_GetLoongArch64PassStructInRegisterFlags = 194,
-    Packet_GetExactClasses = 195,
-    Packet_GetRuntimeTypePointer = 196,
-    Packet_PrintObjectDescription = 197,
-    Packet_GetReadonlyStaticFieldValue = 198,
-    Packet_GetObjectType = 199,
-    Packet_IsObjectImmutable = 200,
-    Packet_ExpandRawHandleIntrinsic = 201,
-    Packet_GetArrayOrStringLength = 202,
-    Packet_IsEnum = 203,
-    Packet_GetStringChar = 204,
+    Packet_GetRISCV64PassStructInRegisterFlags = 195,
+    Packet_GetExactClasses = 196,
+    Packet_GetRuntimeTypePointer = 197,
+    Packet_PrintObjectDescription = 198,
+    Packet_GetReadonlyStaticFieldValue = 199,
+    Packet_GetObjectType = 200,
+    Packet_IsObjectImmutable = 201,
+    Packet_ExpandRawHandleIntrinsic = 202,
+    Packet_GetArrayOrStringLength = 203,
+    Packet_IsEnum = 204,
+    Packet_GetStringChar = 205,
 };
 
 void SetDebugDumpVariables();
