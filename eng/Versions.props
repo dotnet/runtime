@@ -64,11 +64,11 @@
       The exact version is always a moving target. This version should never go ahead of the version of Roslyn that is included in the most recent
       public Visual Studio preview version. If it were to go ahead, then any components depending on this version would not work in Visual Studio
       and would cause a major regression for any local development that depends on those components contributing to the build.
-      When we are building from source, we care more about reducing pre-built requirements than inner-loop dev experience, so we update this to be the same version
-      as MicrosoftCodeAnalysisVersion.
+      This version must also not go ahead of the most recently release .NET SDK version, as that would break the source-build build.
+      Source-build builds the product with the most recent previously source-built release. Thankfully, these two requirements line up nicely
+      such that any version that satisfies the VS version requirement will also satisfy the .NET SDK version requirement because of how we ship.
     -->
     <MicrosoftCodeAnalysisVersion_LatestVS>4.5.0</MicrosoftCodeAnalysisVersion_LatestVS>
-    <MicrosoftCodeAnalysisVersion_LatestVS Condition="'$(DotNetBuildFromSource)' == 'true'">$(MicrosoftCodeAnalysisVersion)</MicrosoftCodeAnalysisVersion_LatestVS>
     <!-- Some of the analyzer dependencies used by ILLink project -->
     <MicrosoftCodeAnalysisCSharpAnalyzerTestingXunitVersion>1.0.1-beta1.21265.1</MicrosoftCodeAnalysisCSharpAnalyzerTestingXunitVersion>
     <MicrosoftCodeAnalysisBannedApiAnalyzersVersion>3.3.2</MicrosoftCodeAnalysisBannedApiAnalyzersVersion>

@@ -255,6 +255,7 @@
       <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="PYTHONHOME=" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
+      <EmscriptenEnvVars Include="EM_FROZEN_CACHE=True" />
       <EmscriptenEnvVars Include="WasmEnableLegacyJsInterop=$(WasmEnableLegacyJsInterop)"/>
     </ItemGroup>
 
@@ -583,6 +584,7 @@
       <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
       <MonoAOTCompilerDefaultAotArguments Include="deterministic" />
       <MonoAOTCompilerDefaultAotArguments Include="mattr=simd" Condition="'$(WasmEnableSIMD)' == 'true'" />
+      <MonoAOTCompilerDefaultProcessArguments Include="-v" Condition="'$(WasmAOTCompilerVerbose)' == 'true'" />
       <MonoAOTCompilerDefaultProcessArguments Include="--wasm-exceptions" Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
       <MonoAOTCompilerDefaultProcessArguments Include="--wasm-gc-safepoints" Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'" />
       <AotProfilePath Include="$(WasmAotProfilePath)"/>

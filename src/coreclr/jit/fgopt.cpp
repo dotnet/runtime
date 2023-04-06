@@ -6886,8 +6886,8 @@ PhaseStatus Compiler::fgTailMerge()
             JITDUMP("A set of %d preds of " FMT_BB " end with the same tree\n", matchedPredInfo.Height(), block->bbNum);
             JITDUMPEXEC(gtDispStmt(matchedPredInfo.TopRef(0).m_stmt));
 
-            BasicBlock* crossJumpVictim       = matchedPredInfo.TopRef(0).m_block;
-            Statement*  crossJumpStmt         = matchedPredInfo.TopRef(0).m_stmt;
+            BasicBlock* crossJumpVictim       = nullptr;
+            Statement*  crossJumpStmt         = nullptr;
             bool        haveNoSplitVictim     = false;
             bool        haveFallThroughVictim = false;
 
@@ -6897,6 +6897,13 @@ PhaseStatus Compiler::fgTailMerge()
                 Statement* const  stmt      = info.m_stmt;
                 BasicBlock* const predBlock = info.m_block;
 
+                // Never pick the scratch block as the victim as that would
+                // cause us to add a predecessor to it, which is invalid.
+                if (fgBBisScratch(predBlock))
+                {
+                    continue;
+                }
+
                 bool const isNoSplit     = stmt == predBlock->firstStmt();
                 bool const isFallThrough = (predBlock->bbJumpKind == BBJ_NONE);
 
@@ -6904,7 +6911,12 @@ PhaseStatus Compiler::fgTailMerge()
                 //
                 bool useBlock = false;
 
-                if (isNoSplit && isFallThrough)
+                if (crossJumpVictim == nullptr)
+                {
+                    // Pick an initial candidate.
+                    useBlock = true;
+                }
+                else if (isNoSplit && isFallThrough)
                 {
                     // This is the ideal choice.
                     //

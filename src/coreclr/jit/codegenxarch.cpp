@@ -6978,7 +6978,15 @@ void CodeGen::genCompareInt(GenTree* treeNode)
                 targetType = TYP_BOOL; // just a tip for inst_SETCC that movzx is not needed
             }
         }
-        emit->emitInsBinary(ins, emitTypeSize(type), op1, op2);
+
+        emitAttr size    = emitTypeSize(type);
+        bool     canSkip = compiler->opts.OptimizationEnabled() && (ins == INS_cmp) && !op1->isUsedFromMemory() &&
+                       !op2->isUsedFromMemory() && emit->IsRedundantCmp(size, op1->GetRegNum(), op2->GetRegNum());
+
+        if (!canSkip)
+        {
+            emit->emitInsBinary(ins, size, op1, op2);
+        }
     }
 
     // Are we evaluating this into a register?
