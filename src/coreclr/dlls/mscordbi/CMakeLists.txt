@@ -100,10 +100,7 @@ elseif(CLR_CMAKE_HOST_UNIX)
         mscordaccore
     )
 
-    # COREDBI_LIBRARIES is mentioned twice because ld is one pass linker and will not find symbols
-    # if they are defined after they are used. Having all libs twice makes sure that ld will actually
-    # find all symbols.
-    target_link_libraries(mscordbi ${COREDBI_LIBRARIES} ${COREDBI_LIBRARIES})
+    target_link_libraries(mscordbi ${COREDBI_LIBRARIES})
 
     add_dependencies(mscordbi mscordaccore)
 
