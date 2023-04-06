@@ -4097,6 +4097,8 @@ private:
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY int generation_skip_ratio_threshold;
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY int conserve_mem_setting;
 
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool spin_count_unit_config_p;
+
     // For SOH we always allocate segments of the same
     // size unless no_gc_region requires larger ones.
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t soh_segment_size;
