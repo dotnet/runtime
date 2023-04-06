@@ -6548,6 +6548,29 @@ void emitter::emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTre
     emitCurIGsize += sz;
 }
 
+#ifdef TARGET_AMD64
+void emitter::emitIns_R_A_R(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir, regNumber reg2)
+{
+    assert(emitComp->compOpportunisticallyDependsOn(InstructionSet_BMI2));
+    assert(ins == INS_shlx || ins == INS_shrx || ins == INS_sarx);
+
+    ssize_t    offs = indir->Offset();
+    instrDesc* id   = emitNewInstrAmd(attr, offs);
+
+    id->idIns(ins);
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+
+    emitHandleMemOp(indir, id, IF_RWR_ARD_RRD, ins);
+
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+#endif // TARGET_AMD64
+
 void emitter::emitIns_R_A_I(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir, int ival)
 {
     noway_assert(emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
@@ -16111,7 +16134,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_RWR_ARD_RRD:
         {
+#ifdef TARGET_AMD64
+            assert(IsAVX2GatherInstruction(ins) || (emitComp->compOpportunisticallyDependsOn(InstructionSet_BMI2) &&
+                                                    (ins == INS_shlx || ins == INS_shrx || ins == INS_sarx)));
+#else  // TARGET_AMD64
             assert(IsAVX2GatherInstruction(ins));
+#endif // !TARGET_AMD64
             code = insCodeRM(ins);
             dst  = emitOutputAM(dst, id, code);
             sz   = emitSizeOfInsDsc(id);

@@ -1061,6 +1061,16 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     // We will allow whatever can be encoded - hope you know what you are doing.
     if (shiftBy->isContained())
     {
+#ifdef TARGET_64BIT
+        if (!shiftBy->OperIsConst())
+        {
+            assert(compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2));
+            srcCount += BuildOperandUses(source, srcCandidates);
+            srcCount += BuildOperandUses(shiftBy, srcCandidates);
+            BuildDef(tree, dstCandidates);
+            return srcCount;
+        }
+#endif // TARGET_64BIT
         assert(shiftBy->OperIsConst());
     }
 #if defined(TARGET_64BIT)

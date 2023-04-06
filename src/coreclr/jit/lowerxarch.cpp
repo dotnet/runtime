@@ -5835,6 +5835,19 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
     {
         MakeSrcContained(node, shiftBy);
     }
+#ifdef TARGET_AMD64
+    else if (comp->opts.OptimizationEnabled() && comp->compOpportunisticallyDependsOn(InstructionSet_BMI2))
+    {
+        if (node->OperIs(GT_LSH, GT_RSH, GT_RSZ))
+        {
+            GenTree* op2 = node->gtGetOp2();
+            if (op2->OperIs(GT_IND))
+            {
+                MakeSrcContained(node, op2);
+            }
+        }
+    }
+#endif // TARGET_AMD64
 }
 
 //------------------------------------------------------------------------

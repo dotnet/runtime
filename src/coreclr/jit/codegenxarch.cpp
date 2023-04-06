@@ -4843,10 +4843,20 @@ void CodeGen::genCodeForShift(GenTree* tree)
                 unreached();
         }
 
-        regNumber shiftByReg = shiftBy->GetRegNum();
-        emitAttr  size       = emitTypeSize(tree);
-        // The order of operandReg and shiftByReg are swapped to follow shlx, sarx and shrx encoding spec.
-        GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), shiftByReg, operandReg);
+        if (shiftBy->isContained())
+        {
+            assert(shiftBy->OperIs(GT_IND));
+
+            emitAttr size = emitTypeSize(tree);
+            GetEmitter()->emitIns_R_A_R(ins, size, tree->GetRegNum(), shiftBy->AsIndir(), operandReg);
+        }
+        else
+        {
+            regNumber shiftByReg = shiftBy->GetRegNum();
+            emitAttr  size       = emitTypeSize(tree);
+            // The order of operandReg and shiftByReg are swapped to follow shlx, sarx and shrx encoding spec.
+            GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), shiftByReg, operandReg);
+        }
     }
 #endif
     else
