@@ -18,10 +18,12 @@ namespace System.Threading
 #endif
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
+#pragma warning disable IDE0060
         private static void RegisteredWaitCallbackCore(IntPtr instance, IntPtr context, IntPtr wait, uint waitResult)
         {
             // PR-Comment: Assuming this is no longer necessary, might be wrong about this
             // var wrapper = ThreadPoolCallbackWrapper.Enter();
+
             GCHandle handle = (GCHandle)context;
             RegisteredWaitHandle registeredWaitHandle = (RegisteredWaitHandle)handle.Target!;
             Debug.Assert((handle == registeredWaitHandle._gcHandle) && (wait == registeredWaitHandle._tpWait));
@@ -31,6 +33,7 @@ namespace System.Threading
             ThreadPool.IncrementCompletedWorkItemCount();
             // wrapper.Exit();
         }
+#pragma warning restore IDE0060
 
         private void PerformCallbackCore(bool timedOut)
         {
@@ -112,7 +115,7 @@ namespace System.Threading
         private bool UnregisterCore(WaitHandle waitObject)
         {
             // Hold the lock during the synchronous part of Unregister (as in CoreCLR)
-            lock(_lock)
+            lock(_lock!)
             {
                 if (!_unregistering)
                 {

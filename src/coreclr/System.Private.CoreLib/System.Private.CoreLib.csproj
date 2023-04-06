@@ -236,8 +236,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.CoreCLR.cs" Condition="'$(TargetsWindows)' != 'true'"/>
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.CoreCLR.Core.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.CoreCLR.cs" Condition="'$(TargetsWindows)' != 'true'"/>
-    <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.CoreCLR.Core.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Type.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypedReference.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.CoreCLR.cs" />
@@ -294,47 +293,9 @@
     </Compile>
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.CoreCLR.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\RegisteredWaitHandle.CoreCLR.Windows.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.CoreCLR.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ThreadPool.cs">
       <Link>Interop\Windows\Kernel32\Interop.ThreadPool.cs</Link>
     </Compile>
-    <!-- <Compile Include="$(NativeAotSourcesRoot)\System\Threading\ManagedThreadId.cs" />  The type or namespace name 'ManagedThreadId' could not be found -->
-    <!-- <Compile Include="$(NativeAotSourcesRoot)\System\Threading\ThreadPoolCallbackWrapper.cs" />  The name 'ThreadPoolCallbackWrapper' does not exist in the current context -->
-    <!-- <Compile Include="$(NativeAotSourcesRoot)\System\Threading\Thread.NativeAot.Windows.cs" />  'Thread' does not contain a definition for 'EnsureThreadPoolThreadInitialized' -->
-    <!-- <Compile Include="$(NativeAotSourcesRoot)\System\Runtime\RuntimeImports.cs" />  Thread.NativeAot.Windows.cs InitializeComForThreadPoolThread calls RuntimeImports -->
-    <!-- <Compile Include="$(NativeAotSourcesRoot)\System\Runtime\RuntimeImportAttribute.cs" /> The type or namespace name 'RuntimeImportAttribute' could not be found -->
-    <!-- <Compile Include="$(NativeAotSourcesRoot)\Internal\Runtime\CompilerServices\Internal.Runtime.CompilerServices.cs" /> The type or namespace name 'CompilerServices' does not exist in the namespace 'Internal.Runtime' -->
-    <!-- <Compile Include="$(NativeAotSourcesRoot)\System\Runtime\CompilerServices\ReflectionBlockedAttribute.cs" /> The type or namespace name 'ReflectionBlockedAttribute' could not be found -->
-    <!-- <Compile Include="$(NativeAotSourcesRoot)\System\EETypePtr.cs" /> The type or namespace name 'EETypePtr' could not be found-->
-    <!-- <Compile Include="$(BclSourcesRoot)\..\..\tools\Common\Internal\Runtime\MethodTable.Constants.cs">
-      <Link>Internal\Runtime\MethodTable.Constants.cs</Link>
-    </Compile> The type or namespace name 'EETypeElementType' does not exist in the namespace 'Internal.Runtime' -->
-    <!-- <Compile Include="$(NativeAotSourcesRoot)\..\..\Common\src\Internal\Runtime\MethodTable.cs">
-      <Link>Internal\Runtime\MethodTable.cs</Link>
-    </Compile> The type or namespace name 'MethodTable' does not exist in the namespace 'Internal.Runtime' -->
-    <!-- <Compile Include="$(BclSourcesRoot)\..\..\tools\Common\Internal\NativeFormat\NativeFormatReader.cs">
-      <Link>Common\src\Internal\NativeFormat\NativeFormatReader.cs</Link>
-    </Compile> The type or namespace name 'NativeFormat' does not exist in the namespace 'Internal' -->
-    <!-- <Compile Include="$(AotCommonPath)\Internal\Runtime\TypeManagerHandle.cs">
-      <Link>Internal\Runtime\TypeManagerHandle.cs</Link>
-    </Compile> The type or namespace name 'TypeManagerHandle' could not be found -->
-    <!--
-    <Compile Include="$(NativeAotSourcesRoot)\Internal\Runtime\CompilerServices\FixupRuntimeTypeHandle.cs" />
-    <Compile Include="$(NativeAotSourcesRoot)\Internal\Runtime\CompilerServices\FunctionPointerOps.cs" />
-    <Compile Include="$(NativeAotSourcesRoot)\Internal\Runtime\CompilerServices\GenericMethodDescriptor.cs" />
-    <Compile Include="$(NativeAotSourcesRoot)\Internal\Runtime\CompilerServices\RuntimeFieldHandleInfo.cs" />
-    <Compile Include="$(NativeAotSourcesRoot)\Internal\Runtime\CompilerServices\RuntimeMethodHandleInfo.cs" />
-    <Compile Include="$(NativeAotSourcesRoot)\Internal\Runtime\CompilerServices\RuntimeSignature.cs" />
-    <Compile Include="$(NativeAotSourcesRoot)\Internal\Runtime\CompilerServices\OpenMethodResolver.cs" />
-    <Compile Include="$(NativeAotSourcesRoot)\System\Runtime\CompilerServices\ForceLazyDictionaryAttribute.cs" />
-    <Compile Include="$(NativeAotSourcesRoot)\System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
-    <Compile Include="$(NativeAotSourcesRoot)\System\Runtime\CompilerServices\ForceDictionaryLookupsAttribute.cs" />
-    <Compile Include="$(NativeAotSourcesRoot)\System\Runtime\CompilerServices\RuntimeFeature.NativeAot.cs" />
-    <Compile Include="$(NativeAotSourcesRoot)\System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
-    <Compile Include="$(NativeAotSourcesRoot)\System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
-    <Compile Include="$(NativeAotSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.NativeAot.cs" />
-    -->
-    <!-- <Compile Include="$(NativeAotSourcesRoot)\System\Threading\ThreadPool.Windows.cs" /> -->
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureObjCMarshal)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ObjectiveCMarshal.CoreCLR.cs" />

@@ -183,7 +183,7 @@ namespace System.Threading
                 PortableThreadPool.ThreadPoolInstance.RequestWorker();
             }
         }
-            
+
         internal static void ReportThreadStatus(bool isWorking)
         {
             Debug.Assert(!ThreadPool.UseWindowsThreadPool);

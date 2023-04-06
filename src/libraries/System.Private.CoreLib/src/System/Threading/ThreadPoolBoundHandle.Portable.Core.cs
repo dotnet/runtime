@@ -41,7 +41,7 @@ namespace System.Threading
             overlapped._boundHandle = this;
             return overlapped._nativeOverlapped;
         }
-        
+
         private unsafe NativeOverlapped* AllocateNativeOverlappedCore(PreAllocatedOverlapped preAllocated)
         {
             ArgumentNullException.ThrowIfNull(preAllocated);

@@ -13,6 +13,7 @@ namespace System.Threading
     //
     // Windows-specific implementation of ThreadPool
     //
+    // PR-Comment: Making it internal just to make it build
     public static class WindowsThreadPool
     {
         internal const bool IsWorkerTrackingEnabledInConfig = false;
@@ -36,7 +37,7 @@ namespace System.Threading
 
         private static IntPtr s_work;
 
-        private class ThreadCountHolder
+        private sealed class ThreadCountHolder
         {
             internal ThreadCountHolder() => Interlocked.Increment(ref s_threadCount);
             ~ThreadCountHolder() => Interlocked.Decrement(ref s_threadCount);
