@@ -24,10 +24,6 @@ namespace System.Threading
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static uint CompareExchange(ref uint location1, uint value, uint comparand) =>
-            (uint)Interlocked.CompareExchange(ref Unsafe.As<uint, int>(ref location1), (int)value, (int)comparand);
-
         [Intrinsic]
         public static long CompareExchange(ref long location1, long value, long comparand)
         {
