@@ -31,7 +31,7 @@ dn_rt_failfast_nomsg(const char* file, int line)
 
 #elif defined(FEATURE_NATIVEAOT)
 #include "common.h"
-#include "gcenv.h"
+#include "gcenv.base.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "PalRedhawkCommon.h"
