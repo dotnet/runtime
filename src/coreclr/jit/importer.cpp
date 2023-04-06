@@ -4063,7 +4063,8 @@ GenTree* Compiler::impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueTy
 GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                               CORINFO_ACCESS_FLAGS    access,
                                               CORINFO_FIELD_INFO*     pFieldInfo,
-                                              var_types               lclTyp)
+                                              var_types               lclTyp,
+                                              bool* /*OUT*/           pIsHoistable)
 {
     // Ordinary static fields never overlap. RVA statics, however, can overlap (if they're
     // mapped to the same ".data" declaration). That said, such mappings only appear to be
@@ -4113,6 +4114,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         outerFldSeq = nullptr;
     }
 
+    bool     isHoistable;
     bool     isStaticReadOnlyInitedRef = false;
     GenTree* op1;
     switch (pFieldInfo->fieldAccessor)
@@ -4143,6 +4145,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                     break;
             }
 
+            isHoistable = !s_helperCallProperties.MayRunCctor(pFieldInfo->helper);
             op1 = gtNewHelperCallNode(pFieldInfo->helper, type, op1);
             op1 = gtNewOperNode(GT_ADD, type, op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
         }
@@ -4177,6 +4180,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 op1 = fgGetStaticsCCtorHelper(pResolvedToken->hClass, pFieldInfo->helper);
             }
 
+            isHoistable = !s_helperCallProperties.MayRunCctor(pFieldInfo->helper);
             op1 = gtNewOperNode(GT_ADD, op1->TypeGet(), op1, gtNewIconNode(pFieldInfo->offset, innerFldSeq));
             break;
         }
@@ -4198,6 +4202,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 op1 = gtNewIndOfIconHandleNode(TYP_I_IMPL, fldAddr, GTF_ICON_STATIC_ADDR_PTR, true);
             }
             GenTree* offset = gtNewIconNode(pFieldInfo->offset, innerFldSeq);
+            isHoistable     = true; // ?
             op1             = gtNewOperNode(GT_ADD, TYP_I_IMPL, op1, offset);
 #else
             unreached();
@@ -4223,7 +4228,9 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 callFlags |= GTF_CALL_HOISTABLE;
             }
             var_types type = TYP_BYREF;
-            op1            = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE, type, ctxTree);
+            CorInfoHelpFunc helper = CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE;
+            isHoistable = !s_helperCallProperties.MayRunCctor(helper);
+            op1 = gtNewHelperCallNode(helper, type, ctxTree);
             op1->gtFlags |= callFlags;
 
             op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
@@ -4266,6 +4273,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
             {
                 handleKind = GTF_ICON_STATIC_HDL;
             }
+            isHoistable = true; // ?
             op1 = gtNewIconHandleNode(fldAddr, handleKind, innerFldSeq);
             INDEBUG(op1->AsIntCon()->gtTargetHandle = reinterpret_cast<size_t>(pResolvedToken->hField));
             if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_INITCLASS)
@@ -4300,6 +4308,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
         }
     }
 
+    *pIsHoistable = isHoistable;
     return op1;
 }
 
@@ -9385,8 +9394,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
                     case CORINFO_FIELD_STATIC_RELOCATABLE:
+                        bool isHoistable;
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
-                                                         lclTyp);
+                                                         lclTyp, &isHoistable);
                         break;
 
                     case CORINFO_FIELD_INTRINSIC_ZERO:
@@ -9560,10 +9570,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
                     case CORINFO_FIELD_STATIC_RELOCATABLE:
+                        bool isHoistable;
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
-                                                         lclTyp);
-                        // TODO - more checks?  Is GTF_CALL_HOISTABLE guaranteed to be appropriate here?
-                        if (!(op1->gtFlags & GTF_CALL_HOISTABLE))
+                                                         lclTyp, &isHoistable);
+                        isHoistable = isHoistable ||
+                            info.compCompHnd->getClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BEFOREFIELDINIT;
+
                         {
                             impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("value for stsfld with typeinit"));
                         }

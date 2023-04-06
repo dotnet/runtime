@@ -3839,7 +3839,8 @@ protected:
     GenTree* impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         CORINFO_ACCESS_FLAGS    access,
                                         CORINFO_FIELD_INFO*     pFieldInfo,
-                                        var_types               lclTyp);
+                                        var_types               lclTyp,
+                                        bool* /*OUT*/           pIsHoistable);
 
     static void impBashVarAddrsToI(GenTree* tree1, GenTree* tree2 = nullptr);
 
