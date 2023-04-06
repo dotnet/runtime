@@ -317,6 +317,7 @@
     <Compile Include="System\Text\RuneTests.TestData.cs" />
     <Compile Include="System\Text\Unicode\Utf16UtilityTests.ValidateChars.cs" />
     <Compile Include="System\Text\Unicode\Utf8Tests.cs" />
+    <Compile Include="System\Text\Unicode\Utf8Tests.TryWrite.cs" />
     <Compile Include="System\Text\Unicode\Utf8UtilityTests.ValidateBytes.cs" />
     <Compile Include="System\ArgIteratorTests.cs" />
     <Compile Include="$(CommonPath)..\tests\System\RealFormatterTestsBase.cs" Link="System\RealFormatterTestsBase.cs" />
