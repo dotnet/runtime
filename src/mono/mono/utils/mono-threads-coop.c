@@ -16,6 +16,8 @@
 #define _DARWIN_C_SOURCE
 #endif
 
+#include <dn-vector-ptr.h>
+
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-tls.h>
@@ -57,32 +59,33 @@ static MonoNativeTlsKey coop_reset_count_stack_key;
 static void
 coop_tls_push (gpointer cookie)
 {
-	GArray *stack;
+	dn_vector_ptr_t *stack;
 
-	stack = (GArray*)mono_native_tls_get_value (coop_reset_count_stack_key);
+	stack = (dn_vector_ptr_t*)mono_native_tls_get_value (coop_reset_count_stack_key);
 	if (!stack) {
-		stack = g_array_new (FALSE, FALSE, sizeof(gpointer));
+		stack = dn_vector_ptr_alloc ();
+		dn_checkfail (stack, "Allocation failed");
 		mono_native_tls_set_value (coop_reset_count_stack_key, stack);
 	}
 
-	g_array_append_val (stack, cookie);
+	dn_vector_ptr_push_back (stack, cookie);
 }
 
 static void
 coop_tls_pop (gpointer received_cookie)
 {
-	GArray *stack;
+	dn_vector_ptr_t *stack;
 	gpointer expected_cookie;
 
-	stack = (GArray*)mono_native_tls_get_value (coop_reset_count_stack_key);
-	if (!stack || 0 == stack->len)
+	stack = (dn_vector_ptr_t*)mono_native_tls_get_value (coop_reset_count_stack_key);
+	if (!stack || dn_vector_ptr_empty (stack))
 		mono_fatal_with_history ("Received cookie %p but found no stack at all\n", received_cookie);
 
-	expected_cookie = g_array_index (stack, gpointer, stack->len - 1);
-	stack->len --;
+	expected_cookie = *dn_vector_ptr_back (stack);
+	dn_vector_ptr_pop_back (stack);
 
-	if (0 == stack->len) {
-		g_array_free (stack,TRUE);
+	if (dn_vector_ptr_empty (stack)) {
+		dn_vector_ptr_free (stack);
 		mono_native_tls_set_value (coop_reset_count_stack_key, NULL);
 	}
 
