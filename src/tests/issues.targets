@@ -4334,27 +4334,6 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" >
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/bigevent/**">
-            <Issue>Operation is not supported on this platform.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/buffersize/**">
-            <Issue>Operation is not supported on this platform.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventsourceerror/**">
-            <Issue>Operation is not supported on this platform.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/processinfo/**">
-            <Issue>Operation is not supported on this platform.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/processinfo2/**">
-            <Issue>Operation is not supported on this platform.</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/providervalidation/**">
-            <Issue>Operation is not supported on this platform.</Issue>
-        </ExcludeList>
-    </ItemGroup>
-
     <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' or ('$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'iOS')">
         <ExcludeList Include="$(XunitTestBinBase)/Interop/MonoAPI/**">
             <Issue>mobile and wasm don't support tests with native libraries.  wasm also needs static linking</Issue>
