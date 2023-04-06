@@ -4679,6 +4679,17 @@ BasicBlock* Compiler::fgSplitBlockBeforeTree(
     block->bbFlags |=
         originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL);
 
+    if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+    {
+        block->bbNatLoopNum = prevBb->bbNatLoopNum;
+
+        // Update lpBottom after block split
+        if (optLoopTable[prevBb->bbNatLoopNum].lpBottom == prevBb)
+        {
+            optLoopTable[prevBb->bbNatLoopNum].lpBottom = block;
+        }
+    }
+
     return block;
 }
 

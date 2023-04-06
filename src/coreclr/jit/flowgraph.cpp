@@ -674,6 +674,23 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, Gen
     fgMorphStmtBlockOps(block, stmt);
     gtUpdateStmtSideEffects(stmt);
 
+    // Final block layout looks like this:
+    //
+    // prevBb(BBJ_NONE):                    [weight: 1.0]
+    //     ...
+    //
+    // isInitedBb(BBJ_COND):                [weight: 1.0]
+    //     if (isInited)
+    //         goto block;
+    //
+    // helperCallBb(BBJ_NONE):              [weight: 0.0]
+    //     helperCall();
+    //
+    // block(...):                          [weight: 1.0]
+    //     use(staticBase);
+    //
+    // Whether we use helperCall's value or not depends on the helper itself.
+
     //
     // Update preds in all new blocks
     //
@@ -706,16 +723,8 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, Gen
     // Update loop info if loop table is known to be valid
     //
 
-    if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
-    {
-        isInitedBb->bbNatLoopNum   = prevBb->bbNatLoopNum;
-        helperCallBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-        // Update lpBottom after block split
-        if (optLoopTable[prevBb->bbNatLoopNum].lpBottom == prevBb)
-        {
-            optLoopTable[prevBb->bbNatLoopNum].lpBottom = block;
-        }
-    }
+    isInitedBb->bbNatLoopNum   = prevBb->bbNatLoopNum;
+    helperCallBb->bbNatLoopNum = prevBb->bbNatLoopNum;
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));

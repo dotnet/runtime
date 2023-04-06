@@ -3452,7 +3452,6 @@ bool CEEInfo::getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONS
     } CONTRACTL_END;
 
     _ASSERTE(addr);
-    bool result;
 
     JIT_TO_EE_TRANSITION_LEAF();
 
@@ -3474,11 +3473,10 @@ bool CEEInfo::getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONS
     addr->addr = (UINT8*)moduleId + DomainLocalModule::GetOffsetOfDataBlob() + clsIndex;
     addr->accessType = IAT_VALUE;
     *offset = 0;
-    result = true;
 
     EE_TO_JIT_TRANSITION_LEAF();
 
-    return result;
+    return true;
 }
 
 /*********************************************************************/
@@ -3490,8 +3488,6 @@ bool CEEInfo::getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    bool result;
-
     JIT_TO_EE_TRANSITION_LEAF();
 
     TypeHandle clsTypeHandle(cls);
@@ -3500,11 +3496,10 @@ bool CEEInfo::getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_
     GCX_COOP();
     addr->addr = isGc ? pMT->GetGCStaticsBasePointer() : pMT->GetNonGCStaticsBasePointer();
     addr->accessType = IAT_VALUE;
-    result = true;
 
     EE_TO_JIT_TRANSITION_LEAF();
 
-    return result;
+    return true;
 }
 
 /*********************************************************************/

@@ -385,22 +385,14 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 }
 
                 //
-                // Update loop info if loop table is known to be valid
+                // Update loop info
                 //
-                if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+                nullcheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
+                fastPathBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
+                fallbackBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
+                if (needsSizeCheck)
                 {
-                    nullcheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-                    fastPathBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
-                    fallbackBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
-                    if (needsSizeCheck)
-                    {
-                        sizeCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-                    }
-                    // Update lpBottom after block split
-                    if (optLoopTable[prevBb->bbNatLoopNum].lpBottom == prevBb)
-                    {
-                        optLoopTable[prevBb->bbNatLoopNum].lpBottom = block;
-                    }
+                    sizeCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
                 }
 
                 // All blocks are expected to be in the same EH region
