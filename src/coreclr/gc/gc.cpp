@@ -46760,12 +46760,14 @@ void gc_heap::verify_heap (BOOL begin_gc_p)
     {
         GCToEEInterface::VerifySyncTableEntry();
 #ifdef MULTIPLE_HEAPS
+#ifdef USE_REGIONS
         // check that the heaps not in use have not been inadvertently written to
         for (int hn = n_heaps; hn < n_max_heaps; hn++)
         {
             gc_heap* hp = g_heaps[hn];
             hp->check_decommissioned_heap();
         }
+#endif //USE_REGIONS
 
         current_join->restart();
 #endif //MULTIPLE_HEAPS
