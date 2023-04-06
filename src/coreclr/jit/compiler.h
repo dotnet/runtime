@@ -5232,7 +5232,7 @@ public:
     void vnPrint(ValueNum vn, unsigned level);
 #endif
 
-    bool fgDominate(BasicBlock* b1, BasicBlock* b2); // Return true if b1 dominates b2
+    bool fgDominate(const BasicBlock* b1, const BasicBlock* b2); // Return true if b1 dominates b2
 
     // Dominator computation member functions
     // Not exposed outside Compiler
@@ -6193,7 +6193,7 @@ protected:
     bool optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt);
 
     // Do hoisting for a particular loop ("lnum" is an index into the optLoopTable.)
-    bool optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, BasicBlockList* existingPreHeaders);
+    bool optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt);
 
     // Hoist all expressions in "blocks" that are invariant in loop "loopNum" (an index into the optLoopTable)
     // outside of that loop.
@@ -6262,7 +6262,6 @@ public:
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(unsigned loopInd, LoopCloneContext* context);
-    void optEnsureUniqueHead(unsigned loopInd, weight_t ambientWeight);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
     void        optRemoveRedundantZeroInits();
     PhaseStatus optIfConversion(); // If conversion
@@ -6338,8 +6337,6 @@ public:
                                   // hoisted
         int lpLoopVarFPCount;     // The register count for the FP LclVars that are read/written inside this loop
         int lpVarInOutFPCount;    // The register count for the FP LclVars that are alive inside or across this loop
-
-        bool lpHoistAddedPreheader; // The loop preheader was added during hoisting
 
         typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, FieldKindForVN>
                         FieldHandleSet;
@@ -6512,10 +6509,11 @@ protected:
     bool fgHasLoops;        // True if this method has any loops, set in fgComputeReachability
 
 public:
-    LoopDsc*      optLoopTable;        // loop descriptor table
-    bool          optLoopTableValid;   // info in loop table should be valid
-    unsigned char optLoopCount;        // number of tracked loops
-    unsigned char loopAlignCandidates; // number of loops identified for alignment
+    LoopDsc*      optLoopTable;              // loop descriptor table
+    bool          optLoopTableValid;         // info in loop table should be valid
+    bool          optLoopsRequirePreHeaders; // Do we require that all loops (in the loop table) have pre-headers?
+    unsigned char optLoopCount;              // number of tracked loops
+    unsigned char loopAlignCandidates;       // number of loops identified for alignment
 
     // Every time we rebuild the loop table, we increase the global "loop epoch". Any loop indices or
     // loop table pointers from the previous epoch are invalid.
@@ -6575,7 +6573,7 @@ protected:
     bool optComputeIterInfo(GenTree* incr, BasicBlock* from, BasicBlock* to, unsigned* pIterVar);
     bool optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenTree* init, unsigned iterVar);
     bool optExtractInitTestIncr(
-        BasicBlock* head, BasicBlock* bottom, BasicBlock* exit, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr);
+        BasicBlock** pInitBlock, BasicBlock* bottom, BasicBlock* exit, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr);
 
     void optFindNaturalLoops();
 
@@ -6642,7 +6640,7 @@ protected:
     bool optIsLoopEntry(BasicBlock* block) const;
 
     // The depth of the loop described by "lnum" (an index into the loop table.) (0 == top level)
-    unsigned optLoopDepth(unsigned lnum)
+    unsigned optLoopDepth(unsigned lnum) const
     {
         assert(lnum < optLoopCount);
         unsigned depth = 0;
@@ -7650,7 +7648,7 @@ public:
     bool optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneVisitorInfo* info);
     bool optIsHandleOrIndirOfHandle(GenTree* tree, GenTreeFlags handleType);
 
-    bool optLoopCloningEnabled();
+    static bool optLoopCloningEnabled();
 
 #ifdef DEBUG
     void optDebugLogLoopCloning(BasicBlock* block, Statement* insertBefore);

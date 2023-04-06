@@ -323,6 +323,201 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count,
     return 0;
 }
 
+static guint8 *
+emit_thunk (guint8 *code, gconstpointer target)
+{
+	guint8 *p = code;
+	code = mono_riscv_emit_imm (code, RISCV_T0, (gsize)target);
+	riscv_jalr (code, RISCV_ZERO, RISCV_T0, 0);
+
+	g_assert ((p - code) < THUNK_SIZE);
+	mono_arch_flush_icache (p, code - p);
+	return code;
+}
+
+static gpointer
+create_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
+{
+	MonoJitInfo *ji;
+	MonoThunkJitInfo *info;
+	guint8 *thunks, *p;
+	int thunks_size;
+	guint8 *orig_target;
+	guint8 *target_thunk;
+	MonoJitMemoryManager *jit_mm;
+
+	if (cfg) {
+		/*
+		 * This can be called multiple times during JITting,
+		 * save the current position in cfg->arch to avoid
+		 * doing a O(n^2) search.
+		 */
+		if (!cfg->arch.thunks) {
+			cfg->arch.thunks = cfg->thunks;
+			cfg->arch.thunks_size = cfg->thunk_area;
+		}
+
+		thunks = cfg->arch.thunks;
+		thunks_size = cfg->arch.thunks_size;
+		if (!thunks_size) {
+			g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size,
+			         mono_method_full_name (cfg->method, TRUE));
+			g_assert_not_reached ();
+		}
+
+		g_assert (*(guint32 *)thunks == 0);
+		emit_thunk (thunks, target);
+
+		cfg->arch.thunks += THUNK_SIZE;
+		cfg->arch.thunks_size -= THUNK_SIZE;
+
+		return thunks;
+	} else {
+		ji = mini_jit_info_table_find (code);
+		g_assert (ji);
+		info = mono_jit_info_get_thunk_info (ji);
+		g_assert (info);
+
+		thunks = (guint8 *)ji->code_start + info->thunks_offset;
+		thunks_size = info->thunks_size;
+
+		orig_target = mono_arch_get_call_target (code + 4);
+
+		/* Arbitrary lock */
+		jit_mm = get_default_jit_mm ();
+
+		jit_mm_lock (jit_mm);
+
+		target_thunk = NULL;
+		if (orig_target >= thunks && orig_target < thunks + thunks_size) {
+			/* The call already points to a thunk, because of trampolines etc. */
+			target_thunk = orig_target;
+		} else {
+			for (p = thunks; p < thunks + thunks_size; p += THUNK_SIZE) {
+				if (((guint32 *)p) [0] == 0) {
+					/* Free entry */
+					target_thunk = p;
+					break;
+				} else if (*(guint64 *)(p + 4) == (guint64)target) {
+					/* Thunk already points to target */
+					target_thunk = p;
+					break;
+				}
+			}
+		}
+
+		if (!target_thunk) {
+			jit_mm_unlock (jit_mm);
+			g_print ("thunk failed %p->%p, thunk space=%d method %s", code, target, thunks_size,
+			         cfg ? mono_method_full_name (cfg->method, TRUE)
+			             : mono_method_full_name (jinfo_get_method (ji), TRUE));
+			g_assert_not_reached ();
+		}
+
+		emit_thunk (target_thunk, target);
+
+		jit_mm_unlock (jit_mm);
+
+		return target_thunk;
+	}
+}
+
+static void
+riscv_patch_full (MonoCompile *cfg, guint8 *code, guint8 *target, int relocation)
+{
+	switch (relocation) {
+	case MONO_R_RISCV_IMM:
+		*(guint64 *)(code + 4) = (guint64)target;
+		break;
+	case MONO_R_RISCV_JAL: {
+		gint32 inst = *(gint32 *)code;
+		gint32 rd = RISCV_BITS (inst, 7, 5);
+		target = MINI_FTNPTR_TO_ADDR (target);
+		if (riscv_is_jal_disp (code, target))
+			riscv_jal (code, rd, riscv_get_jal_disp (code, target));
+		else {
+			gpointer thunk;
+			thunk = create_thunk (cfg, code, target);
+			g_assert (riscv_is_jal_disp (code, thunk));
+			riscv_jal (code, rd, riscv_get_jal_disp (code, thunk));
+		}
+		break;
+	}
+	case MONO_R_RISCV_BEQ:
+	case MONO_R_RISCV_BNE:
+	case MONO_R_RISCV_BGE:
+	case MONO_R_RISCV_BLT:
+	case MONO_R_RISCV_BGEU:
+	case MONO_R_RISCV_BLTU: {
+		int offset = target - code;
+
+		gint32 inst = *(gint32 *)code;
+		gint32 rs1 = RISCV_BITS (inst, 15, 5);
+		gint32 rs2 = RISCV_BITS (inst, 20, 5);
+
+		// if the offset too large to encode as B_IMM
+		// try to use jal to branch
+		if (!RISCV_VALID_B_IMM ((gint32)(gssize)(offset))) {
+			// branch inst should followed by a nop inst
+			g_assert (*(gint32 *)(code + 4) == 0x13);
+			if (riscv_is_jal_disp (code, target)) {
+				if (relocation == MONO_R_RISCV_BEQ)
+					riscv_bne (code, rs1, rs2, 8);
+				else if (relocation == MONO_R_RISCV_BNE)
+					riscv_beq (code, rs1, rs2, 8);
+				else if (relocation == MONO_R_RISCV_BGE)
+					riscv_blt (code, rs1, rs2, 8);
+				else if (relocation == MONO_R_RISCV_BLT)
+					riscv_bge (code, rs1, rs2, 8);
+				else if (relocation == MONO_R_RISCV_BGEU)
+					riscv_bltu (code, rs1, rs2, 8);
+				else if (relocation == MONO_R_RISCV_BLTU)
+					riscv_bgeu (code, rs1, rs2, 8);
+				else
+					g_assert_not_reached ();
+				break;
+
+				riscv_jal (code, RISCV_ZERO, riscv_get_jal_disp (code, target));
+			} else
+				g_assert_not_reached ();
+		}
+
+		if (relocation == MONO_R_RISCV_BEQ)
+			riscv_beq (code, rs1, rs2, offset);
+		else if (relocation == MONO_R_RISCV_BNE)
+			riscv_bne (code, rs1, rs2, offset);
+		else if (relocation == MONO_R_RISCV_BGE)
+			riscv_bge (code, rs1, rs2, offset);
+		else if (relocation == MONO_R_RISCV_BLT)
+			riscv_blt (code, rs1, rs2, offset);
+		else if (relocation == MONO_R_RISCV_BGEU)
+			riscv_bgeu (code, rs1, rs2, offset);
+		else if (relocation == MONO_R_RISCV_BLTU)
+			riscv_bltu (code, rs1, rs2, offset);
+		else
+			g_assert_not_reached ();
+		break;
+	}
+	case MONO_R_RISCV_JALR:
+		*(guint64 *)code = (guint64)target;
+		break;
+	default:
+		NOT_IMPLEMENTED;
+	}
+}
+
+static void
+riscv_patch_rel (guint8 *code, guint8 *target, int relocation)
+{
+	riscv_patch_full (NULL, code, target, relocation);
+}
+
+void
+mono_riscv_patch (guint8 *code, guint8 *target, int relocation)
+{
+	riscv_patch_rel (code, target, relocation);
+}
+
 /**
  * [NFC] Because there is OP_LOCALLOC stuff,
  * the stack size will increase dynamicly,
@@ -343,11 +538,26 @@ mono_riscv_emit_destroy_frame (guint8 *code)
 
 	return code;
 }
+
 void
 mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code,
                           MonoJumpInfo *ji, gpointer target)
 {
-	NOT_IMPLEMENTED;
+	guint8 *ip;
+
+	ip = ji->ip.i + code;
+	switch (ji->type) {
+	case MONO_PATCH_INFO_METHOD_JUMP:
+		/* ji->relocation is not set by the caller */
+		riscv_patch_full (cfg, ip, (guint8 *)target, MONO_R_RISCV_JAL);
+		mono_arch_flush_icache (ip, 8);
+		break;
+	case MONO_PATCH_INFO_NONE:
+		break;
+	default:
+		riscv_patch_full (cfg, ip, (guint8 *)target, ji->relocation);
+		break;
+	}
 }
 
 /**
@@ -1982,6 +2192,62 @@ emit_move_return_value (MonoCompile *cfg, guint8 *code, MonoInst *ins)
 	return code;
 }
 
+static guint8 *
+mono_riscv_emit_call (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gconstpointer data)
+{
+	mono_add_patch_info_rel (cfg, code - cfg->native_code, patch_type, data, MONO_R_RISCV_JAL);
+	// only used as a placeholder
+	riscv_jal (code, RISCV_RA, 0);
+	cfg->thunk_area += THUNK_SIZE;
+	return code;
+}
+
+/* This clobbers RA */
+static guint8 *
+mono_riscv_emit_branch_exc (MonoCompile *cfg, guint8 *code, int opcode, int sreg1, int sreg2, const char *exc_name)
+{
+	// guint8 *p;
+
+	// riscv_auipc(code, RISCV_T0, 0);
+	// // load imm
+	// riscv_jal (code, RISCV_T1, sizeof (guint64) + 4);
+	// p = code;
+	// code += sizeof (guint64);
+	// riscv_ld (code, RISCV_T1, RISCV_T1, 0);
+	// // pc + imm
+	// riscv_add(code, RISCV_T0, RISCV_T0, RISCV_T1);
+
+	// *(guint64 *)p = (gsize)code;
+
+	switch (opcode) {
+	case OP_RISCV_EXC_BEQ:
+		riscv_bne (code, sreg1, sreg2, 16 + sizeof (guint64));
+		break;
+	case OP_RISCV_EXC_BNE:
+		riscv_beq (code, sreg1, sreg2, 16 + sizeof (guint64));
+		break;
+	case OP_RISCV_EXC_BLT:
+		riscv_bge (code, sreg1, sreg2, 16 + sizeof (guint64));
+		break;
+	case OP_RISCV_EXC_BLTU:
+		riscv_bgeu (code, sreg1, sreg2, 16 + sizeof (guint64));
+		break;
+	case OP_RISCV_EXC_BGEU:
+		riscv_bltu (code, sreg1, sreg2, 16 + sizeof (guint64));
+		break;
+	default:
+		g_print ("can't emit exc branch %d\n", opcode);
+		NOT_IMPLEMENTED;
+	}
+	riscv_jal (code, RISCV_T6, sizeof (guint64) + 4);
+
+	mono_add_patch_info_rel (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC, exc_name, MONO_R_RISCV_JALR);
+	code += sizeof (guint64);
+
+	code = mono_riscv_emit_load (code, RISCV_T6, RISCV_T6, 0, 0);
+	riscv_jalr (code, RISCV_ZERO, RISCV_T6, 0);
+	return code;
+}
 guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
@@ -2003,7 +2269,62 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 void
 mono_arch_emit_exceptions (MonoCompile *cfg)
 {
-	NOT_IMPLEMENTED;
+	MonoJumpInfo *ji;
+	MonoClass *exc_class;
+	guint8 *code, *ip;
+	guint8 *exc_throw_pos [MONO_EXC_INTRINS_NUM] = {NULL};
+	guint8 exc_throw_found [MONO_EXC_INTRINS_NUM] = {0};
+	int exc_id, max_epilog_size = 0;
+
+	for (ji = cfg->patch_info; ji; ji = ji->next) {
+		if (ji->type == MONO_PATCH_INFO_EXC) {
+			exc_id = mini_exception_id_by_name ((const char *)ji->data.target);
+			g_assert (exc_id < MONO_EXC_INTRINS_NUM);
+			if (!exc_throw_found [exc_id]) {
+				max_epilog_size += 40; // 8 Inst for exception
+				exc_throw_found [exc_id] = TRUE;
+			}
+		}
+	}
+
+	code = realloc_code (cfg, max_epilog_size);
+
+	/* Emit code to raise corlib exceptions */
+	for (ji = cfg->patch_info; ji; ji = ji->next) {
+		if (ji->type != MONO_PATCH_INFO_EXC)
+			continue;
+
+		ip = cfg->native_code + ji->ip.i;
+
+		exc_id = mini_exception_id_by_name ((const char *)ji->data.target);
+
+		if (exc_throw_pos [exc_id]) {
+			/* ip should points to the branch inst in OP_COND_EXC_... */
+			riscv_patch_rel (ip, exc_throw_pos [exc_id], ji->relocation);
+			ji->type = MONO_PATCH_INFO_NONE;
+			continue;
+		}
+
+		exc_throw_pos [exc_id] = code;
+		riscv_patch_rel (ip, code, ji->relocation);
+
+		/* A0 = type token */
+		exc_class = mono_class_load_from_name (mono_defaults.corlib, "System", ji->data.name);
+		code = mono_riscv_emit_imm (code, RISCV_A0, m_class_get_type_token (exc_class) - MONO_TOKEN_TYPE_DEF);
+		/* A1 = throw ip */
+		riscv_addi (code, RISCV_A1, RISCV_T0, 0);
+		/* Branch to the corlib exception throwing trampoline */
+		ji->ip.i = code - cfg->native_code;
+		ji->type = MONO_PATCH_INFO_JIT_ICALL_ID;
+		ji->data.jit_icall_id = MONO_JIT_ICALL_mono_arch_throw_corlib_exception;
+		ji->relocation = MONO_R_RISCV_JAL;
+		riscv_jal (code, RISCV_RA, 0);
+
+		cfg->thunk_area += THUNK_SIZE;
+		set_code_cursor (cfg, code);
+	}
+
+	set_code_cursor (cfg, code);
 }
 
 guint32

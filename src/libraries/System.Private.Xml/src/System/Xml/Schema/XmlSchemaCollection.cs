@@ -227,14 +227,11 @@ namespace System.Xml.Schema
         void ICollection.CopyTo(Array array, int index)
         {
             ArgumentNullException.ThrowIfNull(array);
-
             ArgumentOutOfRangeException.ThrowIfNegative(index);
+
             for (XmlSchemaCollectionEnumerator e = this.GetEnumerator(); e.MoveNext();)
             {
-                if (index == array.Length)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(index));
-                }
+                ArgumentOutOfRangeException.ThrowIfEqual(index, array.Length);
                 array.SetValue(e.Current, index++);
             }
         }
@@ -242,18 +239,14 @@ namespace System.Xml.Schema
         public void CopyTo(XmlSchema[] array, int index)
         {
             ArgumentNullException.ThrowIfNull(array);
-
             ArgumentOutOfRangeException.ThrowIfNegative(index);
+
             for (XmlSchemaCollectionEnumerator e = this.GetEnumerator(); e.MoveNext();)
             {
                 XmlSchema? schema = e.Current;
                 if (schema != null)
                 {
-                    if (index == array.Length)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(index));
-                    }
-
+                    ArgumentOutOfRangeException.ThrowIfEqual(index, array.Length);
                     array[index++] = e.Current!;
                 }
             }
