@@ -232,6 +232,7 @@
     <Compile Include="System\Runtime\RuntimeHelpers.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
+    <Compile Include="System\Threading\Volatile.cs" />
     <Compile Include="System\Array.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
     <Compile Include="System\Object.cs" />
@@ -239,6 +240,9 @@
     <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="$(AotCommonPath)\Internal\Runtime\TypeManagerHandle.cs">
       <Link>Internal\Runtime\TypeManagerHandle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\..\..\libraries\System.Private.CoreLib\src\System\Runtime\CompilerServices\CastCache.cs">
+      <Link>System\Runtime\CompilerServices\CastCache.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>
