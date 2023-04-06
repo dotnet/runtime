@@ -11,7 +11,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project ToolsVersion="14.0">
   <PropertyGroup>
-    <_WebAssemblyPropsFile>$(MSBuildThisFileDirectory)\Microsoft.NET.Sdk.WebAssembly.Browser.Current.props</_WebAssemblyPropsFile>
-    <_WebAssemblyTargetsFile>$(MSBuildThisFileDirectory)\Microsoft.NET.Sdk.WebAssembly.Browser.Current.targets</_WebAssemblyTargetsFile>
+    <_WebAssemblyPropsFile>$(MSBuildThisFileDirectory)\Microsoft.NET.Sdk.WebAssembly.props</_WebAssemblyPropsFile>
+    <_WebAssemblyTargetsFile>$(MSBuildThisFileDirectory)\Microsoft.NET.Sdk.WebAssembly.targets</_WebAssemblyTargetsFile>
   </PropertyGroup>
 </Project>
