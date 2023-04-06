@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 using ILCompiler.DependencyAnalysis;
@@ -49,7 +50,7 @@ namespace ILCompiler
                 if (!field.IsStatic || field.IsLiteral || field.IsThreadStatic || field.HasRva)
                     continue;
 
-               _fieldValues.Add(field, NewUninitializedLocationValue(field.FieldType));
+                _fieldValues.Add(field, NewUninitializedLocationValue(field.FieldType));
             }
         }
 
@@ -352,11 +353,11 @@ namespace ILCompiler
                                 // and resetting it would lead to unpredictable analysis durations.
                                 int baseInstructionCounter = instructionCounter;
                                 Status status = nestedPreinit.TryScanMethod(field.OwningType.GetStaticConstructor(), null, recursionProtect, ref instructionCounter, out Value _);
+                                recursionProtect.Pop();
                                 if (!status.IsSuccessful)
                                 {
                                     return Status.Fail(methodIL.OwningMethod, opcode, "Nested cctor failed to preinit");
                                 }
-                                recursionProtect.Pop();
                                 Value value = nestedPreinit._fieldValues[field];
                                 if (value is ValueTypeValue)
                                     stack.PushFromLocation(field.FieldType, value);
@@ -440,12 +441,11 @@ namespace ILCompiler
                                 recursionProtect ??= new Stack<MethodDesc>();
                                 recursionProtect.Push(methodIL.OwningMethod);
                                 Status callResult = TryScanMethod(method, methodParams, recursionProtect, ref instructionCounter, out retVal);
+                                recursionProtect.Pop();
                                 if (!callResult.IsSuccessful)
                                 {
-                                    recursionProtect.Pop();
                                     return callResult;
                                 }
-                                recursionProtect.Pop();
                             }
 
                             if (!methodSig.ReturnType.IsVoid)
@@ -575,13 +575,11 @@ namespace ILCompiler
                                 recursionProtect ??= new Stack<MethodDesc>();
                                 recursionProtect.Push(methodIL.OwningMethod);
                                 Status ctorCallResult = TryScanMethod(ctor, ctorParameters, recursionProtect, ref instructionCounter, out _);
+                                recursionProtect.Pop();
                                 if (!ctorCallResult.IsSuccessful)
                                 {
-                                    recursionProtect.Pop();
                                     return ctorCallResult;
                                 }
-
-                                recursionProtect.Pop();
                             }
 
                             stack.PushFromLocation(owningType, instance);
@@ -600,7 +598,7 @@ namespace ILCompiler
                             Value value = stack.PopIntoLocation(field.FieldType);
                             StackEntry instance = stack.Pop();
 
-                            if (field.FieldType.IsGCPointer && value != null)
+                            if (field.FieldType.IsGCPointer && value != null && !field.IsInitOnly)
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Reference field");
                             }
@@ -1891,8 +1889,9 @@ namespace ILCompiler
         }
 
         // Also represents pointers and function pointer.
-        private sealed class ValueTypeValue : BaseValueTypeValue, IAssignableValue
+        private sealed class ValueTypeValue : BaseValueTypeValue, IAssignableValue, IHasInstanceFields
         {
+            public Dictionary<FieldDesc, Value> GCFields;
             public readonly byte[] InstanceBytes;
 
             public override int Size => InstanceBytes.Length;
@@ -1903,19 +1902,20 @@ namespace ILCompiler
                 InstanceBytes = new byte[type.GetElementSize().AsInt];
             }
 
-            private ValueTypeValue(byte[] bytes)
+            private ValueTypeValue(byte[] bytes, Dictionary<FieldDesc, Value> gcFields = null)
             {
                 InstanceBytes = bytes;
+                GCFields = gcFields;
             }
 
             public override Value Clone()
             {
-                return new ValueTypeValue((byte[])InstanceBytes.Clone());
+                return new ValueTypeValue((byte[])InstanceBytes.Clone(), GCFields == null ? null : new(GCFields));
             }
 
             public override bool TryCreateByRef(out Value value)
             {
-                value = new ByRefValue(InstanceBytes, 0);
+                value = new ByRefValue(InstanceBytes, 0, this);
                 return true;
             }
 
@@ -1933,6 +1933,7 @@ namespace ILCompiler
                 }
 
                 Array.Copy(vtvalue.InstanceBytes, InstanceBytes, InstanceBytes.Length);
+                GCFields = vtvalue.GCFields == null ? null : new(vtvalue.GCFields);
                 return true;
             }
 
@@ -1942,12 +1943,28 @@ namespace ILCompiler
                     || vtvalue.InstanceBytes.Length != InstanceBytes.Length)
                 {
                     ThrowHelper.ThrowInvalidProgramException();
+                    return false;
                 }
+
+                if ((GCFields == null) != (vtvalue.GCFields == null) || GCFields != null && GCFields.Count != vtvalue.GCFields.Count)
+                    return false;
 
                 for (int i = 0; i < InstanceBytes.Length; i++)
                 {
-                    if (InstanceBytes[i] != ((ValueTypeValue)value).InstanceBytes[i])
+                    if (InstanceBytes[i] != vtvalue.InstanceBytes[i])
                         return false;
+                }
+
+                if (GCFields != null)
+                {
+                    foreach (var (field, myValue) in GCFields)
+                    {
+                        if (!vtvalue.GCFields.TryGetValue(field, out var otherValue))
+                            return false;
+
+                        if ((myValue == null) != (otherValue == null) || myValue != null && !myValue.Equals(otherValue))
+                            return false;
+                    }
                 }
 
                 return true;
@@ -1955,11 +1972,40 @@ namespace ILCompiler
 
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
-                builder.EmitBytes(InstanceBytes);
+                if (GCFields != null)
+                {
+                    int bytesWritten = 0;
+                    foreach (var (field, value) in GCFields.OrderBy(x => x.Key.Offset.AsInt))
+                    {
+                        int fieldOffset = field.Offset.AsInt;
+                        int fieldSize = field.FieldType.GetElementSize().AsInt;
+                        //if (fieldOffset + fieldSize > _instanceBytes.Length - _offset)
+                        //    ThrowHelper.ThrowInvalidProgramException();
+
+                        int bytesFromInstance = bytesWritten - fieldOffset;
+                        if (bytesFromInstance > 0)
+                        {
+                            builder.EmitBytes(InstanceBytes, bytesWritten, bytesFromInstance);
+                            bytesWritten += bytesFromInstance;
+                        }
+                        value.WriteFieldData(ref builder, factory);
+                        bytesWritten += fieldSize;
+                    }
+                }
+                else
+                {
+                    builder.EmitBytes(InstanceBytes);
+                }
             }
 
             public override bool GetRawData(NodeFactory factory, out object data)
             {
+                if (GCFields != null)
+                {
+                    data = null;
+                    return false;
+                }
+
                 data = InstanceBytes;
                 return true;
             }
@@ -1972,6 +2018,33 @@ namespace ILCompiler
                 }
                 return InstanceBytes;
             }
+
+            Value IHasInstanceFields.GetField(FieldDesc field)
+            {
+                if (field.FieldType.IsGCPointer)
+                {
+                    return GCFields.GetValueOrDefault(field);
+                }
+                else
+                {
+                    return new FieldAccessor(InstanceBytes, 0).GetField(field);
+                }
+            }
+
+            void IHasInstanceFields.SetField(FieldDesc field, Value value)
+            {
+                if (field.FieldType.IsGCPointer)
+                {
+                    GCFields ??= new();
+                    GCFields[field] = value;
+                }
+                else
+                {
+                    new FieldAccessor(InstanceBytes, 0).SetField(field, value);
+                }
+            }
+
+            ByRefValue IHasInstanceFields.GetFieldAddress(FieldDesc field) => new FieldAccessor(InstanceBytes, 0).GetFieldAddress(field);
 
             public override sbyte AsSByte() => (sbyte)AsExactByteCount(1)[0];
             public override short AsInt16() => BitConverter.ToInt16(AsExactByteCount(2), 0);
@@ -2144,11 +2217,13 @@ namespace ILCompiler
         {
             public readonly byte[] PointedToBytes;
             public readonly int PointedToOffset;
+            public readonly IHasInstanceFields PointedToType;
 
-            public ByRefValue(byte[] pointedToBytes, int pointedToOffset)
+            public ByRefValue(byte[] pointedToBytes, int pointedToOffset, IHasInstanceFields pointedToType = null)
             {
                 PointedToBytes = pointedToBytes;
                 PointedToOffset = pointedToOffset;
+                PointedToType = pointedToType;
             }
 
             public override bool Equals(Value value)
@@ -2162,9 +2237,39 @@ namespace ILCompiler
                     && PointedToOffset == ((ByRefValue)value).PointedToOffset;
             }
 
-            Value IHasInstanceFields.GetField(FieldDesc field) => new FieldAccessor(PointedToBytes, PointedToOffset).GetField(field);
-            void IHasInstanceFields.SetField(FieldDesc field, Value value) => new FieldAccessor(PointedToBytes, PointedToOffset).SetField(field, value);
-            ByRefValue IHasInstanceFields.GetFieldAddress(FieldDesc field) => new FieldAccessor(PointedToBytes, PointedToOffset).GetFieldAddress(field);
+            Value IHasInstanceFields.GetField(FieldDesc field)
+            {
+                if (PointedToType != null)
+                {
+                    return PointedToType.GetField(field);
+                }
+                else
+                {
+                    return new FieldAccessor(PointedToBytes, PointedToOffset).GetField(field);
+                }
+            }
+
+            void IHasInstanceFields.SetField(FieldDesc field, Value value)
+            {
+                if (PointedToType != null)
+                {
+                    PointedToType.SetField(field, value);
+                }
+                else
+                {
+                    new FieldAccessor(PointedToBytes, PointedToOffset).SetField(field, value);
+                }
+            }
+
+            ByRefValue IHasInstanceFields.GetFieldAddress(FieldDesc field)
+            {
+                if (field.FieldType.IsGCPointer)
+                {
+                    throw new NotSupportedException();
+                }
+
+                return new FieldAccessor(PointedToBytes, PointedToOffset).GetFieldAddress(field);
+            }
 
             public void Initialize(int size)
             {
@@ -2523,6 +2628,7 @@ namespace ILCompiler
 #pragma warning restore CA1852
         {
             private readonly byte[] _data;
+            public Dictionary<FieldDesc, Value> GCFields;
 
             public ObjectInstance(DefType type, AllocationSite allocationSite)
                 : base(type, allocationSite)
@@ -2565,9 +2671,32 @@ namespace ILCompiler
                 return true;
             }
 
-            Value IHasInstanceFields.GetField(FieldDesc field) => new FieldAccessor(_data).GetField(field);
-            void IHasInstanceFields.SetField(FieldDesc field, Value value) => new FieldAccessor(_data).SetField(field, value);
-            ByRefValue IHasInstanceFields.GetFieldAddress(FieldDesc field) => new FieldAccessor(_data).GetFieldAddress(field);
+            Value IHasInstanceFields.GetField(FieldDesc field)
+            {
+                if (field.FieldType.IsGCPointer)
+                {
+                    return GCFields.GetValueOrDefault(field);
+                }
+                else
+                {
+                    return new FieldAccessor(_data, 0).GetField(field);
+                }
+            }
+
+            void IHasInstanceFields.SetField(FieldDesc field, Value value)
+            {
+                if (field.FieldType.IsGCPointer)
+                {
+                    GCFields ??= new();
+                    GCFields[field] = value;
+                }
+                else
+                {
+                    new FieldAccessor(_data, 0).SetField(field, value);
+                }
+            }
+
+            ByRefValue IHasInstanceFields.GetFieldAddress(FieldDesc field) => new FieldAccessor(_data, 0).GetFieldAddress(field);
 
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
@@ -2581,10 +2710,42 @@ namespace ILCompiler
                 Debug.Assert(!node.RepresentsIndirectionCell);  // Shouldn't have allowed preinitializing this
                 builder.EmitPointerReloc(node);
 
-                // We skip the first pointer because that's the MethodTable pointer
-                // we just initialized above.
-                int pointerSize = factory.Target.PointerSize;
-                builder.EmitBytes(_data, pointerSize, _data.Length - pointerSize);
+                if (GCFields != null)
+                {
+                    // We skip the first pointer because that's the MethodTable pointer
+                    // we just initialized above.
+                    int bytesWritten = factory.Target.PointerSize;
+                    foreach (var (field, value) in GCFields.OrderBy(x => x.Key.Offset.AsInt))
+                    {
+                        int fieldOffset = field.Offset.AsInt;
+                        int fieldSize = field.FieldType.GetElementSize().AsInt;
+                        //if (fieldOffset + fieldSize > _instanceBytes.Length - _offset)
+                        //    ThrowHelper.ThrowInvalidProgramException();
+
+                        int bytesFromInstance = bytesWritten - fieldOffset;
+                        if (bytesFromInstance > 0)
+                        {
+                            builder.EmitBytes(_data, bytesWritten, bytesFromInstance);
+                            bytesWritten += bytesFromInstance;
+                        }
+                        if (value == null)
+                        {
+                            builder.EmitZeroPointer();
+                        }
+                        else
+                        {
+                            value.WriteFieldData(ref builder, factory);
+                        }
+                        bytesWritten += fieldSize;
+                    }
+                }
+                else
+                {
+                    // We skip the first pointer because that's the MethodTable pointer
+                    // we just initialized above.
+                    int pointerSize = factory.Target.PointerSize;
+                    builder.EmitBytes(_data, pointerSize, _data.Length - pointerSize);
+                }
             }
 
             public bool IsKnownImmutable => !Type.GetFields().GetEnumerator().MoveNext();
