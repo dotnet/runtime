@@ -175,7 +175,7 @@ namespace Thunkerator
             IFDEFING
         }
 
-        private static ReadOnlyCollection<FunctionDecl> ParseInput(StreanReader tr)
+        private static ReadOnlyCollection<FunctionDecl> ParseInput(StreamReader tr)
         {
             Dictionary<string, TypeReplacement> ThunkReturnTypes = new Dictionary<string, TypeReplacement>();
             Dictionary<string, TypeReplacement> ThunkTypes = new Dictionary<string, TypeReplacement>();
