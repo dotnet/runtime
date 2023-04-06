@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         // The test framework above has 4 assemblies in it each with different set of assembly and file versions.
         //                                     NetCoreApp        HighWare
         // - TestAssemblyWithNoVersions:       null   , null     null   , null
-        // - TestAssemblyWithAssemblyVersion:  2.1.1.1, null     2.1.1.2, null       
+        // - TestAssemblyWithAssemblyVersion:  2.1.1.1, null     2.1.1.2, null
         // - TestAssemblyWithFileVersion:      null   , 3.2.2.2  null   , 3.2.2.2
         // - TestAssemblyWithBothVersions:     2.1.1.1, 3.2.2.2  2.1.1.0, 3.2.2.0
         private const string TestAssemblyWithNoVersions = "Test.Assembly.NoVersions";
@@ -80,12 +80,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
         public class SharedTestState : ComponentSharedTestStateBase
         {
+            public string HighWarePath => Path.Combine(DotNetWithNetCoreApp.BinPath, "shared", HighWare, "1.1.1");
+
             public SharedTestState()
             {
             }
 
             protected override TestApp CreateTestFrameworkReferenceApp() => CreateFrameworkReferenceApp(HighWare, "1.1.1");
-
 
             protected override void CustomizeDotNetWithNetCoreAppMicrosoftNETCoreApp(NetCoreAppBuilder builder)
             {
@@ -104,7 +105,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     HighWare,
                     "1.1.1",
                     runtimeConfig => runtimeConfig.WithFramework(MicrosoftNETCoreApp, "4.0.0"),
-                    path => NetCoreAppBuilder.ForNETCoreApp(HighWare, RepoDirectories.TargetRID)
+                    path => NetCoreAppBuilder.ForNETCoreApp(HighWare, RepoDirectoriesProvider.Default.TargetRID)
                         .WithProject(HighWare, "1.1.1", p => p
                             .WithAssemblyGroup(null, g => g
                             .WithAsset(TestAssemblyWithNoVersions + ".dll")
@@ -152,7 +153,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             string expectedBaseLocation = frameworkWins switch
             {
                 MicrosoftNETCoreApp => SharedState.DotNetWithNetCoreApp.GreatestVersionSharedFxPath,
-                HighWare => Path.Combine(SharedState.DotNetWithNetCoreApp.BinPath, "shared", HighWare, "1.1.1"),
+                HighWare => SharedState.HighWarePath,
                 _ => app.Location,
             };
             string expectedTestAssemblyPath = Path.Combine(expectedBaseLocation, testAssemblyName + ".dll");
@@ -161,7 +162,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
-                .And.HaveResolvedAssembly(expectedTestAssemblyPath);
+                .And.HaveResolvedAssembly(expectedTestAssemblyPath)
+                .And.HaveUsedFrameworkProbe(SharedState.HighWarePath, level: 1)
+                .And.HaveUsedFrameworkProbe(SharedState.DotNetWithNetCoreApp.GreatestVersionSharedFxPath, level: 2);
         }
     }
 
@@ -194,7 +197,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             SharedState.RunComponentResolutionTest(component)
                 .Should().Pass()
                 .And.HaveSuccessfullyResolvedComponentDependencies()
-                .And.HaveResolvedComponentDependencyAssembly($"{component.AppDll};{expectedTestAssemblyPath}");
+                .And.HaveResolvedComponentDependencyAssembly($"{component.AppDll};{expectedTestAssemblyPath}")
+                .And.NotHaveUsedFrameworkProbe(SharedState.HighWarePath)
+                .And.NotHaveUsedFrameworkProbe(SharedState.DotNetWithNetCoreApp.GreatestVersionSharedFxPath);
         }
     }
 }

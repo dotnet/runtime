@@ -488,7 +488,7 @@ regMaskTP CodeGenInterface::genGetRegMask(const LclVarDsc* varDsc)
     regNumber reg = varDsc->GetRegNum();
     if (genIsValidFloatReg(reg))
     {
-        regMask = genRegMaskFloat(reg, varDsc->GetRegisterType());
+        regMask = genRegMaskFloat(reg ARM_ARG(varDsc->GetRegisterType()));
     }
     else
     {
@@ -2785,7 +2785,7 @@ void CodeGen::genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm
                 wbKind = varDsc->lvIsParam ? CWBKind_ByRefArg : CWBKind_OtherByRefLocal;
             }
         }
-        else if (tgtAddr->OperIsLocalAddr())
+        else if (tgtAddr->OperIs(GT_LCL_ADDR))
         {
             // Ideally, we should have eliminated the barrier for this case.
             wbKind = CWBKind_AddrOfLocal;
@@ -4625,7 +4625,7 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             }
 
             if ((varDsc->TypeGet() == TYP_STRUCT) && !compiler->info.compInitMem &&
-                (varDsc->lvExactSize >= TARGET_POINTER_SIZE))
+                (varDsc->lvExactSize() >= TARGET_POINTER_SIZE))
             {
                 // We only initialize the GC variables in the TYP_STRUCT
                 const unsigned slots  = (unsigned)compiler->lvaLclSize(varNum) / REGSIZE_BYTES;
@@ -5339,11 +5339,11 @@ void CodeGen::genFinalizeFrame()
     //
     if (maskPushRegsFloat != RBM_NONE)
     {
-        regMaskTP contiguousMask = genRegMaskFloat(REG_F16, TYP_DOUBLE);
+        regMaskTP contiguousMask = genRegMaskFloat(REG_F16);
         while (maskPushRegsFloat > contiguousMask)
         {
             contiguousMask <<= 2;
-            contiguousMask |= genRegMaskFloat(REG_F16, TYP_DOUBLE);
+            contiguousMask |= genRegMaskFloat(REG_F16);
         }
         if (maskPushRegsFloat != contiguousMask)
         {
@@ -5358,7 +5358,7 @@ void CodeGen::genFinalizeFrame()
 
 #if defined(TARGET_XARCH)
     // Compute the count of callee saved float regs saved on stack.
-    // On Amd64 we push only integer regs. Callee saved float (xmm6-xmm15)
+    // On Amd64 we push only integer regs. Callee saved float (xmm6-xmm31)
     // regs are stack allocated and preserved in their stack locations.
     compiler->compCalleeFPRegsSavedMask = maskCalleeRegsPushed & RBM_FLT_CALLEE_SAVED;
     maskCalleeRegsPushed &= ~RBM_FLT_CALLEE_SAVED;
@@ -7780,7 +7780,18 @@ void CodeGen::genReturn(GenTree* treeNode)
             else
 #endif // TARGET_ARM
             {
-                regNumber retReg = varTypeUsesFloatReg(treeNode) ? REG_FLOATRET : REG_INTRET;
+                regNumber retReg;
+
+                if (varTypeUsesIntReg(treeNode))
+                {
+                    retReg = REG_INTRET;
+                }
+                else
+                {
+                    assert(varTypeUsesFloatReg(treeNode));
+                    retReg = REG_FLOATRET;
+                }
+
                 inst_Mov_Extend(targetType, /* srcInReg */ true, retReg, op1->GetRegNum(), /* canSkip */ true);
             }
 #endif // !TARGET_ARM64 || !TARGET_LOONGARCH64 || !TARGET_RISCV64
@@ -9348,10 +9359,10 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 //
 void CodeGen::genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg)
 {
-    const bool srcFltReg = varTypeUsesFloatReg(srcType) || varTypeIsSIMD(srcType);
+    const bool srcFltReg = varTypeUsesFloatReg(srcType);
     assert(srcFltReg == genIsValidFloatReg(srcReg));
 
-    const bool dstFltReg = varTypeUsesFloatReg(targetType) || varTypeIsSIMD(targetType);
+    const bool dstFltReg = varTypeUsesFloatReg(targetType);
     assert(dstFltReg == genIsValidFloatReg(targetReg));
 
     inst_Mov(targetType, targetReg, srcReg, /* canSkip */ true);
@@ -9443,4 +9454,31 @@ bool CodeGen::genCanOmitNormalizationForBswap16(GenTree* tree)
     }
 
     return (cast->gtCastType == TYP_USHORT) || (cast->gtCastType == TYP_SHORT);
+}
+
+//----------------------------------------------------------------------
+// genCodeForReuseVal: Generate code for a node marked with re-using a register.
+//
+// Arguments:
+//   tree - The node marked with re-using a register
+//
+// Remarks:
+//   Generates nothing, except for when the node is a CNS_INT(0) where
+//   we will define a new label to propagate GC info. We want to do this
+//   because if the node is a CNS_INT(0) and is re-using a register,
+//   that register could have been used for a CNS_INT(ref null) that is GC
+//   tracked.
+//
+void CodeGen::genCodeForReuseVal(GenTree* treeNode)
+{
+    assert(treeNode->IsReuseRegVal());
+
+    // For now, this is only used for constant nodes.
+    assert(treeNode->OperIs(GT_CNS_INT, GT_CNS_DBL, GT_CNS_VEC));
+    JITDUMP("  TreeNode is marked ReuseReg\n");
+
+    if (treeNode->IsIntegralConst(0) && GetEmitter()->emitCurIGnonEmpty())
+    {
+        genDefineTempLabel(genCreateTempLabel());
+    }
 }

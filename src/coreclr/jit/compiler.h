@@ -492,13 +492,10 @@ public:
     // Morph will update if this local is passed in a register.
     LclVarDsc()
         : _lvArgReg(REG_STK)
-        ,
 #if FEATURE_MULTIREG_ARGS
-        _lvOtherArgReg(REG_STK)
-        ,
+        , _lvOtherArgReg(REG_STK)
 #endif // FEATURE_MULTIREG_ARGS
-        lvClassHnd(NO_CLASS_HANDLE)
-        , lvRefBlks(BlockSetOps::UninitVal())
+        , lvClassHnd(NO_CLASS_HANDLE)
         , lvPerSsaData()
     {
     }
@@ -559,9 +556,8 @@ public:
 #endif                             // defined(TARGET_RISCV64)
 
     unsigned char lvIsBoolean : 1; // set if variable is boolean
-    unsigned char lvSingleDef : 1; // variable has a single def
-                                   // before lvaMarkLocalVars: identifies ref type locals that can get type updates
-                                   // after lvaMarkLocalVars: identifies locals that are suitable for optAddCopies
+    unsigned char lvSingleDef : 1; // variable has a single def. Used to identify ref type locals that can get type
+                                   // updates
 
     unsigned char lvSingleDefRegCandidate : 1; // variable has a single def and hence is a register candidate
                                                // Currently, this is only used to decide if an EH variable can be
@@ -577,7 +573,6 @@ public:
                                           // in earlier phase and the information might not be appropriate
                                           // in LSRA.
 
-    unsigned char lvDisqualify : 1;   // variable is no longer OK for add copy optimization
     unsigned char lvVolatileHint : 1; // hint for AssertionProp
 
 #ifndef TARGET_64BIT
@@ -628,9 +623,6 @@ public:
     unsigned char lvLRACandidate : 1; // Tracked for linear scan register allocation purposes
 
 #ifdef FEATURE_SIMD
-    // Note that both SIMD vector args and locals are marked as lvSIMDType = true, but the
-    // type of an arg node is TYP_BYREF and a local node is TYP_SIMD*.
-    unsigned char lvSIMDType : 1;            // This is a SIMD struct
     unsigned char lvUsedInSIMDIntrinsic : 1; // This tells lclvar is used for simd intrinsic
     unsigned char lvSimdBaseJitType : 5;     // Note: this only packs because CorInfoType has less than 32 entries
 
@@ -666,6 +658,8 @@ public:
 
     unsigned char lvIsOSRLocal : 1; // Root method local in an OSR method. Any stack home will be on the Tier0 frame.
                                     // Initial value will be defined by Tier0. Requires special handing in prolog.
+
+    unsigned char lvIsOSRExposedLocal : 1; // OSR local that was address exposed in Tier0
 
 private:
     unsigned char lvIsNeverNegative : 1; // The local is known to be never negative
@@ -766,7 +760,7 @@ public:
         assert(varTypeIsStruct(lvType));
         unsigned slots = 0;
 #ifdef TARGET_ARM
-        slots = lvExactSize / sizeof(float);
+        slots = lvExactSize() / sizeof(float);
         assert(slots <= 8);
 #elif defined(TARGET_ARM64)
         switch (GetLvHfaElemKind())
@@ -775,17 +769,17 @@ public:
                 assert(!"lvHfaSlots called for non-HFA");
                 break;
             case CORINFO_HFA_ELEM_FLOAT:
-                assert((lvExactSize % 4) == 0);
-                slots = lvExactSize >> 2;
+                assert((lvExactSize() % 4) == 0);
+                slots = lvExactSize() >> 2;
                 break;
             case CORINFO_HFA_ELEM_DOUBLE:
             case CORINFO_HFA_ELEM_VECTOR64:
-                assert((lvExactSize % 8) == 0);
-                slots = lvExactSize >> 3;
+                assert((lvExactSize() % 8) == 0);
+                slots = lvExactSize() >> 3;
                 break;
             case CORINFO_HFA_ELEM_VECTOR128:
-                assert((lvExactSize % 16) == 0);
-                slots = lvExactSize >> 4;
+                assert((lvExactSize() % 16) == 0);
+                slots = lvExactSize() >> 4;
                 break;
             default:
                 unreached();
@@ -949,12 +943,6 @@ public:
 #endif // FEATURE_MULTIREG_ARGS
 
 #ifdef FEATURE_SIMD
-    // Is this is a SIMD struct?
-    bool lvIsSIMDType() const
-    {
-        return lvSIMDType;
-    }
-
     // Is this is a SIMD struct which is used for SIMD intrinsic?
     bool lvIsUsedInSIMDIntrinsic() const
     {
@@ -1014,13 +1002,14 @@ public:
         regMaskTP regMask = RBM_NONE;
         if (GetRegNum() != REG_STK)
         {
-            if (varTypeUsesFloatReg(TypeGet()))
+            if (varTypeUsesIntReg(this))
             {
-                regMask = genRegMaskFloat(GetRegNum(), TypeGet());
+                regMask = genRegMask(GetRegNum());
             }
             else
             {
-                regMask = genRegMask(GetRegNum());
+                assert(varTypeUsesFloatReg(this));
+                regMask = genRegMaskFloat(GetRegNum() ARM_ARG(TypeGet()));
             }
         }
         return regMask;
@@ -1091,9 +1080,7 @@ public:
         lvStkOffs = offset;
     }
 
-    // TODO-Cleanup: Remove this in favor of GetLayout()->Size/genTypeSize(lvType).
-    unsigned lvExactSize; // (exact) size of a STRUCT/SIMD/BLK local in bytes.
-
+    unsigned lvExactSize() const;
     unsigned lvSize() const;
 
     size_t lvArgStackSize() const;
@@ -1107,10 +1094,6 @@ private:
     ClassLayout* m_layout; // layout info for structs
 
 public:
-    BlockSet   lvRefBlks;          // Set of blocks that contain refs
-    Statement* lvDefStmt;          // Pointer to the statement with the single definition
-    void       lvaDisqualifyVar(); // Call to disqualify a local variable from use in optAddCopies
-
     var_types TypeGet() const
     {
         return (var_types)lvType;
@@ -1124,14 +1107,16 @@ public:
     {
         return varTypeIsSmall(TypeGet()) &&
                // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
-               (lvIsParam || m_addrExposed || lvIsStructField);
+               // OSR exposed locals were normalize on load in the Tier0 frame so must be so for OSR too.
+               (lvIsParam || m_addrExposed || lvIsStructField || lvIsOSRExposedLocal);
     }
 
     bool lvNormalizeOnStore() const
     {
         return varTypeIsSmall(TypeGet()) &&
                // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
-               !(lvIsParam || m_addrExposed || lvIsStructField);
+               // OSR exposed locals were normalize on load in the Tier0 frame so must be so for OSR too.
+               !(lvIsParam || m_addrExposed || lvIsStructField || lvIsOSRExposedLocal);
     }
 
     void incRefCnts(weight_t weight, Compiler* pComp, RefCountState state = RCS_NORMAL, bool propagate = true);
@@ -1191,8 +1176,7 @@ public:
         assert(varTypeIsStruct(lvType));
         assert((m_layout == nullptr) || (m_layout->IsBlockLayout() && (m_layout->GetSize() <= layout->GetSize())));
         assert(layout->IsBlockLayout());
-        m_layout    = layout;
-        lvExactSize = layout->GetSize();
+        m_layout = layout;
     }
 
     SsaDefArray<LclSsaVarDsc> lvPerSsaData;
@@ -2529,9 +2513,7 @@ public:
 public:
     GenTreeObj* gtNewObjNode(ClassLayout* layout, GenTree* addr);
     GenTreeObj* gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr);
-    void gtSetObjGcInfo(GenTreeObj* objNode);
-    GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr);
-    GenTree* gtNewBlockVal(GenTree* addr, unsigned size);
+    GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTreeCall* gtNewCallNode(gtCallTypes           callType,
                                CORINFO_METHOD_HANDLE handle,
@@ -2550,8 +2532,8 @@ public:
     GenTreeLclVar* gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs = BAD_IL_OFFSET));
     GenTreeLclVar* gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs = BAD_IL_OFFSET));
 
-    GenTreeLclVar* gtNewLclVarAddrNode(unsigned lclNum, var_types type = TYP_I_IMPL);
-    GenTreeLclFld* gtNewLclFldAddrNode(unsigned lclNum, unsigned lclOffs, var_types type = TYP_I_IMPL);
+    GenTreeLclFld* gtNewLclVarAddrNode(unsigned lclNum, var_types type = TYP_I_IMPL);
+    GenTreeLclFld* gtNewLclAddrNode(unsigned lclNum, unsigned lclOffs, var_types type = TYP_I_IMPL);
 
     GenTreeConditional* gtNewConditionalNode(
         genTreeOps oper, GenTree* cond, GenTree* op1, GenTree* op2, var_types type);
@@ -2722,6 +2704,18 @@ public:
                                      unsigned    simdSize,
                                      bool        isSimdAsHWIntrinsic);
 
+    GenTree* gtNewSimdGetLowerNode(var_types   type,
+                                   GenTree*    op1,
+                                   CorInfoType simdBaseJitType,
+                                   unsigned    simdSize,
+                                   bool        isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdGetUpperNode(var_types   type,
+                                   GenTree*    op1,
+                                   CorInfoType simdBaseJitType,
+                                   unsigned    simdSize,
+                                   bool        isSimdAsHWIntrinsic);
+
     GenTree* gtNewSimdLoadNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
 
@@ -2795,6 +2789,20 @@ public:
                                       unsigned    simdSize,
                                       bool        isSimdAsHWIntrinsic);
 
+    GenTree* gtNewSimdWithLowerNode(var_types   type,
+                                    GenTree*    op1,
+                                    GenTree*    op2,
+                                    CorInfoType simdBaseJitType,
+                                    unsigned    simdSize,
+                                    bool        isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdWithUpperNode(var_types   type,
+                                    GenTree*    op1,
+                                    GenTree*    op2,
+                                    CorInfoType simdBaseJitType,
+                                    unsigned    simdSize,
+                                    bool        isSimdAsHWIntrinsic);
+
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types      type,
@@ -2803,11 +2811,14 @@ public:
                                                    NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(
         var_types type, GenTree* op1, GenTree* op2, GenTree* op3, NamedIntrinsic hwIntrinsicID);
-    CORINFO_CLASS_HANDLE gtGetStructHandleForHWSIMD(var_types simdType, CorInfoType simdBaseJitType);
     CorInfoType getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
                                               CORINFO_CLASS_HANDLE clsHnd,
                                               CORINFO_SIG_INFO*    sig,
                                               CorInfoType          simdBaseJitType);
+    
+#ifdef TARGET_ARM64
+    GenTreeFieldList* gtConvertTableOpToFieldList(GenTree* op, unsigned fieldCount);
+#endif
 #endif // FEATURE_HW_INTRINSICS
 
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
@@ -2982,6 +2993,9 @@ public:
                               GenTreeFlags GenTreeFlags = GTF_SIDE_EFFECT,
                               bool         ignoreRoot   = false);
 
+    bool gtSplitTree(
+        BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitPointUse);
+
     // Static fields of struct types (and sometimes the types that those are reduced to) are represented by having the
     // static field contain an object pointer to the boxed struct.  This simplifies the GC implementation...but
     // complicates the JIT somewhat.  This predicate returns "true" iff a node with type "fieldNodeType", representing
@@ -3052,7 +3066,7 @@ public:
     // Check if this tree is a typeof()
     bool gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle = nullptr);
 
-    GenTree* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
+    GenTreeLclVarCommon* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
 
 //-------------------------------------------------------------------------
 // Functions to display the trees
@@ -3261,9 +3275,6 @@ public:
 
     unsigned lvaInlinedPInvokeFrameVar; // variable representing the InlinedCallFrame
     unsigned lvaReversePInvokeFrameVar; // variable representing the reverse PInvoke frame
-#if FEATURE_FIXED_OUT_ARGS
-    unsigned lvaPInvokeFrameRegSaveVar; // variable representing the RegSave for PInvoke inlining.
-#endif
     unsigned lvaMonAcquired; // boolean variable introduced into in synchronized methods
                              // that tracks whether the lock has been taken
 
@@ -3624,7 +3635,6 @@ public:
     bool lvaMapSimd12ToSimd16(const LclVarDsc* varDsc)
     {
         assert(varDsc->lvType == TYP_SIMD12);
-        assert(varDsc->lvExactSize == 12);
 
 #if defined(TARGET_64BIT)
         assert(compMacOsArm64Abi() || varDsc->lvSize() == 16);
@@ -3734,6 +3744,7 @@ private:
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
     static OPCODE impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEndp);
+    static GenTreeFlags impPrefixFlagsToIndirFlags(unsigned prefixFlags);
     static bool impOpcodeIsCallOpcode(OPCODE opcode);
 
 public:
@@ -4431,7 +4442,6 @@ public:
     unsigned                     fgBBcountAtCodegen; // # of BBs in the method at the start of codegen
     jitstd::vector<BasicBlock*>* fgBBOrder;          // ordered vector of BBs
 #endif
-    unsigned     fgBBNumMin;           // The min bbNum that has been assigned to basic blocks
     unsigned     fgBBNumMax;           // The max bbNum that has been assigned to basic blocks
     unsigned     fgDomBBcount;         // # of BBs for which we have dominator and reachability information
     BasicBlock** fgBBReversePostorder; // Blocks in reverse postorder
@@ -4450,7 +4460,9 @@ public:
     DomTreeNode* fgSsaDomTree;
 
     bool fgBBVarSetsInited;
-    bool fgOSROriginalEntryBBProtected;
+
+    // Track how many artificial ref counts we've added to fgEntryBB (for OSR)
+    unsigned fgEntryBBExtraRefs;
 
     // Allocate array like T* a = new T[fgBBNumMax + 1];
     // Using helper so we don't keep forgetting +1.
@@ -4739,6 +4751,7 @@ public:
     void fgMergeBlockReturn(BasicBlock* block);
 
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg));
+    void fgMorphStmtBlockOps(BasicBlock* block, Statement* stmt);
 
     //------------------------------------------------------------------------------------------------------------
     // MorphMDArrayTempCache: a simple cache of compiler temporaries in the local variable table, used to minimize
@@ -4817,6 +4830,7 @@ public:
     BasicBlock* fgSplitBlockAfterStatement(BasicBlock* curr, Statement* stmt);
     BasicBlock* fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node); // for LIR
     BasicBlock* fgSplitEdge(BasicBlock* curr, BasicBlock* succ);
+    BasicBlock* fgSplitBlockBeforeTree(BasicBlock* block, Statement* stmt, GenTree* splitPoint, Statement** firstNewStmt, GenTree*** splitNodeUse);
 
     Statement* fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const DebugInfo& di);
     Statement* fgNewStmtFromTree(GenTree* tree);
@@ -4950,6 +4964,17 @@ public:
             m_nodeToLoopMemoryBlockMap = new (getAllocator()) NodeToLoopMemoryBlockMap(getAllocator());
         }
         return m_nodeToLoopMemoryBlockMap;
+    }
+
+    typedef JitHashTable<void*, JitPtrKeyFuncs<void>, CORINFO_RUNTIME_LOOKUP> SignatureToLookupInfoMap;
+    SignatureToLookupInfoMap* m_signatureToLookupInfoMap;
+    SignatureToLookupInfoMap* GetSignatureToLookupInfoMap()
+    {
+        if (m_signatureToLookupInfoMap == nullptr)
+        {
+            m_signatureToLookupInfoMap = new (getAllocator()) SignatureToLookupInfoMap(getAllocator());
+        }
+        return m_signatureToLookupInfoMap;
     }
 
     void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);
@@ -5281,6 +5306,10 @@ public:
     // Initialize the per-block variable sets (used for liveness analysis).
     void fgInitBlockVarSets();
 
+    PhaseStatus StressSplitTree();
+    void SplitTreesRandomly();
+    void SplitTreesRemoveCommas();
+    PhaseStatus fgExpandRuntimeLookups();
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
@@ -5573,7 +5602,7 @@ public:
 
 #endif // DEBUG
 
-    static bool fgProfileWeightsEqual(weight_t weight1, weight_t weight2);
+    static bool fgProfileWeightsEqual(weight_t weight1, weight_t weight2, weight_t epsilon = 0.01);
     static bool fgProfileWeightsConsistent(weight_t weight1, weight_t weight2);
 
     static GenTree* fgGetFirstNode(GenTree* tree);
@@ -5680,8 +5709,8 @@ protected:
     PhaseStatus fgPrepareToInstrumentMethod();
     PhaseStatus fgInstrumentMethod();
     PhaseStatus fgIncorporateProfileData();
-    void        fgIncorporateBlockCounts();
-    void        fgIncorporateEdgeCounts();
+    bool        fgIncorporateBlockCounts();
+    bool        fgIncorporateEdgeCounts();
 
 public:
     const char*                            fgPgoFailReason;
@@ -5920,9 +5949,11 @@ private:
                                            CORINFO_CONTEXT_HANDLE* ExactContextHnd,
                                            methodPointerInfo*      ldftnToken);
     GenTree* fgMorphLeaf(GenTree* tree);
+public:
     GenTree* fgMorphInitBlock(GenTree* tree);
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
+private:
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
     void fgTryReplaceStructLocalWithField(GenTree* tree);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
@@ -6775,12 +6806,6 @@ protected:
         treeStmtLst* csdTreeList; // list of matching tree nodes: head
         treeStmtLst* csdTreeLast; // list of matching tree nodes: tail
 
-        // ToDo: This can be removed when gtGetStructHandleIfPresent stops guessing
-        // and GT_IND nodes always have valid struct handle.
-        //
-        CORINFO_CLASS_HANDLE csdStructHnd; // The class handle, currently needed to create a SIMD LclVar in PerformCSE
-        bool                 csdStructHndMismatch;
-
         ValueNum defExcSetPromise; // The exception set that is now required for all defs of this CSE.
                                    // This will be set to NoVN if we decide to abandon this CSE
 
@@ -7080,13 +7105,6 @@ public:
     {
         optMethodFlags |= OMF_HAS_EXPRUNTIMELOOKUP;
     }
-
-    void clearMethodHasExpRuntimeLookup()
-    {
-        optMethodFlags &= ~OMF_HAS_EXPRUNTIMELOOKUP;
-    }
-
-    void addExpRuntimeLookupCandidate(GenTreeCall* call);
 
     bool doesMethodHavePatchpoints()
     {
@@ -7452,10 +7470,7 @@ public:
     };
 
 protected:
-    static fgWalkPreFn optAddCopiesCallback;
     static fgWalkPreFn optVNAssertionPropCurStmtVisitor;
-    unsigned           optAddCopyLclNum;
-    GenTree*           optAddCopyAsgnNode;
 
     bool optLocalAssertionProp;  // indicates that we are performing local assertion prop
     bool optAssertionPropagated; // set to true if we modified the trees
@@ -7602,8 +7617,6 @@ public:
 
     static void optDumpAssertionIndices(const char* header, ASSERT_TP assertions, const char* footer = nullptr);
     static void optDumpAssertionIndices(ASSERT_TP assertions, const char* footer = nullptr);
-
-    PhaseStatus optAddCopies();
 
     /**************************************************************************
      *                          Range checks
@@ -8426,80 +8439,28 @@ private:
 
     struct SIMDHandlesCache
     {
-        // SIMD Types
-        CORINFO_CLASS_HANDLE SIMDFloatHandle;
-        CORINFO_CLASS_HANDLE SIMDDoubleHandle;
-        CORINFO_CLASS_HANDLE SIMDIntHandle;
-        CORINFO_CLASS_HANDLE SIMDUShortHandle;
-        CORINFO_CLASS_HANDLE SIMDUByteHandle;
-        CORINFO_CLASS_HANDLE SIMDShortHandle;
-        CORINFO_CLASS_HANDLE SIMDByteHandle;
-        CORINFO_CLASS_HANDLE SIMDLongHandle;
-        CORINFO_CLASS_HANDLE SIMDUIntHandle;
-        CORINFO_CLASS_HANDLE SIMDULongHandle;
-        CORINFO_CLASS_HANDLE SIMDNIntHandle;
-        CORINFO_CLASS_HANDLE SIMDNUIntHandle;
+        // BYTE, UBYTE, SHORT, USHORT, INT, UINT, LONG, ULONG
+        // NATIVEINT, NATIVEUINT, FLOAT, and DOUBLE
+        static const uint32_t SupportedTypeCount = 12;
 
-        CORINFO_CLASS_HANDLE SIMDPlaneHandle;
-        CORINFO_CLASS_HANDLE SIMDQuaternionHandle;
-        CORINFO_CLASS_HANDLE SIMDVector2Handle;
-        CORINFO_CLASS_HANDLE SIMDVector3Handle;
-        CORINFO_CLASS_HANDLE SIMDVector4Handle;
-        CORINFO_CLASS_HANDLE SIMDVectorHandle;
+        // SIMD Types
+        CORINFO_CLASS_HANDLE VectorTHandles[SupportedTypeCount];
+
+        CORINFO_CLASS_HANDLE PlaneHandle;
+        CORINFO_CLASS_HANDLE QuaternionHandle;
+        CORINFO_CLASS_HANDLE Vector2Handle;
+        CORINFO_CLASS_HANDLE Vector3Handle;
+        CORINFO_CLASS_HANDLE Vector4Handle;
+        CORINFO_CLASS_HANDLE VectorHandle;
 
 #ifdef FEATURE_HW_INTRINSICS
 #if defined(TARGET_ARM64)
-        CORINFO_CLASS_HANDLE Vector64FloatHandle;
-        CORINFO_CLASS_HANDLE Vector64DoubleHandle;
-        CORINFO_CLASS_HANDLE Vector64IntHandle;
-        CORINFO_CLASS_HANDLE Vector64UShortHandle;
-        CORINFO_CLASS_HANDLE Vector64UByteHandle;
-        CORINFO_CLASS_HANDLE Vector64ShortHandle;
-        CORINFO_CLASS_HANDLE Vector64ByteHandle;
-        CORINFO_CLASS_HANDLE Vector64LongHandle;
-        CORINFO_CLASS_HANDLE Vector64UIntHandle;
-        CORINFO_CLASS_HANDLE Vector64ULongHandle;
-        CORINFO_CLASS_HANDLE Vector64NIntHandle;
-        CORINFO_CLASS_HANDLE Vector64NUIntHandle;
+        CORINFO_CLASS_HANDLE Vector64THandles[SupportedTypeCount];
 #endif // defined(TARGET_ARM64)
-        CORINFO_CLASS_HANDLE Vector128FloatHandle;
-        CORINFO_CLASS_HANDLE Vector128DoubleHandle;
-        CORINFO_CLASS_HANDLE Vector128IntHandle;
-        CORINFO_CLASS_HANDLE Vector128UShortHandle;
-        CORINFO_CLASS_HANDLE Vector128UByteHandle;
-        CORINFO_CLASS_HANDLE Vector128ShortHandle;
-        CORINFO_CLASS_HANDLE Vector128ByteHandle;
-        CORINFO_CLASS_HANDLE Vector128LongHandle;
-        CORINFO_CLASS_HANDLE Vector128UIntHandle;
-        CORINFO_CLASS_HANDLE Vector128ULongHandle;
-        CORINFO_CLASS_HANDLE Vector128NIntHandle;
-        CORINFO_CLASS_HANDLE Vector128NUIntHandle;
+        CORINFO_CLASS_HANDLE Vector128THandles[SupportedTypeCount];
 #if defined(TARGET_XARCH)
-        CORINFO_CLASS_HANDLE Vector256FloatHandle;
-        CORINFO_CLASS_HANDLE Vector256DoubleHandle;
-        CORINFO_CLASS_HANDLE Vector256IntHandle;
-        CORINFO_CLASS_HANDLE Vector256UShortHandle;
-        CORINFO_CLASS_HANDLE Vector256UByteHandle;
-        CORINFO_CLASS_HANDLE Vector256ShortHandle;
-        CORINFO_CLASS_HANDLE Vector256ByteHandle;
-        CORINFO_CLASS_HANDLE Vector256LongHandle;
-        CORINFO_CLASS_HANDLE Vector256UIntHandle;
-        CORINFO_CLASS_HANDLE Vector256ULongHandle;
-        CORINFO_CLASS_HANDLE Vector256NIntHandle;
-        CORINFO_CLASS_HANDLE Vector256NUIntHandle;
-
-        CORINFO_CLASS_HANDLE Vector512FloatHandle;
-        CORINFO_CLASS_HANDLE Vector512DoubleHandle;
-        CORINFO_CLASS_HANDLE Vector512IntHandle;
-        CORINFO_CLASS_HANDLE Vector512UShortHandle;
-        CORINFO_CLASS_HANDLE Vector512UByteHandle;
-        CORINFO_CLASS_HANDLE Vector512ShortHandle;
-        CORINFO_CLASS_HANDLE Vector512ByteHandle;
-        CORINFO_CLASS_HANDLE Vector512LongHandle;
-        CORINFO_CLASS_HANDLE Vector512UIntHandle;
-        CORINFO_CLASS_HANDLE Vector512ULongHandle;
-        CORINFO_CLASS_HANDLE Vector512NIntHandle;
-        CORINFO_CLASS_HANDLE Vector512NUIntHandle;
+        CORINFO_CLASS_HANDLE Vector256THandles[SupportedTypeCount];
+        CORINFO_CLASS_HANDLE Vector512THandles[SupportedTypeCount];
 #endif // defined(TARGET_XARCH)
 #endif // FEATURE_HW_INTRINSICS
 
@@ -8510,16 +8471,148 @@ private:
 
         SIMDHandlesCache()
         {
+            assert(SupportedTypeCount == static_cast<uint32_t>(CORINFO_TYPE_DOUBLE - CORINFO_TYPE_BYTE + 1));
             memset(this, 0, sizeof(*this));
         }
     };
 
     SIMDHandlesCache* m_simdHandleCache;
 
-    // Get the handle for a SIMD type.
+#if defined(FEATURE_HW_INTRINSICS)
     CORINFO_CLASS_HANDLE gtGetStructHandleForSIMD(var_types simdType, CorInfoType simdBaseJitType)
     {
         assert(varTypeIsSIMD(simdType));
+        assert((simdBaseJitType >= CORINFO_TYPE_BYTE) && (simdBaseJitType <= CORINFO_TYPE_DOUBLE));
+
+        // We should only be called from gtGetStructHandleForSimdOrHW and this should've been checked already
+        assert(m_simdHandleCache != nullptr);
+
+        if (simdBaseJitType == CORINFO_TYPE_FLOAT)
+        {
+            switch (simdType)
+            {
+                case TYP_SIMD8:
+                {
+                    return m_simdHandleCache->Vector2Handle;
+                }
+
+                case TYP_SIMD12:
+                {
+                    return m_simdHandleCache->Vector3Handle;
+                }
+
+                case TYP_SIMD16:
+                {
+                    // We order the checks roughly by expected hit count so early exits are possible
+
+                    if (m_simdHandleCache->Vector4Handle != NO_CLASS_HANDLE)
+                    {
+                        return m_simdHandleCache->Vector4Handle;
+                    }
+
+                    if (m_simdHandleCache->QuaternionHandle != NO_CLASS_HANDLE)
+                    {
+                        return m_simdHandleCache->QuaternionHandle;
+                    }
+
+                    if (m_simdHandleCache->PlaneHandle != NO_CLASS_HANDLE)
+                    {
+                        return m_simdHandleCache->PlaneHandle;
+                    }
+
+                    break;
+                }
+
+#if defined(TARGET_XARCH)
+                case TYP_SIMD32:
+                case TYP_SIMD64:
+                {
+                    // This should be handled by the Vector<T> path below
+                    break;
+                }
+#endif // TARGET_XARCH
+
+                default:
+                {
+                    unreached();
+                }
+            }
+        }
+
+        if (emitTypeSize(simdType) != getSIMDVectorRegisterByteLength())
+        {
+            // We have scenarios, such as shifting Vector<T> by a non-constant
+            // which may introduce different sized vectors that are marked as
+            // isSimdAsHWIntrinsic.
+
+            return NO_CLASS_HANDLE;
+        }
+
+        uint32_t handleIndex = static_cast<uint32_t>(simdBaseJitType - CORINFO_TYPE_BYTE);
+        assert(handleIndex < SIMDHandlesCache::SupportedTypeCount);
+
+        return m_simdHandleCache->VectorTHandles[handleIndex];
+    }
+
+    CORINFO_CLASS_HANDLE gtGetStructHandleForHWSIMD(var_types simdType, CorInfoType simdBaseJitType)
+    {
+        assert(varTypeIsSIMD(simdType));
+        assert((simdBaseJitType >= CORINFO_TYPE_BYTE) && (simdBaseJitType <= CORINFO_TYPE_DOUBLE));
+
+        // We should only be called from gtGetStructHandleForSimdOrHW and this should've been checked already
+        assert(m_simdHandleCache != nullptr);
+
+        uint32_t handleIndex = static_cast<uint32_t>(simdBaseJitType - CORINFO_TYPE_BYTE);
+        assert(handleIndex < SIMDHandlesCache::SupportedTypeCount);
+
+        switch (simdType)
+        {
+            case TYP_SIMD8:
+            {
+#if defined(TARGET_ARM64)
+                return m_simdHandleCache->Vector64THandles[handleIndex];
+#else
+                // This can only be Vector2 and should've been handled by gtGetStructHandleForSIMD
+                return NO_CLASS_HANDLE;
+#endif
+            }
+
+            case TYP_SIMD12:
+            {
+                // This can only be Vector3 and should've been handled by gtGetStructHandleForSIMD
+                return NO_CLASS_HANDLE;
+            }
+
+            case TYP_SIMD16:
+            {
+                return m_simdHandleCache->Vector128THandles[handleIndex];
+            }
+
+#if defined(TARGET_XARCH)
+            case TYP_SIMD32:
+            {
+                return m_simdHandleCache->Vector256THandles[handleIndex];
+            }
+
+            case TYP_SIMD64:
+            {
+                return m_simdHandleCache->Vector512THandles[handleIndex];
+            }
+#endif // TARGET_XARCH
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    CORINFO_CLASS_HANDLE gtGetStructHandleForSimdOrHW(var_types   simdType,
+                                                      CorInfoType simdBaseJitType,
+                                                      bool        isSimdAsHWIntrinsic = false)
+    {
+        assert(varTypeIsSIMD(simdType));
+        assert((simdBaseJitType >= CORINFO_TYPE_BYTE) && (simdBaseJitType <= CORINFO_TYPE_DOUBLE));
 
         if (m_simdHandleCache == nullptr)
         {
@@ -8528,118 +8621,21 @@ private:
             return NO_CLASS_HANDLE;
         }
 
-        if (simdBaseJitType == CORINFO_TYPE_FLOAT)
-        {
-            switch (simdType)
-            {
-                case TYP_SIMD8:
-                {
-                    return m_simdHandleCache->SIMDVector2Handle;
-                }
-
-                case TYP_SIMD12:
-                {
-                    return m_simdHandleCache->SIMDVector3Handle;
-                }
-
-                case TYP_SIMD16:
-                {
-                    // We order the checks roughly by expected hit count so early exits are possible
-
-                    if (simdBaseJitType != CORINFO_TYPE_FLOAT)
-                    {
-                        // We could be Vector<T>, so handle below
-                        assert(getSIMDVectorType() == TYP_SIMD16);
-                        break;
-                    }
-
-                    if (m_simdHandleCache->SIMDVector4Handle != NO_CLASS_HANDLE)
-                    {
-                        return m_simdHandleCache->SIMDVector4Handle;
-                    }
-
-                    if (m_simdHandleCache->SIMDQuaternionHandle != NO_CLASS_HANDLE)
-                    {
-                        return m_simdHandleCache->SIMDQuaternionHandle;
-                    }
-
-                    if (m_simdHandleCache->SIMDPlaneHandle != NO_CLASS_HANDLE)
-                    {
-                        return m_simdHandleCache->SIMDPlaneHandle;
-                    }
-
-                    return NO_CLASS_HANDLE;
-                }
-
-#if defined(TARGET_XARCH)
-                case TYP_SIMD32:
-                case TYP_SIMD64:
-                    break;
-#endif // TARGET_XARCH
-
-                default:
-                    unreached();
-            }
-        }
-
-        assert(emitTypeSize(simdType) <= largestEnregisterableStructSize());
-
-        switch (simdBaseJitType)
-        {
-            case CORINFO_TYPE_FLOAT:
-                return m_simdHandleCache->SIMDFloatHandle;
-            case CORINFO_TYPE_DOUBLE:
-                return m_simdHandleCache->SIMDDoubleHandle;
-            case CORINFO_TYPE_INT:
-                return m_simdHandleCache->SIMDIntHandle;
-            case CORINFO_TYPE_USHORT:
-                return m_simdHandleCache->SIMDUShortHandle;
-            case CORINFO_TYPE_UBYTE:
-                return m_simdHandleCache->SIMDUByteHandle;
-            case CORINFO_TYPE_SHORT:
-                return m_simdHandleCache->SIMDShortHandle;
-            case CORINFO_TYPE_BYTE:
-                return m_simdHandleCache->SIMDByteHandle;
-            case CORINFO_TYPE_LONG:
-                return m_simdHandleCache->SIMDLongHandle;
-            case CORINFO_TYPE_UINT:
-                return m_simdHandleCache->SIMDUIntHandle;
-            case CORINFO_TYPE_ULONG:
-                return m_simdHandleCache->SIMDULongHandle;
-            case CORINFO_TYPE_NATIVEINT:
-                return m_simdHandleCache->SIMDNIntHandle;
-            case CORINFO_TYPE_NATIVEUINT:
-                return m_simdHandleCache->SIMDNUIntHandle;
-            default:
-                assert(!"Didn't find a class handle for simdType");
-        }
-
-        return NO_CLASS_HANDLE;
-    }
-
-#if defined(FEATURE_HW_INTRINSICS)
-    CORINFO_CLASS_HANDLE gtGetStructHandleForSimdOrHW(var_types   simdType,
-                                                      CorInfoType simdBaseJitType,
-                                                      bool        isSimdAsHWIntrinsic = false)
-    {
-        assert(varTypeIsSIMD(simdType));
-
         CORINFO_CLASS_HANDLE clsHnd = NO_CLASS_HANDLE;
 
         if (isSimdAsHWIntrinsic)
         {
             clsHnd = gtGetStructHandleForSIMD(simdType, simdBaseJitType);
         }
-        else
+
+        if (clsHnd == NO_CLASS_HANDLE)
         {
             clsHnd = gtGetStructHandleForHWSIMD(simdType, simdBaseJitType);
         }
 
-        // Currently there are cases where isSimdAsHWIntrinsic is passed
-        // incorrectly. Fall back to the canonical SIMD handle in that case.
-        // TODO-cleanup: We can probably just always use the canonical handle.
         if (clsHnd == NO_CLASS_HANDLE)
         {
+            // TODO-cleanup: We can probably just always use the canonical handle.
             clsHnd = gtGetCanonicalStructHandleForSIMD(simdType);
         }
 
@@ -8675,7 +8671,7 @@ private:
             case TYP_SIMD8:
                 return m_simdHandleCache->CanonicalSimd8Handle;
             case TYP_SIMD12:
-                return m_simdHandleCache->SIMDVector3Handle;
+                return m_simdHandleCache->Vector3Handle;
             case TYP_SIMD16:
                 return m_simdHandleCache->CanonicalSimd16Handle;
 #if defined(TARGET_XARCH)
@@ -8703,27 +8699,27 @@ private:
             return false;
         }
 
-        if (structHandle == m_simdHandleCache->SIMDVector4Handle)
+        if (structHandle == m_simdHandleCache->Vector4Handle)
         {
             return false;
         }
 
-        if (structHandle == m_simdHandleCache->SIMDVector3Handle)
+        if (structHandle == m_simdHandleCache->Vector3Handle)
         {
             return false;
         }
 
-        if (structHandle == m_simdHandleCache->SIMDVector2Handle)
+        if (structHandle == m_simdHandleCache->Vector2Handle)
         {
             return false;
         }
 
-        if (structHandle == m_simdHandleCache->SIMDQuaternionHandle)
+        if (structHandle == m_simdHandleCache->QuaternionHandle)
         {
             return false;
         }
 
-        if (structHandle == m_simdHandleCache->SIMDPlaneHandle)
+        if (structHandle == m_simdHandleCache->PlaneHandle)
         {
             return false;
         }
@@ -8744,7 +8740,7 @@ private:
     // Returns true if the lclVar is an opaque SIMD type.
     bool isOpaqueSIMDLclVar(const LclVarDsc* varDsc) const
     {
-        if (!varDsc->lvSIMDType)
+        if (!varTypeIsSIMD(varDsc))
         {
             return false;
         }
@@ -8980,6 +8976,87 @@ private:
 #endif // FEATURE_SIMD
 
 public:
+    enum UnrollKind
+    {
+        Memset,
+        Memcpy,
+        Memmove
+    };
+
+    //------------------------------------------------------------------------
+    // getUnrollThreshold: Calculates the unrolling threshold for the given operation
+    //
+    // Arguments:
+    //    type       - kind of the operation (memset/memcpy)
+    //    canUseSimd - whether it is allowed to use SIMD or not
+    //
+    // Return Value:
+    //    The unrolling threshold for the given operation in bytes
+    //
+    unsigned int getUnrollThreshold(UnrollKind type, bool canUseSimd = true)
+    {
+        unsigned maxRegSize = REGSIZE_BYTES;
+        unsigned threshold  = maxRegSize;
+
+#if defined(FEATURE_SIMD)
+        if (canUseSimd)
+        {
+            maxRegSize = maxSIMDStructBytes();
+#if defined(TARGET_XARCH)
+            // TODO-XARCH-AVX512: Consider enabling this for AVX512 where it's beneficial
+            maxRegSize = min(maxRegSize, YMM_REGSIZE_BYTES);
+            threshold  = maxRegSize;
+#elif defined(TARGET_ARM64)
+            // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
+            //
+            //   ldp q0, q1, [x1]
+            //   stp q0, q1, [x0]
+            //
+            threshold = maxRegSize * 2;
+#endif
+        }
+#if defined(TARGET_XARCH)
+        else
+        {
+            // Compatibility with previous logic: we used to allow memset:128/memcpy:64
+            // on AMD64 (and 64/32 on x86) for cases where we don't use SIMD
+            // see https://github.com/dotnet/runtime/issues/83297
+            threshold *= 2;
+        }
+#endif
+#endif
+
+        if (type == UnrollKind::Memset)
+        {
+            // Typically, memset-like operations require less instructions than memcpy
+            threshold *= 2;
+        }
+
+        // Use 4 as a multiplier by default, thus, the final threshold will be:
+        //
+        // | arch        | memset | memcpy |
+        // |-------------|--------|--------|
+        // | x86 avx512  |   512  |   256  | (TODO-XARCH-AVX512: ignored for now)
+        // | x86 avx     |   256  |   128  |
+        // | x86 sse     |   128  |    64  |
+        // | arm64       |   256  |   128  | ldp/stp (2x128bit)
+        // | arm         |    32  |    16  | no SIMD support
+        // | loongarch64 |    64  |    32  | no SIMD support
+        //
+        // We might want to use a different multiplier for truly hot/cold blocks based on PGO data
+        //
+        threshold *= 4;
+
+        if (type == UnrollKind::Memmove)
+        {
+            // NOTE: Memmove's unrolling is currently limited with LSRA -
+            // up to LinearScan::MaxInternalCount number of temp regs, e.g. 5*16=80 bytes on arm64
+            threshold = maxRegSize * 4;
+        }
+
+        return threshold;
+    }
+
     //------------------------------------------------------------------------
     // largestEnregisterableStruct: The size in bytes of the largest struct that can be enregistered.
     //
@@ -9028,16 +9105,6 @@ public:
 #endif // FEATURE_HW_INTRINSICS
 
 private:
-    // These routines need not be enclosed under FEATURE_SIMD since lvIsSIMDType()
-    // is defined for both FEATURE_SIMD and !FEATURE_SIMD appropriately. The use
-    // of this routines also avoids the need of #ifdef FEATURE_SIMD specific code.
-
-    // Is this var is of type simd struct?
-    bool lclVarIsSIMDType(unsigned varNum)
-    {
-        return lvaGetDesc(varNum)->lvIsSIMDType();
-    }
-
     // Returns true if the TYP_SIMD locals on stack are aligned at their
     // preferred byte boundary specified by getSIMDTypeAlignment().
     //
@@ -9058,10 +9125,11 @@ private:
     bool isSIMDTypeLocalAligned(unsigned varNum)
     {
 #if defined(FEATURE_SIMD) && ALIGN_SIMD_TYPES
-        if (lclVarIsSIMDType(varNum) && lvaTable[varNum].lvType != TYP_BYREF)
+        LclVarDsc* lcl = lvaGetDesc(varNum);
+        if (varTypeIsSIMD(lcl))
         {
             // TODO-Cleanup: Can't this use the lvExactSize on the varDsc?
-            int alignment = getSIMDTypeAlignment(lvaTable[varNum].lvType);
+            int alignment = getSIMDTypeAlignment(lcl->TypeGet());
             if (alignment <= STACK_ALIGN)
             {
                 bool rbpBased;
@@ -9168,7 +9236,7 @@ private:
     //
     bool IsBaselineVector512IsaSupportedDebugOnly() const
     {
-#ifdef TARGET_AMD64
+#ifdef TARGET_XARCH
         return (compIsaSupportedDebugOnly(InstructionSet_Vector512));
 #else
         return false;
@@ -9184,7 +9252,7 @@ private:
     //
     bool IsBaselineVector512IsaSupported() const
     {
-#ifdef TARGET_AMD64
+#ifdef TARGET_XARCH
         return (compExactlyDependsOn(InstructionSet_Vector512));
 #else
         return false;
@@ -9205,13 +9273,6 @@ private:
     //
     bool canUseEvexEncoding() const
     {
-#ifdef DEBUG
-        if (JitConfig.JitForceEVEXEncoding())
-        {
-            return true;
-        }
-#endif // DEBUG
-
         return compOpportunisticallyDependsOn(InstructionSet_AVX512F);
     }
 
@@ -9226,16 +9287,19 @@ private:
 #ifdef DEBUG
         // Using JitStressEVEXEncoding flag will force instructions which would
         // otherwise use VEX encoding but can be EVEX encoded to use EVEX encoding
-        // This requires AVX512VL support. JitForceEVEXEncoding forces this encoding, thus
-        // causing failure if not running on compatible hardware.
+        // This requires AVX512F, AVX512BW, AVX512CD, AVX512DQ, and AVX512VL support
 
-        if (JitConfig.JitForceEVEXEncoding())
+        if (JitConfig.JitStressEvexEncoding() && IsBaselineVector512IsaSupported())
         {
-            return true;
-        }
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F_VL));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW_VL));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512CD));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512CD_VL));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ));
+            assert(compIsaSupportedDebugOnly(InstructionSet_AVX512DQ_VL));
 
-        if (JitConfig.JitStressEvexEncoding() && compOpportunisticallyDependsOn(InstructionSet_AVX512F_VL))
-        {
             return true;
         }
 #endif // DEBUG
@@ -9788,6 +9852,7 @@ public:
         STRESS_MODE(MERGED_RETURNS)                                                             \
         STRESS_MODE(BB_PROFILE)                                                                 \
         STRESS_MODE(OPT_BOOLS_GC)                                                               \
+        STRESS_MODE(OPT_BOOLS_COMPARE_CHAIN_COST)                                               \
         STRESS_MODE(REMORPH_TREES)                                                              \
         STRESS_MODE(64RSLT_MUL)                                                                 \
         STRESS_MODE(DO_WHILE_LOOPS)                                                             \
@@ -9806,6 +9871,8 @@ public:
         STRESS_MODE(PROMOTE_FEWER_STRUCTS)/* Don't promote some structs that can be promoted */ \
         STRESS_MODE(VN_BUDGET)/* Randomize the VN budget */                                     \
         STRESS_MODE(SSA_INFO) /* Select lower thresholds for "complex" SSA num encoding */      \
+        STRESS_MODE(SPLIT_TREES_RANDOMLY) /* Split all statements at a random tree */           \
+        STRESS_MODE(SPLIT_TREES_REMOVE_COMMAS) /* Remove all GT_COMMA nodes */                  \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
@@ -10017,6 +10084,10 @@ public:
 
         // Number of class profile probes in this method
         unsigned compHandleHistogramProbeCount;
+
+#ifdef TARGET_ARM64
+        bool compNeedsConsecutiveRegisters;
+#endif
 
     } info;
 
@@ -11025,8 +11096,7 @@ public:
             // Leaf lclVars
             case GT_LCL_VAR:
             case GT_LCL_FLD:
-            case GT_LCL_VAR_ADDR:
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
                 if (TVisitor::DoLclVarsOnly)
                 {
                     result = reinterpret_cast<TVisitor*>(this)->PreOrderVisit(use, user);
@@ -11647,6 +11717,9 @@ extern size_t   gcPtrMapNSize;
 #if COUNT_BASIC_BLOCKS
 extern Histogram bbCntTable;
 extern Histogram bbOneBBSizeTable;
+extern Histogram domsChangedIterationTable;
+extern Histogram computeReachabilitySetsIterationTable;
+extern Histogram computeReachabilityIterationTable;
 #endif
 
 /*****************************************************************************
@@ -11675,17 +11748,6 @@ extern Histogram loopCountTable;          // Histogram of loop counts
 extern Histogram loopExitCountTable;      // Histogram of loop exit counts
 
 #endif // COUNT_LOOPS
-
-/*****************************************************************************
- * variables to keep track of how many iterations we go in a dataflow pass
- */
-
-#if DATAFLOW_ITER
-
-extern unsigned CSEiterCount; // counts the # of iteration for the CSE dataflow
-extern unsigned CFiterCount;  // counts the # of iteration for the Const Folding dataflow
-
-#endif // DATAFLOW_ITER
 
 #if MEASURE_BLOCK_SIZE
 extern size_t genFlowNodeSize;

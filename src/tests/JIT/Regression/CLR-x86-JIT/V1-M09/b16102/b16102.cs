@@ -3,13 +3,15 @@
 
 
 using System;
+using Xunit;
 
 
 namespace N
 {
-    internal class X
+    public class X
     {
-        public static void Main()
+        [Fact]
+        public static void TestEntryPoint()
         {
         }
     }

@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 //
 //  Test case for a GC Stress 4 failure
 //
@@ -73,7 +74,8 @@ public class Program
             
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Program prog = new Program();
 

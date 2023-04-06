@@ -129,6 +129,7 @@ set( JIT_SOURCES
   hwintrinsic.cpp
   hostallocator.cpp
   ifconversion.cpp
+  runtimelookup.cpp
   indirectcalltransformer.cpp
   importercalls.cpp
   importer.cpp
@@ -153,6 +154,7 @@ set( JIT_SOURCES
   morphblock.cpp
   objectalloc.cpp
   optcse.cpp
+  optimizebools.cpp
   optimizer.cpp
   patchpoint.cpp
   phase.cpp

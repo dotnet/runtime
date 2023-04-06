@@ -115,7 +115,7 @@ namespace System
             if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
-            return (Array)Enum.GetValuesAsUnderlyingTypeNoCopy(this).Clone();
+            return Enum.GetValuesAsUnderlyingType(this);
         }
 
         internal bool IsActualEnum

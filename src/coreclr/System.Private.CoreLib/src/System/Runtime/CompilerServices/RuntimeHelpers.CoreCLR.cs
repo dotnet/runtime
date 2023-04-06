@@ -556,6 +556,8 @@ namespace System.Runtime.CompilerServices
 
         public bool HasTypeEquivalence => (Flags & enum_flag_HasTypeEquivalence) != 0;
 
+        internal static bool AreSameType(MethodTable* mt1, MethodTable* mt2) => mt1 == mt2;
+
         public bool HasDefaultConstructor => (Flags & (enum_flag_HasComponentSize | enum_flag_HasDefaultCtor)) == enum_flag_HasDefaultCtor;
 
         public bool IsMultiDimensionalArray
