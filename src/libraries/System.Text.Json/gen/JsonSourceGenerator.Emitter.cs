@@ -1153,7 +1153,7 @@ private void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {val
 /// </summary>
 public {typeInfoPropertyTypeRef} {typeFriendlyName}
 {{
-    get => _{typeFriendlyName} ??= ({typeInfoPropertyTypeRef}){OptionsInstanceVariableName}.GetTypeInfo(typeof({typeCompilableName}));
+    get => _{typeFriendlyName} ??= ({typeInfoPropertyTypeRef}){OptionsInstanceVariableName}.GetTypeInfo(typeof({typeCompilableName}))!;
 }}
 
 private {typeInfoPropertyTypeRef} {typeMetadata.CreateTypeInfoMethodName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
@@ -1322,33 +1322,13 @@ private static {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({JsonS
             {
                 StringBuilder sb = new();
 
+                // JsonSerializerContext.GetTypeInfo override -- returns cached metadata via JsonSerializerOptions
                 sb.Append(
 @$"/// <inheritdoc/>
 public override {JsonTypeInfoTypeRef}? GetTypeInfo({TypeTypeRef} type)
-{{");
-                // This method body grows linearly over the number of generated types.
-                // In line with https://github.com/dotnet/runtime/issues/77897 we should
-                // eventually replace this method with a direct call to Options.GetTypeInfo().
-                // We can't do this currently because Options.GetTypeInfo throws whereas
-                // this GetTypeInfo returns null for unsupported types, so we need new API to support it.
-                foreach (TypeGenerationSpec metadata in _currentContext.TypesWithMetadataGenerated)
-                {
-                    if (metadata.ClassType != ClassType.TypeUnsupportedBySourceGen)
-                    {
-                        sb.Append($@"
-    if (type == typeof({metadata.TypeRef}))
-    {{
-        return this.{metadata.TypeInfoPropertyName};
-    }}
+    => {OptionsInstanceVariableName}.GetTypeInfo(type);
 ");
-                    }
-                }
-
-                sb.AppendLine(@"
-    return null;
-}");
-
-                // Explicit IJsonTypeInfoResolver implementation
+                // Explicit IJsonTypeInfoResolver implementation -- the source of truth for metadata resolution
                 sb.AppendLine();
                 sb.Append(@$"{JsonTypeInfoTypeRef}? {JsonTypeInfoResolverTypeRef}.GetTypeInfo({TypeTypeRef} type, {JsonSerializerOptionsTypeRef} {OptionsLocalVariableName})
 {{");

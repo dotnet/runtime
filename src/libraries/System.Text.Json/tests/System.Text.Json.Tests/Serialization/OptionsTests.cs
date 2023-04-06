@@ -513,7 +513,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Empty(resolverList);
                 Assert.Empty(options.TypeInfoResolverChain);
 
-                Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(string)));
+                Assert.Null(options.GetTypeInfo(typeof(string)));
                 Assert.Throws<NotSupportedException>(() => options.GetConverter(typeof(string)));
 
                 Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize("string"));
@@ -547,7 +547,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Null(options.TypeInfoResolver);
                 Assert.Empty(options.TypeInfoResolverChain);
 
-                Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(string)));
+                Assert.Null(options.GetTypeInfo(typeof(string)));
                 Assert.Throws<NotSupportedException>(() => options.GetConverter(typeof(string)));
 
                 Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize("string", options));
@@ -660,6 +660,10 @@ namespace System.Text.Json.Serialization.Tests
                 // A converter can be resolved when looking up JsonSerializerOptions
                 JsonConverter converter = JsonContext.Default.Options.GetConverter(typeof(MyClass));
                 Assert.IsAssignableFrom<JsonConverter<MyClass>>(converter);
+
+                // Serialization using JsonSerializerContext now uses the reflection fallback.
+                json = JsonSerializer.Serialize(unsupportedValue, unsupportedValue.GetType(), JsonContext.Default);
+                JsonTestHelper.AssertJsonEqual("""{"Value":"value", "Thing":null}""", json);
 
             }, options).Dispose();
         }
@@ -1371,8 +1375,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions();
 
-            // An unset resolver results in NotSupportedException.
-            Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(type));
+            // An unset resolver results in null JsonTypeInfo.
+            Assert.Null(options.GetTypeInfo(type));
 
             options.TypeInfoResolver = new DefaultJsonTypeInfoResolver();
             JsonTypeInfo typeInfo = options.GetTypeInfo(type);
@@ -1459,7 +1463,7 @@ namespace System.Text.Json.Serialization.Tests
             var resolver = new RecursiveResolver();
             var options = new JsonSerializerOptions { TypeInfoResolver = resolver };
 
-            Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(TestClassForEncoding)));
+            Assert.Null(options.GetTypeInfo(typeof(TestClassForEncoding)));
             Assert.True(resolver.IsThresholdReached);
         }
 
@@ -1506,12 +1510,12 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void GetTypeInfo_ResolverWithoutMetadata_ThrowsNotSupportedException()
+        public static void GetTypeInfo_ResolverWithoutMetadata_ReturnsNull()
         {
             var options = new JsonSerializerOptions();
             options.AddContext<JsonContext>();
 
-            Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(BasicCompany)));
+            Assert.Null(options.GetTypeInfo(typeof(BasicCompany)));
         }
 
         [Theory]

@@ -44,7 +44,7 @@ namespace System.Text.Json
         ///
         /// If the <see cref="JsonSerializerOptions"/> instance is locked for modification, the method will return a cached instance for the metadata.
         /// </remarks>
-        public JsonTypeInfo GetTypeInfo(Type type)
+        public JsonTypeInfo? GetTypeInfo(Type type)
         {
             if (type is null)
             {
@@ -56,19 +56,24 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(type), type, null, null);
             }
 
-            return GetTypeInfoInternal(type, resolveIfMutable: true);
+            return GetTypeInfoInternal(type, ensureNotNull: null, resolveIfMutable: true);
         }
 
         /// <summary>
         /// Same as GetTypeInfo but without validation and additional knobs.
         /// </summary>
-        internal JsonTypeInfo GetTypeInfoInternal(
+        [return: NotNullIfNotNull(nameof(ensureNotNull))]
+        internal JsonTypeInfo? GetTypeInfoInternal(
             Type type,
             bool ensureConfigured = true,
+            // We can't assert non-nullability on the basis of boolean parameters,
+            // so use a nullable representation instead to piggy-back on the NotNullIfNotNull attribute.
+            bool? ensureNotNull = true,
             bool resolveIfMutable = false,
             bool fallBackToNearestAncestorType = false)
         {
             Debug.Assert(!fallBackToNearestAncestorType || IsReadOnly, "ancestor resolution should only be invoked in read-only options.");
+            Debug.Assert(ensureNotNull is null or true, "Explicitly passing false will result in invalid result annotation.");
 
             JsonTypeInfo? typeInfo = null;
 
@@ -85,7 +90,7 @@ namespace System.Text.Json
                 typeInfo = GetTypeInfoNoCaching(type);
             }
 
-            if (typeInfo == null)
+            if (typeInfo is null && ensureNotNull == true)
             {
                 ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type, TypeInfoResolver);
             }
@@ -241,7 +246,7 @@ namespace System.Text.Json
             private CacheEntry? DetermineNearestAncestor(Type type, CacheEntry entry)
             {
                 // In cases where the underlying TypeInfoResolver returns `null` for a given type,
-                // this method traverses the hierarchy above the given type to determine potential
+                // this method traverses the hierarchy above the type to determine potential
                 // ancestors for which the resolver does provide metadata. This can be useful in
                 // cases where we're using a source generator and are trying to serialize private
                 // implementations of an interface that is supported by the source generator.
