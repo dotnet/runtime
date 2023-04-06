@@ -15,23 +15,24 @@ namespace System.Runtime.CompilerServices
     }
 
 #if NATIVEAOT
-    [EagerStaticClassConstruction] // the wait subsystem is used during lazy class construction
+    [EagerStaticClassConstruction]
 #endif
     internal static unsafe class CastCache
     {
 
 #if CORECLR
-        // in coreclr the table is written to only on the native side
+        // In coreclr the table is written to only on the native side. T
+        // This is all we need to implement TryGet.
         private static int[]? s_table;
 #else
 
-#if DEBUG
+  #if DEBUG
         private const int INITIAL_CACHE_SIZE = 8;    // MUST BE A POWER OF TWO
         private const int MAXIMUM_CACHE_SIZE = 512;  // make this lower than release to make it easier to reach this in tests.
-#else
+  #else
         private const int INITIAL_CACHE_SIZE = 128;  // MUST BE A POWER OF TWO
         private const int MAXIMUM_CACHE_SIZE = 4096; // 4096 * sizeof(CastCacheEntry) is 98304 bytes on 64bit. We will rarely need this much though.
-#endif // DEBUG
+  #endif // DEBUG
 
         private const int VERSION_NUM_SIZE = 29;
         private const uint VERSION_NUM_MASK = (1 << VERSION_NUM_SIZE) - 1;
@@ -46,9 +47,9 @@ namespace System.Runtime.CompilerServices
         // The actual storage.
         // Initialize to the sentinel in DEBUG as if just flushed, to ensure the sentinel can be handled in Set.
         private static int[] s_table =
-#if !DEBUG
+  #if !DEBUG
             CreateCastCache(INITIAL_CACHE_SIZE) ??
-#endif
+  #endif
             s_sentinelTable;
 
 #endif // CORECLR
@@ -102,8 +103,8 @@ namespace System.Runtime.CompilerServices
 
             int hashShift = HashShift(ref tableData);
 #if TARGET_64BIT
-                ulong hash = RotateLeft((ulong)source, 32) ^ (ulong)target;
-                return (int)((hash * 11400714819323198485ul) >> hashShift);
+            ulong hash = RotateLeft((ulong)source, 32) ^ (ulong)target;
+            return (int)((hash * 11400714819323198485ul) >> hashShift);
 #else
             uint hash = RotateLeft((uint)source, 16) ^ (uint)target;
             return (int)((hash * 2654435769u) >> hashShift);

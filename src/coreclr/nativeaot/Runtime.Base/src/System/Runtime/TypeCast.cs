@@ -774,7 +774,7 @@ namespace System.Runtime
             if (elementType != obj.GetMethodTable())
                 goto notExactMatch;
 
-            doWrite:
+        doWrite:
             InternalCalls.RhpAssignRef(ref element, obj);
             return;
 
@@ -1036,7 +1036,7 @@ namespace System.Runtime
 
         public static unsafe bool AreTypesAssignableInternal(MethodTable* pSourceType, MethodTable* pTargetType, AssignmentVariation variation, EETypePairList* pVisited)
         {
-            // Important special case -- it breaks infinite recursion in CastCache itself!
+            // Important special case -- it breaks infinite recursion
             if (pSourceType == pTargetType)
                 return true;
 
