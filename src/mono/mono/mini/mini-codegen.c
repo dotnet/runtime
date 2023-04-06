@@ -479,7 +479,8 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 			if (!ins->inst_false_bb)
 				g_string_append_printf (sbuf, " [B%d]", ins->inst_true_bb->block_num);
 			else
-				g_string_append_printf (sbuf, " [B%dB%d]", ins->inst_true_bb->block_num, ins->inst_false_bb->block_num);
+				g_string_append_printf (sbuf, " [T:B%d F:B%d]", ins->inst_true_bb->block_num,
+				                        ins->inst_false_bb->block_num);
 			break;
 		case OP_PHI:
 		case OP_VPHI:
@@ -683,10 +684,16 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	case OP_LBGE_UN:
 	case OP_LBLE:
 	case OP_LBLE_UN:
+#if defined(TARGET_RISCV64) || defined(TARGET_RISCV32)
+	case OP_RISCV_BNE:
+	case OP_RISCV_BEQ:
+	case OP_RISCV_BGE:
+#endif
 		if (!ins->inst_false_bb)
 			g_string_append_printf (sbuf, " [B%d]", ins->inst_true_bb->block_num);
 		else
-			g_string_append_printf (sbuf, " [B%dB%d]", ins->inst_true_bb->block_num, ins->inst_false_bb->block_num);
+			g_string_append_printf (sbuf, " [T:B%d F:B%d]", ins->inst_true_bb->block_num,
+			                        ins->inst_false_bb->block_num);
 		break;
 	case OP_LIVERANGE_START:
 	case OP_LIVERANGE_END:
@@ -1827,7 +1834,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 					sreg_masks [0] &= ~(regmask (hreg));
 
-					DEBUG (printf ("\tassigned arg reg %s to R%d\n", mono_arch_regname (hreg), reg));
+					DEBUG (printf ("\tassigned arg ireg %s to R%d\n", mono_arch_regname (hreg), reg));
 
 					list = g_slist_next (list);
 				}
@@ -1845,7 +1852,7 @@ mono_local_regalloc (MonoCompile *cfg, MonoBasicBlock *bb)
 
 					assign_reg (cfg, rs, reg, hreg, 1);
 
-					DEBUG (printf ("\tassigned arg reg %s to R%d\n", mono_regname_full (hreg, 1), reg));
+					DEBUG (printf ("\tassigned arg freg %s to R%d\n", mono_regname_full (hreg, 1), reg));
 
 					list = g_slist_next (list);
 				}
