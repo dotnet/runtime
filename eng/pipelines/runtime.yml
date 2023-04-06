@@ -163,6 +163,35 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
+      # Temporarily define PGO jobs to get PR validation of PGO instrumented builds
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          buildConfig: release
+          platforms:
+          - linux_x64
+          - linux_arm64
+          jobParameters:
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            signBinaries: false
+            testGroup: innerloop
+            pgoType: 'PGO'
+
+
+      # Temporarily define PGO jobs to get PR validation of PGO instrumented builds
+        - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
+          buildConfig: Release
+          jobParameters:
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            liveRuntimeBuildConfig: release
+            liveLibrariesBuildConfig: Release
+            pgoType: 'PGO'
+          platforms:
+          - linux_x64
+          - linux_arm64
+
       #
       # Build CoreCLR Formatting Job
       # Only when CoreCLR is changed, and only in the 'main' branch (no release branches;
