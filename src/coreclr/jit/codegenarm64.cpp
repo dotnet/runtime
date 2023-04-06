@@ -4710,8 +4710,6 @@ void CodeGen::genCodeForCinc(GenTreeOp* cinc)
     if (cinc->OperIs(GT_CINC))
     {
         assert(!opcond->isContained());
-        assert(opcond->OperIsSimple());
-        assert(!varTypeIsFloating(opcond->gtGetOp1()->TypeGet()));
         // Condition has been generated into a register - move it into flags.
         emit->emitIns_R_I(INS_cmp, emitActualTypeSize(opcond), opcond->GetRegNum(), 0);
         cond = GenCondition::NE;
@@ -4723,7 +4721,19 @@ void CodeGen::genCodeForCinc(GenTreeOp* cinc)
     }
     const GenConditionDesc& prevDesc  = GenConditionDesc::Get(cond);
     regNumber               targetReg = cinc->GetRegNum();
-    regNumber               srcReg    = op->IsIntegralConst(0) ? REG_ZR : genConsumeReg(op);
+    regNumber               srcReg;
+
+    genConsumeRegs(op);
+
+    if (op->isContained())
+    {
+        assert(op->IsIntegralConst(0));
+        srcReg = REG_ZR;
+    }
+    else
+    {
+        srcReg = op->GetRegNum();
+    }
 
     assert(prevDesc.oper != GT_OR && prevDesc.oper != GT_AND);
     emit->emitIns_R_R_COND(INS_cinc, attr, targetReg, srcReg, JumpKindToInsCond(prevDesc.jumpKind1));

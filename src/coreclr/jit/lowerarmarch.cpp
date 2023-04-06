@@ -2484,45 +2484,50 @@ void Lowering::TryLowerCselToCinc(GenTreeOp* select, GenTree* cond)
 
     GenTree* trueVal  = select->gtOp1;
     GenTree* falseVal = select->gtOp2;
-    if (trueVal->IsCnsIntOrI() && falseVal->IsCnsIntOrI() && cond->OperIsSimple() &&
-        !varTypeIsFloating(cond->gtGetOp1()->TypeGet()))
+    size_t   op1Val   = (size_t)trueVal->AsIntCon()->IconValue();
+    size_t   op2Val   = (size_t)falseVal->AsIntCon()->IconValue();
+
+    if (op1Val + 1 == op2Val || op2Val + 1 == op1Val)
     {
-        assert(!varTypeIsFloating(cond->gtGetOp2()->TypeGet()));
-        size_t op1Val = (size_t)trueVal->AsIntCon()->IconValue();
-        size_t op2Val = (size_t)falseVal->AsIntCon()->IconValue();
-        if (op1Val + 1 == op2Val || op2Val + 1 == op1Val)
+        const bool shouldReverseCondition = op1Val + 1 == op2Val;
+
+        // Create a cinc node, insert it and update the use.
+        if (select->OperIs(GT_SELECT))
         {
-            // Create a cinc node, insert it and update the use.
-            if (select->OperIs(GT_SELECT))
+            assert(!varTypeIsFloating(cond->gtGetOp2()->TypeGet()));
+            if (shouldReverseCondition)
             {
-                if (op1Val + 1 == op2Val)
+                // Reverse the condition so that op2 will be selected
+                if (!cond->OperIsCompare())
                 {
-                    // Reverse the condition so that op2 will be selected
-                    select->gtOp2    = select->gtOp1;
-                    GenTree* revCond = comp->gtReverseCond(cond);
-                    assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
+                    // Non-compare nodes add additional GT_NOT node after reversing.
+                    // This would remove gains from this optimisation so don't proceed.
+                    return;
                 }
-                select->gtOp1 = cond->AsOp();
-                select->SetOper(GT_CINC);
-                DISPTREERANGE(BlockRange(), select);
+                select->gtOp2    = select->gtOp1;
+                GenTree* revCond = comp->gtReverseCond(cond);
+                assert(cond == revCond); // Ensure `gtReverseCond` did not create a new node.
+            }
+            select->gtOp1 = cond->AsOp();
+            select->SetOper(GT_CINC);
+            DISPTREERANGE(BlockRange(), select);
+        }
+        else
+        {
+            GenTreeOpCC* selectcc   = select->AsOpCC();
+            GenCondition selectCond = selectcc->gtCondition;
+            if (shouldReverseCondition)
+            {
+                // Reverse the condition so that op2 will be selected
+                selectcc->gtCondition = GenCondition::Reverse(selectCond);
             }
             else
             {
-                GenTreeOpCC* selectcc   = select->AsOpCC();
-                GenCondition selectCond = selectcc->gtCondition;
-                if (op1Val + 1 == op2Val)
-                {
-                    // Reverse the condition so that op2 will be selected
-                    selectcc->gtCondition = GenCondition::Reverse(selectCond);
-                }
-                else
-                {
-                    std::swap(selectcc->gtOp1, selectcc->gtOp2);
-                }
-                BlockRange().Remove(selectcc->gtOp2);
-                selectcc->SetOper(GT_CINCCC);
-                DISPTREERANGE(BlockRange(), selectcc);
+                std::swap(selectcc->gtOp1, selectcc->gtOp2);
             }
+            BlockRange().Remove(selectcc->gtOp2);
+            selectcc->SetOper(GT_CINCCC);
+            DISPTREERANGE(BlockRange(), selectcc);
         }
     }
 }

@@ -3604,7 +3604,11 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     }
 
 #ifdef TARGET_ARM64
-    TryLowerCselToCinc(select, cond);
+    if (trueVal->IsCnsIntOrI() && falseVal->IsCnsIntOrI() &&
+        !(cond->OperIsSimple() && varTypeIsFloating(cond->gtGetOp1()->TypeGet())))
+    {
+        TryLowerCselToCinc(select, cond);
+    }
 #endif
     return newSelect != nullptr ? newSelect->gtNext : select->gtNext;
 }
