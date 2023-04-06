@@ -588,8 +588,8 @@ PhaseStatus Compiler::fgExpandStaticInit()
                 assert(flagAddr.accessType == IAT_VALUE);
 
                 GenTree* cachedStaticBase = nullptr;
-                GenTree* isInitAdrNode;
-                GenTree* isInitedValue;
+                GenTree* isInitedActualValueNode;
+                GenTree* isInitedExpectedValue;
                 if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
                 {
                     GenTree* baseAddr = gtNewIconHandleNode((size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR);
@@ -602,30 +602,30 @@ PhaseStatus Compiler::fgExpandStaticInit()
                     }
 
                     // Don't fold ADD(CNS1, CNS2) here since the result won't be reloc-friendly for AOT
-                    isInitAdrNode =
+                    isInitedActualValueNode =
                         gtNewIndir(TYP_I_IMPL, (isInitOffset != 0) ? gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr,
                                                                                    gtNewIconNode(isInitOffset))
                                                                    : baseAddr);
                     // 0 means "initialized" on NativeAOT
-                    isInitedValue = gtNewIconNode(0, TYP_I_IMPL);
+                    isInitedExpectedValue = gtNewIconNode(0, TYP_I_IMPL);
                 }
                 else
                 {
                     assert(isInitOffset == 0);
 
-                    isInitAdrNode =
+                    isInitedActualValueNode =
                         gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR, false);
 
                     // Check ClassInitFlags::INITIALIZED_FLAG bit
-                    isInitAdrNode = gtNewOperNode(GT_AND, TYP_INT, isInitAdrNode, gtNewIconNode(1));
-                    isInitedValue = gtNewIconNode(1);
+                    isInitedActualValueNode = gtNewOperNode(GT_AND, TYP_INT, isInitedActualValueNode, gtNewIconNode(1));
+                    isInitedExpectedValue   = gtNewIconNode(1);
                 }
 
                 // This indir points to a mutable location and doesn't have side-effects
-                isInitAdrNode->gtFlags &= ~GTF_EXCEPT;
-                isInitAdrNode->gtFlags |= (GTF_IND_NONFAULTING | GTF_GLOB_REF);
+                isInitedActualValueNode->gtFlags &= ~GTF_EXCEPT;
+                isInitedActualValueNode->gtFlags |= (GTF_IND_NONFAULTING | GTF_GLOB_REF);
 
-                GenTree* isInitedCmp = gtNewOperNode(GT_EQ, TYP_INT, isInitAdrNode, isInitedValue);
+                GenTree* isInitedCmp = gtNewOperNode(GT_EQ, TYP_INT, isInitedActualValueNode, isInitedExpectedValue);
                 isInitedCmp->gtFlags |= GTF_RELOP_JMP_USED;
                 BasicBlock* isInitedBb =
                     fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp), debugInfo);
