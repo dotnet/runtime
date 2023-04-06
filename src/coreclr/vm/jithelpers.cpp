@@ -5746,7 +5746,7 @@ HCIMPL1(void, JIT_CountProfile32, volatile LONG* pCounter)
 
     if (count > 0)
     {
-        unsigned int logCount = 0;
+        DWORD logCount = 0;
         BitScanReverse(&logCount, count);
 
         if (logCount >= 13)
@@ -5776,7 +5776,7 @@ HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
 
     if (count > 0)
     {
-        unsigned int logCount = 0;
+        DWORD logCount = 0;
         BitScanReverse64(&logCount, count);
 
         if (logCount >= 13)
