@@ -5036,58 +5036,13 @@ void CodeGen::genRangeCheck(GenTree* oper)
     noway_assert(oper->OperIs(GT_BOUNDS_CHECK));
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
-    GenTree* arrLen    = bndsChk->GetArrayLength();
-    GenTree* arrIndex  = bndsChk->GetIndex();
-    GenTree* arrRef    = NULL;
-    int      lenOffset = 0;
+    GenTree* src1 = bndsChk->GetIndex();
+    GenTree* src2 = bndsChk->GetArrayLength();
+    regNumber    reg1 = src1->GetRegNum();
+    regNumber    reg2 = src2->GetRegNum();
 
-    GenTree*     src1;
-    GenTree*     src2;
-    regNumber    reg1;
-    regNumber    reg2;
-    emitJumpKind jmpKind = EJ_jmp;
-
-    genConsumeRegs(arrIndex);
-    genConsumeRegs(arrLen);
-
-    emitter*             emit     = GetEmitter();
-    GenTreeIntConCommon* intConst = nullptr;
-    if (arrIndex->IsCnsIntOrI())
-    {
-        src1 = arrLen;
-        src2 = arrIndex;
-        reg1 = rsGetRsvdReg();
-        reg2 = src1->GetRegNum();
-
-        intConst    = src2->AsIntConCommon();
-        ssize_t imm = intConst->IconValue();
-        if (imm == INT64_MAX)
-        {
-            emit->emitIns_R_R_I(INS_addi, EA_PTRSIZE, rsGetRsvdReg(), REG_R0, -1);
-            emit->emitIns_R_R_I(INS_srli, EA_PTRSIZE, rsGetRsvdReg(), rsGetRsvdReg(), 1);
-        }
-        else
-        {
-            emit->emitIns_I_la(EA_PTRSIZE, rsGetRsvdReg(), imm);
-        }
-    }
-    else
-    {
-        src1 = arrIndex;
-        src2 = arrLen;
-        reg1 = src1->GetRegNum();
-
-        if (src2->IsCnsIntOrI())
-        {
-            reg2        = rsGetRsvdReg();
-            ssize_t imm = src2->AsIntConCommon()->IconValue();
-            emit->emitIns_I_la(EA_PTRSIZE, rsGetRsvdReg(), imm);
-        }
-        else
-        {
-            reg2 = src2->GetRegNum();
-        }
-    }
+    genConsumeRegs(src1);
+    genConsumeRegs(src2);
 
 #ifdef DEBUG
     var_types bndsChkType = genActualType(src2->TypeGet());
