@@ -611,7 +611,8 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, Gen
 
         // Don't fold ADD(CNS1, CNS2) here since the result won't be reloc-friendly for AOT
         GenTree* offsetNode     = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr, gtNewIconNode(isInitOffset));
-        isInitedActualValueNode = gtNewIndir(TYP_I_IMPL, offsetNode, GTF_IND_NONFAULTING | GTF_GLOB_REF);
+        isInitedActualValueNode = gtNewIndir(TYP_I_IMPL, offsetNode, GTF_IND_NONFAULTING);
+        isInitedActualValueNode->gtFlags |= GTF_GLOB_REF;
         isInitedActualValueNode->gtFlags &= ~GTF_EXCEPT;
 
         // 0 means "initialized" on NativeAOT
