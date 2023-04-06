@@ -7,6 +7,23 @@
 // @TODO: Audit native events in NativeAOT Runtime
 
 #include "clreventpipewriteevents.h"
+#include "etwevents.h"
+
+inline BOOL EventEnabledDestroyGCHandle(void) {return EventPipeEventEnabledDestroyGCHandle();}
+
+inline ULONG FireEtwDestroyGCHandle(
+    void*  HandleID,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventDestroyGCHandle(HandleID,ClrInstanceID,ActivityId,RelatedActivityId);
+#ifndef TARGET_UNIX
+    status &= FireEtXplatDestroyGCHandle(HandleID,ClrInstanceID);
+#endif
+    return status;
+}
 
 inline BOOL EventEnabledGCStart_V2(void) {return EventPipeEventEnabledGCStart_V2();}
 
@@ -21,7 +38,11 @@ inline ULONG FireEtwGCStart_V2(
     const GUID * RelatedActivityId = nullptr
 )
 {
-    return EventPipeWriteEventGCStart_V2(Count,Depth,Reason,Type,ClrInstanceID,ClientSequenceNumber,ActivityId,RelatedActivityId);;
+    ULONG status = EventPipeWriteEventGCStart_V2(Count,Depth,Reason,Type,ClrInstanceID,ClientSequenceNumber,ActivityId,RelatedActivityId);
+#ifndef TARGET_UNIX
+    status &= FireEtXplatGCStart_V2(Count,Depth,Reason,Type,ClrInstanceID,ClientSequenceNumber);
+#endif
+    return status;
 }
 
 
@@ -33,7 +54,11 @@ inline ULONG FireEtwGCRestartEEEnd_V1(
     const GUID * RelatedActivityId = nullptr
 )
 {
-    return EventPipeWriteEventGCRestartEEEnd_V1(ClrInstanceID,ActivityId,RelatedActivityId);
+    ULONG status = EventPipeWriteEventGCRestartEEEnd_V1(ClrInstanceID,ActivityId,RelatedActivityId);
+#ifndef TARGET_UNIX
+    status &= FireEtXplatGCRestartEEEnd_V1(ClrInstanceID);
+#endif
+    return status;
 }
 
 inline BOOL EventEnabledGCRestartEEBegin_V1(void) {return EventPipeEventEnabledGCRestartEEBegin_V1();}
@@ -44,7 +69,11 @@ inline ULONG FireEtwGCRestartEEBegin_V1(
     const GUID * RelatedActivityId = nullptr
 )
 {
-    return EventPipeWriteEventGCRestartEEBegin_V1(ClrInstanceID,ActivityId,RelatedActivityId);
+    ULONG status = EventPipeWriteEventGCRestartEEBegin_V1(ClrInstanceID,ActivityId,RelatedActivityId);
+#ifndef TARGET_UNIX
+    status &= FireEtXplatGCRestartEEBegin_V1(ClrInstanceID);
+#endif
+    return status;
 }
 
 inline BOOL EventEnabledGCSuspendEEEnd_V1(void) {return EventPipeEventEnabledGCSuspendEEEnd_V1();}
@@ -55,7 +84,11 @@ inline ULONG FireEtwGCSuspendEEEnd_V1(
     const GUID * RelatedActivityId = nullptr
 )
 {
-    return EventPipeWriteEventGCSuspendEEEnd_V1(ClrInstanceID,ActivityId,RelatedActivityId);
+    ULONG status = EventPipeWriteEventGCSuspendEEEnd_V1(ClrInstanceID,ActivityId,RelatedActivityId);
+#ifndef TARGET_UNIX
+    status &= FireEtXPlatGCSuspendEEEnd_V1(ClrInstanceID);
+#endif
+    return status;
 }
 
 inline BOOL EventEnabledGCSuspendEEBegin_V1(void) {return EventPipeEventEnabledGCSuspendEEBegin_V1();}
@@ -68,5 +101,9 @@ inline ULONG FireEtwGCSuspendEEBegin_V1(
     const GUID * RelatedActivityId = nullptr
 )
 {
-    return EventPipeWriteEventGCSuspendEEBegin_V1(Reason,Count,ClrInstanceID,ActivityId,RelatedActivityId);
+    ULONG status = EventPipeWriteEventGCSuspendEEBegin_V1(Reason,Count,ClrInstanceID,ActivityId,RelatedActivityId);
+#ifndef TARGET_UNIX
+    status &= FireEtXplatGCSuspendEEBegin_V1(Reason,Count,ClrInstanceID);
+#endif
+    return status;
 }

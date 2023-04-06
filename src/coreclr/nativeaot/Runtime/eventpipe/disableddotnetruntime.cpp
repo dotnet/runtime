@@ -10,9 +10,7 @@ This file is generated using the logic from <root>/src/scripts/genEventPipe.py
 
 #include <common.h>
 #include "eventpipeadapter.h"
-// #include "dotnetruntime.h"
 #include "gcheaputilities.h"
-//#include "clretwallmain.h"
 
 #if defined(TARGET_UNIX)
 #define wcslen PAL_wcslen
@@ -21,6 +19,15 @@ This file is generated using the logic from <root>/src/scripts/genEventPipe.py
 #ifndef ERROR_WRITE_FAULT
 #define ERROR_WRITE_FAULT 29L
 #endif
+
+ULONG EventPipeWriteEventDestroyGCHandle(
+    const void*  HandleID,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId,
+    const GUID * RelatedActivityId)
+{
+    return 0;
+}
 
 ULONG EventPipeWriteEventGCStart_V2(
     const unsigned int Count,

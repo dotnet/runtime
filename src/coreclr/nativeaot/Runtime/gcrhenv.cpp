@@ -663,20 +663,17 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 #endif // FEATURE_EVENT_TRACE
 
     FireEtwGCSuspendEEBegin_V1(Info.SuspendEE.Reason, Info.SuspendEE.GcCount, GetClrInstanceId());
-    FireEtXplatGCSuspendEEBegin_V1(Info.SuspendEE.Reason, Info.SuspendEE.GcCount, GetClrInstanceId());
 
     GetThreadStore()->LockThreadStore();
     GCHeapUtilities::GetGCHeap()->SetGCInProgress(TRUE);
     GetThreadStore()->SuspendAllThreads(true);
 
     FireEtwGCSuspendEEEnd_V1(GetClrInstanceId());
-    FireEtXPlatGCSuspendEEEnd_V1(GetClrInstanceId());
 }
 
 void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
 {
     FireEtwGCRestartEEBegin_V1(GetClrInstanceId());
-    FireEtXplatGCRestartEEBegin_V1(GetClrInstanceId());
 
 #if defined(TARGET_ARM) || defined(TARGET_ARM64)
     // Flush the store buffers on all CPUs, to ensure that they all see changes made
@@ -695,7 +692,6 @@ void GCToEEInterface::RestartEE(bool /*bFinishedGC*/)
     GetThreadStore()->UnlockThreadStore();
 
     FireEtwGCRestartEEEnd_V1(GetClrInstanceId());
-    FireEtXplatGCRestartEEEnd_V1(GetClrInstanceId());
 }
 
 void GCToEEInterface::GcStartWork(int condemned, int /*max_gen*/)

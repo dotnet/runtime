@@ -922,7 +922,6 @@ void ETW::GCLog::FireGcStart(ETW_GC_INFO* pGcInfo)
         }
 
         FireEtwGCStart_V2(pGcInfo->GCStart.Count, pGcInfo->GCStart.Depth, pGcInfo->GCStart.Reason, pGcInfo->GCStart.Type, GetClrInstanceId(), l64ClientSequenceNumberToLog);
-        FireEtXplatGCStart_V2(pGcInfo->GCStart.Count, pGcInfo->GCStart.Depth, pGcInfo->GCStart.Reason, pGcInfo->GCStart.Type, GetClrInstanceId(), l64ClientSequenceNumberToLog);
 
 #elif defined(FEATURE_DTRACE)
         FireEtwGCStart(pGcInfo->GCStart.Count, pGcInfo->GCStart.Reason);
