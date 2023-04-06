@@ -3,12 +3,13 @@
 
 
 .assembly extern mscorlib { }
+.assembly extern xunit.core {}
 .assembly extern System.Console
 {
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly test {}
+.assembly 'trashreg' {}
 .class public sealed a extends [mscorlib]System.Object
 {
   // specifying beforefieldinit here makes this sample work
@@ -26,6 +27,9 @@
 
   .method public static int32 a()
   {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .locals init (
              class [mscorlib]System.ArithmeticException V_1,

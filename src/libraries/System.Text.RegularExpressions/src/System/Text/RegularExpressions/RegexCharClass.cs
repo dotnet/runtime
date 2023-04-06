@@ -1142,37 +1142,31 @@ namespace System.Text.RegularExpressions
             0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
         };
 
+         /// <summary>Mask of Unicode categories that combine to form [\\w]</summary>
+         private const int WordCategoriesMask =
+               1 << (int)UnicodeCategory.UppercaseLetter |
+               1 << (int)UnicodeCategory.LowercaseLetter |
+               1 << (int)UnicodeCategory.TitlecaseLetter |
+               1 << (int)UnicodeCategory.ModifierLetter |
+               1 << (int)UnicodeCategory.OtherLetter |
+               1 << (int)UnicodeCategory.NonSpacingMark |
+               1 << (int)UnicodeCategory.DecimalDigitNumber |
+               1 << (int)UnicodeCategory.ConnectorPunctuation;
+
         /// <summary>Determines whether a character is considered a word character for the purposes of testing the \w set.</summary>
         public static bool IsWordChar(char ch)
         {
             // This is the same as IsBoundaryWordChar, except that IsBoundaryWordChar also
             // returns true for \u200c and \u200d.
 
-            // Fast lookup in our lookup table for ASCII characters.  This is purely an optimization, and has the
-            // behavior as if we fell through to the switch below (which was actually used to produce the lookup table).
-            ReadOnlySpan<byte> asciiLookup = WordCharAsciiLookup;
+            // Bitmap for whether each character 0 through 127 is in [\\w]
+            ReadOnlySpan<byte> ascii = WordCharAsciiLookup;
+
+            // If the char is ASCII, look it up in the bitmap. Otherwise, query its Unicode category.
             int chDiv8 = ch >> 3;
-            if ((uint)chDiv8 < (uint)asciiLookup.Length)
-            {
-                return (asciiLookup[chDiv8] & (1 << (ch & 0x7))) != 0;
-            }
-
-            // For non-ASCII, fall back to checking the Unicode category.
-            switch (CharUnicodeInfo.GetUnicodeCategory(ch))
-            {
-                case UnicodeCategory.UppercaseLetter:
-                case UnicodeCategory.LowercaseLetter:
-                case UnicodeCategory.TitlecaseLetter:
-                case UnicodeCategory.ModifierLetter:
-                case UnicodeCategory.OtherLetter:
-                case UnicodeCategory.NonSpacingMark:
-                case UnicodeCategory.DecimalDigitNumber:
-                case UnicodeCategory.ConnectorPunctuation:
-                    return true;
-
-                default:
-                    return false;
-            }
+            return (uint)chDiv8 < (uint)ascii.Length ?
+                (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :
+                (WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;
         }
 
         /// <summary>Determines whether a character is considered a word character for the purposes of testing a word character boundary.</summary>
@@ -1182,33 +1176,17 @@ namespace System.Text.RegularExpressions
             // RL 1.4 Simple Word Boundaries  The class of <word_character> includes all Alphabetic
             // values from the Unicode character database, from UnicodeData.txt [UData], plus the U+200C
             // ZERO WIDTH NON-JOINER and U+200D ZERO WIDTH JOINER.
+            const char ZeroWidthNonJoiner = '\u200C', ZeroWidthJoiner = '\u200D';
 
-            // Fast lookup in our lookup table for ASCII characters.  This is purely an optimization, and has the
-            // behavior as if we fell through to the switch below (which was actually used to produce the lookup table).
-            ReadOnlySpan<byte> asciiLookup = WordCharAsciiLookup;
+            // Bitmap for whether each character 0 through 127 is in [\\w]
+            ReadOnlySpan<byte> ascii = WordCharAsciiLookup;
+
+            // If the char is ASCII, look it up in the bitmap. Otherwise, query its Unicode category.
             int chDiv8 = ch >> 3;
-            if ((uint)chDiv8 < (uint)asciiLookup.Length)
-            {
-                return (asciiLookup[chDiv8] & (1 << (ch & 0x7))) != 0;
-            }
-
-            // For non-ASCII, fall back to checking the Unicode category.
-            switch (CharUnicodeInfo.GetUnicodeCategory(ch))
-            {
-                case UnicodeCategory.UppercaseLetter:
-                case UnicodeCategory.LowercaseLetter:
-                case UnicodeCategory.TitlecaseLetter:
-                case UnicodeCategory.ModifierLetter:
-                case UnicodeCategory.OtherLetter:
-                case UnicodeCategory.NonSpacingMark:
-                case UnicodeCategory.DecimalDigitNumber:
-                case UnicodeCategory.ConnectorPunctuation:
-                    return true;
-
-                default:
-                    const char ZeroWidthNonJoiner = '\u200C', ZeroWidthJoiner = '\u200D';
-                    return ch == ZeroWidthJoiner | ch == ZeroWidthNonJoiner;
-            }
+            return (uint)chDiv8 < (uint)ascii.Length ?
+                (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :
+                ((WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0 ||
+                 (ch == ZeroWidthJoiner | ch == ZeroWidthNonJoiner));
         }
 
         /// <summary>Determines whether the 'a' and 'b' values differ by only a single bit, setting that bit in 'mask'.</summary>

@@ -392,6 +392,7 @@ namespace SuperFileCheck
 
             // Create anchors from the first prefix.
             var startAnchorText = $"// {checkPrefixes[0]}-LABEL: for method {methodName}";
+            var startInstrsAnchorText = $"// {checkPrefixes[0]}: Lcl frame size =";
             var endAnchorText = $"// {checkPrefixes[0]}: for method {methodName}";
 
             // Create temp source file based on the source text of the method.
@@ -405,6 +406,7 @@ namespace SuperFileCheck
                 tmpSrc.AppendLine(String.Empty);
             }
             tmpSrc.AppendLine(startAnchorText);
+            tmpSrc.AppendLine(startInstrsAnchorText);
             tmpSrc.AppendLine(TransformMethod(methodDecl, checkPrefixes));
             tmpSrc.AppendLine(endAnchorText);
 

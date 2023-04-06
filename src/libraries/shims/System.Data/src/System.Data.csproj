@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <CompileUsingReferenceAssemblies>false</CompileUsingReferenceAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(CoreLibProject)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Data.Common\src\System.Data.Common.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Data.Odbc\src\System.Data.Odbc.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Data.OleDb\src\System.Data.OleDb.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Permissions\src\System.Security.Permissions.csproj" />
+  </ItemGroup>
+
+</Project>

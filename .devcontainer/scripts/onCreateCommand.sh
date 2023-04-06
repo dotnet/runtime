@@ -2,6 +2,10 @@
 
 set -e
 
+# bump the dotnet sdk version to get msbuild bugfix: https://github.com/dotnet/msbuild/issues/8531
+# TODO: remove once we're on a newer sdk in global.json
+sed -i 's/8.0.100-preview.1.23115.2/8.0.100-preview.3.23159.20/g' global.json || true
+
 opt=$1
 case "$opt" in
 

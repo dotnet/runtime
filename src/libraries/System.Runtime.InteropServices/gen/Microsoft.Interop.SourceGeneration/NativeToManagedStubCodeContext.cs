@@ -55,13 +55,12 @@ namespace Microsoft.Interop
             }
             // If the info is in the managed return position but is not in the native return position,
             // then that means that the stub is introducing an additional info for the return position.
-            // This means that there is no name in source for this info, so we must provide one here.
+            // This element can be in any position in the native signature,
+            // but since it isn't in the managed signature, there is no name in source for this info, so we must provide one here.
             // We can't use ReturnIdentifier or ReturnNativeIdentifier since that will be used by the return value of the stub itself.
-            // Additionally, we don't have a name that we can use from source.
             // As a result, we generate another name for the native return value.
             if (info.IsManagedReturnPosition)
             {
-                Debug.Assert(info.NativeIndex == TypePositionInfo.UnsetIndex);
                 return (InvokeReturnIdentifier, InvokeReturnIdentifierNative);
             }
 

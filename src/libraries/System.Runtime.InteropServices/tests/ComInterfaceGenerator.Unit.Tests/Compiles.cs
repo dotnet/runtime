@@ -353,7 +353,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                     // Cannot use 'ref', 'in', or 'out' in the signature of a method attributed with 'UnmanagedCallersOnly'.
                     "CS8977",
                     // The type 'SafeFileHandle' must be a non-nullable value type, along with all fields at any level of nesting,
-                    // in order to use it as parameter 'T' in the generic type or method 'ExceptionDefaultMarshaller<T>'
+                    // in order to use it as parameter 'T' in the generic type or method 'ExceptionAsDefaultMarshaller<T>'
                     "CS8377",
                     // Argument N may not be passed with the 'in' keyword
                     "CS1615"

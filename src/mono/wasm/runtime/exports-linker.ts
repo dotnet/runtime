@@ -5,7 +5,6 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
 import { mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint, mono_wasm_fire_debugger_agent_message_with_data, mono_wasm_fire_debugger_agent_message_with_data_to_pause } from "./debug";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
-import { mono_wasm_load_icu_data } from "./icu";
 import { mono_wasm_bind_cs_function } from "./invoke-cs";
 import { mono_wasm_bind_js_function, mono_wasm_invoke_bound_function, mono_wasm_invoke_import } from "./invoke-js";
 import { mono_interp_tier_prepare_jiterpreter } from "./jiterpreter";
@@ -25,7 +24,7 @@ import { mono_wasm_typed_array_to_array_ref } from "./net6-legacy/js-to-cs";
 import { mono_wasm_typed_array_from_ref } from "./net6-legacy/buffers";
 import {
     mono_wasm_invoke_js_blazor, mono_wasm_invoke_js_with_args_ref, mono_wasm_get_object_property_ref, mono_wasm_set_object_property_ref,
-    mono_wasm_get_by_index_ref, mono_wasm_set_by_index_ref, mono_wasm_get_global_object_ref
+    mono_wasm_get_by_index_ref, mono_wasm_set_by_index_ref, mono_wasm_get_global_object_ref, mono_wasm_change_case_invariant, mono_wasm_change_case
 } from "./net6-legacy/method-calls";
 
 // the methods would be visible to EMCC linker
@@ -94,9 +93,8 @@ export function export_linker(): any {
         mono_wasm_invoke_import,
         mono_wasm_bind_cs_function,
         mono_wasm_marshal_promise,
-
-        //  pal_icushim_static.c
-        mono_wasm_load_icu_data,
+        mono_wasm_change_case_invariant,
+        mono_wasm_change_case,
 
         // threading exports, if threading is enabled
         ...mono_wasm_threads_exports,

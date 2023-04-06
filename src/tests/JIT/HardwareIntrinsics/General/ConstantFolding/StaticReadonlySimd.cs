@@ -6,10 +6,12 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Threading;
+using Xunit;
 
-class StaticReadonlySimd
+public class StaticReadonlySimd
 {
-    static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         for (int i = 0; i < 100; i++)
         {
@@ -17,7 +19,6 @@ class StaticReadonlySimd
             Test();
             Thread.Sleep(15);
         }
-        return 100;
     }
 
     static readonly Vector2 v1 = new Vector2(-1.0f, 2.0f);

@@ -361,27 +361,20 @@ void Compiler::fgRemoveBlockAsPred(BasicBlock* block)
                     fgRemoveRefPred(bNext, bNext->bbPreds->getSourceBlock());
                 }
             }
+            fgRemoveRefPred(block->bbJumpDest, block);
+            break;
 
-            FALLTHROUGH;
-
-        case BBJ_COND:
         case BBJ_ALWAYS:
         case BBJ_EHCATCHRET:
-
-            /* Update the predecessor list for 'block->bbJumpDest' and 'block->bbNext' */
             fgRemoveRefPred(block->bbJumpDest, block);
-
-            if (block->bbJumpKind != BBJ_COND)
-            {
-                break;
-            }
-
-            /* If BBJ_COND fall through */
-            FALLTHROUGH;
+            break;
 
         case BBJ_NONE:
+            fgRemoveRefPred(block->bbNext, block);
+            break;
 
-            /* Update the predecessor list for 'block->bbNext' */
+        case BBJ_COND:
+            fgRemoveRefPred(block->bbJumpDest, block);
             fgRemoveRefPred(block->bbNext, block);
             break;
 
@@ -519,8 +512,7 @@ Compiler::SwitchUniqueSuccSet Compiler::GetDescriptorForSwitch(BasicBlock* switc
         // can create a new epoch, thus invalidating all existing BlockSet objects, such as
         // reachability information stored in the blocks. To avoid that, we just use a local BitVec.
 
-        unsigned     bbNumMax = impInlineRoot()->fgBBNumMax;
-        BitVecTraits blockVecTraits(bbNumMax + 1, this);
+        BitVecTraits blockVecTraits(fgBBNumMax + 1, this);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&blockVecTraits));
         for (BasicBlock* const targ : switchBlk->SwitchTargets())
         {

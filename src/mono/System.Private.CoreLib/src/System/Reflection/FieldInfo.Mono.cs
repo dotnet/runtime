@@ -24,7 +24,7 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Argument_InvalidHandle);
             FieldInfo fi = internal_from_handle_type(handle.Value, declaringType.Value);
             if (fi == null)
-                throw new ArgumentException("The field handle and the type handle are incompatible.");
+                throw new ArgumentException(SR.Argument_FieldPropertyEventAndTypeHandleIncompatibility);
             return fi;
         }
 

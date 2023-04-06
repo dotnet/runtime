@@ -229,7 +229,7 @@ namespace System.Reflection.Emit
         {
             RejectIfCreated();
             if (iOffset < 0)
-                throw new ArgumentException("Negative field offset is not allowed");
+                throw new ArgumentException(SR.Argument_NegativeFieldOffsetNotPermitted);
             offset = iOffset;
         }
 
@@ -240,7 +240,7 @@ namespace System.Reflection.Emit
 
         private static NotSupportedException CreateNotSupportedException()
         {
-            return new NotSupportedException("The invoked member is not supported in a dynamic module.");
+            return new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
         private void RejectIfCreated()
