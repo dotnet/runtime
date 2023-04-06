@@ -204,7 +204,7 @@ namespace Tracing.Tests.Common
             Func<int> optionalTraceValidationCallback = null;
             DiagnosticsClient client = new DiagnosticsClient(processId);
 #if DIAGNOSTICS_RUNTIME
-            if (OperatingSystem.IsAndroid() || OperatingSystem.IsIOS())
+            if (OperatingSystem.IsAndroid() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
                 client = new DiagnosticsClient(new IpcEndpointConfig("127.0.0.1:9000", IpcEndpointConfig.TransportType.TcpSocket, IpcEndpointConfig.PortType.Listen));
 #endif
             var readerTask = new Task(() =>
