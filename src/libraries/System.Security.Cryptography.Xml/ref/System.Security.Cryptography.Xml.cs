@@ -523,6 +523,7 @@ namespace System.Security.Cryptography.Xml
         public override void LoadInnerXml(System.Xml.XmlNodeList nodeList) { }
         public override void LoadInput(object obj) { }
     }
+    [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
     public partial class XmlDsigXsltTransform : System.Security.Cryptography.Xml.Transform
     {
         public XmlDsigXsltTransform() { }

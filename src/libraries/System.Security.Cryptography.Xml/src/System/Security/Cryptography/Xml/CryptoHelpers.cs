@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+
 namespace System.Security.Cryptography.Xml
 {
     internal static class CryptoHelpers
@@ -16,7 +18,7 @@ namespace System.Security.Cryptography.Xml
                 "http://www.w3.org/2001/10/xml-exc-c14n#WithComments" => new XmlDsigExcC14NWithCommentsTransform(),
                 "http://www.w3.org/2000/09/xmldsig#base64" => new XmlDsigBase64Transform(),
                 "http://www.w3.org/TR/1999/REC-xpath-19991116" => new XmlDsigXPathTransform(),
-                "http://www.w3.org/TR/1999/REC-xslt-19991116" => new XmlDsigXsltTransform(),
+                "http://www.w3.org/TR/1999/REC-xslt-19991116" => CreateXmlDsigXsltTransform(),
                 "http://www.w3.org/2000/09/xmldsig#enveloped-signature" => new XmlDsigEnvelopedSignatureTransform(),
                 "http://www.w3.org/2002/07/decrypt#XML" => new XmlDecryptionTransform(),
                 "urn:mpeg:mpeg21:2003:01-REL-R-NS:licenseTransform" => new XmlLicenseTransform(),
@@ -37,6 +39,22 @@ namespace System.Security.Cryptography.Xml
                 "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512" => new RSAPKCS1SHA512SignatureDescription(),
                 _ => null,
             };
+
+#pragma warning disable IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling - workaround https://github.com/dotnet/linker/issues/2715
+        private static XmlDsigXsltTransform CreateXmlDsigXsltTransform()
+        {
+#if NETCOREAPP
+            if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                // XSLTs are only supported when dynamic code is supported. See https://github.com/dotnet/runtime/issues/84389
+                throw new NotSupportedException(SR.Cryptography_Xml_XsltRequiresDynamicCode);
+            }
+#endif
+
+            return new XmlDsigXsltTransform();
+        }
+#pragma warning restore IL3050
+
 
         public static T? CreateFromName<T>(string? name) where T : class
         {
