@@ -14,6 +14,9 @@
 #define __MONO_METADATA_DEBUG_MONO_PPDB_H__
 
 #include <config.h>
+
+#include <dn-vector-ptr.h>
+
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/mono-debug.h>
 
@@ -76,5 +79,5 @@ mono_create_ppdb_file (MonoImage *ppdb_image, gboolean is_embedded_ppdb);
 
 MONO_COMPONENT_API gboolean
 mono_get_pe_debug_info_full (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *out_timestamp, guint8 **ppdb_data,
-				   int *ppdb_uncompressed_size, int *ppdb_compressed_size, char **pdb_path, GArray *pdb_checksum_hash_type, GArray *pdb_checksum);
+				   int *ppdb_uncompressed_size, int *ppdb_compressed_size, char **pdb_path, dn_vector_ptr_t *pdb_checksum_hash_type, dn_vector_ptr_t *pdb_checksum);
 #endif

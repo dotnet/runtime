@@ -41,6 +41,9 @@ set(${MONO_DEBUGGER_COMPONENT_NAME}-stub-sources
   ${MONO_COMPONENT_PATH}/debugger-stub.c
   )
 
+set(${MONO_DEBUGGER_COMPONENT_NAME}-link_libraries
+  shared_container_objects)
+
 # hot_reload
 list(APPEND components
   ${MONO_HOT_RELOAD_COMPONENT_NAME}
@@ -53,6 +56,9 @@ set(${MONO_HOT_RELOAD_COMPONENT_NAME}-sources
 set(${MONO_HOT_RELOAD_COMPONENT_NAME}-stub-sources
   ${MONO_COMPONENT_PATH}/hot_reload-stub.c
   )
+
+set(${MONO_HOT_RELOAD_COMPONENT_NAME}-link_libraries
+  shared_container_objects)
 
 # diagnostics_tracing (event_pipe/diagnostics_server)
 list(APPEND components

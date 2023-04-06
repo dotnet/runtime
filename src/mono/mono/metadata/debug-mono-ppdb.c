@@ -16,6 +16,9 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+
+#include <dn-vector-ptr.h>
+
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/tokentype.h>
@@ -62,7 +65,7 @@ enum {
 
 gboolean 
 mono_get_pe_debug_info_full (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *out_timestamp, guint8 **ppdb_data,
-				   int *ppdb_uncompressed_size, int *ppdb_compressed_size, char **pdb_path, GArray *pdb_checksum_hash_type, GArray *pdb_checksum)
+				   int *ppdb_uncompressed_size, int *ppdb_compressed_size, char **pdb_path, dn_vector_ptr_t *pdb_checksum_hash_type, dn_vector_ptr_t *pdb_checksum)
 {
 	MonoPEDirEntry *debug_dir_entry;
 	ImageDebugDirectory debug_dir;
@@ -93,8 +96,8 @@ mono_get_pe_debug_info_full (MonoImage *image, guint8 *out_guid, gint32 *out_age
 			data  = (guint8 *) (image->raw_data + debug_dir.pointer);
 			char* alg_name = (char*)data;
 			guint8*	checksum = (guint8 *) (data + strlen(alg_name)+ 1);
-			g_array_append_val (pdb_checksum_hash_type, alg_name);
-			g_array_append_val (pdb_checksum, checksum);
+			dn_vector_ptr_push_back (pdb_checksum_hash_type, alg_name);
+			dn_vector_ptr_push_back (pdb_checksum, checksum);
 		}
 
 		if (debug_dir.type == DEBUG_DIR_ENTRY_CODEVIEW && debug_dir.major_version == 0x100 && debug_dir.minor_version == 0x504d) {
