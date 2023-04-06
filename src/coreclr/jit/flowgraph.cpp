@@ -613,7 +613,6 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, Gen
         GenTree* offsetNode     = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr, gtNewIconNode(isInitOffset));
         isInitedActualValueNode = gtNewIndir(TYP_I_IMPL, offsetNode, GTF_IND_NONFAULTING);
         isInitedActualValueNode->gtFlags |= GTF_GLOB_REF;
-        isInitedActualValueNode->gtFlags &= ~GTF_EXCEPT;
 
         // 0 means "initialized" on NativeAOT
         isInitedExpectedValue = gtNewIconNode(0, TYP_I_IMPL);
