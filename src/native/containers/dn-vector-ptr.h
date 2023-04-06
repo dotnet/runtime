@@ -24,4 +24,19 @@ DN_DEFINE_VECTOR_T (ptr, void *)
 		} \
 	} while (0)
 
+#define dn_vector_ptr_index_t(vector, type, index) \
+	(type*)dn_vector_ptr_index (vector,index)
+
+#define dn_vector_ptr_at_t(vector, type, index) \
+	(type*)dn_vector_ptr_at (vector, index)
+
+#define dn_vector_ptr_front_t(vector, type) \
+	(type*)dn_vector_ptr_front (vector)
+
+#define dn_vector_ptr_back_t(vector, type) \
+	(type*)dn_vector_ptr_back (vector)
+
+#define dn_vector_ptr_data_t(vector, type) \
+	(type*)dn_vector_btr_data (vector)
+
 #endif /* __DN_VECTOR_PTR_H__ */
