@@ -1807,3 +1807,32 @@ MINI_OP(OP_CVT_SI_FP_SCALAR, "convert_si_to_fp_scalar", XREG, XREG, NONE)
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 MINI_OP3(OP_BSL,            "bitwise_select", XREG, XREG, XREG, XREG)
 #endif // TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM
+
+#if defined(TARGET_RISCV64) || defined(TARGET_RISCV32)
+MINI_OP(OP_RISCV_EXC_BEQ, "riscv_exc_beq", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_EXC_BNE, "riscv_exc_bne", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_EXC_BGEU, "riscv_exc_bgeu", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_EXC_BLT, "riscv_exc_blt", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_EXC_BLTU, "riscv_exc_bltu", NONE, IREG, IREG)
+
+MINI_OP(OP_RISCV_BEQ, "riscv_beq", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_BNE, "riscv_bne", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_BGE, "riscv_bge", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_BGEU, "riscv_bgeu", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_BLT, "riscv_blt", NONE, IREG, IREG)
+MINI_OP(OP_RISCV_BLTU, "riscv_bltu", NONE, IREG, IREG)
+
+MINI_OP(OP_RISCV_ADDIW, "riscv_addiw", IREG, IREG, NONE)
+
+MINI_OP(OP_RISCV_SLT, "riscv_slt", IREG, IREG, IREG)
+MINI_OP(OP_RISCV_SLTU, "riscv_sltu", IREG, IREG, IREG)
+MINI_OP(OP_RISCV_SLTI, "riscv_slti", IREG, IREG, NONE)
+MINI_OP(OP_RISCV_SLTIU, "riscv_sltiu", IREG, IREG, NONE)
+
+// used for cfg->r4fp == FALSE
+MINI_OP(OP_RISCV_SETFREG_R4,"riscv_setfreg_r4", FREG, FREG, NONE)
+#endif
+
+#if defined(TARGET_RISCV64)
+MINI_OP(OP_RISCV_ADDUW, "riscv_adduw", IREG, IREG, IREG)
+#endif
