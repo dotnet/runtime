@@ -8342,15 +8342,13 @@ HRESULT DacGCBookkeepingEnumerator::Init()
     mem.Size = card_table_info->size;
     mRegions.Add(mem);
     
-    DPTR(size_t) layout = g_gcDacGlobals->card_table_element_layout;
-    size_t card_table_info_size = layout[0];
+    size_t card_table_info_size = g_gcDacGlobals->card_table_info_size;
     TADDR nextStart = card_table_info->next_card_table;
     TADDR next = nextStart;
 
-    _ASSERTE(sizeof(dac_card_table_info) <= card_table_info_size);
-
     // The while loop is effectively "while (next != 0)" but with an added check to make
-    // sure we don't underflow next when subtracting card_table_info_size on a bad pointer.
+    // sure we don't underflow next when subtracting card_table_info_size if we encounter
+    // a bad pointer.
     while (next > card_table_info_size)
     {
         DPTR(dac_card_table_info) ct(next - card_table_info_size);

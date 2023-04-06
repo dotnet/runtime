@@ -8398,7 +8398,6 @@ public:
 
 static_assert(offsetof(dac_card_table_info, size) == offsetof(card_table_info, size), "DAC card_table_info layout mismatch");
 static_assert(offsetof(dac_card_table_info, next_card_table) == offsetof(card_table_info, next_card_table), "DAC card_table_info layout mismatch");
-static_assert(card_table_element == 0, "DAC takes a dependency on card_table_element_layout[0] == sizeof(card_table_info)");
 
 //These are accessors on untranslated cardtable
 inline
@@ -8627,6 +8626,9 @@ void gc_heap::clear_mark_array (uint8_t* from, uint8_t* end)
 inline
 uint32_t*& card_table_next (uint32_t* c_table)
 {
+    // NOTE:  The dac takes a dependency on card_table_info being right before c_table.
+    //        It's 100% ok to change this implementation detail as long as a matching change
+    //        is made to DacGCBookkeepingEnumerator::Init in daccess.cpp.
     return ((card_table_info*)((uint8_t*)c_table - sizeof (card_table_info)))->next_card_table;
 }
 
@@ -49300,6 +49302,8 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->major_version_number = 2;
     gcDacVars->minor_version_number = 0;
     gcDacVars->total_bookkeeping_elements = total_bookkeeping_elements;
+    gcDacVars->card_table_info_size = sizeof(card_table_info);
+
 #ifdef USE_REGIONS
     gcDacVars->minor_version_number |= 1;
     gcDacVars->count_free_region_kinds = count_free_region_kinds;
@@ -49366,5 +49370,4 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #endif // MULTIPLE_HEAPS
     gcDacVars->generation_field_offsets = reinterpret_cast<int**>(&generation_field_offsets);
     gcDacVars->bookkeeping_covered_start = &gc_heap::bookkeeping_covered_start;
-    gcDacVars->card_table_element_layout = reinterpret_cast<size_t**>(&gc_heap::card_table_element_layout);
 }

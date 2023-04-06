@@ -249,6 +249,7 @@ struct GcDacVars {
   size_t total_generation_count;
   int total_bookkeeping_elements;
   int count_free_region_kinds;
+  size_t card_table_info_size;
 #ifdef DACCESS_COMPILE
  #define GC_DAC_VAR(type, name)       DPTR(type) name;
  #define GC_DAC_PTR_VAR(type, name)   DPTR(type*) name;
