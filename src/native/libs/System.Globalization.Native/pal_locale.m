@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "pal_locale_internal.h"
 #include "pal_localeStringData.h"
+#include "pal_localeNumberData.h"
 
 #import <Foundation/Foundation.h>
 #import <Foundation/NSFormatter.h>
@@ -151,6 +152,462 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
 
     return strdup(value);
 }
+
+// invariant character definitions
+#define CHAR_CURRENCY ((char)0x00A4)   // international currency
+#define CHAR_SPACE ((char)0x0020)      // space
+#define CHAR_NBSPACE ((char)0x00A0)    // space
+#define CHAR_DIGIT ((char)0x0023)      // '#'
+#define CHAR_MINUS ((char)0x002D)      // '-'
+#define CHAR_PERCENT ((char)0x0025)    // '%'
+#define CHAR_OPENPAREN ((char)0x0028)  // '('
+#define CHAR_CLOSEPAREN ((char)0x0029) // ')'
+#define CHAR_ZERO ((char)0x0030)       // '0'
+
+/*
+Function:
+NormalizeNumericPattern
+
+Returns a numeric string pattern in a format that we can match against the
+appropriate managed pattern.
+*/
+static char* NormalizeNumericPattern(const char* srcPattern, int isNegative)
+{
+    int iStart = 0;
+    int iEnd = strlen(srcPattern);
+    int32_t iNegativePatternStart = -1;
+
+    for (int i = iStart; i < iEnd; i++)
+    {
+        if (srcPattern[i] == ';')
+        {
+            iNegativePatternStart = i;
+        }
+    }
+
+    if (iNegativePatternStart >= 0)
+    {
+        if (isNegative)
+        {
+            iStart = iNegativePatternStart + 1;
+        }
+        else
+        {
+            iEnd = iNegativePatternStart - 1;
+        }
+    }
+
+    int index = 0;
+    int minusAdded = false;
+    int digitAdded = false;
+    int currencyAdded = false;
+    int spaceAdded = false;
+
+    for (int i = iStart; i <= iEnd; i++)
+    {
+        char ch = srcPattern[i];
+        switch (ch)
+        {
+            case CHAR_MINUS:
+            case CHAR_OPENPAREN:
+            case CHAR_CLOSEPAREN:
+                minusAdded = true;
+                break;
+        }
+    }
+
+    // international currency symbol (CHAR_CURRENCY)
+    // The positive pattern comes first, then an optional negative pattern
+    // separated by a semicolon
+    // A destPattern example: "(C n)" where C represents the currency symbol, and
+    // n is the number
+    char* destPattern;
+
+    // if there is no negative subpattern, prefix the minus sign
+    if (isNegative && !minusAdded)
+    {
+        int length = (iEnd - iStart) + 2;
+        destPattern = (char*)calloc((size_t)length, sizeof(char));
+        if (!destPattern)
+        {
+            return NULL;
+        }
+        destPattern[index++] = '-';
+    }
+    else
+    {
+        int length = (iEnd - iStart) + 1;
+        destPattern = (char*)calloc((size_t)length, sizeof(char));
+        if (!destPattern)
+        {
+            return NULL;
+        }
+    }
+
+    for (int i = iStart; i <= iEnd; i++)
+    {
+        char ch = srcPattern[i];
+        switch (ch)
+        {
+            case CHAR_DIGIT:
+            case CHAR_ZERO:
+                if (!digitAdded)
+                {
+                    digitAdded = true;
+                    destPattern[index++] = 'n';
+                }
+                break;
+
+            case CHAR_CURRENCY:
+                if (!currencyAdded)
+                {
+                    currencyAdded = true;
+                    destPattern[index++] = 'C';
+                }
+                break;
+
+            case CHAR_SPACE:
+            case CHAR_NBSPACE:
+                if (!spaceAdded)
+                {
+                    spaceAdded = true;
+                    destPattern[index++] = ' ';
+                }
+                break;
+
+            case CHAR_MINUS:
+            case CHAR_OPENPAREN:
+            case CHAR_CLOSEPAREN:
+                minusAdded = true;
+                destPattern[index++] = (char)ch;
+                break;
+
+            case CHAR_PERCENT:
+                destPattern[index++] = '%';
+                break;
+        }
+    }
+
+    return destPattern;
+}
+
+/*
+Function:
+GetNumericPattern
+
+Determines the pattern from the decimalFormat and returns the matching pattern's
+index from patterns[].
+Returns index -1 if no pattern is found.
+*/
+static int GetNumericPatternNative(const char* pNumberFormat,
+                                   const char* patterns[],
+                                   int patternsCount,
+                                   int isNegative)
+{
+    const int INVALID_FORMAT = -1;
+    const int MAX_DOTNET_NUMERIC_PATTERN_LENGTH = 6; // example: "(C n)" plus terminator
+    char* normalizedPattern = NormalizeNumericPattern(pNumberFormat, isNegative);
+
+    if (!normalizedPattern)
+    {
+        return U_MEMORY_ALLOCATION_ERROR;
+    }
+
+    size_t normalizedPatternLength = strlen(normalizedPattern);
+
+    assert(normalizedPatternLength > 0);
+    assert(normalizedPatternLength < MAX_DOTNET_NUMERIC_PATTERN_LENGTH);
+
+    if (normalizedPatternLength == 0 || normalizedPatternLength >= MAX_DOTNET_NUMERIC_PATTERN_LENGTH)
+    {
+        free(normalizedPattern);
+        return INVALID_FORMAT;
+    }
+
+    for (int i = 0; i < patternsCount; i++)
+    {
+        if (strcmp(normalizedPattern, patterns[i]) == 0)
+        {
+            free(normalizedPattern);
+            return i;
+        }
+    }
+
+    assert(false); // should have found a valid pattern
+
+    free(normalizedPattern);
+    return INVALID_FORMAT;
+}
+
+int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, LocaleNumberData localeNumberData)
+{
+    bool isSuccess = true;
+    int32_t value;
+    NSString *locName = [NSString stringWithFormat:@"%s", localeName];
+    NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
+
+    switch (localeNumberData)
+    {
+        case LocaleNumber_MeasurementSystem:
+        {
+            const char *measurementSystem = [[currentLocale objectForKey:NSLocaleMeasurementSystem] UTF8String];
+            NSLocale *usLocale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US"];
+            const char *us_measurementSystem = [[usLocale objectForKey:NSLocaleMeasurementSystem] UTF8String];
+            value = (measurementSystem == us_measurementSystem) ? 1 : 0;        
+            break;
+        }
+        case LocaleNumber_FractionalDigitsCount:
+        {
+            NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
+            numberFormatter.locale = currentLocale;
+            numberFormatter.numberStyle = NSNumberFormatterDecimalStyle;
+            value = (int32_t)numberFormatter.maximumFractionDigits;
+            break;
+        }
+        case LocaleNumber_NegativeNumberFormat:
+        {
+            NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
+            numberFormatter.locale = currentLocale;
+            numberFormatter.numberStyle = NSNumberFormatterDecimalStyle;
+            static const char* Patterns[] = {"(n)", "-n", "- n", "n-", "n -"};
+            const char *pFormat = [[numberFormatter negativeFormat] UTF8String];
+            value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), true);
+            if (value >= 0)
+            {
+                return value;
+            }
+            else
+            {
+                isSuccess = false;
+            }
+            break;
+        }
+        case LocaleNumber_MonetaryFractionalDigitsCount:
+        {
+            NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
+            numberFormatter.locale = currentLocale;
+            numberFormatter.numberStyle = NSNumberFormatterCurrencyStyle;
+            value = (int32_t)numberFormatter.maximumFractionDigits;
+            break;
+        }        
+        case LocaleNumber_PositiveMonetaryNumberFormat:
+        {
+            NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
+            numberFormatter.locale = currentLocale;
+            numberFormatter.numberStyle = NSNumberFormatterCurrencyStyle;
+            static const char* Patterns[] = {"Cn", "nC", "C n", "n C"};
+            const char *pFormat = [[numberFormatter positiveFormat] UTF8String];
+            value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), false);
+            if (value >= 0)
+            {
+                return value;
+            }
+            else
+            {
+                isSuccess = false;
+            }
+            break;
+        }
+        case LocaleNumber_NegativeMonetaryNumberFormat:
+        {
+            NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
+            numberFormatter.locale = currentLocale;
+            numberFormatter.numberStyle = NSNumberFormatterCurrencyStyle;
+            static const char* Patterns[] = {"(Cn)",
+                                             "-Cn",
+                                             "C-n",
+                                             "Cn-",
+                                             "(nC)",
+                                             "-nC",
+                                             "n-C",
+                                             "nC-",
+                                             "-n C",
+                                             "-C n",
+                                             "n C-",
+                                             "C n-",
+                                             "C -n",
+                                             "n- C",
+                                             "(C n)",
+                                             "(n C)",
+                                             "C- n" };
+            const char *pFormat = [[numberFormatter negativeFormat] UTF8String];
+            value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), true);
+            if (value >= 0)
+            {
+                return value;
+            }
+            else
+            {
+                isSuccess = false;
+            }
+            break;
+        }
+        case LocaleNumber_FirstWeekOfYear:
+        {
+            NSCalendar *calendar = [currentLocale objectForKey:NSLocaleCalendar];
+            int minDaysInWeek = (int32_t)[calendar minimumDaysInFirstWeek];
+            if (minDaysInWeek == 1)
+            {
+                value = WeekRule_FirstDay;
+            }
+            else if (minDaysInWeek == 7)
+            {
+                value = WeekRule_FirstFullWeek;
+            }
+            else if (minDaysInWeek >= 4)
+            {
+                value = WeekRule_FirstFourDayWeek;
+            }
+            else
+            {
+                isSuccess = false;
+            }
+            break;
+        }        
+        case LocaleNumber_ReadingLayout:
+        {
+            NSLocaleLanguageDirection langDir = [NSLocale characterDirectionForLanguage:[[NSLocale currentLocale] objectForKey:NSLocaleLanguageCode]];
+            //  0 - Left to right (such as en-US)
+            //  1 - Right to left (such as arabic locales)
+            value = NSLocaleLanguageDirectionRightToLeft == langDir ? 1 : 0;
+            break;
+        }
+        case LocaleNumber_FirstDayofWeek:
+        {
+            NSCalendar *calendar = [currentLocale objectForKey:NSLocaleCalendar];
+            value = (int32_t)[calendar firstWeekday];
+            break;
+        }       
+        case LocaleNumber_NegativePercentFormat:
+        {
+            NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
+            numberFormatter.locale = currentLocale;
+            numberFormatter.numberStyle = NSNumberFormatterPercentStyle;
+            static const char* Patterns[] = {"-n %", "-n%", "-%n", "%-n", "%n-", "n-%", "n%-", "-% n", "n %-", "% n-", "% -n", "n- %"};
+            const char *pFormat = [[numberFormatter negativeFormat] UTF8String];
+            value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), true);
+            if (value >= 0)
+            {
+                return value;
+            }
+            else
+            {
+                isSuccess = false;
+            }
+            break;
+        }
+        case LocaleNumber_PositivePercentFormat:
+        {
+            NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
+            numberFormatter.locale = currentLocale;
+            numberFormatter.numberStyle = NSNumberFormatterPercentStyle;
+            static const char* Patterns[] = {"n %", "n%", "%n", "% n"};
+            const char *pFormat = [[numberFormatter positiveFormat] UTF8String];
+            value = GetNumericPatternNative(pFormat, Patterns, sizeof(Patterns)/sizeof(Patterns[0]), false);
+            if (value >= 0)
+            {
+                return value;
+            }
+            else
+            {
+                isSuccess = false;
+            }
+            break;
+        }
+        default:
+            assert(isSuccess,"GlobalizationNative_GetLocaleInfoIntNative Failed.");
+            break;
+    }
+
+    return value;
+}
+
+/*
+PAL Function:
+GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative
+
+Returns primary grouping size for decimal and currency
+*/
+int32_t GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative(const char* localeName, LocaleNumberData localeGroupingData)
+{
+    bool isSuccess = true;
+    NSString *locName = [NSString stringWithFormat:@"%s", localeName];
+    NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
+    NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
+    numberFormatter.locale = currentLocale;    
+
+    switch (localeGroupingData)
+    {
+        case LocaleNumber_Digit:
+            numberFormatter.numberStyle = NSNumberFormatterDecimalStyle;
+            break;
+        case LocaleNumber_Monetary:
+            numberFormatter.numberStyle = NSNumberFormatterCurrencyStyle;
+            break;
+        default:
+            isSuccess = false;
+            assert(isSuccess,"GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative Failed.");
+            break;
+    }
+
+    return [numberFormatter groupingSize];  
+}
+
+/*
+PAL Function:
+GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative
+
+Returns secondary grouping size for decimal and currency
+*/
+int32_t GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative(const char* localeName, LocaleNumberData localeGroupingData)
+{   
+    NSString *locName = [NSString stringWithFormat:@"%s", localeName];
+    NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
+    NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
+    numberFormatter.locale = currentLocale;    
+
+    switch (localeGroupingData)
+    {
+        case LocaleNumber_Digit:
+            numberFormatter.numberStyle = NSNumberFormatterDecimalStyle;
+            break;
+        case LocaleNumber_Monetary:
+            numberFormatter.numberStyle = NSNumberFormatterCurrencyStyle;
+            break;
+        default:
+            isSuccess = false;
+            assert(isSuccess,"GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative Failed");
+            break;
+    }
+
+    return [numberFormatter secondaryGroupingSize];
+}
+
+/*
+PAL Function:
+GlobalizationNative_GetLocaleTimeFormatNative
+
+Returns time format information (in native format, it needs to be converted to .NET's format).
+*/
+const char* GlobalizationNative_GetLocaleTimeFormatNative(const char* localeName, int shortFormat)
+{
+    NSString *locName = [NSString stringWithFormat:@"%s", localeName];
+    NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
+    NSDateFormatter* dateFormatter = [[NSDateFormatter alloc] init];
+    [dateFormatter setLocale:currentLocale];
+
+    if (shortFormat != 0)
+    {
+        [dateFormatter setTimeStyle:NSDateFormatterShortStyle];
+    }
+    else
+    {
+        [dateFormatter setTimeStyle:NSDateFormatterMediumStyle];
+    }
+
+    return strdup([[dateFormatter dateFormat] UTF8String]);
+}
+
 #endif
 
 #if defined(TARGET_MACCATALYST) || defined(TARGET_IOS) || defined(TARGET_TVOS)

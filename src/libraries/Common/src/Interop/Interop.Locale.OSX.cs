@@ -12,5 +12,17 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleInfoStringNative", StringMarshalling = StringMarshalling.Utf8)]
         internal static unsafe partial string GetLocaleInfoStringNative(string localeName, uint localeStringData);
+
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleInfoIntNative", StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial int GetLocaleInfoIntNative(string localeName, uint localeNumberData);
+
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative", StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial int GetLocaleInfoPrimaryGroupingSizeNative(string localeName, uint localeGroupingData);
+
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative", StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial int GetLocaleInfoSecondaryGroupingSizeNative(string localeName, uint localeGroupingData);
+
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetLocaleTimeFormatNative", StringMarshalling = StringMarshalling.Utf16)]
+        internal static unsafe partial string GetLocaleTimeFormatNative(string localeName, [MarshalAs(UnmanagedType.Bool)] bool shortFormat);
     }
 }
