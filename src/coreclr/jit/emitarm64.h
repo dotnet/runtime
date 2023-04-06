@@ -162,7 +162,8 @@ inline bool OptimizeLdrStr(instruction ins,
 
     // If the previous instruction was a matching load/store, then try to replace it instead of emitting.
     // Don't do this if either instruction had a local variable.
-    if ((emitLastIns->idIns() == ins) && ((ins == INS_ldr) || (!localVar && !emitLastIns->idIsLclVar())) && ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt))
+    if ((emitLastIns->idIns() == ins) && ((ins == INS_ldr) || (!localVar && !emitLastIns->idIsLclVar())) &&
+        ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt))
     {
         return true;
     }
