@@ -45,7 +45,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new CultureInfo(name).TwoLetterISOLanguageName);
         }
 
-        /*public static IEnumerable<object[]> FirstDayOfWeek_Get_TestData()
+        public static IEnumerable<object[]> FirstDayOfWeek_Get_TestData()
         {
             yield return new object[] { DateTimeFormatInfo.InvariantInfo, DayOfWeek.Sunday };
             yield return new object[] { new CultureInfo("en-US", false).DateTimeFormat, DayOfWeek.Sunday };
@@ -57,21 +57,6 @@ namespace System.Globalization.Tests
         public void FirstDayOfWeek(DateTimeFormatInfo format, DayOfWeek expected)
         {
             Assert.Equal(expected, format.FirstDayOfWeek);
-        }*/
-
-        [Theory]
-        [InlineData(DayOfWeek.Sunday)]
-        [InlineData(DayOfWeek.Monday)]
-        [InlineData(DayOfWeek.Tuesday)]
-        [InlineData(DayOfWeek.Wednesday)]
-        [InlineData(DayOfWeek.Thursday)]
-        [InlineData(DayOfWeek.Friday)]
-        [InlineData(DayOfWeek.Saturday)]
-        public void FirstDayOfWeek_Set_GetReturnsExpected(DayOfWeek value)
-        {
-            var format = new DateTimeFormatInfo();
-            format.FirstDayOfWeek = value;
-            Assert.Equal(value, format.FirstDayOfWeek);
         }
 
         public static IEnumerable<object[]> CurrencyNegativePatternTestLocales()
@@ -87,15 +72,7 @@ namespace System.Globalization.Tests
         [MemberData(nameof(CurrencyNegativePatternTestLocales))]
         public void CurrencyNegativePattern_Get_ReturnsExpected_ByLocale(string locale)
         {
-            CultureInfo culture;
-            try
-            {
-                culture = CultureInfo.GetCultureInfo(locale);
-            }
-            catch (CultureNotFoundException)
-            {
-                return; // ignore unsupported culture
-            }
+            CultureInfo culture = new CultureInfo(locale);
 
             NumberFormatInfo format = culture.NumberFormat;
             Assert.Contains(format.CurrencyNegativePattern, GetCurrencyNegativePatterns(locale));
@@ -125,7 +102,6 @@ namespace System.Globalization.Tests
             }
             
             return new int[] { 0 };
-            //throw DateTimeFormatInfoData.GetCultureNotSupportedException(CultureInfo.GetCultureInfo(localeName));
         }
     }
 }

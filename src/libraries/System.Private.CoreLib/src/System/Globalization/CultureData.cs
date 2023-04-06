@@ -2356,7 +2356,7 @@ namespace System.Globalization
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return null!;
-            // TODO hybrid mode implement groupingdata
+
 #if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
             return GlobalizationMode.Hybrid ? GetLocaleInfoNative(type) : IcuGetLocaleInfo(type);
 #else

@@ -35,10 +35,10 @@ char* DetectDefaultAppleLocaleName()
 
 const char* GlobalizationNative_GetLocaleNameNative(const char* localeName)
 {
-     NSString *locName = [NSString stringWithFormat:@"%s", localeName];
-     NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
-     const char* value = [currentLocale.localeIdentifier UTF8String];
-     return strdup(value);
+    NSString *locName = [NSString stringWithFormat:@"%s", localeName];
+    NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
+    const char* value = [currentLocale.localeIdentifier UTF8String];
+    return strdup(value);
 }
 
 const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData)
@@ -51,7 +51,6 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
     NSDateFormatter* dateFormatter = [[NSDateFormatter alloc] init];
     [dateFormatter setLocale:currentLocale];
     NSLocale *gbLocale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_GB"];
-
 
     switch (localeStringData)
     {
@@ -149,7 +148,6 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
             value = "";
             break;
     }
-
     return strdup(value);
 }
 
@@ -475,7 +473,7 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
         case LocaleNumber_FirstDayofWeek:
         {
             NSCalendar *calendar = [currentLocale objectForKey:NSLocaleCalendar];
-            value = (int32_t)[calendar firstWeekday];
+            value = [calendar firstWeekday] - 1; // .NET is 0-based and in Apple is 1-based;
             break;
         }       
         case LocaleNumber_NegativePercentFormat:
@@ -515,7 +513,7 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
             break;
         }
         default:
-            assert(isSuccess,"GlobalizationNative_GetLocaleInfoIntNative Failed.");
+            assert(isSuccess);
             break;
     }
 
@@ -546,11 +544,10 @@ int32_t GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative(const char* l
             break;
         default:
             isSuccess = false;
-            assert(isSuccess,"GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative Failed.");
+            assert(isSuccess);
             break;
     }
-
-    return [numberFormatter groupingSize];  
+    return [numberFormatter groupingSize];    
 }
 
 /*
@@ -560,7 +557,8 @@ GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative
 Returns secondary grouping size for decimal and currency
 */
 int32_t GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative(const char* localeName, LocaleNumberData localeGroupingData)
-{   
+{
+    bool isSuccess = true;
     NSString *locName = [NSString stringWithFormat:@"%s", localeName];
     NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
     NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];            
@@ -576,7 +574,7 @@ int32_t GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative(const char*
             break;
         default:
             isSuccess = false;
-            assert(isSuccess,"GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative Failed");
+            assert(isSuccess);
             break;
     }
 

@@ -7,7 +7,12 @@ namespace System.Globalization
 {
     internal sealed partial class CultureData
     {
-        private bool InitCultureDataCore() => InitIcuCultureDataCore();
+        private bool InitCultureDataCore() =>
+#if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
+        InitNativeCultureDataCore();
+#else
+        InitIcuCultureDataCore();
+#endif
 
         // Unix doesn't support user overrides
         partial void InitUserOverride(bool useUserOverride);

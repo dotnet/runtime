@@ -18,6 +18,8 @@ namespace System.Globalization
             string realNameBuffer = _sRealName;
 
             _sWindowsName = GetLocaleNameNative(realNameBuffer);
+            _sName = _sWindowsName;
+            _sRealName = _sName;
             return true;
         }
 
@@ -53,7 +55,6 @@ namespace System.Globalization
                     // returning 0 will cause the first supported calendar to be returned, which is the preferred calendar
                     return 0;
             }
-
 
             return Interop.Globalization.GetLocaleInfoIntNative(_sWindowsName, (uint)type);
         }
