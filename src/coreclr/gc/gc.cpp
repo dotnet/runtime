@@ -49363,4 +49363,8 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->generation_field_offsets = reinterpret_cast<int**>(&generation_field_offsets);
     gcDacVars->bookkeeping_covered_start = &gc_heap::bookkeeping_covered_start;
     gcDacVars->card_table_element_layout = reinterpret_cast<size_t**>(&gc_heap::card_table_element_layout);
+
+    // Dac takes a dependency on card_table_element_layout[0] being the size of card_table_info for walking
+    // backwards from card_table_info::next_card_table to the beginning of the next card_table_info.
+    assert(gc_heap::card_table_element_layout[0] == sizeof(card_table_info));
 }
