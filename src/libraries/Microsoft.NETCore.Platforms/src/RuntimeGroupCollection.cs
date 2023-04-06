@@ -34,7 +34,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
         /// <param name="parent"></param>
         public void AddRuntimeIdentifier(string runtimeIdentifier, string parent)
         {
-            RID rid = RID.Parse(runtimeIdentifier);
+            RID rid = RID.Parse(runtimeIdentifier, noQualifier: true);
 
             AddRuntimeIdentifier(rid, parent);
         }
