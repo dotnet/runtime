@@ -846,7 +846,11 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
         if ((strip(corInfoType) == CORINFO_TYPE_VALUECLASS) && (argSize <= MAX_PASS_MULTIREG_BYTES))
         {
+#if defined(TARGET_LOONGARCH64)
             floatFlags = info.compCompHnd->getLoongArch64PassStructInRegisterFlags(typeHnd);
+#else
+            floatFlags = info.compCompHnd->getRISCV64PassStructInRegisterFlags(typeHnd);
+#endif
         }
 
         if ((floatFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) != 0)

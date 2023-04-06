@@ -24091,7 +24091,11 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
 
+#ifdef TARGET_LOONGARCH64
             uint32_t floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(retClsHnd);
+#else
+            uint32_t floatFieldFlags = comp->info.compCompHnd->getRISCV64PassStructInRegisterFlags(retClsHnd);
+#endif
             BYTE     gcPtrs[2]       = {TYPE_GC_NONE, TYPE_GC_NONE};
             comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
 

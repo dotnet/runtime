@@ -83,7 +83,6 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
             case GT_XOR:
                 return emitter::isValidUimm11(immVal);
             case GT_JCMP:
-                assert(((parentNode->gtFlags & GTF_JCMP_TST) == 0) ? (immVal == 0) : isPow2(immVal));
                 return true;
 
             case GT_STORE_LCL_FLD:

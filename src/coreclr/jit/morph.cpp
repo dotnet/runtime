@@ -2442,7 +2442,11 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             {
                 assert((howToPassStruct == Compiler::SPK_ByValue) || (howToPassStruct == Compiler::SPK_PrimitiveType));
 
+#if defined(TARGET_LOONGARCH64)
                 floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(argSigClass);
+#else
+                floatFieldFlags = comp->info.compCompHnd->getRISCV64PassStructInRegisterFlags(argSigClass);
+#endif
 
                 passUsingFloatRegs = (floatFieldFlags & STRUCT_HAS_FLOAT_FIELDS_MASK) ? true : false;
                 comp->compFloatingPointUsed |= passUsingFloatRegs;
