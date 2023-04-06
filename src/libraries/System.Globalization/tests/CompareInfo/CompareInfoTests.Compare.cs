@@ -15,12 +15,12 @@ namespace System.Globalization.Tests
         private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
         private static CompareInfo s_japaneseCompare = new CultureInfo("ja-JP").CompareInfo;
         private static CompareOptions supportedIgnoreNonSpaceOption =
-            PlatformDetection.IsHybridGlobalization ?
+            PlatformDetection.IsHybridGlobalizationOnWasm ?
             CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType :
             CompareOptions.IgnoreNonSpace;
 
         private static CompareOptions supportedIgnoreCaseIgnoreNonSpaceOptions =
-            PlatformDetection.IsHybridGlobalization ?
+            PlatformDetection.IsHybridGlobalizationOnWasm ?
             CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType :
             CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace;
 
@@ -38,7 +38,7 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> Compare_Kana_TestData()
         {
             // HybridGlobalization does not support IgnoreWidth
-            if (!PlatformDetection.IsHybridGlobalization)
+            if (!PlatformDetection.IsHybridGlobalizationOnWasm)
             {
                 CompareOptions ignoreKanaIgnoreWidthIgnoreCase = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;                
                 yield return new object[] { s_invariantCompare, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", ignoreKanaIgnoreWidthIgnoreCase, 0 };
@@ -65,8 +65,8 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> Compare_TestData()
         {
-            // PlatformDetection.IsHybridGlobalization does not support IgnoreWidth
-            CompareOptions ignoredOptions = PlatformDetection.IsHybridGlobalization ?
+            // PlatformDetection.IsHybridGlobalizationOnWasm does not support IgnoreWidth
+            CompareOptions ignoredOptions = PlatformDetection.IsHybridGlobalizationOnWasm ?
                 CompareOptions.IgnoreKanaType | CompareOptions.IgnoreCase :
                 CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
             
@@ -243,12 +243,12 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "foobar", "FooB\u00C0R", supportedIgnoreNonSpaceOption, -1 };
 
             yield return new object[] { s_invariantCompare, "\uFF9E", "\u3099", supportedIgnoreNonSpaceOption, 0 };
-            yield return new object[] { s_invariantCompare, "\uFF9E", "\u3099", CompareOptions.IgnoreCase, PlatformDetection.IsHybridGlobalization ? 1 : 0 };
+            yield return new object[] { s_invariantCompare, "\uFF9E", "\u3099", CompareOptions.IgnoreCase, PlatformDetection.IsHybridGlobalizationOnWasm ? 1 : 0 };
             yield return new object[] { s_invariantCompare, "\u20A9", "\uFFE6", CompareOptions.IgnoreCase, -1 };
             yield return new object[] { s_invariantCompare, "\u20A9", "\uFFE6", CompareOptions.None, -1 };
             yield return new object[] { s_invariantCompare, "\u0021", "\uFF01", CompareOptions.IgnoreSymbols, 0 };
             // some symbols e.g. currencies are not ignored correctly in HybridGlobalization
-            if (!PlatformDetection.IsHybridGlobalization)
+            if (!PlatformDetection.IsHybridGlobalizationOnWasm)
             {
                 yield return new object[] { s_invariantCompare, "\u00A2", "\uFFE0", CompareOptions.IgnoreSymbols, 0 };
                 yield return new object[] { s_invariantCompare, "$", "&", CompareOptions.IgnoreSymbols, 0 };
@@ -256,7 +256,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\uFF65", "\u30FB", CompareOptions.IgnoreSymbols, 0 };
             yield return new object[] { s_invariantCompare, "\u0021", "\uFF01", CompareOptions.None, -1 };
 
-            if (!PlatformDetection.IsHybridGlobalization)
+            if (!PlatformDetection.IsHybridGlobalizationOnWasm)
             {
                 yield return new object[] { s_invariantCompare, "\u20A9", "\uFFE6", CompareOptions.IgnoreWidth, 0 };
                 yield return new object[] { s_invariantCompare, "\u0021", "\uFF01", CompareOptions.IgnoreWidth, 0 };
@@ -265,13 +265,13 @@ namespace System.Globalization.Tests
 
             yield return new object[] { s_invariantCompare, "\uFF66", "\u30F2", CompareOptions.IgnoreSymbols, s_expectedHalfToFullFormsComparison };
             yield return new object[] { s_invariantCompare, "\uFF66", "\u30F2", CompareOptions.IgnoreCase, s_expectedHalfToFullFormsComparison };
-            // in HybridGlobalization IgnoreNonSpace is not supported and comparison of katakana/hiragana equivalents with supportedIgnoreNonSpaceOption gives 0
-            if (!PlatformDetection.IsHybridGlobalization)
+            // in HybridGlobalization on WASM IgnoreNonSpace is not supported and comparison of katakana/hiragana equivalents with supportedIgnoreNonSpaceOption gives 0
+            if (!PlatformDetection.IsHybridGlobalizationOnWasm)
                 yield return new object[] { s_invariantCompare, "\uFF66", "\u30F2", CompareOptions.IgnoreNonSpace, s_expectedHalfToFullFormsComparison };
             yield return new object[] { s_invariantCompare, "\uFF66", "\u30F2", CompareOptions.None, s_expectedHalfToFullFormsComparison };
 
-            // in HybridGlobalization IgnoreKanaType is supported only for "ja"
-            var kanaComparison = PlatformDetection.IsHybridGlobalization ? s_japaneseCompare : s_invariantCompare;
+            // in HybridGlobalization on WASM IgnoreKanaType is supported only for "ja"
+            var kanaComparison = PlatformDetection.IsHybridGlobalizationOnWasm ? s_japaneseCompare : s_invariantCompare;
             yield return new object[] { kanaComparison, "\u3060", "\u30C0", CompareOptions.IgnoreKanaType, 0 };
             yield return new object[] { kanaComparison, "c", "C", CompareOptions.IgnoreKanaType, -1 };
             yield return new object[] { s_invariantCompare, "\u3060", "\u30C0", CompareOptions.IgnoreCase, s_expectedHiraganaToKatakanaCompare };
@@ -296,7 +296,7 @@ namespace System.Globalization.Tests
             // Misc differences between platforms
             bool useNls = PlatformDetection.IsNlsGlobalization;
 
-            var supportedCmpOptions = PlatformDetection.IsHybridGlobalization ?
+            var supportedCmpOptions = PlatformDetection.IsHybridGlobalizationOnWasm ?
                 CompareOptions.IgnoreKanaType | CompareOptions.IgnoreCase :
                 CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
 
@@ -538,15 +538,15 @@ namespace System.Globalization.Tests
 
             // Edge case of the Ignore Width.
             Assert.False(string.Compare("\u3162\u3163", "\uFFDB\uFFDC", CultureInfo.InvariantCulture, CompareOptions.None) == 0, $"Expect '0x3162 0x3163' != '0xFFDB 0xFFDC'");
-            if (!PlatformDetection.IsHybridGlobalization)
+            if (!PlatformDetection.IsHybridGlobalizationOnWasm)
                 Assert.True(string.Compare("\u3162\u3163", "\uFFDB\uFFDC", CultureInfo.InvariantCulture, CompareOptions.IgnoreWidth) == 0, "Expect '0x3162 0x3163' == '0xFFDB 0xFFDC'");
 
             const char hiraganaStart = '\u3041';
             const char hiraganaEnd = '\u3096';
             const int hiraganaToKatakanaOffset = 0x30a1 - 0x3041;
 
-            // in HybridGlobalization, IgnoreKanaType is supported only for "ja-JP"
-            CultureInfo ignoreKanaTypeTestedCulture = PlatformDetection.IsHybridGlobalization ? new CultureInfo("ja-JP") : CultureInfo.InvariantCulture;
+            // in HybridGlobalization on WASM IgnoreKanaType is supported only for "ja-JP"
+            CultureInfo ignoreKanaTypeTestedCulture = PlatformDetection.IsHybridGlobalizationOnWasm ? new CultureInfo("ja-JP") : CultureInfo.InvariantCulture;
 
             for (Char hiraganaChar = hiraganaStart; hiraganaChar <= hiraganaEnd; hiraganaChar++)
             {
@@ -559,7 +559,7 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> Compare_HiraganaAndKatakana_TestData()
         {
-            CompareOptions[] optionsPositive = PlatformDetection.IsHybridGlobalization ?
+            CompareOptions[] optionsPositive = PlatformDetection.IsHybridGlobalizationOnWasm ?
                 new[] {
                     CompareOptions.None,
                     CompareOptions.IgnoreCase,
@@ -594,7 +594,7 @@ namespace System.Globalization.Tests
                     CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreNonSpace,
                     CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace,
                 };
-            CompareOptions[] optionsNegative = PlatformDetection.IsHybridGlobalization ?
+            CompareOptions[] optionsNegative = PlatformDetection.IsHybridGlobalizationOnWasm ?
             new[] {
                     CompareOptions.IgnoreNonSpace,
                     CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreCase,
