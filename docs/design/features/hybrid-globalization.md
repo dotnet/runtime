@@ -29,7 +29,7 @@ Affected public APIs:
 The number of `CompareOptions` and `StringComparison` combinations is limited. Originally supported combinations can be found [here for CompareOptions](https://learn.microsoft.com/dotnet/api/system.globalization.compareoptions) and [here for StringComparison](https://learn.microsoft.com/dotnet/api/system.stringcomparison).
 
 - `IgnoreWidth` is not supported because there is no equivalent in Web API. Throws `PlatformNotSupportedException`.
-```
+``` JS
 let high = String.fromCharCode(65281)                                       // %uff83 = ﾃ
 let low = String.fromCharCode(12486)                                        // %u30c6 = テ
 high.localeCompare(low, "ja-JP", { sensitivity: "case" })                   // -1 ; case: a ≠ b, a = á, a ≠ A; expected: 0
@@ -45,7 +45,7 @@ For comparison where "accent" sensitivity is used, ignoring some type of charact
 
 It is always switched on for comparison with locale "ja-JP", even if this comparison option was not set explicitly.
 
- ```
+``` JS
 let hiragana = String.fromCharCode(12353)             // %u3041 = ぁ
 let katakana = String.fromCharCode(12449)             // %u30A1 = ァ
 let enCmp = hiragana.localeCompare(katakana, "en-US") // -1
@@ -62,7 +62,7 @@ No equivalent in Web API for "ja-JP" locale. See previous point about `IgnoreKan
 
 For `IgnoreCase | IgnoreKanaType`, argument `sensitivity: "accent"` is used.
 
-```
+``` JS
 let hiraganaBig = `${String.fromCharCode(12353)} A`                          // %u3041 = ぁ
 let katakanaSmall = `${String.fromCharCode(12449)} a`                        // %u30A1 = ァ
 hiraganaBig.localeCompare(katakanaSmall, "en-US", { sensitivity: "accent" }) // 0;  accent: a ≠ b, a ≠ á, a = A
@@ -79,7 +79,7 @@ Known exceptions:
 
 For `IgnoreCase` alone, a comparison with default option: `sensitivity: "variant"` is used after string case unification.
 
-```
+``` JS
 let hiraganaBig = `${String.fromCharCode(12353)} A`                          // %u3041 = ぁ
 let katakanaSmall = `${String.fromCharCode(12449)} a`                        // %u30A1 = ァ
 let unchangedLocale = "en-US"
@@ -102,7 +102,7 @@ From this reason, comparison with locale `ja-JP` `CompareOption` `IgnoreCase` an
 
 `IgnoreNonSpace` cannot be used separately without `IgnoreKanaType`. Argument `sensitivity: "case"` is used for comparison and it ignores both types of characters. Option `IgnoreNonSpace` alone throws `PlatformNotSupportedException`.
 
-```
+``` JS
 let hiraganaAccent = `${String.fromCharCode(12353)} á`                           // %u3041 = ぁ
 let katakanaNoAccent = `${String.fromCharCode(12449)} a`                         // %u30A1 = ァ
 hiraganaAccent.localeCompare(katakanaNoAccent, "en-US", { sensitivity: "case" }) // 0; case:  a ≠ b, a = á, a ≠ A
@@ -111,7 +111,7 @@ hiraganaAccent.localeCompare(katakanaNoAccent, "en-US", { sensitivity: "case" })
 - `IgnoreNonSpace | IgnoreCase`
 Combination of `IgnoreNonSpace` and `IgnoreCase` cannot be used without `IgnoreKanaType`. Argument `sensitivity: "base"` is used for comparison and it ignores three types of characters. Combination `IgnoreNonSpace | IgnoreCase` alone throws `PlatformNotSupportedException`.
 
-```
+``` JS
 let hiraganaBigAccent = `${String.fromCharCode(12353)} A á`                              // %u3041 = ぁ
 let katakanaSmallNoAccent = `${String.fromCharCode(12449)} a a`                          // %u30A1 = ァ
 hiraganaBigAccent.localeCompare(katakanaSmallNoAccent, "en-US", { sensitivity: "base" }) // 0; base: a ≠ b, a = á, a = A
@@ -121,7 +121,7 @@ hiraganaBigAccent.localeCompare(katakanaSmallNoAccent, "en-US", { sensitivity: "
 
 The subset of ignored symbols is limited to the symbols ignored by `string1.localeCompare(string2, locale, { ignorePunctuation: true })`. E.g. currency symbols, & are not ignored
 
-```
+``` JS
 let hiraganaAccent = `${String.fromCharCode(12353)} á`                     // %u3041 = ぁ
 let katakanaNoAccent = `${String.fromCharCode(12449)} a`                   // %u30A1 = ァ
 hiraganaBig.localeCompare(katakanaSmall, "en-US", { sensitivity: "base" }) // 0; base: a ≠ b, a = á, a = A
