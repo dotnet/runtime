@@ -339,7 +339,6 @@ export function generateWasmBody (
                     isConditionallyExecuted = true;
                 break;
 
-            case MintOpcode.MINT_LEAVE_S:
             case MintOpcode.MINT_BR_S:
             case MintOpcode.MINT_CALL_HANDLER:
             case MintOpcode.MINT_CALL_HANDLER_S:
@@ -2463,8 +2462,6 @@ function emit_branch (
     //  the current branch block and execution proceeds forward to find the
     //  branch target (if possible), bailing out at the end otherwise
     switch (opcode) {
-        case MintOpcode.MINT_LEAVE:
-        case MintOpcode.MINT_LEAVE_S:
         case MintOpcode.MINT_CALL_HANDLER:
         case MintOpcode.MINT_CALL_HANDLER_S:
         case MintOpcode.MINT_BR:
@@ -2472,7 +2469,6 @@ function emit_branch (
             const isCallHandler = (opcode === MintOpcode.MINT_CALL_HANDLER) ||
                 (opcode === MintOpcode.MINT_CALL_HANDLER_S);
             displacement = (
-                (opcode === MintOpcode.MINT_LEAVE) ||
                 (opcode === MintOpcode.MINT_BR) ||
                 (opcode === MintOpcode.MINT_CALL_HANDLER)
             )
