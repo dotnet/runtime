@@ -723,8 +723,6 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             break;
 
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
-            FALLTHROUGH;
-
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
             bNeedClassID = false;
             FALLTHROUGH;
@@ -4235,17 +4233,13 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
             for (GenTree* const tree : stmt->TreeList())
             {
-                if (!tree->IsCall())
+                if (!tree->IsHelperCall())
                 {
                     continue;
                 }
 
                 GenTreeCall* call = tree->AsCall();
 
-                if (!call->IsHelperCall())
-                {
-                    continue;
-                }
                 CorInfoHelpFunc func = eeGetHelperNum(call->gtCallMethHnd);
                 if (func != CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
                 {
@@ -4439,15 +4433,9 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
                 // Inherit the weights
                 block->inheritWeight(prevBb);
-
-                // 99% chance we pass maxThreadStaticBlocks check
-                maxThreadStaticBlocksCondBB->inheritWeightPercentage(prevBb, 99);
-
-                // 98% (0.99 * 0.99) chance we pass threadStatic block null check
-                threadStaticBlockNullCondBB->inheritWeightPercentage(maxThreadStaticBlocksCondBB, 98);
-
-                // 97% (0.99 * 0.99 * 0.99) chance we get to fast path
-                fastPathBb->inheritWeightPercentage(threadStaticBlockNullCondBB, 97);
+                maxThreadStaticBlocksCondBB->inheritWeight(prevBb);
+                threadStaticBlockNullCondBB->inheritWeight(prevBb);
+                fastPathBb->inheritWeight(prevBb);
 
                 // fallback will just execute first time
                 fallbackBb->bbSetRunRarely();
