@@ -1992,11 +1992,8 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     {
         if (varTypeIsFloating(targetType))
         {
-            regNumber tmpReg = REG_SCRATCH_FLT;
-            assert(tmpReg != operandReg);
-            GetEmitter()->emitIns_R_R(targetType == TYP_DOUBLE ? INS_fcvt_d_l : INS_fcvt_s_l, attr, tmpReg, REG_R0);
-            GetEmitter()->emitIns_R_R_R(targetType == TYP_DOUBLE ? INS_fsub_d : INS_fsub_s, attr, targetReg, tmpReg,
-                                        operandReg);
+            GetEmitter()->emitIns_R_R_R(targetType == TYP_DOUBLE ? INS_fsgnjn_d : INS_fsgnjn_s, attr, targetReg,
+                                        operandReg, operandReg);
         }
         else
         {
