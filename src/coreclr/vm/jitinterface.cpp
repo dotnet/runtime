@@ -9439,9 +9439,28 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
 
 #if defined(TARGET_LOONGARCH64)
     size = (uint32_t)MethodTable::GetLoongArch64PassStructInRegisterFlags(cls);
-#elif defined(TARGET_RISCV64)
-    size = (uint32_t)MethodTable::GetRiscv64PassStructInRegisterFlags(cls);
 #endif
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return size;
+}
+
+uint32_t CEEInfo::getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cls)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    uint32_t size = STRUCT_NO_FLOAT_FIELD;
+
+#if defined(TARGET_RISCV64)
+    size = (uint32_t)MethodTable::GetRiscv64PassStructInRegisterFlags(cls);
+#endif // TARGET_RISCV64
 
     EE_TO_JIT_TRANSITION_LEAF();
 
