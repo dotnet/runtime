@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Hosting
 {
     public class WindowsServiceLifetimeTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [ConditionalFact(typeof(AdminHelpers), nameof(AdminHelpers.IsProcessElevated))]
         public void ServiceStops()
         {
             using var serviceTester = WindowsServiceTester.Create(async () =>
@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Hosting
             Assert.Equal(0, status.win32ExitCode);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [ConditionalFact(typeof(AdminHelpers), nameof(AdminHelpers.IsProcessElevated))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework is missing the fix from https://github.com/dotnet/corefx/commit/3e68d791066ad0fdc6e0b81828afbd9df00dd7f8")]
         public void ExceptionOnStartIsPropagated()
         {
@@ -81,7 +81,7 @@ namespace Microsoft.Extensions.Hosting
             Assert.Equal(Interop.Errors.ERROR_EXCEPTION_IN_SERVICE, status.win32ExitCode);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [ConditionalFact(typeof(AdminHelpers), nameof(AdminHelpers.IsProcessElevated))]
         public void ExceptionOnStopIsPropagated()
         {
             using var serviceTester = WindowsServiceTester.Create(async () =>
@@ -103,7 +103,7 @@ namespace Microsoft.Extensions.Hosting
             Assert.Equal(Interop.Errors.ERROR_PROCESS_ABORTED, status.win32ExitCode);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [ConditionalFact(typeof(AdminHelpers), nameof(AdminHelpers.IsProcessElevated))]
         public void CancelStopAsync()
         {
             using var serviceTester = WindowsServiceTester.Create(async () =>
@@ -126,7 +126,7 @@ namespace Microsoft.Extensions.Hosting
             Assert.Equal(Interop.Errors.ERROR_PROCESS_ABORTED, status.win32ExitCode);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [ConditionalFact(typeof(AdminHelpers), nameof(AdminHelpers.IsProcessElevated))]
         public void ServiceCanStopItself()
         {
             using (var serviceTester = WindowsServiceTester.Create(async () =>
@@ -182,7 +182,7 @@ namespace Microsoft.Extensions.Hosting
                 """, logText);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [ConditionalFact(typeof(AdminHelpers), nameof(AdminHelpers.IsProcessElevated))]
         public void ServiceSequenceIsCorrect()
         {
             using (var serviceTester = WindowsServiceTester.Create(() =>

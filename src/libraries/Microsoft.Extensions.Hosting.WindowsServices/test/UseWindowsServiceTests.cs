@@ -27,12 +27,12 @@ namespace Microsoft.Extensions.Hosting
 
             using (host)
             {
-                var lifetime = host.Services.GetRequiredService<IHostLifetime>();
-                Assert.IsType<ConsoleLifetime>(lifetime);
-            }
+            var lifetime = host.Services.GetRequiredService<IHostLifetime>();
+            Assert.IsType<ConsoleLifetime>(lifetime);
+        }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
+        [ConditionalFact(typeof(AdminHelpers), nameof(AdminHelpers.IsProcessElevated))]
         public void CanCreateService()
         {
             using var serviceTester = WindowsServiceTester.Create(() =>
