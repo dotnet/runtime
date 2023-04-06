@@ -85,7 +85,6 @@ Function:
 GlobalizationNative_GetLocaleInfoIntNative
 
 Returns int locale information if found for the specified locale name for Apple platforms.
-Returns empty string if not found.
 */
 int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, LocaleNumberData localeStringData);
 
@@ -93,8 +92,7 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
 Function:
 GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative
 
-Returns int locale information if found for the specified locale name for Apple platforms.
-Returns empty string if not found.
+Returns primary grouping size for decimal and currency for the specified locale name for Apple platforms.
 */
 int32_t GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative(const char* localeName, LocaleNumberData localeStringData);
 
@@ -102,8 +100,7 @@ int32_t GlobalizationNative_GetLocaleInfoPrimaryGroupingSizeNative(const char* l
 Function:
 GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative
 
-Returns int locale information if found for the specified locale name for Apple platforms.
-Returns empty string if not found.
+Returns secondary grouping size for decimal and currency for the specified locale name for Apple platforms.
 */
 int32_t GlobalizationNative_GetLocaleInfoSecondaryGroupingSizeNative(const char* localeName, LocaleNumberData localeStringData);
 #endif

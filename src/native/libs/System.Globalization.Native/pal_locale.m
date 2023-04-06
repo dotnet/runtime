@@ -457,7 +457,8 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
                 value = WeekRule_FirstFourDayWeek;
             }
             else
-            {
+            { 
+                value = -1;
                 isSuccess = false;
             }
             break;
@@ -513,6 +514,7 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
             break;
         }
         default:
+            value = -1;
             assert(isSuccess);
             break;
     }
