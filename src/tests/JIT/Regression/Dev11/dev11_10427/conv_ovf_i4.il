@@ -3,6 +3,7 @@
 
 
 .assembly 'conv_ovf_i4' {}
+.assembly extern xunit.core {}
 .assembly extern System.Console { auto }
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern mscorlib { auto }
@@ -11,6 +12,9 @@
 .class public auto ansi Test_conv_ovf_i4 extends [mscorlib] System.Object {
 .method static public int32 main() il managed
 {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .locals init ([0] int64 alpha, [1] int32 delta, [2] int32 result)
 

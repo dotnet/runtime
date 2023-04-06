@@ -653,6 +653,8 @@ public:
     unsigned char lvIsOSRLocal : 1; // Root method local in an OSR method. Any stack home will be on the Tier0 frame.
                                     // Initial value will be defined by Tier0. Requires special handing in prolog.
 
+    unsigned char lvIsOSRExposedLocal : 1; // OSR local that was address exposed in Tier0
+
 private:
     unsigned char lvIsNeverNegative : 1; // The local is known to be never negative
 
@@ -994,13 +996,14 @@ public:
         regMaskTP regMask = RBM_NONE;
         if (GetRegNum() != REG_STK)
         {
-            if (varTypeUsesFloatReg(TypeGet()))
+            if (varTypeUsesIntReg(this))
             {
-                regMask = genRegMaskFloat(GetRegNum(), TypeGet());
+                regMask = genRegMask(GetRegNum());
             }
             else
             {
-                regMask = genRegMask(GetRegNum());
+                assert(varTypeUsesFloatReg(this));
+                regMask = genRegMaskFloat(GetRegNum() ARM_ARG(TypeGet()));
             }
         }
         return regMask;
@@ -1098,14 +1101,16 @@ public:
     {
         return varTypeIsSmall(TypeGet()) &&
                // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
-               (lvIsParam || m_addrExposed || lvIsStructField);
+               // OSR exposed locals were normalize on load in the Tier0 frame so must be so for OSR too.
+               (lvIsParam || m_addrExposed || lvIsStructField || lvIsOSRExposedLocal);
     }
 
     bool lvNormalizeOnStore() const
     {
         return varTypeIsSmall(TypeGet()) &&
                // lvIsStructField is treated the same as the aliased local, see fgDoNormalizeOnStore.
-               !(lvIsParam || m_addrExposed || lvIsStructField);
+               // OSR exposed locals were normalize on load in the Tier0 frame so must be so for OSR too.
+               !(lvIsParam || m_addrExposed || lvIsStructField || lvIsOSRExposedLocal);
     }
 
     void incRefCnts(weight_t weight, Compiler* pComp, RefCountState state = RCS_NORMAL, bool propagate = true);
@@ -2502,9 +2507,7 @@ public:
 public:
     GenTreeObj* gtNewObjNode(ClassLayout* layout, GenTree* addr);
     GenTreeObj* gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr);
-    void gtSetObjGcInfo(GenTreeObj* objNode);
-    GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr);
-    GenTree* gtNewBlockVal(GenTree* addr, unsigned size);
+    GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTreeCall* gtNewCallNode(gtCallTypes           callType,
                                CORINFO_METHOD_HANDLE handle,
@@ -2523,8 +2526,8 @@ public:
     GenTreeLclVar* gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs = BAD_IL_OFFSET));
     GenTreeLclVar* gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs = BAD_IL_OFFSET));
 
-    GenTreeLclVar* gtNewLclVarAddrNode(unsigned lclNum, var_types type = TYP_I_IMPL);
-    GenTreeLclFld* gtNewLclFldAddrNode(unsigned lclNum, unsigned lclOffs, var_types type = TYP_I_IMPL);
+    GenTreeLclFld* gtNewLclVarAddrNode(unsigned lclNum, var_types type = TYP_I_IMPL);
+    GenTreeLclFld* gtNewLclAddrNode(unsigned lclNum, unsigned lclOffs, var_types type = TYP_I_IMPL);
 
     GenTreeConditional* gtNewConditionalNode(
         genTreeOps oper, GenTree* cond, GenTree* op1, GenTree* op2, var_types type);
@@ -2695,6 +2698,18 @@ public:
                                      unsigned    simdSize,
                                      bool        isSimdAsHWIntrinsic);
 
+    GenTree* gtNewSimdGetLowerNode(var_types   type,
+                                   GenTree*    op1,
+                                   CorInfoType simdBaseJitType,
+                                   unsigned    simdSize,
+                                   bool        isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdGetUpperNode(var_types   type,
+                                   GenTree*    op1,
+                                   CorInfoType simdBaseJitType,
+                                   unsigned    simdSize,
+                                   bool        isSimdAsHWIntrinsic);
+
     GenTree* gtNewSimdLoadNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
 
@@ -2768,6 +2783,20 @@ public:
                                       unsigned    simdSize,
                                       bool        isSimdAsHWIntrinsic);
 
+    GenTree* gtNewSimdWithLowerNode(var_types   type,
+                                    GenTree*    op1,
+                                    GenTree*    op2,
+                                    CorInfoType simdBaseJitType,
+                                    unsigned    simdSize,
+                                    bool        isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdWithUpperNode(var_types   type,
+                                    GenTree*    op1,
+                                    GenTree*    op2,
+                                    CorInfoType simdBaseJitType,
+                                    unsigned    simdSize,
+                                    bool        isSimdAsHWIntrinsic);
+
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types      type,
@@ -2780,6 +2809,10 @@ public:
                                               CORINFO_CLASS_HANDLE clsHnd,
                                               CORINFO_SIG_INFO*    sig,
                                               CorInfoType          simdBaseJitType);
+    
+#ifdef TARGET_ARM64
+    GenTreeFieldList* gtConvertTableOpToFieldList(GenTree* op, unsigned fieldCount);
+#endif
 #endif // FEATURE_HW_INTRINSICS
 
     GenTree* gtNewMustThrowException(unsigned helper, var_types type, CORINFO_CLASS_HANDLE clsHnd);
@@ -3027,7 +3060,7 @@ public:
     // Check if this tree is a typeof()
     bool gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle = nullptr);
 
-    GenTree* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
+    GenTreeLclVarCommon* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
 
 //-------------------------------------------------------------------------
 // Functions to display the trees
@@ -3705,6 +3738,7 @@ private:
 
     static void impValidateMemoryAccessOpcode(const BYTE* codeAddr, const BYTE* codeEndp, bool volatilePrefix);
     static OPCODE impGetNonPrefixOpcode(const BYTE* codeAddr, const BYTE* codeEndp);
+    static GenTreeFlags impPrefixFlagsToIndirFlags(unsigned prefixFlags);
     static bool impOpcodeIsCallOpcode(OPCODE opcode);
 
 public:
@@ -4420,7 +4454,9 @@ public:
     DomTreeNode* fgSsaDomTree;
 
     bool fgBBVarSetsInited;
-    bool fgOSROriginalEntryBBProtected;
+
+    // Track how many artificial ref counts we've added to fgEntryBB (for OSR)
+    unsigned fgEntryBBExtraRefs;
 
     // Allocate array like T* a = new T[fgBBNumMax + 1];
     // Using helper so we don't keep forgetting +1.
@@ -5667,8 +5703,8 @@ protected:
     PhaseStatus fgPrepareToInstrumentMethod();
     PhaseStatus fgInstrumentMethod();
     PhaseStatus fgIncorporateProfileData();
-    void        fgIncorporateBlockCounts();
-    void        fgIncorporateEdgeCounts();
+    bool        fgIncorporateBlockCounts();
+    bool        fgIncorporateEdgeCounts();
 
 public:
     const char*                            fgPgoFailReason;
@@ -8941,22 +8977,24 @@ public:
     //
     unsigned int getUnrollThreshold(UnrollKind type, bool canUseSimd = true)
     {
-        unsigned threshold = TARGET_POINTER_SIZE;
+        unsigned maxRegSize = REGSIZE_BYTES;
+        unsigned threshold  = maxRegSize;
 
 #if defined(FEATURE_SIMD)
         if (canUseSimd)
         {
-            threshold = maxSIMDStructBytes();
-#if defined(TARGET_ARM64)
+            maxRegSize = maxSIMDStructBytes();
+#if defined(TARGET_XARCH)
+            // TODO-XARCH-AVX512: Consider enabling this for AVX512 where it's beneficial
+            maxRegSize = min(maxRegSize, YMM_REGSIZE_BYTES);
+            threshold  = maxRegSize;
+#elif defined(TARGET_ARM64)
             // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
             //
             //   ldp q0, q1, [x1]
             //   stp q0, q1, [x0]
             //
-            threshold *= 2;
-#elif defined(TARGET_XARCH)
-            // TODO-XARCH-AVX512: Consider enabling this for AVX512 where it's beneficial
-            threshold = min(threshold, YMM_REGSIZE_BYTES);
+            threshold = maxRegSize * 2;
 #endif
         }
 #if defined(TARGET_XARCH)
@@ -8987,12 +9025,17 @@ public:
         // | arm         |    32  |    16  | no SIMD support
         // | loongarch64 |    64  |    32  | no SIMD support
         //
-        // We might want to use a different multiplier for trully hot/cold blocks based on PGO data
+        // We might want to use a different multiplier for truly hot/cold blocks based on PGO data
         //
         threshold *= 4;
 
-        // NOTE: Memmove's unrolling is currently limitted with LSRA -
-        // up to LinearScan::MaxInternalCount number of temp regs, e.g. 5*32=160 bytes for AVX cpu.
+        if (type == UnrollKind::Memmove)
+        {
+            // NOTE: Memmove's unrolling is currently limited with LSRA -
+            // up to LinearScan::MaxInternalCount number of temp regs, e.g. 5*16=80 bytes on arm64
+            threshold = maxRegSize * 4;
+        }
+
         return threshold;
     }
 
@@ -10022,6 +10065,10 @@ public:
         // Number of class profile probes in this method
         unsigned compHandleHistogramProbeCount;
 
+#ifdef TARGET_ARM64
+        bool compNeedsConsecutiveRegisters;
+#endif
+
     } info;
 
     ReturnTypeDesc compRetTypeDesc; // ABI return type descriptor for the method
@@ -11029,8 +11076,7 @@ public:
             // Leaf lclVars
             case GT_LCL_VAR:
             case GT_LCL_FLD:
-            case GT_LCL_VAR_ADDR:
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
                 if (TVisitor::DoLclVarsOnly)
                 {
                     result = reinterpret_cast<TVisitor*>(this)->PreOrderVisit(use, user);
@@ -11651,6 +11697,9 @@ extern size_t   gcPtrMapNSize;
 #if COUNT_BASIC_BLOCKS
 extern Histogram bbCntTable;
 extern Histogram bbOneBBSizeTable;
+extern Histogram domsChangedIterationTable;
+extern Histogram computeReachabilitySetsIterationTable;
+extern Histogram computeReachabilityIterationTable;
 #endif
 
 /*****************************************************************************
@@ -11679,17 +11728,6 @@ extern Histogram loopCountTable;          // Histogram of loop counts
 extern Histogram loopExitCountTable;      // Histogram of loop exit counts
 
 #endif // COUNT_LOOPS
-
-/*****************************************************************************
- * variables to keep track of how many iterations we go in a dataflow pass
- */
-
-#if DATAFLOW_ITER
-
-extern unsigned CSEiterCount; // counts the # of iteration for the CSE dataflow
-extern unsigned CFiterCount;  // counts the # of iteration for the Const Folding dataflow
-
-#endif // DATAFLOW_ITER
 
 #if MEASURE_BLOCK_SIZE
 extern size_t genFlowNodeSize;

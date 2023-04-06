@@ -1839,8 +1839,6 @@ collect_nursery (const char *reason, gboolean is_overflow)
 	TV_GETTIME (btv);
 	time_minor_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
 
-	sgen_client_pre_collection_checks ();
-
 	sgen_major_collector.start_nursery_collection ();
 
 	sgen_memgov_minor_collection_start ();
@@ -2077,8 +2075,6 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 	time_major_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
 
 	objects_pinned = 0;
-
-	sgen_client_pre_collection_checks ();
 
 	if (mode != COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
 		/* Remsets are not useful for a major collection */
@@ -2844,13 +2840,6 @@ sgen_object_is_live (GCObject *obj)
  */
 
 static volatile gboolean pending_unqueued_finalizer = FALSE;
-volatile gboolean sgen_suspend_finalizers = FALSE;
-
-void
-sgen_set_suspend_finalizers (void)
-{
-	sgen_suspend_finalizers = TRUE;
-}
 
 int
 sgen_gc_invoke_finalizers (void)
@@ -2906,8 +2895,6 @@ sgen_gc_invoke_finalizers (void)
 gboolean
 sgen_have_pending_finalizers (void)
 {
-	if (sgen_suspend_finalizers)
-		return FALSE;
 	return pending_unqueued_finalizer || !sgen_pointer_queue_is_empty (&fin_ready_queue) || !sgen_pointer_queue_is_empty (&critical_fin_queue);
 }
 
@@ -3152,8 +3139,6 @@ mono_gc_wbarrier_generic_nostore_internal (gpointer ptr)
 	gpointer obj;
 
 	HEAVY_STAT (++stat_wbarrier_generic_store);
-
-	sgen_client_wbarrier_generic_nostore_check (ptr);
 
 	obj = *(gpointer*)ptr;
 	if (obj)

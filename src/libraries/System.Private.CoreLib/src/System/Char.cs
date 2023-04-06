@@ -410,11 +410,9 @@ namespace System
         // Determines whether a character is a punctuation mark.
         public static bool IsPunctuation(char c)
         {
-            if (IsLatin1(c))
-            {
-                return CheckPunctuation(GetLatin1UnicodeCategory(c));
-            }
-            return CheckPunctuation(CharUnicodeInfo.GetUnicodeCategory(c));
+            return CheckPunctuation(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategory(c));
         }
 
         /*=================================CheckLetterOrDigit=====================================
@@ -422,17 +420,23 @@ namespace System
         ==============================================================================*/
         internal static bool CheckLetterOrDigit(UnicodeCategory uc)
         {
-            return CheckLetter(uc) || uc == UnicodeCategory.DecimalDigitNumber;
+            const int LetterOrDigitCategories =
+                1 << (int)UnicodeCategory.UppercaseLetter |
+                1 << (int)UnicodeCategory.LowercaseLetter |
+                1 << (int)UnicodeCategory.TitlecaseLetter |
+                1 << (int)UnicodeCategory.ModifierLetter |
+                1 << (int)UnicodeCategory.OtherLetter |
+                1 << (int)UnicodeCategory.DecimalDigitNumber;
+
+            return (LetterOrDigitCategories & (1 << (int)uc)) != 0;
         }
 
         // Determines whether a character is a letter or a digit.
         public static bool IsLetterOrDigit(char c)
         {
-            if (IsLatin1(c))
-            {
-                return CheckLetterOrDigit(GetLatin1UnicodeCategory(c));
-            }
-            return CheckLetterOrDigit(CharUnicodeInfo.GetUnicodeCategory(c));
+            return CheckLetterOrDigit(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategory(c));
         }
 
         /*===================================ToUpper====================================
@@ -653,12 +657,9 @@ namespace System
             }
 
             char c = s[index];
-            if (IsLatin1(c))
-            {
-                return CheckLetterOrDigit(GetLatin1UnicodeCategory(c));
-            }
-
-            return CheckLetterOrDigit(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
+            return CheckLetterOrDigit(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         public static bool IsLower(string s, int index)
@@ -748,12 +749,9 @@ namespace System
             }
 
             char c = s[index];
-            if (IsLatin1(c))
-            {
-                return CheckPunctuation(GetLatin1UnicodeCategory(c));
-            }
-
-            return CheckPunctuation(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
+            return CheckPunctuation(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         /*================================= CheckSeparator ============================
@@ -831,11 +829,9 @@ namespace System
 
         public static bool IsSymbol(char c)
         {
-            if (IsLatin1(c))
-            {
-                return CheckSymbol(GetLatin1UnicodeCategory(c));
-            }
-            return CheckSymbol(CharUnicodeInfo.GetUnicodeCategory(c));
+            return CheckSymbol(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategory(c));
         }
 
         public static bool IsSymbol(string s, int index)
@@ -850,12 +846,9 @@ namespace System
             }
 
             char c = s[index];
-            if (IsLatin1(c))
-            {
-                return CheckSymbol(GetLatin1UnicodeCategory(c));
-            }
-
-            return CheckSymbol(CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
+            return CheckSymbol(IsLatin1(c) ?
+                GetLatin1UnicodeCategory(c) :
+                CharUnicodeInfo.GetUnicodeCategoryInternal(s, index));
         }
 
         public static bool IsUpper(string s, int index)
@@ -1000,7 +993,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            if (index + 1 < s.Length)
+            if ((uint)(index + 1) < (uint)s.Length)
             {
                 return IsSurrogatePair(s[index], s[index + 1]);
             }
@@ -1102,45 +1095,39 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             }
 
-            if (index < 0 || index >= s.Length)
+            if ((uint)index >= (uint)s.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
             }
+
             // Check if the character at index is a high surrogate.
-            int temp1 = (int)s[index] - CharUnicodeInfo.HIGH_SURROGATE_START;
-            if (temp1 >= 0 && temp1 <= 0x7ff)
+            int temp1 = s[index] - CharUnicodeInfo.HIGH_SURROGATE_START;
+            if ((uint)temp1 <= 0x7ff)
             {
                 // Found a surrogate char.
+                bool invalidIsLow = true;
                 if (temp1 <= 0x3ff)
                 {
                     // Found a high surrogate.
-                    if (index < s.Length - 1)
+                    if ((uint)(index + 1) < (uint)s.Length)
                     {
-                        int temp2 = (int)s[index + 1] - CharUnicodeInfo.LOW_SURROGATE_START;
-                        if (temp2 >= 0 && temp2 <= 0x3ff)
+                        int temp2 = s[index + 1] - CharUnicodeInfo.LOW_SURROGATE_START;
+                        if ((uint)temp2 <= 0x3ff)
                         {
                             // Found a low surrogate.
                             return (temp1 * 0x400) + temp2 + UNICODE_PLANE01_START;
                         }
-                        else
-                        {
-                            throw new ArgumentException(SR.Format(SR.Argument_InvalidHighSurrogate, index), nameof(s));
-                        }
                     }
-                    else
-                    {
-                        // Found a high surrogate at the end of the string.
-                        throw new ArgumentException(SR.Format(SR.Argument_InvalidHighSurrogate, index), nameof(s));
-                    }
+
+                    invalidIsLow = false;
                 }
-                else
-                {
-                    // Find a low surrogate at the character pointed by index.
-                    throw new ArgumentException(SR.Format(SR.Argument_InvalidLowSurrogate, index), nameof(s));
-                }
+
+                throw new ArgumentException(SR.Format(invalidIsLow ? SR.Argument_InvalidLowSurrogate : SR.Argument_InvalidHighSurrogate, index), nameof(s));
+
             }
-            // Not a high-surrogate or low-surrogate. Genereate the UTF32 value for the BMP characters.
-            return (int)s[index];
+
+            // Not a high-surrogate or low-surrogate. Generate the UTF32 value for the BMP characters.
+            return s[index];
         }
 
         //

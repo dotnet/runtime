@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_54100
 {
@@ -13,7 +14,8 @@ public class Runtime_54100
     static short s_32;
     static short s_33;
     static int s_45;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         ushort[] vr4 = s_23[0];
         return (int)M45();

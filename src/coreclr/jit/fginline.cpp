@@ -393,15 +393,8 @@ private:
             asg                      = inlinee;
         }
 
-        // Block morphing does not support (promoted) locals under commas, as such, instead of "COMMA(asg, lcl)" we
-        // do "OBJ(COMMA(asg, ADDR(LCL)))". TODO-1stClassStructs: improve block morphing and delete this workaround.
-        //
-        GenTree* lcl  = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
-        GenTree* addr = m_compiler->gtNewOperNode(GT_ADDR, TYP_I_IMPL, lcl);
-        addr          = m_compiler->gtNewOperNode(GT_COMMA, addr->TypeGet(), asg, addr);
-        GenTree* obj  = m_compiler->gtNewObjNode(varDsc->GetLayout(), addr);
-
-        return obj;
+        GenTree* lcl = m_compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
+        return m_compiler->gtNewOperNode(GT_COMMA, lcl->TypeGet(), asg, lcl);
     }
 #endif // FEATURE_MULTIREG_RET
 
@@ -1454,6 +1447,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
     lvaGenericsContextInUse |= InlineeCompiler->lvaGenericsContextInUse;
 
+#ifdef TARGET_ARM64
+    info.compNeedsConsecutiveRegisters |= InlineeCompiler->info.compNeedsConsecutiveRegisters;
+#endif
+
     // If the inlinee compiler encounters switch tables, disable hot/cold splitting in the root compiler.
     // TODO-CQ: Implement hot/cold splitting of methods with switch tables.
     if (InlineeCompiler->fgHasSwitch && opts.compProcedureSplitting)
@@ -1870,10 +1867,10 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     continue;
                 }
 
-                var_types lclTyp = (var_types)lvaTable[tmpNum].lvType;
+                var_types lclTyp = lvaTable[tmpNum].lvType;
                 noway_assert(lclTyp == lclVarInfo[lclNum + inlineInfo->argCnt].lclTypeInfo);
 
-                if (!varTypeIsStruct(lclTyp))
+                if (lclTyp != TYP_STRUCT)
                 {
                     // Unsafe value cls check is not needed here since in-linee compiler instance would have
                     // iterated over locals and marked accordingly.

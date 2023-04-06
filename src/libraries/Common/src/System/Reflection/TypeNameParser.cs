@@ -6,6 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
+#nullable enable
+
 namespace System.Reflection
 {
     //
@@ -48,6 +50,8 @@ namespace System.Reflection
                     return null;
 
                 assemblyName = GetNextAssemblyName();
+                if (assemblyName is null)
+                    return null;
                 Debug.Assert(Peek == TokenType.End);
             }
 
@@ -126,7 +130,7 @@ namespace System.Reflection
                 return null;
 
             // Because "[" is used both for generic arguments and array indexes, we must peek two characters deep.
-            if (!(Peek == TokenType.OpenSqBracket && (PeekSecond == TokenType.Other || PeekSecond == TokenType.OpenSqBracket)))
+            if (!(Peek is TokenType.OpenSqBracket && (PeekSecond is TokenType.Other or TokenType.OpenSqBracket)))
                 return namedType;
 
             Skip();
@@ -328,11 +332,12 @@ namespace System.Reflection
         // Lex the next segment as the assembly name at the end of an assembly-qualified type name. (Do not use for
         // assembly names embedded inside generic type arguments.)
         //
-        private string GetNextAssemblyName()
+        private string? GetNextAssemblyName()
         {
-            SkipWhiteSpace();
+            if (!StartAssemblyName())
+                return null;
 
-            string assemblyName = new string(_input.Slice(_index));
+            string assemblyName = _input.Slice(_index).ToString();
             _index = _input.Length;
             return assemblyName;
         }
@@ -344,7 +349,8 @@ namespace System.Reflection
         //
         private string? GetNextEmbeddedAssemblyName()
         {
-            SkipWhiteSpace();
+            if (!StartAssemblyName())
+                return null;
 
             ValueStringBuilder sb = new ValueStringBuilder(stackalloc char[64]);
 
@@ -380,6 +386,18 @@ namespace System.Reflection
             }
 
             return sb.ToString();
+        }
+
+        private bool StartAssemblyName()
+        {
+            // Compat: Treat invalid starting token of assembly name as type name parsing error instead of assembly name parsing error. This only affects
+            // exception returned by the parser.
+            if (Peek is TokenType.End or TokenType.Comma)
+            {
+                ParseError();
+                return false;
+            }
+            return true;
         }
 
         //
@@ -524,8 +542,10 @@ namespace System.Reflection
                 _rankOrModifier = rankOrModifier;
             }
 
+#if NETCOREAPP
             [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
                 Justification = "Used to implement resolving types from strings.")]
+#endif
             public override Type? ResolveType(ref TypeNameParser parser, string? containingAssemblyIfAny)
             {
                 Type? elementType = _elementTypeName.ResolveType(ref parser, containingAssemblyIfAny);
@@ -558,10 +578,12 @@ namespace System.Reflection
                 _typeArgumentsCount = typeArgumentsCount;
             }
 
+#if NETCOREAPP
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
                 Justification = "Used to implement resolving types from strings.")]
             [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
                 Justification = "Used to implement resolving types from strings.")]
+#endif
             public override Type? ResolveType(ref TypeNameParser parser, string? containingAssemblyIfAny)
             {
                 Type? typeDefinition = _typeDefinition.ResolveType(ref parser, containingAssemblyIfAny);
@@ -585,10 +607,17 @@ namespace System.Reflection
         // Type name escaping helpers
         //
 
+#if NETCOREAPP
         private static ReadOnlySpan<char> CharsToEscape => "\\[]+*&,";
 
         private static bool NeedsEscapingInTypeName(char c)
             => CharsToEscape.Contains(c);
+#else
+        private static char[] CharsToEscape { get; } = "\\[]+*&,".ToCharArray();
+
+        private static bool NeedsEscapingInTypeName(char c)
+            => Array.IndexOf(CharsToEscape, c) >= 0;
+#endif
 
         private static string EscapeTypeName(string name)
         {
@@ -622,10 +651,34 @@ namespace System.Reflection
             return fullName;
         }
 
+        private static (string typeNamespace, string name) SplitFullTypeName(string typeName)
+        {
+            string typeNamespace, name;
+
+            // Matches algorithm from ns::FindSep in src\coreclr\utilcode\namespaceutil.cpp
+            int separator = typeName.LastIndexOf('.');
+            if (separator <= 0)
+            {
+                typeNamespace = "";
+                name = typeName;
+            }
+            else
+            {
+                if (typeName[separator - 1] == '.')
+                    separator--;
+                typeNamespace = typeName.Substring(0, separator);
+                name = typeName.Substring(separator + 1);
+            }
+
+            return (typeNamespace, name);
+        }
+
+#if SYSTEM_PRIVATE_CORELIB
         private void ParseError()
         {
             if (_throwOnError)
                 throw new ArgumentException(SR.Arg_ArgumentException, $"typeName@{_errorIndex}");
         }
+#endif
     }
 }

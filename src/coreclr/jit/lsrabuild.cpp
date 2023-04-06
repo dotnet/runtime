@@ -1674,7 +1674,7 @@ int LinearScan::ComputeOperandDstCount(GenTree* operand)
     }
     if (operand->IsValue())
     {
-        // Operands that are values and are not contained consume all of their operands
+        // Operands that are values and are not contained, consume all of their operands
         // and produce one or more registers.
         return operand->GetRegisterDstCount(compiler);
     }
@@ -1859,6 +1859,12 @@ void LinearScan::buildRefPositionsForNode(GenTree* tree, LsraLocation currentLoc
                 regMaskTP calleeSaveMask = calleeSaveRegs(interval->registerType);
                 newRefPosition->registerAssignment =
                     getConstrainedRegMask(oldAssignment, calleeSaveMask, minRegCountForRef);
+#ifdef TARGET_ARM64
+                if (newRefPosition->isFirstRefPositionOfConsecutiveRegisters())
+                {
+                    newRefPosition->registerAssignment |= LsraLimitFPSetForConsecutive;
+                }
+#endif
                 if ((newRefPosition->registerAssignment != oldAssignment) && (newRefPosition->refType == RefTypeUse) &&
                     !interval->isLocalVar)
                 {
@@ -1876,6 +1882,10 @@ const unsigned         lsraRegOrderSize = ArrLen(lsraRegOrder);
 // TODO-XARCH-AVX512 we might want to move this to be configured with the rbm variables too
 static const regNumber lsraRegOrderFlt[]   = {REG_VAR_ORDER_FLT};
 const unsigned         lsraRegOrderFltSize = ArrLen(lsraRegOrderFlt);
+#if defined(TARGET_AMD64)
+static const regNumber lsraRegOrderFltUpper[]   = {REG_VAR_ORDER_FLT_UPPER};
+const unsigned         lsraRegOrderUpperFltSize = ArrLen(lsraRegOrderFltUpper);
+#endif //  TARGET_AMD64
 
 //------------------------------------------------------------------------
 // buildPhysRegRecords: Make an interval for each physical register
@@ -1899,6 +1909,17 @@ void LinearScan::buildPhysRegRecords()
         RegRecord* curr = &physRegs[reg];
         curr->regOrder  = (unsigned char)i;
     }
+#if defined(TARGET_AMD64)
+    if (compiler->canUseEvexEncoding())
+    {
+        for (unsigned int i = 0; i < lsraRegOrderUpperFltSize; i++)
+        {
+            regNumber  reg  = lsraRegOrderFltUpper[i];
+            RegRecord* curr = &physRegs[reg];
+            curr->regOrder  = (unsigned char)(i + lsraRegOrderFltSize);
+        }
+    }
+#endif //  TARGET_AMD64
 }
 
 //------------------------------------------------------------------------
@@ -2136,6 +2157,8 @@ void LinearScan::buildIntervals()
         }
     }
 #endif // DEBUG
+
+    resetRegState();
 
 #if DOUBLE_ALIGN
     // We will determine whether we should double align the frame during
@@ -2613,8 +2636,18 @@ void LinearScan::buildIntervals()
                     // Given that we also don't have a good way to tell whether the variable is live
                     // across a call in the non-EH code, we'll be extra conservative about this.
                     // Note that for writeThru intervals we don't update the preferences to be only callee-save.
-                    unsigned calleeSaveCount =
-                        (varTypeUsesFloatReg(interval->registerType)) ? CNT_CALLEE_SAVED_FLOAT : CNT_CALLEE_ENREG;
+                    unsigned calleeSaveCount;
+
+                    if (varTypeUsesIntReg(interval->registerType))
+                    {
+                        calleeSaveCount = CNT_CALLEE_ENREG;
+                    }
+                    else
+                    {
+                        assert(varTypeUsesFloatReg(interval->registerType));
+                        calleeSaveCount = CNT_CALLEE_SAVED_FLOAT;
+                    }
+
                     if ((weight <= (BB_UNITY_WEIGHT * 7)) || varDsc->lvVarIndex >= calleeSaveCount)
                     {
                         // If this is relatively low weight, don't prefer callee-save at all.
@@ -2812,7 +2845,7 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
         type = tree->GetRegTypeByIndex(multiRegIdx);
     }
 
-    if (varTypeUsesFloatReg(type))
+    if (!varTypeUsesIntReg(type))
     {
         compiler->compFloatingPointUsed = true;
     }
@@ -3037,9 +3070,9 @@ void LinearScan::UpdatePreferencesOfDyingLocal(Interval* interval)
 //           the defList, and build a use RefPosition for the associated Interval.
 //
 // Arguments:
-//    operand      - The node of interest
-//    candidates   - The register candidates for the use
-//    multiRegIdx  - The index of the multireg def/use
+//    operand             - The node of interest
+//    candidates          - The register candidates for the use
+//    multiRegIdx         - The index of the multireg def/use
 //
 // Return Value:
 //    The newly created use RefPosition
@@ -3841,13 +3874,15 @@ int LinearScan::BuildReturn(GenTree* tree)
                         {
                             hasMismatchedRegTypes = true;
                             regMaskTP dstRegMask  = genRegMask(retTypeDesc.GetABIReturnReg(i));
-                            if (varTypeUsesFloatReg(dstType))
+
+                            if (varTypeUsesIntReg(dstType))
                             {
-                                buildInternalFloatRegisterDefForNode(tree, dstRegMask);
+                                buildInternalIntRegisterDefForNode(tree, dstRegMask);
                             }
                             else
                             {
-                                buildInternalIntRegisterDefForNode(tree, dstRegMask);
+                                assert(varTypeUsesFloatReg(dstType));
+                                buildInternalFloatRegisterDefForNode(tree, dstRegMask);
                             }
                         }
                     }

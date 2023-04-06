@@ -53,7 +53,7 @@ namespace Internal.Runtime.TypeLoader
         /// The StaticClassConstructionContext for a type is encoded in the negative space
         /// of the NonGCStatic fields of a type.
         /// </summary>
-        public static readonly unsafe int ClassConstructorOffset = -sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
+        public static unsafe int ClassConstructorOffset => -sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
 
         private LowLevelList<TypeDesc> _typesThatNeedTypeHandles = new LowLevelList<TypeDesc>();
 
@@ -1101,9 +1101,8 @@ namespace Internal.Runtime.TypeLoader
             if ((contextKind & GenericContextKind.FromMethodHiddenArg) != 0)
             {
                 RuntimeTypeHandle declaringTypeHandle;
-                MethodNameAndSignature nameAndSignature;
                 RuntimeTypeHandle[] genericMethodArgHandles;
-                bool success = TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(context, out declaringTypeHandle, out nameAndSignature, out genericMethodArgHandles);
+                bool success = TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(context, out declaringTypeHandle, out genericMethodArgHandles);
                 Debug.Assert(success);
 
                 if (RuntimeAugments.IsGenericType(declaringTypeHandle))
