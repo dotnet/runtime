@@ -4,7 +4,7 @@
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "../gc-handles";
 import { Module, runtimeHelpers, INTERNAL } from "../imports";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
-import { setU16, _release_temp_frame } from "../memory";
+import { _release_temp_frame } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
 import { find_entry_point } from "../run";
 import { conv_string_root, js_string_to_mono_string_root } from "../strings";
@@ -13,7 +13,6 @@ import { Int32Ptr, VoidPtr } from "../types/emscripten";
 import { mono_array_root_to_js_array, unbox_mono_obj_root } from "./cs-to-js";
 import { js_array_to_mono_array, js_to_mono_obj_root } from "./js-to-cs";
 import { Converter, BoundMethodToken, mono_method_resolve, mono_method_get_call_signature_ref, mono_bind_method } from "./method-binding";
-import { compare_strings, get_utf16_string, pass_exception_details } from "./globalization-helper";
 
 const boundMethodsByFqn: Map<string, Function> = new Map();
 
@@ -298,66 +297,3 @@ export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo:
         return 0;
     }
 }
-
-export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
-    try{
-        const input = get_utf16_string(src, srcLength);
-        let result = toUpper ? input.toUpperCase() : input.toLowerCase();
-        // Unicode defines some codepoints which expand into multiple codepoints,
-        // originally we do not support this expansion
-        if (result.length > dstLength)
-            result = input;
-
-        for (let i = 0; i < result.length; i++)
-            setU16(dst + i*2, result.charCodeAt(i));
-    }
-    catch (ex: any) {
-        pass_exception_details(ex, exceptionMessage);
-    }
-}
-
-export function mono_wasm_change_case(exceptionMessage: Int32Ptr, culture: MonoStringRef, src: number, srcLength: number, dst: number, destLength: number, toUpper: number) : void{
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
-    try{
-        const cultureName = conv_string_root(cultureRoot);
-        if (!cultureName)
-            throw new Error("Cannot change case, the culture name is null.");
-        const input = get_utf16_string(src, srcLength);
-        let result = toUpper ? input.toLocaleUpperCase(cultureName) : input.toLocaleLowerCase(cultureName);
-        if (result.length > destLength)
-            result = input;
-
-        for (let i = 0; i < destLength; i++)
-            setU16(dst + i*2, result.charCodeAt(i));
-    }
-    catch (ex: any) {
-        pass_exception_details(ex, exceptionMessage);
-    }
-    finally {
-        cultureRoot.release();
-    }
-}
-
-export function mono_wasm_compare_string(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number) : number{
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
-    try{
-        const cultureName = conv_string_root(cultureRoot);
-        const string1  = get_utf16_string(str1, str1Length);
-        const string2 = get_utf16_string(str2, str2Length);
-        const casePicker = (options & 0x1f);
-        const locale = cultureName ? cultureName : undefined;
-        const result = compare_strings(string1, string2, locale, casePicker);
-        if (result == -2)
-            throw new Error("$Invalid comparison option.");
-        return result;
-    }
-    catch (ex: any) {
-        pass_exception_details(ex, exceptionMessage);
-        return -2;
-    }
-    finally {
-        cultureRoot.release();
-    }
-}
-
-
