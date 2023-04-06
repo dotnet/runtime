@@ -102,6 +102,13 @@ public:
     uint32_t dwMaxIndex;
 };
 
+class dac_card_table_info {
+public:
+    unsigned    recount;
+    size_t      size;
+    TADDR       next_card_table;
+};
+
 // Possible values of the current_c_gc_state dacvar, indicating the state of
 // a background GC.
 enum c_gc_state
@@ -225,6 +232,7 @@ struct GcDacVars {
   uint8_t minor_version_number;
   size_t generation_size;
   size_t total_generation_count;
+  int total_bookkeeping_elements;
 #ifdef DACCESS_COMPILE
  #define GC_DAC_VAR(type, name)       DPTR(type) name;
  #define GC_DAC_PTR_VAR(type, name)   DPTR(type*) name;

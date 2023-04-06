@@ -1986,6 +1986,13 @@ private:
 
 class DacHandleTableMemoryEnumerator : public DacMemoryEnumerator
 {
+public:
+    virtual HRESULT Init();
+};
+
+class DacGCBookkeepingEnumerator : public DacMemoryEnumerator
+{
+public:
     virtual HRESULT Init();
 };
 

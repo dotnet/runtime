@@ -2228,8 +2228,8 @@ size_t      gc_heap::g_bpromoted;
 #endif //MULTIPLE_HEAPS
 
 size_t      gc_heap::card_table_element_layout[total_bookkeeping_elements + 1];
-#ifdef USE_REGIONS
 uint8_t*    gc_heap::bookkeeping_covered_start = nullptr;
+#ifdef USE_REGIONS
 uint8_t*    gc_heap::bookkeeping_covered_committed = nullptr;
 size_t      gc_heap::bookkeeping_sizes[total_bookkeeping_elements];
 #endif //USE_REGIONS
@@ -8378,6 +8378,9 @@ class card_table_info
 {
 public:
     unsigned    recount;
+    size_t      size;
+    uint32_t*   next_card_table;
+
     uint8_t*    lowest_address;
     uint8_t*    highest_address;
     short*      brick_table;
@@ -8391,10 +8394,11 @@ public:
 #ifdef BACKGROUND_GC
     uint32_t*   mark_array;
 #endif //BACKGROUND_GC
-
-    size_t      size;
-    uint32_t*   next_card_table;
 };
+
+static_assert(offsetof(dac_card_table_info, size) == offsetof(card_table_info, size), "DAC card_table_info layout mismatch");
+static_assert(offsetof(dac_card_table_info, next_card_table) == offsetof(card_table_info, next_card_table), "DAC card_table_info layout mismatch");
+static_assert(card_table_element == 0, "DAC takes a dependency on card_table_element_layout[0] == sizeof(card_table_info)");
 
 //These are accessors on untranslated cardtable
 inline
@@ -8996,9 +9000,7 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
 
     size_t alloc_size = card_table_element_layout[total_bookkeeping_elements];
     uint8_t* mem = (uint8_t*)GCToOSInterface::VirtualReserve (alloc_size, 0, virtual_reserve_flags);
-#ifdef USE_REGIONS
     bookkeeping_covered_start = mem;
-#endif //USE_REGIONS
 
     if (!mem)
         return 0;
@@ -49291,11 +49293,13 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 
     assert(gcDacVars != nullptr);
     *gcDacVars = {};
-    // Note: these version numbers are not actually checked by SOS, so if you change
-    // the GC in a way that makes it incompatible with SOS, please change
-    // SOS_BREAKING_CHANGE_VERSION in both the runtime and the diagnostics repo
-    gcDacVars->major_version_number = 1;
+    // Note: These version numbers do not need to be checked in the .Net dac/SOS because
+    // we always match the compiled dac and GC to the version used.  NativeAOT's SOS may
+    // work differently than .Net SOS.  When making breaking changes here you may need to
+    // find NativeAOT's equivalent of SOS_BREAKING_CHANGE_VERSION and increment it.
+    gcDacVars->major_version_number = 2;
     gcDacVars->minor_version_number = 0;
+    gcDacVars->total_bookkeeping_elements = total_bookkeeping_elements;
 #ifdef USE_REGIONS
     gcDacVars->minor_version_number |= 1;
 #endif //USE_REGIONS
@@ -49357,4 +49361,6 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->gc_heap_field_offsets = reinterpret_cast<int**>(&gc_heap_field_offsets);
 #endif // MULTIPLE_HEAPS
     gcDacVars->generation_field_offsets = reinterpret_cast<int**>(&generation_field_offsets);
+    gcDacVars->bookkeeping_covered_start = &gc_heap::bookkeeping_covered_start;
+    gcDacVars->card_table_element_layout = reinterpret_cast<size_t**>(&gc_heap::card_table_element_layout);
 }

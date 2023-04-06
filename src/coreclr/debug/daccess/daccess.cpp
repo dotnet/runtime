@@ -8325,6 +8325,42 @@ HRESULT DacMemoryEnumerator::Next(unsigned int count, SOSMemoryRegion regions[],
     return i < count ? S_FALSE : S_OK;
 }
 
+
+HRESULT DacGCBookkeepingEnumerator::Init()
+{
+    TADDR ctiAddr = TO_TADDR(*g_gcDacGlobals->bookkeeping_covered_start);
+    DPTR(dac_card_table_info) card_table_info(ctiAddr);
+
+    SOSMemoryRegion mem = {0};
+    mem.Start = card_table_info.GetAddr();
+    mem.Size = card_table_info->size;
+    mRegions.Add(mem);
+    
+    DPTR(size_t) layout = g_gcDacGlobals->card_table_element_layout;
+    size_t card_table_info_size = layout[0];
+    TADDR nextStart = card_table_info->next_card_table;
+    TADDR next = nextStart;
+
+    _ASSERTE(sizeof(dac_card_table_info) <= card_table_info_size);
+
+    // The while loop is effectively "while (next != 0)" but with an added check to make
+    // sure we don't underflow next when subtracting card_table_info_size on a bad pointer.
+    while (next > card_table_info_size)
+    {
+        DPTR(dac_card_table_info) ct(next - card_table_info_size);
+
+        mem = {0};
+        mem.Start = ct.GetAddr();
+        mem.Size = ct->size;
+        mRegions.Add(mem);
+        
+        next = ct->next_card_table;
+    }
+    
+    return S_OK;
+}
+
+
 HRESULT DacHandleTableMemoryEnumerator::Init()
 {
     int max_slots = 1;
