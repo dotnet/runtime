@@ -234,9 +234,8 @@ namespace System.Runtime
                 Debug.Assert(pUnboxToEEType != null && pUnboxToEEType->IsNullable);
 
                 // Set HasValue to false and clear the value (in case there were GC references we wish to stop reporting).
-                InternalCalls.RhpInitMultibyte(
+                InternalCalls.RhpGcSafeZeroMemory(
                     ref data,
-                    0,
                     pUnboxToEEType->ValueTypeSize);
 
                 return;
