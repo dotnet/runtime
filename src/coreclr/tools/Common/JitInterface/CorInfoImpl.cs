@@ -2860,21 +2860,20 @@ namespace Internal.JitInterface
             return PrintFromUtf16(field.Name, buffer, bufferSize, requiredBufferSize);
         }
 
+#pragma warning disable CA1822 // Mark members as static
         private uint getThreadLocalFieldInfo(CORINFO_FIELD_STRUCT_* fld)
+#pragma warning restore CA1822 // Mark members as static
         {
             // Implemented for JIT only for now.
 
-            // This is present so compiler doesn't complain about method not being static.
-            FieldDesc field = HandleToObject(fld);
-            return (uint)(field.IsThreadStatic ? 0 : 0);
+            return 0;
         }
 
+#pragma warning disable CA1822 // Mark members as static
         private void getThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo)
+#pragma warning restore CA1822 // Mark members as static
         {
             // Implemented for JIT only for now.
-
-            // This is present so compiler doesn't complain about method not being static.
-            pInfo->tlsIndex = CreateConstLookupToSymbol(null);
         }
 
         private CORINFO_CLASS_STRUCT_* getFieldClass(CORINFO_FIELD_STRUCT_* field)

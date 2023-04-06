@@ -3631,8 +3631,7 @@ void MethodContext::recGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field, uint3
     if (GetThreadLocalFieldInfo == nullptr)
         GetThreadLocalFieldInfo = new LightWeightMap<DWORDLONG, DWORD>();
 
-    DWORDLONG key;
-    ZeroMemory(&key, sizeof(key));
+    DWORDLONG key = 0;
 
     key = CastHandle(field);
     GetThreadLocalFieldInfo->Add(key, result);
@@ -3660,6 +3659,8 @@ void MethodContext::recGetThreadLocalStaticBlocksInfo(CORINFO_THREAD_STATIC_BLOC
         GetThreadLocalStaticBlocksInfo = new LightWeightMap<DWORD, Agnostic_GetThreadLocalStaticBlocksInfo>();
 
     Agnostic_GetThreadLocalStaticBlocksInfo value;
+    ZeroMemory(&value, sizeof(value));
+
     value.tlsIndex.handle                   = CastHandle(pInfo->tlsIndex.addr);
     value.tlsIndex.accessType               = pInfo->tlsIndex.accessType;
     value.offsetOfMaxThreadStaticBlocks     = pInfo->offsetOfMaxThreadStaticBlocks;

@@ -4235,11 +4235,11 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
             for (GenTree* const tree : stmt->TreeList())
             {
-                // We only need calls with IsExpRuntimeLookup() flag
-                if (!tree->IsCall() || !tree->AsCall()->IsHelperCall())
+                if (!tree->IsCall())
                 {
                     continue;
                 }
+
                 GenTreeCall* call = tree->AsCall();
 
                 if (!call->IsHelperCall())
@@ -4277,19 +4277,6 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
                 }
 
                 GenTreeLclVar* threadStaticBlockLcl = nullptr;
-
-                // Mostly for Tier0: if the current statement is ASG(LCL, RuntimeLookup)
-                // we can drop it and use that LCL as the destination
-                if (stmt->GetRootNode()->OperIs(GT_ASG))
-                {
-                    GenTree* lhs = stmt->GetRootNode()->gtGetOp1();
-                    GenTree* rhs = stmt->GetRootNode()->gtGetOp2();
-                    if (lhs->OperIs(GT_LCL_VAR) && rhs == *callUse)
-                    {
-                        threadStaticBlockLcl = gtClone(lhs)->AsLclVar();
-                        fgRemoveStmt(block, stmt);
-                    }
-                }
 
                 // Grab a temp to store result (it's assigned from either fastPathBb or fallbackBb)
                 if (threadStaticBlockLcl == nullptr)
