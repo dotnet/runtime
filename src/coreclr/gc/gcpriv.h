@@ -2443,7 +2443,20 @@ private:
 
     PER_HEAP_ISOLATED_METHOD void equalize_promoted_bytes(int condemned_gen_number);
 
-    PER_HEAP_ISOLATED_METHOD bool redistribute_regions(int new_n_heaps);
+#ifdef MULTIPLE_HEAPS
+    // check that the fields of a decommissioned heap have their expected values,
+    // i.e. were not inadvertently modified
+    PER_HEAP_METHOD void check_decommissioned_heap();
+
+    // take a heap out of service, setting its fields to non-sensical value
+    // to detect inadvertent usage
+    PER_HEAP_METHOD void decommission_heap();
+
+    // re-initialize a heap in preparation to putting it back into service
+    PER_HEAP_METHOD void recommission_heap();
+
+    PER_HEAP_ISOLATED_METHOD bool change_heap_count (int new_n_heaps);
+#endif //MULTIPLE_HEAPS
 #endif //USE_REGIONS
 
 #if !defined(USE_REGIONS) || defined(_DEBUG)
