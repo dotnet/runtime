@@ -13420,7 +13420,6 @@ void gc_heap::make_generation (int gen_num, heap_segment* seg, uint8_t* start)
 #endif //USE_REGIONS
     gen->allocation_segment = seg;
     gen->free_list_space = 0;
-    gen->pinned_allocated = 0;
     gen->free_list_allocated = 0;
     gen->end_seg_allocated = 0;
     gen->condemned_allocated = 0;
@@ -21292,12 +21291,10 @@ void gc_heap::gc1()
         generation* gn = generation_of (gen_number);
         if (settings.compaction)
         {
-            generation_pinned_allocated (gn) += generation_pinned_allocation_compact_size (gn);
             generation_allocation_size (generation_of (gen_number)) += generation_pinned_allocation_compact_size (gn);
         }
         else
         {
-            generation_pinned_allocated (gn) += generation_pinned_allocation_sweep_size (gn);
             generation_allocation_size (generation_of (gen_number)) += generation_pinned_allocation_sweep_size (gn);
         }
         generation_pinned_allocation_sweep_size (gn) = 0;
@@ -29552,7 +29549,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
         generation_allocation_size (condemned_gen2) = 0;
         generation_condemned_allocated (condemned_gen2) = 0;
         generation_sweep_allocated (condemned_gen2) = 0;
-        generation_pinned_allocated (condemned_gen2) = 0;
         generation_free_list_allocated(condemned_gen2) = 0;
         generation_end_seg_allocated (condemned_gen2) = 0;
         generation_pinned_allocation_sweep_size (condemned_gen2) = 0;
