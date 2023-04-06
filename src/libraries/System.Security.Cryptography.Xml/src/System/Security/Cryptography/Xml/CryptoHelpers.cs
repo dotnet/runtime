@@ -1,15 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Security.Cryptography.Xml
 {
     internal static class CryptoHelpers
     {
+        internal const string XsltRequiresDynamicCodeMessage = "XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.";
+
         private static readonly char[] _invalidChars = new char[] { ',', '`', '[', '*', '&' };
 
-        public static object? CreateFromKnownName(string name) =>
+        [RequiresDynamicCode(XsltRequiresDynamicCodeMessage)]
+        private static object? CreateFromKnownName(string name) =>
             name switch
             {
                 "http://www.w3.org/TR/2001/REC-xml-c14n-20010315" => new XmlDsigC14NTransform(),
@@ -40,7 +45,7 @@ namespace System.Security.Cryptography.Xml
                 _ => null,
             };
 
-#pragma warning disable IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling - workaround https://github.com/dotnet/linker/issues/2715
+        [RequiresDynamicCode(XsltRequiresDynamicCodeMessage)]
         private static XmlDsigXsltTransform CreateXmlDsigXsltTransform()
         {
 #if NETCOREAPP
@@ -53,9 +58,8 @@ namespace System.Security.Cryptography.Xml
 
             return new XmlDsigXsltTransform();
         }
-#pragma warning restore IL3050
 
-
+        [RequiresDynamicCode(XsltRequiresDynamicCodeMessage)]
         public static T? CreateFromName<T>(string? name) where T : class
         {
             if (name == null || name.IndexOfAny(_invalidChars) >= 0)
@@ -70,6 +74,15 @@ namespace System.Security.Cryptography.Xml
             {
                 return null;
             }
+        }
+
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCodeAttribute",
+            Justification = "Only XmlDsigXsltTransform requires dynamic code. This method asserts that T is not a Transform.")]
+        public static T? CreateNonTransformFromName<T>(string? name) where T : class
+        {
+            Debug.Assert(!typeof(Transform).IsAssignableFrom(typeof(T)));
+
+            return CreateFromName<T>(name);
         }
     }
 }

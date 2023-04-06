@@ -9,7 +9,7 @@ using System.Xml.Xsl;
 
 namespace System.Security.Cryptography.Xml
 {
-    [RequiresDynamicCode("XmlDsigXsltTransform uses XslCompiledTransform which requires dynamic code.")]
+    [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
     public class XmlDsigXsltTransform : Transform
     {
         private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlDocument), typeof(XmlNodeList) };
