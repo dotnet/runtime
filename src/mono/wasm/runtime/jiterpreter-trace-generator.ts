@@ -925,6 +925,14 @@ export function generateWasmBody (
                 isLowValueOpcode = true;
                 break;
 
+            // These are generated in place of regular LEAVEs inside of the body of a catch clause.
+            // We can safely assume that during normal execution, catch clauses won't be running.
+            case MintOpcode.MINT_LEAVE_CHECK:
+            case MintOpcode.MINT_LEAVE_S_CHECK:
+                append_bailout(builder, ip, BailoutReason.LeaveCheck);
+                isLowValueOpcode = true;
+                break;
+
             case MintOpcode.MINT_ENDFINALLY: {
                 if (
                     (builder.callHandlerReturnAddresses.length > 0) &&
