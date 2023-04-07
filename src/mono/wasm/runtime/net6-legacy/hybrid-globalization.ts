@@ -6,7 +6,7 @@ import { mono_wasm_new_external_root } from "../roots";
 import {MonoString, MonoStringRef } from "../types";
 import { Int32Ptr } from "../types/emscripten";
 import { conv_string_root, js_string_to_mono_string_root } from "../strings";
-import { setU16 } from "../memory";
+import { setU16, setU32 } from "../memory";
 
 export function mono_wasm_change_case_invariant(exceptionMessage: Int32Ptr, src: number, srcLength: number, dst: number, dstLength: number, toUpper: number) : void{
     try{
@@ -82,6 +82,108 @@ export function pass_exception_details(ex: any, exceptionMessage: Int32Ptr){
     const exceptionRoot = mono_wasm_new_external_root<MonoString>(<any>exceptionMessage);
     js_string_to_mono_string_root(exceptionJsString, exceptionRoot);
     exceptionRoot.release();
+}
+
+
+export function mono_wasm_index_of(exceptionMessage: Int32Ptr, culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, matchLengthPointer: number, fromBeginning: boolean): number{
+    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture);
+    try{
+        const ignoreSymbols = (options & 0x4) == 0x4;
+        if (ignoreSymbols)
+            throw new Error("$Invalid comparison option.");
+        const value = get_utf16_string(str1, str1Length); // searched value in source string
+        // no need to look for an empty string
+        const result = "".localeCompare(value, undefined);
+        if (result === 0)
+            return fromBeginning ? 0 : str2Length;
+
+        const source = get_utf16_string(str2, str2Length); // source string
+        const cultureName = conv_string_root(cultureRoot);
+        const locale = cultureName ? cultureName : undefined;
+        const graphemesSource = segment_string_locale_sensitive(source, locale);
+        const graphemesValue = segment_string_locale_sensitive(value, locale);
+        const casePicker = (options & 0x1f);
+        if (fromBeginning)
+            return get_index_of(graphemesSource, graphemesValue, locale, casePicker, matchLengthPointer, source.length);
+        else
+            return get_last_index_of(graphemesSource, graphemesValue, locale, casePicker, matchLengthPointer, source.length);
+    }
+    catch (ex: any) {
+        pass_exception_details(ex, exceptionMessage);
+        return -1;
+    }
+    finally {
+        cultureRoot.release();
+    }
+}
+
+export function segment_string_locale_sensitive(string: string, locale: string | undefined) : Intl.SegmentData[]
+{
+    const segmenter = new Intl.Segmenter(locale, { granularity: "grapheme" });
+    return Array.from(segmenter.segment(string));
+}
+
+export function get_index_of(graphemesSource: Intl.SegmentData[], graphemesValue: Intl.SegmentData[], locale: string | undefined, casePicker: number, matchLengthPointer: number, srcOriginalLen: number){
+
+    const lenDifference = graphemesSource.length - graphemesValue.length;
+    for (let i = 0; i <= lenDifference; i++)
+    {
+        let index = -1;
+        for (let j = 0; j < graphemesValue.length; j++)
+        {
+            const isEqual = compare_strings(graphemesSource[i + j].segment, graphemesValue[j].segment, locale, casePicker);
+            if (isEqual !== 0)
+            {
+                index = -1;
+                break;
+            }
+            if (index === -1 && isEqual === 0)
+                index = graphemesSource[i].index;
+        }
+        if (index !== -1)
+        {
+            const lastGraphemeOriginalStartIxd = graphemesSource[i + graphemesValue.length - 1].index;
+            const lastGraphemeLen = (index + 1 < graphemesSource.length) ?
+                graphemesSource[index + 1].index - graphemesSource[index].index :
+                srcOriginalLen - graphemesSource[index].index;
+            const matchLen = (lastGraphemeOriginalStartIxd + lastGraphemeLen) - index ;
+            setU32(matchLengthPointer, matchLen);
+            return index;
+        }
+    }
+    return -1;
+}
+
+export function get_last_index_of(graphemesSource: Intl.SegmentData[], graphemesValue: Intl.SegmentData[], locale: string | undefined, casePicker: number, matchLengthPointer: number, srcOriginalLen: number){
+
+    for (let i = graphemesSource.length - 1; i >= graphemesValue.length - 1; i--)
+    {
+        let index = -1;
+        const lastGraphemeIdx = graphemesValue.length - 1;
+        const firstGraphemeId = i - graphemesValue.length + 1;
+        for (let j = lastGraphemeIdx; j >= 0; j--)
+        {
+            const isEqual = compare_strings(graphemesSource[i - (lastGraphemeIdx - j)].segment, graphemesValue[j].segment, locale, casePicker);
+            if (isEqual !== 0)
+            {
+                index = -1;
+                break;
+            }
+            if (index === -1 && isEqual === 0)
+                index = graphemesSource[firstGraphemeId].index;
+        }
+        if (index !== -1)
+        {
+            const lastGraphemeOriginalStartIxd = graphemesSource[i].index;
+            const lastGraphemeLen = (i + 1 < graphemesSource.length) ?
+                graphemesSource[i + 1].index - graphemesSource[i].index :
+                srcOriginalLen - graphemesSource[i].index;
+            const matchLen = (lastGraphemeOriginalStartIxd + lastGraphemeLen) - index ;
+            setU32(matchLengthPointer, matchLen);
+            return index;
+        }
+    }
+    return -1;
 }
 
 export function compare_strings(string1: string, string2: string, locale: string | undefined, casePicker: number) : number{

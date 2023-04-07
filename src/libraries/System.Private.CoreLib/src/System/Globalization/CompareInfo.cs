@@ -173,11 +173,14 @@ namespace System.Globalization
             if (GlobalizationMode.UseNls)
             {
                 NlsInitSortHandle();
+                return;
             }
-            else
+            if (GlobalizationMode.Hybrid)
             {
-                IcuInitSortHandle(culture.InteropName!);
+                JsInit(culture.InteropName!);
+                return;
             }
+            IcuInitSortHandle(culture.InteropName!);
         }
 
         [OnDeserializing]
@@ -1100,6 +1103,10 @@ namespace System.Globalization
         private unsafe int IndexOfCore(ReadOnlySpan<char> source, ReadOnlySpan<char> target, CompareOptions options, int* matchLengthPtr, bool fromBeginning) =>
             GlobalizationMode.UseNls ?
                 NlsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
+#if TARGET_BROWSER || TARGET_WASI
+            GlobalizationMode.Hybrid ?
+                JsIndexOfCore(source, target, options, matchLengthPtr, fromBeginning) :
+#endif
                 IcuIndexOfCore(source, target, options, matchLengthPtr, fromBeginning);
 
         /// <summary>

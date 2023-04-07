@@ -100,6 +100,7 @@ let linked_functions = [
     "mono_wasm_change_case_invariant",
     "mono_wasm_change_case",
     "mono_wasm_compare_string",
+    "mono_wasm_index_of",
 
     "icudt68_dat",
 ];
