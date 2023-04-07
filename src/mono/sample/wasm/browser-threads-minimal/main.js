@@ -15,18 +15,37 @@ try {
 
     const exports = await getAssemblyExports(assemblyName);
 
-    const r1 = await exports.Sample.Test.RunBackgroundThreadCompute();
-    if (r1 !== 524) {
-        const msg = `Unexpected result ${r1} from RunBackgroundThreadCompute()`;
+    //console.log ("XYZ: running hello");
+    //await exports.Sample.Test.Hello();
+    //console.log ("XYZ: hello done");
+
+    console.log ("XYZ: running FetchBackground");
+    let s = await exports.Sample.Test.FetchBackground("./blurst.txt");
+    console.log ("XYZ: FetchBackground done");
+    if (s !== "It was the best of times, it was the blurst of times.\n") {
+        const msg = `Unexpected FetchBackground result ${s}`;
         document.getElementById("out").innerHTML = msg;
-        throw new Error(msg);
+        throw new Error (msg);
     }
-    const r2 = await exports.Sample.Test.RunBackgroundLongRunningTaskCompute();
-    if (r2 !== 524) {
-        const msg = `Unexpected result ${r2} from RunBackgorundLongRunningTaskCompute()`;
+
+    console.log ("XYZ: running FetchBackground(missing)");
+    s = await exports.Sample.Test.FetchBackground("./missing.txt");
+    console.log ("XYZ: FetchBackground(missing) done");
+    if (s !== "not-ok") {
+        const msg = `Unexpected FetchBackground(missing) result ${s}`;
         document.getElementById("out").innerHTML = msg;
-        throw new Error(msg);
+        throw new Error (msg);
     }
+    
+    //console.log ("HHH: running TaskRunCompute");
+    //const r1 = await exports.Sample.Test.RunBackgroundTaskRunCompute();
+    //if (r1 !== 524) {
+    //    const msg = `Unexpected result ${r1} from RunBackgorundTaskRunCompute()`;
+    //    document.getElementById("out").innerHTML = msg;
+    //    throw new Error(msg);
+    //}
+    //console.log ("HHH: TaskRunCompute done");
+
 
     let exit_code = await runMain(assemblyName, []);
     exit(exit_code);
