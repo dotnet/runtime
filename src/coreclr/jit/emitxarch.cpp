@@ -596,6 +596,24 @@ bool emitter::AreUpper32BitsSignExtended(regNumber reg)
 #endif // TARGET_64BIT
 
 //------------------------------------------------------------------------
+// emitDoesInsModifyFlags: checks if the given instruction modifies flags
+//
+// Arguments:
+//    ins - instruction of interest
+//
+// Return Value:
+//    true if the instruction modifies flags.
+//    false if it does not.
+//
+bool emitter::emitDoesInsModifyFlags(instruction ins)
+{
+    return (CodeGenInterface::instInfo[ins] &
+            (Resets_OF | Resets_SF | Resets_AF | Resets_PF | Resets_CF | Undefined_OF | Undefined_SF | Undefined_AF |
+             Undefined_PF | Undefined_CF | Undefined_ZF | Writes_OF | Writes_SF | Writes_AF | Writes_PF | Writes_CF |
+             Writes_ZF | Restore_SF_ZF_AF_PF_CF));
+}
+
+//------------------------------------------------------------------------
 // emitIsInstrWritingToReg: checks if the given register is being written to
 //
 // Arguments:
@@ -792,6 +810,75 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
     }
 
     return false;
+}
+
+//------------------------------------------------------------------------
+// IsRedundantCmp: determines if there is a 'cmp' instruction that is redundant with the given inputs
+//
+// Arguments:
+//    size - size of 'cmp'
+//    reg1 - op1 register of 'cmp'
+//    reg2 - op2 register of 'cmp'
+//
+// Return Value:
+//    true if there is a redundant 'cmp'
+//
+bool emitter::IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2)
+{
+    // Only allow GPRs.
+    // If not a valid register, then return false.
+    if (!genIsValidIntReg(reg1))
+        return false;
+
+    if (!genIsValidIntReg(reg2))
+        return false;
+
+    // Only consider if safe
+    //
+    if (!emitCanPeepholeLastIns())
+    {
+        return false;
+    }
+
+    bool result = false;
+
+    emitPeepholeIterateLastInstrs([&](instrDesc* id) {
+        instruction ins = id->idIns();
+
+        switch (ins)
+        {
+            case INS_cmp:
+            {
+                // We only care about 'cmp reg, reg'.
+                if (id->idInsFmt() != IF_RRD_RRD)
+                    return PEEPHOLE_ABORT;
+
+                if ((id->idReg1() == reg1) && (id->idReg2() == reg2))
+                {
+                    result = (size == id->idOpSize());
+                }
+
+                return PEEPHOLE_ABORT;
+            }
+
+            default:
+                break;
+        }
+
+        if (emitDoesInsModifyFlags(ins))
+        {
+            return PEEPHOLE_ABORT;
+        }
+
+        if (emitIsInstrWritingToReg(id, reg1) || emitIsInstrWritingToReg(id, reg2))
+        {
+            return PEEPHOLE_ABORT;
+        }
+
+        return PEEPHOLE_CONTINUE;
+    });
+
+    return result;
 }
 
 //------------------------------------------------------------------------
@@ -4623,7 +4710,7 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
         return;
     }
 
-    if (addr->OperIsLocalAddr())
+    if (addr->OperIs(GT_LCL_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
         unsigned             offset  = varNode->GetLclOffs();
@@ -4631,10 +4718,10 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
 
         // Updating variable liveness after instruction was emitted.
         // TODO-Review: it appears that this call to genUpdateLife does nothing because it
-        // returns quickly when passed GT_LCL_VAR_ADDR or GT_LCL_FLD_ADDR. Below, emitInsStoreInd
-        // had similar code that replaced `varNode` with `mem` (to fix a GC hole). It might be
-        // appropriate to do that here as well, but doing so showed no asm diffs, so it's not
-        // clear when this scenario gets hit, at least for GC refs.
+        // returns quickly when passed GT_LCL_ADDR. Below, emitInsStoreInd had similar code
+        // that replaced `varNode` with `mem` (to fix a GC hole). It might be appropriate to
+        // do that here as well, but doing so showed no asm diffs, so it's not clear when
+        // this scenario gets hit, at least for GC refs.
         codeGen->genUpdateLife(varNode);
         return;
     }
@@ -4708,7 +4795,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         return;
     }
 
-    if (addr->OperIsLocalAddr())
+    if (addr->OperIs(GT_LCL_ADDR))
     {
         GenTreeLclVarCommon* varNode = addr->AsLclVarCommon();
         unsigned             offset  = varNode->GetLclOffs();
@@ -4948,12 +5035,11 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
             switch (memBase->OperGet())
             {
-                case GT_LCL_VAR_ADDR:
-                case GT_LCL_FLD_ADDR:
+                case GT_LCL_ADDR:
                 {
                     assert(memBase->isContained());
-                    varNum = memBase->AsLclVarCommon()->GetLclNum();
-                    offset = memBase->AsLclVarCommon()->GetLclOffs();
+                    varNum = memBase->AsLclFld()->GetLclNum();
+                    offset = memBase->AsLclFld()->GetLclOffs();
 
                     // Ensure that all the GenTreeIndir values are set to their defaults.
                     assert(!memIndir->HasIndex());
@@ -5264,7 +5350,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
 {
     GenTree* addr = storeInd->Addr();
     addr          = addr->gtSkipReloadOrCopy();
-    assert(addr->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_LEA, GT_CLS_VAR_ADDR, GT_CNS_INT));
+    assert(addr->OperIs(GT_LCL_VAR, GT_LEA, GT_CLS_VAR_ADDR, GT_CNS_INT) || addr->IsLclVarAddr());
 
     instrDesc*     id = nullptr;
     UNATIVE_OFFSET sz;
@@ -5294,7 +5380,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
                 break;
         }
 
-        if (addr->isContained() && addr->OperIsLocalAddr())
+        if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
         {
             GenTreeLclVarCommon* lclVar = addr->AsLclVarCommon();
             emitIns_S_I(ins, attr, lclVar->GetLclNum(), lclVar->GetLclOffs(), iconVal);
@@ -5352,7 +5438,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
 {
     GenTree* addr = storeInd->Addr();
     addr          = addr->gtSkipReloadOrCopy();
-    assert(addr->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_CLS_VAR_ADDR, GT_LEA, GT_CNS_INT));
+    assert(addr->OperIs(GT_LCL_VAR, GT_CLS_VAR_ADDR, GT_LEA, GT_CNS_INT) || addr->IsLclVarAddr());
 
     ssize_t offset = 0;
     if (addr->OperGet() != GT_CLS_VAR_ADDR)
@@ -5360,7 +5446,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
         offset = storeInd->Offset();
     }
 
-    if (addr->isContained() && addr->OperIsLocalAddr())
+    if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
     {
         GenTreeLclVarCommon* lclVar = addr->AsLclVarCommon();
         emitIns_S(ins, attr, lclVar->GetLclNum(), lclVar->GetLclOffs());

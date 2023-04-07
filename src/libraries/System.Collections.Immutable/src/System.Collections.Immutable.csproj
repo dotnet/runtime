@@ -29,8 +29,10 @@ The System.Collections.Immutable library is built-in as part of the shared frame
     <Compile Include="System\Collections\Frozen\KeysAndValuesFrozenDictionary.cs" />
     <Compile Include="System\Collections\Frozen\SmallFrozenDictionary.cs" />
     <Compile Include="System\Collections\Frozen\SmallFrozenSet.cs" />
-    <Compile Include="System\Collections\Frozen\SmallComparableValueTypeFrozenDictionary.cs" />
-    <Compile Include="System\Collections\Frozen\SmallComparableValueTypeFrozenSet.cs" />
+    <Compile Include="System\Collections\Frozen\SmallValueTypeComparableFrozenDictionary.cs" />
+    <Compile Include="System\Collections\Frozen\SmallValueTypeComparableFrozenSet.cs" />
+    <Compile Include="System\Collections\Frozen\SmallValueTypeDefaultComparerFrozenDictionary.cs" />
+    <Compile Include="System\Collections\Frozen\SmallValueTypeDefaultComparerFrozenSet.cs" />
     <Compile Include="System\Collections\Frozen\ValueTypeDefaultComparerFrozenDictionary.cs" />
     <Compile Include="System\Collections\Frozen\ValueTypeDefaultComparerFrozenSet.cs" />
     <Compile Include="System\Collections\Frozen\Int32\Int32FrozenDictionary.cs" />
