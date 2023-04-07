@@ -6,9 +6,6 @@
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>
-  <PropertyGroup>
-    <CLRTestExitCode>0</CLRTestExitCode>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="test1.il" />
   </ItemGroup>
