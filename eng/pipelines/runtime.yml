@@ -1464,7 +1464,7 @@ extends:
             extraStepsParameters:
               name: SourceBuildPackages
             timeoutInMinutes: 95
-            condition: true
+            condition: eq(variables['isRollingBuild'], true)
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1478,4 +1478,4 @@ extends:
             extraStepsParameters:
               name: SourceBuildPackages
             timeoutInMinutes: 95
-            condition: true
+            condition: eq(variables['isRollingBuild'], true)
