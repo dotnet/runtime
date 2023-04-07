@@ -3244,5 +3244,35 @@ namespace System.Runtime.Intrinsics
             }
             return AdvSimd.Arm64.ZipHigh(left, right);
         }
+
+        // TODO: Make generic versions of these public, see https://github.com/dotnet/runtime/issues/82559
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<byte> AddSaturate(Vector128<byte> left, Vector128<byte> right)
+        {
+            if (Sse2.IsSupported)
+            {
+                return Sse2.AddSaturate(left, right);
+            }
+            else if (!AdvSimd.Arm64.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+            return AdvSimd.AddSaturate(left, right);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector128<byte> SubtractSaturate(Vector128<byte> left, Vector128<byte> right)
+        {
+            if (Sse2.IsSupported)
+            {
+                return Sse2.SubtractSaturate(left, right);
+            }
+            else if (!AdvSimd.Arm64.IsSupported)
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+            return AdvSimd.SubtractSaturate(left, right);
+        }
     }
 }

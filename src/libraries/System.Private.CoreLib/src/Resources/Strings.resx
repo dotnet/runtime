@@ -241,9 +241,6 @@
   <data name="Arg_CannotUnloadAppDomainException" xml:space="preserve">
     <value>Attempt to unload the AppDomain failed.</value>
   </data>
-  <data name="Arg_CATypeResolutionFailed" xml:space="preserve">
-    <value>Failed to resolve type from string "{0}" which was embedded in custom attribute blob.</value>
-  </data>
   <data name="Arg_COMAccess" xml:space="preserve">
     <value>Must specify property Set or Get or method call for a COM Object.</value>
   </data>
@@ -1929,25 +1926,31 @@
     <value>Year must be between 1 and 9999.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeNonZero" xml:space="preserve">
-    <value>'{0}' must be a non-zero value.</value>
+    <value>{0} ('{1}') must be a non-zero value.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeNonNegative" xml:space="preserve">
-    <value>'{0}' must be a non-negative value.</value>
+    <value>{0} ('{1}') must be a non-negative value.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero" xml:space="preserve">
-    <value>'{0}' must be a non-negative and non-zero value.</value>
+    <value>{0} ('{1}') must be a non-negative and non-zero value.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeLessOrEqual" xml:space="preserve">
-    <value>'{0}' must be less than or equal to '{1}'.</value>
+    <value>{0} ('{1}') must be less than or equal to '{2}'.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeLess" xml:space="preserve">
-    <value>'{0}' must be less than '{1}'.</value>
+    <value>{0} ('{1}') must be less than '{2}'.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeGreaterOrEqual" xml:space="preserve">
-    <value>'{0}' must be greater than or equal to '{1}'.</value>
+    <value>{0} ('{1}') must be greater than or equal to '{2}'.</value>
   </data>
   <data name="ArgumentOutOfRange_Generic_MustBeGreater" xml:space="preserve">
-    <value>'{0}' must be greater than '{1}'.</value>
+    <value>{0} ('{1}') must be greater than '{2}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeEqual" xml:space="preserve">
+    <value>{0} ('{1}') must be equal to '{2}'.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Generic_MustBeNotEqual" xml:space="preserve">
+    <value>{0} ('{1}') must not be equal to '{2}'.</value>
   </data>
   <data name="Arithmetic_NaN" xml:space="preserve">
     <value>Function does not accept floating point Not-a-Number values.</value>

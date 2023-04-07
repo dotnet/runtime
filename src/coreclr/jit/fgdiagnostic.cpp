@@ -3432,7 +3432,7 @@ void Compiler::fgDebugCheckLinkedLocals()
 
         bool ShouldLink(GenTree* node)
         {
-            return node->OperIsLocal() || node->OperIsLocalAddr();
+            return node->OperIsLocal() || node->OperIs(GT_LCL_ADDR);
         }
 
     public:
@@ -3520,7 +3520,7 @@ void Compiler::fgDebugCheckLinkedLocals()
             int nodeIndex = 0;
             for (GenTree* cur = first; cur != nullptr; cur = cur->gtNext)
             {
-                success &= cur->OperIsLocal() || cur->OperIsLocalAddr();
+                success &= cur->OperIsLocal() || cur->OperIs(GT_LCL_ADDR);
                 success &= (nodeIndex < expected->Height()) && (cur == expected->Bottom(nodeIndex));
                 nodeIndex++;
             }
@@ -4402,6 +4402,7 @@ void Compiler::fgDebugCheckSsa()
 //    - All basic blocks with loop numbers set have a corresponding loop in the table
 //    - All basic blocks without a loop number are not in a loop
 //    - All parents of the loop with the block contain that block
+//    - If optLoopsRequirePreHeaders is true, the loop has a pre-header
 //    - If the loop has a pre-header, it is valid
 //    - The loop flags are valid
 //    - no loop shares `top` with any of its children
@@ -4658,6 +4659,11 @@ void Compiler::fgDebugCheckLoopTable()
                 assert(!childLoop.lpIsRemoved());
                 assert(loop.lpTop != childLoop.lpTop);
             }
+        }
+
+        if (optLoopsRequirePreHeaders)
+        {
+            assert((loop.lpFlags & LPFLG_HAS_PREHEAD) != 0);
         }
 
         // If the loop has a pre-header, ensure the pre-header form is correct.

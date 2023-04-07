@@ -645,6 +645,12 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_SDB_SEQ_POINT:
 			return TRACE_IGNORE;
 
+		case MINT_LEAVE_CHECK:
+		case MINT_LEAVE_S_CHECK:
+			// These are only generated inside catch clauses, so it's safe to assume that
+			//  during normal execution they won't run, and compile them as a bailout.
+			return TRACE_IGNORE;
+
 		case MINT_INITLOCAL:
 		case MINT_INITLOCALS:
 		case MINT_LOCALLOC:
@@ -707,12 +713,12 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_CTZ_I8:
 		case MINT_POPCNT_I8:
 		case MINT_LOG2_I8:
+		case MINT_SHL_AND_I4:
+		case MINT_SHL_AND_I8:
 			return TRACE_CONTINUE;
 
 		case MINT_BR:
 		case MINT_BR_S:
-		case MINT_LEAVE:
-		case MINT_LEAVE_S:
 		case MINT_CALL_HANDLER:
 		case MINT_CALL_HANDLER_S:
 			// Detect backwards branches
@@ -729,6 +735,10 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 
 			return TRACE_CONTINUE;
 
+		case MINT_ENDFINALLY:
+			// May produce either a backwards branch or a bailout
+			return TRACE_CONDITIONAL_ABORT;
+
 		case MINT_ICALL_V_P:
 		case MINT_ICALL_V_V:
 		case MINT_ICALL_P_P:
@@ -742,11 +752,6 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 
 			return TRACE_ABORT;
 
-		case MINT_LEAVE_CHECK:
-		case MINT_LEAVE_S_CHECK:
-			return TRACE_ABORT;
-
-		case MINT_ENDFINALLY:
 		case MINT_RETHROW:
 		case MINT_PROF_EXIT:
 		case MINT_PROF_EXIT_VOID:
@@ -940,6 +945,30 @@ trace_info_alloc () {
 	return index;
 }
 
+static void
+build_address_taken_bitset (TransformData *td, InterpBasicBlock *bb, guint32 bitset_size)
+{
+	for (InterpInst *ins = bb->first_ins; ins != NULL; ins = ins->next) {
+		if (ins->opcode == MINT_LDLOCA_S) {
+			InterpMethod *imethod = td->rtm;
+			InterpLocal *loc = &td->locals[ins->sregs[0]];
+
+			// Allocate on demand so if a method contains no ldlocas we don't allocate the bitset
+			if (!imethod->address_taken_bits)
+				imethod->address_taken_bits = mono_bitset_new (bitset_size, 0);
+
+			// Ensure that every bit in the set corresponding to space occupied by this local
+			//  is set, so that large locals (structs etc) being ldloca'd properly sets the
+			//  whole range covered by the struct as a no-go for optimization.
+			// FIXME: Do this per slot instead of per byte.
+			for (int j = 0; j < loc->size; j++) {
+				guint32 b = (loc->offset + j) / MINT_STACK_SLOT_SIZE;
+				mono_bitset_set (imethod->address_taken_bits, b);
+			}
+		}
+	}
+}
+
 /*
  * Insert jiterpreter entry points at the correct candidate locations:
  * The first basic block of the function,
@@ -957,13 +986,15 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 	TransformData *td = (TransformData *)_td;
 	// Insert an entry opcode for the next basic block (call resume and first bb)
 	// FIXME: Should we do this based on relationships between BBs instead of insn sequence?
-	gboolean enter_at_next = TRUE;
+	gboolean enter_at_next = TRUE, table_full = FALSE;
 
 	if (!mono_opt_jiterpreter_traces_enabled)
 		return;
 
 	// Start with a high instruction counter so the distance check will pass
 	int instruction_count = mono_opt_jiterpreter_minimum_distance_between_traces;
+	// Pre-calculate how big the address-taken-locals bitset needs to be
+	guint32 bitset_size = td->total_locals_size / MINT_STACK_SLOT_SIZE;
 
 	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		// Enter trace at top of functions
@@ -975,7 +1006,7 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 		if (mono_opt_jiterpreter_backward_branch_entries_enabled && bb->backwards_branch_target)
 			is_backwards_branch = TRUE;
 
-		gboolean enabled = (is_backwards_branch || is_resume_or_first);
+		gboolean enabled = (is_backwards_branch || is_resume_or_first) && !table_full;
 		// FIXME: This scan will likely proceed forward all the way out of the current block,
 		//  which means that for large methods we will sometimes scan the same instruction
 		//  multiple times and waste some work. At present this is unavoidable because
@@ -1002,7 +1033,7 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 			gint32 trace_index = trace_info_alloc ();
 			if (trace_index < 0) {
 				// We're out of space in the TraceInfo table.
-				return;
+				table_full = TRUE;
 			} else {
 				td->cbb = bb;
 				imethod->contains_traces = TRUE;
@@ -1030,6 +1061,14 @@ jiterp_insert_entry_points (void *_imethod, void *_td)
 		//  the new instruction counter will be the number of instructions in the block, so if
 		//  it's big enough we'll be able to insert another entry point right away.
 		instruction_count += bb->in_count;
+
+		build_address_taken_bitset (td, bb, bitset_size);
+	}
+
+	// If we didn't insert any entry points and we allocated the bitset, free it.
+	if (!imethod->contains_traces && imethod->address_taken_bits) {
+		mono_bitset_free (imethod->address_taken_bits);
+		imethod->address_taken_bits = NULL;
 	}
 }
 
@@ -1442,6 +1481,16 @@ mono_jiterp_boost_back_branch_target (guint16 *ip) {
 	else
 		g_print ("Entry point #%d at %d was already maxed out\n", trace_index, ip, trace_info->hit_count);
 	*/
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_jiterp_is_imethod_var_address_taken (InterpMethod *imethod, int offset) {
+	g_assert (imethod);
+	g_assert (offset >= 0);
+	if (!imethod->address_taken_bits)
+		return FALSE;
+
+	return mono_bitset_test (imethod->address_taken_bits, offset / MINT_STACK_SLOT_SIZE);
 }
 
 // HACK: fix C4206

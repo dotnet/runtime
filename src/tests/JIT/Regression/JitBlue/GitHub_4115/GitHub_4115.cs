@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace Issue_4115
 {
@@ -125,7 +126,8 @@ namespace Issue_4115
             } 
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             MainClass mainClass = new MainClass();
             mainClass._head = mainClass._tail = new MyClass();
