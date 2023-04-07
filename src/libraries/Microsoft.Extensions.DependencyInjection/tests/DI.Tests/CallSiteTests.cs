@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
@@ -80,7 +81,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public void BuiltExpressionWillReturnResolvedServiceWhenAppropriate(
             ServiceDescriptor[] descriptors, Type serviceType, Func<object, object, bool> compare)
         {
-            var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
+            var serviceCollection = new ServiceCollection();
+            foreach (ServiceDescriptor serviceDescriptor in descriptors)
+            {
+                serviceCollection.Add(serviceDescriptor);
+            }
+
+            var provider = new ServiceProvider(serviceCollection, ServiceProviderOptions.Default);
 
             var callSite = provider.CallSiteFactory.GetCallSite(serviceType, new CallSiteChain());
             var collectionCallSite = provider.CallSiteFactory.GetCallSite(typeof(IEnumerable<>).MakeGenericType(serviceType), new CallSiteChain());
@@ -136,7 +143,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var disposables = new List<object>();
             var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
-            
+
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceC), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 
@@ -185,7 +192,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var disposables = new List<object>();
             var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
-            
+
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceC), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 

@@ -109,6 +109,11 @@ namespace Microsoft.Extensions.DependencyInjection
             _isReadOnly = true;
         }
 
+        /// <summary>
+        /// Hooks for invoking actions just before the ServiceProvider is built
+        /// </summary>
+        public OnBeforeBuild OnBeforeBuild { get; set; } = delegate { };
+
         private void CheckReadOnly()
         {
             if (_isReadOnly)

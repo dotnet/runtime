@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 
+
 namespace Microsoft.Extensions.DependencyInjection
 {
     /// <summary>
@@ -10,5 +11,6 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     public interface IServiceCollection : IList<ServiceDescriptor>
     {
+        OnBeforeBuild OnBeforeBuild { get; set; }
     }
 }

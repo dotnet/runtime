@@ -7,5 +7,6 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
 {
     internal sealed class TestServiceCollection : List<ServiceDescriptor>, IServiceCollection
     {
+        public OnBeforeBuild OnBeforeBuild { get; set; }
     }
 }

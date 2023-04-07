@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.DependencyInjection
             !RuntimeFeature.IsDynamicCodeSupported;
 #endif
 
-        internal ServiceProvider(ICollection<ServiceDescriptor> serviceDescriptors, ServiceProviderOptions options)
+        internal ServiceProvider(IServiceCollection serviceCollection, ServiceProviderOptions options)
         {
             // note that Root needs to be set before calling GetEngine(), because the engine may need to access Root
             Root = new ServiceProviderEngineScope(this, isRootScope: true);
@@ -49,7 +49,9 @@ namespace Microsoft.Extensions.DependencyInjection
             _createServiceAccessor = CreateServiceAccessor;
             _realizedServices = new ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object?>>();
 
-            CallSiteFactory = new CallSiteFactory(serviceDescriptors);
+            serviceCollection.OnBeforeBuild?.Invoke(serviceCollection);
+
+            CallSiteFactory = new CallSiteFactory(serviceCollection);
             // The list of built in services that aren't part of the list of service descriptors
             // keep this in sync with CallSiteFactory.IsService
             CallSiteFactory.Add(typeof(IServiceProvider), new ServiceProviderCallSite());
@@ -64,7 +66,7 @@ namespace Microsoft.Extensions.DependencyInjection
             if (options.ValidateOnBuild)
             {
                 List<Exception>? exceptions = null;
-                foreach (ServiceDescriptor serviceDescriptor in serviceDescriptors)
+                foreach (ServiceDescriptor serviceDescriptor in serviceCollection)
                 {
                     try
                     {
