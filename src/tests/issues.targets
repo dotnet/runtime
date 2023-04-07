@@ -4334,11 +4334,17 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" >
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/processinfo/**">
+    <ItemGroup Condition="'$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'iOSSimulator'" >
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/processinfo/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/processinfo2/**">
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/processinfo/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/**">
+            <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/buffersize/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>
