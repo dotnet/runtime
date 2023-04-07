@@ -7,6 +7,8 @@
 #include <eventpipe/ep.h>
 #include <eventpipe/ep-event.h>
 
+#include <dn-vector.h>
+
 #include <eglib/gmodule.h>
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/mono-time.h>
@@ -61,7 +63,7 @@ struct _EventPipeThreadData {
 };
 
 // Sample profiler.
-static GArray * _ep_rt_mono_sampled_thread_callstacks = NULL;
+static dn_vector_t * _ep_rt_mono_sampled_thread_callstacks = NULL;
 static uint32_t _ep_rt_mono_max_sampled_thread_count = 32;
 
 // Mono profilers.
@@ -2076,7 +2078,7 @@ void
 ep_rt_mono_fini (void)
 {
 	if (_ep_rt_mono_sampled_thread_callstacks)
-		g_array_free (_ep_rt_mono_sampled_thread_callstacks, TRUE);
+		dn_vector_free (_ep_rt_mono_sampled_thread_callstacks);
 
 	if (_ep_rt_mono_initialized)
 		mono_rand_close (_ep_rt_mono_rand_provider);
@@ -2766,13 +2768,17 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 	// TODO: Investigate alternatives on platforms supporting Signals/SuspendThread (see Mono profiler) or CPU PMU's (see ETW/perf_event_open).
 
 	// Sample profiler only runs on one thread, no need to synchorinize.
-	if (!_ep_rt_mono_sampled_thread_callstacks)
-		_ep_rt_mono_sampled_thread_callstacks = g_array_sized_new (FALSE, FALSE, sizeof (EventPipeSampleProfileStackWalkData), _ep_rt_mono_max_sampled_thread_count);
+	if (!_ep_rt_mono_sampled_thread_callstacks) {
+		dn_vector_custom_alloc_params_t alloc_params = {0,};
+		alloc_params.capacity = _ep_rt_mono_max_sampled_thread_count;
+		alloc_params.attributes = DN_VECTOR_ATTRIBUTE_MEMORY_INIT;
+		_ep_rt_mono_sampled_thread_callstacks = dn_vector_custom_alloc_t (&alloc_params, EventPipeSampleProfileStackWalkData);
+	}
 
 	// Make sure there is room based on previous max number of sampled threads.
 	// NOTE, there is a chance there are more threads than max, if that's the case we will
 	// miss those threads in this sample, but will be included in next when max has been adjusted.
-	g_array_set_size (_ep_rt_mono_sampled_thread_callstacks, _ep_rt_mono_max_sampled_thread_count);
+	dn_vector_reserve (_ep_rt_mono_sampled_thread_callstacks, _ep_rt_mono_max_sampled_thread_count);
 
 	uint32_t filtered_thread_count = 0;
 	uint32_t sampled_thread_count = 0;
@@ -2791,7 +2797,7 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 			MonoThreadUnwindState *thread_state = mono_thread_info_get_suspend_state (thread_info);
 			if (thread_state->valid) {
 				if (sampled_thread_count < _ep_rt_mono_max_sampled_thread_count) {
-					EventPipeSampleProfileStackWalkData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileStackWalkData, sampled_thread_count);
+					EventPipeSampleProfileStackWalkData *data = dn_vector_index_t (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileStackWalkData, sampled_thread_count);
 					data->thread_id = ep_rt_thread_id_t_to_uint64_t (mono_thread_info_get_tid (thread_info));
 					data->thread_ip = (uintptr_t)MONO_CONTEXT_GET_IP (&thread_state->ctx);
 					data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR;
@@ -2835,7 +2841,7 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 	// adapter instance and only set recorded tid as parameter inside adapter.
 	THREAD_INFO_TYPE adapter = { { 0 } };
 	for (uint32_t thread_count = 0; thread_count < sampled_thread_count; ++thread_count) {
-		EventPipeSampleProfileStackWalkData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileStackWalkData, thread_count);
+		EventPipeSampleProfileStackWalkData *data = dn_vector_index_t (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileStackWalkData, thread_count);
 		if ((data->stack_walk_data.top_frame && data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL) || (data->payload_data != EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR && ep_stack_contents_get_length (&data->stack_contents) > 0)) {
 			// Check if we have an async frame, if so we will need to make sure all frames are registered in regular jit info table.
 			// TODO: An async frame can contain wrapper methods (no way to check during stackwalk), we could skip writing profile event
