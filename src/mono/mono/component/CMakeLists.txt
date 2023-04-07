@@ -106,6 +106,10 @@ set(${MONO_MARSHAL_ILGEN_COMPONENT_NAME}-sources
   ${MONO_COMPONENT_PATH}/marshal-ilgen.h
 )
 
+set(${MONO_MARSHAL_ILGEN_COMPONENT_NAME}-link_libraries
+  shared_container_objects
+)
+
 # For every component not build into the AOT compiler, build the stub instead
 set(stubs_for_aot "")
 foreach (component IN LISTS components)
@@ -161,7 +165,7 @@ foreach(component IN LISTS components)
   if(NOT DISABLE_COMPONENT_OBJECTS)
     add_library("${component}-objects" OBJECT "${${component}-sources}")
     target_link_libraries("${component}-objects" PRIVATE component_base)
-    target_link_libraries("${component}-objects" PUBLIC eglib_api)
+    target_link_libraries("${component}-objects" PUBLIC eglib_api shared_container_api)
     if(DEFINED "${component}-link_libraries")
       target_link_libraries("${component}-objects" PRIVATE "${${component}-link_libraries}")
     endif()
@@ -171,7 +175,7 @@ foreach(component IN LISTS components)
   endif()
   add_library("${component}-stub-objects" OBJECT "${${component}-stub-sources}")
   target_link_libraries("${component}-stub-objects" PRIVATE component_base)
-  target_link_libraries("${component}-stub-objects" PUBLIC eglib_api)
+  target_link_libraries("${component}-stub-objects" PUBLIC eglib_api shared_container_api)
 endforeach()
 
 if(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)

@@ -540,7 +540,7 @@ if(NOT DISABLE_EXECUTABLES)
   if(MONO_CROSS_COMPILE_EXECUTABLE_NAME)
     set_target_properties(mono-sgen PROPERTIES OUTPUT_NAME mono-aot-cross)
   endif()
-  target_link_libraries(mono-sgen PRIVATE monoapi eglib_api monosgen-static ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
+  target_link_libraries(mono-sgen PRIVATE monoapi eglib_api shared_container_api monosgen-static ${OS_LIBS} ${LLVM_LIBS} ${ICU_LIBS} ${Z_LIBS})
   # Alpine Linux implements ucontext in a different library
   if(CLR_CMAKE_HOST_ALPINE_LINUX AND TARGET_S390X)
     target_link_libraries(mono-sgen PRIVATE ucontext)

@@ -5,7 +5,7 @@ project(metadata C)
 #
 if(DISABLE_ICALL_TABLES)
 add_library(mono-icall-table STATIC "icall-table.c")
-target_link_libraries(mono-icall-table PRIVATE monoapi eglib_api)
+target_link_libraries(mono-icall-table PRIVATE monoapi eglib_api shared_container_api)
 target_include_directories(mono-icall-table PRIVATE ${PROJECT_BINARY_DIR}/../..
   ${PROJECT_SOURCE_DIR}/../..
   ${PROJECT_SOURCE_DIR}/..)
