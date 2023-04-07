@@ -945,7 +945,6 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
                 __fallthrough;
 
             case BBJ_RETURN:
-
             {
                 // Pseudo-edge back to method entry.
                 //
@@ -960,6 +959,7 @@ void Compiler::WalkSpanningTree(SpanningTreeVisitor* visitor)
             break;
 
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
             case BBJ_EHCATCHRET:
             case BBJ_EHFILTERRET:
             case BBJ_LEAVE:
@@ -4581,6 +4581,7 @@ PhaseStatus Compiler::fgComputeEdgeWeights()
                 case BBJ_COND:
                 case BBJ_SWITCH:
                 case BBJ_EHFINALLYRET:
+                case BBJ_EHFAULTRET:
                 case BBJ_EHFILTERRET:
                     if (edge->edgeWeightMax() > bSrc->bbWeight)
                     {
@@ -5279,7 +5280,7 @@ bool Compiler::fgDebugCheckOutgoingProfileData(BasicBlock* block, ProfileChecks 
     //
     const unsigned numSuccs = block->NumSucc(this);
 
-    if ((numSuccs > 0) && !block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET))
+    if ((numSuccs > 0) && !block->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET))
     {
         weight_t const blockWeight        = block->bbWeight;
         weight_t       outgoingWeightMin  = 0;

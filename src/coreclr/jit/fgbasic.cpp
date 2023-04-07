@@ -2802,6 +2802,7 @@ void Compiler::fgLinkBasicBlocks()
                 // We do it in impFixPredLists.
                 break;
 
+            case BBJ_EHFAULTRET:
             case BBJ_THROW:
             case BBJ_RETURN:
                 break;
@@ -3064,6 +3065,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                 break;
 
             case CEE_ENDFINALLY:
+                // Start with BBJ_EHFINALLYRET; change to BBJ_EHFAULTRET later if it's in a 'fault' clause.
                 jmpKind = BBJ_EHFINALLYRET;
                 break;
 
@@ -3782,6 +3784,13 @@ void Compiler::fgFindBasicBlocks()
             if (!block->hasHndIndex())
             {
                 block->setHndIndex(XTnum);
+
+                // If the most nested EH handler region of this block is a 'fault' region, then change any
+                // BBJ_EHFINALLYRET that were imported to BBJ_EHFAULTRET.
+                if ((hndBegBB->bbCatchTyp == BBCT_FAULT) && block->KindIs(BBJ_EHFINALLYRET))
+                {
+                    block->bbJumpKind = BBJ_EHFAULTRET;
+                }
             }
 
             // All blocks in a catch handler or filter are rarely run, except the entry
@@ -4060,6 +4069,7 @@ void Compiler::fgCheckBasicBlockControlFlow()
                 break;
 
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
             case BBJ_EHFILTERRET:
 
                 if (!blk->hasHndIndex()) // must be part of a handler
@@ -4077,17 +4087,28 @@ void Compiler::fgCheckBasicBlockControlFlow()
                         BADCODE("Unexpected endfilter");
                     }
                 }
-                // endfinally allowed only in a finally/fault block
-                else if (!HBtab->HasFinallyOrFaultHandler())
+                else if (blk->bbJumpKind == BBJ_EHFILTERRET)
                 {
-                    BADCODE("Unexpected endfinally");
+                    // endfinally allowed only in a finally block
+                    if (!HBtab->HasFinallyHandler())
+                    {
+                        BADCODE("Unexpected endfinally");
+                    }
+                }
+                else if (blk->bbJumpKind == BBJ_EHFAULTRET)
+                {
+                    // 'endfault' (alias of IL 'endfinally') allowed only in a fault block
+                    if (!HBtab->HasFaultHandler())
+                    {
+                        BADCODE("Unexpected endfault");
+                    }
                 }
 
                 // The handler block should be the innermost block
                 // Exception blocks are listed, innermost first.
                 if (blk->hasTryIndex() && (blk->getTryIndex() < blk->getHndIndex()))
                 {
-                    BADCODE("endfinally / endfilter in nested try block");
+                    BADCODE("endfinally / endfault / endfilter in nested try block");
                 }
 
                 break;
@@ -6298,8 +6319,7 @@ BasicBlock* Compiler::fgFindInsertPoint(unsigned    regionIndex,
 #endif // DEBUG
 
     JITDUMP("fgFindInsertPoint(regionIndex=%u, putInTryRegion=%s, startBlk=" FMT_BB ", endBlk=" FMT_BB
-            ", nearBlk=" FMT_BB ", "
-            "jumpBlk=" FMT_BB ", runRarely=%s)\n",
+            ", nearBlk=" FMT_BB ", jumpBlk=" FMT_BB ", runRarely=%s)\n",
             regionIndex, dspBool(putInTryRegion), startBlk->bbNum, (endBlk == nullptr) ? 0 : endBlk->bbNum,
             (nearBlk == nullptr) ? 0 : nearBlk->bbNum, (jumpBlk == nullptr) ? 0 : jumpBlk->bbNum, dspBool(runRarely));
 
@@ -6697,10 +6717,10 @@ _FoundAfterBlk:;
     /* We have decided to insert the block after 'afterBlk'. */
     noway_assert(afterBlk != nullptr);
 
-    JITDUMP("fgNewBBinRegion(jumpKind=%u, tryIndex=%u, hndIndex=%u, putInFilter=%s, runRarely=%s, insertAtEnd=%s): "
+    JITDUMP("fgNewBBinRegion(jumpKind=%s, tryIndex=%u, hndIndex=%u, putInFilter=%s, runRarely=%s, insertAtEnd=%s): "
             "inserting after " FMT_BB "\n",
-            jumpKind, tryIndex, hndIndex, dspBool(putInFilter), dspBool(runRarely), dspBool(insertAtEnd),
-            afterBlk->bbNum);
+            BBjumpKindNames[jumpKind], tryIndex, hndIndex, dspBool(putInFilter), dspBool(runRarely),
+            dspBool(insertAtEnd), afterBlk->bbNum);
 
     return fgNewBBinRegionWorker(jumpKind, afterBlk, regionIndex, putInTryRegion);
 }
