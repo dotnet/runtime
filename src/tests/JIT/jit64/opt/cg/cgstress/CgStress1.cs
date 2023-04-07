@@ -4310,6 +4310,7 @@ namespace CgTest
             return retVal;
         }
 
+#pragma warning disable xUnit1013
         public static void foo0()
         {
             ActualResult = (ActualResult + "0");
@@ -28891,5 +28892,6 @@ namespace CgTest
             ActualResult = (ActualResult + "4096");
             return;
         }
+#pragma warning restore xUnit1013
     }
 }
