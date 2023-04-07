@@ -179,7 +179,7 @@ extends:
 
 
       # Temporarily define PGO jobs to get PR validation of PGO instrumented builds
-        - template: /eng/pipelines/common/platform-matrix.yml
+      - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
           buildConfig: Release
