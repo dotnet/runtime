@@ -895,6 +895,7 @@ extends:
           buildConfig: Release
           platforms:
           - linux_arm
+          - linux_arm64
           - linux_musl_arm
           - linux_musl_arm64
           - windows_arm
