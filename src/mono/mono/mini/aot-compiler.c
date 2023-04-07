@@ -4843,8 +4843,8 @@ add_wrappers (MonoAotCompile *acfg)
 #ifdef MONO_ARCH_DYN_CALL_SUPPORTED
 		if (!acfg->aot_opts.llvm_only) {
 			method = mono_marshal_get_runtime_invoke_dynamic ();
-			if (!collect_dedup_method (acfg, method))
-				add_method (acfg, method);
+			collect_dedup_method (acfg, method);
+			add_method (acfg, method);
 		}
 #endif
 
