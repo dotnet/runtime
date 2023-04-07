@@ -11,6 +11,8 @@
 #include "aot.h"
 #include "helper.h"
 
+#include <dn-vector.h>
+
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/tokentype.h>
@@ -231,7 +233,9 @@ helper_thread (void *arg)
 	if (aot_profiler.duration >= 0) {
 		sleep (aot_profiler.duration);
 	} else if (aot_profiler.command_port >= 0) {
-		GArray *command_sockets = g_array_new (FALSE, FALSE, sizeof (int));
+		dn_vector_t command_sockets = {0,};
+
+		dn_vector_init_t (&command_sockets, int);
 
 		while (1) {
 			fd_set rfds;
@@ -242,8 +246,8 @@ helper_thread (void *arg)
 
 			mono_profhelper_add_to_fd_set (&rfds, aot_profiler.server_socket, &max_fd);
 
-			for (gint i = 0; i < command_sockets->len; i++)
-				mono_profhelper_add_to_fd_set (&rfds, g_array_index (command_sockets, int, i), &max_fd);
+			for (uint32_t i = 0; i < dn_vector_size (&command_sockets); i++)
+				mono_profhelper_add_to_fd_set (&rfds, *dn_vector_index_t (&command_sockets, int, i), &max_fd);
 
 			struct timeval tv = { .tv_sec = 1, .tv_usec = 0 };
 
@@ -256,8 +260,8 @@ helper_thread (void *arg)
 				exit (1);
 			}
 
-			for (gint i = 0; i < command_sockets->len; i++) {
-				int fd = g_array_index (command_sockets, int, i);
+			for (uint32_t i = 0; i < dn_vector_size (&command_sockets); i++) {
+				int fd = *dn_vector_index_t (&command_sockets, int, i);
 
 				if (!FD_ISSET (fd, &rfds))
 					continue;
@@ -270,7 +274,7 @@ helper_thread (void *arg)
 
 				if (!len) {
 					// The other end disconnected.
-					g_array_remove_index (command_sockets, i);
+					dn_vector_erase (dn_vector_it_next_n (dn_vector_begin (&command_sockets), i));
 					i--;
 					mono_profhelper_close_socket_fd (fd);
 
@@ -288,7 +292,7 @@ helper_thread (void *arg)
 
 					mono_profiler_printf_err ("aot profiler data saved to the socket");
 
-					g_array_remove_index (command_sockets, i);
+					dn_vector_erase (dn_vector_it_next_n (dn_vector_begin (&command_sockets), i));
 					i--;
 
 					continue;
@@ -307,15 +311,15 @@ helper_thread (void *arg)
 					if (fd >= FD_SETSIZE)
 						mono_profhelper_close_socket_fd (fd);
 					else
-						g_array_append_val (command_sockets, fd);
+						dn_vector_push_back (&command_sockets, fd);
 				}
 			}
 		}
 
-		for (gint i = 0; i < command_sockets->len; i++)
-			mono_profhelper_close_socket_fd (g_array_index (command_sockets, int, i));
+		for (gint i = 0; i < dn_vector_size (&command_sockets); i++)
+			mono_profhelper_close_socket_fd (*dn_vector_index_t (&command_sockets, int, i));
 
-		g_array_free (command_sockets, TRUE);
+		dn_vector_dispose (&command_sockets);
 	}
 
 	prof_shutdown (&aot_profiler);

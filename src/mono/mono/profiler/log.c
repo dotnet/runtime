@@ -12,6 +12,7 @@
  */
 
 #include <config.h>
+#include <dn-vector.h>
 #include <gmodule.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
@@ -2781,7 +2782,8 @@ helper_thread (void *arg)
 {
 	MonoProfilerThread *thread = profiler_thread_begin ("Profiler Helper", TRUE);
 
-	GArray *command_sockets = g_array_new (FALSE, FALSE, sizeof (int));
+	dn_vector_t command_sockets = {0,};
+	dn_vector_init_t (&command_sockets, int);
 
 	while (1) {
 		fd_set rfds;
@@ -2795,8 +2797,8 @@ helper_thread (void *arg)
 		mono_profhelper_add_to_fd_set (&rfds, log_profiler.pipes [0], &max_fd);
 #endif
 
-		for (gint i = 0; i < command_sockets->len; i++)
-			mono_profhelper_add_to_fd_set (&rfds, g_array_index (command_sockets, int, i), &max_fd);
+		for (gint i = 0; i < dn_vector_size (&command_sockets); i++)
+			mono_profhelper_add_to_fd_set (&rfds, *dn_vector_index_t (&command_sockets, int, i), &max_fd);
 
 		struct timeval tv = { .tv_sec = 1, .tv_usec = 0 };
 
@@ -2835,8 +2837,8 @@ helper_thread (void *arg)
 		}
 #endif
 
-		for (gint i = 0; i < command_sockets->len; i++) {
-			int fd = g_array_index (command_sockets, int, i);
+		for (gint i = 0; i < dn_vector_size (&command_sockets); i++) {
+			int fd = *dn_vector_index_t (&command_sockets, int, i);
 
 			if (!FD_ISSET (fd, &rfds))
 				continue;
@@ -2852,7 +2854,7 @@ helper_thread (void *arg)
 
 			if (!len) {
 				// The other end disconnected.
-				g_array_remove_index (command_sockets, i);
+				dn_vector_erase (dn_vector_it_next_n (dn_vector_begin (&command_sockets), i));
 				mono_profhelper_close_socket_fd (fd);
 
 				continue;
@@ -2873,17 +2875,17 @@ helper_thread (void *arg)
 					mono_profhelper_close_socket_fd (fd);
 				else
 #endif
-					g_array_append_val (command_sockets, fd);
+					dn_vector_push_back (&command_sockets, fd);
 			}
 		}
 
 		profiler_thread_check_detach (thread);
 	}
 
-	for (gint i = 0; i < command_sockets->len; i++)
-		mono_profhelper_close_socket_fd (g_array_index (command_sockets, int, i));
+	for (gint i = 0; i < dn_vector_size (&command_sockets); i++)
+		mono_profhelper_close_socket_fd (*dn_vector_intex_t (&command_sockets, int, i));
 
-	g_array_free (command_sockets, TRUE);
+	dn_vector_dispose (&command_sockets);
 
 	profiler_thread_end (thread, &log_profiler.helper_thread_exited, TRUE);
 
