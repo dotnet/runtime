@@ -83,14 +83,14 @@ namespace Microsoft.Interop
 
         public static SyntaxTokenList StripAccessibilityModifiers(this SyntaxTokenList tokenList)
         {
-            SyntaxToken[] strippedTokens = new SyntaxToken[tokenList.Count];
+            List<SyntaxToken> strippedTokens = new ();
             for (int i = 0; i < tokenList.Count; i++)
             {
                 if (tokenList[i].Kind() is SyntaxKind.PublicKeyword or SyntaxKind.InternalKeyword or SyntaxKind.ProtectedKeyword or SyntaxKind.PrivateKeyword)
                 {
                     continue;
                 }
-                strippedTokens[i] = tokenList[i];
+                strippedTokens.Add(tokenList[i]);
             }
             return new SyntaxTokenList(strippedTokens);
         }
