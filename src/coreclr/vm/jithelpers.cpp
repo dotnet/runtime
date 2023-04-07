@@ -1820,10 +1820,6 @@ HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIn
     MethodTable * pMT = AppDomain::GetCurrentDomain()->LookupThreadStaticBlockType(staticBlockIndex);
     _ASSERTE(!pMT->HasGenericsStaticsInfo());
 
-    // For generics, we need to call CheckRestore() for some reason
-    if (pMT->HasGenericsStaticsInfo())
-        pMT->CheckRestore();
-
     // Get the TLM
     ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
     _ASSERTE(pThreadLocalModule != NULL);
