@@ -789,6 +789,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     else if (helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
     {
         result = gtNewHelperCallNode(helper, type, gtNewIconNode(typeIndex, TYP_UINT));
+        result->SetExpTLSFieldAccess();
     }
     else
     {
@@ -4240,17 +4241,20 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 
                 GenTreeCall* call = tree->AsCall();
 
-                CorInfoHelpFunc func = eeGetHelperNum(call->gtCallMethHnd);
-                if (func != CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
+                if (!call->IsExpTLSFieldAccess())
                 {
                     continue;
                 }
+
+                assert(eeGetHelperNum(call->gtCallMethHnd) ==
+                       CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED);
 
                 JITDUMP("Expanding thread static local access for [%06d] in " FMT_BB ":\n", dspTreeID(tree),
                         block->bbNum);
                 DISPTREE(tree);
                 JITDUMP("\n");
 
+                call->ClearExpTLSFieldAccess();
                 assert(call->gtArgs.CountArgs() == 1);
 
                 // Split block right before the call tree
