@@ -1,4 +1,4 @@
-<Project>
+<Project InitialTargets="NETStandardCompatError_Microsoft_Extensions_Configuration_Binder">
     <Target Name="_Microsoft_Extensions_Configuration_BinderRemoveAnalyzer" 
             Condition="'$(EnableConfigurationBindingGenerator)' != 'true'"
             AfterTargets="ResolvePackageDependenciesForBuild;ResolveNuGetPackageAssets">
@@ -7,4 +7,22 @@
             <Analyzer Remove="@(Analyzer->WithMetadataValue('NuGetPackageId', 'Microsoft.Extensions.Configuration.Binder'))" />
         </ItemGroup>
     </Target>
+
+    <!-- Only apply for [net4.6.1] and [netcoreapp2.0, net6.0) -->
+    <Target Name="NETStandardCompatError_Microsoft_Extensions_Configuration_Binder"
+          Condition="'$(SuppressTfmSupportBuildWarnings)' == '' AND
+          (
+            (
+                $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net4.6.1')) AND
+                !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net4.6.2'))
+            )
+            OR
+            (
+                $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netcoreapp2.0')) AND
+                !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net6.0'))
+            )
+          )
+          ">
+    <Warning Text="Microsoft.Extensions.Configuration.Binder doesn't support $(TargetFramework) and has not been tested with it. Consider upgrading your TargetFramework to net6.0 or later. You may also set &lt;SuppressTfmSupportBuildWarnings&gt;true&lt;/SuppressTfmSupportBuildWarnings&gt; in the project file to ignore this warning and attempt to run in this unsupported configuration at your own risk." />
+  </Target>
 </Project>
