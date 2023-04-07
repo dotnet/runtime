@@ -5841,7 +5841,8 @@ void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
         if (node->OperIs(GT_LSH, GT_RSH, GT_RSZ))
         {
             GenTree* op2 = node->gtGetOp2();
-            if (op2->OperIs(GT_IND) && op2->TypeIs(node->TypeGet()))
+            if (op2->TypeIs(node->TypeGet()) && IsContainableMemoryOp(op2) &&
+                IsSafeToContainMem(node, op2))
             {
                 MakeSrcContained(node, op2);
             }

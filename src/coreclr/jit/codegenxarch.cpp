@@ -4845,10 +4845,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
         if (shiftBy->isContained())
         {
-            assert(shiftBy->OperIs(GT_IND));
-
-            emitAttr size = emitTypeSize(tree);
-            GetEmitter()->emitIns_R_A_R(ins, size, tree->GetRegNum(), shiftBy->AsIndir(), operandReg);
+            inst_RV_TT_RV(ins, emitTypeSize(tree), tree->GetRegNum(), shiftBy, operandReg);
         }
         else
         {

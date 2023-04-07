@@ -1137,6 +1137,51 @@ void CodeGen::inst_RV_RV_TT(
             unreached();
     }
 }
+
+#ifdef TARGET_AMD64
+//------------------------------------------------------------------------
+// inst_RV_TT_RV: Generates an instruction that takes 2 operands:
+//                a register operand and an operand that may be in memory or register
+//                the result is returned in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    size      -- The emit size attribute
+//    targetReg -- The target register
+//    op1       -- The first operand, which may be a memory node or a node producing a register
+//    op2Reg    -- The second operand register
+//
+void CodeGen::inst_RV_TT_RV(instruction ins, emitAttr size, regNumber targetReg, GenTree* op1, regNumber op2Reg)
+{
+    emitter* emit = GetEmitter();
+    noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(size), targetReg));
+
+    OperandDesc op1Desc = genOperandDesc(op1);
+    switch (op1Desc.GetKind())
+    {
+        case OperandKind::ClsVar:
+            emit->emitIns_R_C_R(ins, size, targetReg, op1Desc.GetFieldHnd(), 0, op2Reg);
+            break;
+
+        case OperandKind::Local:
+            emit->emitIns_R_S_R(ins, size, targetReg, op1Desc.GetVarNum(), op1Desc.GetLclOffset(), op2Reg);
+            break;
+
+        case OperandKind::Indir:
+        {
+            // Until we improve the handling of addressing modes in the emitter, we'll create a
+            // temporary GT_IND to generate code with.
+            GenTreeIndir  indirForm;
+            GenTreeIndir* indir = op1Desc.GetIndirForm(&indirForm);
+            emit->emitIns_R_A_R(ins, size, targetReg, indir, op2Reg);
+        }
+        break;
+
+        default:
+            unreached();
+    }
+}
+#endif // TARGET_AMD64
 #endif // TARGET_XARCH
 
 /*****************************************************************************

@@ -560,6 +560,9 @@ void emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* i
 
 #ifdef TARGET_AMD64
 void emitIns_R_A_R(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir, regNumber reg2);
+void emitIns_R_C_R(
+    instruction ins, emitAttr attr, regNumber reg1, CORINFO_FIELD_HANDLE fldHnd, int offs, regNumber reg2);
+void emitIns_R_S_R(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, regNumber reg2);
 #endif // TARGET_AMD64
 
 void emitIns_R_A_I(instruction ins, emitAttr attr, regNumber reg1, GenTreeIndir* indir, int ival);

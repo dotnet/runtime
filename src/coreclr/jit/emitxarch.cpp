@@ -754,6 +754,7 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
         case IF_RRW_MRD_CNS:
 
         case IF_RWR_RRD_MRD:
+        case IF_RWR_MRD_RRD:
         case IF_RWR_MRD_CNS:
         case IF_RWR_RRD_MRD_CNS:
         case IF_RWR_RRD_MRD_RRD:
@@ -764,6 +765,7 @@ bool emitter::emitIsInstrWritingToReg(instrDesc* id, regNumber reg)
         case IF_RRW_SRD_CNS:
 
         case IF_RWR_RRD_SRD:
+        case IF_RWR_SRD_RRD:
         case IF_RWR_SRD_CNS:
         case IF_RWR_RRD_SRD_CNS:
         case IF_RWR_RRD_SRD_RRD:
@@ -934,8 +936,10 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition 
         case IF_RRW:
         case IF_RWR_RRD_RRD:
         case IF_RWR_RRD_MRD:
+        case IF_RWR_MRD_RRD:
         case IF_RWR_RRD_ARD:
         case IF_RWR_RRD_SRD:
+        case IF_RWR_SRD_RRD:
             break;
         default:
             return false;
@@ -2854,12 +2858,14 @@ unsigned emitter::emitGetVexPrefixSize(instrDesc* id) const
         case IF_RRW_SRD:
         case IF_RRW_SRD_CNS:
         case IF_RWR_MRD:
+        case IF_RWR_MRD_RRD:
         case IF_RWR_MRD_CNS:
         case IF_RWR_RRD_MRD:
         case IF_RWR_RRD_MRD_CNS:
         case IF_RWR_RRD_SRD:
         case IF_RWR_RRD_SRD_CNS:
         case IF_RWR_SRD:
+        case IF_RWR_SRD_RRD:
         case IF_RWR_SRD_CNS:
         case IF_SRD:
         case IF_SWR_RRD:
@@ -4501,6 +4507,8 @@ emitter::insFormat emitter::emitMapFmtAtoM(insFormat fmt)
             return IF_RRW_MRD_CNS;
         case IF_RWR_RRD_ARD:
             return IF_RWR_RRD_MRD;
+        case IF_RWR_ARD_RRD:
+            return IF_RWR_MRD_RRD;
         case IF_RWR_RRD_ARD_CNS:
             return IF_RWR_RRD_MRD_CNS;
         case IF_RWR_RRD_ARD_RRD:
@@ -6564,6 +6572,59 @@ void emitter::emitIns_R_A_R(instruction ins, emitAttr attr, regNumber reg1, GenT
     emitHandleMemOp(indir, id, IF_RWR_ARD_RRD, ins);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
+void emitter::emitIns_R_C_R(
+    instruction ins, emitAttr attr, regNumber reg1, CORINFO_FIELD_HANDLE fldHnd, int offs, regNumber reg2)
+{
+    assert(emitComp->compOpportunisticallyDependsOn(InstructionSet_BMI2));
+    assert(ins == INS_shlx || ins == INS_shrx || ins == INS_sarx);
+
+    // Static always need relocs
+    if (!jitStaticFldIsGlobAddr(fldHnd))
+    {
+         attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
+    }
+
+    instrDesc* id   = emitNewInstrAmd(attr, offs);
+
+    id->idIns(ins);
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+
+    id->idInsFmt(IF_RWR_MRD_RRD);
+    id->idAddr()->iiaFieldHnd = fldHnd;
+
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    id->idCodeSize(sz);
+
+    dispIns(id);
+    emitCurIGsize += sz;
+}
+
+void emitter::emitIns_R_S_R(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs, regNumber reg2)
+{
+    assert(emitComp->compOpportunisticallyDependsOn(InstructionSet_BMI2));
+    assert(ins == INS_shlx || ins == INS_shrx || ins == INS_sarx);
+
+    instrDesc* id = emitNewInstr(attr);
+
+    id->idInsFmt(IF_RWR_SRD_RRD);
+    id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
+#endif
+
+    id->idIns(ins);
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+
+    UNATIVE_OFFSET sz = emitInsSizeSV(id, insCodeRM(ins), varx, offs);
     id->idCodeSize(sz);
 
     dispIns(id);
@@ -11133,6 +11194,12 @@ void emitter::emitDispIns(
                              id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
             break;
 
+        case IF_RWR_SRD_RRD:
+            printf("%s, %s, %s", emitRegName(id->idReg1(), attr), sstr, emitRegName(id->idReg2(), attr));
+            emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
+                             id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+            break;
+
         case IF_RWR_RRD_SRD_CNS:
         {
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
@@ -11485,6 +11552,12 @@ void emitter::emitDispIns(
 
         case IF_RWR_RRD_MRD:
             printf("%s, %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), attr), sstr);
+            offs = emitGetInsDsp(id);
+            emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
+            break;
+
+        case IF_RWR_MRD_RRD:
+            printf("%s, %s, %s", emitRegName(id->idReg1(), attr), sstr, emitRegName(id->idReg2(), attr));
             offs = emitGetInsDsp(id);
             emitDispClsVar(id->idAddr()->iiaFieldHnd, offs, ID_INFO_DSP_RELOC);
             break;
@@ -13312,6 +13385,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 case IF_RWR_SRD: // Register Write, Stack Read
                 case IF_RRW_SRD: // Register Read/Write, Stack Read
                 case IF_RWR_RRD_SRD:
+                case IF_RWR_SRD_RRD:
                     emitGCregDeadUpd(id->idReg1(), dst);
                     break;
                 default:
@@ -13769,6 +13843,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
                 case IF_RWR_MRD:
                 case IF_RRW_MRD:
                 case IF_RWR_RRD_MRD:
+                case IF_RWR_MRD_RRD:
                     emitGCregDeadUpd(id->idReg1(), dst);
                     break;
                 default:
@@ -16342,6 +16417,18 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
         }
 
+        case IF_RWR_SRD_RRD:
+        {
+            assert(IsVexOrEvexEncodableInstruction(ins));
+            assert(emitComp->compOpportunisticallyDependsOn(InstructionSet_BMI2));
+
+            code = insCodeRM(ins);
+
+            regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
+            dst     = emitOutputSV(dst, id, code | regcode);
+            break;
+        }
+
         case IF_RWR_RRD_SRD_CNS:
         case IF_RWR_RRD_SRD_RRD:
         {
@@ -16503,6 +16590,20 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
                 dst     = emitOutputCV(dst, id, code | regcode | 0x0500);
             }
+            sz = emitSizeOfInsDsc(id);
+            break;
+        }
+
+        case IF_RWR_MRD_RRD:
+        {
+            assert(IsVexOrEvexEncodableInstruction(ins));
+            assert(emitComp->compOpportunisticallyDependsOn(InstructionSet_BMI2));
+
+            code = insCodeRM(ins);
+
+            regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
+            dst     = emitOutputCV(dst, id, code | regcode | 0x0500);
+
             sz = emitSizeOfInsDsc(id);
             break;
         }
@@ -16843,6 +16944,7 @@ emitter::insFormat emitter::getMemoryOperation(instrDesc* id)
         case IF_RWR_MRD_CNS:
         case IF_RWR_MRD_OFF:
         case IF_RWR_RRD_MRD:
+        case IF_RWR_MRD_RRD:
         case IF_RRW_MRD_CNS:
         case IF_RWR_RRD_MRD_CNS:
         case IF_RWR_RRD_MRD_RRD:
@@ -16876,6 +16978,7 @@ emitter::insFormat emitter::getMemoryOperation(instrDesc* id)
         case IF_RWR_SRD:
         case IF_RWR_SRD_CNS:
         case IF_RWR_RRD_SRD:
+        case IF_RWR_SRD_RRD:
         case IF_RRW_SRD_CNS:
         case IF_RWR_RRD_SRD_CNS:
         case IF_RWR_RRD_SRD_RRD:
