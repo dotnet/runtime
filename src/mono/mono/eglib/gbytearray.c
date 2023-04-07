@@ -27,6 +27,7 @@
  */
 #include "config.h"
 #include <stdlib.h>
+#define G_ALLOW_DEPRECATED_CONTAINER
 #include <glib.h>
 
 GByteArray *

@@ -104,10 +104,14 @@ public:
 #define G_MAY_ALIAS /* nothing */
 #endif
 
+#ifndef G_ALLOW_DEPRECATED_CONTAINER
 #if defined (__GNUC__)
 #define G_CONTAINER_DEPRECATED(gcontainer,dncontainer) __attribute__((deprecated("Do not use " #gcontainer ", use " #dncontainer " from src/native/containers")))
 #elif defined (_MSC_VER)
 #define G_CONTAINER_DEPRECATED(gcontainer,dncontainer) __declspec(deprecated("Do not use " #gcontainer ", use " #dncontainer " from src\\native\\containers"))
+#endif
+#else
+#define G_CONTAINER_DEPRECATED(gcontainer,dncontainer) /* empty */
 #endif
 
 
