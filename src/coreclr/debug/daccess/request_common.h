@@ -153,7 +153,7 @@ inline void EnumGcHeap(TADDR heap)
 #define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) ENUM_ARRAY(field_name, field_type, array_length)
 
 #include "../../gc/dac_gcheap_fields.h"
-    
+
 #undef DEFINE_ARRAY_FIELD
 #undef DEFINE_DPTR_FIELD
 #undef DEFINE_FIELD
