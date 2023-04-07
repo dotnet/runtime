@@ -5312,7 +5312,7 @@ HRESULT ClrDataAccess::GetHandleTableMemoryRegions(ISOSMemoryEnum** ppEnum)
             hr = htEnum->QueryInterface(__uuidof(ISOSMemoryEnum), (void**)ppEnum);
 
         if (FAILED(hr))
-            delete ppEnum;
+            delete htEnum;
     }
     else
     {
@@ -5330,16 +5330,16 @@ HRESULT ClrDataAccess::GetGCBookkeepingMemoryRegions(ISOSMemoryEnum** ppEnum)
 
     SOSDacEnter();
 
-    DacGCBookkeepingEnumerator* htEnum = new (nothrow) DacGCBookkeepingEnumerator();
-    if (htEnum)
+    DacGCBookkeepingEnumerator* bkEnum = new (nothrow) DacGCBookkeepingEnumerator();
+    if (bkEnum)
     {
-        hr = htEnum->Init();
+        hr = bkEnum->Init();
 
         if (SUCCEEDED(hr))
-            hr = htEnum->QueryInterface(__uuidof(ISOSMemoryEnum), (void**)ppEnum);
+            hr = bkEnum->QueryInterface(__uuidof(ISOSMemoryEnum), (void**)ppEnum);
 
         if (FAILED(hr))
-            delete ppEnum;
+            delete bkEnum;
     }
     else
     {
