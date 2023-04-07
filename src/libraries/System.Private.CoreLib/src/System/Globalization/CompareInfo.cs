@@ -175,11 +175,13 @@ namespace System.Globalization
                 NlsInitSortHandle();
                 return;
             }
+#if TARGET_BROWSER || TARGET_WASI
             if (GlobalizationMode.Hybrid)
             {
                 JsInit(culture.InteropName!);
                 return;
             }
+#endif
             IcuInitSortHandle(culture.InteropName!);
         }
 
