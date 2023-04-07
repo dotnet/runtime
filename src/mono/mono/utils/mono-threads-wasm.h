@@ -11,6 +11,20 @@
 #include <glib.h>
 #include <mono/utils/mono-threads.h>
 
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+#include <emscripten/version.h>
+/* for Emscripten < 3.1.33,
+ * emscripten_runtime_keepalive_push()/emscripten_runtime_keepalive_pop()/emscripten_keepalive_check()
+ * are no-ops when -sNO_EXIT_RUNTIME=1 (the default).  Do our own bookkeeping when we can.  Note
+ * that this is a HACK that is very sensitive to code that actually cares about this bookkeeping.
+ *
+ * Specifically we need https://github.com/emscripten-core/emscripten/commit/0c2f5896b839e25fee9763a9ac9c619f359988f4
+ */
+#if (__EMSCRIPTEN_major__ < 3) || (__EMSCRIPTEN_major__ == 3 && __EMSCRIPTEN_minor__ < 1) || (__EMSCRIPTEN_major__ == 3 && __EMSCRIPTEN_minor__ == 1 && __EMSCRIPTEN_tiny__ < 33)
+#define MONO_EMSCRIPTEN_KEEPALIVE_WORKAROUND_HACK 1
+#endif
+#endif /*HOST_BROWSER && !DISABLE_THREADS*/
+
 #ifdef HOST_WASM
 
 /*
