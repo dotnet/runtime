@@ -8359,6 +8359,8 @@ HRESULT DacGCBookkeepingEnumerator::Init()
         mRegions.Add(mem);
         
         next = ct->next_card_table;
+        if (next == nextStart)
+            break;
     }
     
     return S_OK;
