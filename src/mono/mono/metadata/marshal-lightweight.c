@@ -68,6 +68,19 @@ get_method_image (MonoMethod *method)
 	return m_class_get_image (method->klass);
 }
 
+static gboolean ilgen_callbacks_requested = FALSE;
+MONO_API void
+mono_marshal_ilgen_init (void)
+{
+  	ilgen_callbacks_requested = TRUE;
+}
+
+gboolean
+mono_marshal_is_ilgen_requested (void)
+{
+	return ilgen_callbacks_requested;
+}
+
 /**
  * mono_mb_strdup:
  * \param mb the MethodBuilder
