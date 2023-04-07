@@ -16421,8 +16421,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             assert(emitComp->compOpportunisticallyDependsOn(InstructionSet_BMI2));
 
-            code = insCodeRM(ins);
-
+            code    = insCodeRM(ins);
             regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
             dst     = emitOutputSV(dst, id, code | regcode);
             break;
@@ -16597,12 +16596,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             assert(emitComp->compOpportunisticallyDependsOn(InstructionSet_BMI2));
 
-            code = insCodeRM(ins);
-
+            code    = insCodeRM(ins);
             regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
             dst     = emitOutputCV(dst, id, code | regcode | 0x0500);
-
-            sz = emitSizeOfInsDsc(id);
+            sz      = emitSizeOfInsDsc(id);
             break;
         }
 
