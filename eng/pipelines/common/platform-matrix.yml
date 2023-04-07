@@ -341,7 +341,7 @@ jobs:
 
 # Mono Linux arm64 product build
 
-- ${{ if containsValue(parameters.platforms, 'linux_arm64') }}:
+- ${{ if containsValue(parameters.platforms, 'mono_linux_arm64') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
