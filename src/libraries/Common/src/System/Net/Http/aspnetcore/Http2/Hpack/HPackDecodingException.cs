@@ -22,10 +22,8 @@ namespace System.Net.Http.HPack
         {
         }
 
-#if NET8_0_OR_GREATER
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-#endif
         public HPackDecodingException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

@@ -40,11 +40,9 @@ namespace System.Reflection.Runtime.TypeInfos
 
         protected sealed override TypeAttributes GetAttributeFlagsImpl()
         {
-            TypeAttributes attrs = TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed;
-#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
-            attrs |= TypeAttributes.Serializable;
+#pragma warning disable SYSLIB0050 // TypeAttributes.Serializable is obsolete
+            return TypeAttributes.AutoLayout | TypeAttributes.AnsiClass | TypeAttributes.Class | TypeAttributes.Public | TypeAttributes.Sealed | TypeAttributes.Serializable;
 #pragma warning restore SYSLIB0050
-            return attrs;
         }
 
         internal sealed override IEnumerable<RuntimeConstructorInfo> SyntheticConstructors
