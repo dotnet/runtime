@@ -170,7 +170,7 @@ We have presented a technique to implement approximately correct counters with r
 
 This sort of counter seems well-suited for use in our Dynamic PGO instrumentation.
 
-It may be that approximate counting will be useful in other application areas where scala
+It may be that approximate counting will be useful in other application areas where scalability is a concern and exact counts aren't needed.
 
 ## End Notes
 

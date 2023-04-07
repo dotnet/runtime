@@ -5736,6 +5736,13 @@ HCIMPL3(void, JIT_VTableProfile64, Object* obj, CORINFO_METHOD_HANDLE baseMethod
 }
 HCIMPLEND
 
+// Helpers for scalable approximate counters
+//
+// Here 13 means we count accurately up to 2^13 = 8192 and
+// then start counting probabialistically.
+//
+// See docs/design/features/ScalableApproximateCounting.md
+//
 HCIMPL1(void, JIT_CountProfile32, volatile LONG* pCounter)
 {
     FCALL_CONTRACT;
