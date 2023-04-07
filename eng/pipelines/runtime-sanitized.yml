@@ -76,6 +76,8 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
               testRunNamePrefixSuffix: Libraries_$(_BuildConfig)
+              scenarios:
+                - normal
 
       #
       # NativeAOT release build and smoke tests with AddressSanitizer
