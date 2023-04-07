@@ -9065,9 +9065,13 @@ public:
         {
             maxRegSize = maxSIMDStructBytes();
 #if defined(TARGET_XARCH)
-            // TODO-XARCH-AVX512: Consider enabling this for AVX512 where it's beneficial
-            maxRegSize = min(maxRegSize, YMM_REGSIZE_BYTES);
-            threshold  = maxRegSize;
+            if (type != UnrollKind::Memmove)
+            {
+                // TODO-XARCH-AVX512: Consider enabling this for AVX512 where it's beneficial.
+                // Enabled for Memmove only for now.
+                maxRegSize = min(maxRegSize, YMM_REGSIZE_BYTES);
+            }
+            threshold = maxRegSize;
 #elif defined(TARGET_ARM64)
             // ldp/stp instructions can load/store two 16-byte vectors at once, e.g.:
             //
@@ -9111,11 +9115,6 @@ public:
 
         if (type == UnrollKind::Memmove)
         {
-#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
-            // Enable AVX512 support for Memmove:
-            maxRegSize = compOpportunisticallyDependsOn(InstructionSet_AVX512F) ? ZMM_REGSIZE_BYTES : maxRegSize;
-#endif
-
             // NOTE: Memmove's unrolling is currently limited with LSRA -
             // up to LinearScan::MaxInternalCount number of temp regs, e.g. 5*16=80 bytes on arm64
             threshold = maxRegSize * 4;
