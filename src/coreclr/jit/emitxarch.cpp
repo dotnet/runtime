@@ -16421,6 +16421,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             assert(IsVexOrEvexEncodableInstruction(ins));
             assert(emitComp->compOpportunisticallyDependsOn(InstructionSet_BMI2));
+            assert(ins == INS_shlx || ins == INS_shrx || ins == INS_sarx);
 
             code = insCodeRM(ins);
             dst  = emitOutputSV(dst, id, code);
@@ -16596,6 +16597,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             assert(IsVexOrEvexEncodableInstruction(ins));
             assert(emitComp->compOpportunisticallyDependsOn(InstructionSet_BMI2));
+            assert(ins == INS_shlx || ins == INS_shrx || ins == INS_sarx);
 
             code = insCodeRM(ins);
             dst  = emitOutputCV(dst, id, code);
