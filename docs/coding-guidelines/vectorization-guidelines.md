@@ -372,7 +372,7 @@ int Sum(Span<int> buffer)
 }
 ```
 
-**Note:** Use `ref MemoryMarshal.GetReference(span)` instead of `ref span[0]` and `ref MemoryMarshal.GetArrayDataReference(array)` instead of `ref array[0]` to handle empty buffer scenarios (which would throw `IndexOutOfRangeException`). If the buffer is empty, these methods return a reference to the location where the 0th element would have been stored. Such a reference may or may not be null. You can use it for pinning but you must never dereference it.
+**Note:** Use `ref MemoryMarshal.GetReference(span)` instead of `ref span[0]` and `ref MemoryMarshal.GetArrayDataReference(array)` instead of `ref array[0]` to handle empty buffer scenarios (which would throw `IndexOutOfRangeException`). If the buffer is empty, these methods return a reference to the location where the 0th element would have been stored. Such a reference may or may not be null. You can use it for pinning but you must never de-reference it.
 
 **Note:** The `GetReference` method has an overload that accepts a `ReadOnlySpan` and returns mutable reference. Please use it with caution! To get a `readonly` reference, you need to use [ReadOnlySpan<T>.GetPinnableReference](https://learn.microsoft.com/dotnet/api/system.readonlyspan-1.getpinnablereference).
 
@@ -497,7 +497,7 @@ unsafe int UnmanagedPointersSum(Span<int> buffer)
 
 `LoadAligned` and `LoadAlignedNonTemporal` require the input to be aligned. Aligned reads and writes should be slightly faster but using them comes at a price of increased complexity. "NonTemporal" means that the hardware is allowed (but not required) to bypass the cache. Non-temporal reads provide a speedup when working with very large amounts of data as it avoids repeatedly filling the cache with values that will never be used again.
 
-Currently .NET exposes only one API fo allocating unmanaged aligned memory: [NativeMemory.AlignedAlloc](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.nativememory.alignedalloc). In the future, we might provide [a dedicated API](https://github.com/dotnet/runtime/issues/27146) for allocating managed, aligned and hence pinned memory buffers.
+Currently .NET exposes only one API for allocating unmanaged aligned memory: [NativeMemory.AlignedAlloc](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.nativememory.alignedalloc). In the future, we might provide [a dedicated API](https://github.com/dotnet/runtime/issues/27146) for allocating managed, aligned and hence pinned memory buffers.
 
 The alternative to creating aligned buffers (we don't always have the control over input) is to pin the buffer, find first aligned address, handle non-aligned elements, then start aligned loop and afterwards handle the remainder. Adding such complexity to our code is hardly ever worth it and needs to be proved with proper benchmarking on various hardware.
 
@@ -739,7 +739,7 @@ AMD Ryzen Threadripper PRO 3945WX 12-Cores, 1 CPU, 24 logical and 12 physical co
 
 Even such a simple problem can be solved in at least 5 different ways. Using sophisticated hardware-specific instructions does not always provide the best performance, so **with the new `Vector128` and `Vector256` APIs we don't need to become assembly language experts to write fast, vectorized code**.
 
-## Toolchain
+## Tool-Chain
 
 `Vector128`, `Vector128<T>`, `Vector256` and `Vector256<T>` expose a LOT of APIs. We are constrained by time, so we won't describe all of them with examples. Instead, we have grouped them into categories to give you an overview of their capabilities. It's not required to remember what each of these methods is doing, but it's important to remember what kind of operations they allow for and check the details when needed.
 
@@ -1131,7 +1131,7 @@ The main goal of the new `Vector128` and `Vector256` APIs is to make writing fas
 
 - If you are already an expert and you have vectorized your code for both `x64/x86` and `arm64/arm` code you can use the new APIs to simplify your code, but you most likely won't observe any performance gains. [#64451](https://github.com/dotnet/runtime/issues/64451) lists the places where it was/can be done in dotnet/runtime. You can use links to the merged PRs to see real-life examples.
 - If you have already vectorized your code, but only for `x64/x86` or `arm64/arm`, you can use the  new APIs to have a single, cross-platform implementation.
-- If you have already vectorized your code with `Vector<T>` you can use the new APIs to check if they can produce better codegen.
+- If you have already vectorized your code with `Vector<T>` you can use the new APIs to check if they can produce better code-gen.
 - If you are not familiar with hardware specific instructions or you are about to vectorize a scalar algorithm, you should start with the new `Vector128` and `Vector256` APIs. Get a solid and working implementation and eventually consider using hardware-specific methods for performance critical code paths.
 
 ### Best practices
