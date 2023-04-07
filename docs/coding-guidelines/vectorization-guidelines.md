@@ -42,7 +42,7 @@ In recent releases, .NET has introduced many new APIs for vectorization. The vas
 
 ## Code structure
 
-`Vector128<T>` is the "common denominator" across all platforms that support vectorization (and this is expected to always be the case). It represents a 128-bit vector of type `T`.
+`Vector128<T>` is the "common denominator" across all platforms that support vectorization (and this is expected to always be the case). It represents a 128-bit vector containing elements of type `T`.
 
 `T` is constrained to specific primitive types:
 
@@ -68,18 +68,73 @@ A single `Vector128` operation allows you to operate on: 16 (s)bytes, 8 (u)short
 -----------------------------------------------------------------
 ```
 
-`Vector256<T>` is twice as big as `Vector128<T>`, so when it is hardware accelerated, and the data is large enough and the benchmarks prove that it offers better performance, you should use it instead of `Vector128<T>`. Namely, `Vector256<T>` on x86/x64 is mostly treated as `2x Vector128<T>` and while there are some operations that can "cross lanes", they can sometimes be more expensive or have other hidden costs.
+`Vector256<T>` is twice as big as `Vector128<T>`, so when it is hardware accelerated, the data is large enough, and the benchmarks prove that it offers better performance, you should consider using it instead of `Vector128<T>`. Benchmarking your code can be important as not all platforms treat larger vectors the same.
 
-To check the acceleration, use `Vector128.IsHardwareAccelerated` and `Vector256.IsHardwareAccelerated` properties.
+For example, `Vector256<T>` on x86/x64 is mostly treated as `2x Vector128<T>` rather than `1x Vector256<T>`, where each `Vector128<T>` is considered a "lane".  For most operations, this doesn't present any additional considerations they only operate on individual elements of the vector. However, some operations could "cross lanes" such as shuffling or pairwise operations and that may require additional overhead to handle.
 
-The size of the input also matters. It needs to be at least of the size of a single vector to be able to execute the vectorized code path (there are some advanced tricks that can allow you to operate on smaller inputs, but we won't describe them here). `Vector128<T>.Count` and `Vector256<T>.Count` return the number of elements of the given type T in a single vector.
-Both `Count` and `IsHardwareAccelerated` are turned into constants by the Just-In-Time compiler (i.e. no method call is required to retrieve the information). In the case of pre-compiled code (NativeAOT), this is not true for the `IsHardwareAccelerated` property, as the required information is not available at compile time.
+As an example, consider `Add(Vector128<float> lhs, Vector128<float> rhs)` where you end up effectively doing (pseudo-code):
+```csharp
+result[0] = lhs[0] + rhs[0];
+result[1] = lhs[1] + rhs[1];
+result[2] = lhs[2] + rhs[2];
+result[3] = lhs[3] + rhs[3];
+```
 
-**Note:** When `Vector256` is accelerated then `Vector128` and `Vector64` are also accelerated.
+With this algorithm it doesn't matter what size vector we have as we're accessing the same index of the input vectors and only one at a time. So regardless of whether we have `Vector128<T>` or `Vector256<T>` or `Vector512<T>`, it all operates the same.
 
-That is why the code is very often structured like this:
+However, if you then consider `AddPairwise(Vector128<float> lhs, Vector128<float> rhs)` (sometimes called `HorizontalAdd`) where you instead end up effectively doing:
+```csharp
+// process left
+result[0] = lhs[0] + lhs[1];
+result[1] = lhs[2] + lhs[3];
+// process right
+result[2] = rhs[0] + rhs[1];
+result[3] = rhs[2] + rhs[3];
+```
 
-```cs
+You may notice that this algorithm would change behavior if expanded up to operate on a single 256-bit vector (note `result[2]` is now `lhs[4] + lhs[6]` and not `rhs[0] + rhs[1]`):
+```csharp
+// process left
+result[0] = lhs[0] + lhs[1];
+result[1] = lhs[2] + lhs[3];
+result[2] = lhs[4] + lhs[5];
+result[3] = lhs[6] + lhs[7];
+// process right
+result[4] = rhs[0] + rhs[1];
+result[5] = rhs[2] + rhs[3];
+result[6] = rhs[4] + rhs[5];
+result[7] = rhs[6] + rhs[7];
+```
+
+Because this behavior would change, the x86/x64 platform opted to treat the operation as `2x Vector128<float>` inputs giving you instead:
+```csharp
+// process lower left
+result[0] = lhs[0] + lhs[1];
+result[1] = lhs[2] + lhs[3];
+// process lower right
+result[2] = rhs[0] + rhs[1];
+result[3] = rhs[2] + rhs[3];
+// process upper left
+result[4] = lhs[4] + lhs[5];
+result[5] = lhs[6] + lhs[7];
+// process upper right
+result[6] = rhs[4] + rhs[5];
+result[7] = rhs[6] + rhs[7];
+```
+
+This ends up preserving behavior and making it much easier to transition from `128-bit` to `256-bit` or higher as you're effectively just unrolling the loop again. It does, however, mean that some algorithms may need additional handling if you need to truly do anything involving the upper and lower lanes together. The exact additional expense here depends on what is being done, what the underlying hardware supports, and several other factors covered in more detail later.
+
+### Checking for Hardware Acceleration
+
+To check if a given vector size is hardware accelerated, use the `IsHardwareAccelerated` property on the relevant non-generic vector class. For example, `Vector128.IsHardwareAccelerated` or `Vector256.IsHardwareAccelerated`. Note that even when a vector size is accelerated, there may still be some operations that are not hardware-accelerated; e.g. floating-point division can be accelerated on some hardware while integer division is not.
+
+The size of the input also matters. It needs to be at least of the size of a single vector to be able to execute the vectorized code path (there are some advanced tricks that can allow you to operate on smaller inputs, but we won't describe them here). The `Count` properties (for example `Vector128<T>.Count` or `Vector256<T>.Count`) return the number of elements of the given type T in a single vector.
+
+When `Vector256` is accelerated, `Vector128` generally will be as well, but there's no guarantee of that. The best practice is to always check `IsHardwareAccelerated` explicitly. You may be tempted to cache the values from the `IsHardwareAccelerated` and `Count` properties, but this is not needed or recommended. Both `IsHardwareAccelerated` and `Count` are turned into constants by the Just-In-Time compiler and no method call is required to retrieve the information.
+
+### Example Code Structure
+
+```csharp
 void CodeStructure(ReadOnlySpan<byte> buffer)
 {
     if (Vector256.IsHardwareAccelerated && buffer.Length >= Vector256<byte>.Count)
@@ -99,7 +154,7 @@ void CodeStructure(ReadOnlySpan<byte> buffer)
 
 To reduce the number of comparisons for small inputs, we can re-arrange it in the following way:
 
-```cs
+```csharp
 void OptimalCodeStructure(ReadOnlySpan<byte> buffer)
 {
     if (!Vector128.IsHardwareAccelerated || buffer.Length < Vector128<byte>.Count)
@@ -117,9 +172,11 @@ void OptimalCodeStructure(ReadOnlySpan<byte> buffer)
 }
 ```
 
-**Both vector types provide almost identical features**, but arm64 hardware does not support `Vector256` yet, so for the sake of simplicity we will be using `Vector128` in all examples and assuming **little endian** architecture. Which means that all examples used in this document assume that they are being executed as part of the following `if` block:
+**Both vector types provide the same functionality**, but arm64 hardware does not support `Vector256`, so for the sake of simplicity we will be using `Vector128` in all examples. All examples shown also assume **little endian** architecture and/or do not need to deal with endianness. `BitConverter.IsLittleEndian` is available (and turned into a constant by the JIT) for algorithms that need to consider endianness.
 
-```cs
+With these assumptions, all examples shown in the document assume that they are being executed as part of the following `if` block:
+
+```csharp
 else if (Vector128.IsHardwareAccelerated && buffer.Length >= Vector128<byte>.Count)
 {
     // Vector128 code path
@@ -159,7 +216,7 @@ All that complexity needs to pay off. We need to **benchmark the code to verify 
 
 It's possible to define a config that instructs the harness to run the benchmarks for all four scenarios:
 
-```cs
+```csharp
 static void Main(string[] args)
 {
     Job enough = Job.Default
@@ -200,13 +257,13 @@ We have three possibilities:
 
 * We can enforce the alignment ourselves and have very stable results.
 * We can ask the harness to try to randomize the memory and observe the entire possible distribution with each run.
-* We can do nothing and wonder why the results vary from time to time.
+* We can do nothing and wonder why the results have additional noise across many runs.
 
 ##### Enforcing memory alignment
 
 We can allocate aligned unmanaged memory by using the [NativeMemory.AlignedAlloc](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.nativememory.alignedalloc).
 
-```cs
+```csharp
 public unsafe class Benchmarks
 {
     private void* _pointer;
@@ -279,7 +336,7 @@ Example: our input is a buffer of ten integers, assuming that `Vector128` is acc
 Imagine that we want to calculate the sum of all the numbers in given buffer. We definitely want to add every element just once, without repetitions. That is why in the first loop, we add four (128 bits / 32 bits) integers in one iteration. In the second loop, we handle the remaining values.
 
 
-```cs
+```csharp
 int Sum(Span<int> buffer)
 {
     Debug.Assert(Vector128.IsHardwareAccelerated && buffer.Length >= Vector128<int>.Count);
@@ -323,11 +380,11 @@ int Sum(Span<int> buffer)
 
 ### Vectorized remainder handling
 
-Now imagine that we need to check whether the given buffer contains a specific number. In this case, processing some values more than once is acceptable, we don't need to handle the remainder in a non-vectorized fashion.
+There are scenarios and advanced techniques that can allow for vectorized remainder handling instead of resorting to the non-vectorized approach illustrated above. Some algorithms could use an approach of backtracking to load one more vector's worth of elements and masking off elements that have already been processed. For idempotent algorithms, it is preferable to simply backtrack and process one last vector, repeating the operation for elements as needed.
 
-Example: a buffer contains six 32-bit integers, `Vector128` is accelerated, and it can work with four integers at a time. In the first loop iteration, we handle the first four elements. In the second (and last) iteration we need to handle the remaining two elements. Since the remainder is smaller than one `Vector128` and we are not mutating the input, we perform a vectorized operation on a `Vector128` containing the last four elements.
+In the example below, we need to check whether the given buffer contains a specific number; processing values more than once is completely acceptable. The buffer contains six 32-bit integers, `Vector128` is accelerated, and it can work with four integers at a time. In the first loop iteration, we handle the first four elements. In the second (and last) iteration we need to handle the remaining two elements. Since the remainder is smaller than one `Vector128` and we are not mutating the input, we perform a vectorized operation on a `Vector128` containing the last four elements.
 
-```cs
+```csharp
 bool Contains(Span<int> buffer, int searched)
 {
     Debug.Assert(Vector128.IsHardwareAccelerated && buffer.Length >= Vector128<int>.Count);
@@ -365,7 +422,7 @@ bool Contains(Span<int> buffer, int searched)
 
 `Vector128.Create(value)` creates a new vector with all elements initialized to the specified value. So `Vector128<int>.Zero` is equivalent to `Vector128.Create(0)`.
 
-`Vector128.Equals(Vector128 left, Vector128 right)` compares two vectors and returns a vector whose elements are all-bits-set or zero, depending on if the provided elements in left and right were equal. If the result of comparison is non zero, it means that there was at least one match.
+`Vector128.Equals(Vector128 left, Vector128 right)` compares two vectors and returns a vector where each element is either all-bits-set or zero, depending on if the corresponding elements in left and right were equal. If the result of comparison is non zero, it means that there was at least one match.
 
 ### Access violation (AV) testing
 
@@ -393,7 +450,7 @@ Writing tests that detect that issue is hard, but not impossible. The .NET Team 
 
 Both `Vector128` and `Vector256` provide at least five ways of loading them from memory:
 
-```cs
+```csharp
 public static class Vector128
 {
     public static Vector128<T> Load<T>(T* source) where T : unmanaged;
@@ -406,7 +463,7 @@ public static class Vector128
 
 The first three overloads require a pointer to the source. To be able to use a pointer to a managed buffer in a safe way, the buffer needs to be pinned first. This is because the GC cannot track unmanaged pointers. It needs help to ensure that it doesn't move the memory while you're using it, as the pointers would silently become invalid. The tricky part here is doing the pointer arithmetic right:
 
-```cs
+```csharp
 unsafe int UnmanagedPointersSum(Span<int> buffer)
 {
     fixed (int* pBuffer = buffer)
@@ -438,7 +495,7 @@ unsafe int UnmanagedPointersSum(Span<int> buffer)
 }
 ```
 
-`LoadAligned` and `LoadAlignedNonTemporal` require the input to be aligned. Aligned reads and writes should be slightly faster but using them comes at a price of increased complexity.
+`LoadAligned` and `LoadAlignedNonTemporal` require the input to be aligned. Aligned reads and writes should be slightly faster but using them comes at a price of increased complexity. "NonTemporal" means that the hardware is allowed (but not required) to bypass the cache. Non-temporal reads provide a speedup when working with very large amounts of data as it avoids repeatedly filling the cache with values that will never be used again.
 
 Currently .NET exposes only one API fo allocating unmanaged aligned memory: [NativeMemory.AlignedAlloc](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.nativememory.alignedalloc). In the future, we might provide [a dedicated API](https://github.com/dotnet/runtime/issues/27146) for allocating managed, aligned and hence pinned memory buffers.
 
@@ -446,7 +503,7 @@ The alternative to creating aligned buffers (we don't always have the control ov
 
 The fourth method expects only a managed reference (`ref T source`). We don't need to pin the buffer (GC is tracking managed references and updates them if memory gets moved), but it still requires us to properly handle managed pointer arithmetic:
 
-```cs
+```csharp
 int ManagedReferencesSum(int[] buffer)
 {
     Debug.Assert(Vector128.IsHardwareAccelerated && buffer.Length >= Vector128<int>.Count);
@@ -481,7 +538,7 @@ int ManagedReferencesSum(int[] buffer)
 
 **Pointer arithmetic can always go wrong, even if you are an experienced engineer and get a very detailed code review from .NET architects**. In [#73768](https://github.com/dotnet/runtime/pull/73768) a GC hole was introduced. The code looked simple:
 
-```cs
+```csharp
 ref TValue currentSearchSpace = ref Unsafe.Add(ref searchSpace, length - Vector128<TValue>.Count);
 
 do
@@ -500,13 +557,13 @@ while (!Unsafe.IsAddressLessThan(ref currentSearchSpace, ref searchSpace));
 
 It was part of `LastIndexOf` implementation, where we were iterating from the end to the beginning of the buffer. In the last iteration of the loop, `currentSearchSpace` could become a pointer to unknown memory that lied before the beginning of the buffer:
 
-```cs
+```csharp
 currentSearchSpace = ref Unsafe.Subtract(ref currentSearchSpace, Vector128<TValue>.Count);
 ```
 
 And it was fine until GC kicked right after that, moved objects in memory, updated all valid managed references and resumed the execution, which run following condition:
 
-```cs
+```csharp
 while (!Unsafe.IsAddressLessThan(ref currentSearchSpace, ref searchSpace));
 ```
 
@@ -514,13 +571,13 @@ Which could return true because `currentSearchSpace` was invalid and not updated
 
 That is why **we recommend using the overload that takes a managed reference and an element offset. It does not require pinning or doing any pointer arithmetic. It still requires care as passing an incorrect offset results in a GC hole.**
 
-```cs
+```csharp
 public static Vector128<T> LoadUnsafe<T>(ref T source, nuint elementOffset) where T : struct;
 ```
 
 **The only thing we need to keep in mind is potential `nuint` overflow when doing unsigned integer arithmetic.**
 
-```cs
+```csharp
 Span<int> buffer = new int[2] { 1, 2 };
 nuint oneVectorAwayFromEnd = (nuint)(buffer.Length - Vector128<int>.Count);
 Console.WriteLine(oneVectorAwayFromEnd);
@@ -532,7 +589,7 @@ Can you guess the result? For a 64 bit process it's `FFFFFFFFFFFFFFFE` (a hex re
 
 Similarly to loading, both `Vector128` and `Vector256` provide at least five ways of storing them in memory:
 
-```cs
+```csharp
 public static class Vector128
 {
     public static void Store<T>(this Vector128<T> source, T* destination) where T : unmanaged;
@@ -545,7 +602,7 @@ public static class Vector128
 
 For the reasons described for loading, we recommend using the overload that takes managed reference and element offset:
 
-```cs
+```csharp
 public static void StoreUnsafe<T>(this Vector128<T> source, ref T destination, nuint elementOffset) where T : struct;
 ```
 
@@ -557,7 +614,7 @@ As mentioned before, `Vector128<T>` and `Vector256<T>` are constrained to a spec
 
 [Unsafe.As<TFrom, TTo>](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.unsafe.as#system-runtime-compilerservices-unsafe-as-2(-0@)) can be used to get a reference to supported type:
 
-```cs
+```csharp
 void CastingReferences(Span<char> buffer)
 {
     ref char charSearchSpace = ref MemoryMarshal.GetReference(buffer);
@@ -568,7 +625,7 @@ void CastingReferences(Span<char> buffer)
 
 Or [MemoryMarshal.Cast<TFrom, TTo>](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.memorymarshal.cast#system-runtime-interopservices-memorymarshal-cast-2(system-readonlyspan((-0)))), which casts a span of one primitive type to a span of another primitive type:
 
-```cs
+```csharp
 void CastingSpans(Span<char> chars)
 {
     Span<short> shorts = MemoryMarshal.Cast<char, short>(chars);
@@ -577,7 +634,7 @@ void CastingSpans(Span<char> chars)
 
 It's also possible to get managed references from unmanaged pointers:
 
-```cs
+```csharp
 void PointerToReference(char* pUtf16Buffer, byte* pAsciiBuffer)
 {
     // of the same type:
@@ -621,7 +678,7 @@ most significant bit
 
 When we look at it, we can realize that another way is checking whether the most significant bit is equal `1`. For the scalar version, we could perform a logical AND:
 
-```cs
+```csharp
 bool IsValidAscii(byte c) => (c & 0b1000_0000) == 0;
 ```
 
@@ -631,7 +688,7 @@ Another step is vectorizing our scalar solution and choosing the best way of doi
 
 If we reuse one of the loops presented in the previous sections, all we need to implement is a method that accepts `Vector128<byte>` and returns `bool` and does exactly the same thing that our scalar method did, but for a vector rather than single value:
 
-```cs
+```csharp
 [MethodImpl(MethodImplOptions.AggressiveInlining)]
 bool VectorContainsNonAsciiChar(Vector128<byte> asciiVector)
 {
@@ -648,7 +705,7 @@ bool VectorContainsNonAsciiChar(Vector128<byte> asciiVector)
 
 We can also use the hardware-specific instructions if they are available:
 
-```cs
+```csharp
 if (Sse41.IsSupported)
 {
     return !Sse41.TestZ(asciiVector, Vector128.Create((byte)0b_1000_0000));
@@ -692,13 +749,13 @@ Even such a simple problem can be solved in at least 5 different ways. Using sop
 
 Each of the vector types provides a `Create` method that accepts a single value and returns a vector with all elements initialized to this value.
 
-```cs
+```csharp
 public static Vector128<T> Create<T>(T value) where T : struct;
 ```
 
 `CreateScalar` initializes first element to the specified value, and the remaining elements to zero.
 
-```cs
+```csharp
 public static Vector128<int> CreateScalar(int value);
 ```
 
@@ -707,19 +764,19 @@ public static Vector128<int> CreateScalar(int value);
 
 We also have an overload that allows for specifying every value in given vector:
 
-```cs
+```csharp
 public static Vector128<short> Create(short e0, short e1, short e2, short e3, short e4, short e5, short e6, short e7)
 ```
 
 And last but not least we have a `Create` overload which accepts a buffer. It creates a vector with its elements set to the first `VectorXYZ<T>.Count` elements of the buffer. It's not recommended to use it in a loop, where `Load` methods should be used instead (for performance).
 
-```cs
+```csharp
 public static Vector128<T> Create<T>(ReadOnlySpan<T> values) where T : struct
 ```
 
 to perform a copy in the other direction, we can use one of the `CopyTo` extension methods:
 
-```cs
+```csharp
 public static void CopyTo<T>(this Vector128<T> vector, Span<T> destination) where T : struct
 ```
 
@@ -729,7 +786,7 @@ All size-specific vector types provide a set of APIs for common bit operations.
 
 `BitwiseAnd` computes the bitwise-and of two vectors, `BitwiseOr` computes the bitwise-or of two vectors. They can both be expressed by using the corresponding operators (`&` and `|`). The same goes for `Xor` which can be expressed with `^` operator and `Negate` (`~`).
 
-```cs
+```csharp
 public static Vector128<T> BitwiseAnd<T>(Vector128<T> left, Vector128<T> right) where T : struct => left & right;
 public static Vector128<T> BitwiseOr<T>(Vector128<T> left, Vector128<T> right) where T : struct => left | right;
 public static Vector128<T> Xor<T>(Vector128<T> left, Vector128<T> right) => left ^ right;
@@ -738,14 +795,14 @@ public static Vector128<T> Negate<T>(Vector128<T> vector) => ~vector;
 
 `AndNot` computes the bitwise-and of a given vector and the ones' complement of another vector.
 
-```cs
+```csharp
 public static Vector128<T> AndNot<T>(Vector128<T> left, Vector128<T> right) => left & ~right;
 ```
 
 `ShiftLeft` shifts each element of a vector left by the specified number of bits.
 `ShiftRightArithmetic` performs a **signed** shift right and `ShiftRightLogical` performs an **unsigned** shift:
 
-```cs
+```csharp
 public static Vector128<sbyte> ShiftLeft(Vector128<sbyte> vector, int shiftCount);
 public static Vector128<sbyte> ShiftRightArithmetic(Vector128<sbyte> vector, int shiftCount);
 public static Vector128<byte> ShiftRightLogical(Vector128<byte> vector, int shiftCount);
@@ -755,20 +812,20 @@ public static Vector128<byte> ShiftRightLogical(Vector128<byte> vector, int shif
 
 `EqualsAll` compares two vectors to determine if all elements are equal. `EqualsAny` compares two vectors to determine if any elements are equal.
 
-```cs
+```csharp
 public static bool EqualsAll<T>(Vector128<T> left, Vector128<T> right) where T : struct => left == right;
 public static bool EqualsAny<T>(Vector128<T> left, Vector128<T> right) where T : struct
 ```
 
 `Equals` compares two vectors to determine if they are equal on a per-element basis. It returns a vector whose elements are all-bits-set or zero, depending on whether the corresponding elements in the `left` and `right` arguments were equal.
 
-```cs
+```csharp
 public static Vector128<T> Equals<T>(Vector128<T> left, Vector128<T> right) where T : struct
 ```
 
 How do we calculate the index of the first match? Let's take a closer look at the result of following equality check:
 
-```cs
+```csharp
 Vector128<int> left = Vector128.Create(1, 2, 3, 4);
 Vector128<int> right = Vector128.Create(0, 0, 3, 0);
 Vector128<int> equals = Vector128.Equals(left, right);
@@ -781,13 +838,13 @@ Console.WriteLine(equals);
 
 `-1` is just `0xFFFFFFFF` (all-bits-set). We could use `GetElement` to get the first non-zero element.
 
-```cs
+```csharp
 public static T GetElement<T>(this Vector128<T> vector, int index) where T : struct
 ```
 
 But it would not be an optimal solution. We should instead extract the most significant bits:
 
-```cs
+```csharp
 uint mostSignificantBits = equals.ExtractMostSignificantBits();
 Console.WriteLine(Convert.ToString(mostSignificantBits, 2).PadLeft(32, '0'));
 ```
@@ -802,7 +859,7 @@ To calculate the last index, we should use [BitOperations.LeadingZeroCount](http
 
 If we were working with a buffer loaded from memory (example: searching for the last index of a given character in the buffer) both results would be relative to the `elementOffset` provided to the `Load` method that was used to load the vector from the buffer.
 
-```cs
+```csharp
 int ComputeLastIndex<T>(nint elementOffset, Vector128<T> equals) where T : struct
 {
     uint mostSignificantBits = equals.ExtractMostSignificantBits();
@@ -815,7 +872,7 @@ int ComputeLastIndex<T>(nint elementOffset, Vector128<T> equals) where T : struc
 
 If we were using the `Load` overload that takes only the managed reference, we could use [Unsafe.ByteOffset<T>(ref T, ref T)](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.unsafe.byteoffset) to calculate the element offset.
 
-```cs
+```csharp
 unsafe int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector128<T> equals) where T : struct
 {
     int elementOffset = (int)Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(T);
@@ -831,7 +888,7 @@ unsafe int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector128<T> e
 
 Beside equality checks, vector APIs allow for comparison. The `bool`-returning overloads return `true` when the given condition is true:
 
-```cs
+```csharp
 public static bool GreaterThanAll<T>(Vector128<T> left, Vector128<T> right) where T : struct
 public static bool GreaterThanAny<T>(Vector128<T> left, Vector128<T> right) where T : struct
 public static bool GreaterThanOrEqualAll<T>(Vector128<T> left, Vector128<T> right) where T : struct
@@ -844,7 +901,7 @@ public static bool LessThanOrEqualAny<T>(Vector128<T> left, Vector128<T> right) 
 
 Similarly to `Equals`, vector-returning overloads return a vector whose elements are all-bits-set or zero, depending on whether the corresponding elements in `left` and `right` meet the given condition.
 
-```cs
+```csharp
 public static Vector128<T> GreaterThan<T>(Vector128<T> left, Vector128<T> right) where T : struct
 public static Vector128<T> GreaterThanOrEqual<T>(Vector128<T> left, Vector128<T> right) where T : struct
 public static Vector128<T> LessThan<T>(Vector128<T> left, Vector128<T> right) where T : struct
@@ -853,13 +910,13 @@ public static Vector128<T> LessThanOrEqual<T>(Vector128<T> left, Vector128<T> ri
 
 `ConditionalSelect` Conditionally selects a value from two vectors on a bitwise basis.
 
-```cs
+```csharp
 public static Vector128<T> ConditionalSelect<T>(Vector128<T> condition, Vector128<T> left, Vector128<T> right)
 ```
 
 This method deserves a self-describing example:
 
-```cs
+```csharp
 Vector128<float> left = Vector128.Create(1.0f, 2, 3, 4);
 Vector128<float> right = Vector128.Create(4.0f, 3, 2, 1);
 
@@ -872,7 +929,7 @@ Assert.Equal(Vector128.Create(4.0f, 3, 3, 4), result);
 
 Very simple math operations can be also expressed by using the operators:
 
-```cs
+```csharp
 public static Vector128<T> Add<T>(Vector128<T> left, Vector128<T> right) where T : struct => left + right;
 public static Vector128<T> Divide<T>(Vector128<T> left, Vector128<T> right) => left / right;
 public static Vector128<T> Divide<T>(Vector128<T> left, T right) => left / right;
@@ -885,7 +942,7 @@ public static Vector128<T> Subtract<T>(Vector128<T> left, Vector128<T> right) =>
 
 `Abs`, `Ceiling`, `Floor`, `Max`, `Min`, `Sqrt` and `Sum` are also provided:
 
-```cs
+```csharp
 public static Vector128<T> Abs<T>(Vector128<T> vector) where T : struct
 public static Vector128<double> Ceiling(Vector128<double> vector)
 public static Vector128<float> Floor(Vector128<float> vector)
@@ -899,7 +956,7 @@ public static T Sum<T>(Vector128<T> vector) where T : struct
 
 Vector types provide a set of methods dedicated to number conversions:
 
-```cs
+```csharp
 public static unsafe Vector128<double> ConvertToDouble(Vector128<long> vector)
 public static unsafe Vector128<double> ConvertToDouble(Vector128<ulong> vector)
 public static unsafe Vector128<int> ConvertToInt32(Vector128<float> vector)
@@ -912,7 +969,7 @@ public static unsafe Vector128<ulong> ConvertToUInt64(Vector128<double> vector)
 
 And for reinterpretation (no values are being changed, they can be just used as if they were of a different type):
 
-```cs
+```csharp
 public static Vector128<TTo> As<TFrom, TTo>(this Vector128<TFrom> vector)
 public static Vector128<byte> AsByte<T>(this Vector128<T> vector)
 public static Vector128<double> AsDouble<T>(this Vector128<T> vector)
@@ -946,21 +1003,21 @@ The first half of every vector is called "lower", the second is "upper".
 
 In case of `Vector128`, `GetLower` gets the value of the lower 64-bits as a new `Vector64<T>` and `GetUpper` gets the upper 64-bits.
 
-```cs
+```csharp
 public static Vector64<T> GetLower<T>(this Vector128<T> vector)
 public static Vector64<T> GetUpper<T>(this Vector128<T> vector)
 ```
 
 Each vector type provides a `Create` method that allows for the creation from lower and upper:
 
-```cs
+```csharp
 public static unsafe Vector128<byte> Create(Vector64<byte> lower, Vector64<byte> upper)
 public static Vector256<byte> Create(Vector128<byte> lower, Vector128<byte> upper)
 ```
 
 `Lower` and `Upper` are also used by `Widen`. This method widens a `Vector128<T1>` into two `Vector128<T2>` where `sizeof(T2) == 2 * sizeof(T1)`.
 
-```cs
+```csharp
 public static unsafe (Vector128<ushort> Lower, Vector128<ushort> Upper) Widen(Vector128<byte> source)
 public static unsafe (Vector128<int> Lower, Vector128<int> Upper) Widen(Vector128<short> source)
 public static unsafe (Vector128<long> Lower, Vector128<long> Upper) Widen(Vector128<int> source)
@@ -972,14 +1029,14 @@ public static unsafe (Vector128<ulong> Lower, Vector128<ulong> Upper) Widen(Vect
 
 It's also possible to widen only the lower or upper part:
 
-```cs
+```csharp
 public static Vector128<ushort> WidenLower(Vector128<byte> source)
 public static Vector128<ushort> WidenUpper(Vector128<byte> source)
 ```
 
 An example of widening is converting a buffer of ASCII bytes into characters:
 
-```cs
+```csharp
 byte[] byteBuffer = Enumerable.Range('A', 128 / 8).Select(i => (byte)i).ToArray();
 Vector128<byte> byteVector = Vector128.Create(byteBuffer);
 Console.WriteLine(byteVector);
@@ -1002,7 +1059,7 @@ ABCDEFGHIJKLMNOP
 
 `Narrow` is the opposite of `Widen`.
 
-```cs
+```csharp
 public static unsafe Vector128<float> Narrow(Vector128<double> lower, Vector128<double> upper)
 public static unsafe Vector128<sbyte> Narrow(Vector128<short> lower, Vector128<short> upper)
 public static unsafe Vector128<short> Narrow(Vector128<int> lower, Vector128<int> upper)
@@ -1015,7 +1072,7 @@ public static unsafe Vector128<uint> Narrow(Vector128<ulong> lower, Vector128<ul
 In contrast to [Sse2.PackUnsignedSaturate](https://learn.microsoft.com/dotnet/api/system.runtime.intrinsics.x86.sse2.packunsignedsaturate) and [AdvSimd.Arm64.UnzipEven](https://learn.microsoft.com/dotnet/api/system.runtime.intrinsics.arm.advsimd.arm64.unzipeven), `Narrow` applies a mask via AND to cut anything above the max value of returned vector:
 
 
-```cs
+```csharp
 Vector256<ushort> ushortVector = Vector256.Create((ushort)300);
 Console.WriteLine(ushortVector);
 unchecked { Console.WriteLine((byte)300); }
@@ -1040,7 +1097,7 @@ if (Sse2.IsSupported)
 
 `Shuffle` creates a new vector by selecting values from an input vector using a set of indices (values that represent indexes of the input vector).
 
-```cs
+```csharp
 public static Vector128<int> Shuffle(Vector128<int> vector, Vector128<int> indices)
 public static Vector128<uint> Shuffle(Vector128<uint> vector, Vector128<uint> indices)
 public static Vector128<float> Shuffle(Vector128<float> vector, Vector128<int> indices)
@@ -1051,7 +1108,7 @@ public static Vector128<double> Shuffle(Vector128<double> vector, Vector128<long
 
 It can be used for many things, including reversing the input:
 
-```cs
+```csharp
 Vector128<int> intVector = Vector128.Create(100, 200, 300, 400);
 Console.WriteLine(intVector);
 Console.WriteLine(Vector128.Shuffle(intVector, Vector128.Create(3, 2, 1, 0)));
