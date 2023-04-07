@@ -104,6 +104,13 @@ public:
 #define G_MAY_ALIAS /* nothing */
 #endif
 
+#if defined (__GNUC__)
+#define G_CONTAINER_DEPRECATED(gcontainer,dncontainer) __attribute__((deprecated("Do not use " #gcontainer ", use " #dncontainer " from src/native/containers")))
+#elif defined (_MSC_VER)
+#define G_CONTAINER_DEPRECATED(gcontainer,dncontainer) __declspec(deprecated("Do not use " #gcontainer ", use " #dncontainer " from src\\native\\containers"))
+#endif
+
+
 #ifdef __cplusplus
 
 // Provide for bit operations on enums, but not all integer operations.
@@ -663,7 +670,9 @@ struct _GArray {
 	gint len;
 };
 
+G_CONTAINER_DEPRECATED(GArray,dn_vector_t)
 GArray *g_array_new               (gboolean zero_terminated, gboolean clear_, guint element_size);
+G_CONTAINER_DEPRECATED(GArray,dn_vector_t)
 GArray *g_array_sized_new         (gboolean zero_terminated, gboolean clear_, guint element_size, guint reserved_size);
 gchar*  g_array_free              (GArray *array, gboolean free_segment);
 GArray *g_array_append_vals       (GArray *array, gconstpointer data, guint len);
