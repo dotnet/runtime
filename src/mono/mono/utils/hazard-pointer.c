@@ -10,6 +10,8 @@
 
 #include <string.h>
 
+#include <dn-vector.h>
+
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-memory-model.h>
@@ -359,17 +361,23 @@ mono_hazard_pointer_install_free_queue_size_callback (MonoHazardFreeQueueSizeCal
 static void
 try_free_delayed_free_items (guint32 limit)
 {
-	GArray *hazardous = NULL;
+
+	dn_vector_t hazardous = {0,};
+	gboolean hazardous_inited = FALSE;
 	DelayedFreeItem item;
 	guint32 freed = 0;
 
 	// Free all the items we can and re-add the ones we can't to the queue.
 	while (mono_lock_free_array_queue_pop (&delayed_free_queue, &item)) {
 		if (is_pointer_hazardous (item.p)) {
-			if (!hazardous)
-				hazardous = g_array_sized_new (FALSE, FALSE, sizeof (DelayedFreeItem), delayed_free_queue.num_used_entries);
+			if (!hazardous_inited) {
+				dn_vector_custom_init_params_t init_params = {0,};
+				init_params.capacity = delayed_free_queue.num_used_entries;
+				dn_vector_custom_init_t (&hazardous, &init_params, DelayedFreeItem);
+				hazardous_inited = TRUE;
+			}
 
-			g_array_append_val (hazardous, item);
+			dn_vector_push_back (&hazardous, item);
 			continue;
 		}
 
@@ -380,11 +388,11 @@ try_free_delayed_free_items (guint32 limit)
 			break;
 	}
 
-	if (hazardous) {
-		for (gint i = 0; i < hazardous->len; i++)
-			mono_lock_free_array_queue_push (&delayed_free_queue, &g_array_index (hazardous, DelayedFreeItem, i));
+	if (hazardous_inited) {
+		for (gint i = 0; i < dn_vector_size (&hazardous); i++)
+			mono_lock_free_array_queue_push (&delayed_free_queue, dn_vector_index_t (&hazardous, DelayedFreeItem, i));
 
-		g_array_free (hazardous, TRUE);
+		dn_vector_dispose (&hazardous);
 	}
 }
 
