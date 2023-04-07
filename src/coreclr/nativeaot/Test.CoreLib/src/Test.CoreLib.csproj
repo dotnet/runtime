@@ -224,6 +224,7 @@
       <Link>System\Runtime\CompilerServices\Unsafe.cs</Link>
     </Compile>
     <Compile Include="Internal\Runtime\IDynamicInterfaceCastableSupport.cs" />
+    <Compile Include="System\Runtime\CompilerServices\CastCache.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\InteropServices\InAttribute.cs" />
