@@ -2501,7 +2501,8 @@ private:
 
                 if (!loopBlocks.IsMember(exitPoint->bbNum))
                 {
-// Exit from a block other than BOTTOM
+                    // Exit from a block other than BOTTOM
+                    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if !defined(FEATURE_EH_FUNCLETS)
                     // On non-funclet platforms (x86), the catch exit is a BBJ_ALWAYS, but we don't want that to
