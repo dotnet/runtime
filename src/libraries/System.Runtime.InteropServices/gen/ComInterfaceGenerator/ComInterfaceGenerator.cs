@@ -77,17 +77,17 @@ namespace Microsoft.Interop
                 Dictionary<INamedTypeSymbol, int> derivedNextOffset = new(SymbolEqualityComparer.Default);
                 foreach (var iface in data)
                 {
-                    var (starting, baseType, derivedStarting) = CalculateOffsetsForInterface(iface.Symbol);
+                    var (starting, baseType, derivedStarting) = CalculateOffsetsForInterface(iface.Symbol, derivedNextOffset);
                     baseInterfaceInfo.Add((starting, baseType is not null ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(baseType) : null, starting == derivedStarting));
                 }
                 return baseInterfaceInfo.MoveToImmutable();
 
-                (int Starting, INamedTypeSymbol? BaseType, int DerivedStarting) CalculateOffsetsForInterface(INamedTypeSymbol iface)
+                static (int Starting, INamedTypeSymbol? BaseType, int DerivedStarting) CalculateOffsetsForInterface(INamedTypeSymbol iface, Dictionary<INamedTypeSymbol, int> derivedNextOffsetCache)
                 {
                     INamedTypeSymbol? baseInterface = null;
                     foreach (var implemented in iface.Interfaces)
                     {
-                        if (implemented.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute))
+                        if (implemented.GetAttributes().Any(static attr => attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute))
                         {
                             // We'll filter out cases where there's multiple matching interfaces when determining
                             // if this is a valid candidate for generation.
@@ -100,9 +100,9 @@ namespace Microsoft.Interop
                     int startingOffset = 3;
                     if (baseInterface is not null)
                     {
-                        if (!derivedNextOffset.TryGetValue(baseInterface, out int offset))
+                        if (!derivedNextOffsetCache.TryGetValue(baseInterface, out int offset))
                         {
-                            offset = CalculateOffsetsForInterface(baseInterface).DerivedStarting;
+                            offset = CalculateOffsetsForInterface(baseInterface, derivedNextOffsetCache).DerivedStarting;
                         }
 
                         startingOffset = offset;
@@ -110,8 +110,8 @@ namespace Microsoft.Interop
 
                     // This calculation isn't strictly accurate. This will count methods that aren't in the same declaring syntax as the attribute on the interface,
                     // but we'll emit an error later if that's a problem. We also can't detect this error if the base type is in metadata.
-                    int ifaceDerivedNextOffset = startingOffset + iface.GetMembers().Where(m => m is IMethodSymbol { IsStatic: false }).Count();
-                    derivedNextOffset[iface] = ifaceDerivedNextOffset;
+                    int ifaceDerivedNextOffset = startingOffset + iface.GetMembers().Where(static m => m is IMethodSymbol { IsStatic: false }).Count();
+                    derivedNextOffsetCache[iface] = ifaceDerivedNextOffset;
 
                     return (startingOffset, baseInterface, ifaceDerivedNextOffset);
                 }
@@ -542,11 +542,11 @@ namespace Microsoft.Interop
                 // Missing Guid
             }
 
-            // TODO: Error if more than one GeneratedComInterface base interface type.
+            // Error if more than one GeneratedComInterface base interface type.
             INamedTypeSymbol? baseInterface = null;
             foreach (var implemented in type.Interfaces)
             {
-                if (implemented.GetAttributes().Any(attr => attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute))
+                if (implemented.GetAttributes().Any(static attr => attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedComInterfaceAttribute))
                 {
                     if (baseInterface is not null)
                     {
