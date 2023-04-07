@@ -191,8 +191,8 @@ copy_stack_data_internal (MonoThreadInfo *info, MonoStackData *stackdata_begin, 
 	if (stackdata_size <= 0)
 		g_error ("%s stackdata_size = %d, but must be > 0, stackdata_begin = %p, stackdata_end = %p", mono_stackdata_get_function_name (stackdata_begin), stackdata_size, stackdata_begin, stackdata_end);
 
-	g_byte_array_set_size (info->stackdata, stackdata_size);
-	state->gc_stackdata = info->stackdata->data;
+	dn_checkfail (dn_vector_resize (info->stackdata, stackdata_size), "Allocation failed");
+	state->gc_stackdata = dn_vector_data (info->stackdata);
 	memcpy (state->gc_stackdata, stackdata_end, stackdata_size);
 
 	state->gc_stackdata_size = stackdata_size;

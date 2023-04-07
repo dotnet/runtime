@@ -519,7 +519,8 @@ register_thread (MonoThreadInfo *info)
 	g_assert (stsize);
 	info->stack_start_limit = staddr;
 	info->stack_end = staddr + stsize;
-	info->stackdata = g_byte_array_new ();
+	info->stackdata = dn_vector_alloc_t (uint8_t);
+	dn_checkfail (info->stackdata, "Allocation failed");
 
 	info->internal_thread_gchandle = NULL;
 
@@ -641,7 +642,7 @@ unregister_thread (void *arg)
 
 	mono_thread_info_suspend_unlock ();
 
-	g_byte_array_free (info->stackdata, /*free_segment=*/TRUE);
+	dn_vector_free (info->stackdata);
 
 	/*now it's safe to free the thread info.*/
 	mono_thread_hazardous_try_free (info, free_thread_info);
