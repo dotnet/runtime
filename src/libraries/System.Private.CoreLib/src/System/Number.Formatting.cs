@@ -1581,7 +1581,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void WriteTwoDigits(char* ptr, uint value)
+        internal static unsafe void WriteTwoDigits(char* ptr, uint value)
         {
             Debug.Assert(value <= 99);
             Unsafe.WriteUnaligned(ptr,
