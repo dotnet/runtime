@@ -129,11 +129,9 @@ LoadGcHeapData(TADDR heap)
 #define DEFINE_FIELD(field_name, field_type) LOAD(field_name, field_type)
 #define DEFINE_DPTR_FIELD(field_name, field_type) LOAD_DPTR(field_name, field_type)
 #define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) LOAD_ARRAY(field_name, field_type, array_length);
-#define DEFINE_MISSING_FIELD(field_name)
 
 #include "../../gc/dac_gcheap_fields.h"
-    
-#undef DEFINE_MISSING_FIELD
+
 #undef DEFINE_ARRAY_FIELD
 #undef DEFINE_DPTR_FIELD
 #undef DEFINE_FIELD
@@ -153,11 +151,9 @@ inline void EnumGcHeap(TADDR heap)
 #define DEFINE_FIELD(field_name, field_type) ENUM(field_name, field_type)
 #define DEFINE_DPTR_FIELD(field_name, field_type) ENUM(field_name, field_type)
 #define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) ENUM_ARRAY(field_name, field_type, array_length)
-#define DEFINE_MISSING_FIELD(field_name)
 
 #include "../../gc/dac_gcheap_fields.h"
     
-#undef DEFINE_MISSING_FIELD
 #undef DEFINE_ARRAY_FIELD
 #undef DEFINE_DPTR_FIELD
 #undef DEFINE_FIELD
@@ -179,11 +175,9 @@ LoadGeneration(TADDR generation)
 #define ALL_FIELDS
 #define DEFINE_FIELD(field_name, field_type) LOAD(field_name, field_type)
 #define DEFINE_DPTR_FIELD(field_name, field_type) LOAD_DPTR(field_name, field_type)
-#define DEFINE_MISSING_FIELD(field_name)
 
 #include "../../gc/dac_generation_fields.h"
 
-#undef DEFINE_MISSING_FIELD
 #undef DEFINE_DPTR_FIELD
 #undef DEFINE_FIELD
 #undef ALL_FIELDS
@@ -202,11 +196,9 @@ inline void EnumGeneration(TADDR generation)
 #define DEFINE_FIELD(field_name, field_type) ENUM(field_name, field_type)
 #define DEFINE_DPTR_FIELD(field_name, field_type) ENUM(field_name, field_type)
 #define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) ENUM_ARRAY(field_name, field_type, array_length)
-#define DEFINE_MISSING_FIELD(field_name)
 
 #include "../../gc/dac_generation_fields.h"
 
-#undef DEFINE_MISSING_FIELD
 #undef DEFINE_ARRAY_FIELD
 #undef DEFINE_DPTR_FIELD
 #undef DEFINE_FIELD
