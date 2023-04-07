@@ -7048,20 +7048,17 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_CASE(MINT_LEAVE)
-		MINT_IN_CASE(MINT_LEAVE_S)
 		MINT_IN_CASE(MINT_LEAVE_CHECK)
 		MINT_IN_CASE(MINT_LEAVE_S_CHECK) {
 			int leave_opcode = *ip;
-			gboolean const check = leave_opcode == MINT_LEAVE_CHECK || leave_opcode == MINT_LEAVE_S_CHECK;
 
-			if (check && frame->imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
+			if (frame->imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
 				MonoException *abort_exc = mono_interp_leave (frame);
 				if (abort_exc)
 					THROW_EX (abort_exc, ip);
 			}
 
-			gboolean const short_offset = leave_opcode == MINT_LEAVE_S || leave_opcode == MINT_LEAVE_S_CHECK;
+			gboolean const short_offset = leave_opcode == MINT_LEAVE_S_CHECK;
 			ip += short_offset ? (gint16)*(ip + 1) : (gint32)READ32 (ip + 1);
 			MINT_IN_BREAK;
 		}

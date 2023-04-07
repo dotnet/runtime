@@ -1098,7 +1098,7 @@ protected:
 #endif // TARGET_XARCH
 
     void genCodeForCast(GenTreeOp* tree);
-    void genCodeForLclAddr(GenTreeLclVarCommon* lclAddrNode);
+    void genCodeForLclAddr(GenTreeLclFld* lclAddrNode);
     void genCodeForIndexAddr(GenTreeIndexAddr* tree);
     void genCodeForIndir(GenTreeIndir* tree);
     void genCodeForNegNot(GenTree* tree);
@@ -1120,6 +1120,7 @@ protected:
     void genCodeForPhysReg(GenTreePhysReg* tree);
     void genCodeForNullCheck(GenTreeIndir* tree);
     void genCodeForCmpXchg(GenTreeCmpXchg* tree);
+    void genCodeForReuseVal(GenTree* treeNode);
 
     void genAlignStackBeforeCall(GenTreePutArgStk* putArgStk);
     void genAlignStackBeforeCall(GenTreeCall* call);

@@ -2088,6 +2088,7 @@ private:
 
 #ifdef TARGET_XARCH
     bool emitIsInstrWritingToReg(instrDesc* id, regNumber reg);
+    bool emitDoesInsModifyFlags(instruction ins);
 #endif // TARGET_XARCH
 
     /************************************************************************/

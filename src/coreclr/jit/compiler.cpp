@@ -5003,8 +5003,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Dominator and reachability sets are no longer valid.
     // The loop table is no longer valid.
-    fgDomsComputed    = false;
-    optLoopTableValid = false;
+    fgDomsComputed            = false;
+    optLoopTableValid         = false;
+    optLoopsRequirePreHeaders = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
@@ -6716,6 +6717,10 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     compGenTreeID    = 0;
     compStatementID  = 0;
     compBasicBlockID = 0;
+#endif
+
+#ifdef TARGET_ARM64
+    info.compNeedsConsecutiveRegisters = false;
 #endif
 
     /* Initialize emitter */
@@ -9605,9 +9610,8 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
         switch (op)
         {
             case GT_LCL_VAR:
-            case GT_LCL_VAR_ADDR:
             case GT_LCL_FLD:
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
             case GT_STORE_LCL_FLD:
             case GT_STORE_LCL_VAR:
                 if (tree->gtFlags & GTF_VAR_DEF)
@@ -9918,13 +9922,13 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             case GT_STORE_BLK:
             case GT_STORE_DYN_BLK:
 
-                if (tree->gtFlags & GTF_BLK_VOLATILE)
+                if (tree->gtFlags & GTF_IND_VOLATILE)
                 {
-                    chars += printf("[BLK_VOLATILE]");
+                    chars += printf("[IND_VOLATILE]");
                 }
-                if (tree->AsBlk()->IsUnaligned())
+                if (tree->gtFlags & GTF_IND_UNALIGNED)
                 {
-                    chars += printf("[BLK_UNALIGNED]");
+                    chars += printf("[IND_UNALIGNED]");
                 }
                 break;
 
