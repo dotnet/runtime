@@ -258,7 +258,7 @@ namespace Internal.Reflection.Core.Execution
                 || type == typeof(int) || type == typeof(uint)
                 || type == typeof(long) || type == typeof(ulong)
                 || type == typeof(float) || type == typeof(double)
-                || type == typeof(nint) || type == typeof(nint);
+                || type == typeof(nint) || type == typeof(nuint);
 
         internal ExecutionEnvironment ExecutionEnvironment { get; }
 
