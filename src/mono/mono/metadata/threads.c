@@ -4944,33 +4944,74 @@ ves_icall_System_Threading_Thread_GetCurrentOSThreadId (MonoError *error)
 }
 
 gpointer
-ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal (void)
+ves_icall_System_Threading_LowLevelLifoSemaphore_InitInternal (int32_t kind)
 {
-	return (gpointer)mono_lifo_semaphore_init ();
+	switch (kind) {
+	case LIFO_SEMAPHORE_NORMAL:
+		return (gpointer)mono_lifo_semaphore_init ();
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+	case LIFO_SEMAPHORE_ASYNCWAIT:
+		return (gpointer)mono_lifo_semaphore_asyncwait_init ();
+#endif
+	default:
+		g_error ("Invalid LowLevelLifoSemaphore kind %d\n", kind);
+		g_assert_not_reached();
+	}
 }
 
 void
 ves_icall_System_Threading_LowLevelLifoSemaphore_DeleteInternal (gpointer sem_ptr)
 {
-	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	mono_lifo_semaphore_delete (sem);
+	LifoSemaphoreBase *sem = (LifoSemaphoreBase *)sem_ptr;
+	switch (sem->kind) {
+	case LIFO_SEMAPHORE_NORMAL:
+		mono_lifo_semaphore_delete ((LifoSemaphore*)sem);
+		break;
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+	case LIFO_SEMAPHORE_ASYNCWAIT:
+		mono_lifo_semaphore_asyncwait_delete ((LifoSemaphoreAsyncWait*)sem);
+		break;
+#endif
+	default:
+		g_assert_not_reached();
+	}
 }
 
 gint32
 ves_icall_System_Threading_LowLevelLifoSemaphore_TimedWaitInternal (gpointer sem_ptr, gint32 timeout_ms)
 {
 	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
+	g_assert (sem->base.kind == LIFO_SEMAPHORE_NORMAL);
 	return mono_lifo_semaphore_timed_wait (sem, timeout_ms);
 }
 
 void
 ves_icall_System_Threading_LowLevelLifoSemaphore_ReleaseInternal (gpointer sem_ptr, gint32 count)
 {
-	LifoSemaphore *sem = (LifoSemaphore *)sem_ptr;
-	mono_lifo_semaphore_release (sem, count);
+	LifoSemaphoreBase *sem = (LifoSemaphoreBase *)sem_ptr;
+	switch (sem->kind) {
+	case LIFO_SEMAPHORE_NORMAL:
+		mono_lifo_semaphore_release ((LifoSemaphore*)sem, count);
+		break;
+#if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+	case LIFO_SEMAPHORE_ASYNCWAIT:
+		mono_lifo_semaphore_asyncwait_release ((LifoSemaphoreAsyncWait*)sem, count);
+		break;
+#endif
+	default:
+		g_assert_not_reached();
+	}
 }
 
 #if defined(HOST_BROWSER) && !defined(DISABLE_THREADS)
+void
+ves_icall_System_Threading_LowLevelLifoSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, intptr_t user_data)
+{
+	LifoSemaphoreAsyncWait *sem = (LifoSemaphoreAsyncWait *)sem_ptr;
+	g_assert (sem->base.kind == LIFO_SEMAPHORE_ASYNCWAIT);
+	mono_lifo_semaphore_asyncwait_prepare_wait (sem, timeout_ms, (LifoSemaphoreAsyncWaitCallbackFn)success_cb, (LifoSemaphoreAsyncWaitCallbackFn)timedout_cb, user_data);
+}
+
 void
 ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void)
 {
@@ -4997,6 +5038,12 @@ ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(
  * need to be defined */
 #if defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP)
 void
+ves_icall_System_Threading_LowLevelLifoSemaphore_PrepareAsyncWaitInternal (gpointer sem_ptr, gint32 timeout_ms, gpointer success_cb, gpointer timedout_cb, intptr_t user_data)
+{
+	g_assert_not_reached();
+}
+
+void
 ves_icall_System_Threading_WebWorkerEventLoop_KeepalivePushInternal (void)
 {
 	g_assert_not_reached();
@@ -5013,6 +5060,5 @@ ves_icall_System_Threading_WebWorkerEventLoop_HasUnsettledInteropPromisesNative(
 {
 	g_assert_not_reached();
 }
-
 #endif /* defined(TARGET_WASM) && defined(ENABLE_ICALL_SYMBOL_MAP) */
 
