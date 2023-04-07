@@ -323,7 +323,7 @@ void Compiler::lvaInitTypeRef()
         }
     }
 
-    // If this is an OSR method, mark all the OSR locals and model OSR exposure.
+    // If this is an OSR method, mark all the OSR locals.
     //
     // Do this before we add the GS Cookie Dummy or Outgoing args to the locals
     // so we don't have to do special checks to exclude them.
@@ -338,14 +338,7 @@ void Compiler::lvaInitTypeRef()
             if (info.compPatchpointInfo->IsExposed(lclNum))
             {
                 JITDUMP("-- V%02u is OSR exposed\n", lclNum);
-                varDsc->lvHasLdAddrOp = 1;
-
-                // todo: Why does it apply only to non-structs?
-                //
-                if (!varTypeIsStruct(varDsc) && !varTypeIsSIMD(varDsc))
-                {
-                    lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::OSR_EXPOSED));
-                }
+                varDsc->lvIsOSRExposedLocal = true;
             }
         }
     }
@@ -1069,7 +1062,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
 #if FEATURE_FASTTAILCALL
             // Check if arg was split between registers and stack.
-            if (!varTypeUsesFloatReg(argType))
+            if (varTypeUsesIntReg(argType))
             {
                 unsigned firstRegArgNum = genMapIntRegNumToRegArgNum(varDsc->GetArgReg());
                 unsigned lastRegArgNum  = firstRegArgNum + cSlots - 1;
@@ -1118,6 +1111,8 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
                 else
 #endif // defined(UNIX_AMD64_ABI)
                 {
+                    assert(varTypeUsesFloatReg(argType) || varTypeUsesIntReg(argType));
+
                     bool     isFloat   = varTypeUsesFloatReg(argType);
                     unsigned regArgNum = genMapRegNumToRegArgNum(varDsc->GetArgReg(), argType);
 
@@ -1170,9 +1165,14 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
         {
 #if defined(TARGET_ARM)
             varDscInfo->setAllRegArgUsed(argType);
+
             if (varTypeUsesFloatReg(argType))
             {
                 varDscInfo->setAnyFloatStackArgs();
+            }
+            else
+            {
+                assert(varTypeUsesIntReg(argType));
             }
 
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
@@ -1767,6 +1767,11 @@ bool Compiler::StructPromotionHelper::CanPromoteStructType(CORINFO_CLASS_HANDLE 
 
     bool overlappingFields = StructHasOverlappingFields(typeFlags);
     if (overlappingFields)
+    {
+        return false;
+    }
+
+    if (StructHasIndexableFields(typeFlags))
     {
         return false;
     }
@@ -2400,7 +2405,7 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
     {
         const lvaStructFieldInfo* pFieldInfo = &structPromotionInfo.fields[index];
 
-        if (varTypeUsesFloatReg(pFieldInfo->fldType))
+        if (!varTypeUsesIntReg(pFieldInfo->fldType))
         {
             // Whenever we promote a struct that contains a floating point field
             // it's possible we transition from a method that originally only had integer
@@ -2436,14 +2441,15 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         // refresh the cached varDsc for lclNum.
         varDsc = compiler->lvaGetDesc(lclNum);
 
-        LclVarDsc* fieldVarDsc       = compiler->lvaGetDesc(varNum);
-        fieldVarDsc->lvType          = pFieldInfo->fldType;
-        fieldVarDsc->lvIsStructField = true;
-        fieldVarDsc->lvFldOffset     = pFieldInfo->fldOffset;
-        fieldVarDsc->lvFldOrdinal    = pFieldInfo->fldOrdinal;
-        fieldVarDsc->lvParentLcl     = lclNum;
-        fieldVarDsc->lvIsParam       = varDsc->lvIsParam;
-        fieldVarDsc->lvIsOSRLocal    = varDsc->lvIsOSRLocal;
+        LclVarDsc* fieldVarDsc           = compiler->lvaGetDesc(varNum);
+        fieldVarDsc->lvType              = pFieldInfo->fldType;
+        fieldVarDsc->lvIsStructField     = true;
+        fieldVarDsc->lvFldOffset         = pFieldInfo->fldOffset;
+        fieldVarDsc->lvFldOrdinal        = pFieldInfo->fldOrdinal;
+        fieldVarDsc->lvParentLcl         = lclNum;
+        fieldVarDsc->lvIsParam           = varDsc->lvIsParam;
+        fieldVarDsc->lvIsOSRLocal        = varDsc->lvIsOSRLocal;
+        fieldVarDsc->lvIsOSRExposedLocal = varDsc->lvIsOSRExposedLocal;
 
         // This new local may be the first time we've seen a long typed local.
         if (fieldVarDsc->lvType == TYP_LONG)
@@ -4224,7 +4230,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
         }
     }
 
-    if (tree->OperIsLocalAddr())
+    if (tree->OperIs(GT_LCL_ADDR))
     {
         LclVarDsc* varDsc = lvaGetDesc(tree->AsLclVarCommon());
         assert(varDsc->IsAddressExposed() || varDsc->IsHiddenBufferStructArg());
@@ -4698,40 +4704,28 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             const weight_t weight = block->getBBWeight(this);
             for (GenTree* node : LIR::AsRange(block))
             {
-                switch (node->OperGet())
+                if (node->OperIsAnyLocal())
                 {
-                    case GT_LCL_VAR:
-                    case GT_LCL_FLD:
-                    case GT_LCL_VAR_ADDR:
-                    case GT_LCL_FLD_ADDR:
-                    case GT_STORE_LCL_VAR:
-                    case GT_STORE_LCL_FLD:
+                    LclVarDsc* varDsc = lvaGetDesc(node->AsLclVarCommon());
+                    // If this is an EH var, use a zero weight for defs, so that we don't
+                    // count those in our heuristic for register allocation, since they always
+                    // must be stored, so there's no value in enregistering them at defs; only
+                    // if there are enough uses to justify it.
+                    if (varDsc->lvLiveInOutOfHndlr && !varDsc->lvDoNotEnregister &&
+                        ((node->gtFlags & GTF_VAR_DEF) != 0))
                     {
-                        LclVarDsc* varDsc = lvaGetDesc(node->AsLclVarCommon());
-                        // If this is an EH var, use a zero weight for defs, so that we don't
-                        // count those in our heuristic for register allocation, since they always
-                        // must be stored, so there's no value in enregistering them at defs; only
-                        // if there are enough uses to justify it.
-                        if (varDsc->lvLiveInOutOfHndlr && !varDsc->lvDoNotEnregister &&
-                            ((node->gtFlags & GTF_VAR_DEF) != 0))
-                        {
-                            varDsc->incRefCnts(0, this);
-                        }
-                        else
-                        {
-                            varDsc->incRefCnts(weight, this);
-                        }
-
-                        if ((node->gtFlags & GTF_VAR_CONTEXT) != 0)
-                        {
-                            assert(node->OperIs(GT_LCL_VAR));
-                            lvaGenericsContextInUse = true;
-                        }
-                        break;
+                        varDsc->incRefCnts(0, this);
+                    }
+                    else
+                    {
+                        varDsc->incRefCnts(weight, this);
                     }
 
-                    default:
-                        break;
+                    if ((node->gtFlags & GTF_VAR_CONTEXT) != 0)
+                    {
+                        assert(node->OperIs(GT_LCL_VAR));
+                        lvaGenericsContextInUse = true;
+                    }
                 }
             }
         }
@@ -6385,7 +6379,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         lvaIncrementFrameSize(extraSlotSize);
     }
 
-    // In case of Amd64 compCalleeRegsPushed does not include float regs (Xmm6-xmm15) that
+    // In case of Amd64 compCalleeRegsPushed does not include float regs (xmm6-xmm31) that
     // need to be pushed.  But Amd64 doesn't support push/pop of xmm registers.
     // Instead we need to allocate space for them on the stack and save them in prolog.
     // Therefore, we consider xmm registers being saved while computing stack offsets
@@ -8188,7 +8182,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     GenTree* const       tree = *pTree;
     GenTreeLclVarCommon* lcl  = nullptr;
 
-    if (tree->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_LCL_FLD, GT_LCL_FLD_ADDR))
+    if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_LCL_ADDR))
     {
         lcl = tree->AsLclVarCommon();
     }
@@ -8214,7 +8208,7 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
     if (bFirstPass)
     {
         // Ignore locals that already have field appearances
-        if (lcl->OperIs(GT_LCL_FLD, GT_LCL_FLD_ADDR))
+        if (lcl->OperIs(GT_LCL_FLD) || (lcl->OperIs(GT_LCL_ADDR) && (lcl->AsLclFld()->GetLclOffs() != 0)))
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_SKIP_SUBTREES;
@@ -8332,13 +8326,9 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         if (tree->OperIs(GT_LCL_VAR))
         {
             tree->ChangeOper(GT_LCL_FLD);
-            tree->AsLclFld()->SetLclOffs(padding);
         }
-        else if (tree->OperIs(GT_LCL_VAR_ADDR))
-        {
-            tree->ChangeOper(GT_LCL_FLD_ADDR);
-            tree->AsLclFld()->SetLclOffs(padding);
-        }
+
+        tree->AsLclFld()->SetLclOffs(padding);
     }
 
     return WALK_SKIP_SUBTREES;

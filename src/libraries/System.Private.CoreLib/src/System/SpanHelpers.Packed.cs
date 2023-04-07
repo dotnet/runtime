@@ -821,7 +821,7 @@ namespace System
         {
             uint notEqualsElements = equals.ExtractMostSignificantBits();
             int index = BitOperations.TrailingZeroCount(notEqualsElements);
-            return index + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(short));
+            return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(short));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -829,7 +829,7 @@ namespace System
         {
             uint notEqualsElements = FixUpPackedVector256Result(equals).ExtractMostSignificantBits();
             int index = BitOperations.TrailingZeroCount(notEqualsElements);
-            return index + (int)(Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(short));
+            return index + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current) / sizeof(short));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -843,7 +843,7 @@ namespace System
                 current0 = ref current1;
                 offsetInVector -= Vector128<short>.Count;
             }
-            return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(short));
+            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(short));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -857,7 +857,7 @@ namespace System
                 current0 = ref current1;
                 offsetInVector -= Vector256<short>.Count;
             }
-            return offsetInVector + (int)(Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(short));
+            return offsetInVector + (int)((nuint)Unsafe.ByteOffset(ref searchSpace, ref current0) / sizeof(short));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

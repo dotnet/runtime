@@ -409,7 +409,8 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEWSFAST_ALIGN8,   // allocator for small, non-finalizer, non-array object, 8 byte aligned
     CORINFO_HELP_NEWSFAST_ALIGN8_VC,// allocator for small, value class, 8 byte aligned
     CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE, // allocator for small, finalizable, non-array object, 8 byte aligned
-    CORINFO_HELP_NEW_MDARR,// multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
+    CORINFO_HELP_NEW_MDARR,// multi-dim array helper for arrays Rank != 1 (with or without lower bounds - dimensions passed in as unmanaged array)
+    CORINFO_HELP_NEW_MDARR_RARE,// rare multi-dim array helper (Rank == 1)
     CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
     CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
     CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
@@ -852,11 +853,11 @@ enum CorInfoFlag
     CORINFO_FLG_ARRAY                 = 0x00080000, // class is an array class (initialized differently)
     CORINFO_FLG_OVERLAPPING_FIELDS    = 0x00100000, // struct or class has fields that overlap (aka union)
     CORINFO_FLG_INTERFACE             = 0x00200000, // it is an interface
-    CORINFO_FLG_DONT_DIG_FIELDS       = 0x00400000, // don't ask field info, AOT can't rely on it (used for types outside of AOT compilation version bubble)
+    CORINFO_FLG_DONT_DIG_FIELDS       = 0x00400000, // don't ask field info (used for types outside of AOT compilation version bubble)
     CORINFO_FLG_CUSTOMLAYOUT          = 0x00800000, // does this struct have custom layout?
     CORINFO_FLG_CONTAINS_GC_PTR       = 0x01000000, // does the class contain a gc ptr ?
     CORINFO_FLG_DELEGATE              = 0x02000000, // is this a subclass of delegate or multicast delegate ?
-    // CORINFO_FLG_UNUSED             = 0x04000000,
+    CORINFO_FLG_INDEXABLE_FIELDS      = 0x04000000, // struct fields may be accessed via indexing (used for inline arrays)
     CORINFO_FLG_BYREF_LIKE            = 0x08000000, // it is byref-like value type
     CORINFO_FLG_VARIANCE              = 0x10000000, // MethodTable::HasVariance (sealed does *not* mean uncast-able)
     CORINFO_FLG_BEFOREFIELDINIT       = 0x20000000, // Additional flexibility for when to run .cctor (see code:#ClassConstructionFlags)
@@ -1267,9 +1268,6 @@ struct CORINFO_RUNTIME_LOOKUP
 
     // If set, test for null and branch to helper if null
     bool                    testForNull;
-
-    // If set, test the lowest bit and dereference if set (see code:FixupPointer)
-    bool                    testForFixup;
 
     uint16_t                sizeOffset;
     size_t                  offsets[CORINFO_MAXINDIRECTIONS];

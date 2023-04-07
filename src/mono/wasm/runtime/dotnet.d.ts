@@ -130,7 +130,7 @@ type MonoConfig = {
      */
     pthreadPoolSize?: number;
     /**
-     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is true.
+     * If true, the snapshot of runtime's memory will be stored in the browser and used for faster startup next time. Default is false.
      */
     startupMemoryCache?: boolean;
     /**
@@ -180,6 +180,7 @@ interface AssetEntry extends ResourceRequest {
 type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "symbols";
 type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
 "invariant" | //  operate in invariant globalization mode.
+"hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
 "auto";
 type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;

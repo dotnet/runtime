@@ -5,6 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
 public class Program
 {
@@ -924,7 +925,8 @@ public class Program
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var result = 100;
 

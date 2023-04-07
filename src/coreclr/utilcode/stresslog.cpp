@@ -645,6 +645,12 @@ void StressLog::ThreadDetach() {
 
 BOOL StressLog::AllowNewChunk (LONG numChunksInCurThread)
 {
+#ifdef MEMORY_MAPPED_STRESSLOG
+    if (StressLogChunk::s_memoryMapped)
+    {
+        return TRUE;
+    }
+#endif
     _ASSERTE (numChunksInCurThread <= theLog.totalChunk);
     DWORD perThreadLimit = theLog.MaxSizePerThread;
 

@@ -512,7 +512,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     GenTree* src     = blkNode->Data();
     unsigned size    = blkNode->Size();
 
-    const bool isDstAddrLocal = dstAddr->OperIsLocalAddr();
+    const bool isDstAddrLocal = dstAddr->OperIs(GT_LCL_ADDR);
 
     if (blkNode->OperIsInitBlkOp())
     {
@@ -647,7 +647,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIsLocalAddr())
+    if (addr->OperIs(GT_LCL_ADDR))
     {
         addr->SetContained();
         return;
@@ -1108,6 +1108,28 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
         case NI_Vector128_op_Inequality:
         {
             return LowerHWIntrinsicCmpOp(node, GT_NE);
+        }
+
+        case NI_Vector128_WithLower:
+        case NI_Vector128_WithUpper:
+        {
+            // Converts to equivalent managed code:
+            //   AdvSimd.InsertScalar(vector.AsUInt64(), 0, value.AsUInt64()).As<ulong, T>();
+            // -or-
+            //   AdvSimd.InsertScalar(vector.AsUInt64(), 1, value.AsUInt64()).As<ulong, T>();
+
+            int index = (intrinsicId == NI_Vector128_WithUpper) ? 1 : 0;
+
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            GenTree* op3 = comp->gtNewIconNode(index);
+            BlockRange().InsertBefore(node, op3);
+            LowerNode(op3);
+
+            node->SetSimdBaseJitType(CORINFO_TYPE_ULONG);
+            node->ResetHWIntrinsicId(NI_AdvSimd_InsertScalar, comp, op1, op3, op2);
+            break;
         }
 
         case NI_AdvSimd_FusedMultiplyAddScalar:
@@ -1981,10 +2003,10 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
             MakeSrcContained(indirNode, addr);
         }
     }
-    else if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+    else if (addr->OperIs(GT_LCL_ADDR))
     {
         // These nodes go into an addr mode:
-        // - GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR is a stack addr mode.
+        // - GT_LCL_ADDR is a stack addr mode.
         MakeSrcContained(indirNode, addr);
     }
 #ifdef TARGET_ARM64

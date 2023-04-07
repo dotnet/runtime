@@ -1,13 +1,15 @@
 using System;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 public class Program
 {
     // 'vlu1' is source as well as destination and want to make sure that
     // we do not allocate same register to the src/dest. We need to mark the
     // src as 'delayFree'.
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         if (Avx2.IsSupported)
         {

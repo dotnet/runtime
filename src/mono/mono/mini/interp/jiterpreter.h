@@ -20,7 +20,12 @@
 // NOT_JITTED indicates that the trace was not jitted and it should be turned into a NOP
 #define JITERPRETER_NOT_JITTED 1
 
-typedef const ptrdiff_t (*JiterpreterThunk) (void *frame, void *pLocals);
+typedef struct {
+	gint32 backward_branch_taken;
+	gint32 bailout_opcode_count;
+} JiterpreterCallInfo;
+
+typedef const ptrdiff_t (*JiterpreterThunk) (void *frame, void *pLocals, JiterpreterCallInfo *cinfo);
 typedef void (*WasmJitCallThunk) (void *ret_sp, void *sp, void *ftndesc, gboolean *thrown);
 typedef void (*WasmDoJitCall) (gpointer cb, gpointer arg, gboolean *out_thrown);
 

@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     FileUtils.EnsureFileDirectoryExists(absolutePath);
                     File.Copy(SourcePath, absolutePath);
                 }
-                else if (FileOnDiskPath == null || FileOnDiskPath.Length >= 0)
+                else if (FileOnDiskPath == null || FileOnDiskPath.Length > 0)
                 {
                     FileUtils.CreateEmptyFile(absolutePath);
                 }

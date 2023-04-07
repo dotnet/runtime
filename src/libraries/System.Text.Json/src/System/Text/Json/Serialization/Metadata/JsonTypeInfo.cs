@@ -695,12 +695,7 @@ namespace System.Text.Json.Serialization.Metadata
                     return false;
                 }
 
-                return OriginatingResolver switch
-                {
-                    JsonSerializerContext ctx => ctx.IsCompatibleWithGeneratedOptions(Options),
-                    DefaultJsonTypeInfoResolver => true, // generates default contracts by definition
-                    _ => false
-                };
+                return OriginatingResolver.IsCompatibleWithOptions(Options);
             }
         }
 

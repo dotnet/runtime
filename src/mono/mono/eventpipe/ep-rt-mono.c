@@ -1503,9 +1503,11 @@ eventpipe_fire_method_events (
 				il_offsets = (uint32_t*)events_data->buffer;
 				native_offsets = il_offsets + offset_entries;
 
+				uint8_t *il_offsets_ptr = (uint8_t *)il_offsets;
+				uint8_t *native_offsets_ptr = (uint8_t *)native_offsets;
 				for (uint32_t offset_count = 0; offset_count < offset_entries; ++offset_count) {
-					il_offsets [offset_count] = debug_info->line_numbers [offset_count].il_offset;
-					native_offsets [offset_count] = debug_info->line_numbers [offset_count].native_offset;
+					ep_write_buffer_uint32_t (&il_offsets_ptr, debug_info->line_numbers [offset_count].il_offset);
+					ep_write_buffer_uint32_t (&native_offsets_ptr, debug_info->line_numbers [offset_count].native_offset);
 				}
 			}
 		}
@@ -1520,7 +1522,7 @@ eventpipe_fire_method_events (
 		il_offsets = (uint32_t*)events_data->buffer;
 		native_offsets = il_offsets + offset_entries;
 		il_offsets [0] = 0;
-		native_offsets [0] = (uint32_t)ji->code_size;
+		native_offsets [0] = ep_rt_val_uint32_t ((uint32_t)ji->code_size);
 	}
 
 	events_data->method_events_func (
@@ -3169,25 +3171,25 @@ ep_rt_mono_fire_bulk_type_event (BulkTypeEventLogger *type_logger)
 
 	uint32_t values_element_size = 0;
 
-	char *ptr = (char *)type_logger->bulk_type_event_buffer;
+	uint8_t *ptr = type_logger->bulk_type_event_buffer;
 
 	for (uint32_t type_value_index = 0; type_value_index < type_logger->bulk_type_value_count; type_value_index++) {
 		BulkTypeValue *target = &type_logger->bulk_type_values [type_value_index];
 
-		values_element_size += write_event_buffer_int64 (target->fixed_sized_data.type_id, ptr, &ptr);
-		values_element_size += write_event_buffer_int64 (target->fixed_sized_data.module_id, ptr, &ptr);
-		values_element_size += write_event_buffer_int32 (target->fixed_sized_data.type_name_id, ptr, &ptr);
-		values_element_size += write_event_buffer_int32 (target->fixed_sized_data.flags, ptr, &ptr);
-		values_element_size += write_event_buffer_int8 (target->fixed_sized_data.cor_element_type, ptr, &ptr);
+		values_element_size += ep_write_buffer_uint64_t (&ptr, target->fixed_sized_data.type_id);
+		values_element_size += ep_write_buffer_uint64_t (&ptr, target->fixed_sized_data.module_id);
+		values_element_size += ep_write_buffer_uint32_t (&ptr, target->fixed_sized_data.type_name_id);
+		values_element_size += ep_write_buffer_uint32_t (&ptr, target->fixed_sized_data.flags);
+		values_element_size += ep_write_buffer_uint8_t (&ptr, target->fixed_sized_data.cor_element_type);
 
 		g_assert (target->name == NULL);
-		values_element_size += write_event_buffer_int16 (0, ptr, &ptr);
+		values_element_size += ep_write_buffer_string_utf8_to_utf16_t (&ptr, "", 0);
 
-		values_element_size += write_event_buffer_int32 (target->type_parameters_count, ptr, &ptr);
+		values_element_size += ep_write_buffer_uint32_t (&ptr, target->type_parameters_count);
 
 		for (uint32_t i = 0; i < target->type_parameters_count; i++) {
 			uint64_t type_parameter = get_typeid_for_type (target->mono_type_parameters [i]);
-			values_element_size += write_event_buffer_int64 ((int64_t)type_parameter, ptr, &ptr);
+			values_element_size += ep_write_buffer_uint64_t (&ptr, type_parameter);
 		}
 	}
 
@@ -3478,8 +3480,9 @@ ep_rt_mono_send_method_details_event (MonoMethod *method)
 		method_inst_parameter_types_count = method_inst->type_argc;
 
 	uint64_t *method_inst_parameters_type_ids = mono_mempool_alloc0 (type_logger->mem_pool, method_inst_parameter_types_count * sizeof (uint64_t));
+	uint8_t *buffer = (uint8_t *)method_inst_parameters_type_ids;
 	for (uint32_t i = 0; i < method_inst_parameter_types_count; i++) {
-		method_inst_parameters_type_ids [i] = get_typeid_for_type (method_inst->type_argv [i]);
+		ep_write_buffer_uint64_t (&buffer, get_typeid_for_type (method_inst->type_argv [i]));
 
 		ep_rt_mono_log_type_and_parameters_if_necessary (type_logger, method_inst->type_argv [i]);
 	}
@@ -3589,9 +3592,11 @@ ep_rt_mono_write_event_method_il_to_native_map (
 				}
 				if (il_offsets) {
 					native_offsets = il_offsets + offset_entries;
+					uint8_t *il_offsets_ptr = (uint8_t *)il_offsets;
+					uint8_t *native_offsets_ptr = (uint8_t *)native_offsets;
 					for (uint32_t offset_count = 0; offset_count < offset_entries; ++offset_count) {
-						il_offsets [offset_count] = debug_info->line_numbers [offset_count].il_offset;
-						native_offsets [offset_count] = debug_info->line_numbers [offset_count].native_offset;
+						ep_write_buffer_uint32_t (&il_offsets_ptr, debug_info->line_numbers [offset_count].il_offset);
+						ep_write_buffer_uint32_t (&native_offsets_ptr, debug_info->line_numbers [offset_count].native_offset);
 					}
 				}
 			}
@@ -3606,7 +3611,7 @@ ep_rt_mono_write_event_method_il_to_native_map (
 			il_offsets = fixed_buffer;
 			native_offsets = il_offsets + offset_entries;
 			il_offsets [0] = 0;
-			native_offsets [0] = ji ? (uint32_t)ji->code_size : 0;
+			native_offsets [0] = ji ? ep_rt_val_uint32_t ((uint32_t)ji->code_size) : 0;
 		}
 
 		FireEtwMethodILToNativeMap (
@@ -5451,14 +5456,12 @@ mono_profiler_fire_buffered_gc_event_moves (
 		for (uint64_t i = 0; i < count; i++) {
 			// GCMoves.Values[].ObjectID.
 			object_id = (uintptr_t)SGEN_POINTER_UNTAG_ALL (*objects);
-			memcpy (buffer, &object_id, sizeof (object_id));
-			buffer += sizeof (object_id);
+			ep_write_buffer_uintptr_t (&buffer, object_id);
 			objects++;
 
 			// GCMoves.Values[].AddressID.
 			address_id = (uintptr_t)*objects;
-			memcpy (buffer, &address_id, sizeof (address_id));
-			buffer += sizeof (address_id);
+			ep_write_buffer_uintptr_t (&buffer, address_id);
 			objects++;
 		}
 	}
@@ -5518,14 +5521,12 @@ mono_profiler_fire_buffered_gc_event_roots (
 		for (uint64_t i = 0; i < count; i++) {
 			// GCRoots.Values[].ObjectID.
 			object_id = (uintptr_t)SGEN_POINTER_UNTAG_ALL (*objects);
-			memcpy (buffer, &object_id, sizeof (object_id));
-			buffer += sizeof (object_id);
+			ep_write_buffer_uintptr_t (&buffer, object_id);
 			objects++;
 
 			// GCRoots.Values[].AddressID.
 			address_id = (uintptr_t)*addresses;
-			memcpy (buffer, &address_id, sizeof (address_id));
-			buffer += sizeof (address_id);
+			ep_write_buffer_uintptr_t (&buffer, address_id);
 			addresses++;
 		}
 	}
@@ -5646,13 +5647,11 @@ mono_profiler_fire_buffered_gc_event_heap_dump_object_reference (
 		for (uintptr_t i = 0; i < object_ref_count; i++) {
 			// GCEvent.Values[].ReferencesOffset
 			object_ref_offset = GUINTPTR_TO_UINT32 (offsets [i] - last_offset);
-			memcpy (buffer, &object_ref_offset, sizeof (object_ref_offset));
-			buffer += sizeof (object_ref_offset);
+			ep_write_buffer_uint32_t (&buffer, object_ref_offset);
 
 			// GCEvent.Values[].ObjectID
 			object_id = (uintptr_t)SGEN_POINTER_UNTAG_ALL (refs[i]);
-			memcpy (buffer, &object_id, sizeof (object_id));
-			buffer += sizeof (object_id);
+			ep_write_buffer_uintptr_t (&buffer, object_id);
 
 			last_offset = offsets [i];
 		}

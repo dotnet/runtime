@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Runtime_1241
 {
@@ -23,7 +24,8 @@ namespace Runtime_1241
 
     public class Program
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int returnVal = 100;
 

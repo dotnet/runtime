@@ -1024,7 +1024,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
             if (clsFlags & CORINFO_FLG_VALUECLASS)
             {
-                assert(newobjThis->OperIs(GT_LCL_VAR_ADDR));
+                assert(newobjThis->IsLclVarAddr());
 
                 unsigned lclNum = newobjThis->AsLclVarCommon()->GetLclNum();
                 impPushOnStack(gtNewLclvNode(lclNum, lvaGetRealType(lclNum)),
@@ -1294,34 +1294,6 @@ DONE:
                 assert(successor->bbJumpKind == BBJ_RETURN);
                 successor->bbFlags |= BBF_TAILCALL_SUCCESSOR;
                 optMethodFlags |= OMF_HAS_TAILCALL_SUCCESSOR;
-            }
-
-            // If this call might eventually turn into a loop back to method entry, make sure we
-            // import the method entry.
-            //
-            assert(call->IsCall());
-            GenTreeCall* const actualCall           = call->AsCall();
-            const bool         mustImportEntryBlock = gtIsRecursiveCall(methHnd) || actualCall->IsInlineCandidate() ||
-                                              actualCall->IsGuardedDevirtualizationCandidate();
-
-            // Only schedule importation if we're not currently importing the entry BB.
-            //
-            if (opts.IsOSR() && mustImportEntryBlock && (compCurBB != fgEntryBB))
-            {
-                JITDUMP("\nOSR: inlineable or recursive tail call [%06u] in the method, so scheduling " FMT_BB
-                        " for importation\n",
-                        dspTreeID(call), fgEntryBB->bbNum);
-                impImportBlockPending(fgEntryBB);
-
-                if (!fgOSROriginalEntryBBProtected && (fgEntryBB != fgFirstBB))
-                {
-                    // Protect fgEntryBB from deletion, since it may not have any
-                    // explicit flow references until morph.
-                    //
-                    fgEntryBB->bbRefs += 1;
-                    fgOSROriginalEntryBBProtected = true;
-                    JITDUMP("   also protecting original method entry " FMT_BB "\n", fgEntryBB->bbNum);
-                }
             }
         }
     }
@@ -1907,7 +1879,8 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 #endif
             )
     {
-        if (newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEW_MDARR))
+        if (newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEW_MDARR) &&
+            newArrayCall->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEW_MDARR_RARE))
         {
             return nullptr;
         }
@@ -2050,7 +2023,7 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
             argIndex++;
         }
 
-        assert((comma != nullptr) && comma->OperIs(GT_LCL_VAR_ADDR) &&
+        assert((comma != nullptr) && comma->IsLclVarAddr() &&
                (comma->AsLclVarCommon()->GetLclNum() == lvaNewObjArrayArgs));
 
         if (argIndex != numArgs)
@@ -2893,7 +2866,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree* indexClone     = nullptr;
                 GenTree* ptrToSpanClone = nullptr;
                 assert(genActualType(index) == TYP_INT);
-                assert(ptrToSpan->TypeGet() == TYP_BYREF);
+                assert(ptrToSpan->TypeGet() == TYP_BYREF || ptrToSpan->TypeGet() == TYP_I_IMPL);
 
 #if defined(DEBUG)
                 if (verbose)
@@ -2908,8 +2881,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // We need to use both index and ptr-to-span twice, so clone or spill.
                 index = impCloneExpr(index, &indexClone, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
                                      nullptr DEBUGARG("Span.get_Item index"));
-                ptrToSpan = impCloneExpr(ptrToSpan, &ptrToSpanClone, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
-                                         nullptr DEBUGARG("Span.get_Item ptrToSpan"));
+
+                if (impIsAddressInLocal(ptrToSpan))
+                {
+                    ptrToSpanClone = gtCloneExpr(ptrToSpan);
+                }
+                else
+                {
+                    ptrToSpan = impCloneExpr(ptrToSpan, &ptrToSpanClone, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                             nullptr DEBUGARG("Span.get_Item ptrToSpan"));
+                }
 
                 // Bounds check
                 CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);
@@ -3807,6 +3788,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_GC_KeepAlive:
             {
                 retNode = impKeepAliveIntrinsic(impPopStack().val);
+                break;
+            }
+
+            case NI_System_SpanHelpers_SequenceEqual:
+            case NI_System_Buffer_Memmove:
+            {
+                // We'll try to unroll this in lower for constant input.
+                isSpecial = true;
                 break;
             }
 
@@ -7070,11 +7059,11 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 
                     if (optimizedTheBox)
                     {
-                        assert(localCopyThis->OperIs(GT_LCL_VAR_ADDR));
+                        assert(localCopyThis->IsLclVarAddr());
 
                         // We may end up inlining this call, so the local copy must be marked as "aliased",
                         // making sure the inlinee importer will know when to spill references to its value.
-                        lvaGetDesc(localCopyThis->AsLclVar())->lvHasLdAddrOp = true;
+                        lvaGetDesc(localCopyThis->AsLclFld())->lvHasLdAddrOp = true;
 
 #if FEATURE_TAILCALL_OPT
                         if (call->IsImplicitTailCall())
@@ -7903,6 +7892,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             result = NI_System_BitConverter_Int64BitsToDouble;
                         }
                     }
+                    else if (strcmp(className, "Buffer") == 0)
+                    {
+                        if (strcmp(methodName, "Memmove") == 0)
+                        {
+                            result = NI_System_Buffer_Memmove;
+                        }
+                    }
                     break;
                 }
 
@@ -8151,6 +8147,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "get_Length") == 0)
                         {
                             result = NI_System_Span_get_Length;
+                        }
+                    }
+                    else if (strcmp(className, "SpanHelpers") == 0)
+                    {
+                        if (strcmp(methodName, "SequenceEqual") == 0)
+                        {
+                            result = NI_System_SpanHelpers_SequenceEqual;
                         }
                     }
                     else if (strcmp(className, "String") == 0)

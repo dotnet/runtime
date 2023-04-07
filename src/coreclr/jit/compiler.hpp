@@ -255,18 +255,19 @@ inline regMaskTP genFindLowestReg(regMaskTP value)
  *  A rather simple routine that counts the number of bits in a given number.
  */
 
-template <typename T>
-inline unsigned genCountBits(T bits)
+inline unsigned genCountBits(uint64_t bits)
 {
-    unsigned cnt = 0;
+    return BitOperations::PopCount(bits);
+}
 
-    while (bits)
-    {
-        cnt++;
-        bits -= genFindLowestBit(bits);
-    }
+/*****************************************************************************
+ *
+ *  A rather simple routine that counts the number of bits in a given number.
+ */
 
-    return cnt;
+inline unsigned genCountBits(uint32_t bits)
+{
+    return BitOperations::PopCount(bits);
 }
 
 /*****************************************************************************
@@ -844,38 +845,6 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
            0); // Can't use this to construct any types that extend unary/binary operator.
     assert(op1 != nullptr || oper == GT_RETFILT || oper == GT_NOP || (oper == GT_RETURN && type == TYP_VOID));
 
-    if (oper == GT_ADDR)
-    {
-        switch (op1->OperGet())
-        {
-            case GT_LCL_VAR:
-                return gtNewLclVarAddrNode(op1->AsLclVar()->GetLclNum(), type);
-
-            case GT_LCL_FLD:
-                return gtNewLclFldAddrNode(op1->AsLclFld()->GetLclNum(), op1->AsLclFld()->GetLclOffs(), type);
-
-            case GT_BLK:
-            case GT_OBJ:
-            case GT_IND:
-                return op1->AsIndir()->Addr();
-
-            case GT_FIELD:
-            {
-                GenTreeField* fieldAddr =
-                    new (this, GT_FIELD_ADDR) GenTreeField(GT_FIELD_ADDR, type, op1->AsField()->GetFldObj(),
-                                                           op1->AsField()->gtFldHnd, op1->AsField()->gtFldOffset);
-                fieldAddr->gtFldMayOverlap = op1->AsField()->gtFldMayOverlap;
-#ifdef FEATURE_READYTORUN
-                fieldAddr->gtFieldLookup = op1->AsField()->gtFieldLookup;
-#endif
-                return fieldAddr;
-            }
-
-            default:
-                unreached();
-        }
-    }
-
     GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
 
     return node;
@@ -1027,27 +996,6 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
     }
 
     return result;
-}
-
-//------------------------------------------------------------------------------
-// gtNewRuntimeLookupHelperCallNode : Helper to create a runtime lookup call helper node.
-//
-//
-// Arguments:
-//    helper    - Call helper
-//    type      - Type of the node
-//    args      - Call args
-//
-// Return Value:
-//    New CT_HELPER node
-
-inline GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_LOOKUP* pRuntimeLookup,
-                                                               GenTree*                ctxTree,
-                                                               void*                   compileTimeHandle)
-{
-    GenTree* argNode  = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
-    GenTreeCall* call = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree, argNode);
-    return call;
 }
 
 //------------------------------------------------------------------------
@@ -1397,6 +1345,10 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 #endif
         case GT_LCL_FLD:
             AsLclFld()->SetLclOffs(0);
+            AsLclFld()->SetLayout(nullptr);
+            break;
+
+        case GT_LCL_ADDR:
             AsLclFld()->SetLayout(nullptr);
             break;
 
@@ -4060,8 +4012,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         // Leaf nodes
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-        case GT_LCL_VAR_ADDR:
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
         case GT_CATCH_ARG:
         case GT_LABEL:
         case GT_FTN_ADDR:
@@ -4388,6 +4339,11 @@ inline static bool StructHasCustomLayout(DWORD attribs)
 inline static bool StructHasDontDigFieldsFlagSet(DWORD attribs)
 {
     return ((attribs & CORINFO_FLG_DONT_DIG_FIELDS) != 0);
+}
+
+inline static bool StructHasIndexableFields(DWORD attribs)
+{
+    return ((attribs & CORINFO_FLG_INDEXABLE_FIELDS) != 0);
 }
 
 //------------------------------------------------------------------------------

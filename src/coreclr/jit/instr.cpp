@@ -101,13 +101,88 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
     static char     buf[4][TEMP_BUFFER_LEN];
     const char*     retbuf;
 
-    if (GetEmitter()->IsVexEncodedInstruction(ins) && !GetEmitter()->IsBMIInstruction(ins) &&
-        !GetEmitter()->IsKInstruction(ins))
+    const emitter* emit = GetEmitter();
+
+    if (emit->IsVexOrEvexEncodableInstruction(ins))
     {
-        sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "v%s", insName);
-        retbuf = buf[curBuf];
-        curBuf = (curBuf + 1) % 4;
-        return retbuf;
+        if (!emit->IsBMIInstruction(ins) && !emit->IsKInstruction(ins))
+        {
+            if (emit->TakesEvexPrefix(id))
+            {
+                switch (ins)
+                {
+                    case INS_movdqa:
+                    {
+                        return "vmovdqa32";
+                    }
+
+                    case INS_movdqu:
+                    {
+                        return "vmovdqu32";
+                    }
+
+                    case INS_pand:
+                    {
+                        return "vpandd";
+                    }
+
+                    case INS_pandn:
+                    {
+                        return "vpandnd";
+                    }
+
+                    case INS_por:
+                    {
+                        return "vpord";
+                    }
+
+                    case INS_pxor:
+                    {
+                        return "vpxord";
+                    }
+
+                    case INS_vbroadcastf128:
+                    {
+                        return "vbroadcastf32x4";
+                    }
+
+                    case INS_vextractf128:
+                    {
+                        return "vextractf32x4";
+                    }
+
+                    case INS_vinsertf128:
+                    {
+                        return "vinsertf32x4";
+                    }
+
+                    case INS_vbroadcasti128:
+                    {
+                        return "vbroadcasti32x4";
+                    }
+
+                    case INS_vextracti128:
+                    {
+                        return "vextracti32x4";
+                    }
+
+                    case INS_vinserti128:
+                    {
+                        return "vinserti32x4";
+                    }
+
+                    default:
+                    {
+                        break;
+                    }
+                }
+            }
+
+            sprintf_s(buf[curBuf], TEMP_BUFFER_LEN, "v%s", insName);
+            retbuf = buf[curBuf];
+            curBuf = (curBuf + 1) % 4;
+            return retbuf;
+        }
     }
 
     // Some instructions have different mnemonics depending on the size.
@@ -493,7 +568,7 @@ void CodeGen::inst_IV_handle(instruction ins, cnsval_ssize_t val)
 void CodeGen::inst_set_SV_var(GenTree* tree)
 {
 #ifdef DEBUG
-    assert((tree != nullptr) && tree->OperIs(GT_LCL_VAR, GT_LCL_VAR_ADDR, GT_STORE_LCL_VAR));
+    assert((tree != nullptr) && (tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR) || tree->IsLclVarAddr()));
     assert(tree->AsLclVarCommon()->GetLclNum() < compiler->lvaCount);
 
     GetEmitter()->emitVarRefOffs = tree->AsLclVar()->gtLclILoffs;
@@ -700,6 +775,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
             {
                 case NI_Vector128_CreateScalarUnsafe:
                 case NI_Vector256_CreateScalarUnsafe:
+                case NI_Vector512_CreateScalarUnsafe:
                 {
                     // The hwintrinsic should be contained and its
                     // op1 should be either contained or spilled. This
@@ -728,12 +804,11 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
 
         switch (addr->OperGet())
         {
-            case GT_LCL_VAR_ADDR:
-            case GT_LCL_FLD_ADDR:
+            case GT_LCL_ADDR:
             {
                 assert(addr->isContained());
-                varNum = addr->AsLclVarCommon()->GetLclNum();
-                offset = addr->AsLclVarCommon()->GetLclOffs();
+                varNum = addr->AsLclFld()->GetLclNum();
+                offset = addr->AsLclFld()->GetLclOffs();
                 break;
             }
 
@@ -1263,7 +1338,7 @@ instruction CodeGen::ins_Move_Extend(var_types srcType, bool srcInReg)
     {
         if (srcType == TYP_DOUBLE)
         {
-            return (srcInReg) ? INS_movaps : INS_movsdsse2;
+            return (srcInReg) ? INS_movaps : INS_movsd_simd;
         }
         else if (srcType == TYP_FLOAT)
         {
@@ -1400,7 +1475,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #ifdef FEATURE_SIMD
         if (srcType == TYP_SIMD8)
         {
-            return INS_movsdsse2;
+            return INS_movsd_simd;
         }
         else
 #endif // FEATURE_SIMD
@@ -1422,7 +1497,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #if defined(TARGET_XARCH)
         if (srcType == TYP_DOUBLE)
         {
-            return INS_movsdsse2;
+            return INS_movsd_simd;
         }
         else if (srcType == TYP_FLOAT)
         {
@@ -1658,7 +1733,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
 #ifdef FEATURE_SIMD
         if (dstType == TYP_SIMD8)
         {
-            return INS_movsdsse2;
+            return INS_movsd_simd;
         }
         else
 #endif // FEATURE_SIMD
@@ -1673,7 +1748,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
     {
         if (dstType == TYP_DOUBLE)
         {
-            return INS_movsdsse2;
+            return INS_movsd_simd;
         }
         else if (dstType == TYP_FLOAT)
         {

@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Text.RegularExpressions
@@ -831,14 +832,11 @@ namespace System.Text.RegularExpressions
                 Call(s_spanSliceIntMethod);
                 Stloc(textSpanLocal);
 
-                // If we can use IndexOf{Any}, try to accelerate the skip loop via vectorization to match the first prefix.
-                // We can use it if this is a case-sensitive class with a small number of characters in the class.
-                // We avoid using it for the relatively common case of the starting set being '.', aka anything other than
+                // Use IndexOf{Any} to accelerate the skip loop via vectorization to match the first prefix.
+                // But we avoid using it for the relatively common case of the starting set being '.', aka anything other than
                 // a newline, as it's very rare to have long, uninterrupted sequences of newlines.
                 int setIndex = 0;
-                bool canUseIndexOf =
-                    primarySet.Set != RegexCharClass.NotNewLineClass &&
-                    (primarySet.Chars is not null || primarySet.Range is not null || primarySet.AsciiSet is not null);
+                bool canUseIndexOf = primarySet.Set != RegexCharClass.NotNewLineClass;
                 bool needLoop = !canUseIndexOf || setsToUse > 1;
 
                 Label checkSpanLengthLabel = default;
@@ -926,9 +924,9 @@ namespace System.Text.RegularExpressions
                         LoadIndexOfAnyValues(primarySet.AsciiSet);
                         Call(s_spanIndexOfAnyIndexOfAnyValues);
                     }
-                    else
+                    else if (primarySet.Range is not null)
                     {
-                        if (primarySet.Range!.Value.LowInclusive == primarySet.Range.Value.HighInclusive)
+                        if (primarySet.Range.Value.LowInclusive == primarySet.Range.Value.HighInclusive)
                         {
                             // tmp = ...IndexOf{AnyExcept}(low);
                             Ldc(primarySet.Range.Value.LowInclusive);
@@ -940,6 +938,92 @@ namespace System.Text.RegularExpressions
                             Ldc(primarySet.Range.Value.LowInclusive);
                             Ldc(primarySet.Range.Value.HighInclusive);
                             Call(primarySet.Negated ? s_spanIndexOfAnyExceptInRange : s_spanIndexOfAnyInRange);
+                        }
+                    }
+                    else
+                    {
+                        // In order to optimize the search for ASCII characters, we use IndexOfAnyValues to vectorize a search
+                        // for those characters plus anything non-ASCII (if we find something non-ASCII, we'll fall back to
+                        // a sequential walk).  In order to do that search, we actually build up a set for all of the ASCII
+                        // characters _not_ contained in the set, and then do a search for the inverse of that, which will be
+                        // all of the target ASCII characters and all of non-ASCII.
+                        var asciiChars = new List<char>();
+                        for (int i = 0; i <= 0x7f; i++)
+                        {
+                            if (!RegexCharClass.CharInClass((char)i, primarySet.Set))
+                            {
+                                asciiChars.Add((char)i);
+                            }
+                        }
+
+                        using (RentedLocalBuilder span = RentReadOnlySpanCharLocal())
+                        using (RentedLocalBuilder i = RentInt32Local())
+                        {
+                            // ReadOnlySpan<char> span = inputSpan...;
+                            Stloc(span);
+
+                            // int i = span.
+                            Ldloc(span);
+                            if (asciiChars.Count == 128)
+                            {
+                                // IndexOfAnyExceptInRange('\0', '\u007f');
+                                Ldc(0);
+                                Ldc(127);
+                                Call(s_spanIndexOfAnyExceptInRange);
+                            }
+                            else
+                            {
+                                // IndexOfAnyExcept(indexOfAnyValuesArray[...]);
+                                LoadIndexOfAnyValues(CollectionsMarshal.AsSpan(asciiChars));
+                                Call(s_spanIndexOfAnyExceptIndexOfAnyValues);
+                            }
+                            Stloc(i);
+
+                            // if ((uint)i >= span.Length) goto doneSearch;
+                            Label doneSearch = DefineLabel();
+                            Ldloc(i);
+                            Ldloca(span);
+                            Call(s_spanGetLengthMethod);
+                            BgeUnFar(doneSearch);
+
+                            // if (span[i] <= 0x7f) goto doneSearch;
+                            Ldc(0x7f);
+                            Ldloca(span);
+                            Ldloc(i);
+                            Call(s_spanGetItemMethod);
+                            LdindU2();
+                            BgeUnFar(doneSearch);
+
+                            Label loop = DefineLabel();
+                            MarkLabel(loop);
+                            // do { ...
+
+                            // if (CharInClass(span[i])) goto doneSearch;
+                            Ldloca(span);
+                            Ldloc(i);
+                            Call(s_spanGetItemMethod);
+                            LdindU2();
+                            EmitMatchCharacterClass(primarySet.Set);
+                            Brtrue(doneSearch);
+
+                            // i++;
+                            Ldloc(i);
+                            Ldc(1);
+                            Add();
+                            Stloc(i);
+
+                            // } while ((uint)i < span.Length);
+                            Ldloc(i);
+                            Ldloca(span);
+                            Call(s_spanGetLengthMethod);
+                            BltUnFar(loop);
+
+                            // i = -1;
+                            Ldc(-1);
+                            Stloc(i);
+
+                            MarkLabel(doneSearch);
+                            Ldloc(i);
                         }
                     }
 
@@ -6008,7 +6092,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Adds an entry in <see cref="CompiledRegexRunner._indexOfAnyValues"/> for the given <paramref name="chars"/> and emits a load of that initialized value.
         /// </summary>
-        private void LoadIndexOfAnyValues(char[] chars)
+        private void LoadIndexOfAnyValues(ReadOnlySpan<char> chars)
         {
             List<IndexOfAnyValues<char>> list = _indexOfAnyValues ??= new();
             int index = list.Count;
