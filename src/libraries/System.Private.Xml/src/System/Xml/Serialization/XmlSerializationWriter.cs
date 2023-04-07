@@ -39,7 +39,7 @@ namespace System.Xml.Serialization
         private bool _escapeName = true;
 
         //char buffer for serializing primitive values
-        private readonly char[] _primitivesBuffer = new char[64];
+        protected readonly char[] primitivesBuffer = new char[64];
 
         // this method must be called before any generated serialization methods are called
         internal void Init(XmlWriter w, XmlSerializerNamespaces? namespaces, string? encodingStyle, string? idBase)
@@ -133,14 +133,29 @@ namespace System.Xml.Serialization
             return XmlCustomFormatter.FromDate(value);
         }
 
+        internal static bool TryFormatDate(DateTime value, Span<char> destination, out int charsWritten)
+        {
+            return XmlCustomFormatter.TryFormatDate(value, destination, out charsWritten);
+        }
+
         protected static string FromTime(DateTime value)
         {
             return XmlCustomFormatter.FromTime(value);
         }
 
+        internal static bool TryFormatTime(DateTime value, Span<char> destination, out int charsWritten)
+        {
+            return XmlCustomFormatter.TryFormatTime(value, destination, out charsWritten);
+        }
+
         protected static string FromChar(char value)
         {
             return XmlCustomFormatter.FromChar(value);
+        }
+
+        internal static bool TryFormatChar(char value, Span<char> destination, out int charsWritten)
+        {
+            return XmlCustomFormatter.TryFormatChar(value, destination, out charsWritten);
         }
 
         protected static string FromEnum(long value, string[] values, long[] ids)
@@ -272,60 +287,60 @@ namespace System.Xml.Serialization
                     writeRaw = false;
                     break;
                 case TypeCode.Int32:
-                    tryFormatResult = XmlConvert.TryFormat((int)o, _primitivesBuffer, out charsWritten);
+                    tryFormatResult = XmlConvert.TryFormat((int)o, primitivesBuffer, out charsWritten);
                     type = "int";
                     break;
                 case TypeCode.Boolean:
-                    tryFormatResult = XmlConvert.TryFormat((bool)o, _primitivesBuffer, out charsWritten);
+                    tryFormatResult = XmlConvert.TryFormat((bool)o, primitivesBuffer, out charsWritten);
                     type = "boolean";
                     break;
                 case TypeCode.Int16:
-                    tryFormatResult = XmlConvert.TryFormat((short)o, _primitivesBuffer, out charsWritten);
+                    tryFormatResult = XmlConvert.TryFormat((short)o, primitivesBuffer, out charsWritten);
                     type = "short";
                     break;
                 case TypeCode.Int64:
-                    tryFormatResult = XmlConvert.TryFormat((long)o, _primitivesBuffer, out charsWritten);
+                    tryFormatResult = XmlConvert.TryFormat((long)o, primitivesBuffer, out charsWritten);
                     type = "long";
                     break;
                 case TypeCode.Single:
-                    tryFormatResult = XmlConvert.TryFormat((float)o, _primitivesBuffer, out charsWritten);
+                    tryFormatResult = XmlConvert.TryFormat((float)o, primitivesBuffer, out charsWritten);
                     type = "float";
                     break;
                 case TypeCode.Double:
-                    tryFormatResult = XmlConvert.TryFormat((double)o, _primitivesBuffer, out charsWritten);
+                    tryFormatResult = XmlConvert.TryFormat((double)o, primitivesBuffer, out charsWritten);
                     type = "double";
                     break;
                 case TypeCode.Decimal:
-                    tryFormatResult = XmlConvert.TryFormat((decimal)o, _primitivesBuffer, out charsWritten);
+                    tryFormatResult = XmlConvert.TryFormat((decimal)o, primitivesBuffer, out charsWritten);
                     type = "decimal";
                     break;
                 case TypeCode.DateTime:
-                    tryFormatResult = TryFormatDateTime((DateTime)o, _primitivesBuffer, out charsWritten);
+                    tryFormatResult = TryFormatDateTime((DateTime)o, primitivesBuffer, out charsWritten);
                     type = "dateTime";
                     break;
                 case TypeCode.Char:
-                    tryFormatResult = XmlConvert.TryFormat((ushort)(char)o, _primitivesBuffer, out charsWritten);
+                    tryFormatResult = XmlConvert.TryFormat((ushort)(char)o, primitivesBuffer, out charsWritten);
                     type = "char";
                     typeNs = UrtTypes.Namespace;
                     break;
                 case TypeCode.Byte:
-                    tryFormatResult = XmlConvert.TryFormat((byte)o, _primitivesBuffer, out charsWritten);
+                    tryFormatResult = XmlConvert.TryFormat((byte)o, primitivesBuffer, out charsWritten);
                     type = "unsignedByte";
                     break;
                 case TypeCode.SByte:
-                    tryFormatResult = XmlConvert.TryFormat((sbyte)o, _primitivesBuffer, out charsWritten);
+                    tryFormatResult = XmlConvert.TryFormat((sbyte)o, primitivesBuffer, out charsWritten);
                     type = "byte";
                     break;
                 case TypeCode.UInt16:
-                    tryFormatResult = XmlConvert.TryFormat((ushort)o, _primitivesBuffer, out charsWritten);
+                    tryFormatResult = XmlConvert.TryFormat((ushort)o, primitivesBuffer, out charsWritten);
                     type = "unsignedShort";
                     break;
                 case TypeCode.UInt32:
-                    tryFormatResult = XmlConvert.TryFormat((uint)o, _primitivesBuffer, out charsWritten);
+                    tryFormatResult = XmlConvert.TryFormat((uint)o, primitivesBuffer, out charsWritten);
                     type = "unsignedInt";
                     break;
                 case TypeCode.UInt64:
-                    tryFormatResult = XmlConvert.TryFormat((ulong)o, _primitivesBuffer, out charsWritten);
+                    tryFormatResult = XmlConvert.TryFormat((ulong)o, primitivesBuffer, out charsWritten);
                     type = "unsignedLong";
                     break;
 
@@ -350,19 +365,19 @@ namespace System.Xml.Serialization
                     }
                     else if (t == typeof(Guid))
                     {
-                        tryFormatResult = XmlConvert.TryFormat((Guid)o, _primitivesBuffer, out charsWritten);
+                        tryFormatResult = XmlConvert.TryFormat((Guid)o, primitivesBuffer, out charsWritten);
                         type = "guid";
                         typeNs = UrtTypes.Namespace;
                     }
                     else if (t == typeof(TimeSpan))
                     {
-                        tryFormatResult = XmlConvert.TryFormat((TimeSpan)o, _primitivesBuffer, out charsWritten);
+                        tryFormatResult = XmlConvert.TryFormat((TimeSpan)o, primitivesBuffer, out charsWritten);
                         type = "TimeSpan";
                         typeNs = UrtTypes.Namespace;
                     }
                     else if (t == typeof(DateTimeOffset))
                     {
-                        tryFormatResult = XmlConvert.TryFormat((DateTimeOffset)o, _primitivesBuffer, out charsWritten);
+                        tryFormatResult = XmlConvert.TryFormat((DateTimeOffset)o, primitivesBuffer, out charsWritten);
                         type = "dateTimeOffset";
                         typeNs = UrtTypes.Namespace;
                     }
@@ -410,11 +425,11 @@ namespace System.Xml.Serialization
                 Debug.Assert(tryFormatResult.Value, "Something goes wrong with formatting primitives to the buffer.");
 #if DEBUG
                 const string escapeChars = "<>\"'&";
-                ReadOnlySpan<char> span = _primitivesBuffer;
+                ReadOnlySpan<char> span = primitivesBuffer;
                 Debug.Assert(span.Slice(0, charsWritten).IndexOfAny(escapeChars) == -1, "Primitive value contains illegal xml char.");
 #endif
                 //all the primitive types except string and XmlQualifiedName writes to the buffer
-                _w.WriteRaw(_primitivesBuffer, 0, charsWritten);
+                _w.WriteRaw(primitivesBuffer, 0, charsWritten);
             }
             else
             {
@@ -977,34 +992,56 @@ namespace System.Xml.Serialization
             }
         }
 
-        protected void WriteAttribute(string localName, string ns, byte[]? value)
+        private bool TryWriteStartAttribute(string localName, string? ns)
         {
-            if (value == null) return;
-
-            if (localName != "xmlns" && !localName.StartsWith("xmlns:", StringComparison.Ordinal))
+            if (localName == "xmlns" || localName.StartsWith("xmlns:", StringComparison.Ordinal))
             {
-                int colon = localName.IndexOf(':');
+                return false;
+            }
 
-                if (colon < 0)
+            int colon = localName.IndexOf(':');
+
+            if (colon < 0)
+            {
+                if (ns == XmlReservedNs.NsXml)
                 {
-                    if (ns == XmlReservedNs.NsXml)
-                    {
-                        _w.WriteStartAttribute("xml", localName, ns);
-                    }
-                    else
-                    {
-                        _w.WriteStartAttribute(null, localName, ns);
-                    }
+                    _w.WriteStartAttribute("xml", localName, ns);
                 }
                 else
                 {
-                    string? prefix = _w.LookupPrefix(ns);
-                    _w.WriteStartAttribute(prefix, localName.Substring(colon + 1), ns);
+                    _w.WriteStartAttribute(null, localName, ns);
                 }
-
-                XmlCustomFormatter.WriteArrayBase64(_w, value, 0, value.Length);
-                _w.WriteEndAttribute();
             }
+            else
+            {
+                string? prefix = ns != null? _w.LookupPrefix(ns) : null;
+                _w.WriteStartAttribute(prefix, localName.Substring(colon + 1), ns);
+            }
+
+            return true;
+        }
+
+        protected void WriteAttribute(string localName, string ns, byte[]? value)
+        {
+            if (value == null ||
+                !TryWriteStartAttribute(localName, ns))
+            {
+                return;
+            }
+
+            XmlCustomFormatter.WriteArrayBase64(_w, value, 0, value.Length);
+            _w.WriteEndAttribute();
+        }
+
+        protected void WriteAttribute(string localName, string? ns, char[] value, int index, int count)
+        {
+            if (!TryWriteStartAttribute(localName, ns))
+            {
+                return;
+            }
+
+            _w.WriteRaw(value, index, count);
+            _w.WriteEndAttribute();
         }
 
         protected void WriteAttribute(string localName, string? value)
@@ -1038,6 +1075,11 @@ namespace System.Xml.Serialization
         {
             if (value == null) return;
             XmlCustomFormatter.WriteArrayBase64(_w, value, 0, value.Length);
+        }
+
+        protected void WriteValue(char[] value, int index, int count)
+        {
+            _w.WriteRaw(value, index, count);
         }
 
         protected void WriteStartDocument()
@@ -1124,6 +1166,15 @@ namespace System.Xml.Serialization
             if (xsiType != null)
                 WriteXsiType(xsiType.Name, xsiType.Namespace);
             XmlCustomFormatter.WriteArrayBase64(_w, value, 0, value.Length);
+            _w.WriteEndElement();
+        }
+
+        protected void WriteElementStringRaw(string localName, string? ns, char[] value, int index, int count, XmlQualifiedName? xsiType)
+        {
+            _w.WriteStartElement(localName, ns);
+            if (xsiType != null)
+                WriteXsiType(xsiType.Name, xsiType.Namespace);
+            _w.WriteRaw(value, index, count);
             _w.WriteEndElement();
         }
 

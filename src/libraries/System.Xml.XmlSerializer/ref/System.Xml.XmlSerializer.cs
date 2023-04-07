@@ -585,6 +585,7 @@ namespace System.Xml.Serialization
     public abstract partial class XmlSerializationWriter : System.Xml.Serialization.XmlSerializationGeneratedCode
     {
         protected XmlSerializationWriter() { }
+        protected readonly char[] primitivesBuffer;
         protected bool EscapeName { get { throw null; } set { } }
         protected System.Collections.ArrayList? Namespaces { get { throw null; } set { } }
         protected System.Xml.XmlWriter Writer { get { throw null; } set { } }
@@ -627,6 +628,7 @@ namespace System.Xml.Serialization
         protected void WriteAttribute(string localName, string? value) { }
         protected void WriteAttribute(string localName, string ns, byte[]? value) { }
         protected void WriteAttribute(string localName, string? ns, string? value) { }
+        protected void WriteAttribute(string localName, string? ns, char[] value, int index, int count) { }
         protected void WriteAttribute(string? prefix, string localName, string? ns, string? value) { }
         protected void WriteElementEncoded(System.Xml.XmlNode? node, string name, string? ns, bool isNullable, bool any) { }
         protected void WriteElementLiteral(System.Xml.XmlNode? node, string name, string? ns, bool isNullable, bool any) { }
@@ -646,6 +648,7 @@ namespace System.Xml.Serialization
         protected void WriteElementStringRaw(string localName, string? ns, string? value) { }
         protected void WriteElementStringRaw(string localName, string? ns, string? value, System.Xml.XmlQualifiedName? xsiType) { }
         protected void WriteElementStringRaw(string localName, string? value, System.Xml.XmlQualifiedName? xsiType) { }
+        protected void WriteElementStringRaw(string localName, string? ns, char[] value, int index, int count, System.Xml.XmlQualifiedName? xsiType) { }
         protected void WriteEmptyTag(string? name) { }
         protected void WriteEmptyTag(string? name, string? ns) { }
         protected void WriteEndElement() { }
@@ -690,6 +693,7 @@ namespace System.Xml.Serialization
         protected void WriteTypedPrimitive(string? name, string? ns, object o, bool xsiType) { }
         protected void WriteValue(byte[]? value) { }
         protected void WriteValue(string? value) { }
+        protected void WriteValue(char[] value, int index, int count) { }
         protected void WriteXmlAttribute(System.Xml.XmlNode node) { }
         protected void WriteXmlAttribute(System.Xml.XmlNode node, object? container) { }
         protected void WriteXsiType(string name, string? ns) { }

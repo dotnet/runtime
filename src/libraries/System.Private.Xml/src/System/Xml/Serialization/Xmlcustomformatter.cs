@@ -80,6 +80,11 @@ namespace System.Xml.Serialization
             return XmlConvert.ToString(value, "yyyy-MM-dd");
         }
 
+        internal static bool TryFormatDate(DateTime value, Span<char> destination, out int charsWritten)
+        {
+            return XmlConvert.TryFormat(value, "yyyy-MM-dd", destination, out charsWritten);
+        }
+
         internal static string FromTime(DateTime value)
         {
             if (!LocalAppContextSwitches.IgnoreKindInUtcTimeSerialization && value.Kind == DateTimeKind.Utc)
@@ -90,6 +95,16 @@ namespace System.Xml.Serialization
             {
                 return XmlConvert.ToString(DateTime.MinValue + value.TimeOfDay, "HH:mm:ss.fffffffzzzzzz");
             }
+        }
+
+        internal static bool TryFormatTime(DateTime value, Span<char> destination, out int charsWritten)
+        {
+            if (!LocalAppContextSwitches.IgnoreKindInUtcTimeSerialization && value.Kind == DateTimeKind.Utc)
+            {
+                return XmlConvert.TryFormat(DateTime.MinValue + value.TimeOfDay, "HH:mm:ss.fffffffZ", destination, out charsWritten);
+            }
+
+            return XmlConvert.TryFormat(DateTime.MinValue + value.TimeOfDay, "HH:mm:ss.fffffffzzzzzz", destination, out charsWritten);
         }
 
         internal static string FromDateTime(DateTime value)
@@ -119,6 +134,11 @@ namespace System.Xml.Serialization
         internal static string FromChar(char value)
         {
             return XmlConvert.ToString((ushort)value);
+        }
+
+        internal static bool TryFormatChar(char value, Span<char> destination, out int charsWritten)
+        {
+            return XmlConvert.TryFormat((ushort)value, destination, out charsWritten);
         }
 
         [return: NotNullIfNotNull(nameof(name))]
