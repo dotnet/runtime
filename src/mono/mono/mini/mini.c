@@ -3138,7 +3138,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	opts |= MONO_OPT_FLOAT32;
 #else
 	opts &= ~MONO_OPT_FLOAT32;
+#ifdef ENABLE_LLVM
 	g_assert (!llvm);
+#endif
 #endif
 
  restart_compile:
