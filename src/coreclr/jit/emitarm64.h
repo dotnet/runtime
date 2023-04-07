@@ -166,7 +166,10 @@ inline bool OptimizeLdrStr(instruction ins,
     if (ins == INS_str)
     {
         // For INS_str, don't do this if either instruction had a local GC variable.
-        if ((localVar && EA_IS_GCREF_OR_BYREF(reg1Attr)) || (emitLastIns->idIsLclVar() && (emitLastIns->idGCref() != GCT_NONE)))
+        // For INS_ldr, it is fine to perform this optimization because the output code already handles the code of
+        // updating the gc refs. We do not need offset tracking for load cases.
+        if ((localVar && EA_IS_GCREF_OR_BYREF(reg1Attr)) ||
+            (emitLastIns->idIsLclVar() && (emitLastIns->idGCref() != GCT_NONE)))
         {
             canReplaceWithPair = false;
         }
