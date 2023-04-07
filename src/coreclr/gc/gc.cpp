@@ -9499,6 +9499,8 @@ void gc_heap::copy_brick_card_table()
     uint32_t* ct = &g_gc_card_table[card_word (gcard_of (g_gc_lowest_address))];
     own_card_table (ct);
     card_table = translate_card_table (ct);
+    bookkeeping_covered_start = (uint8_t*)ct - sizeof(card_table_info);
+    card_table_size(ct) = card_table_element_layout[total_bookkeeping_elements];
     /* End of global lock */
     highest_address = card_table_highest_address (ct);
     lowest_address = card_table_lowest_address (ct);
