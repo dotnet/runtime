@@ -16419,9 +16419,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_RWR_SRD_RRD:
         {
+#ifdef TARGET_AMD64
+            assert(ins == INS_shlx || ins == INS_shrx || ins == INS_sarx);
+#else  // TARGET_AMD64
+            noway_assert(false && "IF_RWR_SRD_RRD not supported in 32-bit");
+#endif // !TARGET_AMD64
+
             assert(IsVexOrEvexEncodableInstruction(ins));
             assert(emitComp->compOpportunisticallyDependsOn(InstructionSet_BMI2));
-            assert(ins == INS_shlx || ins == INS_shrx || ins == INS_sarx);
 
             code = insCodeRM(ins);
             dst  = emitOutputSV(dst, id, code);
@@ -16595,9 +16600,14 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_RWR_MRD_RRD:
         {
+#ifdef TARGET_AMD64
+            assert(ins == INS_shlx || ins == INS_shrx || ins == INS_sarx);
+#else  // TARGET_AMD64
+            noway_assert(false && "IF_RWR_MRD_RRD not supported in 32-bit");
+#endif // !TARGET_AMD64
+
             assert(IsVexOrEvexEncodableInstruction(ins));
             assert(emitComp->compOpportunisticallyDependsOn(InstructionSet_BMI2));
-            assert(ins == INS_shlx || ins == INS_shrx || ins == INS_sarx);
 
             code = insCodeRM(ins);
             dst  = emitOutputCV(dst, id, code);
