@@ -1820,7 +1820,20 @@ HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIn
     MethodTable * pMT = AppDomain::GetCurrentDomain()->LookupThreadStaticBlockType(staticBlockIndex);
     _ASSERTE(!pMT->HasGenericsStaticsInfo());
 
-    staticBlock = HCCALL1(JIT_GetNonGCThreadStaticBase_Helper, pMT);
+    // For generics, we need to call CheckRestore() for some reason
+    if (pMT->HasGenericsStaticsInfo())
+        pMT->CheckRestore();
+
+    // Get the TLM
+    ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLM(pMT);
+    _ASSERTE(pThreadLocalModule != NULL);
+
+    // Check if the class constructor needs to be run
+    pThreadLocalModule->CheckRunClassInitThrowing(pMT);
+
+    // Lookup the non-GC statics base pointer
+    staticBlock = (void*) pMT->GetNonGCThreadStaticsBasePointer();
+    CONSISTENCY_CHECK(staticBlock != NULL);
 
     if (t_threadStaticBlocksSize <= staticBlockIndex)
     {
@@ -1847,7 +1860,6 @@ HCIMPL1(void*, JIT_GetSharedNonGCThreadStaticBaseOptimized, UINT32 staticBlockIn
         t_threadStaticBlocks[staticBlockIndex] = staticBlock;
         t_maxThreadStaticBlocks = max(t_maxThreadStaticBlocks, staticBlockIndex);
     }
-
     HELPER_METHOD_FRAME_END();
 #else
     _ASSERTE(!"JIT_GetSharedNonGCThreadStaticBaseOptimized not supported on non-windows.");
