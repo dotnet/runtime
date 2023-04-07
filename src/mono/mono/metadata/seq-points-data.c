@@ -170,7 +170,7 @@ seq_point_read (SeqPoint* seq_point, guint8* ptr, guint8* buffer_ptr, gboolean h
 }
 
 gboolean
-mono_seq_point_info_add_seq_point (GByteArray* array, SeqPoint *sp, SeqPoint *last_seq_point, GSList *next, gboolean has_debug_data)
+mono_seq_point_info_add_seq_point (dn_vector_t* array, SeqPoint *sp, SeqPoint *last_seq_point, GSList *next, gboolean has_debug_data)
 {
 	int il_delta, native_delta;
 	GSList *l;
@@ -193,25 +193,25 @@ mono_seq_point_info_add_seq_point (GByteArray* array, SeqPoint *sp, SeqPoint *la
 	}
 
 	len = encode_var_int (buffer, NULL, encode_zig_zag (il_delta));
-	g_byte_array_append (array, buffer, len);
+	_dn_vector_append_range (array, buffer, len);
 
 	len = encode_var_int (buffer, NULL, encode_zig_zag (native_delta));
-	g_byte_array_append (array, buffer, len);
+	_dn_vector_append_range (array, buffer, len);
 
 	if (has_debug_data) {
-		sp->next_offset = array->len;
+		sp->next_offset = dn_vector_size (array);
 		sp->next_len = g_slist_length (next);
 
 		len = encode_var_int (buffer, NULL, flags);
-		g_byte_array_append (array, buffer, len);
+		_dn_vector_append_range (array, buffer, len);
 
 		len = encode_var_int (buffer, NULL, sp->next_len);
-		g_byte_array_append (array, buffer, len);
+		_dn_vector_append_range (array, buffer, len);
 
 		for (l = next; l; l = l->next) {
 			int next_index = GPOINTER_TO_UINT (l->data);
 			len = encode_var_int (buffer, NULL, next_index);
-			g_byte_array_append (array, buffer, len);
+			_dn_vector_append_range (array, buffer, len);
 		}
 	}
 

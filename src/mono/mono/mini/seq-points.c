@@ -10,6 +10,7 @@
  */
 
 #include <config.h>
+#include <dn-vector.h>
 #include <dn-vector-ptr.h>
 #include "mini.h"
 #include "mini-runtime.h"
@@ -112,7 +113,7 @@ mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 	int seq_info_size;
 	GSList **next = NULL;
 	SeqPoint* seq_points;
-	GByteArray* array;
+	dn_vector_t array = {0,};
 	gboolean has_debug_data = cfg->gen_sdb_seq_points;
 
 	if (!cfg->seq_points)
@@ -206,7 +207,7 @@ mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 		}
 	}
 
-	array = g_byte_array_new ();
+	dn_vector_init_t (&array, uint8_t);
 
 	{ /* Add sequence points to seq_point_info */
 		SeqPoint zero_seq_point = {0};
@@ -219,7 +220,7 @@ mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 			if (has_debug_data)
 				next_list = next[i];
 
-			if (mono_seq_point_info_add_seq_point (array, sp, last_seq_point, next_list, has_debug_data))
+			if (mono_seq_point_info_add_seq_point (&array, sp, last_seq_point, next_list, has_debug_data))
 				last_seq_point = sp;
 
 			if (has_debug_data)
@@ -232,10 +233,10 @@ mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 	if (has_debug_data)
 		g_free (next);
 
-	cfg->seq_point_info = mono_seq_point_info_new (array->len, TRUE, array->data, has_debug_data, &seq_info_size);
+	cfg->seq_point_info = mono_seq_point_info_new (dn_vector_size (&array), TRUE, dn_vector_data (&array), has_debug_data, &seq_info_size);
 	mono_atomic_fetch_add_i32 (&mono_jit_stats.allocated_seq_points_size, seq_info_size);
 
-	g_byte_array_free (array, TRUE);
+	dn_vector_dispose (&array);
 
 	// FIXME: dynamic methods
 	if (!cfg->compile_aot) {

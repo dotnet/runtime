@@ -4010,7 +4010,7 @@ collect_pred_seq_points (TransformData *td, InterpBasicBlock *bb, SeqPoint *seqp
 static void
 save_seq_points (TransformData *td, MonoJitInfo *jinfo)
 {
-	GByteArray *array;
+	dn_vector_t array = {0,};
 	int seq_info_size;
 	MonoSeqPointInfo *info;
 	GSList **next = NULL;
@@ -4055,14 +4055,14 @@ save_seq_points (TransformData *td, MonoJitInfo *jinfo)
 	}
 
 	/* Serialize the seq points into a byte array */
-	array = g_byte_array_new ();
+	dn_vector_init_t (&array, uint8_t);
 	SeqPoint zero_seq_point = {0};
 	SeqPoint* last_seq_point = &zero_seq_point;
 	for (guint i = 0; i < td->seq_points->len; ++i) {
 		SeqPoint *sp = (SeqPoint*)g_ptr_array_index (td->seq_points, i);
 
 		sp->next_offset = 0;
-		if (mono_seq_point_info_add_seq_point (array, sp, last_seq_point, next [i], TRUE))
+		if (mono_seq_point_info_add_seq_point (&array, sp, last_seq_point, next [i], TRUE))
 			last_seq_point = sp;
 	}
 
@@ -4085,10 +4085,10 @@ save_seq_points (TransformData *td, MonoJitInfo *jinfo)
 		}
 	}
 
-	info = mono_seq_point_info_new (array->len, TRUE, array->data, TRUE, &seq_info_size);
+	info = mono_seq_point_info_new (dn_vector_size (&array), TRUE, dn_vector_data (&array), TRUE, &seq_info_size);
 	mono_atomic_fetch_add_i32 (&mono_jit_stats.allocated_seq_points_size, seq_info_size);
 
-	g_byte_array_free (array, TRUE);
+	dn_vector_dispose (&array);
 
 	jinfo->seq_points = info;
 }

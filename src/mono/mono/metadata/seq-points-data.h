@@ -7,6 +7,8 @@
 #ifndef __MONO_SEQ_POINTS_DATA_H__
 #define __MONO_SEQ_POINTS_DATA_H__
 
+#include <dn-vector.h>
+
 #include <glib.h>
 #include "mono/utils/mono-compiler.h"
 
@@ -65,7 +67,7 @@ int
 mono_seq_point_info_get_write_size (MonoSeqPointInfo* info);
 
 gboolean
-mono_seq_point_info_add_seq_point (GByteArray* array, SeqPoint *sp, SeqPoint *last_seq_point, GSList *next, gboolean has_debug_data);
+mono_seq_point_info_add_seq_point (dn_vector_t* array, SeqPoint *sp, SeqPoint *last_seq_point, GSList *next, gboolean has_debug_data);
 
 MonoSeqPointInfo*
 mono_seq_point_info_new (int len, gboolean alloc_data, guint8 *data, gboolean has_debug_data, int *out_size);
