@@ -47,7 +47,7 @@ namespace System.Runtime.Serialization
         protected abstract void WriteUInt64(ulong val, string name);
         protected abstract void WriteValueType(object obj, string name, System.Type memberType);
     }
-    [System.ObsoleteAttribute("Legacy formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class FormatterConverter : System.Runtime.Serialization.IFormatterConverter
     {
         public FormatterConverter() { }
@@ -73,7 +73,7 @@ namespace System.Runtime.Serialization
         [System.CLSCompliantAttribute(false)]
         public ulong ToUInt64(object value) { throw null; }
     }
-    [System.ObsoleteAttribute("Legacy formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public static partial class FormatterServices
     {
         public static void CheckTypeSecurity(System.Type t, System.Runtime.Serialization.Formatters.TypeFilterLevel securityLevel) { }
@@ -99,27 +99,27 @@ namespace System.Runtime.Serialization
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("BinaryFormatter serialization is not trim compatible because the type of objects being processed cannot be statically discovered.")]
         void Serialize(System.IO.Stream serializationStream, object graph);
     }
-    [System.ObsoleteAttribute("Legacy formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface ISerializationSurrogate
     {
         void GetObjectData(object obj, System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context);
         object SetObjectData(object obj, System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context, System.Runtime.Serialization.ISurrogateSelector? selector);
     }
-    [System.ObsoleteAttribute("Legacy formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface ISurrogateSelector
     {
         void ChainSelector(System.Runtime.Serialization.ISurrogateSelector selector);
         System.Runtime.Serialization.ISurrogateSelector? GetNextSelector();
         System.Runtime.Serialization.ISerializationSurrogate? GetSurrogate(System.Type type, System.Runtime.Serialization.StreamingContext context, out System.Runtime.Serialization.ISurrogateSelector selector);
     }
-    [System.ObsoleteAttribute("Legacy formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class ObjectIDGenerator
     {
         public ObjectIDGenerator() { }
         public virtual long GetId(object obj, out bool firstTime) { throw null; }
         public virtual long HasId(object obj, out bool firstTime) { throw null; }
     }
-    [System.ObsoleteAttribute("Legacy formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class ObjectManager
     {
         public ObjectManager(System.Runtime.Serialization.ISurrogateSelector? selector, System.Runtime.Serialization.StreamingContext context) { }
@@ -148,7 +148,7 @@ namespace System.Runtime.Serialization
         public virtual void BindToName(System.Type serializedType, out string? assemblyName, out string? typeName) { throw null; }
         public abstract System.Type? BindToType(string assemblyName, string typeName);
     }
-    [System.ObsoleteAttribute("Legacy formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class SerializationObjectManager
     {
         public SerializationObjectManager(System.Runtime.Serialization.StreamingContext context) { }
@@ -156,7 +156,7 @@ namespace System.Runtime.Serialization
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("SerializationObjectManager is not trim compatible because the type of objects being managed cannot be statically discovered.")]
         public void RegisterObject(object obj) { }
     }
-    [System.ObsoleteAttribute("Legacy formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial class SurrogateSelector : System.Runtime.Serialization.ISurrogateSelector
     {
         public SurrogateSelector() { }
@@ -169,26 +169,26 @@ namespace System.Runtime.Serialization
 }
 namespace System.Runtime.Serialization.Formatters
 {
-    [System.ObsoleteAttribute("Legacy formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum FormatterAssemblyStyle
     {
         Simple = 0,
         Full = 1,
     }
-    [System.ObsoleteAttribute("Legacy formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum FormatterTypeStyle
     {
         TypesWhenNeeded = 0,
         TypesAlways = 1,
         XsdString = 2,
     }
-    [System.ObsoleteAttribute("Legacy formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface IFieldInfo
     {
         string[]? FieldNames { get; set; }
         System.Type[]? FieldTypes { get; set; }
     }
-    [System.ObsoleteAttribute("Legacy formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public enum TypeFilterLevel
     {
         Low = 2,

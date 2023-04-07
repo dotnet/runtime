@@ -256,7 +256,7 @@ namespace System.DirectoryServices
     {
         public DirectoryServicesCOMException() { }
 #if NET8_0_OR_GREATER
-        [System.ObsoleteAttribute("This API supports legacy formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
         protected DirectoryServicesCOMException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -265,7 +265,7 @@ namespace System.DirectoryServices
         public int ExtendedError { get { throw null; } }
         public string? ExtendedErrorMessage { get { throw null; } }
 #if NET8_0_OR_GREATER
-        [System.ObsoleteAttribute("This API supports legacy formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
@@ -540,7 +540,7 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         public ActiveDirectoryObjectExistsException() { }
 #if NET8_0_OR_GREATER
-        [System.ObsoleteAttribute("This API supports legacy formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
         protected ActiveDirectoryObjectExistsException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -551,7 +551,7 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         public ActiveDirectoryObjectNotFoundException() { }
 #if NET8_0_OR_GREATER
-        [System.ObsoleteAttribute("This API supports legacy formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
         protected ActiveDirectoryObjectNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -561,7 +561,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public string? Name { get { throw null; } }
         public System.Type? Type { get { throw null; } }
 #if NET8_0_OR_GREATER
-        [System.ObsoleteAttribute("This API supports legacy formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
@@ -570,7 +570,7 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         public ActiveDirectoryOperationException() { }
 #if NET8_0_OR_GREATER
-        [System.ObsoleteAttribute("This API supports legacy formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
         protected ActiveDirectoryOperationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -580,7 +580,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public ActiveDirectoryOperationException(string? message, int errorCode) { }
         public int ErrorCode { get { throw null; } }
 #if NET8_0_OR_GREATER
-        [System.ObsoleteAttribute("This API supports legacy formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
@@ -744,7 +744,7 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         public ActiveDirectoryServerDownException() { }
 #if NET8_0_OR_GREATER
-        [System.ObsoleteAttribute("This API supports legacy formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
         protected ActiveDirectoryServerDownException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -756,7 +756,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public override string Message { get { throw null; } }
         public string? Name { get { throw null; } }
 #if NET8_0_OR_GREATER
-        [System.ObsoleteAttribute("This API supports legacy formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
@@ -1312,7 +1312,7 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         public ForestTrustCollisionException() { }
 #if NET8_0_OR_GREATER
-        [System.ObsoleteAttribute("This API supports legacy formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
         protected ForestTrustCollisionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -1321,7 +1321,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public ForestTrustCollisionException(string? message, System.Exception? inner, System.DirectoryServices.ActiveDirectory.ForestTrustRelationshipCollisionCollection? collisions) { }
         public System.DirectoryServices.ActiveDirectory.ForestTrustRelationshipCollisionCollection? Collisions { get { throw null; } }
 #if NET8_0_OR_GREATER
-        [System.ObsoleteAttribute("This API supports legacy formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
@@ -1704,7 +1704,7 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         public SyncFromAllServersOperationException() { }
 #if NET8_0_OR_GREATER
-        [System.ObsoleteAttribute("This API supports legacy formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
         protected SyncFromAllServersOperationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -1713,7 +1713,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public SyncFromAllServersOperationException(string? message, System.Exception? inner, System.DirectoryServices.ActiveDirectory.SyncFromAllServersErrorInformation[]? errors) { }
         public System.DirectoryServices.ActiveDirectory.SyncFromAllServersErrorInformation[] ErrorInformation { get { throw null; } }
 #if NET8_0_OR_GREATER
-        [System.ObsoleteAttribute("This API supports legacy formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 #endif
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
