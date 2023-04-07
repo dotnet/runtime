@@ -148,9 +148,18 @@ namespace Microsoft.Extensions.Hosting
                 FileLogger.Log("host.Start()");
                 host.Start();
 
-                FileLogger.Log("host.Stop()");
-                await host.StopAsync();
-                FileLogger.Log("host.Stop() complete");
+                using (ServiceController selfController = new(nameof(ServiceCanStopItself)))
+                {
+                    selfController.WaitForStatus(ServiceControllerStatus.Running, WindowsServiceTester.WaitForStatusTimeout);
+                    Assert.Equal(ServiceControllerStatus.Running, selfController.Status);
+
+                    FileLogger.Log("host.Stop()");
+                    await host.StopAsync();
+                    FileLogger.Log("host.Stop() complete");
+
+                    selfController.WaitForStatus(ServiceControllerStatus.Stopped, WindowsServiceTester.WaitForStatusTimeout);
+                    Assert.Equal(ServiceControllerStatus.Stopped, selfController.Status);
+                }
             }))
             {
                 FileLogger.DeleteLog(nameof(ServiceCanStopItself));
