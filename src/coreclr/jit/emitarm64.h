@@ -146,7 +146,7 @@ inline bool OptimizeLdrStr(instruction ins,
 {
     assert(ins == INS_ldr || ins == INS_str);
 
-    if (!emitCanPeepholeLastIns())
+    if (!emitCanPeepholeLastIns() || (emitLastIns->idIns() != ins))
     {
         return false;
     }
@@ -161,9 +161,18 @@ inline bool OptimizeLdrStr(instruction ins,
     reg2 = encodingZRtoSP(reg2);
 
     // If the previous instruction was a matching load/store, then try to replace it instead of emitting.
-    // Don't do this if either instruction had a local variable.
-    if ((emitLastIns->idIns() == ins) && ((ins == INS_ldr) || (!localVar && !emitLastIns->idIsLclVar())) &&
-        ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt))
+    //
+    bool canReplaceWithPair = true;
+    if (ins == INS_str)
+    {
+        // For INS_str, don't do this if either instruction had a local GC variable.
+        if ((localVar && EA_IS_GCREF_OR_BYREF(reg1Attr)) || (emitLastIns->idIsLclVar() && (emitLastIns->idGCref() != GCT_NONE)))
+        {
+            canReplaceWithPair = false;
+        }
+    }
+
+    if (canReplaceWithPair && ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt))
     {
         return true;
     }
