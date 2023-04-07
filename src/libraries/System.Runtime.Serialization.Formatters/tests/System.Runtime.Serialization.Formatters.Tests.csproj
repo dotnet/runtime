@@ -8,7 +8,8 @@
     <!--
       We're testing the BinaryFormatter enablement / disablement switch, so we need to suppress any inherited behavior.
       The specific combination below accomplishes this. Normal apps should *NOT* set this combination of switches and
-      should instead set the switches documented at https://aka.ms/binaryformatter.
+      should instead set the switches documented at:
+      https://learn.microsoft.com/dotnet/core/compatibility/core-libraries/7.0/binaryformatter-apis-produce-errors#recommended-action
     -->
     <_ProjectTypeRequiresBinaryFormatter>true</_ProjectTypeRequiresBinaryFormatter>
     <EnableUnsafeBinaryFormatterSerialization><!-- intentionally left blank --></EnableUnsafeBinaryFormatterSerialization>

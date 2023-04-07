@@ -412,6 +412,7 @@ void CodeGen::genMarkLabelsForCodegen()
                 break;
 
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
             case BBJ_EHFILTERRET:
             case BBJ_RETURN:
             case BBJ_THROW:
@@ -7857,7 +7858,7 @@ void CodeGen::genReturn(GenTree* treeNode)
 #else  // !FEATURE_EH_FUNCLETS
     // Don't generate stack checks for x86 finally/filter EH returns: these are not invoked
     // with the same SP as the main function. See also CodeGen::genEHFinallyOrFilterRet().
-    if ((compiler->compCurBB->bbJumpKind == BBJ_EHFINALLYRET) || (compiler->compCurBB->bbJumpKind == BBJ_EHFILTERRET))
+    if (compiler->compCurBB->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET))
     {
         doStackPointerCheck = false;
     }

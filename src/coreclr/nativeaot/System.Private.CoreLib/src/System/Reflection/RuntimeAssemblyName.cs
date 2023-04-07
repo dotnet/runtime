@@ -152,8 +152,7 @@ namespace System.Reflection
             {
                 // We must not hand out our own copy of the PKT to AssemblyName as AssemblyName is amazingly trusting and gives untrusted callers
                 // full freedom to scribble on its PKT array. (As do we but we only have trusted callers!)
-                byte[] pkCopy = new byte[this.PublicKeyOrToken.Length];
-                ((ICollection<byte>)(this.PublicKeyOrToken)).CopyTo(pkCopy, 0);
+                var pkCopy = (byte[])this.PublicKeyOrToken.Clone();
 
                 if (0 != (this.Flags & AssemblyNameFlags.PublicKey))
                     blank.SetPublicKey(pkCopy);
