@@ -63,7 +63,7 @@ namespace System.Reflection.Emit.Tests
             yield return new object[] { new Type[] { typeof(EmptyStruct) } };
             yield return new object[] { new Type[] { typeof(StructWithField) } };
             yield return new object[] { new Type[] { typeof(StructWithField), typeof(EmptyStruct) } };
-            yield return new object[] { new Type[] { typeof(IMultipleMethod), typeof(EmptyStruct) , typeof(INoMethod2), typeof(StructWithField) } };
+            yield return new object[] { new Type[] { typeof(IMultipleMethod), typeof(EmptyStruct), typeof(INoMethod2), typeof(StructWithField) } };
         }
 
         [Theory]
