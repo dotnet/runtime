@@ -5354,6 +5354,10 @@ void ClrDataAccess::AddFreeRegion(DPTR(dac_region_free_list) free_list, unsigned
 {
     if (free_list != nullptr)
     {
+        // Cap the number of regions we will walk in case we hit memory corruption that
+        // puts us into an infinite loop.
+        int maxRegions = 4096;
+
         DPTR(dac_heap_segment) seg = free_list->head_free_region;
         while (seg != nullptr)
         {
@@ -5364,6 +5368,9 @@ void ClrDataAccess::AddFreeRegion(DPTR(dac_region_free_list) free_list, unsigned
 
             seg = seg->next;
             if (seg == free_list->head_free_region)
+                break;
+
+            if (--maxRegions <= 0)
                 break;
         }
     }
@@ -5376,6 +5383,11 @@ HRESULT ClrDataAccess::GetGCFreeRegions(unsigned int count, CLRDATA_ADDRESS regi
 
     SOSDacEnter();
 
+    // Cap the number of free regions we will walk at a sensible number.  This is to protect against
+    // memory corruption, un-initialized data, or just a bug.
+    int count_free_region_kinds = g_gcDacGlobals->count_free_region_kinds;
+    count_free_region_kinds = min(count_free_region_kinds, 16);
+
     unsigned int index = 0;
     if (g_gcDacGlobals->global_free_huge_regions != nullptr)
     {
@@ -5385,7 +5397,7 @@ HRESULT ClrDataAccess::GetGCFreeRegions(unsigned int count, CLRDATA_ADDRESS regi
     if (g_gcDacGlobals->global_regions_to_decommit != nullptr)
     {
         DPTR(dac_region_free_list) regionList(g_gcDacGlobals->global_regions_to_decommit);
-        for (int i = 0; i < g_gcDacGlobals->count_free_region_kinds; i++, regionList++)
+        for (int i = 0; i < count_free_region_kinds; i++, regionList++)
             AddFreeRegion(regionList, count, regions, index);
     }
     
@@ -5398,8 +5410,9 @@ HRESULT ClrDataAccess::GetGCFreeRegions(unsigned int count, CLRDATA_ADDRESS regi
 #endif //FEATURE_SVR_GC
     {
         DPTR(dac_region_free_list) regionList(g_gcDacGlobals->free_regions);
-        for (int i = 0; i < g_gcDacGlobals->count_free_region_kinds; i++, regionList++)
-            AddFreeRegion(regionList, count, regions, index);
+        if (regionList != nullptr)
+            for (int i = 0; i < count_free_region_kinds; i++, regionList++)
+                AddFreeRegion(regionList, count, regions, index);
     }
 
     if (regions)

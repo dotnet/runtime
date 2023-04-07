@@ -8346,6 +8346,10 @@ HRESULT DacGCBookkeepingEnumerator::Init()
     TADDR nextStart = card_table_info->next_card_table;
     TADDR next = nextStart;
 
+    // Cap the number of regions we will walk in case we have run into some kind of
+    // memory corruption.  We shouldn't have more than 2 linked card tables anyway.
+    int maxRegions = 8;
+
     // The while loop is effectively "while (next != 0)" but with an added check to make
     // sure we don't underflow next when subtracting card_table_info_size if we encounter
     // a bad pointer.
@@ -8360,6 +8364,9 @@ HRESULT DacGCBookkeepingEnumerator::Init()
         
         next = ct->next_card_table;
         if (next == nextStart)
+            break;
+
+        if (--maxRegions <= 0)
             break;
     }
     
@@ -8376,7 +8383,11 @@ HRESULT DacHandleTableMemoryEnumerator::Init()
         max_slots = GCHeapCount();
 #endif // FEATURE_SVR_GC
 
-    for (dac_handle_table_map *map = g_gcDacGlobals->handle_table_map; map; map = map->pNext)
+    // Cap the number of regions we will walk in case we hit an infinite loop due
+    // to memory corruption
+    int maxRegions = 8192;
+
+    for (dac_handle_table_map *map = g_gcDacGlobals->handle_table_map; map && maxRegions >= 0; map = map->pNext, maxRegions--)
     {
         for (int i = 0; i < INITIAL_HANDLE_TABLE_ARRAY_SIZE; ++i)
         {
