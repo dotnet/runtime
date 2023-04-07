@@ -1380,7 +1380,7 @@ public:
     static bool is_on_free_list (heap_segment* region, region_free_list free_list[count_free_region_kinds]);
 };
 
-static_assert(sizeof(region_free_list) == sizeof(dac_region_free_list));
+static_assert(sizeof(region_free_list) == sizeof(dac_region_free_list), "The DAC relies on the size of these two types matching for pointer arithmetic.");
 #endif
 
 enum bookkeeping_element
