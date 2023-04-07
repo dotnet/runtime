@@ -1324,9 +1324,6 @@
     <Compile Include="$(CommonPath)SkipLocalsInit.cs">
       <Link>Common\SkipLocalsInit.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\ITimer.cs">
-      <Link>Common\System\ITimer.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)System\TimeProvider.cs">
       <Link>Common\System\TimeProvider.cs</Link>
     </Compile>
@@ -1386,6 +1383,9 @@
     </Compile>
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs">
       <Link>Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Threading\ITimer.cs">
+      <Link>Common\System\Threading\ITimer.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Threading\OpenExistingResult.cs">
       <Link>Common\System\Threading\OpenExistingResult.cs</Link>
