@@ -16419,7 +16419,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_RWR_SRD_RRD:
         {
-            assert(IsVexOrEvexEncodableInstruction(ins));
             assert(emitComp->compOpportunisticallyDependsOn(InstructionSet_BMI2));
 
             code = insCodeRM(ins);
@@ -16596,7 +16595,6 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
         case IF_RWR_MRD_RRD:
         {
-            assert(IsVexOrEvexEncodableInstruction(ins));
             assert(emitComp->compOpportunisticallyDependsOn(InstructionSet_BMI2));
 
             code = insCodeRM(ins);
