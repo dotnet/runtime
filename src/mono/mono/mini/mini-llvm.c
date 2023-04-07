@@ -9,6 +9,8 @@
 
 #include "config.h"
 
+#include <dn-vector.h>
+
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/mempool-internals.h>
@@ -13662,13 +13664,16 @@ mono_llvm_nonnull_state_update (EmitContext *ctx, LLVMValueRef lcall, MonoMethod
 		g_assert (num_params <= num_passed);
 
 		g_assert (ctx->module->method_to_call_info);
-		GArray *call_site_union = (GArray *) g_hash_table_lookup (ctx->module->method_to_call_info, call_method);
+		dn_vector_t *call_site_union = (dn_vector_t *) g_hash_table_lookup (ctx->module->method_to_call_info, call_method);
 
 		if (!call_site_union) {
-			call_site_union = g_array_sized_new (FALSE, TRUE, sizeof (gint32), num_params);
+			dn_vector_custom_alloc_params_t alloc_params = {0,};
+			alloc_params.capacity = num_params;
+			call_site_union = dn_vector_custom_alloc_t (&alloc_params, int32_t);
+			dn_checkfail(call_site_union, "Allocation failed");
 			int zero = 0;
 			for (guint i = 0; i < num_params; i++)
-				g_array_insert_val (call_site_union, i, zero);
+				dn_vector_push_back (call_site_union, zero);
 		}
 
 		for (guint i = 0; i < num_params; i++) {
@@ -13676,7 +13681,7 @@ mono_llvm_nonnull_state_update (EmitContext *ctx, LLVMValueRef lcall, MonoMethod
 				g_assert (i < LLVMGetNumArgOperands (lcall));
 				mono_llvm_set_call_nonnull_arg (lcall, i);
 			} else {
-				gint32 *nullable_count = &g_array_index (call_site_union, gint32, i);
+				gint32 *nullable_count = dn_vector_index_t (call_site_union, int32_t, i);
 				*nullable_count = *nullable_count + 1;
 			}
 		}
@@ -13702,15 +13707,15 @@ mono_llvm_propagate_nonnull_final (GHashTable *all_specializable, MonoLLVMModule
 	MonoMethod *method;
 	g_hash_table_iter_init (&iter, all_specializable);
 	while (g_hash_table_iter_next (&iter, (void**)&lmethod, (void**)&method)) {
-		GArray *call_site_union = (GArray *) g_hash_table_lookup (module->method_to_call_info, method);
+		dn_vector_t *call_site_union = (dn_vector_t *) g_hash_table_lookup (module->method_to_call_info, method);
 
 		// Basic sanity checking
 		if (call_site_union)
-			g_assert (call_site_union->len == LLVMCountParams (lmethod));
+			g_assert (dn_vector_size (call_site_union) == LLVMCountParams (lmethod));
 
 		// Add root to work queue
-		for (int i = 0; call_site_union && i < call_site_union->len; i++) {
-			if (g_array_index (call_site_union, gint32, i) == 0) {
+		for (int i = 0; call_site_union && i < dn_vector_size (call_site_union); i++) {
+			if (*dn_vector_index_t (call_site_union, int32_t, i) == 0) {
 					NonnullPropWorkItem *item = g_malloc (sizeof (NonnullPropWorkItem));
 					item->lmethod = lmethod;
 					item->argument = i;
@@ -13762,7 +13767,7 @@ mono_llvm_propagate_nonnull_final (GHashTable *all_specializable, MonoLLVMModule
 				continue;
 
 			// Decrement number of nullable refs at that func's arg offset
-			GArray *call_site_union = (GArray *) g_hash_table_lookup (module->method_to_call_info, callee_method);
+			dn_vector_t *call_site_union = (dn_vector_t *) g_hash_table_lookup (module->method_to_call_info, callee_method);
 
 			// It has module-local callers and is specializable, should have seen this call site
 			// and inited this
@@ -13770,7 +13775,7 @@ mono_llvm_propagate_nonnull_final (GHashTable *all_specializable, MonoLLVMModule
 
 			// The function *definition* parameter arity should always be consistent
 			int max_params = LLVMCountParams (callee_lmethod);
-			if (call_site_union->len != max_params) {
+			if (dn_vector_size (call_site_union) != max_params) {
 				mono_llvm_dump_value (callee_lmethod);
 				g_assert_not_reached ();
 			}
@@ -13782,7 +13787,7 @@ mono_llvm_propagate_nonnull_final (GHashTable *all_specializable, MonoLLVMModule
 				// Every time we used the newly-non-nullable argument, decrement the nullable
 				// refcount for that function.
 				if (caller_argument == operands [call_argument]) {
-					gint32 *nullable_count = &g_array_index (call_site_union, gint32, call_argument);
+					gint32 *nullable_count = dn_vector_index_t (call_site_union, int32_t, call_argument);
 					g_assert (*nullable_count > 0);
 					*nullable_count = *nullable_count - 1;
 
