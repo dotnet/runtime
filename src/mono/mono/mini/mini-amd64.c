@@ -24,6 +24,8 @@
 #include <unistd.h>
 #endif
 
+#include <dn-vector.h>
+
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/debug-helpers.h>
@@ -346,7 +348,7 @@ typedef struct {
  *   Collect field info from KLASS recursively into FIELDS.
  */
 static void
-collect_field_info_nested (MonoClass *klass, GArray *fields_array, int offset, gboolean pinvoke, gboolean unicode)
+collect_field_info_nested (MonoClass *klass, dn_vector_t *fields_array, int offset, gboolean pinvoke, gboolean unicode)
 {
 	MonoMarshalType *info;
 
@@ -369,17 +371,17 @@ collect_field_info_nested (MonoClass *klass, GArray *fields_array, int offset, g
 					/* This can happen with .pack directives eg. 'fixed' arrays */
 					if (MONO_TYPE_IS_PRIMITIVE (f.type)) {
 						/* Replicate the last field to fill out the remaining place, since the code in add_valuetype () needs type information */
-						g_array_append_val (fields_array, f);
+						dn_vector_push_back (fields_array, f);
 						while (f.size + f.offset < info->native_size) {
 							f.offset += f.size;
-							g_array_append_val (fields_array, f);
+							dn_vector_push_back (fields_array, f);
 						}
 					} else {
 						f.size = info->native_size - f.offset;
-						g_array_append_val (fields_array, f);
+						dn_vector_push_back (fields_array, f);
 					}
 				} else {
-					g_array_append_val (fields_array, f);
+					dn_vector_push_back (fields_array, f);
 				}
 			}
 		}
@@ -403,7 +405,7 @@ collect_field_info_nested (MonoClass *klass, GArray *fields_array, int offset, g
 				f.size = mono_type_size (field->type, &align);
 				f.offset = m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject) + offset;
 
-				g_array_append_val (fields_array, f);
+				dn_vector_push_back (fields_array, f);
 			}
 		}
 	}
@@ -627,7 +629,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	guint32 quadsize [2] = {8, 8};
 	ArgumentClass args [2];
 	StructFieldInfo *fields = NULL;
-	GArray *fields_array;
+	dn_vector_t fields_array = {0,};
 	MonoClass *klass;
 	gboolean pass_on_stack = FALSE;
 	int struct_size;
@@ -654,10 +656,10 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 	 * Collect field information recursively to be able to
 	 * handle nested structures.
 	 */
-	fields_array = g_array_new (FALSE, TRUE, sizeof (StructFieldInfo));
-	collect_field_info_nested (klass, fields_array, 0, sig->pinvoke && !sig->marshalling_disabled, m_class_is_unicode (klass));
-	fields = (StructFieldInfo*)fields_array->data;
-	nfields = fields_array->len;
+	dn_vector_init_t (&fields_array, StructFieldInfo);
+	collect_field_info_nested (klass, &fields_array, 0, sig->pinvoke && !sig->marshalling_disabled, m_class_is_unicode (klass));
+	fields = dn_vector_data_t (&fields_array, StructFieldInfo);
+	nfields = dn_vector_size (&fields_array);
 
 	for (i = 0; i < nfields; ++i) {
 		if ((fields [i].offset < 8) && (fields [i].offset + fields [i].size) > 8) {
@@ -680,7 +682,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		if (!is_return)
 			ainfo->arg_size = ALIGN_TO (size, 8);
 
-		g_array_free (fields_array, TRUE);
+		dn_vector_dispose (&fields_array);
 		return;
 	}
 
@@ -722,7 +724,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 			if (!is_return)
 				ainfo->arg_size = ALIGN_TO (struct_size, 8);
 
-			g_array_free (fields_array, TRUE);
+			dn_vector_dispose (&fields_array);
 			return;
 		}
 
@@ -760,7 +762,7 @@ add_valuetype (MonoMethodSignature *sig, ArgInfo *ainfo, MonoType *type,
 		}
 	}
 
-	g_array_free (fields_array, TRUE);
+	dn_vector_dispose (&fields_array);
 
 	/* Post merger cleanup */
 	if ((args [0] == ARG_CLASS_MEMORY) || (args [1] == ARG_CLASS_MEMORY))
