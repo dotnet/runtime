@@ -2208,6 +2208,24 @@
         <ExcludeList Include = "$(XunitTestBinBase)/GC/Features/Finalizer/finalizeother/finalizearray/**">
             <Issue>https://github.com/dotnet/runtime/issues/54113</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Dp/Dp_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/81907</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Dp/Dp_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/81907</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Rdm/Rdm_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/81907</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Rdm/Rdm_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/81907</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Rdm.Arm64/Rdm.Arm64_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/81907</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/Arm/Rdm.Arm64/Rdm.Arm64_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/81907</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsWindows)' != 'true' " >
