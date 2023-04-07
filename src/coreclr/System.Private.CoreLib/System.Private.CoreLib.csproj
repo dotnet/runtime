@@ -291,8 +291,12 @@
     <Compile Include="$(CommonPath)Interop\Windows\OleAut32\Interop.VariantClear.cs">
       <Link>Common\Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
     </Compile>
-    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.CoreCLR.Windows.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.CoreCLR.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\RegisteredWaitHandle.CoreCLR.Windows.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.CoreCLR.Windows.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPoolBoundHandle.CoreCLR.Windows.cs" />
+    <!-- <Compile Include="$(NativeAotSourcesRoot)\Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" /> -->
+    <Compile Include="$(NativeAotSourcesRoot)\System\Threading\Win32ThreadPoolNativeOverlapped.OverlappedData.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ThreadPool.cs">
       <Link>Interop\Windows\Kernel32\Interop.ThreadPool.cs</Link>
     </Compile>

@@ -7,9 +7,9 @@ namespace System.Threading
     /// Represents pre-allocated state for native overlapped I/O operations.
     /// </summary>
     /// <seealso cref="ThreadPoolBoundHandle.AllocateNativeOverlapped(PreAllocatedOverlapped)"/>
-    public sealed class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
+    public sealed partial class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
     {
-        internal readonly ThreadPoolBoundHandleOverlapped _overlapped;
+        internal readonly ThreadPoolBoundHandleOverlapped _overlapped_portable_core;
         private DeferredDisposableLifetime<PreAllocatedOverlapped> _lifetime;
 
         /// <summary>
@@ -89,32 +89,23 @@ namespace System.Threading
         /// </exception>
         [CLSCompliant(false)]
         public static PreAllocatedOverlapped UnsafeCreate(IOCompletionCallback callback, object? state, object? pinData) =>
-            new PreAllocatedOverlapped(callback, state, pinData, flowExecutionContext: false);
+            UnsafeCreatePortableCore(callback, state, pinData);
 
         private PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
-            ArgumentNullException.ThrowIfNull(callback);
-
-            _overlapped = new ThreadPoolBoundHandleOverlapped(callback, state, pinData, this, flowExecutionContext);
+            InitializePortableCore(callback, state, pinData, flowExecutionContext);
         }
 
-        internal bool AddRef()
-        {
-            return _lifetime.AddRef();
-        }
+        internal bool AddRef() => AddRefPortableCore();
 
-        internal void Release()
-        {
-            _lifetime.Release(this);
-        }
+        internal void Release() => ReleasePortableCore();
 
         /// <summary>
         /// Frees the resources associated with this <see cref="PreAllocatedOverlapped"/> instance.
         /// </summary>
         public void Dispose()
         {
-            _lifetime.Dispose(this);
-            GC.SuppressFinalize(this);
+            DisposePortableCore();
         }
 
         ~PreAllocatedOverlapped()
@@ -124,19 +115,7 @@ namespace System.Threading
 
         unsafe void IDeferredDisposable.OnFinalRelease(bool disposed)
         {
-            if (_overlapped != null) // protect against ctor throwing exception and leaving field uninitialized
-            {
-                if (disposed)
-                {
-                    Overlapped.Free(_overlapped._nativeOverlapped);
-                }
-                else
-                {
-                    _overlapped._boundHandle = null;
-                    _overlapped._completed = false;
-                    *_overlapped._nativeOverlapped = default;
-                }
-            }
+            IDeferredDisposableOnFinalReleasePortableCore(disposed);
         }
     }
 }

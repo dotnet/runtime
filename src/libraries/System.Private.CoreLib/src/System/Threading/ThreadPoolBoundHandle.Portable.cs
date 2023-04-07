@@ -116,7 +116,7 @@ namespace System.Threading
         /// </exception>
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData) =>
-            AllocateNativeOverlappedCore(callback, state, pinData);
+            AllocateNativeOverlappedPortableCore(callback, state, pinData);
 
         /// <summary>
         ///     Returns an unmanaged pointer to a <see cref="NativeOverlapped"/> structure, specifying
@@ -164,7 +164,7 @@ namespace System.Threading
         /// </exception>
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* UnsafeAllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData) =>
-            UnsafeAllocateNativeOverlappedCore(callback, state, pinData);
+            UnsafeAllocateNativeOverlappedPortableCore(callback, state, pinData);
 
         /// <summary>
         ///     Returns an unmanaged pointer to a <see cref="NativeOverlapped"/> structure, using the callback,
@@ -195,7 +195,7 @@ namespace System.Threading
         /// </exception>
         /// <seealso cref="PreAllocatedOverlapped"/>
         [CLSCompliant(false)]
-        public unsafe NativeOverlapped* AllocateNativeOverlapped(PreAllocatedOverlapped preAllocated) => AllocateNativeOverlappedCore(preAllocated);
+        public unsafe NativeOverlapped* AllocateNativeOverlapped(PreAllocatedOverlapped preAllocated) => AllocateNativeOverlappedPortableCore(preAllocated);
 
         /// <summary>
         ///     Frees the unmanaged memory associated with a <see cref="NativeOverlapped"/> structure
@@ -221,7 +221,7 @@ namespace System.Threading
         ///     This method was called after the <see cref="ThreadPoolBoundHandle"/> was disposed.
         /// </exception>
         [CLSCompliant(false)]
-        public unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped) => FreeNativeOverlappedCore(overlapped);
+        public unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped) => FreeNativeOverlappedPortableCore(overlapped);
 
         /// <summary>
         ///     Returns the user-provided object specified when the <see cref="NativeOverlapped"/> instance was
@@ -240,15 +240,8 @@ namespace System.Threading
         ///     <paramref name="overlapped"/> is <see langword="null"/>.
         /// </exception>
         [CLSCompliant(false)]
-        public static unsafe object? GetNativeOverlappedState(NativeOverlapped* overlapped) => GetNativeOverlappedStateCore(overlapped);
+        public static unsafe object? GetNativeOverlappedState(NativeOverlapped* overlapped) => GetNativeOverlappedStatePortableCore(overlapped);
 
-        public void Dispose()
-        {
-            // .NET Native's version of ThreadPoolBoundHandle that wraps the Win32 ThreadPool holds onto
-            // native resources so it needs to be disposable. To match the contract, we are also disposable.
-            // We also implement a disposable state to mimic behavior between this implementation and
-            // .NET Native's version (code written against us, will also work against .NET Native's version).
-            _isDisposed = true;
-        }
+        public void Dispose() => DisposePortableCore();
     }
 }

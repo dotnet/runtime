@@ -5,17 +5,16 @@ using System.Diagnostics;
 
 namespace System.Threading
 {
-    public sealed class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
+    public sealed partial class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
     {
-        [CLSCompliant(false)]
         private static PreAllocatedOverlapped UnsafeCreateCore(IOCompletionCallback callback, object? state, object? pinData) =>
             new PreAllocatedOverlapped(callback, state, pinData, flowExecutionContext: false);
 
-        private unsafe PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
+        private unsafe void InitializeCore(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
             ArgumentNullException.ThrowIfNull(callback);
 
-            _overlapped = Win32ThreadPoolNativeOverlapped.Allocate(callback, state, pinData, this, flowExecutionContext);
+            _overlapped_core = Win32ThreadPoolNativeOverlapped.Allocate(callback, state, pinData, this, flowExecutionContext);
         }
 
         private bool AddRefCore()
@@ -28,17 +27,23 @@ namespace System.Threading
             _lifetime.Release(this);
         }
 
-        unsafe void IDeferredDisposable.OnFinalRelease(bool disposed)
+        internal unsafe bool IsUserObject(byte[]? buffer) => _overlapped_core->IsUserObject(buffer);
+
+        private void DisposeCore()
         {
-            if (_overlapped != null)
-            {
-                if (disposed)
-                    Win32ThreadPoolNativeOverlapped.Free(_overlapped);
-                else
-                    *Win32ThreadPoolNativeOverlapped.ToNativeOverlapped(_overlapped) = default(NativeOverlapped);
-            }
+            _lifetime.Dispose(this);
+            GC.SuppressFinalize(this);
         }
 
-        private unsafe bool IsUserObjectCore(byte[]? buffer) => _overlapped->IsUserObject(buffer);
+        private unsafe void IDeferredDisposableOnFinalReleaseCore(bool disposed)
+        {
+            if (_overlapped_core != null)
+            {
+                if (disposed)
+                    Win32ThreadPoolNativeOverlapped.Free(_overlapped_core);
+                else
+                    *Win32ThreadPoolNativeOverlapped.ToNativeOverlapped(_overlapped_core) = default(NativeOverlapped);
+            }
+        }
     }
 }

@@ -13,9 +13,6 @@ namespace System.Threading
     //
     // Windows-specific implementation of ThreadPool
     //
-#if !FEATURE_WASM_THREADS
-    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-#endif
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
 #pragma warning disable IDE0060

@@ -23,16 +23,16 @@ namespace System.Threading
             if (handle.IsClosed || handle.IsInvalid)
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
 
-            return BindHandleCore(handle);
+            return BindHandleWindowsCore(handle);
         }
 
-        private unsafe NativeOverlapped* AllocateNativeOverlappedCore(IOCompletionCallback callback, object? state, object? pinData) =>
-            AllocateNativeOverlapped(callback, state, pinData, flowExecutionContext: true);
+        private unsafe NativeOverlapped* AllocateNativeOverlappedPortableCore(IOCompletionCallback callback, object? state, object? pinData) =>
+            AllocateNativeOverlappedPortableCore(callback, state, pinData, flowExecutionContext: true);
 
-        private unsafe NativeOverlapped* UnsafeAllocateNativeOverlappedCore(IOCompletionCallback callback, object? state, object? pinData) =>
-            AllocateNativeOverlapped(callback, state, pinData, flowExecutionContext: false);
+        private unsafe NativeOverlapped* UnsafeAllocateNativeOverlappedPortableCore(IOCompletionCallback callback, object? state, object? pinData) =>
+            AllocateNativeOverlappedPortableCore(callback, state, pinData, flowExecutionContext: false);
 
-        private unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
+        private unsafe NativeOverlapped* AllocateNativeOverlappedPortableCore(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
             ArgumentNullException.ThrowIfNull(callback);
             ObjectDisposedException.ThrowIf(_isDisposed, this);
@@ -42,7 +42,7 @@ namespace System.Threading
             return overlapped._nativeOverlapped;
         }
 
-        private unsafe NativeOverlapped* AllocateNativeOverlappedCore(PreAllocatedOverlapped preAllocated)
+        private unsafe NativeOverlapped* AllocateNativeOverlappedPortableCore(PreAllocatedOverlapped preAllocated)
         {
             ArgumentNullException.ThrowIfNull(preAllocated);
             ObjectDisposedException.ThrowIf(_isDisposed, this);
@@ -66,7 +66,7 @@ namespace System.Threading
             }
         }
 
-        private unsafe void FreeNativeOverlappedCore(NativeOverlapped* overlapped)
+        private unsafe void FreeNativeOverlappedPortableCore(NativeOverlapped* overlapped)
         {
             ArgumentNullException.ThrowIfNull(overlapped);
 
@@ -83,7 +83,7 @@ namespace System.Threading
                 Overlapped.Free(overlapped);
         }
 
-        private static unsafe object? GetNativeOverlappedStateCore(NativeOverlapped* overlapped)
+        private static unsafe object? GetNativeOverlappedStatePortableCore(NativeOverlapped* overlapped)
         {
             ArgumentNullException.ThrowIfNull(overlapped);
 
@@ -105,6 +105,15 @@ namespace System.Threading
             }
 
             return wrapper;
+        }
+
+        private void DisposePortableCore()
+        {
+            // .NET Native's version of ThreadPoolBoundHandle that wraps the Win32 ThreadPool holds onto
+            // native resources so it needs to be disposable. To match the contract, we are also disposable.
+            // We also implement a disposable state to mimic behavior between this implementation and
+            // .NET Native's version (code written against us, will also work against .NET Native's version).
+            _isDisposed = true;
         }
     }
 }

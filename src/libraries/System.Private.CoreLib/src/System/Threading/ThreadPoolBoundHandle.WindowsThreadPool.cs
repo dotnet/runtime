@@ -13,7 +13,7 @@ namespace System.Threading
     //
     // Implementation of ThreadPoolBoundHandle that sits on top of the Win32 ThreadPool
     //
-    public partial sealed class ThreadPoolBoundHandle : IDisposable, IDeferredDisposable
+    public sealed partial class ThreadPoolBoundHandle : IDisposable, IDeferredDisposable
     {
         private static unsafe ThreadPoolBoundHandle BindHandleCore(SafeHandle handle)
         {
@@ -38,15 +38,13 @@ namespace System.Threading
             return new ThreadPoolBoundHandle(handle, threadPoolHandle);
         }
 
-        [CLSCompliant(false)]
         private unsafe NativeOverlapped* AllocateNativeOverlappedCore(IOCompletionCallback callback, object? state, object? pinData) =>
-            AllocateNativeOverlapped(callback, state, pinData, flowExecutionContext: true);
+            AllocateNativeOverlappedCore(callback, state, pinData, flowExecutionContext: true);
 
-        [CLSCompliant(false)]
         private unsafe NativeOverlapped* UnsafeAllocateNativeOverlappedCore(IOCompletionCallback callback, object? state, object? pinData) =>
-            AllocateNativeOverlapped(callback, state, pinData, flowExecutionContext: false);
+            AllocateNativeOverlappedCore(callback, state, pinData, flowExecutionContext: false);
 
-        private unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback, object state, object pinData, bool flowExecutionContext)
+        private unsafe NativeOverlapped* AllocateNativeOverlappedCore(IOCompletionCallback callback, object state, object pinData, bool flowExecutionContext)
         {
             ArgumentNullException.ThrowIfNull(callback);
 
@@ -67,7 +65,6 @@ namespace System.Threading
             }
         }
 
-        [CLSCompliant(false)]
         private unsafe NativeOverlapped* AllocateNativeOverlappedCore(PreAllocatedOverlapped preAllocated)
         {
             ArgumentNullException.ThrowIfNull(preAllocated);
@@ -99,7 +96,6 @@ namespace System.Threading
             }
         }
 
-        [CLSCompliant(false)]
         private unsafe void FreeNativeOverlappedCore(NativeOverlapped* overlapped)
         {
             ArgumentNullException.ThrowIfNull(overlapped);
@@ -122,7 +118,6 @@ namespace System.Threading
                 Win32ThreadPoolNativeOverlapped.Free(threadPoolOverlapped);
         }
 
-        [CLSCompliant(false)]
         private static unsafe object GetNativeOverlappedStateCore(NativeOverlapped* overlapped)
         {
             ArgumentNullException.ThrowIfNull(overlapped);
@@ -171,6 +166,28 @@ namespace System.Threading
         private void Release()
         {
             _lifetime.Release(this);
+        }
+
+        void IDeferredDisposableOnFinalReleaseCore(bool disposed)
+        {
+            if (disposed)
+                _threadPoolHandle.Dispose();
+        }
+
+        private void DisposeCore()
+        {
+            _lifetime.Dispose(this);
+            GC.SuppressFinalize(this);
+        }
+
+        private void FinalizeCore()
+        {
+            //
+            // During shutdown, don't automatically clean up, because this instance may still be
+            // reachable/usable by other code.
+            //
+            if (!Environment.HasShutdownStarted)
+                Dispose();
         }
     }
 }

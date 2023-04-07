@@ -5,9 +5,9 @@ using System.Diagnostics;
 
 namespace System.Threading
 {
-    public sealed class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
+    public sealed partial class PreAllocatedOverlapped : IDisposable, IDeferredDisposable
     {
-        internal readonly unsafe Win32ThreadPoolNativeOverlapped* _overlapped;
+        internal readonly unsafe Win32ThreadPoolNativeOverlapped* _overlapped_core;
         private DeferredDisposableLifetime<PreAllocatedOverlapped> _lifetime;
 
         [CLSCompliant(false)]
@@ -17,7 +17,13 @@ namespace System.Threading
         }
 
         [CLSCompliant(false)]
-        public static PreAllocatedOverlapped UnsafeCreate(IOCompletionCallback callback, object? state, object? pinData) => UnsafeCreateCore(callback, state, pinData);
+        public static PreAllocatedOverlapped UnsafeCreate(IOCompletionCallback callback, object? state, object? pinData) =>
+            UnsafeCreateCore(callback, state, pinData);
+
+        private unsafe PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
+        {
+            InitiliazeCore(callback, state, pinData, flowExecutionContext);
+        }
 
         internal bool AddRef() => AddRefCore();
 
@@ -25,8 +31,7 @@ namespace System.Threading
 
         public void Dispose()
         {
-            _lifetime.Dispose(this);
-            GC.SuppressFinalize(this);
+            DisposeCore();
         }
 
         ~PreAllocatedOverlapped()
@@ -36,15 +41,8 @@ namespace System.Threading
 
         unsafe void IDeferredDisposable.OnFinalRelease(bool disposed)
         {
-            if (_overlapped != null)
-            {
-                if (disposed)
-                    Win32ThreadPoolNativeOverlapped.Free(_overlapped);
-                else
-                    *Win32ThreadPoolNativeOverlapped.ToNativeOverlapped(_overlapped) = default(NativeOverlapped);
-            }
+            IDeferredDisposableOnFinalReleaseCore();
         }
 
-        internal unsafe bool IsUserObject(byte[]? buffer) => IsUserObjectCore(buffer);
     }
 }

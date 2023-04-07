@@ -13,7 +13,7 @@ namespace System.Threading
     //
     // Implementation of ThreadPoolBoundHandle that sits on top of the Win32 ThreadPool
     //
-    public partial sealed class ThreadPoolBoundHandle : IDisposable, IDeferredDisposable
+    public sealed partial class ThreadPoolBoundHandle : IDisposable, IDeferredDisposable
     {
         private readonly SafeHandle _handle;
         private readonly SafeThreadPoolIOHandle _threadPoolHandle;
@@ -50,26 +50,16 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static unsafe object GetNativeOverlappedState(NativeOverlapped* overlapped) => GetNativeOverlappedStateCore(overlapped);
 
-        public void Dispose()
-        {
-            _lifetime.Dispose(this);
-            GC.SuppressFinalize(this);
-        }
+        public void Dispose() => DisposeCore();
 
         ~ThreadPoolBoundHandle()
         {
-            //
-            // During shutdown, don't automatically clean up, because this instance may still be
-            // reachable/usable by other code.
-            //
-            if (!Environment.HasShutdownStarted)
-                Dispose();
+            FinalizeCore();
         }
 
         void IDeferredDisposable.OnFinalRelease(bool disposed)
         {
-            if (disposed)
-                _threadPoolHandle.Dispose();
+            IDeferredDisposableOnFinalReleaseCore(disposed);
         }
     }
 }
