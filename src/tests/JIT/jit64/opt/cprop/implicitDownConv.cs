@@ -16,7 +16,7 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test(long i)
+    internal static void Test(long i)
     {
         if (i == 0)
             return;

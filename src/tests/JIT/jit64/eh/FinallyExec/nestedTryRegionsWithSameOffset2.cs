@@ -25,7 +25,7 @@ public class Program
         testLog = new TestUtil.TestLog(expectedOut);
     }
 
-    public static void Test(int count)
+    internal static void Test(int count)
     {
         try
         {

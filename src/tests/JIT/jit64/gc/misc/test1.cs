@@ -28,13 +28,6 @@ class C
 public class Test_test1
 {
     [Fact]
-    public static int TestEntryPoint()
-    {
-        test1();
-        test2();
-        return (100);
-    }
-
     public static void test1()
     {
         C c = new C();
@@ -42,6 +35,7 @@ public class Test_test1
         foo(c.s1);
     }
 
+    [Fact]
     public static void test2()
     {
         C c = new C();

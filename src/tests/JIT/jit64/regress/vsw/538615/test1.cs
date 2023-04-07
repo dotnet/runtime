@@ -48,7 +48,7 @@ public class Test
         return retCode;
     }
 
-    public static void Check(int i)
+    internal static void Check(int i)
     {
         int nav = i;
         int[] av = new int[8];

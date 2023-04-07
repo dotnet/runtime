@@ -36,7 +36,7 @@ public class test
         return 100;
     }
 
-    public static void VarArgFunction(__arglist)
+    internal static void VarArgFunction(__arglist)
     {
         System.Console.WriteLine("inside call");
     }

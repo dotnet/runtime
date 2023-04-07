@@ -44,7 +44,7 @@ namespace CGRecurse
             return;
         }
 
-        public static void A()
+        internal static void A()
         {
             ActualResult = (ActualResult + "A");
             if ((cntC == 1))

@@ -45,7 +45,7 @@ public class LIM
     }
 
 
-    public static void Accumulate(int x)
+    internal static void Accumulate(int x)
     {
         try
         {
