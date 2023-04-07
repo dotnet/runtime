@@ -30,7 +30,7 @@ unsafe class Program
         else
         {
             lowerBound = 1300 * 1024; // ~1.3 MB
-            upperBound = 1600 * 1024; // ~1.6 MB
+            upperBound = 1750 * 1024; // ~1.75 MB
         }
 
         if (fileSize < lowerBound || fileSize > upperBound)
