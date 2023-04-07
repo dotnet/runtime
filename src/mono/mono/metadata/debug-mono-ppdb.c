@@ -17,6 +17,7 @@
 #include <errno.h>
 #include <string.h>
 
+#include <dn-vector.h>
 #include <dn-vector-ptr.h>
 
 #include <mono/metadata/metadata.h>
@@ -491,7 +492,7 @@ mono_ppdb_get_seq_points_internal (MonoImage *image, MonoPPDBFile *ppdb, MonoMet
 	MonoDebugSourceInfo *docinfo;
 	int i, size, docidx, iloffset, delta_il, delta_lines, delta_cols, start_line, start_col, adv_line, adv_col;
 	gboolean first = TRUE, first_non_hidden = TRUE;
-	GArray *sps;
+	dn_vector_t sps = {0,};
 	MonoSymSeqPoint sp;
 	GPtrArray *sfiles = NULL;
 	GPtrArray *sindexes = NULL;
@@ -533,7 +534,7 @@ mono_ppdb_get_seq_points_internal (MonoImage *image, MonoPPDBFile *ppdb, MonoMet
 	size = mono_metadata_decode_blob_size (ptr, &ptr);
 	end = ptr + size;
 
-	sps = g_array_new (FALSE, TRUE, sizeof (MonoSymSeqPoint));
+	dn_vector_init_t (&sps, MonoSymSeqPoint);
 
 	/* Header */
 	/* LocalSignature */
@@ -593,26 +594,26 @@ mono_ppdb_get_seq_points_internal (MonoImage *image, MonoPPDBFile *ppdb, MonoMet
 		sp.end_line = start_line + delta_lines;
 		sp.end_column = start_col + delta_cols;
 
-		g_array_append_val (sps, sp);
+		dn_vector_push_back (&sps, sp);
 		if (source_files)
 			g_ptr_array_add (sindexes, GUINT_TO_POINTER (sfiles->len - 1));
 	}
 
 	if (n_seq_points) {
-		*n_seq_points = sps->len;
+		*n_seq_points = dn_vector_size (&sps);
 		g_assert (seq_points);
-		*seq_points = g_new (MonoSymSeqPoint, sps->len);
-		memcpy (*seq_points, sps->data, sps->len * sizeof (MonoSymSeqPoint));
+		*seq_points = g_new (MonoSymSeqPoint, dn_vector_size (&sps));
+		memcpy (*seq_points, dn_vector_data_t (&sps, MonoSymSeqPoint), dn_vector_size (&sps) * sizeof (MonoSymSeqPoint));
 	}
 
 	if (source_files) {
-		*source_files = g_new (int, sps->len);
-		for (i = 0; i < sps->len; ++i)
+		*source_files = g_new (int, dn_vector_size (&sps));
+		for (i = 0; i < dn_vector_size (&sps); ++i)
 			(*source_files)[i] = GPOINTER_TO_INT (g_ptr_array_index (sindexes, i));
 		g_ptr_array_free (sindexes, TRUE);
 	}
-	int n_seqs = sps->len;
-	g_array_free (sps, TRUE);
+	int n_seqs = dn_vector_size (&sps);
+	dn_vector_dispose (&sps);
 
 	return n_seqs;
 }
