@@ -3677,6 +3677,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
     assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
 
     assert(tree->OperIs(GT_JCMP));
+    assert(!varTypeIsFloating(tree));
     assert(tree->TypeGet() == TYP_VOID);
     assert(tree->GetRegNum() == REG_NA);
 
@@ -3702,11 +3703,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
     emitAttr  cmpSize    = EA_ATTR(genTypeSize(op1Type));
     regNumber regOp1     = op1->GetRegNum();
 
-    if (varTypeIsFloating(op1Type))
-    {
-        NYI_RISCV64("genCodeForJumpCompare floating-----unimplemented on RISCV64 yet----");
-    }
-    else if (op2->isContainedIntOrIImmed())
+    if (op2->isContainedIntOrIImmed())
     {
         ssize_t imm = op2->AsIntCon()->gtIconVal;
         if (imm)

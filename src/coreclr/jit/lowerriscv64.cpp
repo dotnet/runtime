@@ -138,7 +138,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
     GenTree*     cmpOp1;
     GenTree*     cmpOp2;
 
-    if (op->OperIsCompare())
+    if (op->OperIsCompare() && !varTypeIsFloating(op->gtGetOp1()))
     {
         // We do not expect any other relops on LA64
         assert(op->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
