@@ -267,7 +267,6 @@ if(CLR_CMAKE_TARGET_LINUX)
   target_sources(tracepointprovider INTERFACE $<TARGET_OBJECTS:tracepointprovider_obj>)
 endif(CLR_CMAKE_TARGET_LINUX)
 
-
 if(CLR_CMAKE_TARGET_OSX)
   find_library(COREFOUNDATION CoreFoundation)
   find_library(CORESERVICES CoreServices)
