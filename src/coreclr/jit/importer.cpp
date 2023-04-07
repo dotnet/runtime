@@ -9582,7 +9582,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     if (helperNode != nullptr)
                     {
-                        impAppendTree(helperNode, CHECK_SPILL_ALL, impCurStmtDI);
+                        bool isHoistable =
+                            info.compCompHnd->getClassAttribs(resolvedToken.hClass) & CORINFO_FLG_BEFOREFIELDINIT;
+                        unsigned check_spill = isHoistable ? CHECK_SPILL_NONE : CHECK_SPILL_ALL;
+                        impAppendTree(helperNode, check_spill, impCurStmtDI);
                     }
                 }
 
