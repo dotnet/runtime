@@ -7075,12 +7075,12 @@ public:
         optMethodFlags |= OMF_HAS_GUARDEDDEVIRT;
     }
 
-    bool doesMethodHaveTlsFieldAccess()
+    bool doesMethodHasTlsFieldAccess()
     {
         return (optMethodFlags & OMF_HAS_TLS_FIELD) != 0;
     }
 
-    void setMethodHaveTlsFieldAccess()
+    void setMethodHasTlsFieldAccess()
     {
         optMethodFlags |= OMF_HAS_TLS_FIELD;
     }

@@ -694,6 +694,18 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
     return false;
 }
 
+//------------------------------------------------------------------------
+// fgGetStaticsCCtorHelper: Creates a BasicBlock from the `tree` node.
+//
+// Arguments:
+//    cls       - The class handle
+//    helper    - The helper function
+//    typeIndex - The static block type index. Used only for
+//                CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED to cache
+//                the static block in an array at index typeIndex.
+//
+// Return Value:
+//    The call node corresponding to the helper
 GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper, uint32_t typeIndex)
 {
     bool         bNeedClassID = true;
@@ -4211,7 +4223,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
 
-    if (!doesMethodHaveTlsFieldAccess())
+    if (!doesMethodHasTlsFieldAccess())
     {
         // The method doesn't have any TLS field
         return result;

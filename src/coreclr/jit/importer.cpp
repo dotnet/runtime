@@ -9418,7 +9418,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         break;
 
                     case CORINFO_FIELD_STATIC_TLS_MANAGED:
-                        setMethodHaveTlsFieldAccess();
+                        setMethodHasTlsFieldAccess();
                         FALLTHROUGH;
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_ADDRESS:
@@ -9698,7 +9698,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         goto SPILL_APPEND;
 
                     case CORINFO_FIELD_STATIC_TLS_MANAGED:
-                        setMethodHaveTlsFieldAccess();
+                        setMethodHasTlsFieldAccess();
                         FALLTHROUGH;
                     case CORINFO_FIELD_STATIC_ADDRESS:
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:

@@ -6951,7 +6951,19 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBjumpKinds jumpKind,
     return newBlk;
 }
 
-// Create block from the given tree
+//------------------------------------------------------------------------
+// CreateBlockFromTree: Creates a BasicBlock from the `tree` node.
+//
+// Arguments:
+//    comp              - compiler instance
+//    insertAfter       - The BasicBlock after which the new block should be inserted.
+//    blockKind         - the jump kind of the new block to create.
+//    tree              - The tree node for which basic block is created.
+//    debugInfo         - Debug info
+//    updateSideEffects - If side-effects should be updated or not.
+//
+// Return Value:
+//    The new basic block
 /* static */ BasicBlock* Compiler::CreateBlockFromTree(Compiler*   comp,
                                                        BasicBlock* insertAfter,
                                                        BBjumpKinds blockKind,
@@ -6959,7 +6971,6 @@ BasicBlock* Compiler::fgNewBBinRegionWorker(BBjumpKinds jumpKind,
                                                        DebugInfo&  debugInfo,
                                                        bool        updateSideEffects)
 {
-    // Fast-path basic block
     BasicBlock* newBlock = comp->fgNewBBafter(blockKind, insertAfter, true);
     newBlock->bbFlags |= BBF_INTERNAL;
     Statement* stmt = comp->fgNewStmtFromTree(tree, debugInfo);
