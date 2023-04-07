@@ -3919,14 +3919,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_fcvt_s_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1);
 			break;
 		}
-		case OP_RDIV:{
+		case OP_RDIV: {
 			g_assert (riscv_stdext_f);
 			/**
 			 * insert inst for the case Divide By 0
 			 * fmv.w.x ft0, zero
 			 * feq.s   t0, sreg2, ft0
 			 * beqz	   t0, zero
-			*/
+			 */
 			riscv_fmv_w_x (code, RISCV_FT0, RISCV_ZERO);
 			riscv_feq_s (code, RISCV_T0, ins->sreg2, RISCV_FT0);
 
