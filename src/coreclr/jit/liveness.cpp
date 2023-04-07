@@ -372,19 +372,6 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsic)
                 break;
             }
 
-            case NI_SSE_Prefetch0:
-            case NI_SSE_Prefetch1:
-            case NI_SSE_Prefetch2:
-            case NI_SSE_PrefetchNonTemporal:
-            {
-                // These instructions don't technically load from memory, but they do take and
-                // consume an address in a non-faulting way, so we still want to record this as
-                // a memory use.
-
-                fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
-                break;
-            }
-
             default:
             {
                 break;

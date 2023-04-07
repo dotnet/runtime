@@ -6584,6 +6584,13 @@ bool GenTree::OperRequiresCallFlag(Compiler* comp)
         case GT_INTRINSIC:
             return comp->IsIntrinsicImplementedByUserCall(this->AsIntrinsic()->gtIntrinsicName);
 
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+        {
+            return AsHWIntrinsic()->OperRequiresCallFlag();
+        }
+#endif // FEATURE_HW_INTRINSICS
+
 #if FEATURE_FIXED_OUT_ARGS && !defined(TARGET_64BIT)
         case GT_LSH:
         case GT_RSH:
@@ -6772,17 +6779,13 @@ ExceptionSetFlags GenTree::OperExceptions(Compiler* comp)
         {
             GenTreeHWIntrinsic* hwIntrinsicNode = this->AsHWIntrinsic();
 
-            if (hwIntrinsicNode->OperIsMemoryLoad())
+            if (hwIntrinsicNode->OperIsMemoryLoadOrStore())
             {
                 assert((gtFlags & GTF_IND_NONFAULTING) == 0);
 
                 // TODO-CQ: We should use comp->fgAddrCouldBeNull on the address operand
                 // to determine if this can actually produce an NRE or not
 
-                return ExceptionSetFlags::NullReferenceException;
-            }
-            else if (hwIntrinsicNode->OperIsMemoryStore())
-            {
                 return ExceptionSetFlags::NullReferenceException;
             }
 
@@ -24225,25 +24228,80 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
     return OperIsMemoryLoad() || OperIsMemoryStore();
 }
 
+//------------------------------------------------------------------------
+// OperIsMemoryLoadOrStore: Does this HWI node have memory load or store semantics?
+//
+// Return Value:
+//    Whether "this" is "OperIsMemoryLoad" or "OperIsMemoryStore".
+//
+bool GenTreeHWIntrinsic::OperIsMemoryStoreOrBarrier() const
+{
+    if (OperIsMemoryStore())
+    {
+        return true;
+    }
+#if defined(TARGET_XARCH)
+    NamedIntrinsic intrinsicId = GetHWIntrinsicId();
+
+    if (HWIntrinsicInfo::HasSpecialSideEffect_Barrier(intrinsicId))
+    {
+        return true;
+    }
+#endif // TARGET_XARCH
+    else
+    {
+        return false;
+    }
+}
+
 //------------------------------------------------------------------------------
 // OperRequiresAsgFlag : Check whether the operation requires GTF_ASG flag regardless
 //                       of the children's flags.
 //
 bool GenTreeHWIntrinsic::OperRequiresAsgFlag() const
 {
-    if (OperIsMemoryStore())
+    // A MemoryStore operation is an assignment and barriers, while they
+    // don't technically do an assignment are modeled the same as
+    // GT_MEMORYBARRIER which tracks itself as requiring the GT_ASG flag
+    return OperIsMemoryStoreOrBarrier();
+}
+
+//------------------------------------------------------------------------------
+// OperRequiresCallFlag : Check whether the operation requires GTF_CALL flag regardless
+//                        of the children's flags.
+//
+bool GenTreeHWIntrinsic::OperRequiresCallFlag() const
+{
+    NamedIntrinsic intrinsicId = GetHWIntrinsicId();
+
+    if (HWIntrinsicInfo::HasSpecialSideEffect(intrinsicId))
     {
-        // A MemoryStore operation is an assignment
-        return true;
-    }
+        switch (intrinsicId)
+        {
 #if defined(TARGET_XARCH)
-    else if (HWIntrinsicInfo::HasSpecialSideEffect_Barrier(GetHWIntrinsicId()))
-    {
-        // While these don't technically do an assignment, they are modeled the
-        // same as GT_MEMORYBARRIER which tracks itself as requiring GT_ASG flag
-        return true;
-    }
+            case NI_X86Base_Pause:
+            case NI_SSE_Prefetch0:
+            case NI_SSE_Prefetch1:
+            case NI_SSE_Prefetch2:
+            case NI_SSE_PrefetchNonTemporal:
+            {
+                return true;
+            }
 #endif // TARGET_XARCH
+
+#if defined(TARGET_ARM64)
+            case NI_ArmBase_Yield:
+            {
+                return true;
+            }
+#endif // TARGET_ARM64
+
+            default:
+            {
+                break;
+            }
+        }
+    }
 
     return false;
 }
@@ -24341,27 +24399,24 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId, bool isSimdAsHWI
         switch (intrinsicId)
         {
 #if defined(TARGET_XARCH)
-            case NI_X86Base_Pause:
-            {
-                gtFlags |= GTF_ORDER_SIDEEFF;
-                break;
-            }
-
             case NI_SSE_StoreFence:
             case NI_SSE2_LoadFence:
             case NI_SSE2_MemoryFence:
             case NI_X86Serialize_Serialize:
             {
+                // Mark as an assignment and global reference, much as is done for GT_MEMORYBARRIER
                 gtFlags |= (GTF_ASG | GTF_GLOB_REF);
                 break;
             }
 
+            case NI_X86Base_Pause:
             case NI_SSE_Prefetch0:
             case NI_SSE_Prefetch1:
             case NI_SSE_Prefetch2:
             case NI_SSE_PrefetchNonTemporal:
             {
-                gtFlags |= GTF_GLOB_REF;
+                // Mark as a call and global reference, much as is done for GT_KEEPALIVE
+                gtFlags |= (GTF_CALL | GTF_GLOB_REF);
                 break;
             }
 #endif // TARGET_XARCH
@@ -24369,7 +24424,8 @@ void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId, bool isSimdAsHWI
 #if defined(TARGET_ARM64)
             case NI_ArmBase_Yield:
             {
-                gtFlags |= GTF_ORDER_SIDEEFF;
+                // Mark as a call and global reference, much as is done for GT_KEEPALIVE
+                gtFlags |= (GTF_CALL | GTF_GLOB_REF);
                 break;
             }
 #endif // TARGET_ARM64

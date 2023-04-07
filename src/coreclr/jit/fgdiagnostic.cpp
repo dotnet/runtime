@@ -3154,14 +3154,14 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
             NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
 
-            if (hwintrinsic->OperIsMemoryStore())
+            if (hwintrinsic->OperIsMemoryLoad())
             {
-                assert(tree->OperRequiresAsgFlag());
                 assert(tree->OperMayThrow(this));
                 expectedFlags |= GTF_GLOB_REF;
             }
-            else if (hwintrinsic->OperIsMemoryLoad())
+            else if (hwintrinsic->OperIsMemoryStore())
             {
+                assert(tree->OperRequiresAsgFlag());
                 assert(tree->OperMayThrow(this));
                 expectedFlags |= GTF_GLOB_REF;
             }
@@ -3170,12 +3170,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 switch (intrinsicId)
                 {
 #if defined(TARGET_XARCH)
-                    case NI_X86Base_Pause:
-                    {
-                        expectedFlags |= GTF_ORDER_SIDEEFF;
-                        break;
-                    }
-
                     case NI_SSE_StoreFence:
                     case NI_SSE2_LoadFence:
                     case NI_SSE2_MemoryFence:
@@ -3186,11 +3180,13 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                         break;
                     }
 
+                    case NI_X86Base_Pause:
                     case NI_SSE_Prefetch0:
                     case NI_SSE_Prefetch1:
                     case NI_SSE_Prefetch2:
                     case NI_SSE_PrefetchNonTemporal:
                     {
+                        assert(tree->OperRequiresCallFlag(this));
                         expectedFlags |= GTF_GLOB_REF;
                         break;
                     }
@@ -3199,14 +3195,16 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 #if defined(TARGET_ARM64)
                     case NI_ArmBase_Yield:
                     {
-                        expectedFlags |= GTF_ORDER_SIDEEFF;
+                        assert(tree->OperRequiresCallFlag(this));
+                        expectedFlags |= GTF_GLOB_REF;
                         break;
                     }
 #endif // TARGET_ARM64
 
                     default:
                     {
-                        unreached();
+                        assert(!"Unhandled HWIntrinsic with special side effect");
+                        break;
                     }
                 }
             }
