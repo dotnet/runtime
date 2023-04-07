@@ -19470,7 +19470,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
             }
             else if (simdSize == 64)
             {
-                if (varTypeIsByte(simdBaseType) || varTypeIsShort(simdBaseType))
+                if (varTypeIsSmall(simdBaseType))
                 {
                     assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
                     intrinsic = NI_AVX512BW_Add;
@@ -19858,7 +19858,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
             }
             else if (simdSize == 64)
             {
-                if (varTypeIsByte(simdBaseType) || varTypeIsShort(simdBaseType))
+                if (varTypeIsSmall(simdBaseType))
                 {
                     assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
                     intrinsic = NI_AVX512BW_Subtract;
