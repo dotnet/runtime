@@ -4338,7 +4338,7 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/processinfo/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/processinfo/**">
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/processinfo2/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/**">
