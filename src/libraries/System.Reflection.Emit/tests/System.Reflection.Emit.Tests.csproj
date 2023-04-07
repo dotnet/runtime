@@ -64,6 +64,7 @@
     <Compile Include="ParameterBuilder\ParameterBuilderSetConstant.cs" />
     <Compile Include="PersistableAssemblyBuilder\AssemblySaveTestsWithVariousTypes.cs" />
     <Compile Include="PersistableAssemblyBuilder\AssemblyTools.cs" />
+    <Compile Include="PersistableAssemblyBuilder\CustomAttributeTesting.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderAddOtherMethod.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderAttributes.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderCanRead.cs" />

@@ -62,10 +62,8 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
-            SetCustomAttributeCore(customBuilder);
+            SetCustomAttributeCore(customBuilder.Ctor, customBuilder.Data);
         }
-
-        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
 
         public void SetImplementationFlags(MethodImplAttributes attributes) => SetImplementationFlagsCore(attributes);
 

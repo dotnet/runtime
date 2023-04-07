@@ -254,20 +254,19 @@ namespace System.Reflection.Emit
             return ilgen;
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            ArgumentNullException.ThrowIfNull(customBuilder);
-
-            string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
+            string? attrname = con.ReflectedType!.FullName;
             if (attrname == "System.Runtime.CompilerServices.MethodImplAttribute")
             {
-                byte[] data = customBuilder.Data;
+                byte[] data = binaryAttribute;
                 int impla; // the (stupid) ctor takes a short or an int ...
                 impla = (int)data[2];
                 impla |= ((int)data[3]) << 8;
                 SetImplementationFlags((MethodImplAttributes)impla);
                 return;
             }
+            CustomAttributeBuilder customBuilder = new CustomAttributeBuilder(con, binaryAttribute);
             if (cattrs != null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
@@ -280,14 +279,6 @@ namespace System.Reflection.Emit
                 cattrs = new CustomAttributeBuilder[1];
                 cattrs[0] = customBuilder;
             }
-        }
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            ArgumentNullException.ThrowIfNull(con);
-            ArgumentNullException.ThrowIfNull(binaryAttribute);
-
-            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)

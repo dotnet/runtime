@@ -283,10 +283,8 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
-            SetCustomAttributeCore(customBuilder);
+            SetCustomAttributeCore(customBuilder.Ctor, customBuilder.Data);
         }
-
-        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
 
         public void SetParent([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
             => SetParentCore(parent);

@@ -74,5 +74,15 @@ namespace System.Reflection.Emit
                 name: metadata.GetOrAddString(field.Name),
                 signature: metadata.GetOrAddBlob(fieldSignatureBlob));
         }
+
+        internal static MemberReferenceHandle AddConstructorReference(MetadataBuilder metadata, TypeReferenceHandle parent, MethodBase method)
+        {
+            var blob = MetadataSignatureHelper.ConstructorSignatureEncoder(method.GetParameters(), (ModuleBuilderImpl)method.Module);
+            return metadata.AddMemberReference(
+                parent: parent,
+                name: metadata.GetOrAddString(method.Name),
+                signature: metadata.GetOrAddBlob(blob)
+                );
+        }
     }
 }

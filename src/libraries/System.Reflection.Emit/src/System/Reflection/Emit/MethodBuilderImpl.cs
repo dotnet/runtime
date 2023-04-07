@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection.Metadata;
@@ -16,6 +17,8 @@ namespace System.Reflection.Emit
         private readonly string _name;
         private readonly CallingConventions _callingConventions;
         private readonly TypeBuilderImpl _declaringType;
+
+        internal List<CustomAttributeWrapper> _customAttributes = new();
 
         internal MethodBuilderImpl(string name, MethodAttributes attributes, CallingConventions callingConventions, Type? returnType,
             Type[]? parameterTypes, ModuleBuilderImpl module, TypeBuilderImpl declaringType)
@@ -44,8 +47,10 @@ namespace System.Reflection.Emit
         protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names) => throw new NotImplementedException();
         protected override ParameterBuilder DefineParameterCore(int position, ParameterAttributes attributes, string? strParamName) => throw new NotImplementedException();
         protected override ILGenerator GetILGeneratorCore(int size) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        {
+            _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+        }
         protected override void SetImplementationFlagsCore(MethodImplAttributes attributes) => throw new NotImplementedException();
         protected override void SetSignatureCore(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
             Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers) => throw new NotImplementedException();

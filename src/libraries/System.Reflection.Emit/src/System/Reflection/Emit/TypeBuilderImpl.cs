@@ -10,14 +10,16 @@ namespace System.Reflection.Emit
 {
     internal sealed class TypeBuilderImpl : TypeBuilder
     {
-        internal List<MethodBuilderImpl> _methodDefStore = new();
-        internal List<FieldBuilderImpl> _fieldDefStore = new();
         private readonly ModuleBuilderImpl _module;
         private readonly string _name;
         private readonly string? _namespace;
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? _typeParent;
         private TypeAttributes _attributes;
+
+        internal List<MethodBuilderImpl> _methodDefStore = new();
+        internal List<FieldBuilderImpl> _fieldDefStore = new();
+        internal List<CustomAttributeWrapper> _customAttributes = new();
 
         internal TypeBuilderImpl(string fullName, TypeAttributes typeAttributes,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, ModuleBuilderImpl module)
@@ -68,8 +70,27 @@ namespace System.Reflection.Emit
         protected override ConstructorBuilder DefineTypeInitializerCore() => throw new NotImplementedException();
         protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
         protected override bool IsCreatedCore() => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        {
+            if (con.DeclaringType == null)
+            {
+                throw new ArgumentException("Attribute constructor has no type.");
+            }
+
+            // We check whether the custom attribute is actually a pseudo-custom attribute.
+            // (We have only done ComImport for the prototype, eventually all pseudo-custom attributes will be hard-coded.)
+            // If it is, simply alter the TypeAttributes.
+            // We want to handle this before the type metadata is generated.
+
+            if (con.DeclaringType.Name.Equals("ComImportAttribute"))
+            {
+                _attributes |= TypeAttributes.Import;
+            }
+            else
+            {
+                _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+            }
+        }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2074:DynamicallyAccessedMembers",
             Justification = "TODO: Need to figure out how to preserve System.Object public constructor")]

@@ -45,10 +45,8 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
-            SetCustomAttributeCore(customBuilder);
+            SetCustomAttributeCore(customBuilder.Ctor, customBuilder.Data);
         }
-
-        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
 
         [System.ObsoleteAttribute("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]

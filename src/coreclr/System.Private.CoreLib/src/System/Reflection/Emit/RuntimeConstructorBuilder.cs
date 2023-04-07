@@ -162,11 +162,6 @@ namespace System.Reflection.Emit
             m_methodBuilder.SetCustomAttribute(con, binaryAttribute);
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            m_methodBuilder.SetCustomAttribute(customBuilder);
-        }
-
         protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
         {
             m_methodBuilder.SetImplementationFlags(attributes);

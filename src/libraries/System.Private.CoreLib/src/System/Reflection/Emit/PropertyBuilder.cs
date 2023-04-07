@@ -32,10 +32,9 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
-            SetCustomAttributeCore(customBuilder);
-        }
 
-        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
+            SetCustomAttributeCore(customBuilder.Ctor, customBuilder.Data);
+        }
 
         public void SetGetMethod(MethodBuilder mdBuilder)
             => SetGetMethodCore(mdBuilder);

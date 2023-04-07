@@ -38,8 +38,6 @@ namespace System.Reflection.Emit
         protected abstract void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute);
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
-            => SetCustomAttributeCore(customBuilder);
-
-        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
+            => SetCustomAttributeCore(customBuilder.Ctor, customBuilder.Data);
     }
 }

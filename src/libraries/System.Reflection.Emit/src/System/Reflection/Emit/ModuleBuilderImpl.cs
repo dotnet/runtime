@@ -15,8 +15,10 @@ namespace System.Reflection.Emit
         private readonly string _name;
         private Type?[]? _coreTypes;
         private readonly Dictionary<Assembly, AssemblyReferenceHandle> _assemblyRefStore = new();
+        private readonly Dictionary<ConstructorInfo, MemberReferenceHandle> _constructorRefStore = new();
         private readonly Dictionary<Type, TypeReferenceHandle> _typeRefStore = new();
         private readonly List<TypeBuilderImpl> _typeDefStore = new();
+        private readonly List<CustomAttributeWrapper> _customAttributes = new();
         private int _nextMethodDefRowId = 1;
         private int _nextFieldDefRowId = 1;
         private bool _coreTypesFullPopulated;
@@ -90,10 +92,10 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        internal void AppendMetadata(MetadataBuilder metadata)
+        internal void AppendMetadata(MetadataBuilder metadata, AssemblyDefinitionHandle assemlbyHandle, List<CustomAttributeWrapper> assemblyAttributes)
         {
             // Add module metadata
-            metadata.AddModule(
+            ModuleDefinitionHandle moduleHandle = metadata.AddModule(
                 generation: 0,
                 moduleName: metadata.GetOrAddString(_name),
                 mvid: metadata.GetOrAddGuid(Guid.NewGuid()),
@@ -107,7 +109,10 @@ namespace System.Reflection.Emit
                 name: metadata.GetOrAddString("<Module>"),
                 baseType: default,
                 fieldList: MetadataTokens.FieldDefinitionHandle(1),
-                methodList: MetadataTokens.MethodDefinitionHandle(1)); ;
+                methodList: MetadataTokens.MethodDefinitionHandle(1));
+
+            WriteCustomAttributes(metadata, assemblyAttributes, assemlbyHandle);
+            WriteCustomAttributes(metadata, _customAttributes, moduleHandle);
 
             // Add each type definition to metadata table.
             foreach (TypeBuilderImpl typeBuilder in _typeDefStore)
@@ -120,20 +125,45 @@ namespace System.Reflection.Emit
                 }
 
                 TypeDefinitionHandle typeDefinitionHandle = MetadataHelper.AddTypeDefinition(metadata, typeBuilder, parent, _nextMethodDefRowId, _nextFieldDefRowId);
+                WriteCustomAttributes(metadata, typeBuilder._customAttributes, typeDefinitionHandle);
 
-                // Add each method definition to metadata table.
                 foreach (MethodBuilderImpl method in typeBuilder._methodDefStore)
                 {
-                    MetadataHelper.AddMethodDefinition(metadata, method, method.GetMethodSignatureBlob());
+                    MethodDefinitionHandle methodHandle = MetadataHelper.AddMethodDefinition(metadata, method, method.GetMethodSignatureBlob());
+                    WriteCustomAttributes(metadata, method._customAttributes, methodHandle);
                     _nextMethodDefRowId++;
                 }
 
                 foreach (FieldBuilderImpl field in typeBuilder._fieldDefStore)
                 {
-                    MetadataHelper.AddFieldDefinition(metadata, field, MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this));
+                    FieldDefinitionHandle fieldHandle = MetadataHelper.AddFieldDefinition(metadata, field, MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this));
+                    WriteCustomAttributes(metadata, field._customAttributes, fieldHandle);
                     _nextFieldDefRowId++;
                 }
             }
+        }
+
+        private void WriteCustomAttributes(MetadataBuilder metadata, List<CustomAttributeWrapper> customAttributes, EntityHandle parent)
+        {
+            foreach (CustomAttributeWrapper customAttribute in customAttributes)
+            {
+                metadata.AddCustomAttribute(parent, GetConstructorHandle(metadata, customAttribute.constructorInfo),
+                    metadata.GetOrAddBlob(customAttribute.binaryAttribute));
+            }
+        }
+
+        private MemberReferenceHandle GetConstructorHandle(MetadataBuilder metadata, ConstructorInfo constructorInfo)
+        {
+            if (_constructorRefStore.TryGetValue(constructorInfo, out var constructorHandle))
+            {
+                return constructorHandle;
+            }
+
+            TypeReferenceHandle parentHandle = GetTypeReference(metadata, constructorInfo.DeclaringType!);
+
+            constructorHandle = MetadataHelper.AddConstructorReference(metadata, parentHandle, constructorInfo);
+            _constructorRefStore.Add(constructorInfo, constructorHandle);
+            return constructorHandle;
         }
 
         private TypeReferenceHandle GetTypeReference(MetadataBuilder metadata, Type type)
@@ -156,6 +186,7 @@ namespace System.Reflection.Emit
 
             return MetadataHelper.AddAssemblyReference(assembly, metadata);
         }
+
         [RequiresAssemblyFiles("Returns <Unknown> for modules with no file path")]
         public override string Name => "<In Memory Module>";
         public override string ScopeName => _name;
@@ -179,8 +210,10 @@ namespace System.Reflection.Emit
         }
         protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
         protected override MethodInfo GetArrayMethodCore(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotSupportedException();
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotSupportedException();
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        {
+            _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+        }
         public override int GetSignatureMetadataToken(SignatureHelper signature) => throw new NotImplementedException();
     }
 }

@@ -140,10 +140,8 @@ namespace System.Reflection.Emit
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
-            SetCustomAttributeCore(customBuilder);
+            SetCustomAttributeCore(customBuilder.Ctor, customBuilder.Data);
         }
-
-        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
 
         public abstract int GetTypeMetadataToken(Type type);
         public abstract int GetFieldMetadataToken(FieldInfo field);

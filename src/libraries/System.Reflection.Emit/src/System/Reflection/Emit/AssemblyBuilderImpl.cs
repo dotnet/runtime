@@ -16,6 +16,8 @@ namespace System.Reflection.Emit
         private readonly Assembly _coreAssembly;
         private ModuleBuilderImpl? _module;
 
+        internal List<CustomAttributeWrapper> _customAttributes = new();
+
         internal AssemblyBuilderImpl(AssemblyName name, Assembly coreAssembly, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             ArgumentNullException.ThrowIfNull(name);
@@ -77,7 +79,7 @@ namespace System.Reflection.Emit
             // Add assembly metadata
             var metadata = new MetadataBuilder();
 
-            metadata.AddAssembly(
+            AssemblyDefinitionHandle assemblyHandle = metadata.AddAssembly(
                metadata.GetOrAddString(value: _assemblyName.Name!),
                version: _assemblyName.Version ?? new Version(0, 0, 0, 0),
                culture: _assemblyName.CultureName == null ? default : metadata.GetOrAddString(value: _assemblyName.CultureName),
@@ -89,7 +91,7 @@ namespace System.Reflection.Emit
                );
 
             // Add module's metadata
-            _module.AppendMetadata(metadata);
+            _module.AppendMetadata(metadata, assemblyHandle, _customAttributes);
 
             var ilBuilder = new BlobBuilder();
             WritePEImage(stream, metadata, ilBuilder);
@@ -128,8 +130,9 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotImplementedException();
-
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        {
+            _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+        }
     }
 }

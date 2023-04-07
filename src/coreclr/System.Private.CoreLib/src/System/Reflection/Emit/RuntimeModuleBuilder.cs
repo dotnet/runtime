@@ -1298,11 +1298,6 @@ namespace System.Reflection.Emit
                 binaryAttribute);
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            customBuilder.CreateCustomAttribute(this, 1);   // This is hard coding the module token to 1
-        }
-
         #endregion
 
         #endregion

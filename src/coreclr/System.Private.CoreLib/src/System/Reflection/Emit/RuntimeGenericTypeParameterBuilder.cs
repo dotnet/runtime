@@ -220,11 +220,6 @@ namespace System.Reflection.Emit
             m_type.SetGenParamCustomAttribute(con, binaryAttribute);
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            m_type.SetGenParamCustomAttribute(customBuilder);
-        }
-
         protected override void SetBaseTypeConstraintCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? baseTypeConstraint)
         {
             m_type.SetParent(baseTypeConstraint);

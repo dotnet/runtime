@@ -502,6 +502,15 @@ namespace System.Reflection.Emit
         {
             byte[] data = customBuilder.Data;
             ConstructorInfo ctor = customBuilder.Ctor;
+            return decode_cattr(ctor, data);
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:UnrecognizedReflectionPattern",
+            Justification = "Types referenced from custom attributes are preserved")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "Types referenced from custom attributes are preserved")]
+        internal static CustomAttributeInfo decode_cattr(ConstructorInfo ctor, byte[] data)
+        {
             int pos;
 
             CustomAttributeInfo info = default;

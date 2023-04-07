@@ -160,13 +160,6 @@ namespace System.Reflection.Emit
                 m_fieldTok, moduleBuilder.GetMethodMetadataToken(con), binaryAttribute);
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            m_typeBuilder.ThrowIfCreated();
-
-            customBuilder.CreateCustomAttribute((RuntimeModuleBuilder)m_typeBuilder.Module, m_fieldTok);
-        }
-
         #endregion
     }
 }

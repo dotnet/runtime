@@ -381,12 +381,12 @@ namespace System.Reflection.Emit
             }
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            switch (customBuilder.Ctor.ReflectedType!.FullName)
+            switch (con.ReflectedType!.FullName)
             {
                 case "System.Runtime.CompilerServices.MethodImplAttribute":
-                    byte[] data = customBuilder.Data;
+                    byte[] data = binaryAttribute;
                     int impla; // the (stupid) ctor takes a short or an int ...
                     impla = (int)data[2];
                     impla |= ((int)data[3]) << 8;
@@ -394,7 +394,7 @@ namespace System.Reflection.Emit
                     return;
 
                 case "System.Runtime.InteropServices.DllImportAttribute":
-                    CustomAttributeBuilder.CustomAttributeInfo attr = CustomAttributeBuilder.decode_cattr(customBuilder);
+                    CustomAttributeBuilder.CustomAttributeInfo attr = CustomAttributeBuilder.decode_cattr(con, binaryAttribute);
                     bool preserveSig = true;
 
                     /*
@@ -453,6 +453,7 @@ namespace System.Reflection.Emit
                     break;
             }
 
+            CustomAttributeBuilder customBuilder = new CustomAttributeBuilder(con, binaryAttribute);
             if (cattrs != null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
@@ -465,11 +466,6 @@ namespace System.Reflection.Emit
                 cattrs = new CustomAttributeBuilder[1];
                 cattrs[0] = customBuilder;
             }
-        }
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)

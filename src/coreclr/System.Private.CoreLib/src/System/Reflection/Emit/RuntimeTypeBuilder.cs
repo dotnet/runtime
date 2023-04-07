@@ -1863,11 +1863,6 @@ namespace System.Reflection.Emit
             DefineCustomAttribute(m_module, m_tdType, m_module.GetMethodMetadataToken(con), binaryAttribute);
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            customBuilder.CreateCustomAttribute(m_module, m_tdType);
-        }
-
         #endregion
 
         #endregion

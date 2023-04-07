@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Globalization;
 
 namespace System.Reflection.Emit
@@ -12,6 +13,8 @@ namespace System.Reflection.Emit
         private readonly FieldAttributes _attributes;
         private readonly Type _fieldType;
 
+        internal List<CustomAttributeWrapper> _customAttributes = new();
+
         internal FieldBuilderImpl(TypeBuilderImpl typeBuilder, string fieldName, Type type, FieldAttributes attributes)
         {
             _fieldName = fieldName;
@@ -20,12 +23,15 @@ namespace System.Reflection.Emit
             _attributes = attributes & ~FieldAttributes.ReservedMask;
         }
 
-        #region MemberInfo Overrides
         protected override void SetConstantCore(object? defaultValue) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute) => throw new NotImplementedException();
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        {
+            _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+        }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder) => throw new NotImplementedException();
         protected override void SetOffsetCore(int iOffset) => throw new NotImplementedException();
+
+        #region MemberInfo Overrides
 
         public override int MetadataToken => throw new NotImplementedException();
 

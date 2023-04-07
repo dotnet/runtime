@@ -1411,12 +1411,12 @@ namespace System.Reflection.Emit
             }
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
+            string? attrname = con.ReflectedType!.FullName;
             if (attrname == "System.Runtime.InteropServices.StructLayoutAttribute")
             {
-                byte[] data = customBuilder.Data;
+                byte[] data = binaryAttribute;
                 int layout_kind; /* the (stupid) ctor takes a short or an int ... */
                 layout_kind = (int)data[2];
                 layout_kind |= ((int)data[3]) << 8;
@@ -1429,7 +1429,7 @@ namespace System.Reflection.Emit
                     _ => throw new Exception(SR.Argument_InvalidKindOfTypeForCA), // we should ignore it since it can be any value anyway...
                 };
 
-                Type ctor_type = customBuilder.Ctor is RuntimeConstructorBuilder builder ? builder.parameters![0] : customBuilder.Ctor.GetParametersInternal()[0].ParameterType;
+                Type ctor_type = con is RuntimeConstructorBuilder builder ? builder.parameters![0] : con.GetParametersInternal()[0].ParameterType;
                 int pos = 6;
                 if (ctor_type.FullName == "System.Int16")
                     pos = 4;
@@ -1518,6 +1518,8 @@ namespace System.Reflection.Emit
                 is_byreflike_set = 1;
             }
 
+            CustomAttributeBuilder customBuilder = new CustomAttributeBuilder(con, binaryAttribute);
+
             if (cattrs != null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
@@ -1530,11 +1532,6 @@ namespace System.Reflection.Emit
                 cattrs = new CustomAttributeBuilder[1];
                 cattrs[0] = customBuilder;
             }
-        }
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         protected override EventBuilder DefineEventCore(string name, EventAttributes attributes, Type eventtype)

@@ -57,7 +57,6 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
         protected abstract void SetCustomAttributeCore(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        protected abstract void SetCustomAttributeCore(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
     }
     [System.FlagsAttribute]
     public enum AssemblyBuilderAccess
@@ -93,7 +92,6 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
         protected abstract void SetCustomAttributeCore(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        protected abstract void SetCustomAttributeCore(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
         public void SetImplementationFlags(System.Reflection.MethodImplAttributes attributes) { }
         protected abstract void SetImplementationFlagsCore(System.Reflection.MethodImplAttributes attributes);
         public override string ToString() { throw null; }
@@ -188,7 +186,6 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
         protected abstract void SetCustomAttributeCore(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        protected abstract void SetCustomAttributeCore(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
     }
     public abstract partial class EventBuilder
     {
@@ -200,7 +197,6 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
         protected abstract void SetCustomAttributeCore(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        protected abstract void SetCustomAttributeCore(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
         public void SetRaiseMethod(System.Reflection.Emit.MethodBuilder mdBuilder) { }
         protected abstract void SetRaiseMethodCore(System.Reflection.Emit.MethodBuilder mdBuilder);
         public void SetRemoveOnMethod(System.Reflection.Emit.MethodBuilder mdBuilder) { }
@@ -226,7 +222,6 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
         protected abstract void SetCustomAttributeCore(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        protected abstract void SetCustomAttributeCore(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
         public void SetOffset(int iOffset) { }
         protected abstract void SetOffsetCore(int iOffset);
         public override void SetValue(object? obj, object? val, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder? binder, System.Globalization.CultureInfo? culture) { }
@@ -329,7 +324,6 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
         protected abstract void SetCustomAttributeCore(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        protected abstract void SetCustomAttributeCore(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
         public void SetGenericParameterAttributes(System.Reflection.GenericParameterAttributes genericParameterAttributes) { }
         protected abstract void SetGenericParameterAttributesCore(System.Reflection.GenericParameterAttributes genericParameterAttributes);
         public void SetInterfaceConstraints(params System.Type[]? interfaceConstraints) { }
@@ -382,7 +376,6 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
         protected abstract void SetCustomAttributeCore(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        protected abstract void SetCustomAttributeCore(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
         public void SetImplementationFlags(System.Reflection.MethodImplAttributes attributes) { }
         protected abstract void SetImplementationFlagsCore(System.Reflection.MethodImplAttributes attributes);
         public void SetParameters(params System.Type[] parameterTypes) { }
@@ -476,7 +469,6 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
         protected abstract void SetCustomAttributeCore(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        protected abstract void SetCustomAttributeCore(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
     }
     public abstract partial class PropertyBuilder : System.Reflection.PropertyInfo
     {
@@ -505,7 +497,6 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
         protected abstract void SetCustomAttributeCore(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        protected abstract void SetCustomAttributeCore(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
         public void SetGetMethod(System.Reflection.Emit.MethodBuilder mdBuilder) { }
         protected abstract void SetGetMethodCore(System.Reflection.Emit.MethodBuilder mdBuilder);
         public void SetSetMethod(System.Reflection.Emit.MethodBuilder mdBuilder) { }
@@ -673,7 +664,6 @@ namespace System.Reflection.Emit
         public void SetCustomAttribute(System.Reflection.ConstructorInfo con, byte[] binaryAttribute) { }
         protected abstract void SetCustomAttributeCore(System.Reflection.ConstructorInfo con, byte[] binaryAttribute);
         public void SetCustomAttribute(System.Reflection.Emit.CustomAttributeBuilder customBuilder) { }
-        protected abstract void SetCustomAttributeCore(System.Reflection.Emit.CustomAttributeBuilder customBuilder);
         public void SetParent([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent) { }
         protected abstract void SetParentCore([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type? parent);
         public override string ToString() { throw null; }

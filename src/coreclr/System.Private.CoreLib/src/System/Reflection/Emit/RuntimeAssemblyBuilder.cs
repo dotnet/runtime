@@ -299,16 +299,5 @@ namespace System.Reflection.Emit
                     binaryAttribute);
             }
         }
-
-        /// <summary>
-        /// Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder.
-        /// </summary>
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            lock (SyncRoot)
-            {
-                customBuilder.CreateCustomAttribute(_manifestModuleBuilder, AssemblyDefToken);
-            }
-        }
     }
 }

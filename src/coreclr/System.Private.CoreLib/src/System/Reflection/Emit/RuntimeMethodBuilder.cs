@@ -678,7 +678,7 @@ namespace System.Reflection.Emit
                 m_isDllImport)
             {
                 // cannot attach method body if methodimpl is marked not marked as managed IL
-                //
+                // supress
                 throw new InvalidOperationException(SR.InvalidOperation_ShouldNotHaveMethodBody);
             }
         }
@@ -704,15 +704,6 @@ namespace System.Reflection.Emit
 
             if (IsKnownCA(con))
                 ParseCA(con);
-        }
-
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            ThrowIfGeneric();
-            customBuilder.CreateCustomAttribute(m_module, MetadataToken);
-
-            if (IsKnownCA(customBuilder.m_con))
-                ParseCA(customBuilder.m_con);
         }
 
         // this method should return true for any and every ca that requires more work

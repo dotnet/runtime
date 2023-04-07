@@ -178,10 +178,17 @@ namespace System.Reflection.Emit
         {
             RejectIfCreated();
 
-            string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
+            
+        }
+
+        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        {
+            RejectIfCreated();
+            CustomAttributeBuilder customBuilder = new CustomAttributeBuilder(con, binaryAttribute);
+            string? attrname = con.ReflectedType!.FullName;
             if (attrname == "System.Runtime.InteropServices.FieldOffsetAttribute")
             {
-                byte[] data = customBuilder.Data;
+                byte[] data = binaryAttribute;
                 offset = (int)data[2];
                 offset |= ((int)data[3]) << 8;
                 offset |= ((int)data[4]) << 16;
@@ -217,12 +224,6 @@ namespace System.Reflection.Emit
                 cattrs = new CustomAttributeBuilder[1];
                 cattrs[0] = customBuilder;
             }
-        }
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            RejectIfCreated();
-            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         protected override void SetOffsetCore(int iOffset)
