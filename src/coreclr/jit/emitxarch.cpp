@@ -6590,7 +6590,7 @@ void emitter::emitIns_R_C_R(
          attr = EA_SET_FLG(attr, EA_DSP_RELOC_FLG);
     }
 
-    instrDesc* id   = emitNewInstrAmd(attr, offs);
+    instrDesc* id = emitNewInstrAmd(attr, offs);
 
     id->idIns(ins);
     id->idReg1(reg1);
@@ -16422,9 +16422,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(IsVexOrEvexEncodableInstruction(ins));
             assert(emitComp->compOpportunisticallyDependsOn(InstructionSet_BMI2));
 
-            code    = insCodeRM(ins);
-            regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
-            dst     = emitOutputSV(dst, id, code | regcode);
+            code = insCodeRM(ins);
+            dst  = emitOutputSV(dst, id, code);
             break;
         }
 
@@ -16598,10 +16597,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             assert(IsVexOrEvexEncodableInstruction(ins));
             assert(emitComp->compOpportunisticallyDependsOn(InstructionSet_BMI2));
 
-            code    = insCodeRM(ins);
-            regcode = (insEncodeReg345(id, id->idReg1(), size, &code) << 8);
-            dst     = emitOutputCV(dst, id, code | regcode | 0x0500);
-            sz      = emitSizeOfInsDsc(id);
+            code = insCodeRM(ins);
+            dst  = emitOutputCV(dst, id, code);
+            sz   = emitSizeOfInsDsc(id);
             break;
         }
 
