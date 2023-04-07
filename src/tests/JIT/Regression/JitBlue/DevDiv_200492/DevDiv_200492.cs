@@ -4,6 +4,7 @@
 using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Regression test for bug 200492, in which the x64 codegen for
 // integer casts would unconditionally suppress same-register
@@ -76,7 +77,8 @@ public class Program
         return (attribute.Field == (ulong)6);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int errors = 0;
 

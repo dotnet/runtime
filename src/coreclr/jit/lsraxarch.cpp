@@ -1843,59 +1843,16 @@ int LinearScan::BuildLclHeap(GenTree* tree)
 {
     int srcCount = 1;
 
-    // Need a variable number of temp regs (see genLclHeap() in codegenamd64.cpp):
-    // Here '-' means don't care.
-    //
-    //     Size?                    Init Memory?         # temp regs
-    //      0                            -                  0 (returns 0)
-    //      const and <=6 reg words      -                  0 (pushes '0')
-    //      const and >6 reg words       Yes                0 (pushes '0')
-    //      const and <PageSize          No                 0 (amd64) 1 (x86)
-    //
-    //      const and >=PageSize         No                 1 (regCnt)
-    //      Non-const                    Yes                0 (regCnt=targetReg and pushes '0')
-    //      Non-const                    No                 1 (regCnt)
-    //
-    // Note: Here we don't need internal register to be different from targetReg.
-    // Rather, require it to be different from operand's reg.
-
     GenTree* size = tree->gtGetOp1();
-    if (size->IsCnsIntOrI())
+    if (size->IsCnsIntOrI() && size->isContained())
     {
-        assert(size->isContained());
         srcCount       = 0;
-        size_t sizeVal = size->AsIntCon()->gtIconVal;
+        size_t sizeVal = AlignUp((size_t)size->AsIntCon()->gtIconVal, STACK_ALIGN);
 
-        if (sizeVal == 0)
+        // Explicitly zeroed LCLHEAP also needs a regCnt in case of x86 or large page
+        if ((TARGET_POINTER_SIZE == 4) || (sizeVal >= compiler->eeGetPageSize()))
         {
-            // For regCnt
             buildInternalIntRegisterDefForNode(tree);
-        }
-        else
-        {
-            // Compute the amount of memory to properly STACK_ALIGN.
-            // Note: The Gentree node is not updated here as it is cheap to recompute stack aligned size.
-            // This should also help in debugging as we can examine the original size specified with localloc.
-            sizeVal = AlignUp(sizeVal, STACK_ALIGN);
-
-            // For small allocations up to 6 pointer sized words (i.e. 48 bytes of localloc)
-            // we will generate 'push 0'.
-            assert((sizeVal % REGSIZE_BYTES) == 0);
-
-            if (!compiler->info.compInitMem)
-            {
-#ifdef TARGET_X86
-                // x86 always needs regCnt.
-                // For regCnt
-                buildInternalIntRegisterDefForNode(tree);
-#else  // !TARGET_X86
-                if (sizeVal >= compiler->eeGetPageSize())
-                {
-                    // For regCnt
-                    buildInternalIntRegisterDefForNode(tree);
-                }
-#endif // !TARGET_X86
-            }
         }
     }
     else
@@ -1905,7 +1862,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
             // For regCnt
             buildInternalIntRegisterDefForNode(tree);
         }
-        BuildUse(size);
+        BuildUse(size); // could be a non-contained constant
     }
     buildInternalRegisterUses();
     BuildDef(tree);

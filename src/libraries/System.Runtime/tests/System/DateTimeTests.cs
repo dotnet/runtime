@@ -2008,6 +2008,57 @@ namespace System.Tests
             Assert.Equal(expected, DateTime.Parse(input, culture));
         }
 
+        public static IEnumerable<object[]> FormatAndParse_DifferentUnicodeSpaces_Succeeds_MemberData()
+        {
+            char[] spaceTypes = new[] { ' ',      // space
+                                        '\u00A0', // no-break space
+                                        '\u202F', // narrow no-break space
+                                      };
+            return spaceTypes.SelectMany(formatSpaceChar => spaceTypes.Select(parseSpaceChar => new object[] { formatSpaceChar, parseSpaceChar }));
+        }
+
+        [Theory]
+        [MemberData(nameof(FormatAndParse_DifferentUnicodeSpaces_Succeeds_MemberData))]
+        public void FormatAndParse_DifferentUnicodeSpaces_Succeeds(char formatSpaceChar, char parseSpaceChar)
+        {
+            var dateTime = new DateTime(2020, 5, 7, 9, 37, 40, DateTimeKind.Local);
+
+            DateTimeFormatInfo formatDtfi = CreateDateTimeFormatInfo(formatSpaceChar);
+            string formatted = dateTime.ToString(formatDtfi);
+            Assert.Contains(formatSpaceChar, formatted);
+
+            DateTimeFormatInfo parseDtfi = CreateDateTimeFormatInfo(parseSpaceChar);
+            Assert.Equal(dateTime, DateTime.Parse(formatted, parseDtfi));
+
+            static DateTimeFormatInfo CreateDateTimeFormatInfo(char spaceChar)
+            {
+                return new DateTimeFormatInfo()
+                {
+                    Calendar = DateTimeFormatInfo.InvariantInfo.Calendar,
+                    CalendarWeekRule = DateTimeFormatInfo.InvariantInfo.CalendarWeekRule,
+                    FirstDayOfWeek = DayOfWeek.Monday,
+                    AMDesignator = "AM",
+                    DateSeparator = "/",
+                    FullDateTimePattern = $"dddd,{spaceChar}MMMM{spaceChar}d,{spaceChar}yyyy{spaceChar}h:mm:ss{spaceChar}tt",
+                    LongDatePattern = $"dddd,{spaceChar}MMMM{spaceChar}d,{spaceChar}yyyy",
+                    LongTimePattern = $"h:mm:ss{spaceChar}tt",
+                    MonthDayPattern = "MMMM d",
+                    PMDesignator = "PM",
+                    ShortDatePattern = "M/d/yyyy",
+                    ShortTimePattern = $"h:mm{spaceChar}tt",
+                    TimeSeparator = ":",
+                    YearMonthPattern = $"MMMM{spaceChar}yyyy",
+                    AbbreviatedDayNames = new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" },
+                    ShortestDayNames = new[] { "Su", "Mo", "Tu", "We", "Th", "Fr", "Sa" },
+                    DayNames = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" },
+                    AbbreviatedMonthNames = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "" },
+                    MonthNames = new[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "" },
+                    AbbreviatedMonthGenitiveNames = new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "" },
+                    MonthGenitiveNames = new[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December", "" }
+                };
+            }
+        }
+
         public static IEnumerable<object[]> ParseExact_ValidInput_Succeeds_MemberData()
         {
             foreach (DateTimeStyles style in new[] { DateTimeStyles.None, DateTimeStyles.AllowWhiteSpaces })

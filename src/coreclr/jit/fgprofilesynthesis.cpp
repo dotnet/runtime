@@ -64,6 +64,10 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
             RandomizeLikelihoods();
             break;
 
+        case ProfileSynthesisOption::RepairLikelihoods:
+            RepairLikelihoods();
+            break;
+
         default:
             assert(!"unexpected profile synthesis option");
             break;
@@ -763,7 +767,6 @@ void ProfileSynthesis::RandomizeLikelihoods()
 void ProfileSynthesis::BuildReversePostorder()
 {
     m_comp->EnsureBasicBlockEpoch();
-    m_comp->fgBBReversePostorder = new (m_comp, CMK_Pgo) BasicBlock*[m_comp->fgBBNumMax + 1]{};
     m_comp->fgComputeEnterBlocksSet();
     m_comp->fgDfsReversePostorder();
 
