@@ -11,7 +11,7 @@ AOT?=false
 #PGO_BINARY_PATH=<path-to-dotnet-pgo-executable>
 #MIBC_PROFILE_PATH=<path-to-mibc-for-sample>
 
-MONO_ENV_DEBUG_OPTIONS = "--trace=all"
+MONO_ENV_DEBUG_OPTIONS = ""
 MONO_ENV_RUN_OPTIONS = ""
 
 build: TestRun.cs
@@ -30,14 +30,13 @@ run: build
 debug: build
 	COMPlus_DebugWriteToStdErr=1 \
 	MONO_LOG_LEVEL=debug MONO_LOG_MASK=all \
-	COREHOST_TRACE=1 COREHOST_TRACE_VERBOSITY=4 \
 	MONO_ENV_OPTIONS=$(MONO_ENV_DEBUG_OPTIONS) \
 	qemu-riscv64 -L $(TOP)/.tools/rootfs/riscv64/ \
 	-g 12345 \
 	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet TestRun.exe &\
 	riscv64-unknown-linux-gnu-gdb -ex 'target remote localhost:12345'  \
 	-ex "set sysroot $(TOP).tools/rootfs/riscv64" -ex "set solib-search-path $(TOP)artifacts/bin/testhost/net8.0-linux-Debug-riscv64/shared/Microsoft.NETCore.App/8.0.0" \
-	-ex "b mono_trace_enter_method " \
+	-ex "b mono_arch_unwind_frame " \
 	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet
 
 clean:
