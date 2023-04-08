@@ -162,7 +162,7 @@ namespace System.Linq
             // Add any remaining elements
             for (int i = 0; i < length; i++)
             {
-                checked { result += T.CreateChecked(Unsafe.Add(ref ptr, i)); }
+                checked { result += Unsafe.Add(ref ptr, i); }
             }
 
             return result;

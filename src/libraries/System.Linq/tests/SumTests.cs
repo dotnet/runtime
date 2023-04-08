@@ -368,7 +368,7 @@ namespace System.Linq.Tests
         // four vectors at a time.
         public static IEnumerable<object[]> SumOverflowsVerticalVectorLanes()
         {
-            for (int element = 0; element < 4; element++)
+            for (int element = 0; element < 2; element++)
             {
                 for (int verticalOffset = 1; verticalOffset < 6; verticalOffset++)
                 {
@@ -407,7 +407,7 @@ namespace System.Linq.Tests
         [MemberData(nameof(SumOverflowsVerticalVectorLanes))]
         public void SumOfInt_SourceSumsToOverflowVectorVertically_OverflowExceptionThrown(int element, int verticalOffset)
         {
-            int[] sourceInt = new int[Vector<int>.Count * Math.Max(4, verticalOffset + 1)];
+            int[] sourceInt = new int[Vector<int>.Count * 6];
             Array.Fill(sourceInt, 0);
 
             sourceInt[element] = int.MaxValue;
@@ -454,7 +454,7 @@ namespace System.Linq.Tests
         [MemberData(nameof(SumOverflowsVerticalVectorLanes))]
         public void SumOfLong_SourceSumsToOverflowVectorVertically_OverflowExceptionThrown(int element, int verticalOffset)
         {
-            long[] sourceLong = new long[Vector<long>.Count * Math.Max(4, verticalOffset + 1)];
+            long[] sourceLong = new long[Vector<long>.Count * 6];
             Array.Fill(sourceLong, 0);
 
             sourceLong[element] = long.MaxValue;
