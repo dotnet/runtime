@@ -4571,12 +4571,6 @@ public:
 
     void fgInsertBBbefore(BasicBlock* insertBeforeBlk, BasicBlock* newBlk);
     void fgInsertBBafter(BasicBlock* insertAfterBlk, BasicBlock* newBlk);
-    static BasicBlock* CreateBlockFromTree(Compiler*   comp,
-                                       BasicBlock* insertAfter,
-                                       BBjumpKinds blockKind,
-                                       GenTree*    tree,
-                                       DebugInfo&  debugInfo,
-                                       bool        updateSideEffects = false);
     void fgUnlinkBlock(BasicBlock* block);
 
 #ifdef FEATURE_JIT_METHOD_PERF
@@ -5317,11 +5311,21 @@ public:
     PhaseStatus StressSplitTree();
     void SplitTreesRandomly();
     void SplitTreesRemoveCommas();
+
+    template <bool (Compiler::*ExpansionFunction)(BasicBlock*, Statement*, GenTreeCall*)>
+    PhaseStatus fgExpandHelper();
+
+    template <bool (Compiler::*ExpansionFunction)(BasicBlock*, Statement*, GenTreeCall*)>
+    bool fgExpandHelperForBlock(BasicBlock* block);
+
     PhaseStatus fgExpandRuntimeLookups();
+    bool fgExpandRuntimeLookupsForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+
     PhaseStatus fgExpandThreadLocalAccess();
-    bool fgExpandStaticInitForBlock(BasicBlock* block);
-    bool fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+    bool fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+
     PhaseStatus fgExpandStaticInit();
+    bool fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
