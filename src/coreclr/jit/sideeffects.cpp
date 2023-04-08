@@ -155,11 +155,7 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         }
 
         // Calls are treated as reads and writes of addressable locations unless they are known to be pure.
-        if (node->AsCall()->IsPure(compiler))
-        {
-            m_flags = ALIAS_NONE;
-        }
-        else
+        if (!node->AsCall()->IsPure(compiler))
         {
             m_flags = ALIAS_READS_ADDRESSABLE_LOCATION | ALIAS_WRITES_ADDRESSABLE_LOCATION;
         }
@@ -200,6 +196,12 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
     unsigned lclOffs        = 0;
     if (node->OperIsIndir())
     {
+        // An invariant indir can be assumed to not be aliased by anything.
+        if (node->AsIndir()->IsInvariantIndir())
+        {
+            return;
+        }
+
         // If the indirection targets a lclVar, we can be more precise with regards to aliasing by treating the
         // indirection as a lclVar access.
         GenTree* address = node->AsIndir()->Addr();

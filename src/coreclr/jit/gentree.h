@@ -7252,6 +7252,11 @@ struct GenTreeIndir : public GenTreeOp
         return (gtFlags & GTF_IND_UNALIGNED) != 0;
     }
 
+    bool IsInvariantIndir() const
+    {
+        return (gtFlags & GTF_IND_INVARIANT) != 0;
+    }
+
 #if DEBUGGABLE_GENTREE
     // Used only for GenTree::GetVtableForOper()
     GenTreeIndir() : GenTreeOp()
