@@ -205,7 +205,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")
                     .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion)
-                    .And.NotHaveStdErrContaining("Failed to read environment variable"); ;
+                    .And.NotHaveStdErrContaining("Failed to read environment variable");
 
                 // Verify running from within the working directory
                 Command.Create(appExe)
@@ -222,7 +222,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")
                     .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion)
-                    .And.NotHaveStdErrContaining("Failed to read environment variable"); ;
+                    .And.NotHaveStdErrContaining("Failed to read environment variable");
             }
         }
 
