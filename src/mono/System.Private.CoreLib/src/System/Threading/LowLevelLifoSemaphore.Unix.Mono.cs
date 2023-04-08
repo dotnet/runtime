@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Threading
 {
-    internal sealed unsafe partial class LowLevelLifoSemaphore : IDisposable
+    internal sealed unsafe partial class LowLevelLifoSemaphore : LowLevelLifoSemaphoreBase, IDisposable
     {
         private IntPtr lifo_semaphore;
 #if TARGET_BROWSER && FEATURE_WASM_THREADS
@@ -83,7 +83,7 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void ReleaseInternal(IntPtr semaphore, int count);
 
-        private void ReleaseCore(int count)
+        protected override void ReleaseCore(int count)
         {
             ReleaseInternal(lifo_semaphore, count);
         }

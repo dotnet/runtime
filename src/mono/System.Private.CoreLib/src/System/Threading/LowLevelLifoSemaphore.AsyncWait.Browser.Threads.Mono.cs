@@ -13,7 +13,7 @@ namespace System.Threading;
 // This class provides a way for browser threads to asynchronously wait for a semaphore
 // from JS, without using the threadpool.  It is used to implement threadpool workers.
 // </summary>
-internal sealed partial class LowLevelLifoSemaphore : IDisposable
+internal sealed partial class LowLevelLifoSemaphore : LowLevelLifoSemaphoreBase, IDisposable
 {
     public static LowLevelLifoSemaphore CreateAsyncWaitSemaphore (int initialSignalCount, int maximumSignalCount, int spinCount, Action onWait)
     {
@@ -21,18 +21,9 @@ internal sealed partial class LowLevelLifoSemaphore : IDisposable
     }
 
     private LowLevelLifoSemaphore(int initialSignalCount, int maximumSignalCount, int spinCount, Action onWait, bool asyncWait)
+        : base (initialSignalCount, maximumSignalCount, spinCount, onWait)
     {
-        Debug.Assert(initialSignalCount >= 0);
-        Debug.Assert(initialSignalCount <= maximumSignalCount);
-        Debug.Assert(maximumSignalCount > 0);
-        Debug.Assert(spinCount >= 0);
         Debug.Assert(asyncWait);
-
-        _separated = default;
-        _separated._counts.SignalCount = (uint)initialSignalCount;
-        _maximumSignalCount = maximumSignalCount;
-        _spinCount = spinCount;
-        _onWait = onWait;
 
         CreateAsyncWait(maximumSignalCount);
     }
