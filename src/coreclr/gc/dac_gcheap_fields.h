@@ -33,7 +33,7 @@ DEFINE_MISSING_FIELD(saved_sweep_ephemeral_start)
 #endif // defined(ALL_FIELDS) || defined(BACKGROUND_GC)
 
 #if defined(ALL_FIELDS) ||  defined(USE_REGIONS)
-DEFINE_ARRAY_FIELD (free_regions,                        dac_region_free_list, 4)
+DEFINE_ARRAY_FIELD (free_regions,                        dac_region_free_list, FREE_REGION_KINDS)
 #else
 DEFINE_MISSING_FIELD(free_regions)
 #endif // ALL_FIELDS
