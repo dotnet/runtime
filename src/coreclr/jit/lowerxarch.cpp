@@ -5599,7 +5599,7 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                     // These intrinsics are "ins reg/mem, xmm"
                     unsigned simdSize = hwintrinsic->GetSimdSize();
 
-                    if (simdSize != 16)
+                    if (simdSize == 16)
                     {
                         // For TYP_SIMD16, we produce a TYP_SIMD16 register
                         // but only store TYP_SIMD8 to memory and so we cannot
