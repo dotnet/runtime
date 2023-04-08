@@ -18,8 +18,8 @@ namespace System.Threading
             /// <summary>
             /// Semaphore for controlling how many threads are currently working.
             /// </summary>
-            private static readonly LowLevelLifoSemaphore s_semaphore =
-                LowLevelLifoSemaphore.CreateAsyncWaitSemaphore(
+            private static readonly LowLevelLifoAsyncWaitSemaphore s_semaphore =
+                new LowLevelLifoAsyncWaitSemaphore(
                     0,
                     MaxPossibleThreadCount,
                     AppContextConfigHelper.GetInt32Config(
@@ -68,17 +68,17 @@ namespace System.Threading
                 // return from thread start with keepalive - the thread will stay alive in the JS event loop
             }
 
-            private static readonly Action<LowLevelLifoSemaphore, object?> s_WorkLoopSemaphoreSuccess = new(WorkLoopSemaphoreSuccess);
-            private static readonly Action<LowLevelLifoSemaphore, object?> s_WorkLoopSemaphoreTimedOut = new(WorkLoopSemaphoreTimedOut);
+            private static readonly Action<LowLevelLifoAsyncWaitSemaphore, object?> s_WorkLoopSemaphoreSuccess = new(WorkLoopSemaphoreSuccess);
+            private static readonly Action<LowLevelLifoAsyncWaitSemaphore, object?> s_WorkLoopSemaphoreTimedOut = new(WorkLoopSemaphoreTimedOut);
 
-            private static void WaitForWorkLoop(LowLevelLifoSemaphore semaphore, SemaphoreWaitState state)
+            private static void WaitForWorkLoop(LowLevelLifoAsyncWaitSemaphore semaphore, SemaphoreWaitState state)
             {
                 semaphore.PrepareAsyncWait(ThreadPoolThreadTimeoutMs, s_WorkLoopSemaphoreSuccess, s_WorkLoopSemaphoreTimedOut, state);
                 // thread should still be kept alive
                 Debug.Assert(state.KeepaliveToken.Valid);
             }
 
-            private static void WorkLoopSemaphoreSuccess(LowLevelLifoSemaphore semaphore, object? stateObject)
+            private static void WorkLoopSemaphoreSuccess(LowLevelLifoAsyncWaitSemaphore semaphore, object? stateObject)
             {
                 SemaphoreWaitState state = (SemaphoreWaitState)stateObject!;
                 WorkerDoWork(state.ThreadPoolInstance, ref state.SpinWait);
@@ -86,7 +86,7 @@ namespace System.Threading
                 WaitForWorkLoop(semaphore, state);
             }
 
-            private static void WorkLoopSemaphoreTimedOut(LowLevelLifoSemaphore semaphore, object? stateObject)
+            private static void WorkLoopSemaphoreTimedOut(LowLevelLifoAsyncWaitSemaphore semaphore, object? stateObject)
             {
                 SemaphoreWaitState state = (SemaphoreWaitState)stateObject!;
                 if (WorkerTimedOutMaybeStop(state.ThreadPoolInstance, state.ThreadAdjustmentLock)) {
