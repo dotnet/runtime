@@ -84,12 +84,6 @@ void EEClass::Destruct(MethodTable * pOwningMT)
     }
     CONTRACTL_END
 
-
-#ifdef _DEBUG
-    _ASSERTE(!IsDestroyed());
-    SetDestroyed();
-#endif
-
 #ifdef PROFILING_SUPPORTED
     // If profiling, then notify the class is getting unloaded.
     {
@@ -274,7 +268,7 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
         {
             szFieldName = "Invalid FieldDef record";
         }
-        LOG((LF_ENC, LL_INFO100, "EEClass::FixupFieldDescForEnC %08x %s\n", fieldDef, szFieldName));
+        LOG((LF_ENC, LL_INFO100, "EEClass::FixupFieldDescForEnC '%s' (0x%08x)\n", szFieldName, fieldDef));
     }
 #endif //LOGGING
 
@@ -456,7 +450,7 @@ HRESULT EEClass::AddField(MethodTable * pMT, mdFieldDef fieldDef, EnCFieldDesc *
         {
             szFieldName = "Invalid FieldDef record";
         }
-        LOG((LF_ENC, LL_INFO100, "EEClass::AddField %s\n", szFieldName));
+        LOG((LF_ENC, LL_INFO100, "EEClass::AddField '%s' tok:0x%08x\n", szFieldName, fieldDef));
     }
 #endif //LOGGING
 
@@ -569,7 +563,7 @@ HRESULT EEClass::AddMethod(MethodTable * pMT, mdMethodDef methodDef, RVA newRVA,
 #ifdef _DEBUG
     // Validate that this methodDef correctly has a parent typeDef
     mdTypeDef   parentTypeDef;
-    if (FAILED(hr = pImport->GetParentToken(methodDef, &parentTypeDef)))
+    if (FAILED(pImport->GetParentToken(methodDef, &parentTypeDef)))
     {
         _ASSERTE(! "**Error** EEClass::AddMethod parent token not found");
         LOG((LF_ENC, LL_INFO100, "**Error** EEClass::AddMethod parent token not found\n"));
@@ -943,7 +937,7 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
 // * Fixup vtable
 //
 /*static*/
-void ClassLoader::LoadExactParents(MethodTable *pMT)
+void ClassLoader::LoadExactParents(MethodTable* pMT)
 {
     CONTRACT_VOID
     {

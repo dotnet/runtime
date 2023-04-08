@@ -957,8 +957,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 EnsureActive(th, pMD);
             }
         }
-        else
-        if (pFD != NULL)
+        else if (pFD != NULL)
         {
             if ((tkType != mdtFieldDef) && (tkType != mdtMemberRef))
                 ThrowBadTokenException(pResolvedToken);
@@ -998,7 +997,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
     }
     else
     {
-        unsigned metaTOK = pResolvedToken->token;
+        mdToken metaTOK = pResolvedToken->token;
         Module * pModule = (Module *)pResolvedToken->tokenScope;
 
         switch (TypeFromToken(metaTOK))

@@ -211,14 +211,14 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     mdToken token;
     while (pIMDInternalImportENC->EnumNext(&enumENC, &token))
     {
-        STRESS_LOG3(LF_ENC, LL_INFO100, "EACM::AEAC: updated token %08x; type %08x; rid %08x\n", token, TypeFromToken(token), RidFromToken(token));
+        STRESS_LOG1(LF_ENC, LL_INFO100, "EACM::AEAC: updated token 0x%08x\n", token);
 
         switch (TypeFromToken(token))
         {
             case mdtMethodDef:
 
                 // MethodDef token - update/add a method
-                LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Found method %08x\n", token));
+                LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Found method 0x%08x\n", token));
 
                 ULONG dwMethodRVA;
                 DWORD dwMethodFlags;
@@ -251,7 +251,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
             case mdtFieldDef:
 
                 // FieldDef token - add a new field
-                LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Found field %08x\n", token));
+                LOG((LF_ENC, LL_INFO10000, "EACM::AEAC: Found field 0x%08x\n", token));
 
                 if (LookupFieldDef(token))
                 {
@@ -439,7 +439,7 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
 
     if (FAILED(hr))
     {
-        LOG((LF_ENC, LL_INFO100, "**Error** EnCModule::AF can't find parent token for field token %08x\n", token));
+        LOG((LF_ENC, LL_INFO100, "**Error** EnCModule::AF can't find parent token for field token 0x%08x\n", token));
         return E_FAIL;
     }
 
@@ -451,7 +451,7 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
     MethodTable * pParentType = LookupTypeDef(parentTypeDef).AsMethodTable();
     if (pParentType == NULL)
     {
-        LOG((LF_ENC, LL_INFO100, "EnCModule::AF class %08x not loaded (field %08x), our work is done\n", parentTypeDef, token));
+        LOG((LF_ENC, LL_INFO100, "EnCModule::AF class 0x%08x not loaded (field 0x%08x), our work is done\n", parentTypeDef, token));
         return S_OK;
     }
 
@@ -462,7 +462,7 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
 
     if (FAILED(hr))
     {
-        LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add field %08x to EE with hr %08x\n", token, hr));
+        LOG((LF_ENC, LL_INFO100000, "**Error** EACM::AF: Failed to add field 0x%08x to EE with hr 0x%08x\n", token, hr));
         return hr;
     }
 
@@ -508,8 +508,8 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
     }
     CONTRACTL_END;
 
-    LOG((LF_ENC, LL_INFO100, "EnCModule::JitUpdatedFunction for %s\n",
-        pMD->m_pszDebugMethodName));
+    LOG((LF_ENC, LL_INFO100, "EnCModule::JitUpdatedFunction for %s::%s\n",
+        pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 
     PCODE jittedCode = NULL;
 
@@ -611,8 +611,8 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
 #if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
     return E_NOTIMPL;
 #else
-    LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction for %s at IL offset 0x%x, ",
-        pMD->m_pszDebugMethodName, newILOffset));
+    LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction for %s::%s at IL offset 0x%zx\n",
+        pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, newILOffset));
 
 #ifdef _DEBUG
     BOOL shouldBreak = CLRConfig::GetConfigValue(
@@ -621,8 +621,6 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
         _ASSERTE(!"EncResumeInUpdatedFunction");
     }
 #endif
-
-    HRESULT hr = E_FAIL;
 
     // JIT-compile the updated version of the method
     PCODE jittedCode = JitUpdatedFunction(pMD, pOrigContext);
@@ -706,12 +704,10 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     LOG((LF_ENC, LL_ERROR, "**Error** EnCModule::ResumeInUpdatedFunction returned from ResumeAtJit"));
     _ASSERTE(!"Should not return from FixContextAndResume()");
 
-    hr = E_FAIL;
-
     // If we fail for any reason we have already potentially trashed with new locals and we have also unwound any
     // Win32 handlers on the stack so cannot ever return from this function.
     EEPOLICY_HANDLE_FATAL_ERROR(CORDBG_E_ENC_INTERNAL_ERROR);
-    return hr;
+    return E_FAIL;
 #endif // #if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
 }
 

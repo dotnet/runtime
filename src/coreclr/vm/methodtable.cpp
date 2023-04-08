@@ -7691,7 +7691,7 @@ void MethodTable::MethodIterator::Init(MethodTable *pMTDecl, MethodTable *pMTImp
         PRECONDITION(CheckPointer(pMTImpl));
     } CONTRACTL_END;
 
-    LOG((LF_LOADER, LL_INFO10000, "SD: MT::MethodIterator created for %s.\n", pMTDecl->GetDebugClassName()));
+    LOG((LF_LOADER, LL_INFO10000, "MT::MethodIterator created for %s.\n", pMTDecl->GetDebugClassName()));
 
     m_pMethodData = MethodTable::GetMethodData(pMTDecl, pMTImpl);
     CONSISTENCY_CHECK(CheckPointer(m_pMethodData));

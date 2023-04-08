@@ -1182,14 +1182,6 @@ public:
         return (m_VMFlags & VMFLAG_COVARIANTOVERRIDE);
     }
 
-#ifdef _DEBUG
-    inline DWORD IsDestroyed()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_wAuxFlags & AUXFLAG_DESTROYED);
-    }
-#endif
-
     inline DWORD IsUnsafeValueClass()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1237,13 +1229,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= VMFLAG_HAS_CUSTOM_FIELD_ALIGNMENT;
     }
-#ifdef _DEBUG
-    inline void SetDestroyed()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_wAuxFlags |= AUXFLAG_DESTROYED;
-    }
-#endif
     inline void SetHasFixedAddressVTStatics()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1431,9 +1416,9 @@ public:
     BOOL HasExplicitSize();
 
     BOOL IsAutoLayoutOrHasAutoLayoutField();
-    
+
     // Only accurate on non-auto layout types
-    BOOL IsInt128OrHasInt128Fields(); 
+    BOOL IsInt128OrHasInt128Fields();
 
     static void GetBestFitMapping(MethodTable * pMT, BOOL *pfBestFitMapping, BOOL *pfThrowOnUnmappableChar);
 
@@ -1664,13 +1649,6 @@ public:
         SigPointer sp,
         CorGenericParamAttr position);
 
-#if defined(_DEBUG)
-public:
-    enum{
-        AUXFLAG_DESTROYED = 0x00000008, // The Destruct() method has already been called on this class
-    };
-#endif // defined(_DEBUG)
-
     //-------------------------------------------------------------
     // CONCRETE DATA LAYOUT
     //
@@ -1691,7 +1669,6 @@ public:
     // sets of flags - a full field is used.  Please avoid adding such members if possible.
     //-------------------------------------------------------------
 
-    // @TODO: needed for asm code in cgenx86.cpp. Can this enum be private?
     //
     // Flags for m_VMFlags
     //
@@ -2131,7 +2108,7 @@ inline BOOL EEClass::IsAutoLayoutOrHasAutoLayoutField()
 
 inline BOOL EEClass::IsInt128OrHasInt128Fields()
 {
-    // The name of this type is a slight misnomer as it doesn't detect Int128 fields on 
+    // The name of this type is a slight misnomer as it doesn't detect Int128 fields on
     // auto layout types, but since we only need this for interop scenarios, it works out.
     LIMITED_METHOD_CONTRACT;
     // If this type is not auto
@@ -2179,13 +2156,6 @@ PCODE TheVarargNDirectStub(BOOL hasRetBuffArg);
 
 #define METH_NAME_CACHE_SIZE        5
 #define MAX_MISSES                  3
-
-#ifdef EnC_SUPPORTED
-
-struct EnCAddedFieldElement;
-
-#endif // EnC_SUPPORTED
-
 
 // --------------------------------------------------------------------------------------------
 // For generic instantiations the FieldDescs stored for instance

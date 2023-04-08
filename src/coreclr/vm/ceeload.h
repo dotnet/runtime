@@ -62,7 +62,6 @@ class Module;
 class SString;
 class Pending;
 class MethodTable;
-class AppDomain;
 class DynamicMethodTable;
 class CodeVersionManager;
 class TieredCompilationManager;
