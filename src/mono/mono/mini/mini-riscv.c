@@ -622,9 +622,6 @@ riscv_patch_full (MonoCompile *cfg, guint8 *code, guint8 *target, int relocation
 			g_assert_not_reached ();
 		break;
 	}
-	case MONO_R_RISCV_JALR:
-		*(guint64 *)code = (guint64)target;
-		break;
 	default:
 		NOT_IMPLEMENTED;
 	}
@@ -1992,6 +1989,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_RMUL:
 		case OP_FMUL:
 		case OP_FDIV:
+		case OP_IDIV:
 		case OP_LDIV:
 		case OP_IDIV_UN:
 		case OP_LDIV_UN:
@@ -2671,7 +2669,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 #endif
-		case default:
+		default:
 			printf ("unable to lowering following IR:");
 			mono_print_ins (ins);
 			NOT_IMPLEMENTED;
@@ -3234,31 +3232,26 @@ mono_riscv_emit_branch_exc (MonoCompile *cfg, guint8 *code, int opcode, int sreg
 
 	switch (opcode) {
 	case OP_RISCV_EXC_BEQ:
-		riscv_bne (code, sreg1, sreg2, 16 + sizeof (guint64));
+		riscv_bne (code, sreg1, sreg2, 8);
 		break;
 	case OP_RISCV_EXC_BNE:
-		riscv_beq (code, sreg1, sreg2, 16 + sizeof (guint64));
+		riscv_beq (code, sreg1, sreg2, 8);
 		break;
 	case OP_RISCV_EXC_BLT:
-		riscv_bge (code, sreg1, sreg2, 16 + sizeof (guint64));
+		riscv_bge (code, sreg1, sreg2, 8);
 		break;
 	case OP_RISCV_EXC_BLTU:
-		riscv_bgeu (code, sreg1, sreg2, 16 + sizeof (guint64));
+		riscv_bgeu (code, sreg1, sreg2, 8);
 		break;
 	case OP_RISCV_EXC_BGEU:
-		riscv_bltu (code, sreg1, sreg2, 16 + sizeof (guint64));
+		riscv_bltu (code, sreg1, sreg2, 8);
 		break;
 	default:
 		g_print ("can't emit exc branch %d\n", opcode);
 		NOT_IMPLEMENTED;
 	}
-	riscv_jal (code, RISCV_T6, sizeof (guint64) + 4);
-
-	mono_add_patch_info_rel (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC, exc_name, MONO_R_RISCV_JALR);
-	code += sizeof (guint64);
-
-	code = mono_riscv_emit_load (code, RISCV_T6, RISCV_T6, 0, 0);
-	riscv_jalr (code, RISCV_ZERO, RISCV_T6, 0);
+	mono_add_patch_info_rel (cfg, code - cfg->native_code, MONO_PATCH_INFO_EXC, exc_name, MONO_R_RISCV_JAL);
+	riscv_jal (code, RISCV_ZERO, 0);
 	return code;
 }
 
@@ -3726,6 +3719,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				riscv_fdiv_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
+		case OP_IDIV:
 		case OP_LDIV:
 			g_assert (riscv_stdext_m);
 			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, ins->sreg2, RISCV_ZERO,
@@ -4218,20 +4212,20 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	guint8 *code, *ip;
 	guint8 *exc_throw_pos [MONO_EXC_INTRINS_NUM] = {NULL};
 	guint8 exc_throw_found [MONO_EXC_INTRINS_NUM] = {0};
-	int exc_id, max_epilog_size = 0;
+	int exc_id, size = 0;
 
 	for (ji = cfg->patch_info; ji; ji = ji->next) {
 		if (ji->type == MONO_PATCH_INFO_EXC) {
 			exc_id = mini_exception_id_by_name ((const char *)ji->data.target);
 			g_assert (exc_id < MONO_EXC_INTRINS_NUM);
 			if (!exc_throw_found [exc_id]) {
-				max_epilog_size += 40; // 8 Inst for exception
+				size += 40; // 8 Inst for exception
 				exc_throw_found [exc_id] = TRUE;
 			}
 		}
 	}
 
-	code = realloc_code (cfg, max_epilog_size);
+	code = realloc_code (cfg, size);
 
 	/* Emit code to raise corlib exceptions */
 	for (ji = cfg->patch_info; ji; ji = ji->next) {

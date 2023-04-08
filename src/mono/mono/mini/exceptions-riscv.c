@@ -152,7 +152,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	riscv_addi (code, RISCV_FP, RISCV_SP, frame_size);
 
 	/* Save gregs */
-	code = emit_store_stack (code, 0xffffffff, RISCV_FP, -gregs_offset, FALSE);
+	code = mono_riscv_emit_store_stack (code, 0xffffffff, RISCV_FP, -gregs_offset, FALSE);
 	if (corlib && !llvm)
 		NOT_IMPLEMENTED;
 	
@@ -164,7 +164,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 
 	/* Save fregs */
 	if (riscv_stdext_f || riscv_stdext_d)
-		code = emit_store_stack (code, 0xffffffff, RISCV_FP, -fregs_offset, TRUE);
+		code = mono_riscv_emit_store_stack (code, 0xffffffff, RISCV_FP, -fregs_offset, TRUE);
 
 	/* Call the C trampoline function */
 	/* Arg1 =  exception object/type token */
@@ -338,7 +338,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls, MonoJitInfo *ji,
 		if (!success)
 			return FALSE;
 
-		memcpy (&new_ctx->gregs, regs, sizeof (host_mgreg_t) * MONO_MAX_IREGS);
+		memcpy (new_ctx->gregs, regs, sizeof (host_mgreg_t) * MONO_MAX_IREGS);
 		for (int i = 0; i < 2; i++)
 			*((host_mgreg_t*)&new_ctx->fregs [RISCV_F8 + i]) = (regs + MONO_MAX_IREGS) [i];
 		for (int i = 0; i < 10; i++)
