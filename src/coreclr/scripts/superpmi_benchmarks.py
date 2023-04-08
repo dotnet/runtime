@@ -304,6 +304,9 @@ def main(main_args):
     """
     coreclr_args = setup_args(main_args)
 
+    if coreclr_args.tiered_compilation and coreclr_args.tiered_pgo:
+        raise RuntimeError("Pass only one tiering option.")
+
     all_output_mch_name = os.path.join(coreclr_args.output_mch_path + "_all.mch")
     build_and_run(coreclr_args, all_output_mch_name)
     if os.path.isfile(all_output_mch_name):

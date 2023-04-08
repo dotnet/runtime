@@ -664,6 +664,11 @@ class SuperPMICollect:
         if coreclr_args.pmi or coreclr_args.crossgen2:
             self.assemblies = coreclr_args.assemblies
             self.exclude = coreclr_args.exclude
+            if coreclr_args.tiered_compilation or coreclr_args.tiered_pgo:
+               raise RuntimeError("Tiering options have no effect for pmi or crossgen2 collections.")
+
+        if coreclr_args.tiered_compilation and coreclr_args.tiered_pgo:
+            raise RuntimeError("Pass only one tiering option.")
 
         self.coreclr_args = coreclr_args
 
