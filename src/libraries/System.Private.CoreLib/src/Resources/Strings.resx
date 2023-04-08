@@ -2987,6 +2987,9 @@
   <data name="InvalidOperation_TimeProviderNullLocalTimeZone" xml:space="preserve">
     <value>The operation cannot performed when having TimeProvider.LocalTimeZone is returning null.</value>
   </data>
+  <data name="InvalidOperation_TimeProviderInvalidTimestampFrequency" xml:space="preserve">
+    <value>The operation cannot performed when having TimeProvider.TimestampFrequency has a zero or negative value.</value>
+  </data>
   <data name="NotSupported_IDispInvokeDefaultMemberWithNamedArgs" xml:space="preserve">
     <value>Invoking default method with named arguments is not supported.</value>
   </data>

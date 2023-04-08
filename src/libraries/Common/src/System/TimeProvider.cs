@@ -104,10 +104,9 @@ namespace System
             if (timestampFrequency <= 0)
             {
 #if SYSTEM_PRIVATE_CORELIB
-                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(TimestampFrequency);
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_TimeProviderInvalidTimestampFrequency);
 #else
-                string propertyName = nameof(TimestampFrequency);
-                throw new ArgumentOutOfRangeException(propertyName, timestampFrequency, SR.Format(SR.ArgumentOutOfRange_Generic_MustBeNonNegativeNonZero, nameof(TimestampFrequency)));
+                throw new InvalidOperationException(SR.InvalidOperation_TimeProviderInvalidTimestampFrequency);
 #endif // SYSTEM_PRIVATE_CORELIB
             }
 

@@ -387,9 +387,9 @@ namespace Tests.System
         public static void NegativeTests()
         {
             FastClock clock = new FastClock(-1);  // negative frequency
-            Assert.Throws<ArgumentOutOfRangeException>(() => clock.GetElapsedTime(1, 2));
+            Assert.Throws<InvalidOperationException>(() => clock.GetElapsedTime(1, 2));
             clock = new FastClock(0); // zero frequency
-            Assert.Throws<ArgumentOutOfRangeException>(() => clock.GetElapsedTime(1, 2));
+            Assert.Throws<InvalidOperationException>(() => clock.GetElapsedTime(1, 2));
 
             Assert.Throws<ArgumentNullException>(() => TimeProvider.System.CreateTimer(null, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan));
             Assert.Throws<ArgumentOutOfRangeException>(() => TimeProvider.System.CreateTimer(obj => { }, null, TimeSpan.FromMilliseconds(-2), Timeout.InfiniteTimeSpan));
