@@ -472,12 +472,9 @@ void ClrDataAccess::GetServerFreeRegions(unsigned int count, CLRDATA_ADDRESS reg
         if (heapAddress == 0)
             continue;
         
-
-
         dac_gc_heap heap = LoadGcHeapData(heapAddress);
-        if (heap.free_regions != nullptr)
-            for (int i = 0; i < count_free_region_kinds; i++)
-                AddFreeRegion(heap.free_regions[i], count, regions, index);
+        for (int i = 0; i < count_free_region_kinds; i++)
+            AddFreeRegion(heap.free_regions[i], count, regions, index);
     }
 }
 
