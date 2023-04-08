@@ -198,11 +198,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .MultilevelLookup(false)
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
                     .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, useRegisteredLocation ? null : builtDotnet)
+                    .EnvironmentVariable(Constants.HostTracing.TraceLevelEnvironmentVariable, "1")
+                    .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "2")
                     .DotNetRoot(null)
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")
-                    .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
+                    .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion)
+                    .And.NotHaveStdErrContaining("Failed to read environment variable"); ;
 
                 // Verify running from within the working directory
                 Command.Create(appExe)
@@ -212,11 +215,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .WorkingDirectory(fixture.TestProject.OutputDirectory)
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
                     .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, useRegisteredLocation ? null : builtDotnet)
+                    .EnvironmentVariable(Constants.HostTracing.TraceLevelEnvironmentVariable, "1")
+                    .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "2")
                     .DotNetRoot(null)
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")
-                    .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
+                    .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion)
+                    .And.NotHaveStdErrContaining("Failed to read environment variable"); ;
             }
         }
 
