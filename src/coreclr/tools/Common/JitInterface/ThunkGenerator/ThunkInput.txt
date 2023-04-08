@@ -119,6 +119,7 @@ CorInfoHFAElemType
 CorInfoTypeWithMod
 CorInfoCallConvExtension
 InfoAccessType
+InfoAccessType*, ref InfoAccessType
 CORINFO_LOOKUP_KIND
 CORINFO_ACCESS_FLAGS
 CORINFO_CALLINFO_FLAGS
@@ -208,6 +209,8 @@ FUNCTIONS
     void* LongLifetimeMalloc(size_t sz)
     void LongLifetimeFree(void* obj)
     size_t getClassModuleIdForStatics(CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE* pModule, VOIDSTARSTAR ppIndirection)
+    bool getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset)
+    bool getStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr)
     unsigned getClassSize(CORINFO_CLASS_HANDLE cls)
     unsigned getHeapClassSize(CORINFO_CLASS_HANDLE        cls)
     bool canAllocateOnStack(CORINFO_CLASS_HANDLE cls)

@@ -565,6 +565,14 @@ public:
                                          CORINFO_MODULE_HANDLE* pModule,
                                          void**                 ppIndirection);
 
+    void recGetIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset, bool result);
+    void dmpGetIsClassInitedFlagAddress(DWORDLONG key, const Agnostic_GetIsClassInitedFlagAddress& value);
+    bool repGetIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset);
+    
+    void recGetStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr, bool result);
+    void dmpGetStaticBaseAddress(DLD key, const Agnostic_GetStaticBaseAddress& value);
+    bool repGetStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr);
+
     void recGetThreadTLSIndex(void** ppIndirection, DWORD result);
     void dmpGetThreadTLSIndex(DWORD key, DLD value);
     DWORD repGetThreadTLSIndex(void** ppIndirection);
@@ -1156,17 +1164,19 @@ enum mcPackets
     Packet_IsIntrinsic = 192,
     Packet_UpdateEntryPointForTailCall = 193,
     Packet_GetLoongArch64PassStructInRegisterFlags = 194,
-    Packet_GetRISCV64PassStructInRegisterFlags = 195,
-    Packet_GetExactClasses = 196,
-    Packet_GetRuntimeTypePointer = 197,
-    Packet_PrintObjectDescription = 198,
-    Packet_GetReadonlyStaticFieldValue = 199,
-    Packet_GetObjectType = 200,
-    Packet_IsObjectImmutable = 201,
-    Packet_ExpandRawHandleIntrinsic = 202,
-    Packet_GetArrayOrStringLength = 203,
-    Packet_IsEnum = 204,
-    Packet_GetStringChar = 205,
+    Packet_GetExactClasses = 195,
+    Packet_GetRuntimeTypePointer = 196,
+    Packet_PrintObjectDescription = 197,
+    Packet_GetReadonlyStaticFieldValue = 198,
+    Packet_GetObjectType = 199,
+    Packet_IsObjectImmutable = 200,
+    Packet_ExpandRawHandleIntrinsic = 201,
+    Packet_GetArrayOrStringLength = 202,
+    Packet_IsEnum = 203,
+    Packet_GetStringChar = 204,
+    Packet_GetIsClassInitedFlagAddress = 205,
+    Packet_GetStaticBaseAddress = 206,
+    Packet_GetRISCV64PassStructInRegisterFlags = 207,
 };
 
 void SetDebugDumpVariables();

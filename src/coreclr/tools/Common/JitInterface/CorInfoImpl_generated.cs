@@ -763,6 +763,36 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
+        private static byte _getIsClassInitedFlagAddress(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, CORINFO_CONST_LOOKUP* addr, int* offset)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getIsClassInitedFlagAddress(cls, ref *addr, ref *offset) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static byte _getStaticBaseAddress(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, byte isGc, CORINFO_CONST_LOOKUP* addr)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getStaticBaseAddress(cls, isGc != 0, ref *addr) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
         private static uint _getClassSize(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls)
         {
             var _this = GetThis(thisHandle);

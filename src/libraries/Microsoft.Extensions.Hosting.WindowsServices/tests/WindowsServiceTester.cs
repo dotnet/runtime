@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Hosting
             { }
         }
 
-        public TimeSpan WaitForStatusTimeout { get; set; } = TimeSpan.FromSeconds(30);
+        public static TimeSpan WaitForStatusTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
         public new void WaitForStatus(ServiceControllerStatus desiredStatus) =>
             WaitForStatus(desiredStatus, WaitForStatusTimeout);

@@ -343,6 +343,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Invariant.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Nls.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.WebAssembly.cs" Condition="'$(TargetsWasi)' == 'true' or '$(TargetsBrowser)' == 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Icu.cs" />
@@ -774,6 +775,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncValueTaskMethodBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncValueTaskMethodBuilderT.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncVoidMethodBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CastCache.cs" Condition="'$(FeatureCoreCLR)' == 'true' or '$(FeatureNativeAot)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerFilePathAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerLineNumberAttribute.cs" />
@@ -1260,6 +1262,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ComAwareWeakReference.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.CompareInfo.cs" Condition="'$(TargetsWasi)' == 'true' or '$(TargetsBrowser)' == 'true'">
+      <Link>Common\Interop\Interop.CompareInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.TextInfo.cs" Condition="'$(TargetsWasi)' == 'true' or '$(TargetsBrowser)' == 'true'">
+      <Link>Common\Interop\Interop.TextInfo.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Calendar.cs">
       <Link>Common\Interop\Interop.Calendar.cs</Link>
     </Compile>
@@ -1324,9 +1332,6 @@
     <Compile Include="$(CommonPath)SkipLocalsInit.cs">
       <Link>Common\SkipLocalsInit.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)System\ITimer.cs">
-      <Link>Common\System\ITimer.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)System\TimeProvider.cs">
       <Link>Common\System\TimeProvider.cs</Link>
     </Compile>
@@ -1386,6 +1391,9 @@
     </Compile>
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs">
       <Link>Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Threading\ITimer.cs">
+      <Link>Common\System\Threading\ITimer.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Threading\OpenExistingResult.cs">
       <Link>Common\System\Threading\OpenExistingResult.cs</Link>

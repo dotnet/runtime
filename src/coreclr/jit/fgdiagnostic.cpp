@@ -105,6 +105,7 @@ void Compiler::fgDebugCheckUpdate()
             {
                 case BBJ_CALLFINALLY:
                 case BBJ_EHFINALLYRET:
+                case BBJ_EHFAULTRET:
                 case BBJ_EHFILTERRET:
                 case BBJ_RETURN:
                 /* for BBJ_ALWAYS is probably just a GOTO, but will have to be treated */
@@ -1994,6 +1995,10 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
                 printf("%*s        (finret)", maxBlockNumWidth - 2, "");
                 break;
 
+            case BBJ_EHFAULTRET:
+                printf("%*s        (falret)", maxBlockNumWidth - 2, "");
+                break;
+
             case BBJ_EHFILTERRET:
                 printf("%*s        (fltret)", maxBlockNumWidth - 2, "");
                 break;
@@ -2633,9 +2638,10 @@ bool BBPredsChecker::CheckJump(BasicBlock* blockPred, BasicBlock* block)
             assert(CheckEHFinallyRet(blockPred, block));
             return true;
 
+        case BBJ_EHFAULTRET:
         case BBJ_THROW:
         case BBJ_RETURN:
-            assert(!"THROW and RETURN block cannot be in the predecessor list!");
+            assert(!"EHFAULTRET, THROW, and RETURN block cannot be in the predecessor list!");
             break;
 
         case BBJ_SWITCH:
@@ -4335,6 +4341,7 @@ void Compiler::fgDebugCheckSsa()
 //    - All basic blocks with loop numbers set have a corresponding loop in the table
 //    - All basic blocks without a loop number are not in a loop
 //    - All parents of the loop with the block contain that block
+//    - If optLoopsRequirePreHeaders is true, the loop has a pre-header
 //    - If the loop has a pre-header, it is valid
 //    - The loop flags are valid
 //    - no loop shares `top` with any of its children
@@ -4591,6 +4598,11 @@ void Compiler::fgDebugCheckLoopTable()
                 assert(!childLoop.lpIsRemoved());
                 assert(loop.lpTop != childLoop.lpTop);
             }
+        }
+
+        if (optLoopsRequirePreHeaders)
+        {
+            assert((loop.lpFlags & LPFLG_HAS_PREHEAD) != 0);
         }
 
         // If the loop has a pre-header, ensure the pre-header form is correct.

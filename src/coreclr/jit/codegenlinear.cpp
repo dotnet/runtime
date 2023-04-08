@@ -629,6 +629,7 @@ void CodeGen::genCodeForBBlist()
 
                     case BBJ_RETURN:
                     case BBJ_EHFINALLYRET:
+                    case BBJ_EHFAULTRET:
                     case BBJ_EHFILTERRET:
                         // These are the "epilog follows" case, handled in the emitter.
 
@@ -715,6 +716,7 @@ void CodeGen::genCodeForBBlist()
                 FALLTHROUGH;
 
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
             case BBJ_EHFILTERRET:
                 genReserveFuncletEpilog(block);
                 break;
@@ -726,6 +728,7 @@ void CodeGen::genCodeForBBlist()
                 break;
 
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
             case BBJ_EHFILTERRET:
                 genEHFinallyOrFilterRet(block);
                 break;

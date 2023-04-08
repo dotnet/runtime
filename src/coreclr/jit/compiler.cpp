@@ -5026,8 +5026,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Dominator and reachability sets are no longer valid.
     // The loop table is no longer valid.
-    fgDomsComputed    = false;
-    optLoopTableValid = false;
+    fgDomsComputed            = false;
+    optLoopTableValid         = false;
+    optLoopsRequirePreHeaders = false;
 
 #ifdef DEBUG
     DoPhase(this, PHASE_STRESS_SPLIT_TREE, &Compiler::StressSplitTree);
@@ -5035,6 +5036,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Expand runtime lookups (an optimization but we'd better run it in tier0 too)
     DoPhase(this, PHASE_EXPAND_RTLOOKUPS, &Compiler::fgExpandRuntimeLookups);
+
+    // Partially inline static initializations
+    DoPhase(this, PHASE_EXPAND_STATIC_INIT, &Compiler::fgExpandStaticInit);
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);

@@ -590,6 +590,26 @@ size_t interceptor_ICJI::getClassModuleIdForStatics(CORINFO_CLASS_HANDLE   cls,
     return temp;
 }
 
+bool interceptor_ICJI::getIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE  cls,
+                                                   CORINFO_CONST_LOOKUP* addr,
+                                                   int*                  offset)
+{
+    mc->cr->AddCall("getIsClassInitedFlagAddress");
+    bool temp = original_ICorJitInfo->getIsClassInitedFlagAddress(cls, addr, offset);
+    mc->recGetIsClassInitedFlagAddress(cls, addr, offset, temp);
+    return temp;
+}
+
+bool interceptor_ICJI::getStaticBaseAddress(CORINFO_CLASS_HANDLE  cls,
+                                            bool                  isGc,
+                                            CORINFO_CONST_LOOKUP* addr)
+{
+    mc->cr->AddCall("getStaticBaseAddress");
+    bool temp = original_ICorJitInfo->getStaticBaseAddress(cls, isGc, addr);
+    mc->recGetStaticBaseAddress(cls, isGc, addr, temp);
+    return temp;
+}
+
 // return the number of bytes needed by an instance of the class
 unsigned interceptor_ICJI::getClassSize(CORINFO_CLASS_HANDLE cls)
 {

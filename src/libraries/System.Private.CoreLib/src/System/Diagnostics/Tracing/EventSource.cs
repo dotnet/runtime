@@ -2629,9 +2629,6 @@ namespace System.Diagnostics.Tracing
                         m_eventSourceEnabled = true;
                     }
 
-                    this.OnEventCommand(commandArgs);
-                    this.m_eventCommandExecuted?.Invoke(this, commandArgs);
-
                     if (!commandArgs.enable)
                     {
                         // If we are disabling, maybe we can turn on 'quick checks' to filter
@@ -2663,6 +2660,9 @@ namespace System.Diagnostics.Tracing
                             m_eventSourceEnabled = false;
                         }
                     }
+
+                    this.OnEventCommand(commandArgs);
+                    this.m_eventCommandExecuted?.Invoke(this, commandArgs);
                 }
                 else
                 {
@@ -4219,6 +4219,38 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        // If an EventListener calls Dispose without calling DisableEvents first we want to issue the Disable command now
+        private static void CallDisableEventsIfNecessary(EventDispatcher eventDispatcher, EventSource eventSource)
+        {
+#if DEBUG
+            // Disable validation of EventSource/EventListener connections in case a call to EventSource.AddListener
+            // causes a recursive call into this method.
+            bool previousValue = s_ConnectingEventSourcesAndListener;
+            s_ConnectingEventSourcesAndListener = true;
+            try
+            {
+#endif
+                if (eventDispatcher.m_EventEnabled == null)
+                {
+                    return;
+                }
+
+                for (int i = 0; i < eventDispatcher.m_EventEnabled.Length; ++i)
+                {
+                    if (eventDispatcher.m_EventEnabled[i])
+                    {
+                        eventDispatcher.m_Listener.DisableEvents(eventSource);
+                    }
+                }
+#if DEBUG
+            }
+            finally
+            {
+                s_ConnectingEventSourcesAndListener = previousValue;
+            }
+#endif
+        }
+
         /// <summary>
         /// Helper used in code:Dispose that removes any references to 'listenerToRemove' in any of the
         /// eventSources in the appdomain.
@@ -4230,14 +4262,38 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
             // Foreach existing EventSource in the appdomain
             Debug.Assert(s_EventSources != null);
-            foreach (WeakReference<EventSource> eventSourceRef in s_EventSources)
+
+            // First pass to call DisableEvents
+            WeakReference<EventSource>[] eventSourcesSnapshot = s_EventSources.ToArray();
+            foreach (WeakReference<EventSource> eventSourceRef in eventSourcesSnapshot)
             {
                 if (eventSourceRef.TryGetTarget(out EventSource? eventSource))
                 {
-                    Debug.Assert(eventSource.m_Dispatchers != null);
+                    EventDispatcher? cur = eventSource.m_Dispatchers;
+                    while (cur != null)
+                    {
+                        if (cur.m_Listener == listenerToRemove)
+                        {
+                            CallDisableEventsIfNecessary(cur!, eventSource);
+                        }
+
+                        cur = cur.m_Next;
+                    }
+                }
+            }
+
+            // DisableEvents can call back to user code and we have to start over since s_EventSources and
+            // eventSource.m_Dispatchers could have mutated
+            foreach (WeakReference<EventSource> eventSourceRef in s_EventSources)
+            {
+                if (eventSourceRef.TryGetTarget(out EventSource? eventSource)
+                    && eventSource.m_Dispatchers != null)
+                {
                     // Is the first output dispatcher the dispatcher we are removing?
                     if (eventSource.m_Dispatchers.m_Listener == listenerToRemove)
+                    {
                         eventSource.m_Dispatchers = eventSource.m_Dispatchers.m_Next;
+                    }
                     else
                     {
                         // Remove 'listenerToRemove' from the eventSource.m_Dispatchers linked list.
@@ -4266,6 +4322,7 @@ namespace System.Diagnostics.Tracing
             EventPipeEventDispatcher.Instance.RemoveEventListener(listenerToRemove);
 #endif // FEATURE_PERFTRACING
         }
+
 
         /// <summary>
         /// Checks internal consistency of EventSources/Listeners.
