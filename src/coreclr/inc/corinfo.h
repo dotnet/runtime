@@ -2377,6 +2377,18 @@ public:
             void **ppIndirection
             ) = 0;
 
+    virtual bool getIsClassInitedFlagAddress(
+            CORINFO_CLASS_HANDLE  cls,
+            CORINFO_CONST_LOOKUP* addr,
+            int*                  offset
+            ) = 0;
+
+    virtual bool getStaticBaseAddress(
+            CORINFO_CLASS_HANDLE  cls,
+            bool                  isGc,
+            CORINFO_CONST_LOOKUP* addr
+            ) = 0;
+
     // return the number of bytes needed by an instance of the class
     virtual unsigned getClassSize (
             CORINFO_CLASS_HANDLE        cls

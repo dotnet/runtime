@@ -511,6 +511,28 @@ size_t WrapICorJitInfo::getClassModuleIdForStatics(
     return temp;
 }
 
+bool WrapICorJitInfo::getIsClassInitedFlagAddress(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CONST_LOOKUP* addr,
+          int* offset)
+{
+    API_ENTER(getIsClassInitedFlagAddress);
+    bool temp = wrapHnd->getIsClassInitedFlagAddress(cls, addr, offset);
+    API_LEAVE(getIsClassInitedFlagAddress);
+    return temp;
+}
+
+bool WrapICorJitInfo::getStaticBaseAddress(
+          CORINFO_CLASS_HANDLE cls,
+          bool isGc,
+          CORINFO_CONST_LOOKUP* addr)
+{
+    API_ENTER(getStaticBaseAddress);
+    bool temp = wrapHnd->getStaticBaseAddress(cls, isGc, addr);
+    API_LEAVE(getStaticBaseAddress);
+    return temp;
+}
+
 unsigned WrapICorJitInfo::getClassSize(
           CORINFO_CLASS_HANDLE cls)
 {

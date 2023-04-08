@@ -4541,6 +4541,8 @@ public:
 
     BasicBlock* fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion);
 
+    BasicBlock* fgNewBBFromTreeAfter(BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, bool updateSideEffects = false);
+
     BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind,
                                 unsigned    tryIndex,
                                 unsigned    hndIndex,
@@ -5304,6 +5306,11 @@ public:
     void SplitTreesRandomly();
     void SplitTreesRemoveCommas();
     PhaseStatus fgExpandRuntimeLookups();
+
+    bool fgExpandStaticInitForBlock(BasicBlock* block);
+    bool fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+    PhaseStatus fgExpandStaticInit();
+
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
@@ -7025,6 +7032,7 @@ public:
 #define OMF_HAS_TAILCALL_SUCCESSOR             0x00001000 // Method has potential tail call in a non BBJ_RETURN block
 #define OMF_HAS_MDNEWARRAY                     0x00002000 // Method contains 'new' of an MD array
 #define OMF_HAS_MDARRAYREF                     0x00004000 // Method contains multi-dimensional intrinsic array element loads or stores.
+#define OMF_HAS_STATIC_INIT                    0x00008000 // Method has static initializations we might want to partially inline
 
     // clang-format on
 
@@ -7053,6 +7061,16 @@ public:
     void setMethodHasFrozenObjects()
     {
         optMethodFlags |= OMF_HAS_FROZEN_OBJECTS;
+    }
+
+    bool doesMethodHaveStaticInit()
+    {
+        return (optMethodFlags & OMF_HAS_STATIC_INIT) != 0;
+    }
+
+    void setMethodHasStaticInit()
+    {
+        optMethodFlags |= OMF_HAS_STATIC_INIT;
     }
 
     bool doesMethodHaveGuardedDevirtualization() const
@@ -8048,6 +8066,14 @@ public:
     static CORINFO_METHOD_HANDLE eeFindHelper(unsigned helper);
     static CorInfoHelpFunc eeGetHelperNum(CORINFO_METHOD_HANDLE method);
 
+    enum StaticHelperReturnValue
+    {
+        SHRV_STATIC_BASE_PTR,
+        SHRV_VOID,
+    };
+    static bool IsStaticHelperEligibleForExpansion(GenTree*                 tree,
+                                                   bool*                    isGc       = nullptr,
+                                                   StaticHelperReturnValue* retValKind = nullptr);
     static bool IsSharedStaticHelper(GenTree* tree);
     static bool IsGcSafePoint(GenTreeCall* call);
 

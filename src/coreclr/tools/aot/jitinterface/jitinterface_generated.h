@@ -62,6 +62,8 @@ struct JitInterfaceCallbacks
     void* (* LongLifetimeMalloc)(void * thisHandle, CorInfoExceptionClass** ppException, size_t sz);
     void (* LongLifetimeFree)(void * thisHandle, CorInfoExceptionClass** ppException, void* obj);
     size_t (* getClassModuleIdForStatics)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CORINFO_MODULE_HANDLE* pModule, void** ppIndirection);
+    bool (* getIsClassInitedFlagAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset);
+    bool (* getStaticBaseAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr);
     unsigned (* getClassSize)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     unsigned (* getHeapClassSize)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     bool (* canAllocateOnStack)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
@@ -700,6 +702,28 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     size_t temp = _callbacks->getClassModuleIdForStatics(_thisHandle, &pException, cls, pModule, ppIndirection);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual bool getIsClassInitedFlagAddress(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CONST_LOOKUP* addr,
+          int* offset)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->getIsClassInitedFlagAddress(_thisHandle, &pException, cls, addr, offset);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual bool getStaticBaseAddress(
+          CORINFO_CLASS_HANDLE cls,
+          bool isGc,
+          CORINFO_CONST_LOOKUP* addr)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->getStaticBaseAddress(_thisHandle, &pException, cls, isGc, addr);
     if (pException != nullptr) throw pException;
     return temp;
 }

@@ -3551,6 +3551,57 @@ inline CorInfoHelpFunc Compiler::eeGetHelperNum(CORINFO_METHOD_HANDLE method)
     return ((CorInfoHelpFunc)(((size_t)method) >> 2));
 }
 
+//------------------------------------------------------------------------
+// IsStaticHelperEligibleForExpansion: Determine whether this node is a static init
+//    helper eligible for late expansion
+//
+// Arguments:
+//    tree       - tree node
+//    isGC       - [OUT] whether the helper returns GCStaticBase or NonGCStaticBase
+//    retValKind - [OUT] describes its return value
+//
+// Return Value:
+//    Returns true if eligible for late expansion
+//
+inline bool Compiler::IsStaticHelperEligibleForExpansion(GenTree* tree, bool* isGc, StaticHelperReturnValue* retValKind)
+{
+    if (!tree->IsHelperCall())
+    {
+        return false;
+    }
+
+    bool                    gc     = false;
+    bool                    result = false;
+    StaticHelperReturnValue retVal = {};
+    switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
+    {
+        case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
+        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
+            result = true;
+            gc     = true;
+            retVal = SHRV_STATIC_BASE_PTR;
+            break;
+        case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
+            result = true;
+            gc     = false;
+            retVal = SHRV_STATIC_BASE_PTR;
+            break;
+        // TODO: other helpers
+        default:
+            break;
+    }
+    if (isGc != nullptr)
+    {
+        *isGc = gc;
+    }
+    if (retValKind != nullptr)
+    {
+        *retValKind = retVal;
+    }
+    return result;
+}
+
 //  TODO-Cleanup: Replace calls to IsSharedStaticHelper with new HelperCallProperties
 //
 

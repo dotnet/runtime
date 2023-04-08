@@ -436,6 +436,347 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
     return createdPollBlocks ? bottom : block;
 }
 
+//------------------------------------------------------------------------------
+// fgExpandStaticInit: Partially expand static initialization calls, e.g.:
+//
+//    tmp = CORINFO_HELP_X_NONGCSTATIC_BASE();
+//
+// into:
+//
+//    if (isClassAlreadyInited)
+//        CORINFO_HELP_X_NONGCSTATIC_BASE();
+//    tmp = fastPath;
+//
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
+//
+PhaseStatus Compiler::fgExpandStaticInit()
+{
+    PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
+
+    if (!doesMethodHaveStaticInit())
+    {
+        // TP: nothing to expand in the current method
+        JITDUMP("Nothing to expand.\n")
+        return result;
+    }
+
+    if (opts.OptimizationDisabled())
+    {
+        JITDUMP("Optimizations aren't allowed - bail out.\n")
+        return result;
+    }
+
+    // TODO: Replace with opts.compCodeOpt once it's fixed
+    const bool preferSize = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
+    if (preferSize)
+    {
+        // The optimization comes with a codegen size increase
+        JITDUMP("Optimized for size - bail out.\n")
+        return result;
+    }
+
+    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    {
+        if (block->isRunRarely())
+        {
+            // It's just an optimization - don't waste time on rarely executed blocks
+            continue;
+        }
+
+        // Expand and visit the last block again to find more candidates
+        while (fgExpandStaticInitForBlock(block))
+        {
+            result = PhaseStatus::MODIFIED_EVERYTHING;
+        }
+    }
+    return result;
+}
+
+//------------------------------------------------------------------------------
+// fgExpandStaticInitForCall: Partially expand given static initialization call.
+//    Also, see fgExpandStaticInit's comments.
+//
+// Arguments:
+//    block  - call's block
+//    stmt   - call's statement
+//    call   - call that represents a static initialization
+//
+// Returns:
+//    true if a static initialization was expanded
+//
+bool Compiler::fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call)
+{
+    bool                    isGc       = false;
+    StaticHelperReturnValue retValKind = {};
+    if (!IsStaticHelperEligibleForExpansion(call, &isGc, &retValKind))
+    {
+        return false;
+    }
+
+    assert(!call->IsTailCall());
+
+    if (call->gtInitClsHnd == NO_CLASS_HANDLE)
+    {
+        assert(!"helper call was created without gtInitClsHnd or already visited");
+        return false;
+    }
+
+    int                  isInitOffset = 0;
+    CORINFO_CONST_LOOKUP flagAddr     = {};
+    if (!info.compCompHnd->getIsClassInitedFlagAddress(call->gtInitClsHnd, &flagAddr, &isInitOffset))
+    {
+        JITDUMP("getIsClassInitedFlagAddress returned false - bail out.\n")
+        return false;
+    }
+
+    CORINFO_CONST_LOOKUP staticBaseAddr = {};
+    if ((retValKind == SHRV_STATIC_BASE_PTR) &&
+        !info.compCompHnd->getStaticBaseAddress(call->gtInitClsHnd, isGc, &staticBaseAddr))
+    {
+        JITDUMP("getStaticBaseAddress returned false - bail out.\n")
+        return false;
+    }
+
+    JITDUMP("Expanding static initialization for '%s', call: [%06d] in " FMT_BB "\n",
+            eeGetClassName(call->gtInitClsHnd), dspTreeID(call), block->bbNum)
+
+    DebugInfo debugInfo = stmt->GetDebugInfo();
+
+    // Split block right before the call tree
+    BasicBlock* prevBb       = block;
+    GenTree**   callUse      = nullptr;
+    Statement*  newFirstStmt = nullptr;
+    block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
+    assert(prevBb != nullptr && block != nullptr);
+
+    // Block ops inserted by the split need to be morphed here since we are after morph.
+    // We cannot morph stmt yet as we may modify it further below, and the morphing
+    // could invalidate callUse.
+    while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
+    {
+        fgMorphStmtBlockOps(block, newFirstStmt);
+        newFirstStmt = newFirstStmt->GetNextStmt();
+    }
+
+    //
+    // Create new blocks. Essentially, we want to transform this:
+    //
+    //   staticBase = helperCall();
+    //
+    // into:
+    //
+    //   if (!isInitialized)
+    //   {
+    //       helperCall(); // we don't use its return value
+    //   }
+    //   staticBase = fastPath;
+    //
+
+    // The initialization check looks like this for JIT:
+    //
+    // *  JTRUE     void
+    // \--*  EQ        int
+    //    +--*  AND       int
+    //    |  +--*  IND       int
+    //    |  |  \--*  CNS_INT(h) long   0x.... const ptr
+    //    |  \--*  CNS_INT   int    1 (bit mask)
+    //    \--*  CNS_INT   int    1
+    //
+    // For NativeAOT it's:
+    //
+    // *  JTRUE     void
+    // \--*  EQ        int
+    //    +--*  IND       nint
+    //    |  \--*  ADD       long
+    //    |     +--*  CNS_INT(h) long   0x.... const ptr
+    //    |     \--*  CNS_INT   int    -8 (offset)
+    //    \--*  CNS_INT   int    0
+    //
+    assert(flagAddr.accessType == IAT_VALUE);
+
+    GenTree* cachedStaticBase = nullptr;
+    GenTree* isInitedActualValueNode;
+    GenTree* isInitedExpectedValue;
+    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    {
+        GenTree* baseAddr = gtNewIconHandleNode((size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR);
+
+        // Save it to a temp - we'll be using its value for the replacementNode.
+        // This leads to some size savings on NativeAOT
+        if ((staticBaseAddr.addr == flagAddr.addr) && (staticBaseAddr.accessType == flagAddr.accessType))
+        {
+            cachedStaticBase = fgInsertCommaFormTemp(&baseAddr);
+        }
+
+        // Don't fold ADD(CNS1, CNS2) here since the result won't be reloc-friendly for AOT
+        GenTree* offsetNode     = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr, gtNewIconNode(isInitOffset));
+        isInitedActualValueNode = gtNewIndir(TYP_I_IMPL, offsetNode, GTF_IND_NONFAULTING);
+        isInitedActualValueNode->gtFlags |= GTF_GLOB_REF;
+
+        // 0 means "initialized" on NativeAOT
+        isInitedExpectedValue = gtNewIconNode(0, TYP_I_IMPL);
+    }
+    else
+    {
+        assert(isInitOffset == 0);
+
+        isInitedActualValueNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR, false);
+
+        // Check ClassInitFlags::INITIALIZED_FLAG bit
+        isInitedActualValueNode = gtNewOperNode(GT_AND, TYP_INT, isInitedActualValueNode, gtNewIconNode(1));
+        isInitedExpectedValue   = gtNewIconNode(1);
+    }
+
+    GenTree* isInitedCmp = gtNewOperNode(GT_EQ, TYP_INT, isInitedActualValueNode, isInitedExpectedValue);
+    isInitedCmp->gtFlags |= GTF_RELOP_JMP_USED;
+    BasicBlock* isInitedBb =
+        fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp), debugInfo);
+
+    // Fallback basic block
+    // TODO-CQ: for JIT we can replace the original call with CORINFO_HELP_INITCLASS
+    // that only accepts a single argument
+    BasicBlock* helperCallBb = fgNewBBFromTreeAfter(BBJ_NONE, isInitedBb, call, debugInfo, true);
+
+    GenTree* replacementNode = nullptr;
+    if (retValKind == SHRV_STATIC_BASE_PTR)
+    {
+        // Replace the call with a constant pointer to the statics base
+        assert(staticBaseAddr.addr != nullptr);
+
+        // Use local if the addressed is already materialized and cached
+        if (cachedStaticBase != nullptr)
+        {
+            assert(staticBaseAddr.accessType == IAT_VALUE);
+            replacementNode = cachedStaticBase;
+        }
+        else if (staticBaseAddr.accessType == IAT_VALUE)
+        {
+            replacementNode = gtNewIconHandleNode((size_t)staticBaseAddr.addr, GTF_ICON_STATIC_HDL);
+        }
+        else
+        {
+            assert(staticBaseAddr.accessType == IAT_PVALUE);
+            replacementNode =
+                gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)staticBaseAddr.addr, GTF_ICON_GLOBAL_PTR, false);
+        }
+    }
+
+    if (replacementNode == nullptr)
+    {
+        (*callUse)->gtBashToNOP();
+    }
+    else
+    {
+        *callUse = replacementNode;
+    }
+
+    fgMorphStmtBlockOps(block, stmt);
+    gtUpdateStmtSideEffects(stmt);
+
+    // Final block layout looks like this:
+    //
+    // prevBb(BBJ_NONE):                    [weight: 1.0]
+    //     ...
+    //
+    // isInitedBb(BBJ_COND):                [weight: 1.0]
+    //     if (isInited)
+    //         goto block;
+    //
+    // helperCallBb(BBJ_NONE):              [weight: 0.0]
+    //     helperCall();
+    //
+    // block(...):                          [weight: 1.0]
+    //     use(staticBase);
+    //
+    // Whether we use helperCall's value or not depends on the helper itself.
+
+    //
+    // Update preds in all new blocks
+    //
+
+    // Unlink block and prevBb
+    fgRemoveRefPred(block, prevBb);
+
+    // Block has two preds now: either isInitedBb or helperCallBb
+    fgAddRefPred(block, isInitedBb);
+    fgAddRefPred(block, helperCallBb);
+
+    // prevBb always flow into isInitedBb
+    fgAddRefPred(isInitedBb, prevBb);
+
+    // Both fastPathBb and helperCallBb have a single common pred - isInitedBb
+    fgAddRefPred(helperCallBb, isInitedBb);
+
+    // helperCallBb unconditionally jumps to the last block (jumps over fastPathBb)
+    isInitedBb->bbJumpDest = block;
+
+    //
+    // Re-distribute weights
+    //
+
+    block->inheritWeight(prevBb);
+    isInitedBb->inheritWeight(prevBb);
+    helperCallBb->bbSetRunRarely();
+
+    //
+    // Update loop info if loop table is known to be valid
+    //
+
+    isInitedBb->bbNatLoopNum   = prevBb->bbNatLoopNum;
+    helperCallBb->bbNatLoopNum = prevBb->bbNatLoopNum;
+
+    // All blocks are expected to be in the same EH region
+    assert(BasicBlock::sameEHRegion(prevBb, block));
+    assert(BasicBlock::sameEHRegion(prevBb, isInitedBb));
+
+    // Extra step: merge prevBb with isInitedBb if possible
+    if (fgCanCompactBlocks(prevBb, isInitedBb))
+    {
+        fgCompactBlocks(prevBb, isInitedBb);
+    }
+
+    // Clear gtInitClsHnd as a mark that we've already visited this call
+    call->gtInitClsHnd = NO_CLASS_HANDLE;
+    return true;
+}
+
+//------------------------------------------------------------------------------
+// fgExpandStaticInitForBlock: Partially expand static initialization calls, in
+//    the given block. Also, see fgExpandStaticInit's comments
+//
+// Arguments:
+//    block   - block to scan for static initializations
+//
+// Returns:
+//    true if a static initialization was found and expanded
+//
+bool Compiler::fgExpandStaticInitForBlock(BasicBlock* block)
+{
+    for (Statement* const stmt : block->NonPhiStatements())
+    {
+        if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
+        {
+            // TP: Stmt has no calls - bail out
+            continue;
+        }
+
+        for (GenTree* const tree : stmt->TreeList())
+        {
+            if (!tree->IsHelperCall())
+            {
+                continue;
+            }
+
+            if (fgExpandStaticInitForCall(block, stmt, tree->AsCall()))
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 //------------------------------------------------------------------------
 // fgCanSwitchToOptimized: Determines if conditions are met to allow switching the opt level to optimized
 //
@@ -790,6 +1131,11 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         result = gtNewHelperCallNode(helper, type, opModuleIDArg);
     }
 
+    if (IsStaticHelperEligibleForExpansion(result))
+    {
+        // Keep class handle attached to the helper call since it's difficult to restore it.
+        result->gtInitClsHnd = cls;
+    }
     result->gtFlags |= callFlags;
 
     // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
