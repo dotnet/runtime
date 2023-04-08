@@ -154,7 +154,8 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	/* Save gregs */
 	code = mono_riscv_emit_store_stack (code, 0xffffffff, RISCV_FP, -gregs_offset, FALSE);
 	if (corlib && !llvm)
-		NOT_IMPLEMENTED;
+		/* The real ra is in A1 */
+		code = mono_riscv_emit_store (code, RISCV_A1, RISCV_FP, -gregs_offset + (RISCV_RA * sizeof(host_mgreg_t)), 0);
 	
 	/* Save previous fp/sp */
 	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_FP, -2 * sizeof(host_mgreg_t), 0);
@@ -170,8 +171,11 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	/* Arg1 =  exception object/type token */
 	// riscv_addi (code, RISCV_A0, RISCV_A0, 0);
 	/* Arg2 = caller ip, should be return address in this case */
-	if (corlib)
-		NOT_IMPLEMENTED;
+	if (corlib){
+		// caller ip are set to A1 already
+		if (llvm)
+			NOT_IMPLEMENTED;
+	}
 	else
 		code = mono_riscv_emit_load (code, RISCV_A1, RISCV_FP, -sizeof(host_mgreg_t), 0);
 	/* Arg 3 = gregs */
@@ -240,8 +244,7 @@ mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
 gpointer
 mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
-	*info = NULL;
-	return nop_stub (0xaa);
+	return get_throw_trampoline (384, TRUE, FALSE, FALSE, FALSE, "throw_corlib_exception", info, aot, FALSE);
 }
 
 #else

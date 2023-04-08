@@ -3217,19 +3217,7 @@ mono_riscv_emit_call (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_typ
 static guint8 *
 mono_riscv_emit_branch_exc (MonoCompile *cfg, guint8 *code, int opcode, int sreg1, int sreg2, const char *exc_name)
 {
-	// guint8 *p;
-
-	// riscv_auipc(code, RISCV_T0, 0);
-	// // load imm
-	// riscv_jal (code, RISCV_T1, sizeof (guint64) + 4);
-	// p = code;
-	// code += sizeof (guint64);
-	// riscv_ld (code, RISCV_T1, RISCV_T1, 0);
-	// // pc + imm
-	// riscv_add(code, RISCV_T0, RISCV_T0, RISCV_T1);
-
-	// *(guint64 *)p = (gsize)code;
-
+	riscv_auipc(code, RISCV_T0, 0);
 	switch (opcode) {
 	case OP_RISCV_EXC_BEQ:
 		riscv_bne (code, sreg1, sreg2, 8);
