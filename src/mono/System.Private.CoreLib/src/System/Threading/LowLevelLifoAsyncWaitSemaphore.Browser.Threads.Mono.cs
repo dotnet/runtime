@@ -13,36 +13,49 @@ namespace System.Threading;
 // This class provides a way for browser threads to asynchronously wait for a semaphore
 // from JS, without using the threadpool.  It is used to implement threadpool workers.
 // </summary>
-internal sealed partial class LowLevelLifoSemaphore : LowLevelLifoSemaphoreBase, IDisposable
+internal sealed partial class LowLevelLifoAsyncWaitSemaphore : LowLevelLifoSemaphoreBase, IDisposable
 {
-    public static LowLevelLifoSemaphore CreateAsyncWaitSemaphore (int initialSignalCount, int maximumSignalCount, int spinCount, Action onWait)
-    {
-        return new LowLevelLifoSemaphore(initialSignalCount, maximumSignalCount, spinCount, onWait, asyncWait: true);
-    }
+    private IntPtr lifo_semaphore;
 
-    private LowLevelLifoSemaphore(int initialSignalCount, int maximumSignalCount, int spinCount, Action onWait, bool asyncWait)
+    [MethodImplAttribute(MethodImplOptions.InternalCall)]
+    private static extern IntPtr InitInternal(int kind);
+
+    public LowLevelLifoAsyncWaitSemaphore(int initialSignalCount, int maximumSignalCount, int spinCount, Action onWait)
         : base (initialSignalCount, maximumSignalCount, spinCount, onWait)
     {
-        Debug.Assert(asyncWait);
-
         CreateAsyncWait(maximumSignalCount);
     }
 
 #pragma warning disable IDE0060
     private void CreateAsyncWait(int maximumSignalCount)
-    {
-        Kind = LifoSemaphoreKind.AsyncWait;
-        lifo_semaphore = InitInternal((int)Kind);
-    }
 #pragma warning restore IDE0060
+    {
+        lifo_semaphore = InitInternal(2);
+    }
 
-    private sealed record WaitEntry (LowLevelLifoSemaphore Semaphore, int TimeoutMs, Action<LowLevelLifoSemaphore, object?> OnSuccess, Action<LowLevelLifoSemaphore, object?> OnTimeout, object? State);
+    [MethodImplAttribute(MethodImplOptions.InternalCall)]
+    private static extern void DeleteInternal(IntPtr semaphore);
 
-    public void PrepareAsyncWait(int timeoutMs, Action<LowLevelLifoSemaphore, object?> onSuccess, Action<LowLevelLifoSemaphore, object?> onTimeout, object? state)
+    public void Dispose()
+    {
+        DeleteInternal(lifo_semaphore);
+        lifo_semaphore = IntPtr.Zero;
+    }
+
+    [MethodImplAttribute(MethodImplOptions.InternalCall)]
+    private static extern void ReleaseInternal(IntPtr semaphore, int count);
+
+    protected override void ReleaseCore(int count)
+    {
+        ReleaseInternal(lifo_semaphore, count);
+    }
+
+    private sealed record WaitEntry (LowLevelLifoAsyncWaitSemaphore Semaphore, int TimeoutMs, Action<LowLevelLifoAsyncWaitSemaphore, object?> OnSuccess, Action<LowLevelLifoAsyncWaitSemaphore, object?> OnTimeout, object? State);
+
+    public void PrepareAsyncWait(int timeoutMs, Action<LowLevelLifoAsyncWaitSemaphore, object?> onSuccess, Action<LowLevelLifoAsyncWaitSemaphore, object?> onTimeout, object? state)
     {
         //FIXME(ak): the async wait never spins. Shoudl we spin a little?
         Debug.Assert(timeoutMs >= -1);
-        ThrowIfInvalidSemaphoreKind(LifoSemaphoreKind.AsyncWait);
 
         // Try to acquire the semaphore or
         // [[a) register as a spinner if false and timeoutMs > 0]]
@@ -115,7 +128,7 @@ internal sealed partial class LowLevelLifoSemaphore : LowLevelLifoSemaphoreBase,
 #endif
     }
 
-    private void PrepareAsyncWaitForSignal(int timeoutMs, Action<LowLevelLifoSemaphore, object?> onSuccess, Action<LowLevelLifoSemaphore, object?> onTimeout, object? state)
+    private void PrepareAsyncWaitForSignal(int timeoutMs, Action<LowLevelLifoAsyncWaitSemaphore, object?> onSuccess, Action<LowLevelLifoAsyncWaitSemaphore, object?> onTimeout, object? state)
     {
         Debug.Assert(timeoutMs > 0 || timeoutMs == -1);
 
@@ -125,7 +138,7 @@ internal sealed partial class LowLevelLifoSemaphore : LowLevelLifoSemaphoreBase,
         // on success calls InternalAsyncWaitSuccess, on timeout calls InternalAsyncWaitTimeout
     }
 
-    private static void InternalAsyncWaitTimeout(LowLevelLifoSemaphore self, WaitEntry internalWaitEntry)
+    private static void InternalAsyncWaitTimeout(LowLevelLifoAsyncWaitSemaphore self, WaitEntry internalWaitEntry)
     {
         WaitEntry we = internalWaitEntry!;
         // Unregister the waiter. The wait subsystem used above guarantees that a thread that wakes due to a timeout does
@@ -134,7 +147,7 @@ internal sealed partial class LowLevelLifoSemaphore : LowLevelLifoSemaphoreBase,
         we.OnTimeout(self, we.State);
     }
 
-    private static void InternalAsyncWaitSuccess(LowLevelLifoSemaphore self, WaitEntry internalWaitEntry)
+    private static void InternalAsyncWaitSuccess(LowLevelLifoAsyncWaitSemaphore self, WaitEntry internalWaitEntry)
     {
         WaitEntry we = internalWaitEntry!;
         // Unregister the waiter if this thread will not be waiting anymore, and try to acquire the semaphore
