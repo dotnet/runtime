@@ -5350,29 +5350,26 @@ HRESULT ClrDataAccess::GetGCBookkeepingMemoryRegions(ISOSMemoryEnum** ppEnum)
     return hr;
 }
 
-void ClrDataAccess::AddFreeRegion(DPTR(dac_region_free_list) free_list, unsigned int count, CLRDATA_ADDRESS regions[], unsigned int& index)
+void ClrDataAccess::AddFreeRegion(const dac_region_free_list &free_list, unsigned int count, CLRDATA_ADDRESS regions[], unsigned int& index)
 {
-    if (free_list != nullptr)
+    // Cap the number of regions we will walk in case we hit memory corruption that
+    // puts us into an infinite loop.
+    int maxRegions = 4096;
+
+    DPTR(dac_heap_segment) seg = free_list.head_free_region;
+    while (seg != nullptr)
     {
-        // Cap the number of regions we will walk in case we hit memory corruption that
-        // puts us into an infinite loop.
-        int maxRegions = 4096;
+        if (regions && index < count)
+            regions[index++] = seg.GetAddr();
+        else
+            index++;
 
-        DPTR(dac_heap_segment) seg = free_list->head_free_region;
-        while (seg != nullptr)
-        {
-            if (regions && index < count)
-                regions[index++] = seg.GetAddr();
-            else
-                index++;
+        seg = seg->next;
+        if (seg == free_list.head_free_region)
+            break;
 
-            seg = seg->next;
-            if (seg == free_list->head_free_region)
-                break;
-
-            if (--maxRegions <= 0)
-                break;
-        }
+        if (--maxRegions <= 0)
+            break;
     }
 }
 
@@ -5391,14 +5388,15 @@ HRESULT ClrDataAccess::GetGCFreeRegions(unsigned int count, CLRDATA_ADDRESS regi
     unsigned int index = 0;
     if (g_gcDacGlobals->global_free_huge_regions != nullptr)
     {
-        AddFreeRegion(DPTR(dac_region_free_list)(TO_TADDR(*g_gcDacGlobals->global_free_huge_regions)), count, regions, index);
+        DPTR(dac_region_free_list) global_free_huge_regions(g_gcDacGlobals->global_free_huge_regions);
+        AddFreeRegion(*global_free_huge_regions, count, regions, index);
     }
 
     if (g_gcDacGlobals->global_regions_to_decommit != nullptr)
     {
         DPTR(dac_region_free_list) regionList(g_gcDacGlobals->global_regions_to_decommit);
         for (int i = 0; i < count_free_region_kinds; i++, regionList++)
-            AddFreeRegion(regionList, count, regions, index);
+            AddFreeRegion(*regionList, count, regions, index);
     }
     
 #if defined(FEATURE_SVR_GC)
@@ -5412,7 +5410,7 @@ HRESULT ClrDataAccess::GetGCFreeRegions(unsigned int count, CLRDATA_ADDRESS regi
         DPTR(dac_region_free_list) regionList(g_gcDacGlobals->free_regions);
         if (regionList != nullptr)
             for (int i = 0; i < count_free_region_kinds; i++, regionList++)
-                AddFreeRegion(regionList, count, regions, index);
+                AddFreeRegion(*regionList, count, regions, index);
     }
 
     if (regions)

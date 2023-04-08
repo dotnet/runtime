@@ -1343,6 +1343,8 @@ enum free_region_kind
     count_free_region_kinds,
 };
 
+static_assert(count_free_region_kinds == FREE_REGION_KINDS, "Keep count_free_region_kinds in sync with FREE_REGION_KINDS, changing this is not a version breaking change.");
+
 class region_free_list
 {
     size_t  num_free_regions;

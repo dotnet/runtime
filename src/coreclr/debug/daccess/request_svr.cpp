@@ -461,17 +461,23 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
 
 void ClrDataAccess::GetServerFreeRegions(unsigned int count, CLRDATA_ADDRESS regions[], unsigned int &index)
 {
+    // Cap the number of free regions we will walk at a sensible number.  This is to protect against
+    // memory corruption, un-initialized data, or just a bug.
+    int count_free_region_kinds = g_gcDacGlobals->count_free_region_kinds;
+    count_free_region_kinds = min(count_free_region_kinds, 16);
+
     for (int i = 0; i < GCHeapCount(); i++)
     {
         TADDR heapAddress = (TADDR)HeapTableIndex(g_gcDacGlobals->g_heaps, i);
         if (heapAddress == 0)
             continue;
+        
+
 
         dac_gc_heap heap = LoadGcHeapData(heapAddress);
-        DPTR(dac_region_free_list) regionList = heap.free_regions;
-        if (regionList != nullptr)
-            for (int i = 0; i < g_gcDacGlobals->count_free_region_kinds; i++, regionList++)
-                AddFreeRegion(regionList, count, regions, index);
+        if (heap.free_regions != nullptr)
+            for (int i = 0; i < count_free_region_kinds; i++)
+                AddFreeRegion(heap.free_regions[i], count, regions, index);
     }
 }
 

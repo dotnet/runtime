@@ -1338,7 +1338,7 @@ public:
     HRESULT EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags);
     HRESULT EnumMemCLRMainModuleInfo();
 
-    void AddFreeRegion(DPTR(dac_region_free_list) free_list, unsigned int count, CLRDATA_ADDRESS regions[], unsigned int &index);
+    void AddFreeRegion(const dac_region_free_list &free_list, unsigned int count, CLRDATA_ADDRESS regions[], unsigned int &index);
     void GetServerFreeRegions(unsigned int count, CLRDATA_ADDRESS regions[], unsigned int &index);
 
     bool ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess = true);

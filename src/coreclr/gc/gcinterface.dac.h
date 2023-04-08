@@ -16,6 +16,7 @@
 #define MAX_EXPAND_MECHANISMS_COUNT     6
 #define MAX_GC_MECHANISM_BITS_COUNT     2
 #define MAX_GLOBAL_GC_MECHANISMS_COUNT  6
+#define FREE_REGION_KINDS               3
 
 // The number of generations is hardcoded in to the dac APIS (DacpGcHeapDetails hard codes the size of its arrays)
 // The number of generations is hardcoded into some older dac APIS (for example DacpGcHeapDetails hard codes the size of its arrays)
