@@ -399,6 +399,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
             switch (block->bbJumpKind)
             {
                 case BBJ_EHFINALLYRET:
+                case BBJ_EHFAULTRET:
                 case BBJ_THROW:
                 case BBJ_RETURN:
                     VarSetOps::AssignNoCopy(this, block->bbLiveOut, VarSetOps::MakeEmpty(this));
@@ -940,6 +941,7 @@ void Compiler::fgExtendDbgLifetimes()
                 break;
 
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
             case BBJ_RETURN:
                 break;
 
