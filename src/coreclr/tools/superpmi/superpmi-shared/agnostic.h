@@ -463,6 +463,19 @@ struct Agnostic_GetClassModuleIdForStatics
     DWORDLONG result;
 };
 
+struct Agnostic_GetIsClassInitedFlagAddress
+{
+    Agnostic_CORINFO_CONST_LOOKUP addr;
+    DWORD                         offset;
+    DWORD                         result;
+};
+
+struct Agnostic_GetStaticBaseAddress
+{
+    Agnostic_CORINFO_CONST_LOOKUP addr;
+    DWORD                         result;
+};
+
 struct Agnostic_IsCompatibleDelegate
 {
     DWORDLONG objCls;

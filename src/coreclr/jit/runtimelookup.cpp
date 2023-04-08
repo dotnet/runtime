@@ -273,18 +273,15 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
                 nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
                 BasicBlock* nullcheckBb =
-                    CreateBlockFromTree(this, prevBb, BBJ_COND, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
-                                        debugInfo);
+                    fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp), debugInfo);
 
                 // Fallback basic block
                 GenTree*    asgFallbackValue = gtNewAssignNode(gtClone(rtLookupLcl), call);
-                BasicBlock* fallbackBb =
-                    CreateBlockFromTree(this, nullcheckBb, BBJ_NONE, asgFallbackValue, debugInfo, true);
+                BasicBlock* fallbackBb = fgNewBBFromTreeAfter(BBJ_NONE, nullcheckBb, asgFallbackValue, debugInfo, true);
 
                 // Fast-path basic block
                 GenTree*    asgFastpathValue = gtNewAssignNode(gtClone(rtLookupLcl), fastPathValueClone);
-                BasicBlock* fastPathBb =
-                    CreateBlockFromTree(this, nullcheckBb, BBJ_ALWAYS, asgFastpathValue, debugInfo);
+                BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, asgFastpathValue, debugInfo);
 
                 BasicBlock* sizeCheckBb = nullptr;
                 if (needsSizeCheck)
@@ -327,7 +324,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     sizeCheck->gtFlags |= GTF_RELOP_JMP_USED;
 
                     GenTree* jtrue = gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck);
-                    sizeCheckBb    = CreateBlockFromTree(this, prevBb, BBJ_COND, jtrue, debugInfo);
+                    sizeCheckBb    = fgNewBBFromTreeAfter(BBJ_COND, prevBb, jtrue, debugInfo);
                 }
 
                 //
@@ -388,22 +385,14 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 }
 
                 //
-                // Update loop info if loop table is known to be valid
+                // Update loop info
                 //
-                if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+                nullcheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
+                fastPathBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
+                fallbackBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
+                if (needsSizeCheck)
                 {
-                    nullcheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-                    fastPathBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
-                    fallbackBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
-                    if (needsSizeCheck)
-                    {
-                        sizeCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-                    }
-                    // Update lpBottom after block split
-                    if (optLoopTable[prevBb->bbNatLoopNum].lpBottom == prevBb)
-                    {
-                        optLoopTable[prevBb->bbNatLoopNum].lpBottom = block;
-                    }
+                    sizeCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
                 }
 
                 // All blocks are expected to be in the same EH region

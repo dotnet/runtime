@@ -6,7 +6,7 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace System.Reflection.Emit
 {
-    // This static helper class adds common entities to a Metadata Builder.
+    // This static helper class adds common entities to a MetadataBuilder.
     internal static class MetadataHelper
     {
         internal static AssemblyReferenceHandle AddAssemblyReference(Assembly assembly, MetadataBuilder metadata)
@@ -34,7 +34,7 @@ namespace System.Reflection.Emit
             // Add type metadata
             return metadata.AddTypeDefinition(
                 attributes: typeBuilder.Attributes,
-                (typeBuilder.Namespace == null) ? default : metadata.GetOrAddString(typeBuilder.Namespace),
+                @namespace: (typeBuilder.Namespace == null) ? default : metadata.GetOrAddString(typeBuilder.Namespace),
                 name: metadata.GetOrAddString(typeBuilder.Name),
                 baseType: baseType,
                 fieldList: MetadataTokens.FieldDefinitionHandle(fieldToken),
@@ -49,28 +49,30 @@ namespace System.Reflection.Emit
         internal static TypeReferenceHandle AddTypeReference(MetadataBuilder metadata, AssemblyReferenceHandle parent, string name, string? nameSpace)
         {
             return metadata.AddTypeReference(
-                parent,
-                (nameSpace == null) ? default : metadata.GetOrAddString(nameSpace),
-                metadata.GetOrAddString(name)
+                resolutionScope: parent,
+                @namespace: (nameSpace == null) ? default : metadata.GetOrAddString(nameSpace),
+                name: metadata.GetOrAddString(name)
                 );
         }
 
         internal static MethodDefinitionHandle AddMethodDefinition(MetadataBuilder metadata, MethodBuilderImpl methodBuilder, BlobBuilder methodSignatureBlob)
         {
             return metadata.AddMethodDefinition(
-                methodBuilder.Attributes,
-                MethodImplAttributes.IL,
-                metadata.GetOrAddString(methodBuilder.Name),
-                metadata.GetOrAddBlob(methodSignatureBlob),
-                -1, // No body supported yet
+                attributes: methodBuilder.Attributes,
+                implAttributes: MethodImplAttributes.IL,
+                name: metadata.GetOrAddString(methodBuilder.Name),
+                signature: metadata.GetOrAddBlob(methodSignatureBlob),
+                bodyOffset: -1, // No body supported yet
                 parameterList: MetadataTokens.ParameterHandle(1)
                 );
         }
 
-        internal static FieldDefinitionHandle AddFieldDefinition(MetadataBuilder metadata, FieldInfo field)
+        internal static FieldDefinitionHandle AddFieldDefinition(MetadataBuilder metadata, FieldInfo field, BlobBuilder fieldSignatureBlob)
         {
-            return metadata.AddFieldDefinition(field.Attributes, metadata.GetOrAddString(field.Name),
-                metadata.GetOrAddBlob(MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType)));
+            return metadata.AddFieldDefinition(
+                attributes: field.Attributes,
+                name: metadata.GetOrAddString(field.Name),
+                signature: metadata.GetOrAddBlob(fieldSignatureBlob));
         }
     }
 }

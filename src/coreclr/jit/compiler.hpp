@@ -607,7 +607,7 @@ inline bool isRegParamType(var_types type)
 #endif // !TARGET_X86
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 /*****************************************************************************/
 // Returns true if 'type' is a struct that can be enregistered for call args
 //                         or can be returned by value in multiple registers.
@@ -665,7 +665,7 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                typ
 
     return result;
 }
-#endif // TARGET_AMD64 || TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_AMD64 || TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 /*****************************************************************************/
 
@@ -3019,6 +3019,8 @@ inline unsigned genMapFloatRegNumToRegArgNum(regNumber regNum)
     return regNum - REG_F0;
 #elif defined(TARGET_LOONGARCH64)
     return regNum - REG_F0;
+#elif defined(TARGET_RISCV64)
+    return regNum - REG_FLTARG_0;
 #elif defined(TARGET_ARM64)
     return regNum - REG_V0;
 #elif defined(UNIX_AMD64_ABI)
@@ -3549,6 +3551,57 @@ inline CorInfoHelpFunc Compiler::eeGetHelperNum(CORINFO_METHOD_HANDLE method)
         return (CORINFO_HELP_UNDEF);
     }
     return ((CorInfoHelpFunc)(((size_t)method) >> 2));
+}
+
+//------------------------------------------------------------------------
+// IsStaticHelperEligibleForExpansion: Determine whether this node is a static init
+//    helper eligible for late expansion
+//
+// Arguments:
+//    tree       - tree node
+//    isGC       - [OUT] whether the helper returns GCStaticBase or NonGCStaticBase
+//    retValKind - [OUT] describes its return value
+//
+// Return Value:
+//    Returns true if eligible for late expansion
+//
+inline bool Compiler::IsStaticHelperEligibleForExpansion(GenTree* tree, bool* isGc, StaticHelperReturnValue* retValKind)
+{
+    if (!tree->IsHelperCall())
+    {
+        return false;
+    }
+
+    bool                    gc     = false;
+    bool                    result = false;
+    StaticHelperReturnValue retVal = {};
+    switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
+    {
+        case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
+        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
+            result = true;
+            gc     = true;
+            retVal = SHRV_STATIC_BASE_PTR;
+            break;
+        case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
+            result = true;
+            gc     = false;
+            retVal = SHRV_STATIC_BASE_PTR;
+            break;
+        // TODO: other helpers
+        default:
+            break;
+    }
+    if (isGc != nullptr)
+    {
+        *isGc = gc;
+    }
+    if (retValKind != nullptr)
+    {
+        *retValKind = retVal;
+    }
+    return result;
 }
 
 //  TODO-Cleanup: Replace calls to IsSharedStaticHelper with new HelperCallProperties

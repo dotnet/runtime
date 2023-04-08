@@ -55,7 +55,7 @@ struct FloatTraits
     {
 #if defined(TARGET_XARCH)
         unsigned bits = 0xFFC00000u;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         unsigned           bits = 0x7FC00000u;
 #else
 #error Unsupported or unset target architecture
@@ -81,7 +81,7 @@ struct DoubleTraits
     {
 #if defined(TARGET_XARCH)
         unsigned long long bits = 0xFFF8000000000000ull;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         unsigned long long bits = 0x7FF8000000000000ull;
 #else
 #error Unsupported or unset target architecture
@@ -4450,7 +4450,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     // (x - 0) == x
     // (x - x) == 0
     // This identity does not apply for floating point (when x == -0.0).
-    auto identityForSubtraction = [=]() -> ValueNum {
+    auto identityForSubtraction = [=](bool ovf) -> ValueNum {
         if (!varTypeIsFloating(typ))
         {
             ValueNum ZeroVN = VNZeroForType(typ);
@@ -4461,6 +4461,39 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
             else if (arg0VN == arg1VN)
             {
                 return ZeroVN;
+            }
+
+            if (!ovf)
+            {
+                // (x + a) - x == a
+                // (a + x) - x == a
+                VNFuncApp add;
+                if (GetVNFunc(arg0VN, &add) && (add.m_func == (VNFunc)GT_ADD))
+                {
+                    if (add.m_args[0] == arg1VN)
+                        return add.m_args[1];
+                    if (add.m_args[1] == arg1VN)
+                        return add.m_args[0];
+
+                    // (x + a) - (x + b) == a - b
+                    // (a + x) - (x + b) == a - b
+                    // (x + a) - (b + x) == a - b
+                    // (a + x) - (b + x) == a - b
+                    VNFuncApp add2;
+                    if (GetVNFunc(arg1VN, &add2) && (add2.m_func == (VNFunc)GT_ADD))
+                    {
+                        for (int a = 0; a < 2; a++)
+                        {
+                            for (int b = 0; b < 2; b++)
+                            {
+                                if (add.m_args[a] == add2.m_args[b])
+                                {
+                                    return VNForFunc(typ, (VNFunc)GT_SUB, add.m_args[1 - a], add2.m_args[1 - b]);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -4515,7 +4548,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
                 break;
 
             case GT_SUB:
-                resultVN = identityForSubtraction();
+                resultVN = identityForSubtraction(/* ovf */ false);
                 break;
 
             case GT_MUL:
@@ -4830,7 +4863,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
 
             case VNF_SUB_OVF:
             case VNF_SUB_UN_OVF:
-                resultVN = identityForSubtraction();
+                resultVN = identityForSubtraction(/* ovf */ true);
                 break;
 
             case VNF_MUL_OVF:
