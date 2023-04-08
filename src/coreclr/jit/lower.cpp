@@ -1903,7 +1903,7 @@ GenTree* Lowering::LowerCallMemcmp(GenTreeCall* call)
             GenTree* lArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
             GenTree* rArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 
-            unsigned MaxUnrollSize = 16;
+            ssize_t MaxUnrollSize = 16;
 #ifdef FEATURE_SIMD
             MaxUnrollSize = 32;
 #ifdef TARGET_XARCH
