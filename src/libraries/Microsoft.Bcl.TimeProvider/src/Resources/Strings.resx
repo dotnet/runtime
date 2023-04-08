@@ -66,4 +66,7 @@
   <data name="ArgumentOutOfRange_Generic_MustBeLessOrEqual" xml:space="preserve">
     <value>'{0}' must be less than or equal to '{1}'.</value>
   </data>
+  <data name="InvalidOperation_TimeProviderNullLocalTimeZone" xml:space="preserve">
+    <value>The operation cannot performed when having TimeProvider.LocalTimeZone is returning null.</value>
+  </data>
 </root>

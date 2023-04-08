@@ -21,7 +21,7 @@ namespace System
         public static TimeProvider System { get; } = new SystemTimeProvider();
 
         /// <summary>
-        /// Initializes new instance of <see cref="TimeProvider"/>.
+        /// Initializes the <see cref="TimeProvider"/>.
         /// </summary>
         protected TimeProvider()
         {
@@ -47,7 +47,16 @@ namespace System
         public DateTimeOffset GetLocalNow()
         {
             DateTimeOffset utcDateTime = GetUtcNow();
-            TimeSpan offset = (LocalTimeZone ?? TimeZoneInfo.Local).GetUtcOffset(utcDateTime);
+            TimeZoneInfo zoneInfo = LocalTimeZone;
+            if (zoneInfo is null)
+            {
+#if SYSTEM_PRIVATE_CORELIB
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_TimeProviderNullLocalTimeZone);
+#else
+                throw new InvalidOperationException(SR.InvalidOperation_TimeProviderNullLocalTimeZone);
+#endif // SYSTEM_PRIVATE_CORELIB
+            }
+            TimeSpan offset = zoneInfo.GetUtcOffset(utcDateTime);
 
             long localTicks = utcDateTime.Ticks + offset.Ticks;
             if ((ulong)localTicks > (ulong)s_maxDateTicks)
@@ -70,7 +79,7 @@ namespace System
         /// Gets the frequency of <see cref="GetTimestamp"/> of high-frequency value per second.
         /// </summary>
         /// <remarks>
-        /// The default implementation returns <see cref="Stopwatch.Frequency"/>.
+        /// The default implementation returns <see cref="Stopwatch.Frequency"/>. For a given TimeProvider instance, the value must be idempotent and remain unchanged.
         /// </remarks>
         public virtual long TimestampFrequency { get => Stopwatch.Frequency; }
 

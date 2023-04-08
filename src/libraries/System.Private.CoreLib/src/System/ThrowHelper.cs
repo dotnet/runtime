@@ -1094,6 +1094,8 @@ namespace System
                     return SR.ArgumentOutOfRange_NotGreaterThanBufferLength;
                 case ExceptionResource.InvalidOperation_SpanOverlappedOperation:
                     return SR.InvalidOperation_SpanOverlappedOperation;
+                case ExceptionResource.InvalidOperation_TimeProviderNullLocalTimeZone:
+                    return SR.InvalidOperation_TimeProviderNullLocalTimeZone;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1285,5 +1287,6 @@ namespace System
         CancellationTokenSource_Disposed,
         Argument_AlignmentMustBePow2,
         InvalidOperation_SpanOverlappedOperation,
+        InvalidOperation_TimeProviderNullLocalTimeZone,
     }
 }
