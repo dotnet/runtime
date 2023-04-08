@@ -2881,8 +2881,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // We need to use both index and ptr-to-span twice, so clone or spill.
                 index = impCloneExpr(index, &indexClone, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
                                      nullptr DEBUGARG("Span.get_Item index"));
-                ptrToSpan = impCloneExpr(ptrToSpan, &ptrToSpanClone, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
-                                         nullptr DEBUGARG("Span.get_Item ptrToSpan"));
+
+                if (impIsAddressInLocal(ptrToSpan))
+                {
+                    ptrToSpanClone = gtCloneExpr(ptrToSpan);
+                }
+                else
+                {
+                    ptrToSpan = impCloneExpr(ptrToSpan, &ptrToSpanClone, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
+                                             nullptr DEBUGARG("Span.get_Item ptrToSpan"));
+                }
 
                 // Bounds check
                 CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(clsHnd, 1);

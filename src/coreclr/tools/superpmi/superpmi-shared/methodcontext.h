@@ -565,6 +565,14 @@ public:
                                          CORINFO_MODULE_HANDLE* pModule,
                                          void**                 ppIndirection);
 
+    void recGetIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset, bool result);
+    void dmpGetIsClassInitedFlagAddress(DWORDLONG key, const Agnostic_GetIsClassInitedFlagAddress& value);
+    bool repGetIsClassInitedFlagAddress(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, int* offset);
+    
+    void recGetStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr, bool result);
+    void dmpGetStaticBaseAddress(DLD key, const Agnostic_GetStaticBaseAddress& value);
+    bool repGetStaticBaseAddress(CORINFO_CLASS_HANDLE cls, bool isGc, CORINFO_CONST_LOOKUP* addr);
+
     void recGetThreadTLSIndex(void** ppIndirection, DWORD result);
     void dmpGetThreadTLSIndex(DWORD key, DLD value);
     DWORD repGetThreadTLSIndex(void** ppIndirection);
@@ -1162,6 +1170,8 @@ enum mcPackets
     Packet_GetArrayOrStringLength = 202,
     Packet_IsEnum = 203,
     Packet_GetStringChar = 204,
+    Packet_GetIsClassInitedFlagAddress = 205,
+    Packet_GetStaticBaseAddress = 206,
 };
 
 void SetDebugDumpVariables();

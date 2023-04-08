@@ -7861,6 +7861,12 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         optMethodFlags |= OMF_NEEDS_GCPOLLS;
     }
 
+    if (fgGlobalMorph && IsStaticHelperEligibleForExpansion(call))
+    {
+        // Current method has potential candidates for fgExpandStaticInit phase
+        setMethodHasStaticInit();
+    }
+
     // Morph Type.op_Equality, Type.op_Inequality, and Enum.HasFlag
     //
     // We need to do these before the arguments are morphed

@@ -4541,6 +4541,8 @@ public:
 
     BasicBlock* fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool extendRegion);
 
+    BasicBlock* fgNewBBFromTreeAfter(BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, bool updateSideEffects = false);
+
     BasicBlock* fgNewBBinRegion(BBjumpKinds jumpKind,
                                 unsigned    tryIndex,
                                 unsigned    hndIndex,
@@ -5232,7 +5234,7 @@ public:
     void vnPrint(ValueNum vn, unsigned level);
 #endif
 
-    bool fgDominate(BasicBlock* b1, BasicBlock* b2); // Return true if b1 dominates b2
+    bool fgDominate(const BasicBlock* b1, const BasicBlock* b2); // Return true if b1 dominates b2
 
     // Dominator computation member functions
     // Not exposed outside Compiler
@@ -5304,6 +5306,11 @@ public:
     void SplitTreesRandomly();
     void SplitTreesRemoveCommas();
     PhaseStatus fgExpandRuntimeLookups();
+
+    bool fgExpandStaticInitForBlock(BasicBlock* block);
+    bool fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+    PhaseStatus fgExpandStaticInit();
+
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
 
@@ -6193,7 +6200,7 @@ protected:
     bool optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt);
 
     // Do hoisting for a particular loop ("lnum" is an index into the optLoopTable.)
-    bool optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, BasicBlockList* existingPreHeaders);
+    bool optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt);
 
     // Hoist all expressions in "blocks" that are invariant in loop "loopNum" (an index into the optLoopTable)
     // outside of that loop.
@@ -6262,7 +6269,6 @@ public:
 
     PhaseStatus optCloneLoops();
     void optCloneLoop(unsigned loopInd, LoopCloneContext* context);
-    void optEnsureUniqueHead(unsigned loopInd, weight_t ambientWeight);
     PhaseStatus optUnrollLoops(); // Unrolls loops (needs to have cost info)
     void        optRemoveRedundantZeroInits();
     PhaseStatus optIfConversion(); // If conversion
@@ -6338,8 +6344,6 @@ public:
                                   // hoisted
         int lpLoopVarFPCount;     // The register count for the FP LclVars that are read/written inside this loop
         int lpVarInOutFPCount;    // The register count for the FP LclVars that are alive inside or across this loop
-
-        bool lpHoistAddedPreheader; // The loop preheader was added during hoisting
 
         typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, FieldKindForVN>
                         FieldHandleSet;
@@ -6512,10 +6516,11 @@ protected:
     bool fgHasLoops;        // True if this method has any loops, set in fgComputeReachability
 
 public:
-    LoopDsc*      optLoopTable;        // loop descriptor table
-    bool          optLoopTableValid;   // info in loop table should be valid
-    unsigned char optLoopCount;        // number of tracked loops
-    unsigned char loopAlignCandidates; // number of loops identified for alignment
+    LoopDsc*      optLoopTable;              // loop descriptor table
+    bool          optLoopTableValid;         // info in loop table should be valid
+    bool          optLoopsRequirePreHeaders; // Do we require that all loops (in the loop table) have pre-headers?
+    unsigned char optLoopCount;              // number of tracked loops
+    unsigned char loopAlignCandidates;       // number of loops identified for alignment
 
     // Every time we rebuild the loop table, we increase the global "loop epoch". Any loop indices or
     // loop table pointers from the previous epoch are invalid.
@@ -6575,7 +6580,7 @@ protected:
     bool optComputeIterInfo(GenTree* incr, BasicBlock* from, BasicBlock* to, unsigned* pIterVar);
     bool optPopulateInitInfo(unsigned loopInd, BasicBlock* initBlock, GenTree* init, unsigned iterVar);
     bool optExtractInitTestIncr(
-        BasicBlock* head, BasicBlock* bottom, BasicBlock* exit, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr);
+        BasicBlock** pInitBlock, BasicBlock* bottom, BasicBlock* exit, GenTree** ppInit, GenTree** ppTest, GenTree** ppIncr);
 
     void optFindNaturalLoops();
 
@@ -6642,7 +6647,7 @@ protected:
     bool optIsLoopEntry(BasicBlock* block) const;
 
     // The depth of the loop described by "lnum" (an index into the loop table.) (0 == top level)
-    unsigned optLoopDepth(unsigned lnum)
+    unsigned optLoopDepth(unsigned lnum) const
     {
         assert(lnum < optLoopCount);
         unsigned depth = 0;
@@ -7027,6 +7032,7 @@ public:
 #define OMF_HAS_TAILCALL_SUCCESSOR             0x00001000 // Method has potential tail call in a non BBJ_RETURN block
 #define OMF_HAS_MDNEWARRAY                     0x00002000 // Method contains 'new' of an MD array
 #define OMF_HAS_MDARRAYREF                     0x00004000 // Method contains multi-dimensional intrinsic array element loads or stores.
+#define OMF_HAS_STATIC_INIT                    0x00008000 // Method has static initializations we might want to partially inline
 
     // clang-format on
 
@@ -7055,6 +7061,16 @@ public:
     void setMethodHasFrozenObjects()
     {
         optMethodFlags |= OMF_HAS_FROZEN_OBJECTS;
+    }
+
+    bool doesMethodHaveStaticInit()
+    {
+        return (optMethodFlags & OMF_HAS_STATIC_INIT) != 0;
+    }
+
+    void setMethodHasStaticInit()
+    {
+        optMethodFlags |= OMF_HAS_STATIC_INIT;
     }
 
     bool doesMethodHaveGuardedDevirtualization() const
@@ -7650,7 +7666,7 @@ public:
     bool optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneVisitorInfo* info);
     bool optIsHandleOrIndirOfHandle(GenTree* tree, GenTreeFlags handleType);
 
-    bool optLoopCloningEnabled();
+    static bool optLoopCloningEnabled();
 
 #ifdef DEBUG
     void optDebugLogLoopCloning(BasicBlock* block, Statement* insertBefore);
@@ -8050,6 +8066,14 @@ public:
     static CORINFO_METHOD_HANDLE eeFindHelper(unsigned helper);
     static CorInfoHelpFunc eeGetHelperNum(CORINFO_METHOD_HANDLE method);
 
+    enum StaticHelperReturnValue
+    {
+        SHRV_STATIC_BASE_PTR,
+        SHRV_VOID,
+    };
+    static bool IsStaticHelperEligibleForExpansion(GenTree*                 tree,
+                                                   bool*                    isGc       = nullptr,
+                                                   StaticHelperReturnValue* retValKind = nullptr);
     static bool IsSharedStaticHelper(GenTree* tree);
     static bool IsGcSafePoint(GenTreeCall* call);
 

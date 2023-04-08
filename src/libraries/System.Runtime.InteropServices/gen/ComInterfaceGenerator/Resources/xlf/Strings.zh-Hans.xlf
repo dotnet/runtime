@@ -147,6 +147,21 @@
         <target state="translated">方法是在不同于 “GeneratedComInterface” 属性的部分声明中声明的。</target>
         <note />
       </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesDescription">
+        <source>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</source>
+        <target state="new">A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesMessage">
+        <source>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</source>
+        <target state="new">Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleComInterfaceBaseTypesTitle">
+        <source>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</source>
+        <target state="new">Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupportedDescription">
         <source>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</source>
         <target state="translated">对于源生成的 P/Invoke 不支持的类型，生成的 P/Invoke 将依赖基础运行时来封送指定的类型。</target>
