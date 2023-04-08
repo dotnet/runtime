@@ -510,9 +510,9 @@ enum GenTreeFlags : unsigned int
 
     GTF_JCMP_EQ                 = 0x80000000, // GTF_JCMP_EQ  -- Branch on equal rather than not equal
     GTF_JCMP_TST                = 0x40000000, // GTF_JCMP_TST -- Use bit test instruction rather than compare against zero instruction
-#if defined(TARGET_LOONGARCH64)
-    GTF_JCMP_MASK               = 0x3E000000, // For LoongArch64, Using the five bits[29:25] to encoding the GenCondition:code.
-#endif
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+    GTF_JCMP_MASK               = 0x3E000000, // For LoongArch64 and RISCV64, Using the five bits[29:25] to encoding the GenCondition:code.
+#endif // TARGET_LOONGARCH64 || TARGET_RISCV64
 
     GTF_RET_MERGED              = 0x80000000, // GT_RETURN -- This is a return generated during epilog merging.
 
@@ -4337,7 +4337,7 @@ struct CallArgABIInformation
         , StructIntRegs(0)
         , StructFloatRegs(0)
 #endif
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         , StructFloatFieldType()
 #endif
         , ArgType(TYP_UNDEF)
@@ -4377,7 +4377,7 @@ public:
     unsigned                                            StructFloatRegs;
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR StructDesc;
 #endif // UNIX_AMD64_ABI
-#ifdef TARGET_LOONGARCH64
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // For LoongArch64's ABI, the struct which has float field(s) and no more than two fields
     // may be passed by float register(s).
     // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
@@ -5164,7 +5164,7 @@ struct GenTreeCall final : public GenTree
     bool HasMultiRegRetVal() const
     {
 #ifdef FEATURE_MULTIREG_RET
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         return (gtType == TYP_STRUCT) && (gtReturnTypeDesc.GetReturnRegCount() > 1);
 #else
 

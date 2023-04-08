@@ -6318,6 +6318,31 @@ DWORD MethodContext::repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HA
     return value;
 }
 
+void MethodContext::recGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value)
+{
+    if (GetRISCV64PassStructInRegisterFlags == nullptr)
+        GetRISCV64PassStructInRegisterFlags = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = CastHandle(structHnd);
+
+    GetRISCV64PassStructInRegisterFlags->Add(key, value);
+    DEBUG_REC(dmpGetRISCV64PassStructInRegisterFlags(key, value));
+}
+
+void MethodContext::dmpGetRISCV64PassStructInRegisterFlags(DWORDLONG key, DWORD value)
+{
+    printf("GetRISCV64PassStructInRegisterFlags key %016" PRIX64 " value-%08X", key, value);
+}
+
+DWORD MethodContext::repGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+{
+    DWORDLONG key = CastHandle(structHnd);
+
+    DWORD value = LookupByKeyOrMissNoMessage(GetRISCV64PassStructInRegisterFlags, key);
+    DEBUG_REP(dmpGetRISCV64PassStructInRegisterFlags(key, value));
+    return value;
+}
+
 void MethodContext::recGetRelocTypeHint(void* target, WORD result)
 {
     if (GetRelocTypeHint == nullptr)

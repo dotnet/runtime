@@ -912,6 +912,12 @@ uint32_t interceptor_ICJI::getLoongArch64PassStructInRegisterFlags(
     return original_ICorJitInfo->getLoongArch64PassStructInRegisterFlags(structHnd);
 }
 
+uint32_t interceptor_ICJI::getRISCV64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    return original_ICorJitInfo->getRISCV64PassStructInRegisterFlags(structHnd);
+}
+
 uint32_t interceptor_ICJI::getThreadTLSIndex(
           void** ppIndirection)
 {
