@@ -183,7 +183,6 @@ public:
 #define DEFINE_FIELD(field_name, field_type) field_type field_name;
 #define DEFINE_DPTR_FIELD(field_name, field_type) DPTR(field_type) field_name;
 #define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) field_type field_name[array_length];
-#define DEFINE_MISSING_FIELD(field_name)
 
 #include "dac_gcheap_fields.h"
 
@@ -191,7 +190,6 @@ public:
 #undef DEFINE_DPTR_FIELD
 #undef DEFINE_FIELD
 #undef ALL_FIELDS
-#undef DEFINE_MISSING_FIELD
 
     // The generation table must always be last, because the size of this array
     // (stored inline in the gc_heap class) can vary.
