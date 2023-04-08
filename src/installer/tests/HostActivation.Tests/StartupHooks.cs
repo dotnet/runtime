@@ -174,7 +174,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             dotnet.Exec(appDll)
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
                 .EnvironmentVariable(Constants.HostTracing.TraceLevelEnvironmentVariable, "1")
-                    .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "2")
+                .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "2")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
