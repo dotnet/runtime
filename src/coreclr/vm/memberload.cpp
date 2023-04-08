@@ -1499,28 +1499,26 @@ MemberLoader::FindField(MethodTable* pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSign
 
     PTR_FieldDesc pFieldDescList = pClass->GetFieldDescList();
 
-    for (i = 0; i < dwFieldDescsToScan; i++)
+    LPCUTF8 szMemberName;
+    mdFieldDef mdField;
+    for (DWORD i = 0; i < fieldDescCount; i++)
     {
-        LPCUTF8     szMemberName;
         FieldDesc * pFD = &pFieldDescList[i];
         PREFIX_ASSUME(pFD!=NULL);
-        mdFieldDef  mdField = pFD->GetMemberDef();
 
         // Check is valid FieldDesc, and not some random memory
         INDEBUGIMPL(pFD->GetApproxEnclosingMethodTable()->SanityCheck());
 
+        mdField = pFD->GetMemberDef();
         IfFailThrow(pInternalImport->GetNameOfFieldDef(mdField, &szMemberName));
 
         if (StrCompFunc(szMemberName, pszName) != 0)
-        {
             continue;
-        }
 
         if (pSignature != NULL)
         {
             PCCOR_SIGNATURE pMemberSig;
             DWORD       cMemberSig;
-
             IfFailThrow(pInternalImport->GetSigOfFieldDef(mdField, &cMemberSig, &pMemberSig));
 
             if (!MetaSig::CompareFieldSigs(
@@ -1530,13 +1528,60 @@ MemberLoader::FindField(MethodTable* pMT, LPCUTF8 pszName, PCCOR_SIGNATURE pSign
                     pSignature,
                     cSignature,
                     pModule))
-                {
+            {
                 continue;
             }
         }
 
         return pFD;
     }
+
+#if defined(EnC_SUPPORTED) && !defined(DACCESS_COMPILE)
+    if (pModule != NULL
+        && pModule->IsFullModule()
+        && ((Module*)pModule)->IsEditAndContinueEnabled())
+    {
+        LOG((LF_LOADER, LL_INFO100000, "ML::FF Falling back to EnC slow path\n"));
+
+        // We may not have the full FieldDesc info at ApplyEnC time because we don't
+        // have a thread so can't do things like load classes (due to possible exceptions)
+        EncApproxFieldDescIterator fdIterator(
+            pMT,
+            ApproxFieldDescIterator::ALL_FIELDS,
+            (EncApproxFieldDescIterator::FixUpEncFields | EncApproxFieldDescIterator::OnlyEncFields));
+        PTR_FieldDesc pCurrentFD;
+        while ((pCurrentFD = fdIterator.Next()) != NULL)
+        {
+            // Check is valid FieldDesc, and not some random memory
+            INDEBUGIMPL(pCurrentFD->GetApproxEnclosingMethodTable()->SanityCheck());
+
+            mdField = pCurrentFD->GetMemberDef();
+            IfFailThrow(pInternalImport->GetNameOfFieldDef(mdField, &szMemberName));
+
+            if (StrCompFunc(szMemberName, pszName) != 0)
+                continue;
+
+            if (pSignature != NULL)
+            {
+                PCCOR_SIGNATURE pMemberSig;
+                DWORD       cMemberSig;
+                IfFailThrow(pInternalImport->GetSigOfFieldDef(mdField, &cMemberSig, &pMemberSig));
+
+                if (!MetaSig::CompareFieldSigs(
+                        pMemberSig,
+                        cMemberSig,
+                        pMT->GetModule(),
+                        pSignature,
+                        cSignature,
+                        pModule))
+                {
+                    continue;
+                }
+            }
+            return pCurrentFD;
+        }
+    }
+#endif // defined(EnC_SUPPORTED) && !defined(DACCESS_COMPILE)
 
     return NULL;
 }

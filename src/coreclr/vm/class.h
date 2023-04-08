@@ -783,7 +783,14 @@ public:
     static HRESULT AddMethod(MethodTable * pMT, mdMethodDef methodDef, RVA newRVA, MethodDesc **ppMethod);
 
     // Add a new field to an already loaded type for EnC
-    static HRESULT AddField(MethodTable * pMT, mdFieldDef fieldDesc, EnCFieldDesc **pAddedField);
+    static HRESULT AddField(MethodTable* pMT, mdFieldDef fieldDesc, FieldDesc** pAddedField);
+private:
+    static HRESULT AddFieldDesc(
+        MethodTable* pMT,
+        mdMethodDef fieldDef,
+        DWORD dwFieldAttrs,
+        FieldDesc** ppNewFD);
+public:
     static VOID    FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdFieldDef fieldDef);
 #endif // EnC_SUPPORTED
 
@@ -1305,6 +1312,19 @@ public:
         m_VMFlags |= VMFLAG_DELEGATE;
     }
 
+#ifdef EnC_SUPPORTED
+    inline BOOL HasEnCStaticFields()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_VMFlags & VMFLAG_ENC_STATIC_FIELDS;
+    }
+    inline void SetHasEnCStaticFields()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_VMFlags |= VMFLAG_ENC_STATIC_FIELDS;
+    }
+#endif // EnC_SUPPORTED
+
     BOOL HasFixedAddressVTStatics()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1680,7 +1700,11 @@ public:
 #endif
         VMFLAG_DELEGATE                        = 0x00000002,
 
-        // VMFLAG_UNUSED                       = 0x0000001c,
+#ifdef EnC_SUPPORTED
+        VMFLAG_ENC_STATIC_FIELDS               = 0x00000004,
+#endif // EnC_SUPPORTED
+
+        // VMFLAG_UNUSED                       = 0x00000018,
 
         VMFLAG_FIXED_ADDRESS_VT_STATICS        = 0x00000020, // Value type Statics in this class will be pinned
         VMFLAG_HASLAYOUT                       = 0x00000040,

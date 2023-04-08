@@ -4476,9 +4476,12 @@ IS_VALUETYPE:
         BuildMethodTableThrowException(IDS_EE_TOOMANYFIELDS);
     }
 
-    GetHalfBakedClass()->SetNumInstanceFields((WORD)dwNumInstanceFields);
-    GetHalfBakedClass()->SetNumStaticFields((WORD)dwNumStaticFields);
-    GetHalfBakedClass()->SetNumThreadStaticFields((WORD)dwNumThreadStaticFields);
+    if (!isEnCField)
+    {
+        GetHalfBakedClass()->SetNumInstanceFields((WORD)dwNumInstanceFields);
+        GetHalfBakedClass()->SetNumStaticFields((WORD)dwNumStaticFields);
+        GetHalfBakedClass()->SetNumThreadStaticFields((WORD)dwNumThreadStaticFields);
+    }
 
     if (bmtFP->fHasFixedAddressValueTypes)
     {

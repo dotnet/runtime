@@ -455,9 +455,9 @@ HRESULT EditAndContinueModule::AddField(mdFieldDef token)
         return S_OK;
     }
 
-    // Create a new EnCFieldDesc for the field and add it to the class
-    LOG((LF_ENC, LL_INFO100000, "EACM::AM: Adding field %08x to type %08x\n", token, parentTypeDef));
-    EnCFieldDesc *pField;
+    // Create a new FieldDesc for the field and add it to the class
+    LOG((LF_ENC, LL_INFO100000, "EACM::AF: Adding field 0x%08x to type 0x%08x\n", token, parentTypeDef));
+    FieldDesc *pField;
     hr = EEClass::AddField(pParentType, token, &pField);
 
     if (FAILED(hr))
@@ -1011,8 +1011,9 @@ PTR_EnCEEClassData EditAndContinueModule::GetEnCEEClassData(MethodTable * pMT, B
     _ASSERTE(getOnly == TRUE);
 #endif // DACCESS_COMPILE
 
-    DPTR(PTR_EnCEEClassData) ppData = m_ClassList.Table();
-    DPTR(PTR_EnCEEClassData) ppLast = ppData + m_ClassList.Count();
+    Module* loaderModule = pMT->GetLoaderModule();
+    DPTR(PTR_EnCEEClassData) ppData = loaderModule->m_ClassList.Table();
+    DPTR(PTR_EnCEEClassData) ppLast = ppData + loaderModule->m_ClassList.Count();
 
     // Look for an existing entry for the specified class
     while (ppData < ppLast)
@@ -1033,7 +1034,7 @@ PTR_EnCEEClassData EditAndContinueModule::GetEnCEEClassData(MethodTable * pMT, B
     // Create a new entry and add it to the end our our table
     EnCEEClassData *pNewData = (EnCEEClassData*)(void*)pMT->GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem_NoThrow(S_SIZE_T(sizeof(EnCEEClassData)));
     pNewData->Init(pMT);
-    ppData = m_ClassList.Append();
+    ppData = loaderModule->m_ClassList.Append();
     if (!ppData)
         return NULL;
     *ppData = pNewData;
@@ -1600,36 +1601,6 @@ EnCEEClassData::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         elt = elt->m_next;
     }
 }
-
-void
-EditAndContinueModule::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
-                                         bool enumThis)
-{
-    SUPPORTS_DAC;
-
-    if (enumThis)
-    {
-        DAC_ENUM_VTHIS();
-    }
-
-    Module::EnumMemoryRegions(flags, false);
-
-    m_ClassList.EnumMemoryRegions();
-
-    DPTR(PTR_EnCEEClassData) classData = m_ClassList.Table();
-    DPTR(PTR_EnCEEClassData) classLast = classData + m_ClassList.Count();
-
-    while (classData.IsValid() && classData < classLast)
-    {
-        if ((*classData).IsValid())
-        {
-            (*classData)->EnumMemoryRegions(flags);
-        }
-
-        classData++;
-    }
-}
-
 #endif // #ifdef DACCESS_COMPILE
 
 
@@ -1640,12 +1611,12 @@ EditAndContinueModule::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
 //   pMT           - MethodTable indicating the type of interest
 //   iteratorType  - one of the ApproxFieldDescIterator::IteratorType values specifying which fields
 //                   are of interest.
-//   fixupEnC      - if true, then any partially-initialized EnC FieldDescs will be fixed up to be complete
-//                   initialized FieldDescs as they are returned by Next().  This may load types and do
-//                   other things to trigger a GC.
+//   flags         - See EncApproxFieldDescIterator::Flags.
 //
-EncApproxFieldDescIterator::EncApproxFieldDescIterator(MethodTable *pMT, int iteratorType, BOOL fixupEnC) :
-      m_nonEnCIter( pMT, iteratorType )
+EncApproxFieldDescIterator::EncApproxFieldDescIterator(MethodTable *pMT, int iteratorType, uint32_t flags)
+    : m_nonEnCIter( pMT, iteratorType )
+    , m_flags( flags )
+    , m_encFieldsReturned( 0 )
 {
     CONTRACTL
     {
@@ -1655,22 +1626,19 @@ EncApproxFieldDescIterator::EncApproxFieldDescIterator(MethodTable *pMT, int ite
     }
     CONTRACTL_END
 
-    m_fixupEnC = fixupEnC;
-
 #ifndef DACCESS_COMPILE
     // can't fixup for EnC on the debugger thread
-    _ASSERTE((g_pDebugInterface->GetRCThreadId() != GetCurrentThreadId()) || fixupEnC == FALSE);
+    _ASSERTE((g_pDebugInterface->GetRCThreadId() != GetCurrentThreadId()) || !(m_flags & FixUpEncFields));
 #endif
 
     m_pCurrListElem = NULL;
     m_encClassData = NULL;
-    m_encFieldsReturned = 0;
 
     // If this is an EnC module, then grab a pointer to the EnC data
     if( pMT->GetModule()->IsEditAndContinueEnabled() )
     {
         PTR_EditAndContinueModule encMod = PTR_EditAndContinueModule(pMT->GetModule());
-        m_encClassData = encMod->GetEnCEEClassData( pMT, TRUE);
+        m_encClassData = encMod->GetEnCEEClassData(pMT, TRUE /* getOnly */);
     }
 }
 
@@ -1680,14 +1648,15 @@ PTR_FieldDesc EncApproxFieldDescIterator::Next()
     CONTRACTL
     {
         NOTHROW;
-        if (m_fixupEnC) {GC_TRIGGERS;} else {GC_NOTRIGGER;}
+        if (m_flags & FixUpEncFields) {GC_TRIGGERS;} else {GC_NOTRIGGER;}
         FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
 
-    // If we still have non-EnC fields to look at, return one of them
-    if( m_nonEnCIter.CountRemaining() > 0 )
+    // If we still have non-EnC fields to look at and the caller didn't
+    // request only EnC fields, return one of them
+    if ( !(m_flags & OnlyEncFields) && m_nonEnCIter.CountRemaining() > 0 )
     {
         _ASSERTE( m_encFieldsReturned == 0 );
         return m_nonEnCIter.Next();
@@ -1695,7 +1664,7 @@ PTR_FieldDesc EncApproxFieldDescIterator::Next()
 
     // Get the next EnC field Desc if any
     PTR_EnCFieldDesc pFD = NextEnC();
-    if( pFD == NULL )
+    if ( pFD == NULL )
     {
         // No more fields
         return NULL;
@@ -1703,7 +1672,7 @@ PTR_FieldDesc EncApproxFieldDescIterator::Next()
 
 #ifndef DACCESS_COMPILE
     // Fixup the fieldDesc if requested and necessary
-    if ( m_fixupEnC && (pFD->NeedsFixup()) )
+    if ((m_flags & FixUpEncFields) && (pFD->NeedsFixup()))
     {
         // if we get an OOM during fixup, the field will just not get fixed up
         EX_TRY
@@ -1741,7 +1710,11 @@ int EncApproxFieldDescIterator::Count()
     }
     CONTRACTL_END
 
-    int count = m_nonEnCIter.Count();
+    int count = 0;
+
+    // Check if the caller is only interested in EnC FieldDescs.
+    if (!(m_flags & OnlyEncFields))
+        count = m_nonEnCIter.Count();
 
     // If this module doesn't have any EnC data then there aren't any EnC fields
     if (m_encClassData == NULL)
