@@ -780,8 +780,15 @@ public:
 
 #ifdef EnC_SUPPORTED
     // Add a new method to an already loaded type for EnC
-    static HRESULT AddMethod(MethodTable * pMT, mdMethodDef methodDef, RVA newRVA, MethodDesc **ppMethod);
-
+    static HRESULT AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc** ppMethod);
+private:
+    static HRESULT AddMethodDesc(
+        MethodTable* pMT,
+        mdMethodDef methodDef,
+        DWORD dwImplFlags,
+        DWORD dwMemberAttrs,
+        MethodDesc** ppNewMD);
+public:
     // Add a new field to an already loaded type for EnC
     static HRESULT AddField(MethodTable* pMT, mdFieldDef fieldDesc, FieldDesc** pAddedField);
 private:

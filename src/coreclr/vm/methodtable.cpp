@@ -8147,7 +8147,45 @@ MethodTable * MethodTable::GetRestoredSlotMT(DWORD slotNumber)
 }
 
 //==========================================================================================
-MethodDesc * MethodTable::GetParallelMethodDesc(MethodDesc * pDefMD)
+namespace
+{
+    // Methods added by EnC cannot be looked up by slot since
+    // they have none, see EEClass::AddMethodDesc(). We must perform
+    // a slow lookup instead of using the fast slot lookup path.
+    MethodDesc* GetParallelMethodDescForEnC(MethodTable* pMT, MethodDesc* pDefMD)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            PRECONDITION(pMT != NULL);
+            PRECONDITION(pDefMD != NULL);
+            PRECONDITION(pDefMD->IsEnCAddedMethod());
+            PRECONDITION(pDefMD->GetSlot() == MethodTable::NO_SLOT);
+        }
+        CONTRACTL_END;
+
+        mdMethodDef tkMethod = pDefMD->GetMemberDef();
+        Module* mod = pDefMD->GetModule();
+        LOG((LF_ENC, LL_INFO100, "GPMDENC: pMT:%p tok:0x%08x mod:%p\n", pMT, tkMethod, mod));
+
+        MethodTable::IntroducedMethodIterator it(pMT);
+        for (; it.IsValid(); it.Next())
+        {
+            MethodDesc* pMD = it.GetMethodDesc();
+            if (pMD->GetMemberDef() == tkMethod
+                && pMD->GetModule() == mod)
+            {
+                return pMD;
+            }
+        }
+        LOG((LF_ENC, LL_INFO10000, "GPMDENC: Not found\n"));
+        return NULL;
+    }
+}
+
+MethodDesc* MethodTable::GetParallelMethodDesc(MethodDesc* pDefMD)
 {
     CONTRACTL
     {
@@ -8156,6 +8194,12 @@ MethodDesc * MethodTable::GetParallelMethodDesc(MethodDesc * pDefMD)
         MODE_ANY;
     }
     CONTRACTL_END;
+
+#ifdef EnC_SUPPORTED
+    if (pDefMD->IsEnCAddedMethod())
+        return GetParallelMethodDescForEnC(this, pDefMD);
+#endif // EnC_SUPPORTED
+
     return GetMethodDescForSlot(pDefMD->GetSlot());
 }
 

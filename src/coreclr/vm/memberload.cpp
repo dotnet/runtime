@@ -1171,10 +1171,44 @@ MemberLoader::FindMethod(
         }
     }
 
-        RETURN md;
-    }
+#ifdef EnC_SUPPORTED
+    // In the event the method wasn't found and the current module has
+    // EnC enabled, try the slow path and go through all available methods.
+    if (md == NULL
+        && pMT->GetModule()->IsEditAndContinueEnabled())
+    {
+        LOG((LF_LOADER, LL_INFO100000, "ML::FM Falling back to EnC slow path\n"));
 
-    RETURN NULL;
+        MethodTable::IntroducedMethodIterator itMethods(pMT, FALSE);
+        for (; itMethods.IsValid(); itMethods.Next())
+        {
+            MethodDesc* pCurDeclMD = itMethods.GetMethodDesc();
+
+#ifdef _DEBUG
+            MethodTable *pCurDeclMT = pCurDeclMD->GetMethodTable();
+            CONSISTENCY_CHECK(!pMT->IsInterface() || pCurDeclMT == pMT->GetCanonicalMethodTable());
+#endif
+
+            if (canSkipMethod && FM_ShouldSkipMethod(pCurDeclMD->GetAttrs(), flags))
+            {
+                continue;
+            }
+
+            LOG((LF_LOADER, LL_INFO100000, "ML::FM EnC - Considering %s::%s, pMD:%p\n",
+                pCurDeclMD->m_pszDebugClassName, pCurDeclMD->m_pszDebugMethodName, pCurDeclMD));
+
+            if (ignoreName || StrCompFunc(pszName, pCurDeclMD->GetNameThrowing()) == 0)
+            {
+                if (CompareMethodSigWithCorrectSubstitution(pSignature, cSignature, pModule, pCurDeclMD, pDefSubst, pMT))
+                {
+                    RETURN pCurDeclMD;
+                }
+            }
+        }
+    }
+#endif // EnC_SUPPORTED
+
+    RETURN md;
 }
 
 //*******************************************************************************

@@ -1118,7 +1118,7 @@ void DebuggerController::DisableAll()
             {
                 if (patch->controller == this)
                 {
-                    Release(patch);
+                    ReleasePatch(patch);
                 }
             }
         }
@@ -1534,41 +1534,6 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
     _ASSERTE( !patch->IsActivated() );
     _ASSERTE( patch->IsBound() );
     return true;
-}
-
-// void DebuggerController::UnapplyPatchAt()
-// NO LOCKING
-// UnapplyPatchAt removes the patch from a copy of the patched code.
-// Like UnapplyPatch, except that we don't bother checking
-// memory permissions, but instead replace the breakpoint instruction
-// with the opcode at an arbitrary memory address.
-void DebuggerController::UnapplyPatchAt(DebuggerControllerPatch *patch,
-                                        CORDB_ADDRESS_TYPE *address)
-{
-    _ASSERTE(patch->IsBound() );
-
-    if (patch->IsNativePatch())
-    {
-        CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)address, patch->opcode);
-        //note that we don't have to zero out opcode field
-        //since we're unapplying at something other than
-        //the original spot. We assert this is true:
-        _ASSERTE( patch->address != address );
-    }
-    else
-    {
-        //
-        // !!! IL patch logic assumes reference encoding
-        //
-// TODO: : determine if this is needed for AMD64
-#ifdef TARGET_X86
-        _ASSERTE(*(unsigned short*)(address+1) == CEE_BREAK);
-
-        *(unsigned short *) (address+1)
-          = (unsigned short) patch->opcode;
-        _ASSERTE( patch->address != address );
-#endif // this makes no sense on anything but X86
-    }
 }
 
 // bool DebuggerController::IsPatched()  Is there a patch at addr?
@@ -2202,7 +2167,7 @@ void DebuggerController::RemovePatchesFromModule(Module *pModule, AppDomain *pAp
             // we shouldn't be both hitting this patch AND
             // unloading the module it belongs to.
             _ASSERTE(!patch->IsTriggering());
-            Release( patch );
+            ReleasePatch( patch );
         }
     }
 }
@@ -2639,7 +2604,7 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
         if (MatchPatch(thread, context, patch))
         {
             LOG((LF_CORDB, LL_INFO10000, "DC::SFT: patch matched\n"));
-            AddRef(patch);
+            AddRefPatch(patch);
 
             // We are hitting a patch at a virtual trace call target, so let's trigger trace call here.
             if (patch->trace.GetTraceType() == TRACE_ENTRY_STUB)
@@ -2690,9 +2655,9 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
             if (patchNext != NULL)
                 iEventNext = g_patches->GetItemIndex((HASHENTRY *)patchNext);
 
-            // Note that Release() actually removes the patch if its ref count
+            // Note that ReleasePatch() actually removes the patch if its ref count
             // reaches 0 after the release.
-            Release(patch);
+            ReleasePatch(patch);
         }
 
         if (tpr == TPR_IGNORE_AND_STOP ||
@@ -2809,27 +2774,51 @@ DPOSS_ACTION DebuggerController::ScanForTriggers(CORDB_ADDRESS_TYPE *address,
 #ifdef EnC_SUPPORTED
 // This function will check for an EnC patch at the given address and return
 // it if one is there, otherwise it will return NULL.
-DebuggerControllerPatch *DebuggerController::GetEnCPatch(const BYTE *address)
+ DebuggerControllerPatch *DebuggerController::GetEnCPatch(const BYTE *address)
 {
     _ASSERTE(address);
 
+    LOG((LF_CORDB|LF_ENC,LL_INFO1000,"DC:GEnCP at %p\n", address));
     if( g_pEEInterface->IsManagedNativeCode(address) )
     {
+        LOG((LF_CORDB|LF_ENC,LL_INFO1000,"DC:GEnCP address is managed code\n"));
         DebuggerJitInfo *dji = g_pDebugger->GetJitInfoFromAddr((TADDR) address);
         if (dji == NULL)
             return NULL;
+
+        dji->LogInstance();
 
         // we can have two types of patches - one in code where the IL has been updated to trigger
         // the switch and the other in the code we've switched to in order to trigger FunctionRemapComplete
         // callback. If version == default then can't be the latter, but otherwise if haven't handled the
         // remap for this function yet is certainly the latter.
-        if (! dji->m_encBreakpointsApplied &&
-            (dji->m_encVersion == CorDB_DEFAULT_ENC_FUNCTION_VERSION))
+        if (! dji->m_encBreakpointsApplied
+            && (dji->m_encVersion == CorDB_DEFAULT_ENC_FUNCTION_VERSION))
         {
             return NULL;
         }
     }
-    return IsXXXPatched(address, DEBUGGER_CONTROLLER_ENC);
+
+    // Look for EnC patch
+    DebuggerControllerPatch *patch = g_patches->GetPatch((CORDB_ADDRESS_TYPE *)address);
+    LOG((LF_CORDB|LF_ENC,LL_INFO1000,"DC:GEnCP Searching, beginning patch: %p\n", patch));
+
+    while (patch != NULL)
+    {
+        // Patches are ordered by DEBUGGER_CONTROLLER_TYPE value
+        DEBUGGER_CONTROLLER_TYPE dct = patch->controller->GetDCType();
+        if ((int)dct > (int)DEBUGGER_CONTROLLER_ENC)
+            break;
+
+        if (dct == DEBUGGER_CONTROLLER_ENC
+            && patch->IsNativePatch())
+        {
+            return patch;
+        }
+        patch = g_patches->GetNextPatch(patch);
+    }
+
+    return NULL;
 }
 #endif //EnC_SUPPORTED
 
@@ -2887,8 +2876,7 @@ DPOSS_ACTION DebuggerController::DispatchPatchOrSingleStep(Thread *thread, CONTE
     // debugger wants to remap the function at this point, then we'll call ResumeInUpdatedFunction and
     // not return, otherwise we will just continue with regular patch-handling logic
     dcpEnCOriginal = GetEnCPatch(dac_cast<PTR_CBYTE>(GetIP(context)));
-
-    if (dcpEnCOriginal)
+    if (dcpEnCOriginal != NULL)
     {
         LOG((LF_CORDB|LF_ENC,LL_INFO10000, "DC::DPOSS EnC short-circuit\n"));
         TP_RESULT tpres =
@@ -8663,17 +8651,34 @@ DebuggerEnCBreakpoint::DebuggerEnCBreakpoint(SIZE_T offset,
                                              DebuggerJitInfo *jitInfo,
                                              DebuggerEnCBreakpoint::TriggerType fTriggerType,
                                              AppDomain *pAppDomain)
-  : DebuggerController(NULL, pAppDomain),
-    m_jitInfo(jitInfo),
-    m_fTriggerType(fTriggerType)
+    : DebuggerController(NULL, pAppDomain),
+      m_jitInfo(jitInfo),
+      m_fTriggerType(fTriggerType)
 {
-    _ASSERTE( jitInfo != NULL );
-    // Add and activate the specified patch
-    AddBindAndActivateNativeManagedPatch(jitInfo->m_nativeCodeVersion.GetMethodDesc(), jitInfo, offset, LEAF_MOST_FRAME, pAppDomain);
-    LOG((LF_ENC,LL_INFO1000, "DEnCBPDEnCBP::adding %s patch!\n",
-        fTriggerType == REMAP_PENDING ? "remap pending" : "remap complete"));
-}
+    _ASSERTE( m_jitInfo != NULL );
 
+    BOOL success;
+    MethodDesc* pMD = m_jitInfo->m_nativeCodeVersion.GetMethodDesc();
+    if (m_fTriggerType == DebuggerEnCBreakpoint::REMAP_COMPLETE)
+    {
+        success = AddBindAndActivateNativeManagedPatch(pMD, m_jitInfo, offset, LEAF_MOST_FRAME, pAppDomain);
+    }
+    else
+    {
+        _ASSERTE(m_fTriggerType == DebuggerEnCBreakpoint::REMAP_PENDING);
+
+        // Add and activate the specified patch
+        Module* module = m_jitInfo->m_pLoaderModule;
+        mdMethodDef tkMethod = pMD->GetMemberDef();
+        SIZE_T encVersion = m_jitInfo->m_encVersion;
+        success = AddILPatch(pAppDomain, module, tkMethod, NULL, encVersion, offset, TRUE);
+    }
+
+    _ASSERTE(success != FALSE);
+
+    LOG((LF_ENC,LL_INFO1000, "DEnCBP::DEnCBP adding %s patch to 0x%x encVersion: %zx\n",
+        fTriggerType == REMAP_PENDING ? "ResumePending" : "ResumeComplete", pMD->GetMemberDef(), m_jitInfo->m_encVersion));
+}
 
 //---------------------------------------------------------------------------------------
 //
@@ -8696,26 +8701,9 @@ TP_RESULT DebuggerEnCBreakpoint::TriggerPatch(DebuggerControllerPatch *patch,
 {
     _ASSERTE(HasLock());
 
-    Module *module = patch->key.module;
-    mdMethodDef md = patch->key.md;
-    SIZE_T offset = patch->offset;
-
-    // Map the current native offset back to the IL offset in the old
-    // function.  This will be mapped to the new native offset within
-    // ResumeInUpdatedFunction
-    CorDebugMappingResult map;
-    DWORD which;
-    SIZE_T currentIP = (SIZE_T)m_jitInfo->MapNativeOffsetToIL(offset,
-            &map, &which);
-
-    // We only lay DebuggerEnCBreakpoints at sequence points
-    _ASSERTE(map == MAPPING_EXACT);
-
     LOG((LF_ENC, LL_ALWAYS,
-         "DEnCBP::TP: triggered E&C %s breakpoint: tid=0x%x, module=0x%08x, "
-         "method def=0x%08x, version=%d, native offset=0x%x, IL offset=0x%x\n this=0x%x\n",
-         m_fTriggerType == REMAP_PENDING ? "ResumePending" : "ResumeComplete",
-         thread, module, md, m_jitInfo->m_encVersion, offset, currentIP, this));
+         "DEnCBP::TP: Triggered EnC %s breakpoint: tid=%p, this=%p\n",
+         m_fTriggerType == REMAP_PENDING ? "ResumePending" : "ResumeComplete", thread, this));
 
     // If this is a REMAP_COMPLETE patch, then dispatch the RemapComplete callback
     if (m_fTriggerType == REMAP_COMPLETE)
@@ -8731,25 +8719,43 @@ TP_RESULT DebuggerEnCBreakpoint::TriggerPatch(DebuggerControllerPatch *patch,
         return TPR_IGNORE;
     }
 
+    // Map the current native offset back to the IL offset in the old
+    // function.  This will be mapped to the new native offset within
+    // ResumeInUpdatedFunction
+    CorDebugMappingResult map;
+    DWORD which;
+    SIZE_T currentIL = (SIZE_T)m_jitInfo->MapNativeOffsetToIL(patch->offset, &map, &which);
+
+    // We only lay DebuggerEnCBreakpoints at sequence points
+    _ASSERTE(map == MAPPING_EXACT);
     _ASSERTE(patch->IsManagedPatch());
 
-    // Grab the MethodDesc for this function.
-    _ASSERTE(module != NULL);
-
-    // GENERICS: @todo generics. This should be replaced by a similar loop
-    // over the DJIs for the DMI as in BindPatch up above.
-    MethodDesc *pFD = g_pEEInterface->FindLoadedMethodRefOrDef(module, md);
-
-    _ASSERTE(pFD != NULL);
-
-    LOG((LF_ENC, LL_ALWAYS,
-         "DEnCBP::TP: in %s::%s\n", pFD->m_pszDebugClassName,pFD->m_pszDebugMethodName));
+    Module *module = patch->key.module;
+    mdMethodDef md = patch->key.md;
+    LOG((LF_ENC, LL_INFO10000,
+         "DEnCBP::TP: methodDef=0x%08x, encVersion=%zx, IL offset=0x%zx\n",
+         md, m_jitInfo->m_encVersion, currentIL));
+    patch->LogInstance();
 
     // Grab the jit info for the original copy of the method, which is
     // what we are executing right now.
-    DebuggerJitInfo *pJitInfo = m_jitInfo;
-    _ASSERTE(pJitInfo);
-    _ASSERTE(pJitInfo->m_nativeCodeVersion.GetMethodDesc() == pFD);
+    DebuggerJitInfo* pJitInfo = m_jitInfo;
+    // Grab the MethodDesc for this function.
+    MethodDesc* pMD = pJitInfo->m_nativeCodeVersion.GetMethodDesc();
+
+    _ASSERTE(pJitInfo != NULL);
+    _ASSERTE(pMD != NULL);
+    LOG((LF_ENC, LL_INFO10000,
+        "DEnCBP::TP: DJI: %p pMD: %p (%s::%s)\n", pJitInfo, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
+
+#if defined(_DEBUG)
+    {
+        // Either the current method matches what we are executing or it is
+        // the typical definition for a generic method (i.e., typical).
+        MethodDesc* loadedMD = g_pEEInterface->FindLoadedMethodRefOrDef(module, md);
+        _ASSERTE(loadedMD == pMD || loadedMD->IsTypicalMethodDefinition());
+    }
+#endif // _DEBUG
 
     // Grab the context for this thread. This is the context that was
     // passed to COMPlusFrameHandler.
@@ -8762,13 +8768,13 @@ TP_RESULT DebuggerEnCBreakpoint::TriggerPatch(DebuggerControllerPatch *patch,
     // Release the controller lock for the rest of this method
     CrstBase::UnsafeCrstInverseHolder inverseLock(&g_criticalSection);
 
-    // resumeIP is the native offset in the new version of the method the debugger wants
+    // resumeIL is the IL offset in the new version of the method the debugger wants
     // to resume to.  We'll pass the address of this variable over to the right-side
     // and if it modifies the contents while we're stopped dispatching the RemapOpportunity,
     // then we know it wants a remap.
     // This form of side-channel communication seems like an error-prone workaround.  Ideally the
-    // remap IP (if any) would just be returned in a response event.
-    SIZE_T resumeIP = (SIZE_T) -1;
+    // remap IL (if any) would just be returned in a response event.
+    SIZE_T resumeIL = (SIZE_T) -1;
 
     // Debugging code to enable a break after N RemapOpportunities
 #ifdef _DEBUG
@@ -8785,29 +8791,29 @@ TP_RESULT DebuggerEnCBreakpoint::TriggerPatch(DebuggerControllerPatch *patch,
         }
 #endif
 
-    // Send an event to the RS to call the RemapOpportunity callback, passing the address of resumeIP.
-    // If the debugger responds with a call to RemapFunction, the supplied IP will be copied into resumeIP
+    // Send an event to the RS to call the RemapOpportunity callback, passing the address of resumeIL.
+    // If the debugger responds with a call to RemapFunction, the supplied IP will be copied into resumeIL
     // and we will know to update the context and resume the function at the new IP. Otherwise we just do
     // nothing and try again on next RemapFunction breakpoint
-    g_pDebugger->LockAndSendEnCRemapEvent(pJitInfo, currentIP, &resumeIP);
+    g_pDebugger->LockAndSendEnCRemapEvent(pJitInfo, currentIL, &resumeIL);
 
     LOG((LF_ENC, LL_ALWAYS,
-         "DEnCBP::TP: resume IL offset is 0x%x\n", resumeIP));
+         "DEnCBP::TP: resume IL is %zx\n", resumeIL));
 
     // Has the debugger requested a remap?
-    if (resumeIP != (SIZE_T) -1)
+    if (resumeIL != (SIZE_T) -1)
     {
         // This will jit the function, update the context, and resume execution at the new location.
         g_pEEInterface->ResumeInUpdatedFunction(pModule,
-                                                pFD,
+                                                pMD,
                                                 (void*)pJitInfo,
-                                                resumeIP,
+                                                resumeIL,
                                                 pContext);
         _ASSERTE(!"Returned from ResumeInUpdatedFunction!");
     }
 
-    LOG((LF_CORDB, LL_ALWAYS, "DEnCB::TP: We've returned from ResumeInUpd"
-        "atedFunction, we're going to skip the EnC patch ####\n"));
+    LOG((LF_CORDB, LL_ALWAYS, "DEnCB::TP: We've returned from ResumeInUpdatedFunction"
+            "we're going to skip the EnC patchId:0x%zx\n", patch->patchId));
 
     // We're returning then we'll have to re-get this lock. Be careful that we haven't kept any controller/patches
     // in the caller. They can move when we unlock, so when we release the lock and reget it here, things might have
@@ -8861,9 +8867,19 @@ TP_RESULT DebuggerEnCBreakpoint::HandleRemapComplete(DebuggerControllerPatch *pa
         return TPR_IGNORE_AND_STOP;
     }
 
-    // GENERICS: @todo generics. This should be replaced by a similar loop
-    // over the DJIs for the DMI as in BindPatch up above.
-    MethodDesc *pFD = g_pEEInterface->FindLoadedMethodRefOrDef(patch->key.module, patch->key.md);
+    MethodDesc* pMD = m_jitInfo->m_nativeCodeVersion.GetMethodDesc();
+    _ASSERTE(pMD != NULL);
+    LOG((LF_ENC, LL_INFO10000, "DEnCBP::HRC: this: %p pMD: %p (%s::%s)\n",
+        this, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
+
+#if defined(_DEBUG)
+    {
+        // Either the current method matches what we are executing or it is
+        // the typical definition for a generic method (i.e., typical).
+        MethodDesc* loadedMD = g_pEEInterface->FindLoadedMethodRefOrDef(patch->key.module, patch->key.md);
+        _ASSERTE(loadedMD == pMD || loadedMD->IsTypicalMethodDefinition());
+    }
+#endif // _DEBUG
 
     LOG((LF_ENC, LL_ALWAYS, "DEnCBP::HRC: unlocking controller\n"));
 
@@ -8872,7 +8888,7 @@ TP_RESULT DebuggerEnCBreakpoint::HandleRemapComplete(DebuggerControllerPatch *pa
 
     LOG((LF_ENC, LL_ALWAYS, "DEnCBP::HRC: sending RemapCompleteEvent\n"));
 
-    g_pDebugger->LockAndSendEnCRemapCompleteEvent(pFD);
+    g_pDebugger->LockAndSendEnCRemapCompleteEvent(pMD);
 
     // We're returning then we'll have to re-get this lock. Be careful that we haven't kept any controller/patches
     // in the caller. They can move when we unlock, so when we release the lock and reget it here, things might have

@@ -15,6 +15,7 @@
 #include "eeconfig.h"
 #include "excep.h"
 #include "stackwalk.h"
+#include "methoditer.h"
 
 #ifdef DACCESS_COMPILE
 #include "../debug/daccess/gcinterface.dac.h"
@@ -317,7 +318,8 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     // Notify the JIT that we've got new IL for this method
     // This will ensure that all new calls to the method will go to the new version.
     // The runtime does this by never backpatching the methodtable slots in EnC-enabled modules.
-    LOG((LF_ENC, LL_INFO100000, "EACM::UM: Updating function %s to version %d\n", pMethod->m_pszDebugMethodName, m_applyChangesCount));
+    LOG((LF_ENC, LL_INFO100000, "EACM::UM: Updating function %s::%s to version %d\n",
+        pMethod->m_pszDebugClassName, pMethod->m_pszDebugMethodName, m_applyChangesCount));
 
     // Reset any flags relevant to the old code
     //
@@ -325,7 +327,30 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
     // to the Method's code must be to the call/jmp blob immediately in front of the
     // MethodDesc itself.  See MethodDesc::InEnCEnabledModule()
     //
-    pMethod->ResetCodeEntryPointForEnC();
+    if (!pMethod->HasClassOrMethodInstantiation())
+    {
+        // Not a method impacted by generics, so this is the MethodDesc to use.
+        pMethod->ResetCodeEntryPointForEnC();
+    }
+    else
+    {
+        // Generics are involved so we need to search for all related MethodDescs.
+        Module* module = pMethod->GetLoaderModule();
+        AppDomain* appDomain = module->GetDomain()->AsAppDomain();
+        mdMethodDef tkMethod = pMethod->GetMemberDef();
+
+        LoadedMethodDescIterator it(
+            appDomain,
+            module,
+            tkMethod,
+            AssemblyIterationFlags(kIncludeLoaded | kIncludeExecution));
+        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+        while (it.Next(pDomainAssembly.This()))
+        {
+            MethodDesc* pMD = it.Current();
+            pMD->ResetCodeEntryPointForEnC();
+        }
+    }
 
     return S_OK;
 }
@@ -383,7 +408,7 @@ HRESULT EditAndContinueModule::AddMethod(mdMethodDef token)
     // Add the method to the runtime's Class data structures
     LOG((LF_ENC, LL_INFO100000, "EACM::AM: Adding function %08x to type %08x\n", token, parentTypeDef));
     MethodDesc *pMethod = NULL;
-    hr = EEClass::AddMethod(pParentType, token, 0, &pMethod);
+    hr = EEClass::AddMethod(pParentType, token, &pMethod);
 
     if (FAILED(hr))
     {
@@ -543,15 +568,15 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
 
     // get the code address (may jit the fcn if not already jitted)
     EX_TRY {
-        if (!pMD->IsPointingToNativeCode())
+        if (pMD->IsPointingToNativeCode())
         {
-            GCX_PREEMP();
-            pMD->DoPrestub(NULL);
-            LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction JIT successful\n"));
+            LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction %p already JITed\n", pMD));
         }
         else
         {
-            LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction function already JITed\n"));
+            GCX_PREEMP();
+            pMD->DoPrestub(NULL);
+            LOG((LF_ENC, LL_INFO100, "EnCModule::ResumeInUpdatedFunction JIT of %p successful\n", pMD));
         }
         jittedCode = pMD->GetNativeCode();
     } EX_CATCH {

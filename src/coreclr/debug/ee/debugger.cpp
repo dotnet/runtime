@@ -4752,7 +4752,6 @@ static BOOL IsDuplicatePatch(SIZE_T_UNORDERED_ARRAY* unorderedArray, SIZE_T Entr
 //
 // Parameters:
 // djiNew - this is the DJI created in D::JitComplete.
-//   If djiNew == NULL iff we aren't tracking debug-info.
 // fd - the method desc that we're binding too.
 // addrOfCode - address of the native blob of code we just jitted
 //
@@ -4841,12 +4840,13 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
                 continue;
             }
 
-            // Only apply breakpoint patches that are for this version.
-            // If the patch doesn't have a particular EnCVersion available from its data then
+            // Only apply breakpoint and EnC remap patches that are for this version.
+            // If the patches doesn't have a particular EnCVersion available from its data then
             // we're (probably) not tracking JIT info.
-            if (dcp->IsBreakpointPatch() && dcp->HasEnCVersion() && djiNew && dcp->GetEnCVersion() != djiNew->m_encVersion)
+            if ((dcp->IsBreakpointPatch() || dcp->IsEnCRemapPatch())
+                && dcp->HasEnCVersion() && dcp->GetEnCVersion() != djiNew->m_encVersion)
             {
-                LOG((LF_CORDB, LL_INFO10000, "Not applying breakpoint patch to new version\n"));
+                LOG((LF_CORDB, LL_INFO10000, "Not applying breakpoint or EnC remap patch to new version\n"));
                 continue;
             }
 
@@ -4856,86 +4856,52 @@ HRESULT Debugger::MapAndBindFunctionPatches(DebuggerJitInfo *djiNew,
             // This is to signal that we should not skip here.
             // <NICE> under exactly what scenarios (EnC, code pitching etc.) will this apply?... </NICE>
             // <NICE> can't we be a little clearer about why we don't want to bind the patch in this arcane situation?</NICE>
-            if (dcp->HasDJI() && !dcp->IsBreakpointPatch() &&  !dcp->IsStepperPatch())
+            if (dcp->HasDJI() && !dcp->IsBreakpointPatch() && !dcp->IsStepperPatch())
             {
-                LOG((LF_CORDB, LL_INFO10000, "Neither stepper nor BP but we have valid a DJI (i.e. the DJI hasn't been deleted as part of the Unbind/MovedCode/Rebind mess)! - getting next patch!\n"));
+                LOG((LF_CORDB, LL_INFO10000, "D::MABFP: Neither stepper nor BP but we have valid a DJI (i.e. the DJI hasn't been deleted as part of the Unbind/MovedCode/Rebind mess)! - getting next patch!\n"));
                 continue;
             }
 
-            // Now check if we're tracking JIT info or not
-            if (djiNew == NULL)
+            pidInCaseTableMoves = dcp->patchId;
+
+            // If we've already mapped this one to the current version,
+            //  don't map it again.
+            LOG((LF_CORDB,LL_INFO10000,"D::MABFP: Checking if 0x%zx is a dup... ",
+                pidInCaseTableMoves));
+
+            if ( IsDuplicatePatch(GetBPMappingDuplicates(), pidInCaseTableMoves) )
             {
-                // This means we put a patch in a method w/ no debug info.
-                _ASSERTE(dcp->IsBreakpointPatch() ||
-                    dcp->IsStepperPatch() ||
-                    dcp->controller->GetDCType() == DEBUGGER_CONTROLLER_THREAD_STARTER);
-
-                // W/o Debug-info, We can only patch native offsets, and only at the start of the method (native offset 0).
-                // <TODO> Why can't we patch other native offsets??
-                // Maybe b/c we don't know if we're patching
-                // in the middle of an instruction. Though that's not a
-                // strict requirement.</TODO>
-                // We can't even do a IL-offset 0 because that's after the prolog and w/o the debug-info,
-                // we don't know where the prolog ends.
-                // Failing this assert is arguably an API misusage - the debugger should have enabled
-                // jit-tracking if they wanted to put bps at offsets other than native:0.
-                if (dcp->IsNativePatch() && (dcp->offset == 0))
-                {
-                    DebuggerController::g_patches->BindPatch(dcp, addrOfCode);
-                    DebuggerController::ActivatePatch(dcp);
-                }
-                else
-                {
-                    // IF a debugger calls EnableJitDebugging(true, ...) in the module-load callback,
-                    // we should never get here.
-                    *(listUnbindablePatches.AppendThrowing()) = dcp;
-                }
-
+                LOG((LF_CORDB,LL_INFO10000,"it is!\n"));
+                continue;
             }
-            else
+            LOG((LF_CORDB,LL_INFO10000,"nope, applying.\n"));
+            dcp->LogInstance();
+
+            // Attempt mapping from patch to new version of code, and
+            // we don't care if it turns out that there isn't a mapping.
+            // <TODO>@todo-postponed: EnC: Make sure that this doesn't cause
+            // the patch-table to shift.</TODO>
+            hr = MapPatchToDJI( dcp, djiNew );
+            if (CORDBG_E_CODE_NOT_AVAILABLE == hr )
             {
-                pidInCaseTableMoves = dcp->pid;
-
-                // If we've already mapped this one to the current version,
-                //  don't map it again.
-                LOG((LF_CORDB,LL_INFO10000,"D::MABFP: Checking if 0x%x is a dup...",
-                    pidInCaseTableMoves));
-
-                if ( IsDuplicatePatch(GetBPMappingDuplicates()->Table(),
-                    GetBPMappingDuplicates()->Count(),
-                    pidInCaseTableMoves) )
-                {
-                    LOG((LF_CORDB,LL_INFO10000,"it is!\n"));
-                    continue;
-                }
-                LOG((LF_CORDB,LL_INFO10000,"nope!\n"));
-
-                // Attempt mapping from patch to new version of code, and
-                // we don't care if it turns out that there isn't a mapping.
-                // <TODO>@todo-postponed: EnC: Make sure that this doesn't cause
-                // the patch-table to shift.</TODO>
-                hr = MapPatchToDJI( dcp, djiNew );
-                if (CORDBG_E_CODE_NOT_AVAILABLE == hr )
-                {
-                    *(listUnbindablePatches.AppendThrowing()) = dcp;
-                    hr = S_OK;
-                }
-
-                if (FAILED(hr))
-                    break;
-
-                //Remember the patch id to prevent duplication later
-                pidTableEntry = GetBPMappingDuplicates()->Append();
-                if (NULL == pidTableEntry)
-                {
-                    hr = E_OUTOFMEMORY;
-                    break;
-                }
-
-                *pidTableEntry = pidInCaseTableMoves;
-                LOG((LF_CORDB,LL_INFO10000,"D::MABFP Adding 0x%x to list of "
-                    "already mapped patches\n", pidInCaseTableMoves));
+                *(listUnbindablePatches.AppendThrowing()) = dcp;
+                hr = S_OK;
             }
+
+            if (FAILED(hr))
+                break;
+
+            //Remember the patch id to prevent duplication later
+            pidTableEntry = GetBPMappingDuplicates()->Append();
+            if (NULL == pidTableEntry)
+            {
+                hr = E_OUTOFMEMORY;
+                break;
+            }
+
+            *pidTableEntry = pidInCaseTableMoves;
+            LOG((LF_CORDB,LL_INFO10000,"D::MABFP Adding 0x%zx to list of already mapped patches\n",
+                pidInCaseTableMoves));
         }
 
         // unlock controller lock before sending events.

@@ -480,6 +480,9 @@ public:
         return dji;
     }
 
+    // Determine if the patch is related to EnC remap logic.
+    BOOL IsEnCRemapPatch();
+
     // These tell us which EnC version a patch relates to.  They are used
     // to determine if we are mapping a patch to a new version.
     //
@@ -1140,8 +1143,8 @@ class DebuggerController
     // destroys the thread before it fires, then we'd still have an active DTS.
     static void CancelOutstandingThreadStarter(Thread * pThread);
 
-    static void AddRef(DebuggerControllerPatch *patch);
-    static void Release(DebuggerControllerPatch *patch);
+    static void AddRefPatch(DebuggerControllerPatch *patch);
+    static void ReleasePatch(DebuggerControllerPatch *patch);
 
   private:
 
@@ -1188,7 +1191,6 @@ private:
                           CORDB_ADDRESS_TYPE *startAddr);
     static bool ApplyPatch(DebuggerControllerPatch *patch);
     static bool UnapplyPatch(DebuggerControllerPatch *patch);
-    static void UnapplyPatchAt(DebuggerControllerPatch *patch, CORDB_ADDRESS_TYPE *address);
     static bool IsPatched(CORDB_ADDRESS_TYPE *address, BOOL native);
 
     static void ActivatePatch(DebuggerControllerPatch *patch);
@@ -1248,17 +1250,6 @@ public:
     //
 
     Thread *GetThread() { return m_thread; }
-
-    // This one should be made private
-    BOOL AddBindAndActivateILSlavePatch(DebuggerControllerPatch *master,
-                                        DebuggerJitInfo *dji);
-
-    BOOL AddILPatch(AppDomain * pAppDomain, Module *module,
-                    mdMethodDef md,
-                    MethodDesc* pMethodFilter,
-                    SIZE_T encVersion,  // what encVersion does this apply to?
-                    SIZE_T offset,
-                    BOOL offsetIsIL);
 
     // The next two are very similar.  Both work on offsets,
     // but one takes a "patch id".  I don't think these are really needed: the
@@ -1325,16 +1316,26 @@ public:
     void Enqueue();
     void Dequeue();
 
-  private:
+  protected:
     // Helper function that is called on each virtual trace call target to set a trace patch
     static void PatchTargetVisitor(TADDR pVirtualTraceCallTarget, VOID* pUserData);
 
-    DebuggerControllerPatch *AddILMasterPatch(Module *module,
+    DebuggerControllerPatch *AddILPrimaryPatch(Module *module,
                   mdMethodDef md,
                   MethodDesc *pMethodDescFilter,
                   SIZE_T offset,
                   BOOL offsetIsIL,
                   SIZE_T encVersion);
+
+    BOOL AddBindAndActivateILReplicaPatch(DebuggerControllerPatch *primary,
+                                        DebuggerJitInfo *dji);
+
+    BOOL AddILPatch(AppDomain * pAppDomain, Module *module,
+                    mdMethodDef md,
+                    MethodDesc* pMethodFilter,
+                    SIZE_T encVersion,  // what encVersion does this apply to?
+                    SIZE_T offset,
+                    BOOL offsetIsIL);
 
     BOOL AddBindAndActivatePatchForMethodDesc(MethodDesc *fd,
                   DebuggerJitInfo *dji,
@@ -1342,7 +1343,6 @@ public:
                   DebuggerPatchKind kind,
                   FramePointer fp,
                   AppDomain *pAppDomain);
-
 
   protected:
 
