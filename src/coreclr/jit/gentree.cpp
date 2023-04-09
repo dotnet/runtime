@@ -15972,23 +15972,18 @@ GenTree* Compiler::gtNewTempAssign(
     GenTree* asg;
     GenTree* dest = gtNewLclvNode(tmp, dstTyp);
 
-    if (val->IsInitVal())
-    {
-        asg = gtNewAssignNode(dest, val);
-    }
-    else if (varTypeIsStruct(varDsc))
+    if (varTypeIsStruct(varDsc) && !val->IsInitVal())
     {
         asg = impAssignStruct(dest, val, CHECK_SPILL_NONE, pAfterStmt, di, block);
     }
     else
     {
-        assert(!varTypeIsStruct(valTyp));
         asg = gtNewAssignNode(dest, val);
     }
 
-    if (compRationalIRForm)
+    if (compAssignmentRationalized)
     {
-        Rationalizer::RewriteAssignmentIntoStoreLcl(asg->AsOp());
+        asg = fgRationalizeAssignment(asg->AsOp());
     }
 
     return asg;
@@ -17242,9 +17237,15 @@ bool GenTree::IsPhiNode()
 
 bool GenTree::IsPhiDefn()
 {
-    bool res = OperIs(GT_ASG) && AsOp()->gtOp2->OperIs(GT_PHI);
-    assert(!res || AsOp()->gtOp1->OperIs(GT_LCL_VAR));
-    return res;
+    if (OperIs(GT_ASG))
+    {
+        return AsOp()->gtOp2->OperIs(GT_PHI);
+    }
+    if (OperIs(GT_STORE_LCL_VAR))
+    {
+        return AsLclVar()->Data()->OperIs(GT_PHI);
+    }
+    return false;
 }
 
 bool GenTree::IsLclVarAddr() const
