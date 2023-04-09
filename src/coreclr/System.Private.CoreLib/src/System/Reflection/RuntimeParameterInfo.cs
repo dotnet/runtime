@@ -259,9 +259,7 @@ namespace System.Reflection
                 if (m_noMetadata || m_noDefaultValue)
                     return false;
 
-                object? defaultValue = GetDefaultValueInternal(false);
-
-                return defaultValue != DBNull.Value;
+                return TryGetDefaultValueInternal(false, out _);
             }
         }
 
@@ -277,9 +275,7 @@ namespace System.Reflection
                 return null;
 
             // for dynamic method we pretend to have cached the value so we do not go to metadata
-            object? defaultValue = GetDefaultValueInternal(raw);
-
-            if (defaultValue == DBNull.Value)
+            if (!TryGetDefaultValueInternal(raw, out object? defaultValue))
             {
                 #region Handle case if no default value was found
                 if (IsOptional)
@@ -328,14 +324,15 @@ namespace System.Reflection
         }
 
         // returns DBNull.Value if the parameter doesn't have a default value
-        private object? GetDefaultValueInternal(bool raw)
+        private bool TryGetDefaultValueInternal(bool raw, out object? defaultValue)
         {
             Debug.Assert(!m_noMetadata);
 
             if (m_noDefaultValue)
-                return DBNull.Value;
-
-            object? defaultValue = null;
+            {
+                defaultValue = DBNull.Value;
+                return false;
+            }
 
             // Prioritize metadata constant over custom attribute constant
             #region Look for a default value in metadata
@@ -343,26 +340,37 @@ namespace System.Reflection
             {
                 // This will return DBNull.Value if no constant value is defined on m_tkParamDef in the metadata.
                 defaultValue = MdConstant.GetValue(m_scope, m_tkParamDef, ParameterType.TypeHandle, raw);
+
+                // If default value is not specified in metadata, look for it in custom attributes
+                if (defaultValue == DBNull.Value)
+                {
+                    // The resolution of default value is done by following these rules:
+                    // 1. For RawDefaultValue, we pick the first custom attribute holding the constant value
+                    //  in the following order: DecimalConstantAttribute, DateTimeConstantAttribute, CustomConstantAttribute
+                    // 2. For DefaultValue, we first look for CustomConstantAttribute and pick the first occurrence.
+                    //  If none is found, then we repeat the same process searching for DecimalConstantAttribute.
+                    // IMPORTANT: Please note that there is a subtle difference in order custom attributes are inspected for
+                    //  RawDefaultValue and DefaultValue.
+                    defaultValue = raw ? GetDefaultValueFromCustomAttributeData() : GetDefaultValueFromCustomAttributes();
+
+                    if (defaultValue == DBNull.Value)
+                    {
+                        m_noDefaultValue = true;
+                        return false;
+                    }
+
+                    return true;
+                }
+                else
+                {
+                    return true;
+                }
             }
+
             #endregion
 
-            // If default value is not specified in metadata, look for it in custom attributes
-            if (defaultValue == DBNull.Value)
-            {
-                // The resolution of default value is done by following these rules:
-                // 1. For RawDefaultValue, we pick the first custom attribute holding the constant value
-                //  in the following order: DecimalConstantAttribute, DateTimeConstantAttribute, CustomConstantAttribute
-                // 2. For DefaultValue, we first look for CustomConstantAttribute and pick the first occurrence.
-                //  If none is found, then we repeat the same process searching for DecimalConstantAttribute.
-                // IMPORTANT: Please note that there is a subtle difference in order custom attributes are inspected for
-                //  RawDefaultValue and DefaultValue.
-                defaultValue = raw ? GetDefaultValueFromCustomAttributeData() : GetDefaultValueFromCustomAttributes();
-            }
-
-            if (defaultValue == DBNull.Value)
-                m_noDefaultValue = true;
-
-            return defaultValue;
+            defaultValue = DBNull.Value;
+            return false;
         }
 
         private static decimal GetRawDecimalConstant(CustomAttributeData attr)
