@@ -1385,9 +1385,87 @@ static void safe_switch_to_thread()
     gc_heap::disable_preemptive(cooperative_mode);
 }
 
+#define check_msl_status(msg, size) if (msl_status == msl_retry_different_heap) \
+    { \
+        dprintf (5555, ("h%d RETRY %s(%Id)", heap_number, msg, size)); \
+        return a_state_retry_allocate; \
+    }
+
 static const int32_t lock_free = -1;
 static const int32_t lock_taken = 0;
 static const int32_t lock_decommissioned = 1;
+
+
+// If our heap got decommissioned, we need to try an existing heap.
+//inline
+#pragma optimize("", off)
+bool gc_heap::should_move_heap (GCSpinLock* msl)
+{
+#ifdef MULTIPLE_HEAPS
+    if (msl->lock == lock_decommissioned)
+    {
+        dprintf (5555, ("heap#%d got decommissioned! need to retry", heap_number));
+    }
+    return (msl->lock == lock_decommissioned);
+#else //MULTIPLE_HEAPS
+    return false;
+#endif //MULTIPLE_HEAPS
+}
+#pragma optimize("", on)
+
+// All the places where we could be stopped because a GC happened should call should_move_heap to check if we need to return
+// so we can try another heap or we can continue the allocation on the same heap.
+enter_msl_status gc_heap::enter_spin_lock_msl (GCSpinLock* msl)
+{
+    if (should_move_heap (msl)) return msl_retry_different_heap;
+
+    RAW_KEYWORD (volatile) int32_t* lock = &(msl->lock);
+
+retry:
+
+    if (Interlocked::CompareExchange (lock, 0, -1) >= 0)
+    {
+        unsigned int i = 0;
+        while (VolatileLoad (lock) >= 0)
+        {
+            if ((++i & 7) && !IsGCInProgress ())
+            {
+                if (g_num_processors > 1)
+                {
+#ifndef MULTIPLE_HEAPS
+                    int spin_count = 32 * yp_spin_count_unit;
+#else //!MULTIPLE_HEAPS
+                    int spin_count = yp_spin_count_unit;
+#endif //!MULTIPLE_HEAPS
+                    for (int j = 0; j < spin_count; j++)
+                    {
+                        if (VolatileLoad (lock) < 0 || IsGCInProgress ())
+                            break;
+                        YieldProcessor ();           // indicate to the processor that we are spinning
+                    }
+                    if (VolatileLoad (lock) >= 0 && !IsGCInProgress ())
+                    {
+                        safe_switch_to_thread ();
+                        if (should_move_heap (msl)) return msl_retry_different_heap;
+                    }
+                }
+                else
+                {
+                    safe_switch_to_thread ();
+                    if (should_move_heap (msl)) return msl_retry_different_heap;
+                }
+            }
+            else
+            {
+                WaitLongerNoInstru (i);
+                if (should_move_heap (msl)) return msl_retry_different_heap;
+            }
+        }
+        goto retry;
+    }
+
+    return msl_entered;
+}
 
 //
 // We need the following methods to have volatile arguments, so that they can accept
@@ -6061,7 +6139,7 @@ void gc_heap::thread_uoh_segment (int gen_number, heap_segment* new_seg)
 }
 
 heap_segment*
-gc_heap::get_uoh_segment (int gen_number, size_t size, BOOL* did_full_compact_gc)
+gc_heap::get_uoh_segment (int gen_number, size_t size, BOOL* did_full_compact_gc, enter_msl_status* msl_status)
 {
     *did_full_compact_gc = FALSE;
     size_t last_full_compact_gc_count = get_full_compact_gc_count();
@@ -6080,6 +6158,13 @@ gc_heap::get_uoh_segment (int gen_number, size_t size, BOOL* did_full_compact_gc
         *did_full_compact_gc = TRUE;
     }
 
+    if (should_move_heap (&more_space_lock_uoh))
+    {
+        *msl_status = msl_retry_different_heap;
+        leave_spin_lock (&gc_heap::gc_lock);
+        return NULL;
+    }
+
     heap_segment* res = get_segment_for_uoh (gen_number, size
 #ifdef MULTIPLE_HEAPS
                                             , this
@@ -6088,7 +6173,9 @@ gc_heap::get_uoh_segment (int gen_number, size_t size, BOOL* did_full_compact_gc
 
     dprintf (SPINLOCK_LOG, ("[%d]Seg: A Lgc", heap_number));
     leave_spin_lock (&gc_heap::gc_lock);
-    enter_spin_lock (&more_space_lock_uoh);
+    *msl_status = enter_spin_lock_msl (&more_space_lock_uoh);
+    if (*msl_status == msl_retry_different_heap) return NULL;
+
     add_saved_spinlock_info (true, me_acquire, mt_get_large_seg);
 
     return res;
@@ -6974,19 +7061,25 @@ void gc_heap::gc_thread_function ()
 #endif //BACKGROUND_GC
 
 #ifdef MULTIPLE_HEAPS
-            int highest_heap_with_more_space_lock = 0;
+            int lowest_heap_with_msl_uoh = -1;
             for (int i = 0; i < gc_heap::n_heaps; i++)
             {
                 gc_heap* hp = gc_heap::g_heaps[i];
                 if (spin_lock_taken_p (&hp->more_space_lock_soh))
                 {
-                    highest_heap_with_more_space_lock = i;
                     hp->add_saved_spinlock_info (false, me_release, mt_block_gc);
                     leave_spin_lock(&hp->more_space_lock_soh);
                 }
-                if (spin_lock_taken_p(&hp->more_space_lock_uoh))
+
+                if ((lowest_heap_with_msl_uoh == -1) && (hp->uoh_msl_before_gc_p))
                 {
-                    highest_heap_with_more_space_lock = i;
+                    lowest_heap_with_msl_uoh = i;
+                }
+
+                if (hp->uoh_msl_before_gc_p)
+                {
+                    dprintf (5555, ("h%d uoh msl was taken before GC", i));
+                    hp->uoh_msl_before_gc_p = false;
                 }
             }
 #endif //MULTIPLE_HEAPS
@@ -7032,8 +7125,14 @@ void gc_heap::gc_thread_function ()
                 // can't have threads allocating while we change the number of heaps
                 GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
 
-                int rand_n_heaps = (int)gc_rand::get_rand(n_max_heaps-1)+1;
-                int new_n_heaps = max (rand_n_heaps, highest_heap_with_more_space_lock+1);
+                int new_n_heaps = (int)gc_rand::get_rand (n_max_heaps - 1) + 1;
+
+                // if we are adjusting down, make sure we adjust lower than the lowest uoh msl heap
+                if ((new_n_heaps < n_heaps) && (lowest_heap_with_msl_uoh != -1))
+                {
+                    new_n_heaps = min (lowest_heap_with_msl_uoh, new_n_heaps);
+                    new_n_heaps = max (new_n_heaps, 1);
+                }
                 change_heap_count (new_n_heaps);
                 prev_change_heap_count_gc_index = settings.gc_index;
 
@@ -14790,7 +14889,9 @@ gc_heap::init_gc_heap (int h_number)
     total_alloc_bytes_uoh = 0;
 
     //needs to be done after the dynamic data has been initialized
-#ifndef MULTIPLE_HEAPS
+#ifdef MULTIPLE_HEAPS
+    uoh_msl_before_gc_p = false;
+#else //MULTIPLE_HEAPS
     allocation_running_amount = dd_min_size (dynamic_data_of (0));
 #endif //!MULTIPLE_HEAPS
 
@@ -17413,19 +17514,22 @@ BOOL gc_heap::uoh_a_fit_segment_end_p (int gen_number,
 
 #ifdef BACKGROUND_GC
 inline
-void gc_heap::wait_for_background (alloc_wait_reason awr, bool loh_p)
+enter_msl_status gc_heap::wait_for_background (alloc_wait_reason awr, bool loh_p)
 {
     GCSpinLock* msl = loh_p ? &more_space_lock_uoh : &more_space_lock_soh;
+    enter_msl_status msl_status = msl_entered;
 
     dprintf (2, ("BGC is already in progress, waiting for it to finish"));
     add_saved_spinlock_info (loh_p, me_release, mt_wait_bgc);
     leave_spin_lock (msl);
     background_gc_wait (awr);
-    enter_spin_lock (msl);
+    msl_status = enter_spin_lock_msl (msl);
     add_saved_spinlock_info (loh_p, me_acquire, mt_wait_bgc);
+
+    return msl_status;
 }
 
-bool gc_heap::wait_for_bgc_high_memory (alloc_wait_reason awr, bool loh_p)
+bool gc_heap::wait_for_bgc_high_memory (alloc_wait_reason awr, bool loh_p, enter_msl_status* msl_status)
 {
     bool wait_p = false;
     if (gc_heap::background_running_p())
@@ -17436,7 +17540,7 @@ bool gc_heap::wait_for_bgc_high_memory (alloc_wait_reason awr, bool loh_p)
         {
             wait_p = true;
             dprintf (GTC_LOG, ("high mem - wait for BGC to finish, wait reason: %d", awr));
-            wait_for_background (awr, loh_p);
+            *msl_status = wait_for_background (awr, loh_p);
         }
     }
 
@@ -17447,10 +17551,11 @@ bool gc_heap::wait_for_bgc_high_memory (alloc_wait_reason awr, bool loh_p)
 
 // We request to trigger an ephemeral GC but we may get a full compacting GC.
 // return TRUE if that's the case.
-BOOL gc_heap::trigger_ephemeral_gc (gc_reason gr)
+BOOL gc_heap::trigger_ephemeral_gc (gc_reason gr, enter_msl_status* msl_status)
 {
 #ifdef BACKGROUND_GC
-    wait_for_bgc_high_memory (awr_loh_oos_bgc, false);
+    wait_for_bgc_high_memory (awr_loh_oos_bgc, false, msl_status);
+    if (*msl_status == msl_retry_different_heap) return FALSE;
 #endif //BACKGROUND_GC
 
     BOOL did_full_compact_gc = FALSE;
@@ -17460,7 +17565,8 @@ BOOL gc_heap::trigger_ephemeral_gc (gc_reason gr)
     vm_heap->GarbageCollectGeneration(max_generation - 1, gr);
 
 #ifdef MULTIPLE_HEAPS
-    enter_spin_lock (&more_space_lock_soh);
+    *msl_status = enter_spin_lock_msl (&more_space_lock_soh);
+    if (*msl_status == msl_retry_different_heap) return FALSE;
     add_saved_spinlock_info (false, me_acquire, mt_t_eph_gc);
 #endif //MULTIPLE_HEAPS
 
@@ -17567,6 +17673,8 @@ allocation_state gc_heap::allocate_soh (int gen_number,
                                           uint32_t flags,
                                           int align_const)
 {
+    enter_msl_status msl_status = msl_entered;
+
 #if defined (BACKGROUND_GC) && !defined (MULTIPLE_HEAPS)
     if (gc_heap::background_running_p())
     {
@@ -17578,7 +17686,10 @@ allocation_state gc_heap::allocate_soh (int gen_number,
             bool cooperative_mode = enable_preemptive();
             GCToOSInterface::Sleep (bgc_alloc_spin);
             disable_preemptive (cooperative_mode);
-            enter_spin_lock (&more_space_lock_soh);
+
+            msl_status = enter_spin_lock_msl (&more_space_lock_soh);
+            if (msl_status == msl_retry_different_heap) return a_state_retry_allocate;
+
             add_saved_spinlock_info (false, me_acquire, mt_alloc_small);
         }
         else
@@ -17684,7 +17795,9 @@ allocation_state gc_heap::allocate_soh (int gen_number,
                 BOOL bgc_in_progress_p = FALSE;
                 BOOL did_full_compacting_gc = FALSE;
 
-                bgc_in_progress_p = check_and_wait_for_bgc (awr_gen0_oos_bgc, &did_full_compacting_gc, false);
+                bgc_in_progress_p = check_and_wait_for_bgc (awr_gen0_oos_bgc, &did_full_compacting_gc, false, &msl_status);
+                if (msl_status == msl_retry_different_heap) return a_state_retry_allocate;
+
                 soh_alloc_state = (did_full_compacting_gc ?
                                         a_state_try_fit_after_cg :
                                         a_state_try_fit_after_bgc);
@@ -17698,7 +17811,9 @@ allocation_state gc_heap::allocate_soh (int gen_number,
                 BOOL bgc_in_progress_p = FALSE;
                 BOOL did_full_compacting_gc = FALSE;
 
-                did_full_compacting_gc = trigger_ephemeral_gc (gr);
+                did_full_compacting_gc = trigger_ephemeral_gc (gr, &msl_status);
+                if (msl_status == msl_retry_different_heap) return a_state_retry_allocate;
+
                 if (did_full_compacting_gc)
                 {
                     soh_alloc_state = a_state_try_fit_after_cg;
@@ -17760,8 +17875,8 @@ allocation_state gc_heap::allocate_soh (int gen_number,
                 BOOL short_seg_end_p = FALSE;
                 BOOL did_full_compacting_gc = FALSE;
 
-
-                did_full_compacting_gc = trigger_ephemeral_gc (gr);
+                did_full_compacting_gc = trigger_ephemeral_gc (gr, &msl_status);
+                if (msl_status == msl_retry_different_heap) return a_state_retry_allocate;
 
                 if (did_full_compacting_gc)
                 {
@@ -17794,7 +17909,9 @@ allocation_state gc_heap::allocate_soh (int gen_number,
 
                 BOOL got_full_compacting_gc = FALSE;
 
-                got_full_compacting_gc = trigger_full_compact_gc (gr, &oom_r, false);
+                got_full_compacting_gc = trigger_full_compact_gc (gr, &oom_r, false, &msl_status);
+                if (msl_status == msl_retry_different_heap) return a_state_retry_allocate;
+
                 soh_alloc_state = (got_full_compacting_gc ? a_state_try_fit_after_cg : a_state_cant_allocate);
                 break;
             }
@@ -17922,13 +18039,15 @@ size_t gc_heap::get_uoh_seg_size (size_t size)
 BOOL gc_heap::uoh_get_new_seg (int gen_number,
                                size_t size,
                                BOOL* did_full_compact_gc,
-                               oom_reason* oom_r)
+                               oom_reason* oom_r,
+                               enter_msl_status* msl_status)
 {
     *did_full_compact_gc = FALSE;
 
     size_t seg_size = get_uoh_seg_size (size);
 
-    heap_segment* new_seg = get_uoh_segment (gen_number, seg_size, did_full_compact_gc);
+    heap_segment* new_seg = get_uoh_segment (gen_number, seg_size, did_full_compact_gc, msl_status);
+    if (*msl_status == msl_retry_different_heap) return FALSE;
 
     if (new_seg && (gen_number == loh_generation))
     {
@@ -17972,7 +18091,8 @@ BOOL gc_heap::retry_full_compact_gc (size_t size)
 
 BOOL gc_heap::check_and_wait_for_bgc (alloc_wait_reason awr,
                                       BOOL* did_full_compact_gc,
-                                      bool loh_p)
+                                      bool loh_p,
+                                      enter_msl_status* msl_status)
 {
     BOOL bgc_in_progress = FALSE;
     *did_full_compact_gc = FALSE;
@@ -17981,7 +18101,7 @@ BOOL gc_heap::check_and_wait_for_bgc (alloc_wait_reason awr,
     {
         bgc_in_progress = TRUE;
         size_t last_full_compact_gc_count = get_full_compact_gc_count();
-        wait_for_background (awr, loh_p);
+        *msl_status = wait_for_background (awr, loh_p);
         size_t current_full_compact_gc_count = get_full_compact_gc_count();
         if (current_full_compact_gc_count > last_full_compact_gc_count)
         {
@@ -18029,7 +18149,8 @@ BOOL gc_heap::uoh_try_fit (int gen_number,
 
 BOOL gc_heap::trigger_full_compact_gc (gc_reason gr,
                                        oom_reason* oom_r,
-                                       bool loh_p)
+                                       bool loh_p,
+                                       enter_msl_status* msl_status)
 {
     BOOL did_full_compact_gc = FALSE;
 
@@ -18044,8 +18165,9 @@ BOOL gc_heap::trigger_full_compact_gc (gc_reason gr,
 #ifdef BACKGROUND_GC
     if (gc_heap::background_running_p())
     {
-        wait_for_background (((gr == reason_oos_soh) ? awr_gen0_oos_bgc : awr_loh_oos_bgc), loh_p);
+        *msl_status = wait_for_background (((gr == reason_oos_soh) ? awr_gen0_oos_bgc : awr_loh_oos_bgc), loh_p);
         dprintf (2, ("waited for BGC - done"));
+        if (*msl_status == msl_retry_different_heap) return FALSE;
     }
 #endif //BACKGROUND_GC
 
@@ -18061,7 +18183,7 @@ BOOL gc_heap::trigger_full_compact_gc (gc_reason gr,
 
     dprintf (3, ("h%d full GC", heap_number));
 
-    trigger_gc_for_alloc (max_generation, gr, msl, loh_p, mt_t_full_gc);
+    *msl_status = trigger_gc_for_alloc (max_generation, gr, msl, loh_p, mt_t_full_gc);
 
     current_full_compact_gc_count = get_full_compact_gc_count();
 
@@ -18136,6 +18258,8 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
                                           uint32_t flags,
                                           int align_const)
 {
+    enter_msl_status msl_status = msl_entered;
+
 #ifdef BACKGROUND_GC
     if (gc_heap::background_running_p())
     {
@@ -18168,7 +18292,10 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
                 bool cooperative_mode = enable_preemptive();
                 GCToOSInterface::YieldThread (spin_for_allocation);
                 disable_preemptive (cooperative_mode);
-                enter_spin_lock (&more_space_lock_uoh);
+
+                msl_status = enter_spin_lock_msl (&more_space_lock_uoh);
+                if (msl_status == msl_retry_different_heap) return a_state_retry_allocate;
+
                 add_saved_spinlock_info (true, me_acquire, mt_alloc_large);
                 dprintf (SPINLOCK_LOG, ("[%d]spin Emsl uoh", heap_number));
             }
@@ -18287,7 +18414,9 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
 
                 current_full_compact_gc_count = get_full_compact_gc_count();
 
-                can_get_new_seg_p = uoh_get_new_seg (gen_number, size, &did_full_compacting_gc, &oom_r);
+                can_get_new_seg_p = uoh_get_new_seg (gen_number, size, &did_full_compacting_gc, &oom_r, &msl_status);
+                check_msl_status ("uoh a_state_acquire_seg", size);
+
                 uoh_alloc_state = (can_get_new_seg_p ?
                                         a_state_try_fit_new_seg :
                                         (did_full_compacting_gc ?
@@ -18302,7 +18431,9 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
 
                 current_full_compact_gc_count = get_full_compact_gc_count();
 
-                can_get_new_seg_p = uoh_get_new_seg (gen_number, size, &did_full_compacting_gc, &oom_r);
+                can_get_new_seg_p = uoh_get_new_seg (gen_number, size, &did_full_compacting_gc, &oom_r, &msl_status);
+                check_msl_status ("uoh a_state_acquire_seg_after_cg", size);
+
                 // Since we release the msl before we try to allocate a seg, other
                 // threads could have allocated a bunch of segments before us so
                 // we might need to retry.
@@ -18318,7 +18449,9 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
 
                 current_full_compact_gc_count = get_full_compact_gc_count();
 
-                can_get_new_seg_p = uoh_get_new_seg (gen_number, size, &did_full_compacting_gc, &oom_r);
+                can_get_new_seg_p = uoh_get_new_seg (gen_number, size, &did_full_compacting_gc, &oom_r, &msl_status);
+                check_msl_status ("uoh a_state_acquire_seg_after_bgc", size);
+
                 uoh_alloc_state = (can_get_new_seg_p ?
                                         a_state_try_fit_new_seg :
                                         (did_full_compacting_gc ?
@@ -18332,7 +18465,9 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
                 BOOL bgc_in_progress_p = FALSE;
                 BOOL did_full_compacting_gc = FALSE;
 
-                bgc_in_progress_p = check_and_wait_for_bgc (awr_loh_oos_bgc, &did_full_compacting_gc, true);
+                bgc_in_progress_p = check_and_wait_for_bgc (awr_loh_oos_bgc, &did_full_compacting_gc, true, &msl_status);
+                check_msl_status ("uoh a_state_check_and_wait_for_bgc", size);
+
                 uoh_alloc_state = (!bgc_in_progress_p ?
                                         a_state_trigger_full_compact_gc :
                                         (did_full_compacting_gc ?
@@ -18350,7 +18485,9 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
 
                 BOOL got_full_compacting_gc = FALSE;
 
-                got_full_compacting_gc = trigger_full_compact_gc (gr, &oom_r, true);
+                got_full_compacting_gc = trigger_full_compact_gc (gr, &oom_r, true, &msl_status);
+                check_msl_status ("uoh a_state_trigger_full_compact_gc", size);
+
                 uoh_alloc_state = (got_full_compacting_gc ? a_state_try_fit_after_cg : a_state_cant_allocate);
                 assert ((uoh_alloc_state != a_state_cant_allocate) || (oom_r != oom_no_failure));
                 break;
@@ -18412,13 +18549,19 @@ exit:
 }
 
 // BGC's final mark phase will acquire the msl, so release it here and re-acquire.
-void gc_heap::trigger_gc_for_alloc (int gen_number, gc_reason gr,
+enter_msl_status gc_heap::trigger_gc_for_alloc (int gen_number, gc_reason gr,
                                     GCSpinLock* msl, bool loh_p,
                                     msl_take_state take_state)
 {
+    enter_msl_status msl_status = msl_entered;
+
 #ifdef BACKGROUND_GC
     if (loh_p)
     {
+#ifdef MULTIPLE_HEAPS
+        uoh_msl_before_gc_p = true;
+        dprintf (5555, ("h%d uoh alloc before GC", heap_number));
+#endif //MULTIPLE_HEAPS
         add_saved_spinlock_info (loh_p, me_release, take_state);
         leave_spin_lock (msl);
     }
@@ -18429,7 +18572,7 @@ void gc_heap::trigger_gc_for_alloc (int gen_number, gc_reason gr,
 #ifdef MULTIPLE_HEAPS
     if (!loh_p)
     {
-        enter_spin_lock (msl);
+        msl_status = enter_spin_lock_msl (msl);
         add_saved_spinlock_info (loh_p, me_acquire, take_state);
     }
 #endif //MULTIPLE_HEAPS
@@ -18437,10 +18580,12 @@ void gc_heap::trigger_gc_for_alloc (int gen_number, gc_reason gr,
 #ifdef BACKGROUND_GC
     if (loh_p)
     {
-        enter_spin_lock (msl);
+        msl_status = enter_spin_lock_msl (msl);
         add_saved_spinlock_info (loh_p, me_acquire, take_state);
     }
 #endif //BACKGROUND_GC
+
+    return msl_status;
 }
 
 inline
@@ -18465,10 +18610,15 @@ bool gc_heap::update_alloc_info (int gen_number, size_t allocated_size, size_t* 
 allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size_t size,
                                     uint32_t flags, int gen_number)
 {
+    enter_msl_status msl_status = msl_entered;
+
     if (gc_heap::gc_started)
     {
         wait_for_gc_done();
-        return a_state_retry_allocate;
+        //dprintf (5555, ("h%d TAMS g%d %Id returning a_state_retry_allocate!", heap_number, gen_number, size));
+
+        //return a_state_retry_allocate;
+        return a_state_wait_in_tams;
     }
 
     bool loh_p = (gen_number > 0);
@@ -18477,11 +18627,10 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
 #ifdef SYNCHRONIZATION_STATS
     int64_t msl_acquire_start = GCToOSInterface::QueryPerformanceCounter();
 #endif //SYNCHRONIZATION_STATS
-    if (!enter_spin_lock (msl, true))
-    {
-        dprintf (3, ("tried to get more space lock on decommissioned heap %d, retry on different heap", heap_number));
-        return a_state_retry_allocate;
-    }
+
+    msl_status = enter_spin_lock_msl (msl);
+    check_msl_status ("TAMS", size);
+    //if (msl_status == msl_retry_different_heap) return a_state_retry_allocate;
     add_saved_spinlock_info (loh_p, me_acquire, mt_try_alloc);
     dprintf (SPINLOCK_LOG, ("[%d]Emsl for alloc", heap_number));
 #ifdef SYNCHRONIZATION_STATS
@@ -18533,7 +18682,8 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
 #ifdef BGC_SERVO_TUNING
     if ((gen_number != 0) && bgc_tuning::should_trigger_bgc_loh())
     {
-        trigger_gc_for_alloc (max_generation, reason_bgc_tuning_loh, msl, loh_p, mt_try_servo_budget);
+        msl_status = trigger_gc_for_alloc (max_generation, reason_bgc_tuning_loh, msl, loh_p, mt_try_servo_budget);
+        if (msl_status == msl_retry_different_heap) return a_state_retry_allocate;
     }
     else
 #endif //BGC_SERVO_TUNING
@@ -18560,7 +18710,8 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
             }
 
 #ifdef BACKGROUND_GC
-            bool recheck_p = wait_for_bgc_high_memory (awr_gen0_alloc, loh_p);
+            bool recheck_p = wait_for_bgc_high_memory (awr_gen0_alloc, loh_p, &msl_status);
+            if (msl_status == msl_retry_different_heap) return a_state_retry_allocate;
 #endif //BACKGROUND_GC
 
 #ifdef SYNCHRONIZATION_STATS
@@ -18578,8 +18729,9 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
             {
                 if (!settings.concurrent || (gen_number == 0))
                 {
-                    trigger_gc_for_alloc (0, ((gen_number == 0) ? reason_alloc_soh : reason_alloc_loh),
-                                        msl, loh_p, mt_try_budget);
+                    msl_status = trigger_gc_for_alloc (0, ((gen_number == 0) ? reason_alloc_soh : reason_alloc_loh),
+                                                       msl, loh_p, mt_try_budget);
+                    if (msl_status == msl_retry_different_heap) return a_state_retry_allocate;
                 }
             }
         }
@@ -19026,16 +19178,24 @@ BOOL gc_heap::allocate_more_space(alloc_context* acontext, size_t size,
     allocation_state status = a_state_start;
     int retry_count = 0;
 
+    gc_heap* saved_alloc_heap = 0;
+
     do
     {
 #ifdef MULTIPLE_HEAPS
         if (alloc_generation_number == 0)
         {
             balance_heaps (acontext);
-            status = acontext->get_alloc_heap()->pGenGCHeap->try_allocate_more_space (acontext, size, flags, alloc_generation_number);
+            status = acontext->get_alloc_heap ()->pGenGCHeap->try_allocate_more_space (acontext, size, flags, alloc_generation_number);
+            if (status == a_state_wait_in_tams)
+            {
+                status = a_state_retry_allocate;
+            }
         }
         else
         {
+            uint64_t start_us = GetHighPrecisionTimeStamp ();
+
             gc_heap* alloc_heap;
             if (heap_hard_limit && (status == a_state_retry_allocate))
             {
@@ -19048,12 +19208,32 @@ BOOL gc_heap::allocate_more_space(alloc_context* acontext, size_t size,
             else
             {
                 alloc_heap = balance_heaps_uoh (acontext, size, alloc_generation_number);
+                dprintf (3, ("uoh alloc %Id on h%d", size, alloc_heap->heap_number));
+                saved_alloc_heap = alloc_heap;
             }
 
+            bool alloced_on_retry = (status == a_state_retry_allocate);
+
             status = alloc_heap->try_allocate_more_space (acontext, size, flags, alloc_generation_number);
+            dprintf (3, ("UOH h%d %Id returned from TAMS, s %d", alloc_heap->heap_number, size, status));
+
+            uint64_t end_us = GetHighPrecisionTimeStamp ();
+
             if (status == a_state_retry_allocate)
             {
-                dprintf (3, ("UOH h%d alloc retry!", alloc_heap->heap_number));
+                // This records that we had to retry due to decommissioned heaps
+                dprintf (5555, ("UOH h%d alloc %Id retry!", alloc_heap->heap_number, size));
+            }
+            else if (status == a_state_wait_in_tams)
+            {
+                status = a_state_retry_allocate;
+            }
+            else
+            {
+                if (alloced_on_retry)
+                {
+                    dprintf (5555, ("UOH h%d allocated %Id on retry (%I64dus)", alloc_heap->heap_number, size, (end_us - start_us)));
+                }
             }
         }
 #else
@@ -20906,7 +21086,7 @@ int gc_heap::generation_to_condemn (int n_initial,
     int n_alloc = n;
     if (heap_number == 0)
     {
-        dprintf (GTC_LOG, ("init: %d(%d)", n_initial, settings.reason));
+        dprintf (5555, ("init: %d(%d)", n_initial, settings.reason));
     }
     int i = 0;
     int temp_gen = 0;
@@ -24812,7 +24992,7 @@ bool gc_heap::change_heap_count (int new_n_heaps)
     // make sure no allocation contexts point to idle heaps
     fix_allocation_contexts_heaps();
 
-//    GCConfig::s_HeapVerifyLevel = 1;
+    GCConfig::s_HeapVerifyLevel = 1;
 
     return true;
 }
@@ -37583,6 +37763,7 @@ void gc_heap::background_grow_c_mark_list()
         assert (new_c_mark_list);
         memcpy (new_c_mark_list, c_mark_list, c_mark_list_length*sizeof(uint8_t*));
         c_mark_list_length = c_mark_list_length*2;
+        dprintf (5555, ("h%d replacing mark list at %Ix with %Ix", heap_number, (size_t)c_mark_list, (size_t)new_c_mark_list));
         delete[] c_mark_list;
         c_mark_list = new_c_mark_list;
     }
@@ -43547,6 +43728,8 @@ BOOL gc_heap::ephemeral_gen_fit_p (gc_tuning_point tp)
 
 CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int gen_number, int64_t& alloc_bytes)
 {
+    uint64_t start_us = GetHighPrecisionTimeStamp ();
+
     //create a new alloc context because gen3context is shared.
     alloc_context acontext;
     acontext.init();
@@ -43641,6 +43824,13 @@ CObjectHeader* gc_heap::allocate_uoh_object (size_t jsize, uint32_t flags, int g
 
     assert (obj != 0);
     assert ((size_t)obj == Align ((size_t)obj, align_const));
+
+    uint64_t elapsed_us = GetHighPrecisionTimeStamp () - start_us;
+
+    //if (elapsed_us > 1000)
+    //{
+    //    dprintf (5555, ("LONG uoh alloc %Id (%I64dus)", size, elapsed_us));
+    //}
 
     return obj;
 }
@@ -45489,7 +45679,7 @@ void gc_heap::descr_generations (const char* msg)
         generation* gen = generation_of (curr_gen_number);
         heap_segment* seg = heap_segment_rw (generation_start_segment (gen));
 #ifdef USE_REGIONS
-        dprintf (1, ("g%d: start seg: %p alloc seg: %p, tail region: %p",
+        dprintf (GTC_LOG, ("g%d: start seg: %p alloc seg: %p, tail region: %p",
             curr_gen_number,
             heap_segment_mem (seg),
             heap_segment_mem (generation_allocation_segment (gen)),
