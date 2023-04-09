@@ -11686,46 +11686,50 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
 // Can and should the interval in this register be spilled for this one,
 // if we don't find a better alternative?
 
+        weight_t currentSpillWeight = 0;
 #ifdef TARGET_ARM64
-        if (assignedInterval == nullptr)
-        {
-            // Ideally we should not be seeing this candidate because it is not assigned to
-            // any interval. But based on that, we cannot determine if it is a good spill
-            // candidate or not. Skip processing it.
-            continue;
-        }
-
         if ((recentRefPosition != nullptr) && linearScan->isRefPositionActive(recentRefPosition, thisLocation) &&
             (recentRefPosition->needsConsecutive))
         {
             continue;
         }
-#endif // TARGET_ARM64
-
-        if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == thisLocation) &&
-            !assignedInterval->getNextRefPosition()->RegOptional())
+        else if (assignedInterval != nullptr)
+#endif
         {
-            continue;
-        }
-        if (!linearScan->isSpillCandidate(currentInterval, refPosition, spillCandidateRegRecord))
-        {
-            continue;
-        }
-
-        weight_t currentSpillWeight = 0;
-        if ((recentRefPosition != nullptr) &&
-            (recentRefPosition->RegOptional() && !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
-        {
-            // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
-            // is not an actual ref. In those cases, we will reload in future (next) refPosition.
-            // For such cases, consider the spill cost of next refposition.
-            // See notes in "spillInterval()".
-            RefPosition* reloadRefPosition = assignedInterval->getNextRefPosition();
-            if (reloadRefPosition != nullptr)
+            if ((linearScan->getNextIntervalRef(spillCandidateRegNum, regType) == thisLocation) &&
+                !assignedInterval->getNextRefPosition()->RegOptional())
             {
-                currentSpillWeight = linearScan->getWeight(reloadRefPosition);
+                continue;
+            }
+            if (!linearScan->isSpillCandidate(currentInterval, refPosition, spillCandidateRegRecord))
+            {
+                continue;
+            }
+
+            if ((recentRefPosition != nullptr) && (recentRefPosition->RegOptional() &&
+                                                   !(assignedInterval->isLocalVar && recentRefPosition->IsActualRef())))
+            {
+                // We do not "spillAfter" if previous (recent) refPosition was regOptional or if it
+                // is not an actual ref. In those cases, we will reload in future (next) refPosition.
+                // For such cases, consider the spill cost of next refposition.
+                // See notes in "spillInterval()".
+                RefPosition* reloadRefPosition = assignedInterval->getNextRefPosition();
+                if (reloadRefPosition != nullptr)
+                {
+                    currentSpillWeight = linearScan->getWeight(reloadRefPosition);
+                }
             }
         }
+#ifdef TARGET_ARM64
+        else
+        {
+            // Ideally we should not be seeing this candidate because it is not assigned to
+            // any interval. But it is possible for certain scenarios. One of them is that
+            // `refPosition` needs consecutive registers and we decided to pick a mix of free+busy
+            // registers. This candidate is part of that set and is free and hence is not assigned
+            // to any interval.
+        }
+#endif // TARGET_ARM64
 
         // Only consider spillCost if we were not able to calculate weight of reloadRefPosition.
         if (currentSpillWeight == 0)
@@ -11875,7 +11879,16 @@ void LinearScan::RegisterSelection::try_PREV_REG_OPT()
 #ifdef DEBUG
         // The assigned should be non-null, and should have a recentRefPosition, however since
         // this is a heuristic, we don't want a fatal error, so we just assert (not noway_assert).
-        if (!hasAssignedInterval)
+        if (!hasAssignedInterval
+#ifdef TARGET_ARM64
+            // We could see a candidate that doesn't have assignedInterval because allocation is
+            // happening for `refPosition` that needs consecutive registers and we decided to pick
+            // a mix of free+busy registers. This candidate is part of that set and is free and hence
+            // is not assigned to any interval.
+
+            && !refPosition->needsConsecutive
+#endif
+            )
         {
             assert(!"Spill candidate has no assignedInterval recentRefPosition");
         }
