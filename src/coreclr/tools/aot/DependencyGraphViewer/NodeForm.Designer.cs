@@ -33,6 +33,9 @@ namespace DependencyLogViewer
         {
             this.nodeTitle = new System.Windows.Forms.Label();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+			chkSameWindowNav = new System.Windows.Forms.CheckBox();
+			btnBack = new System.Windows.Forms.Button();
+			btnForward = new System.Windows.Forms.Button();
             this.dependentsListBox = new System.Windows.Forms.ListBox();
             this.exploreDependent = new System.Windows.Forms.Button();
             this.dependeesListBox = new System.Windows.Forms.ListBox();
@@ -45,21 +48,22 @@ namespace DependencyLogViewer
             // 
             // nodeTitle
             // 
-            this.nodeTitle.AutoSize = true;
             this.nodeTitle.BackColor = System.Drawing.SystemColors.Info;
             this.nodeTitle.Dock = System.Windows.Forms.DockStyle.Top;
             this.nodeTitle.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
             this.nodeTitle.Location = new System.Drawing.Point(0, 0);
             this.nodeTitle.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.nodeTitle.Name = "nodeTitle";
-            this.nodeTitle.Size = new System.Drawing.Size(116, 30);
+            this.nodeTitle.Size = new System.Drawing.Size(1220, 75);
             this.nodeTitle.TabIndex = 0;
             this.nodeTitle.Text = "Node Title";
+            this.nodeTitle.TextAlign = System.Drawing.ContentAlignment.BottomLeft;
+            this.nodeTitle.AutoEllipsis = true;
             // 
             // splitContainer1
             // 
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer1.Location = new System.Drawing.Point(0, 30);
+            this.splitContainer1.Location = new System.Drawing.Point(0, 75);
             this.splitContainer1.Margin = new System.Windows.Forms.Padding(4);
             this.splitContainer1.Name = "splitContainer1";
             this.splitContainer1.Orientation = System.Windows.Forms.Orientation.Horizontal;
@@ -77,6 +81,39 @@ namespace DependencyLogViewer
             this.splitContainer1.SplitterDistance = 419;
             this.splitContainer1.SplitterWidth = 6;
             this.splitContainer1.TabIndex = 1;
+			// 
+			// chkSameWindowNav
+			// 
+			chkSameWindowNav.AutoSize = true;
+			chkSameWindowNav.Location = new System.Drawing.Point(890, 0);
+			chkSameWindowNav.Name = "chkSameWindowNav";
+			chkSameWindowNav.Size = new System.Drawing.Size(322, 36);
+			chkSameWindowNav.TabIndex = 5;
+			chkSameWindowNav.Text = "Same Window Nav";
+			chkSameWindowNav.UseVisualStyleBackColor = true;
+            chkSameWindowNav.CheckedChanged += ChkSameWindowNav_CheckedChanged;
+			// 
+			// btnBack
+			// 
+			btnBack.Location = new System.Drawing.Point(607, 0);
+			btnBack.Margin = new System.Windows.Forms.Padding(4);
+			btnBack.Name = "btnBack";
+			btnBack.Size = new System.Drawing.Size(124, 43);
+			btnBack.TabIndex = 3;
+			btnBack.Text = "Back";
+			btnBack.UseVisualStyleBackColor = true;
+			btnBack.Click += btnBack_Click;
+			// 
+            // btnForward
+            // 
+            btnForward.Location = new System.Drawing.Point(750, 0);
+            btnForward.Margin = new System.Windows.Forms.Padding(4);
+            btnForward.Name = "btnForward";
+            btnForward.Size = new System.Drawing.Size(124, 43);
+            btnForward.TabIndex = 4;
+            btnForward.Text = "Forward";
+            btnForward.UseVisualStyleBackColor = true;
+            btnForward.Click += btnForward_Click;
             // 
             // dependentsListBox
             // 
@@ -133,6 +170,9 @@ namespace DependencyLogViewer
             this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 30F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1126, 836);
+			Controls.Add(chkSameWindowNav);
+			Controls.Add(btnBack);
+			Controls.Add(btnForward);
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.nodeTitle);
             this.Margin = new System.Windows.Forms.Padding(4);
@@ -148,6 +188,7 @@ namespace DependencyLogViewer
 
         }
 
+
         #endregion
 
         private System.Windows.Forms.Label nodeTitle;
@@ -156,5 +197,8 @@ namespace DependencyLogViewer
         private System.Windows.Forms.ListBox dependeesListBox;
         private System.Windows.Forms.Button exploreDependent;
         private System.Windows.Forms.ListBox dependentsListBox;
+		private System.Windows.Forms.Button btnBack;
+		private System.Windows.Forms.CheckBox chkSameWindowNav;
+		private System.Windows.Forms.Button btnForward;
     }
 }
