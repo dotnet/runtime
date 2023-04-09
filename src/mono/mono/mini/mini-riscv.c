@@ -3977,7 +3977,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_fmv_w_x (code, RISCV_FT0, RISCV_ZERO);
 			riscv_feq_s (code, RISCV_T0, ins->sreg2, RISCV_FT0);
 
-			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BNE, RISCV_T0, RISCV_ZERO,
+			code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, RISCV_T0, RISCV_ZERO,
 			                                   "DivideByZeroException");
 			riscv_fdiv_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
