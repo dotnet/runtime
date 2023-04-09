@@ -3570,8 +3570,15 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
 
         case INS_cvtdq2pd:
         case INS_cvtps2pd:
+        case INS_vpmovdw:
+        case INS_vpmovqd:
+        case INS_vpmovwb:
         {
-            if (defaultSize == 32)
+            if (defaultSize == 64)
+            {
+                return EA_32BYTE;
+            }
+            else if (defaultSize == 32)
             {
                 return EA_16BYTE;
             }
