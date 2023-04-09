@@ -6,7 +6,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.Frozen
@@ -98,7 +97,7 @@ namespace System.Collections.Frozen
                 ChooseImplementationOptimizedForConstruction(uniqueValues!, sourceIsCopy));
         }
 
-        /// <summary>Extracts from the source either an existing <see cref="FrozenSet{T}"/> instance or a <see cref="HashSet{T}"/> containing the values and the specified <paramref name="comparer"/>.</summary>
+        /// <summary>Extracts from the source either an existing <see cref="FrozenDictionary{TKey,TValue}"/> instance or a <see cref="Dictionary{TKey,TValue}"/> containing the values and the specified <paramref name="comparer"/>.</summary>
         /// <returns>true if <paramref name="uniqueValues"/> is a copy of the original source; false if it's either null or the original source.</returns>
         private static bool GetUniqueValues<TKey, TValue>(
             IEnumerable<KeyValuePair<TKey, TValue>> source, IEqualityComparer<TKey>? comparer,
@@ -200,17 +199,28 @@ namespace System.Collections.Frozen
                 // the Equals/GetHashCode methods to be devirtualized and possibly inlined.
                 if (ReferenceEquals(comparer, EqualityComparer<TKey>.Default))
                 {
-                    if (default(TKey) is IComparable<TKey> &&
-                        source.Count <= Constants.MaxItemsInSmallComparableValueTypeFrozenCollection)
+                    if (source.Count <= Constants.MaxItemsInSmallValueTypeFrozenCollection)
                     {
-                        return (FrozenDictionary<TKey, TValue>)(object)new SmallComparableValueTypeFrozenDictionary<TKey, TValue>(source);
+                        // If the key is a something we know we can efficiently compare, use a specialized implementation
+                        // that will enable quickly ruling out values outside of the range of keys stored.
+                        if (Constants.IsKnownComparable<TKey>())
+                        {
+                            return (FrozenDictionary<TKey, TValue>)(object)new SmallValueTypeComparableFrozenDictionary<TKey, TValue>(source);
+                        }
+
+                        // Otherwise, use an implementation optimized for a small number of value types using the default comparer.
+                        return (FrozenDictionary<TKey, TValue>)(object)new SmallValueTypeDefaultComparerFrozenDictionary<TKey, TValue>(source);
                     }
 
+                    // Use a hash-based implementation.
+
+                    // For Int32 keys, we can reuse the key storage as the hash storage, saving on space and extra indirection.
                     if (typeof(TKey) == typeof(int))
                     {
                         return (FrozenDictionary<TKey, TValue>)(object)new Int32FrozenDictionary<TValue>((Dictionary<int, TValue>)(object)source);
                     }
 
+                    // Fallback to an implementation usable with any value type and the default comparer.
                     return new ValueTypeDefaultComparerFrozenDictionary<TKey, TValue>(source);
                 }
             }

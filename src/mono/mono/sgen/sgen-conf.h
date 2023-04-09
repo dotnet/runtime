@@ -81,12 +81,6 @@ typedef target_mword SgenDescriptor;
 //#define SGEN_CHECK_UPDATE_REFERENCE
 
 /*
- * Define this and use the "xdomain-checks" MONO_GC_DEBUG option to
- * have cross-domain checks in the write barrier.
- */
-//#define XDOMAIN_CHECKS_IN_WBARRIER
-
-/*
  * Define this to get number of objects marked information in the
  * concurrent GC DTrace probes.  Has a small performance impact, so
  * it's disabled by default.
@@ -105,9 +99,7 @@ typedef target_mword SgenDescriptor;
 #ifndef SGEN_HEAVY_BINARY_PROTOCOL
 #ifndef HEAVY_STATISTICS
 #define MANAGED_ALLOCATION
-#ifndef XDOMAIN_CHECKS_IN_WBARRIER
 #define MANAGED_WBARRIER
-#endif
 #endif
 #endif
 

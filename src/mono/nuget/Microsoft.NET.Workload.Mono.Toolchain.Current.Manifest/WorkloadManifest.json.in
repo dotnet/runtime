@@ -143,6 +143,7 @@
       "platforms": [ "win-x64", "win-arm64", "osx-arm64", "osx-x64" ]
     },
     "runtimes-windows": {
+      "abstract": true,
       "description": "Windows Runtime Packs",
       "packs": [
         "Microsoft.NETCore.App.Runtime.win-x64",

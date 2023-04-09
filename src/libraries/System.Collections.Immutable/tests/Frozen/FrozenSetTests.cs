@@ -266,8 +266,6 @@ namespace System.Collections.Frozen.Tests
                 Assert.True(frozen.SetEquals(new HashSet<T>(source, otherComparer)));
                 Assert.True(frozen.SetEquals(FrozenSet.ToFrozenSet(source, otherComparer)));
                 Assert.True(frozen.SetEquals(source.ToImmutableHashSet(otherComparer)));
-                Assert.True(frozen.SetEquals(new SortedSet<T>(source)));
-                Assert.True(frozen.SetEquals(source.ToImmutableSortedSet()));
                 Assert.False(frozen.SetEquals(new HashSet<T>(InvertingComparer.Instance)));
                 Assert.False(frozen.SetEquals(FrozenSet.ToFrozenSet(source, InvertingComparer.Instance)));
                 Assert.False(frozen.SetEquals(source.ToImmutableHashSet(InvertingComparer.Instance)));
@@ -280,8 +278,6 @@ namespace System.Collections.Frozen.Tests
                 Assert.True(frozen.IsSubsetOf(new HashSet<T>(source, otherComparer)));
                 Assert.True(frozen.IsSubsetOf(FrozenSet.ToFrozenSet(source, otherComparer)));
                 Assert.True(frozen.IsSubsetOf(source.ToImmutableHashSet(otherComparer)));
-                Assert.True(frozen.IsSubsetOf(new SortedSet<T>(source)));
-                Assert.True(frozen.IsSubsetOf(source.ToImmutableSortedSet()));
                 Assert.False(frozen.IsSubsetOf(new HashSet<T>(InvertingComparer.Instance)));
                 Assert.False(frozen.IsSubsetOf(FrozenSet.ToFrozenSet(source, InvertingComparer.Instance)));
                 Assert.False(frozen.IsSubsetOf(source.ToImmutableHashSet(InvertingComparer.Instance)));
@@ -294,8 +290,6 @@ namespace System.Collections.Frozen.Tests
                 Assert.True(frozen.IsSupersetOf(new HashSet<T>(source, otherComparer)));
                 Assert.True(frozen.IsSupersetOf(FrozenSet.ToFrozenSet(source, otherComparer)));
                 Assert.True(frozen.IsSupersetOf(source.ToImmutableHashSet(otherComparer)));
-                Assert.True(frozen.IsSupersetOf(new SortedSet<T>(source)));
-                Assert.True(frozen.IsSupersetOf(source.ToImmutableSortedSet()));
                 Assert.True(frozen.IsSupersetOf(new HashSet<T>(InvertingComparer.Instance)));
                 Assert.True(frozen.IsSupersetOf(FrozenSet.ToFrozenSet(source, InvertingComparer.Instance)));
                 Assert.True(frozen.IsSupersetOf(source.ToImmutableHashSet(InvertingComparer.Instance)));
@@ -308,8 +302,6 @@ namespace System.Collections.Frozen.Tests
                 Assert.False(frozen.IsProperSubsetOf(new HashSet<T>(source, otherComparer)));
                 Assert.False(frozen.IsProperSubsetOf(FrozenSet.ToFrozenSet(source, otherComparer)));
                 Assert.False(frozen.IsProperSubsetOf(source.ToImmutableHashSet(otherComparer)));
-                Assert.False(frozen.IsProperSubsetOf(new SortedSet<T>(source)));
-                Assert.False(frozen.IsProperSubsetOf(source.ToImmutableSortedSet()));
                 Assert.False(frozen.IsProperSubsetOf(new HashSet<T>(InvertingComparer.Instance)));
                 Assert.False(frozen.IsProperSubsetOf(FrozenSet.ToFrozenSet(source, InvertingComparer.Instance)));
                 Assert.False(frozen.IsProperSubsetOf(source.ToImmutableHashSet(InvertingComparer.Instance)));
@@ -323,8 +315,6 @@ namespace System.Collections.Frozen.Tests
                 Assert.False(frozen.IsProperSupersetOf(new HashSet<T>(source, otherComparer)));
                 Assert.False(frozen.IsProperSupersetOf(FrozenSet.ToFrozenSet(source, otherComparer)));
                 Assert.False(frozen.IsProperSupersetOf(source.ToImmutableHashSet(otherComparer)));
-                Assert.False(frozen.IsProperSupersetOf(new SortedSet<T>(source)));
-                Assert.False(frozen.IsProperSupersetOf(source.ToImmutableSortedSet()));
                 Assert.True(frozen.IsProperSupersetOf(new HashSet<T>(InvertingComparer.Instance)));
                 Assert.True(frozen.IsProperSupersetOf(FrozenSet.ToFrozenSet(source, InvertingComparer.Instance)));
                 Assert.True(frozen.IsProperSupersetOf(source.ToImmutableHashSet(InvertingComparer.Instance)));
@@ -462,6 +452,23 @@ namespace System.Collections.Frozen.Tests
     public class FrozenSet_Generic_Tests_SimpleStruct : FrozenSet_Generic_Tests<SimpleStruct>
     {
         protected override SimpleStruct CreateT(int seed) => new SimpleStruct { Value = seed + 1 };
+
+        protected override bool TestLargeSizes => false; // hash code contention leads to longer running times
+    }
+
+    public class FrozenSet_Generic_Tests_SimpleNonComparableStruct : FrozenSet_Generic_Tests<SimpleNonComparableStruct>
+    {
+        protected override SimpleNonComparableStruct CreateT(int seed) => new SimpleNonComparableStruct { Value = seed + 1 };
+
+        protected override bool TestLargeSizes => false; // hash code contention leads to longer running times
+    }
+
+    public class FrozenSet_Generic_Tests_ValueTupleSimpleNonComparableStruct : FrozenSet_Generic_Tests<ValueTuple<SimpleNonComparableStruct,SimpleNonComparableStruct>>
+    {
+        protected override ValueTuple<SimpleNonComparableStruct, SimpleNonComparableStruct> CreateT(int seed) =>
+            new ValueTuple<SimpleNonComparableStruct, SimpleNonComparableStruct>(
+                new SimpleNonComparableStruct { Value = seed + 1 },
+                new SimpleNonComparableStruct { Value = seed + 1 });
 
         protected override bool TestLargeSizes => false; // hash code contention leads to longer running times
     }

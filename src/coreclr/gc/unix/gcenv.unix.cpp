@@ -318,7 +318,6 @@ void GCToOSInterface::Shutdown()
     munmap(g_helperPage, OS_PAGE_SIZE);
 
     CleanupCGroup();
-    NUMASupportCleanup();
 }
 
 // Get numeric id of the current thread if possible on the
@@ -615,7 +614,7 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
     }
 #endif
 
-#if HAVE_NUMA_H
+#ifdef TARGET_LINUX
     if (success && g_numaAvailable && (node != NUMA_NODE_UNDEFINED))
     {
         if ((int)node <= g_highestNumaNode)
@@ -628,12 +627,12 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
             int index = node / sizeof(unsigned long);
             nodeMask[index] = ((unsigned long)1) << (node & (sizeof(unsigned long) - 1));
 
-            int st = mbind(address, size, MPOL_PREFERRED, nodeMask, usedNodeMaskBits, 0);
+            int st = BindMemoryPolicy(address, size, nodeMask, usedNodeMaskBits);
             assert(st == 0);
             // If the mbind fails, we still return the allocated memory since the node is just a hint
         }
     }
-#endif // HAVE_NUMA_H
+#endif // TARGET_LINUX
 
     return success;
 }
@@ -1430,14 +1429,14 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
             if (availableProcNumber == heap_number)
             {
                 *proc_no = procNumber;
-#if HAVE_NUMA_H
+#ifdef TARGET_LINUX
                 if (GCToOSInterface::CanEnableGCNumaAware())
                 {
-                    int result = numa_node_of_cpu(procNumber);
+                    int result = GetNumaNodeNumByCpu(procNumber);
                     *node_no = (result >= 0) ? (uint16_t)result : NUMA_NODE_UNDEFINED;
                 }
                 else
-#endif // HAVE_NUMA_H
+#endif // TARGET_LINUX
                 {
                     *node_no = NUMA_NODE_UNDEFINED;
                 }

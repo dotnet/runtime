@@ -33,6 +33,7 @@ const unsigned int RegisterTypeCount    = 2;
 * Register types
 *****************************************************************************/
 typedef var_types RegisterType;
+
 #define IntRegisterType TYP_INT
 #define FloatRegisterType TYP_FLOAT
 #define MaskRegisterType TYP_MASK
@@ -46,7 +47,21 @@ typedef var_types RegisterType;
 template <class T>
 RegisterType regType(T type)
 {
-    return varTypeUsesFloatReg(TypeGet(type)) ? FloatRegisterType : IntRegisterType;
+    if (varTypeUsesIntReg(type))
+    {
+        return IntRegisterType;
+    }
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+    else if (varTypeUsesMaskReg(type))
+    {
+        return MaskRegisterType;
+    }
+#endif // TARGET_XARCH && FEATURE_SIMD
+    else
+    {
+        assert(varTypeUsesFloatReg(type));
+        return FloatRegisterType;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -629,7 +644,10 @@ public:
     // This does the dataflow analysis and builds the intervals
     void buildIntervals();
 
-    // This is where the actual assignment is done
+// This is where the actual assignment is done
+#ifdef TARGET_ARM64
+    template <bool hasConsecutiveRegister = false>
+#endif
     void allocateRegisters();
 
     // This is the resolution phase, where cross-block mismatches are fixed up
@@ -774,10 +792,16 @@ private:
 #elif defined(TARGET_ARM64)
     static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_V0 | RBM_V1 | RBM_V2 | RBM_V8 | RBM_V9);
+    // LsraLimitFPSetForConsecutive is used for stress mode and gives few extra registers to satisfy
+    // the requirements for allocating consecutive registers.
+    static const regMaskTP LsraLimitFPSetForConsecutive = (RBM_V3 | RBM_V5 | RBM_V7);
 #elif defined(TARGET_X86)
     static const regMaskTP LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EDI);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
 #elif defined(TARGET_LOONGARCH64)
+    static const regMaskTP LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
+    static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
+#elif defined(TARGET_RISCV64)
     static const regMaskTP LsraLimitSmallIntSet = (RBM_T1 | RBM_T3 | RBM_A0 | RBM_A1 | RBM_T0);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_F0 | RBM_F1 | RBM_F2 | RBM_F8 | RBM_F9);
 #else
@@ -1021,7 +1045,7 @@ private:
                                             bool         isUse);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     // For AMD64 on SystemV machines. This method
     // is called as replacement for raUpdateRegStateForArg
     // that is used on Windows. On System V systems a struct can be passed
@@ -1030,7 +1054,7 @@ private:
     // For LoongArch64's ABI, a struct can be passed
     // partially using registers from the 2 register files.
     void UpdateRegStateForStructArg(LclVarDsc* argDsc);
-#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
+#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     // Update reg state for an incoming register argument
     void updateRegStateForArg(LclVarDsc* argDsc);
@@ -1164,7 +1188,9 @@ private:
 #ifdef DEBUG
     const char* getScoreName(RegisterScore score);
 #endif
+    template <bool needsConsecutiveRegisters = false>
     regNumber allocateReg(Interval* current, RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
+    template <bool needsConsecutiveRegisters = false>
     regNumber assignCopyReg(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
@@ -1192,10 +1218,21 @@ private:
 
     void spillGCRefs(RefPosition* killRefPosition);
 
-    /*****************************************************************************
-    * Register selection
-    ****************************************************************************/
-    regMaskTP getFreeCandidates(regMaskTP candidates, var_types regType)
+/*****************************************************************************
+* Register selection
+****************************************************************************/
+
+#if defined(TARGET_ARM64)
+    bool canAssignNextConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
+    void assignConsecutiveRegisters(RefPosition* firstRefPosition, regNumber firstRegAssigned);
+    regMaskTP getConsecutiveCandidates(regMaskTP candidates, RefPosition* refPosition, regMaskTP* busyCandidates);
+    regMaskTP filterConsecutiveCandidates(regMaskTP    candidates,
+                                          unsigned int registersNeeded,
+                                          regMaskTP*   allConsecutiveCandidates);
+    regMaskTP filterConsecutiveCandidatesForSpill(regMaskTP consecutiveCandidates, unsigned int registersNeeded);
+#endif // TARGET_ARM64
+
+    regMaskTP getFreeCandidates(regMaskTP candidates ARM_ARG(var_types regType))
     {
         regMaskTP result = candidates & m_AvailableRegs;
 #ifdef TARGET_ARM
@@ -1224,6 +1261,7 @@ private:
         RegisterSelection(LinearScan* linearScan);
 
         // Perform register selection and update currentInterval or refPosition
+        template <bool hasConsecutiveRegister = false>
         FORCEINLINE regMaskTP select(Interval*    currentInterval,
                                      RefPosition* refPosition DEBUG_ARG(RegisterScore* registerScore));
 
@@ -1368,6 +1406,21 @@ private:
                                       var_types        type,
                                       VARSET_VALARG_TP sharedCriticalLiveSet,
                                       regMaskTP        terminatorConsumedRegs);
+
+#ifdef TARGET_ARM64
+    typedef JitHashTable<RefPosition*, JitPtrKeyFuncs<RefPosition>, RefPosition*> NextConsecutiveRefPositionsMap;
+    NextConsecutiveRefPositionsMap* nextConsecutiveRefPositionMap;
+    NextConsecutiveRefPositionsMap* getNextConsecutiveRefPositionsMap()
+    {
+        if (nextConsecutiveRefPositionMap == nullptr)
+        {
+            nextConsecutiveRefPositionMap =
+                new (getAllocator(compiler)) NextConsecutiveRefPositionsMap(getAllocator(compiler));
+        }
+        return nextConsecutiveRefPositionMap;
+    }
+    FORCEINLINE RefPosition* getNextConsecutiveRefPosition(RefPosition* refPosition);
+#endif
 
 #ifdef DEBUG
     void dumpVarToRegMap(VarToRegMap map);
@@ -1613,6 +1666,12 @@ private:
 #endif
     PhasedVar<regMaskTP>* availableRegs[TYP_COUNT];
 
+#if defined(TARGET_XARCH)
+#define allAvailableRegs (availableIntRegs | availableFloatRegs | availableMaskRegs)
+#else
+#define allAvailableRegs (availableIntRegs | availableFloatRegs)
+#endif
+
     // Register mask of argument registers currently occupied because we saw a
     // PUTARG_REG node. Tracked between the PUTARG_REG and its corresponding
     // CALL node and is used to avoid preferring these registers for locals
@@ -1694,7 +1753,7 @@ private:
 
     void resetAvailableRegs()
     {
-        m_AvailableRegs          = (availableIntRegs | availableFloatRegs);
+        m_AvailableRegs          = allAvailableRegs;
         m_RegistersWithConstants = RBM_NONE;
     }
 
@@ -1861,7 +1920,6 @@ private:
     bool checkContainedOrCandidateLclVar(GenTreeLclVar* lclNode);
 
     RefPosition* BuildUse(GenTree* operand, regMaskTP candidates = RBM_NONE, int multiRegIdx = 0);
-
     void setDelayFree(RefPosition* use);
     int BuildBinaryUses(GenTreeOp* node, regMaskTP candidates = RBM_NONE);
     int BuildCastUses(GenTreeCast* cast, regMaskTP candidates);
@@ -1946,6 +2004,9 @@ private:
 
 #ifdef FEATURE_HW_INTRINSICS
     int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount);
+#ifdef TARGET_ARM64
+    int BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode = nullptr);
+#endif
 #endif // FEATURE_HW_INTRINSICS
 
     int BuildPutArgStk(GenTreePutArgStk* argNode);
@@ -2329,6 +2390,14 @@ public:
     // would be 0..MAX_MULTIREG_COUNT-1.
     unsigned char multiRegIdx : 2;
 
+#ifdef TARGET_ARM64
+    // If this refposition needs consecutive register assignment
+    unsigned char needsConsecutive : 1;
+
+    // How many consecutive registers does this and subsequent refPositions need
+    unsigned char regCount : 3;
+#endif // TARGET_ARM64
+
     // Last Use - this may be true for multiple RefPositions in the same Interval
     unsigned char lastUse : 1;
 
@@ -2414,6 +2483,10 @@ public:
         , registerAssignment(RBM_NONE)
         , refType(refType)
         , multiRegIdx(0)
+#ifdef TARGET_ARM64
+        , needsConsecutive(false)
+        , regCount(0)
+#endif
         , lastUse(false)
         , reload(false)
         , spillAfter(false)
@@ -2566,6 +2639,19 @@ public:
     {
         return (isFixedRefOfRegMask(genRegMask(regNum)));
     }
+
+#ifdef TARGET_ARM64
+    /// For consecutive registers, returns true if this RefPosition is
+    /// the first of the series.
+    FORCEINLINE bool isFirstRefPositionOfConsecutiveRegisters()
+    {
+        if (needsConsecutive)
+        {
+            return regCount != 0;
+        }
+        return false;
+    }
+#endif // TARGET_ARM64
 
 #ifdef DEBUG
     // operator= copies everything except 'rpNum', which must remain unique
