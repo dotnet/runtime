@@ -1162,12 +1162,12 @@ void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
     {
         *pContext = *pRegDisp->pContext;
     }
-#elif defined(TARGET_AMD64)
+#elif !defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
     memcpy(pContext, pRegDisp->pCurrentContext, offsetof(T_CONTEXT, XStateFeaturesMask));
     pContext->ContextFlags = (CONTEXT_INTEGER | CONTEXT_CONTROL);
-#else // TARGET_X86 && !FEATURE_EH_FUNCLETS && !TARGET_AMD64
+#else
     *pContext = *pRegDisp->pCurrentContext;
-#endif // !TARGET_X86 || FEATURE_EH_FUNCLETS
+#endif
 }
 
 //---------------------------------------------------------------------------------------
