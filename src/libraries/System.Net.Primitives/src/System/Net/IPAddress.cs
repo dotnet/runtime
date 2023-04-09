@@ -433,9 +433,9 @@ namespace System.Net
             TryFormatCore(destination, out charsWritten);
 
         /// <inheritdoc/>
-        bool IUtf8SpanFormattable.TryFormat(Span<byte> destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
             // format and provider are explicitly ignored
-            TryFormatCore(destination, out bytesWritten);
+            TryFormatCore(utf8Destination, out bytesWritten);
 
         private bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {

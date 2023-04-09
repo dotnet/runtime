@@ -301,8 +301,8 @@ namespace System.Net
             TryFormat(destination, out charsWritten);
 
         /// <inheritdoc />
-        bool IUtf8SpanFormattable.TryFormat(Span<byte> destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
-            Utf8.TryWrite(destination, CultureInfo.InvariantCulture, $"{BaseAddress}/{(uint)PrefixLength}", out bytesWritten);
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            Utf8.TryWrite(utf8Destination, CultureInfo.InvariantCulture, $"{BaseAddress}/{(uint)PrefixLength}", out bytesWritten);
 
         /// <inheritdoc />
         static IPNetwork IParsable<IPNetwork>.Parse([NotNull] string s, IFormatProvider? provider) => Parse(s);

@@ -180,7 +180,7 @@ namespace System.Net
             {
                 destination[pos++] = TChar.CreateTruncating('%');
 
-                // TODO: Use UInt32 TryFormat for both char and byte once IUtf8SpanFormattable implementation exists
+                // TODO https://github.com/dotnet/runtime/issues/84527: Use UInt32 TryFormat for both char and byte once IUtf8SpanFormattable implementation exists
                 Span<TChar> chars = stackalloc TChar[10];
                 int bytesPos = 10;
                 do
