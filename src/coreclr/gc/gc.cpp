@@ -7019,7 +7019,7 @@ void gc_heap::gc_thread_function ()
             }
 #ifdef USE_REGIONS
             // quick hack for initial testing
-            if ((settings.gc_index >= (prev_change_heap_count_gc_index + 100))
+            if ((settings.gc_index >= (prev_change_heap_count_gc_index + 20))
                 && !gc_heap::background_running_p())
             {
                 // can't have threads allocating while we change the number of heaps
@@ -20573,7 +20573,9 @@ size_t gc_heap::get_total_allocated_since_last_gc()
     {
         gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
-        total_allocated_size += hp->allocated_since_last_gc[0] + hp->allocated_since_last_gc[1];
+        // TEMP, only count UOH allocs
+        //total_allocated_size += hp->allocated_since_last_gc[0] + hp->allocated_since_last_gc[1];
+        total_allocated_size += hp->allocated_since_last_gc[1];
         hp->allocated_since_last_gc[0] = 0;
         hp->allocated_since_last_gc[1] = 0;
     }
@@ -24673,6 +24675,8 @@ void gc_heap::recommission_heap()
 
 bool gc_heap::change_heap_count (int new_n_heaps)
 {
+    dprintf (5555, ("changing heap count %d -> %d", n_heaps, new_n_heaps));
+
     // use this variable for clarity - n_heaps will change during the transition
     int old_n_heaps = n_heaps;
 
@@ -24899,7 +24903,7 @@ bool gc_heap::change_heap_count (int new_n_heaps)
     // make sure no allocation contexts point to idle heaps
     fix_allocation_contexts_heaps();
 
-    GCConfig::s_HeapVerifyLevel = 1;
+//    GCConfig::s_HeapVerifyLevel = 1;
 
     return true;
 }
@@ -44103,7 +44107,8 @@ void gc_heap::process_background_segment_end (heap_segment* seg,
     }
 
     dprintf (3, ("verifying seg %p's mark array was completely cleared", seg));
-    bgc_verify_mark_array_cleared (seg);
+    // TEMP!!!
+    //bgc_verify_mark_array_cleared (seg);
 }
 
 inline
@@ -48547,7 +48552,7 @@ void gc_heap::do_pre_gc()
 #ifdef TRACE_GC
     size_t total_allocated_since_last_gc = get_total_allocated_since_last_gc();
 #ifdef BACKGROUND_GC
-    dprintf (1, (ThreadStressLog::gcDetailedStartMsg(),
+    dprintf (5555, (ThreadStressLog::gcDetailedStartMsg(),
         VolatileLoad(&settings.gc_index),
         dd_collection_count (hp->dynamic_data_of (0)),
         settings.condemned_generation,
@@ -48966,7 +48971,7 @@ void gc_heap::do_post_gc()
     }
 #endif //BGC_SERVO_TUNING
 
-    dprintf (1, (ThreadStressLog::gcDetailedEndMsg(),
+    dprintf (5555, (ThreadStressLog::gcDetailedEndMsg(),
         VolatileLoad(&settings.gc_index),
         dd_collection_count(hp->dynamic_data_of(0)),
         (size_t)(GetHighPrecisionTimeStamp() / 1000),
