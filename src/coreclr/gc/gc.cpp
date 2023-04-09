@@ -15812,19 +15812,7 @@ void allocator::rethread_items (size_t* num_total_fl_items, size_t* num_total_fl
                 }
                 else
                 {
-                    if (prev_item == nullptr)
-                    {
-                        alloc_list_head_of (i) = next_item;
-                    }
-                    else
-                    {
-                        free_list_slot (prev_item) = next_item;
-                    }
-                    if (alloc_list_tail_of (i) == free_item)
-                    {
-                        assert (next_item == nullptr);
-                        alloc_list_tail_of (i) = prev_item;
-                    }
+                    unlink_item (i, free_item, prev_item, FALSE);
                     current_bucket_min_fl_list[hn].thread_item_no_prev (free_item);
                 }
                 free_list_space_per_heap[hn] += size_o;
@@ -22121,7 +22109,6 @@ void gc_heap::gc1()
             compute_gc_and_ephemeral_range (settings.condemned_generation, true);
             stomp_write_barrier_ephemeral (ephemeral_low, ephemeral_high,
                                            map_region_to_generation_skewed, (uint8_t)min_segment_size_shr);
-//            fl_exp ();
 #endif //USE_REGIONS
 
 #ifdef FEATURE_LOH_COMPACTION
@@ -22240,137 +22227,6 @@ void gc_heap::gc1()
 }
 
 #if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
-// Do the experiment here.
-// For each region in the old gen, do the following -
-// generate a fake new heap for this region, if the new heap is different, then
-// stage 1: for each free object on the FL, we take it off the current heap's gen FL, and thread
-// it onto the new heap's FL, record # of regions we went through and ones whose heap changed.
-// stage 2: when we are done, we need to go through each heap's gen's FL and thread the ones back
-// since we didn't actually change. record # of fl items we went through and whose heap changed.
-// 03/21/2023 - made stage 2 per heap
-//
-// record each stage's time so see the diff.
-//
-// for now I'm only doing gen2 (allocator::rethread_items is only implemented for gen2)!!!!
-//
-void gc_heap::fl_exp()
-{
-    total_num_fl_items_moved_stage1 = 0;
-    total_num_fl_items_stage1 = 0;
-
-    size_t gc_idx = VolatileLoadWithoutBarrier (&settings.gc_index);
-
-    if ((gc_idx % 5) == 0)
-    {
-        dprintf (8888, ("GC%5d - FL EXP", gc_idx));
-    }
-    else
-    {
-        return;
-    }
-
-    uint64_t start_us = GetHighPrecisionTimeStamp();
-    uint64_t end_us = 0;
-
-    int total_num_total_regions = 0;
-    int total_num_regions_heap_changed = 0;
-    size_t total_num_objects_moved_regions = 0;
-    size_t total_num_fl_items_moved_regions = 0;
-    size_t total_num_objects_nonmoved_regions = 0;
-    size_t total_num_fl_items_nonmoved_regions = 0;
-    for (int hn = 0; hn < n_heaps; hn++)
-    {
-        gc_heap* hp = g_heaps[hn];
-
-        int num_total_regions = 0;
-        int num_regions_heap_changed = 0;
-        size_t num_objects_moved_regions = 0;
-        size_t num_fl_items_moved_regions = 0;
-        size_t num_objects_nonmoved_regions = 0;
-        size_t num_fl_items_nonmoved_regions = 0;
-
-        for (int i = max_generation; i < loh_generation; i++)
-        {
-            generation* gen = hp->generation_of (i);
-            heap_segment* region = heap_segment_rw (generation_start_segment(gen));
-            int align_const = get_alignment_constant (i == max_generation);
-            allocator* gen_allocator = generation_allocator (gen);
-
-            dprintf (8888, ("processing h%d g%d", hn, i));
-            while (region)
-            {
-                // generate a random heap, for now let's get one that's always different from the current one.
-                int new_hn = (gc_rand::get_rand (n_heaps) + hn + 1) % n_heaps;
-                gc_heap* new_hp = g_heaps[new_hn];
-                //region->temp_heap = new_hp;
-                allocator* new_gen_allocator = generation_allocator (new_hp->generation_of (i));
-                num_total_regions++;
-                dprintf (3, ("region %Ix h%d->%d, %Ix->%Ix", (size_t)region, hp->heap_number, new_hp->heap_number,
-                    heap_segment_mem (region), heap_segment_allocated (region)));
-
-                if (new_hn != hn)
-                {
-                    num_regions_heap_changed++;
-
-                    // Go through the region and pick out the FL items.
-                    uint8_t* o = heap_segment_mem (region);
-                    while (o < heap_segment_allocated (region))
-                    {
-                        size_t size_o = Align(size (o), align_const);
-                        num_objects_moved_regions++;
-
-                        if ((method_table (o) == g_gc_pFreeObjectMethodTable) && (is_on_free_list (o, size_o)))
-                        {
-                            gen_allocator->unlink_item_no_undo (o, size_o);
-                            new_gen_allocator->thread_item (o, size_o);
-                            num_fl_items_moved_regions++;
-                        }
-
-                        o = o + size_o;
-                    }
-                }
-                else
-                {
-                    // for the regions we are not moving, also get the # of free items.
-                    uint8_t* o = heap_segment_mem (region);
-                    while (o < heap_segment_allocated (region))
-                    {
-                        size_t size_o = Align(size (o), align_const);
-                        num_objects_nonmoved_regions++;
-
-                        if ((method_table (o) == g_gc_pFreeObjectMethodTable) && (is_on_free_list (o, size_o)))
-                        {
-                            num_fl_items_nonmoved_regions++;
-                        }
-                        o = o + size_o;
-                    }
-                }
-
-                region = heap_segment_next (region);
-            }
-        }
-
-        end_us = GetHighPrecisionTimeStamp();
-        dprintf (8888, ("stage 1 h%d: %I64dus (%I64dms), total %d regions, %d heap changed, %Id objs/%Id fl items in moved regions, %Id objs/%Id fl items in others", 
-            hn, (end_us - start_us), ((end_us - start_us) / 1000), num_total_regions, num_regions_heap_changed,
-            num_objects_moved_regions, num_fl_items_moved_regions,
-            num_objects_nonmoved_regions, num_fl_items_nonmoved_regions));
-
-        total_num_total_regions += num_total_regions;
-        total_num_regions_heap_changed += num_regions_heap_changed;
-        total_num_objects_moved_regions += num_objects_moved_regions;
-        total_num_fl_items_moved_regions += num_fl_items_moved_regions;
-        total_num_fl_items_nonmoved_regions += num_fl_items_nonmoved_regions;
-        start_us = end_us;
-    }
-
-    dprintf (8888, ("stage 1 total %d regions, %d heap changed, %Id objs, %Id fl items moved",
-                total_num_total_regions, total_num_regions_heap_changed, total_num_objects_moved_regions, total_num_fl_items_moved_regions));
-    total_num_fl_items_moved_stage1 = total_num_fl_items_moved_regions;
-    total_num_fl_items_stage1 = total_num_fl_items_moved_regions + total_num_fl_items_nonmoved_regions;
-}
-
-// Currently only implemented for gen2!
 void gc_heap::rethread_fl_items(int gen_idx)
 {
     if (!total_num_fl_items_moved_stage1)
