@@ -951,7 +951,7 @@ namespace System
         static char System.IParsable<char>.Parse(string s, System.IFormatProvider? provider) { throw null; }
         static bool System.IParsable<char>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out char result) { throw null; }
         bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
-        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         static char System.ISpanParsable<char>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
         static bool System.ISpanParsable<char>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out char result) { throw null; }
         static char System.Numerics.IAdditionOperators<char, char, char>.operator +(char left, char right) { throw null; }
@@ -1577,7 +1577,7 @@ namespace System
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateOnlyFormat")] string? format) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateOnlyFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateOnlyFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
-        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeOnlyFormat")] System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeOnlyFormat")] System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.DateOnly result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.DateOnly result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
@@ -1720,7 +1720,7 @@ namespace System
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateTimeFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public System.DateTime ToUniversalTime() { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateTimeFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
-        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeOnlyFormat")] System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeOnlyFormat")] System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.DateTime result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.DateTime result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles styles, out System.DateTime result) { throw null; }
@@ -1833,7 +1833,7 @@ namespace System
         public long ToUnixTimeMilliseconds() { throw null; }
         public long ToUnixTimeSeconds() { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateTimeFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? formatProvider = null) { throw null; }
-        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeOnlyFormat")] System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeOnlyFormat")] System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> input, out System.DateTimeOffset result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.DateTimeOffset result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> input, System.IFormatProvider? formatProvider, System.Globalization.DateTimeStyles styles, out System.DateTimeOffset result) { throw null; }
@@ -5327,7 +5327,7 @@ namespace System
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeOnlyFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public System.TimeSpan ToTimeSpan() { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeOnlyFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
-        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeOnlyFormat")] System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeOnlyFormat")] System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.TimeOnly result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.TimeOnly result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.TimeOnly result) { throw null; }
@@ -5431,7 +5431,7 @@ namespace System
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeSpanFormat")] string? format) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeSpanFormat")] string? format, System.IFormatProvider? formatProvider) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeSpanFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? formatProvider = null) { throw null; }
-        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeSpanFormat")] System.ReadOnlySpan<char> format, System.IFormatProvider? formatProvider) { throw null; }
+        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeSpanFormat")] System.ReadOnlySpan<char> format, System.IFormatProvider? formatProvider) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> input, System.IFormatProvider? formatProvider, out System.TimeSpan result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.TimeSpan result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, System.IFormatProvider? formatProvider, out System.TimeSpan result) { throw null; }
@@ -14279,7 +14279,7 @@ namespace System.Text
         int System.IComparable.CompareTo(object? obj) { throw null; }
         string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
         bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
-        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         public static System.Text.Rune ToLower(System.Text.Rune value, System.Globalization.CultureInfo culture) { throw null; }
         public static System.Text.Rune ToLowerInvariant(System.Text.Rune value) { throw null; }
         public override string ToString() { throw null; }

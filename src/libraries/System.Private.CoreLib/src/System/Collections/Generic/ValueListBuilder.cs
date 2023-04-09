@@ -71,6 +71,8 @@ namespace System.Collections.Generic
 
         public Span<T> AppendSpan(int length)
         {
+            Debug.Assert(length >= 0);
+
             int pos = _pos;
             if ((uint)(pos + length) > (uint)_span.Length)
             {

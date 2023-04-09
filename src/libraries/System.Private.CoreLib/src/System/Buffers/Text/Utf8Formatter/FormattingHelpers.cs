@@ -33,8 +33,6 @@ namespace System.Buffers.Text
             return symbol;
         }
 
-        #region UTF-8 Helper methods
-
         /// <summary>
         /// Fills a buffer with the ASCII character '0' (0x30).
         /// </summary>
@@ -109,69 +107,58 @@ namespace System.Buffers.Text
         }
 
         /// <summary>
+        /// Writes a value [ 00 .. 99 ] to the buffer starting at the specified offset.
+        /// This method performs best when the starting index is a constant literal.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe void WriteTwoDigits<TChar>(uint value, Span<TChar> buffer, int startingIndex = 0) where TChar : unmanaged, IBinaryInteger<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            Debug.Assert(value <= 99);
+            Debug.Assert(startingIndex <= buffer.Length - 2);
+
+            fixed (TChar* bufferPtr = &MemoryMarshal.GetReference(buffer))
+            {
+                Number.WriteTwoDigits(bufferPtr + startingIndex, value);
+            }
+        }
+
+        /// <summary>
         /// Writes a value [ 0000 .. 9999 ] to the buffer starting at the specified offset.
         /// This method performs best when the starting index is a constant literal.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void WriteFourDecimalDigits<TChar>(uint value, Span<TChar> buffer, int startingIndex = 0) where TChar : unmanaged, IBinaryInteger<TChar>
+        public static unsafe void WriteFourDigits<TChar>(uint value, Span<TChar> buffer, int startingIndex = 0) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(value <= 9999);
             Debug.Assert(startingIndex <= buffer.Length - 4);
 
             (value, uint remainder) = Math.DivRem(value, 100);
             fixed (TChar* bufferPtr = &MemoryMarshal.GetReference(buffer))
             {
-                if (typeof(TChar) == typeof(char))
-                {
-                    Number.WriteTwoDigits((char*)bufferPtr + startingIndex, value);
-                    Number.WriteTwoDigits((char*)bufferPtr + startingIndex + 2, remainder);
-                }
-                else
-                {
-                    Number.WriteTwoDigits((byte*)bufferPtr + startingIndex, value);
-                    Number.WriteTwoDigits((byte*)bufferPtr + startingIndex + 2, remainder);
-                }
+                Number.WriteTwoDigits(bufferPtr + startingIndex, value);
+                Number.WriteTwoDigits(bufferPtr + startingIndex + 2, remainder);
             }
         }
 
-        /// <summary>
-        /// Writes a value [ 00 .. 99 ] to the buffer starting at the specified offset.
-        /// This method performs best when the starting index is a constant literal.
-        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void WriteTwoDecimalDigits<TChar>(uint value, Span<TChar> buffer, int startingIndex = 0) where TChar : unmanaged, IBinaryInteger<TChar>
+        public static void CopyFour<TChar>(ReadOnlySpan<TChar> source, Span<TChar> destination) where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            Debug.Assert(value <= 99);
-            Debug.Assert(startingIndex <= buffer.Length - 2);
-
-            fixed (TChar* bufferPtr = &MemoryMarshal.GetReference(buffer))
+            if (typeof(TChar) == typeof(byte))
             {
-                if (typeof(TChar) == typeof(char))
-                {
-                    Number.WriteTwoDigits((char*)bufferPtr + startingIndex, value);
-                }
-                else
-                {
-                    Number.WriteTwoDigits((byte*)bufferPtr + startingIndex, value);
-                }
+                Unsafe.WriteUnaligned(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(destination)),
+                    Unsafe.ReadUnaligned<uint>(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(source))));
+            }
+            else
+            {
+                Debug.Assert(typeof(TChar) == typeof(char));
+                Unsafe.WriteUnaligned(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(destination)),
+                    Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(source))));
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void CopyFourBytes(ReadOnlySpan<byte> source, Span<byte> destination) =>
-            Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination),
-                Unsafe.ReadUnaligned<uint>(ref MemoryMarshal.GetReference(source)));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void CopyFourChars(ReadOnlySpan<char> source, Span<char> destination) =>
-            Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(destination)),
-                Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(source))));
-
-        #endregion UTF-8 Helper methods
-
-        //
-        // Enable use of ThrowHelper from TryFormat() routines without introducing dozens of non-code-coveraged "bytesWritten = 0; return false" boilerplate.
-        //
+        /// <summary>Enable use of ThrowHelper from TryFormat() routines without introducing dozens of non-code-coveraged "bytesWritten = 0; return false" boilerplate.</summary>
         public static bool TryFormatThrowFormatException(out int bytesWritten)
         {
             bytesWritten = 0;

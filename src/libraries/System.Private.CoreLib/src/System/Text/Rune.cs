@@ -916,8 +916,8 @@ namespace System.Text
         bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
             TryEncodeToUtf16(destination, out charsWritten);
 
-        bool IUtf8SpanFormattable.TryFormat(Span<byte> destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
-            TryEncodeToUtf8(destination, out bytesWritten);
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            TryEncodeToUtf8(utf8Destination, out bytesWritten);
 
         string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString();
 #endif

@@ -99,9 +99,9 @@ namespace System.Globalization
             return new string(destination.Slice(0, charsWritten));
         }
 
-        private enum StandardFormat { C, G, g }
+        internal enum StandardFormat { C, G, g }
 
-        private static bool TryFormatStandard<TChar>(TimeSpan value, StandardFormat format, string? decimalSeparator, Span<TChar> destination, out int written) where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static bool TryFormatStandard<TChar>(TimeSpan value, StandardFormat format, string? decimalSeparator, Span<TChar> destination, out int written) where TChar : unmanaged, IBinaryInteger<TChar>
         {
             Debug.Assert(format == StandardFormat.C || format == StandardFormat.G || format == StandardFormat.g);
 
@@ -155,7 +155,7 @@ namespace System.Globalization
                     Debug.Assert(decimalSeparator is not null);
                     fractionDigits = DateTimeFormat.MaxSecondsFractionDigits;
                     requiredOutputLength += fractionDigits;
-                    requiredOutputLength += typeof(TChar) == typeof(char) ?
+                    requiredOutputLength += typeof(TChar) == typeof(char) || (decimalSeparator.Length == 1 && char.IsAscii(decimalSeparator[0])) ?
                         decimalSeparator.Length :
                         Encoding.UTF8.GetByteCount(decimalSeparator);
                     break;
@@ -168,7 +168,7 @@ namespace System.Globalization
                     {
                         fractionDigits = DateTimeFormat.MaxSecondsFractionDigits - FormattingHelpers.CountDecimalTrailingZeros(fraction, out fraction);
                         requiredOutputLength += fractionDigits;
-                        requiredOutputLength += typeof(TChar) == typeof(char) ?
+                        requiredOutputLength += typeof(TChar) == typeof(char) || (decimalSeparator.Length == 1 && char.IsAscii(decimalSeparator[0])) ?
                             decimalSeparator.Length :
                             Encoding.UTF8.GetByteCount(decimalSeparator);
                     }
@@ -249,7 +249,7 @@ namespace System.Globalization
             Debug.Assert(hourDigits == 1 || hourDigits == 2);
             if (hourDigits == 2)
             {
-                FormattingHelpers.WriteTwoDecimalDigits(hours, destination, idx);
+                FormattingHelpers.WriteTwoDigits(hours, destination, idx);
                 idx += 2;
             }
             else
@@ -257,10 +257,10 @@ namespace System.Globalization
                 destination[idx++] = TChar.CreateTruncating('0' + hours);
             }
             destination[idx++] = TChar.CreateTruncating(':');
-            FormattingHelpers.WriteTwoDecimalDigits((uint)minutes, destination, idx);
+            FormattingHelpers.WriteTwoDigits((uint)minutes, destination, idx);
             idx += 2;
             destination[idx++] = TChar.CreateTruncating(':');
-            FormattingHelpers.WriteTwoDecimalDigits((uint)seconds, destination, idx);
+            FormattingHelpers.WriteTwoDigits((uint)seconds, destination, idx);
             idx += 2;
 
             // Write fraction and separator, if necessary
