@@ -8926,7 +8926,8 @@ private:
     unsigned int roundUpSIMDSize(unsigned size)
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
-        auto maxSimdSize = maxSIMDStructBytes();
+        unsigned maxSimdSize = maxSIMDStructBytes();
+        assert(maxSimdSize <= ZMM_REGSIZE_BYTES);
         if (size <= XMM_REGSIZE_BYTES && maxSimdSize > XMM_REGSIZE_BYTES)
         {
             return XMM_REGSIZE_BYTES;
@@ -8937,6 +8938,7 @@ private:
         }
         return maxSimdSize;
 #elif defined(TARGET_ARM64)
+        assert(maxSIMDStructBytes() == FP_REGSIZE_BYTES);
         return FP_REGSIZE_BYTES;
 #else
         assert(!"roundUpSIMDSize() unimplemented on target arch");
@@ -8960,9 +8962,9 @@ private:
     {
 #if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
         unsigned maxSimdSize = maxSIMDStructBytes();
+        assert(maxSimdSize <= ZMM_REGSIZE_BYTES);
         if (size >= maxSimdSize)
         {
-            assert(maxSimdSize <= ZMM_REGSIZE_BYTES);
             // Size is bigger than max SIMD size the current target supports
             return maxSimdSize;
         }
@@ -8974,7 +8976,7 @@ private:
         // Return 0 if size is even less than XMM, otherwise - XMM
         return size >= XMM_REGSIZE_BYTES ? XMM_REGSIZE_BYTES : 0;
 #elif defined(TARGET_ARM64)
-        assert(maxSimdSize == FP_REGSIZE_BYTES);
+        assert(maxSIMDStructBytes() == FP_REGSIZE_BYTES);
         return size >= FP_REGSIZE_BYTES ? FP_REGSIZE_BYTES : 0;
 #else
         assert(!"roundDownSIMDSize() unimplemented on target arch");
