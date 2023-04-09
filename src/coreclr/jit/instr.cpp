@@ -238,8 +238,8 @@ const char* CodeGen::genSizeStr(emitAttr attr)
         "dword ptr ",
         "qword ptr ",
         "xmmword ptr ",
-        "ymmword ptr",
-        "zmmword ptr"
+        "ymmword ptr ",
+        "zmmword ptr "
     };
     // clang-format on
 
