@@ -6619,26 +6619,37 @@ GenTree* GenTree::gtGetParent(GenTree*** pUse)
 
 bool GenTree::OperRequiresAsgFlag()
 {
-    if (OperIs(GT_ASG, GT_STORE_DYN_BLK) ||
-        OperIs(GT_XADD, GT_XORR, GT_XAND, GT_XCHG, GT_LOCKADD, GT_CMPXCHG, GT_MEMORYBARRIER))
+    switch (OperGet())
     {
-        return true;
-    }
+        case GT_STORE_LCL_VAR:
+        case GT_STORE_LCL_FLD:
+        case GT_STOREIND:
+        case GT_STORE_BLK:
+        case GT_STORE_DYN_BLK:
+        case GT_ASG:
+        case GT_XADD:
+        case GT_XORR:
+        case GT_XAND:
+        case GT_XCHG:
+        case GT_LOCKADD:
+        case GT_CMPXCHG:
+        case GT_MEMORYBARRIER:
+            return true;
 
-#ifdef FEATURE_HW_INTRINSICS
-    if (gtOper == GT_HWINTRINSIC)
-    {
-        return AsHWIntrinsic()->OperRequiresAsgFlag();
-    }
-#endif // FEATURE_HW_INTRINSICS
-
-    if (gtOper == GT_CALL)
-    {
         // If the call has return buffer argument, it produced a definition and hence
         // should be marked with assignment.
-        return AsCall()->IsOptimizingRetBufAsLocal();
+        case GT_CALL:
+            return AsCall()->IsOptimizingRetBufAsLocal();
+
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HWINTRINSIC:
+            return AsHWIntrinsic()->OperRequiresAsgFlag();
+#endif // FEATURE_HW_INTRINSICS
+
+        default:
+            assert(!OperIsStore() && !OperIsAtomicOp());
+            return false;
     }
-    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -16120,14 +16131,7 @@ bool Compiler::gtNodeHasSideEffects(GenTree* tree, GenTreeFlags flags)
 {
     if (flags & GTF_ASG)
     {
-        // TODO-Bug: This only checks for GT_ASG/GT_STORE_DYN_BLK but according to OperRequiresAsgFlag
-        // there are many more opers that are considered to have an assignment side effect: atomic ops
-        // (GT_CMPXCHG & co.), GT_MEMORYBARRIER (not classified as an atomic op) and HW intrinsic
-        // memory stores. Atomic ops have special handling in gtExtractSideEffList but the others
-        // will simply be dropped is they are ever subject to an "extract side effects" operation.
-        // It is possible that the reason no bugs have yet been observed in this area is that the
-        // other nodes are likely to always be tree roots.
-        if (tree->OperIs(GT_ASG, GT_STORE_DYN_BLK))
+        if (tree->OperRequiresAsgFlag())
         {
             return true;
         }
@@ -16630,18 +16634,6 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
                     {
                         Append(node);
                     }
-                    return Compiler::WALK_SKIP_SUBTREES;
-                }
-
-                // TODO-Cleanup: These have GTF_ASG set but for some reason gtNodeHasSideEffects ignores
-                // them. See the related gtNodeHasSideEffects comment as well.
-                // Also, these nodes must always be preserved, no matter what side effect flags are passed
-                // in. But then it should never be the case that gtExtractSideEffList gets called without
-                // specifying GTF_ASG so there doesn't seem to be any reason to be inconsistent with
-                // gtNodeHasSideEffects and make this check unconditionally.
-                if (node->OperIsAtomicOp())
-                {
-                    Append(node);
                     return Compiler::WALK_SKIP_SUBTREES;
                 }
 

@@ -508,9 +508,9 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     }
     else
     {
-        if (!node->OperIsStore())
+        if (((node->gtFlags & GTF_ASG) != 0) && !node->OperRequiresAsgFlag())
         {
-            // Clear the GTF_ASG flag for all nodes but stores
+            // Clear the GTF_ASG flag for all nodes that do not require it
             node->gtFlags &= ~GTF_ASG;
         }
 

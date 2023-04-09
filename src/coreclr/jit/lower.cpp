@@ -7274,7 +7274,7 @@ void Lowering::CheckCallArg(GenTree* arg)
 {
     if (!arg->IsValue() && !arg->OperIsPutArgStk())
     {
-        assert(arg->OperIsStore() || arg->OperIsCopyBlkOp());
+        assert(arg->OperIsStore());
         return;
     }
 
@@ -8229,7 +8229,7 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
 //
 void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
 {
-    assert(store->OperIsStore() && !store->OperIsAtomicOp());
+    assert(store->OperIsStore());
 
     if (!varTypeIsFloating(store))
     {
