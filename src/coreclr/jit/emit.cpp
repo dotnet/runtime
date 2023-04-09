@@ -7005,7 +7005,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                         printf("              ;; offset=%04XH", emitCurCodeOffs(cp));
                     }
                     else
-#else // DEBUG
+#endif // DEBUG
                     {
                         printf("  ;; offset=%04XH", emitCurCodeOffs(cp));
                     }
