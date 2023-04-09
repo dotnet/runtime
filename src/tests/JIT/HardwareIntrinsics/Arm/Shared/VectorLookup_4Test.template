@@ -18,7 +18,6 @@ namespace JIT.HardwareIntrinsics.Arm
 {
     public static partial class Program
     {
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/83891", TestRuntimes.Mono)]
         [Fact]
         public static void VectorLookup_4_{RetBaseType}()
         {

@@ -1765,10 +1765,12 @@ public:
             return false;
         }
 
-        if (bottom->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, BBJ_CALLFINALLY, BBJ_SWITCH))
+        if (bottom->KindIs(BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, BBJ_CALLFINALLY,
+                           BBJ_SWITCH))
         {
             JITDUMP("    bottom odd jump kind\n");
-            // BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, and BBJ_CALLFINALLY can never form a loop.
+            // BBJ_EHFINALLYRET, BBJ_EHFAULTRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET, and BBJ_CALLFINALLY can never form a
+            // loop.
             // BBJ_SWITCH that has a backward jump appears only for labeled break.
             return false;
         }
@@ -2511,6 +2513,7 @@ private:
                 break;
 
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
             case BBJ_EHFILTERRET:
                 // The "try" associated with this "finally" must be in the same loop, so the
                 // finally block will return control inside the loop.
@@ -2820,6 +2823,7 @@ void Compiler::optRedirectBlock(BasicBlock* blk, BlockToBlockMap* redirectMap, R
         case BBJ_THROW:
         case BBJ_RETURN:
         case BBJ_EHFILTERRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFINALLYRET:
         case BBJ_EHCATCHRET:
             // These have no jump destination to update.
