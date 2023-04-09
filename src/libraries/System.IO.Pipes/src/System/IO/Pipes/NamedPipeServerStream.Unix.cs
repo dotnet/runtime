@@ -38,7 +38,9 @@ namespace System.IO.Pipes
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_MessageTransmissionMode);
             }
 
+#pragma warning disable CA1416
             if ((options & PipeOptions.FirstPipeInstance) != 0)
+#pragma warning restore CA1416
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_PipeOptions_FirstPipeInstance);
             }

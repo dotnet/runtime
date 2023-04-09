@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Net.NetworkInformation;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
@@ -262,5 +263,17 @@ namespace System.IO.Pipes.Tests
         {
             Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeServerStream(PipeStreamConformanceTests.GetUniquePipeName(), PipeDirection.Out, 1, PipeTransmissionMode.Byte, PipeOptions.FirstPipeInstance));
         }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void Windows_PipeOptions_FirstPipeInstanceWithSameNameReuse_Throws_UnauthorizedAccessException()
+        {
+            string uniqueServerName = PipeStreamConformanceTests.GetUniquePipeName();
+            using (NamedPipeServerStream server = new NamedPipeServerStream(uniqueServerName, PipeDirection.In, 2, PipeTransmissionMode.Byte, PipeOptions.FirstPipeInstance))
+            {
+                Assert.Throws<UnauthorizedAccessException>(() => new NamedPipeServerStream(uniqueServerName, PipeDirection.In, 2, PipeTransmissionMode.Byte, PipeOptions.FirstPipeInstance));
+            }
+        }
+
     }
 }
