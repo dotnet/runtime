@@ -10430,8 +10430,17 @@ void emitter::emitDispShift(instruction ins, int cnt)
 
 void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
+#ifdef DEBUG
+    if (!emitComp->opts.disAddr)
+    {
+        return;
+    }
+#else // DEBUG
+    return;
+#endif
+
     // We do not display the instruction hex if we want diff-able disassembly
-    if (!emitComp->opts.disDiffable && emitComp->opts.disAddr)
+    if (!emitComp->opts.disDiffable)
     {
 #ifdef TARGET_AMD64
         // how many bytes per instruction we format for
