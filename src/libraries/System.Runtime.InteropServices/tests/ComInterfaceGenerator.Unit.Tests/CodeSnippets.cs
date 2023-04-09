@@ -113,7 +113,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
             """;
-        public string BasicParametersAndModifiers(string typeName, string preDeclaration = "") => $$"""
+        public string BasicParametersAndModifiers(string typeName, string methodModifiers = "", string preDeclaration = "") => $$"""
             using System.Runtime.CompilerServices;
             using System.Runtime.InteropServices;
             using System.Runtime.InteropServices.Marshalling;
@@ -126,7 +126,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             partial interface INativeAPI
             {
                 {{VirtualMethodIndex(0)}}
-                {{typeName}} Method({{typeName}} value, in {{typeName}} inValue, ref {{typeName}} refValue, out {{typeName}} outValue);
+                {{methodModifiers}} {{typeName}} Method({{typeName}} value, in {{typeName}} inValue, ref {{typeName}} refValue, out {{typeName}} outValue);
             }
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
             """;
@@ -245,6 +245,43 @@ namespace ComInterfaceGenerator.Unit.Tests
             {{_attributeProvider.AdditionalUserRequiredInterfaces("INativeAPI")}}
             """;
 
+        public string DerivedComInterfaceType => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+            
+            {{GeneratedComInterface}}
+            partial interface IComInterface
+            {
+                void Method();
+            }
+            {{GeneratedComInterface}}
+            partial interface IComInterface2 : IComInterface
+            {
+                void Method2();
+            }
+            """;
+        public string DerivedComInterfaceTypeMultipleComInterfaceBases => $$"""
+            using System.Runtime.CompilerServices;
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+            
+            {{GeneratedComInterface}}
+            partial interface IComInterface
+            {
+                void Method();
+            }
+            {{GeneratedComInterface}}
+            partial interface IOtherComInterface
+            {
+                void MethodA();
+            }
+            {{GeneratedComInterface}}
+            partial interface IComInterface2 : IComInterface, IOtherComInterface
+            {
+                void Method2();
+            }
+            """;
         public class ManagedToUnmanaged : IVirtualMethodIndexSignatureProvider
         {
             public MarshalDirection Direction => MarshalDirection.ManagedToUnmanaged;
