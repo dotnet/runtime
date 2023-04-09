@@ -8962,6 +8962,7 @@ private:
         unsigned maxSimdSize = maxSIMDStructBytes();
         if (size >= maxSimdSize)
         {
+            assert(maxSimdSize <= ZMM_REGSIZE_BYTES);
             // Size is bigger than max SIMD size the current target supports
             return maxSimdSize;
         }
@@ -8973,6 +8974,7 @@ private:
         // Return 0 if size is even less than XMM, otherwise - XMM
         return size >= XMM_REGSIZE_BYTES ? XMM_REGSIZE_BYTES : 0;
 #elif defined(TARGET_ARM64)
+        assert(maxSimdSize == FP_REGSIZE_BYTES);
         return size >= FP_REGSIZE_BYTES ? FP_REGSIZE_BYTES : 0;
 #else
         assert(!"roundDownSIMDSize() unimplemented on target arch");
