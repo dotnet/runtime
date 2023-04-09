@@ -2109,7 +2109,6 @@ private:
     PER_HEAP_METHOD void gc1();
 
 #if defined(MULTIPLE_HEAPS) && defined(USE_REGIONS)
-    PER_HEAP_ISOLATED_METHOD void fl_exp();
     PER_HEAP_METHOD void rethread_fl_items(int gen_idx);
     PER_HEAP_ISOLATED_METHOD void merge_fl_from_other_heaps (int gen_idx, int to_n_heaps, int from_n_heaps);
 #endif //MULTIPLE_HEAPS && USE_REGIONS
