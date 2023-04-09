@@ -1984,11 +1984,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Narrow:
         case NI_Vector256_Narrow:
+        case NI_Vector512_Narrow:
         {
             assert(sig->numArgs == 2);
 
             if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
             {
+                assert((simdSize != 64) || IsBaselineVector512IsaSupportedDebugOnly());
+
                 op2 = impSIMDPopStack(retType);
                 op1 = impSIMDPopStack(retType);
 
@@ -2485,11 +2488,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_WidenLower:
         case NI_Vector256_WidenLower:
+        case NI_Vector512_WidenLower:
         {
             assert(sig->numArgs == 1);
 
             if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
             {
+                assert((simdSize != 64) || IsBaselineVector512IsaSupportedDebugOnly());
+
                 op1 = impSIMDPopStack(retType);
 
                 retNode =
@@ -2500,11 +2506,14 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_WidenUpper:
         case NI_Vector256_WidenUpper:
+        case NI_Vector512_WidenUpper:
         {
             assert(sig->numArgs == 1);
 
             if ((simdSize != 32) || varTypeIsFloating(simdBaseType) || compExactlyDependsOn(InstructionSet_AVX2))
             {
+                assert((simdSize != 64) || IsBaselineVector512IsaSupportedDebugOnly());
+
                 op1 = impSIMDPopStack(retType);
 
                 retNode =
