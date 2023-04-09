@@ -1177,6 +1177,10 @@ void CodeGen::inst_RV_TT_RV(instruction ins, emitAttr size, regNumber targetReg,
         }
         break;
 
+        case OperandKind::Reg:
+            GetEmitter()->emitIns_R_R_R(ins, size, targetReg, op1->GetRegNum(), op2Reg);
+            break;
+
         default:
             unreached();
     }
