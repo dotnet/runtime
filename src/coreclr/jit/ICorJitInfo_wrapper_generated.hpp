@@ -1272,6 +1272,15 @@ uint32_t WrapICorJitInfo::getLoongArch64PassStructInRegisterFlags(
     return temp;
 }
 
+uint32_t WrapICorJitInfo::getRISCV64PassStructInRegisterFlags(
+          CORINFO_CLASS_HANDLE structHnd)
+{
+    API_ENTER(getRISCV64PassStructInRegisterFlags);
+    uint32_t temp = wrapHnd->getRISCV64PassStructInRegisterFlags(structHnd);
+    API_LEAVE(getRISCV64PassStructInRegisterFlags);
+    return temp;
+}
+
 uint32_t WrapICorJitInfo::getThreadTLSIndex(
           void** ppIndirection)
 {

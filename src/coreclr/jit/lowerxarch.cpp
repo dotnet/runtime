@@ -5583,6 +5583,37 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
                     break;
                 }
 
+                case NI_AVX512F_ConvertToVector128Int16:
+                case NI_AVX512F_ConvertToVector128Int32:
+                case NI_AVX512F_ConvertToVector128UInt16:
+                case NI_AVX512F_ConvertToVector128UInt32:
+                case NI_AVX512F_ConvertToVector256Int16:
+                case NI_AVX512F_ConvertToVector256Int32:
+                case NI_AVX512F_ConvertToVector256UInt16:
+                case NI_AVX512F_ConvertToVector256UInt32:
+                case NI_AVX512BW_ConvertToVector128Byte:
+                case NI_AVX512BW_ConvertToVector128SByte:
+                case NI_AVX512BW_ConvertToVector256Byte:
+                case NI_AVX512BW_ConvertToVector256SByte:
+                {
+                    // These intrinsics are "ins reg/mem, xmm"
+                    unsigned simdSize = hwintrinsic->GetSimdSize();
+
+                    if (simdSize == 16)
+                    {
+                        // For TYP_SIMD16, we produce a TYP_SIMD16 register
+                        // but only store TYP_SIMD8 to memory and so we cannot
+                        // contain without additional work.
+                        isContainable = false;
+                    }
+                    else
+                    {
+                        assert((simdSize == 32) || (simdSize == 64));
+                        isContainable = true;
+                    }
+                    break;
+                }
+
                 default:
                 {
                     break;
@@ -6965,6 +6996,18 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
         case NI_AVX_ExtractVector128:
         case NI_AVX2_ExtractVector128:
         case NI_AVX512F_ExtractVector256:
+        case NI_AVX512F_ConvertToVector128Int16:
+        case NI_AVX512F_ConvertToVector128Int32:
+        case NI_AVX512F_ConvertToVector128UInt16:
+        case NI_AVX512F_ConvertToVector128UInt32:
+        case NI_AVX512F_ConvertToVector256Int16:
+        case NI_AVX512F_ConvertToVector256Int32:
+        case NI_AVX512F_ConvertToVector256UInt16:
+        case NI_AVX512F_ConvertToVector256UInt32:
+        case NI_AVX512BW_ConvertToVector128Byte:
+        case NI_AVX512BW_ConvertToVector128SByte:
+        case NI_AVX512BW_ConvertToVector256Byte:
+        case NI_AVX512BW_ConvertToVector256SByte:
         {
             // These are only containable as part of a store
             return false;
@@ -7162,6 +7205,24 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
                         }
                         break;
+                    }
+
+                    case NI_AVX512F_ConvertToVector128Int16:
+                    case NI_AVX512F_ConvertToVector128Int32:
+                    case NI_AVX512F_ConvertToVector128UInt16:
+                    case NI_AVX512F_ConvertToVector128UInt32:
+                    case NI_AVX512F_ConvertToVector256Int16:
+                    case NI_AVX512F_ConvertToVector256Int32:
+                    case NI_AVX512F_ConvertToVector256UInt16:
+                    case NI_AVX512F_ConvertToVector256UInt32:
+                    case NI_AVX512BW_ConvertToVector128Byte:
+                    case NI_AVX512BW_ConvertToVector128SByte:
+                    case NI_AVX512BW_ConvertToVector256Byte:
+                    case NI_AVX512BW_ConvertToVector256SByte:
+                    {
+                        // These intrinsics are "ins reg/mem, xmm" and get
+                        // contained by the relevant store operation instead.
+                        return;
                     }
 
                     default:

@@ -1288,6 +1288,12 @@ uint32_t MyICJI::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE st
     return jitInstance->mc->repGetLoongArch64PassStructInRegisterFlags(structHnd);
 }
 
+uint32_t MyICJI::getRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd)
+{
+    jitInstance->mc->cr->AddCall("getRISCV64PassStructInRegisterFlags");
+    return jitInstance->mc->repGetRISCV64PassStructInRegisterFlags(structHnd);
+}
+
 // Stuff on ICorDynamicInfo
 uint32_t MyICJI::getThreadTLSIndex(void** ppIndirection)
 {

@@ -795,6 +795,10 @@ public:
     void dmpGetLoongArch64PassStructInRegisterFlags(DWORDLONG key, DWORD value);
     DWORD repGetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
 
+    void recGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd, DWORD value);
+    void dmpGetRISCV64PassStructInRegisterFlags(DWORDLONG key, DWORD value);
+    DWORD repGetRISCV64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE structHnd);
+
     void recGetRelocTypeHint(void* target, WORD result);
     void dmpGetRelocTypeHint(DWORDLONG key, DWORD value);
     WORD repGetRelocTypeHint(void* target);
@@ -1172,6 +1176,7 @@ enum mcPackets
     Packet_GetStringChar = 204,
     Packet_GetIsClassInitedFlagAddress = 205,
     Packet_GetStaticBaseAddress = 206,
+    Packet_GetRISCV64PassStructInRegisterFlags = 207,
 };
 
 void SetDebugDumpVariables();

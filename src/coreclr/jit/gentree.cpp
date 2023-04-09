@@ -1327,7 +1327,7 @@ void CallArgABIInformation::SetByteSize(unsigned byteSize, unsigned byteAlignmen
 //   is a HFA of doubles, since double and float registers overlap.
 void CallArgABIInformation::SetMultiRegNums()
 {
-#if FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64)
+#if FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     if (NumRegs == 1)
     {
         return;
@@ -1348,7 +1348,7 @@ void CallArgABIInformation::SetMultiRegNums()
         argReg = (regNumber)(argReg + regSize);
         SetRegNum(regIndex, argReg);
     }
-#endif // FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64)
+#endif // FEATURE_MULTIREG_ARGS && !defined(UNIX_AMD64_ABI) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 }
 
 //---------------------------------------------------------------
@@ -4387,6 +4387,27 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                 addrModeCostSz += 4;
             }
         }
+#elif defined(TARGET_RISCV64)
+        if (base)
+        {
+            addrModeCostEx += base->GetCostEx();
+            addrModeCostSz += base->GetCostSz();
+        }
+
+        if (idx)
+        {
+            addrModeCostEx += idx->GetCostEx();
+            addrModeCostSz += idx->GetCostSz();
+        }
+        if (cns != 0)
+        {
+            if (!emitter::isValidSimm12(cns))
+            {
+                // TODO-RISCV64-CQ: tune for RISCV64.
+                addrModeCostEx += 1;
+                addrModeCostSz += 4;
+            }
+        }
 #else
 #error "Unknown TARGET"
 #endif
@@ -4839,6 +4860,18 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costEx = 1;
                 costSz = 4;
                 goto COMMON_CNS;
+#elif defined(TARGET_RISCV64)
+            // TODO-RISCV64-CQ: tune the costs.
+            case GT_CNS_STR:
+                costEx = IND_COST_EX + 2;
+                costSz = 4;
+                goto COMMON_CNS;
+
+            case GT_CNS_LNG:
+            case GT_CNS_INT:
+                costEx = 1;
+                costSz = 4;
+                goto COMMON_CNS;
 #else
             case GT_CNS_STR:
             case GT_CNS_LNG:
@@ -4910,6 +4943,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 }
 #elif defined(TARGET_LOONGARCH64)
                 // TODO-LoongArch64-CQ: tune the costs.
+                costEx = 2;
+                costSz = 8;
+#elif defined(TARGET_RISCV64)
+                // TODO-RISCV64-CQ: tune the costs.
                 costEx = 2;
                 costSz = 8;
 #else
@@ -5112,6 +5149,10 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     }
 #elif defined(TARGET_LOONGARCH64)
                     // TODO-LoongArch64-CQ: tune the costs.
+                    costEx = 1;
+                    costSz = 4;
+#elif defined(TARGET_RISCV64)
+                    // TODO-RISCV64-CQ: tune the costs.
                     costEx = 1;
                     costSz = 4;
 #else
@@ -8081,7 +8122,7 @@ bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
     }
 
 // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (!comp->opts.MinOpts() && ((divisorValue >= 3) || !isSignedDivide))
     {
         // All checks pass we can perform the division operation using a reciprocal multiply.
@@ -17282,7 +17323,7 @@ GenTreeLclVar* GenTree::IsImplicitByrefParameterValuePostMorph(Compiler* compile
         }
     }
 
-#endif // FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64)
+#endif // FEATURE_IMPLICIT_BYREFS && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 
     return nullptr;
 }
@@ -19088,6 +19129,18 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_AVX2_ConvertToUInt32:
         case NI_AVX2_ExtractVector128:
         case NI_AVX512F_ExtractVector256:
+        case NI_AVX512F_ConvertToVector128Int16:
+        case NI_AVX512F_ConvertToVector128Int32:
+        case NI_AVX512F_ConvertToVector128UInt16:
+        case NI_AVX512F_ConvertToVector128UInt32:
+        case NI_AVX512F_ConvertToVector256Int16:
+        case NI_AVX512F_ConvertToVector256Int32:
+        case NI_AVX512F_ConvertToVector256UInt16:
+        case NI_AVX512F_ConvertToVector256UInt32:
+        case NI_AVX512BW_ConvertToVector128Byte:
+        case NI_AVX512BW_ConvertToVector128SByte:
+        case NI_AVX512BW_ConvertToVector256Byte:
+        case NI_AVX512BW_ConvertToVector256SByte:
         {
             // These HWIntrinsic operations are contained as part of a store
             return true;
@@ -19444,6 +19497,19 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
                 {
                     assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
                     intrinsic = NI_AVX2_Add;
+                }
+            }
+            else if (simdSize == 64)
+            {
+                if (varTypeIsSmall(simdBaseType))
+                {
+                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+                    intrinsic = NI_AVX512BW_Add;
+                }
+                else
+                {
+                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    intrinsic = NI_AVX512F_Add;
                 }
             }
             else if (simdBaseType == TYP_FLOAT)
@@ -19819,6 +19885,19 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
                 {
                     assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
                     intrinsic = NI_AVX2_Subtract;
+                }
+            }
+            else if (simdSize == 64)
+            {
+                if (varTypeIsSmall(simdBaseType))
+                {
+                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512BW));
+                    intrinsic = NI_AVX512BW_Subtract;
+                }
+                else
+                {
+                    assert(compIsaSupportedDebugOnly(InstructionSet_AVX512F));
+                    intrinsic = NI_AVX512F_Subtract;
                 }
             }
             else if (simdBaseType == TYP_FLOAT)
@@ -22326,7 +22405,149 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
     GenTree* tmp3;
     GenTree* tmp4;
 
-    if (simdSize == 32)
+    if (IsBaselineVector512IsaSupported())
+    {
+        // This is the same in principle to the other comments below, however due to
+        // code formatting, its too long to reasonably display here.
+
+        assert((simdSize == 16) || (simdSize == 32) || (simdSize == 64));
+        var_types tmpSimdType = (simdSize == 64) ? TYP_SIMD32 : TYP_SIMD16;
+
+        NamedIntrinsic intrinsicId;
+        CorInfoType    opBaseJitType;
+
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            {
+                if (simdSize == 64)
+                {
+                    intrinsicId = NI_AVX512BW_ConvertToVector256SByte;
+                }
+                else
+                {
+                    intrinsicId = NI_AVX512BW_ConvertToVector128SByte;
+                }
+
+                opBaseJitType = CORINFO_TYPE_SHORT;
+                break;
+            }
+
+            case TYP_UBYTE:
+            {
+                if (simdSize == 64)
+                {
+                    intrinsicId = NI_AVX512BW_ConvertToVector256Byte;
+                }
+                else
+                {
+                    intrinsicId = NI_AVX512BW_ConvertToVector128Byte;
+                }
+
+                opBaseJitType = CORINFO_TYPE_USHORT;
+                break;
+            }
+
+            case TYP_SHORT:
+            {
+                if (simdSize == 64)
+                {
+                    intrinsicId = NI_AVX512F_ConvertToVector256Int16;
+                }
+                else
+                {
+                    intrinsicId = NI_AVX512F_ConvertToVector128Int16;
+                }
+
+                opBaseJitType = CORINFO_TYPE_INT;
+                break;
+            }
+
+            case TYP_USHORT:
+            {
+                if (simdSize == 64)
+                {
+                    intrinsicId = NI_AVX512F_ConvertToVector256UInt16;
+                }
+                else
+                {
+                    intrinsicId = NI_AVX512F_ConvertToVector128UInt16;
+                }
+
+                opBaseJitType = CORINFO_TYPE_UINT;
+                break;
+            }
+
+            case TYP_INT:
+            {
+                if (simdSize == 64)
+                {
+                    intrinsicId = NI_AVX512F_ConvertToVector256Int32;
+                }
+                else
+                {
+                    intrinsicId = NI_AVX512F_ConvertToVector128Int32;
+                }
+
+                opBaseJitType = CORINFO_TYPE_LONG;
+                break;
+            }
+
+            case TYP_UINT:
+            {
+                if (simdSize == 64)
+                {
+                    intrinsicId = NI_AVX512F_ConvertToVector256UInt32;
+                }
+                else
+                {
+                    intrinsicId = NI_AVX512F_ConvertToVector128UInt32;
+                }
+
+                opBaseJitType = CORINFO_TYPE_ULONG;
+                break;
+            }
+
+            case TYP_FLOAT:
+            {
+                if (simdSize == 64)
+                {
+                    intrinsicId = NI_AVX512F_ConvertToVector256Single;
+                }
+                else if (simdSize == 32)
+                {
+                    intrinsicId = NI_AVX_ConvertToVector128Single;
+                }
+                else
+                {
+                    intrinsicId = NI_SSE2_ConvertToVector128Single;
+                }
+
+                opBaseJitType = CORINFO_TYPE_DOUBLE;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        tmp1 = gtNewSimdHWIntrinsicNode(tmpSimdType, op1, intrinsicId, opBaseJitType, simdSize, isSimdAsHWIntrinsic);
+        tmp2 = gtNewSimdHWIntrinsicNode(tmpSimdType, op2, intrinsicId, opBaseJitType, simdSize, isSimdAsHWIntrinsic);
+
+        if (simdSize == 16)
+        {
+            return gtNewSimdHWIntrinsicNode(type, tmp1, tmp2, NI_SSE_MoveLowToHigh, CORINFO_TYPE_FLOAT, simdSize,
+                                            isSimdAsHWIntrinsic);
+        }
+
+        intrinsicId = (simdSize == 64) ? NI_Vector256_ToVector512Unsafe : NI_Vector128_ToVector256Unsafe;
+
+        tmp1 = gtNewSimdHWIntrinsicNode(type, tmp1, intrinsicId, simdBaseJitType, simdSize / 2, isSimdAsHWIntrinsic);
+        return gtNewSimdWithUpperNode(type, tmp1, tmp2, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    }
+    else if (simdSize == 32)
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
 
@@ -22451,9 +22672,11 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
                 // var tmp2 = Avx.ConvertToVector128Single(op2);
                 // return Avx.InsertVector128(tmp1, tmp2, 1);
 
-                tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_AVX_ConvertToVector128Single, simdBaseJitType,
+                CorInfoType opBaseJitType = CORINFO_TYPE_DOUBLE;
+
+                tmp1 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_AVX_ConvertToVector128Single, opBaseJitType,
                                                 simdSize, isSimdAsHWIntrinsic);
-                tmp2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_AVX_ConvertToVector128Single, simdBaseJitType,
+                tmp2 = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, NI_AVX_ConvertToVector128Single, opBaseJitType,
                                                 simdSize, isSimdAsHWIntrinsic);
 
                 tmp1 = gtNewSimdHWIntrinsicNode(type, tmp1, NI_Vector128_ToVector256Unsafe, simdBaseJitType, 16,
@@ -22469,6 +22692,8 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
     }
     else
     {
+        assert(simdSize == 16);
+
         switch (simdBaseType)
         {
             case TYP_BYTE:
@@ -23454,7 +23679,66 @@ GenTree* Compiler::gtNewSimdWidenLowerNode(
     GenTree* tmp1;
 
 #if defined(TARGET_XARCH)
-    if (simdSize == 32)
+    if (simdSize == 64)
+    {
+        assert(IsBaselineVector512IsaSupportedDebugOnly());
+
+        tmp1 = gtNewSimdGetLowerNode(TYP_SIMD32, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            {
+                intrinsic = NI_AVX512BW_ConvertToVector512Int16;
+                break;
+            }
+
+            case TYP_UBYTE:
+            {
+                intrinsic = NI_AVX512BW_ConvertToVector512UInt16;
+                break;
+            }
+
+            case TYP_SHORT:
+            {
+                intrinsic = NI_AVX512F_ConvertToVector512Int32;
+                break;
+            }
+
+            case TYP_USHORT:
+            {
+                intrinsic = NI_AVX512F_ConvertToVector512UInt32;
+                break;
+            }
+
+            case TYP_INT:
+            {
+                intrinsic = NI_AVX512F_ConvertToVector512Int64;
+                break;
+            }
+
+            case TYP_UINT:
+            {
+                intrinsic = NI_AVX512F_ConvertToVector512UInt64;
+                break;
+            }
+
+            case TYP_FLOAT:
+            {
+                intrinsic = NI_AVX512F_ConvertToVector512Double;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        assert(intrinsic != NI_Illegal);
+        return gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    }
+    else if (simdSize == 32)
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
         assert(!varTypeIsIntegral(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
@@ -23614,7 +23898,66 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(
     GenTree* tmp1;
 
 #if defined(TARGET_XARCH)
-    if (simdSize == 32)
+    if (simdSize == 64)
+    {
+        assert(IsBaselineVector512IsaSupportedDebugOnly());
+
+        tmp1 = gtNewSimdGetUpperNode(TYP_SIMD32, op1, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            {
+                intrinsic = NI_AVX512BW_ConvertToVector512Int16;
+                break;
+            }
+
+            case TYP_UBYTE:
+            {
+                intrinsic = NI_AVX512BW_ConvertToVector512UInt16;
+                break;
+            }
+
+            case TYP_SHORT:
+            {
+                intrinsic = NI_AVX512F_ConvertToVector512Int32;
+                break;
+            }
+
+            case TYP_USHORT:
+            {
+                intrinsic = NI_AVX512F_ConvertToVector512UInt32;
+                break;
+            }
+
+            case TYP_INT:
+            {
+                intrinsic = NI_AVX512F_ConvertToVector512Int64;
+                break;
+            }
+
+            case TYP_UINT:
+            {
+                intrinsic = NI_AVX512F_ConvertToVector512UInt64;
+                break;
+            }
+
+            case TYP_FLOAT:
+            {
+                intrinsic = NI_AVX512F_ConvertToVector512Double;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        assert(intrinsic != NI_Illegal);
+        return gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    }
+    else if (simdSize == 32)
     {
         assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
         assert(!varTypeIsIntegral(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
@@ -24397,10 +24740,14 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                 m_regType[i] = comp->getJitGCType(gcPtrs[i]);
             }
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             assert((structSize >= TARGET_POINTER_SIZE) && (structSize <= (2 * TARGET_POINTER_SIZE)));
 
+#ifdef TARGET_LOONGARCH64
             uint32_t floatFieldFlags = comp->info.compCompHnd->getLoongArch64PassStructInRegisterFlags(retClsHnd);
+#else
+            uint32_t floatFieldFlags = comp->info.compCompHnd->getRISCV64PassStructInRegisterFlags(retClsHnd);
+#endif
             BYTE     gcPtrs[2]       = {TYPE_GC_NONE, TYPE_GC_NONE};
             comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
 
@@ -24666,7 +25013,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx) const
         resultReg = (regNumber)((unsigned)(REG_FLOATRET) + idx); // V0, V1, V2 or V3
     }
 
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     var_types regType = GetReturnRegType(idx);
     if (idx == 0)
     {

@@ -607,7 +607,7 @@ inline bool isRegParamType(var_types type)
 #endif // !TARGET_X86
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 /*****************************************************************************/
 // Returns true if 'type' is a struct that can be enregistered for call args
 //                         or can be returned by value in multiple registers.
@@ -665,7 +665,7 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                typ
 
     return result;
 }
-#endif // TARGET_AMD64 || TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_AMD64 || TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 /*****************************************************************************/
 
@@ -3019,6 +3019,8 @@ inline unsigned genMapFloatRegNumToRegArgNum(regNumber regNum)
     return regNum - REG_F0;
 #elif defined(TARGET_LOONGARCH64)
     return regNum - REG_F0;
+#elif defined(TARGET_RISCV64)
+    return regNum - REG_FLTARG_0;
 #elif defined(TARGET_ARM64)
     return regNum - REG_V0;
 #elif defined(UNIX_AMD64_ABI)
