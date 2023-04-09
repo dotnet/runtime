@@ -1217,7 +1217,7 @@ public:
     friend class LoadLockHolder;
 public:
     void InitVSD();
-    RangeList *GetCollectibleVSDRanges() { return &m_collVSDRanges; }    
+    RangeList *GetCollectibleVSDRanges() { return &m_collVSDRanges; }
 
 private:
     TypeIDMap m_typeIDMap;

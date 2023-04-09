@@ -97,7 +97,7 @@ bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock* block, Statement* stmt,
 {
     assert(call->IsHelperCall());
 
-    if (call->IsExpRuntimeLookup())
+    if (!call->IsExpRuntimeLookup())
     {
         return false;
     }
@@ -669,12 +669,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
         threadStaticBlockNullCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
         fastPathBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
         fallbackBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
-
-        // Update lpBottom after block split
-        if (optLoopTable[prevBb->bbNatLoopNum].lpBottom == prevBb)
-        {
-            optLoopTable[prevBb->bbNatLoopNum].lpBottom = block;
-        }
     }
 
     // All blocks are expected to be in the same EH region
