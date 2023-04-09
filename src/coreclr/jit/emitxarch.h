@@ -138,6 +138,8 @@ bool AreUpper32BitsZero(regNumber reg);
 bool AreUpper32BitsSignExtended(regNumber reg);
 #endif // TARGET_64BIT
 
+bool IsRedundantCmp(emitAttr size, regNumber reg1, regNumber reg2);
+
 bool AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition cond);
 bool AreFlagsSetForSignJumpOpt(regNumber reg, emitAttr opSize, GenCondition cond);
 

@@ -159,5 +159,11 @@ namespace System
 
         internal const string JsonSerializerOptionsAddContextMessage = "JsonSerializerOptions.AddContext is obsolete. To register a JsonSerializerContext, use either the TypeInfoResolver or TypeInfoResolverChain properties.";
         internal const string JsonSerializerOptionsAddContextDiagId = "SYSLIB0049";
+
+        internal const string LegacyFormatterMessage = "(reserved for serialization work)";
+        internal const string LegacyFormatterDiagId = "SYSLIB0050";
+
+        internal const string LegacyFormatterImplMessage = "(reserved for serialization work)";
+        internal const string LegacyFormatterImplDiagId = "SYSLIB0051";
     }
 }

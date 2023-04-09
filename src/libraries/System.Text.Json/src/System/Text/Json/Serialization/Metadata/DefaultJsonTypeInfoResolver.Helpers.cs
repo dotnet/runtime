@@ -399,13 +399,13 @@ namespace System.Text.Json.Serialization.Metadata
                     MethodInfo? getMethod = propertyInfo.GetMethod;
                     if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
                     {
-                        jsonPropertyInfo.Get = DefaultJsonTypeInfoResolver.MemberAccessor.CreatePropertyGetter<T>(propertyInfo);
+                        jsonPropertyInfo.Get = MemberAccessor.CreatePropertyGetter<T>(propertyInfo);
                     }
 
                     MethodInfo? setMethod = propertyInfo.SetMethod;
                     if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
                     {
-                        jsonPropertyInfo.Set = DefaultJsonTypeInfoResolver.MemberAccessor.CreatePropertySetter<T>(propertyInfo);
+                        jsonPropertyInfo.Set = MemberAccessor.CreatePropertySetter<T>(propertyInfo);
                     }
 
                     break;
@@ -413,11 +413,11 @@ namespace System.Text.Json.Serialization.Metadata
                 case FieldInfo fieldInfo:
                     Debug.Assert(fieldInfo.IsPublic);
 
-                    jsonPropertyInfo.Get = DefaultJsonTypeInfoResolver.MemberAccessor.CreateFieldGetter<T>(fieldInfo);
+                    jsonPropertyInfo.Get = MemberAccessor.CreateFieldGetter<T>(fieldInfo);
 
                     if (!fieldInfo.IsInitOnly)
                     {
-                        jsonPropertyInfo.Set = DefaultJsonTypeInfoResolver.MemberAccessor.CreateFieldSetter<T>(fieldInfo);
+                        jsonPropertyInfo.Set = MemberAccessor.CreateFieldSetter<T>(fieldInfo);
                     }
 
                     break;

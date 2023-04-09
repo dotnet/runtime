@@ -641,7 +641,6 @@ sgen_update_reference (GCObject **p, GCObject *o, gboolean allow_null)
 /* Major collector */
 
 typedef void (*sgen_cardtable_block_callback) (mword start, mword size);
-void sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback);
 void sgen_major_collector_iterate_block_ranges (sgen_cardtable_block_callback callback);
 
 void sgen_iterate_all_block_ranges (sgen_cardtable_block_callback callback, gboolean is_parallel);
@@ -698,7 +697,6 @@ struct _SgenMajorCollector {
 	void (*pin_objects) (SgenGrayQueue *queue);
 	void (*pin_major_object) (GCObject *obj, SgenGrayQueue *queue);
 	void (*scan_card_table) (CardTableScanType scan_type, ScanCopyContext ctx, int job_index, int job_split_count, int block_count);
-	void (*iterate_live_block_ranges) (sgen_cardtable_block_callback callback);
 	void (*iterate_block_ranges) (sgen_cardtable_block_callback callback);
 	void (*iterate_block_ranges_in_parallel) (sgen_cardtable_block_callback callback, int job_index, int job_split_count, int block_count);
 	void (*update_cardtable_mod_union) (void);

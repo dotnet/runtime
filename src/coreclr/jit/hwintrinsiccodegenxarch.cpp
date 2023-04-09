@@ -386,6 +386,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVX:
         case InstructionSet_AVX2:
         case InstructionSet_AVX512F:
+        case InstructionSet_AVX512BW:
             genAvxFamilyIntrinsic(node);
             break;
         case InstructionSet_AES:
@@ -1782,6 +1783,29 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
             assert(emitter::isMaskReg(op1Reg));
 
             emit->emitIns_R_R(testIns, EA_8BYTE, op1Reg, op1Reg);
+            break;
+        }
+
+        case NI_AVX512F_ConvertToVector128Int16:
+        case NI_AVX512F_ConvertToVector128Int32:
+        case NI_AVX512F_ConvertToVector128UInt16:
+        case NI_AVX512F_ConvertToVector128UInt32:
+        case NI_AVX512F_ConvertToVector256Int16:
+        case NI_AVX512F_ConvertToVector256Int32:
+        case NI_AVX512F_ConvertToVector256UInt16:
+        case NI_AVX512F_ConvertToVector256UInt32:
+        case NI_AVX512BW_ConvertToVector128Byte:
+        case NI_AVX512BW_ConvertToVector128SByte:
+        case NI_AVX512BW_ConvertToVector256Byte:
+        case NI_AVX512BW_ConvertToVector256SByte:
+        {
+            // These instructions are RM_R and so we need to ensure the targetReg
+            // is passed in as the RM register and op1 is passed as the R register
+
+            op1Reg          = op1->GetRegNum();
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+
+            emit->emitIns_R_R(ins, attr, op1Reg, targetReg);
             break;
         }
 

@@ -645,6 +645,12 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 		case MINT_SDB_SEQ_POINT:
 			return TRACE_IGNORE;
 
+		case MINT_LEAVE_CHECK:
+		case MINT_LEAVE_S_CHECK:
+			// These are only generated inside catch clauses, so it's safe to assume that
+			//  during normal execution they won't run, and compile them as a bailout.
+			return TRACE_IGNORE;
+
 		case MINT_INITLOCAL:
 		case MINT_INITLOCALS:
 		case MINT_LOCALLOC:
@@ -713,8 +719,6 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 
 		case MINT_BR:
 		case MINT_BR_S:
-		case MINT_LEAVE:
-		case MINT_LEAVE_S:
 		case MINT_CALL_HANDLER:
 		case MINT_CALL_HANDLER_S:
 			// Detect backwards branches
@@ -746,10 +750,6 @@ jiterp_should_abort_trace (InterpInst *ins, gboolean *inside_branch_block)
 			if (*inside_branch_block)
 				return TRACE_CONDITIONAL_ABORT;
 
-			return TRACE_ABORT;
-
-		case MINT_LEAVE_CHECK:
-		case MINT_LEAVE_S_CHECK:
 			return TRACE_ABORT;
 
 		case MINT_RETHROW:

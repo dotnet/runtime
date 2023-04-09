@@ -340,7 +340,6 @@ export function generateWasmBody (
                     isConditionallyExecuted = true;
                 break;
 
-            case MintOpcode.MINT_LEAVE_S:
             case MintOpcode.MINT_BR_S:
             case MintOpcode.MINT_CALL_HANDLER:
             case MintOpcode.MINT_CALL_HANDLER_S:
@@ -922,6 +921,14 @@ export function generateWasmBody (
                 // Not an exit, because throws are by definition unlikely
                 // We shouldn't make optimization decisions based on them.
                 append_bailout(builder, ip, BailoutReason.Throw);
+                isLowValueOpcode = true;
+                break;
+
+            // These are generated in place of regular LEAVEs inside of the body of a catch clause.
+            // We can safely assume that during normal execution, catch clauses won't be running.
+            case MintOpcode.MINT_LEAVE_CHECK:
+            case MintOpcode.MINT_LEAVE_S_CHECK:
+                append_bailout(builder, ip, BailoutReason.LeaveCheck);
                 isLowValueOpcode = true;
                 break;
 
@@ -2494,8 +2501,6 @@ function emit_branch (
     //  the current branch block and execution proceeds forward to find the
     //  branch target (if possible), bailing out at the end otherwise
     switch (opcode) {
-        case MintOpcode.MINT_LEAVE:
-        case MintOpcode.MINT_LEAVE_S:
         case MintOpcode.MINT_CALL_HANDLER:
         case MintOpcode.MINT_CALL_HANDLER_S:
         case MintOpcode.MINT_BR:
@@ -2503,7 +2508,6 @@ function emit_branch (
             const isCallHandler = (opcode === MintOpcode.MINT_CALL_HANDLER) ||
                 (opcode === MintOpcode.MINT_CALL_HANDLER_S);
             displacement = (
-                (opcode === MintOpcode.MINT_LEAVE) ||
                 (opcode === MintOpcode.MINT_BR) ||
                 (opcode === MintOpcode.MINT_CALL_HANDLER)
             )
