@@ -8835,7 +8835,7 @@ TP_RESULT DebuggerEnCBreakpoint::HandleRemapComplete(DebuggerControllerPatch *pa
                                                      Thread *thread,
                                                      TRIGGER_WHY tyWhy)
 {
-    LOG((LF_ENC, LL_ALWAYS, "DEnCBP::HRC: HandleRemapComplete\n"));
+    LOG((LF_ENC, LL_ALWAYS, "DEnCBP::HRC: HandleRemapComplete: %p\n", this));
 
     // Debugging code to enable a break after N RemapCompletes
 #ifdef _DEBUG
@@ -8852,13 +8852,19 @@ TP_RESULT DebuggerEnCBreakpoint::HandleRemapComplete(DebuggerControllerPatch *pa
 #endif
     _ASSERTE(HasLock());
 
-
     bool fApplied = m_jitInfo->m_encBreakpointsApplied;
+    MethodDesc* pMD = m_jitInfo->m_nativeCodeVersion.GetMethodDesc();
+    _ASSERTE(pMD != NULL);
+    LOG((LF_ENC, LL_INFO10000, "DEnCBP::HRC: Applied: %s, pMD: %p (%s::%s)\n",
+        (fApplied ? "true" : "false"), pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
+
     // Need to delete this before unlock below so if any other thread come in after the unlock
     // they won't handle this patch.
     Delete();
 
-    // We just deleted ourselves. Can't access anything any instances after this point.
+    //
+    // NOTE: We just deleted ourselves. Can't access anything any instances after this point.
+    //
 
     // if have somehow updated this function before we resume into it then just bail
     if (fApplied)
@@ -8866,11 +8872,6 @@ TP_RESULT DebuggerEnCBreakpoint::HandleRemapComplete(DebuggerControllerPatch *pa
         LOG((LF_ENC, LL_ALWAYS, "DEnCBP::HRC:  function already updated, ignoring\n"));
         return TPR_IGNORE_AND_STOP;
     }
-
-    MethodDesc* pMD = m_jitInfo->m_nativeCodeVersion.GetMethodDesc();
-    _ASSERTE(pMD != NULL);
-    LOG((LF_ENC, LL_INFO10000, "DEnCBP::HRC: this: %p pMD: %p (%s::%s)\n",
-        this, pMD, pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 
 #if defined(_DEBUG)
     {
