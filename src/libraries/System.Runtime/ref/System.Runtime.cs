@@ -3871,7 +3871,7 @@ namespace System
     }
     public partial interface IUtf8SpanFormattable
     {
-        bool TryFormat(System.Span<byte> destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider);
+        bool TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider);
     }
     public partial class Lazy<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>
     {
