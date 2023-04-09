@@ -3461,6 +3461,13 @@ public:
         SetLclNum(lclNum);
     }
 
+    GenTreeLclVarCommon(genTreeOps oper, var_types type, unsigned lclNum, GenTree* data)
+        : GenTreeUnOp(oper, type, data DEBUGARG(/* largeNode */ false))
+    {
+        assert(OperIsLocalStore());
+        SetLclNum(lclNum);
+    }
+
     GenTree*& Data()
     {
         assert(OperIsLocalStore());
@@ -3605,7 +3612,7 @@ private:
     MultiRegSpillFlags gtSpillFlags;
 
 public:
-    INDEBUG(IL_OFFSET gtLclILoffs;) // instr offset of ref (only for JIT dumps)
+    INDEBUG(IL_OFFSET gtLclILoffs = BAD_IL_OFFSET;) // instr offset of ref (only for JIT dumps)
 
     // Multireg support
     bool IsMultiReg() const
@@ -3692,6 +3699,11 @@ public:
         assert(OperIsScalarLocal(oper));
     }
 
+    GenTreeLclVar(var_types type, unsigned lclNum, GenTree* data)
+        : GenTreeLclVarCommon(GT_STORE_LCL_VAR, type, lclNum, data)
+    {
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeLclVar() : GenTreeLclVarCommon()
     {
@@ -3710,6 +3722,13 @@ private:
 public:
     GenTreeLclFld(genTreeOps oper, var_types type, unsigned lclNum, unsigned lclOffs, ClassLayout* layout = nullptr)
         : GenTreeLclVarCommon(oper, type, lclNum), m_lclOffs(static_cast<uint16_t>(lclOffs))
+    {
+        assert(lclOffs <= UINT16_MAX);
+        SetLayout(layout);
+    }
+
+    GenTreeLclFld(var_types type, unsigned lclNum, unsigned lclOffs, GenTree* data, ClassLayout* layout)
+        : GenTreeLclVarCommon(GT_STORE_LCL_FLD, type, lclNum, data), m_lclOffs(static_cast<uint16_t>(lclOffs))
     {
         assert(lclOffs <= UINT16_MAX);
         SetLayout(layout);

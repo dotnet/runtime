@@ -7586,12 +7586,36 @@ GenTree* Compiler::gtNewOneConNode(var_types type, var_types simdBaseType /* = T
     }
 }
 
-GenTreeLclVar* Compiler::gtNewStoreLclVar(unsigned dstLclNum, GenTree* src)
+GenTreeLclVar* Compiler::gtNewStoreLclVar(unsigned lclNum, GenTree* data)
 {
-    GenTreeLclVar* store = new (this, GT_STORE_LCL_VAR) GenTreeLclVar(GT_STORE_LCL_VAR, src->TypeGet(), dstLclNum);
-    store->gtOp1         = src;
-    store->gtFlags       = (src->gtFlags & GTF_COMMON_MASK);
-    store->gtFlags |= GTF_VAR_DEF | GTF_ASG;
+    LclVarDsc*     varDsc = lvaGetDesc(lclNum);
+    var_types      type   = varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc);
+    GenTreeLclVar* store  = new (this, GT_STORE_LCL_VAR) GenTreeLclVar(type, lclNum, data);
+    store->gtFlags |= (GTF_VAR_DEF | GTF_ASG);
+    if (varDsc->IsAddressExposed())
+    {
+        store->gtFlags |= GTF_GLOB_REF;
+    }
+
+    return store;
+}
+
+GenTreeLclFld* Compiler::gtNewStoreLclFldNode(unsigned lclNum, var_types type, unsigned offset, GenTree* data)
+{
+    assert((genActualType(type) == genActualType(data)) || ((type == TYP_STRUCT) && data->TypeIs(TYP_INT)));
+
+    ClassLayout*   layout = (type == TYP_STRUCT) ? data->GetLayout(this) : nullptr;
+    GenTreeLclFld* store  = new (this, GT_STORE_LCL_FLD) GenTreeLclFld(type, lclNum, offset, data, layout);
+    store->gtFlags |= (GTF_VAR_DEF | GTF_ASG);
+    if (store->IsPartialLclFld(this))
+    {
+        store->gtFlags |= GTF_VAR_USEASG;
+    }
+    if (lvaGetDesc(lclNum)->IsAddressExposed())
+    {
+        store->gtFlags |= GTF_GLOB_REF;
+    }
+
     return store;
 }
 
@@ -7761,7 +7785,7 @@ GenTreeConditional* Compiler::gtNewConditionalNode(
 
 GenTreeLclFld* Compiler::gtNewLclFldNode(unsigned lnum, var_types type, unsigned offset)
 {
-    GenTreeLclFld* node = new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, type, lnum, offset);
+    GenTreeLclFld* node = new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, type, lnum, offset, nullptr);
     return node;
 }
 
