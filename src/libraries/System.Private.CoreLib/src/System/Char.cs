@@ -214,15 +214,12 @@ namespace System
 
         public static bool TryParse([NotNullWhen(true)] string? s, out char result)
         {
-            result = '\0';
-            if (s == null)
+            if ((s is null) || (s.Length != 1))
             {
+                result = '\0';
                 return false;
             }
-            if (s.Length != 1)
-            {
-                return false;
-            }
+
             result = s[0];
             return true;
         }
@@ -1933,9 +1930,10 @@ namespace System
         {
             if (s.Length != 1)
             {
-                result = default;
+                result = '\0';
                 return false;
             }
+
             result = s[0];
             return true;
         }
@@ -2024,7 +2022,7 @@ namespace System
 
         static char IBinaryIntegerParseAndFormatInfo<char>.MaxValueDiv10 => (char)(MaxValue / 10);
 
-        static bool IBinaryIntegerParseAndFormatInfo<char>.IsGreaterThanAsUnsigned(char left, char positiveRight) => left > positiveRight;
+        static bool IBinaryIntegerParseAndFormatInfo<char>.IsGreaterThanAsUnsigned(char left, char right) => left > right;
 
         static char IBinaryIntegerParseAndFormatInfo<char>.MultiplyBy10(char value) => (char)(value * 10);
     }

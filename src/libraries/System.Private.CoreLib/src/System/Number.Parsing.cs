@@ -453,7 +453,7 @@ namespace System
             if ((styles & ~NumberStyles.Integer) == 0)
             {
                 // Optimized path for the common case of anything that's allowed for integer style.
-                return TryParseInt32IntegerStyle(value, styles, info, out result);
+                return TryParseBinaryIntegerStyle(value, styles, info, out result);
             }
 
             if ((styles & NumberStyles.AllowHexSpecifier) != 0)
@@ -484,7 +484,8 @@ namespace System
         }
 
         /// <summary>Parses int limited to styles that make up NumberStyles.Integer.</summary>
-        internal static ParsingStatus TryParseInt32IntegerStyle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out int result)
+        internal static ParsingStatus TryParseBinaryIntegerStyle<TInteger>(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out TInteger result)
+            where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
             Debug.Assert((styles & ~NumberStyles.Integer) == 0, "Only handles subsets of Integer format");
 
@@ -508,14 +509,14 @@ namespace System
             }
 
             // Parse leading sign.
-            int sign = 1;
+            bool isNegative = false;
             if ((styles & NumberStyles.AllowLeadingSign) != 0)
             {
                 if (info.HasInvariantNumberSigns)
                 {
                     if (num == '-')
                     {
-                        sign = -1;
+                        isNegative = true;
                         index++;
                         if ((uint)index >= (uint)value.Length)
                             goto FalseExit;
@@ -531,7 +532,7 @@ namespace System
                 }
                 else if (info.AllowHyphenDuringParsing && num == '-')
                 {
-                    sign = -1;
+                    isNegative = true;
                     index++;
                     if ((uint)index >= (uint)value.Length)
                         goto FalseExit;
@@ -551,7 +552,7 @@ namespace System
                     }
                     else if (!string.IsNullOrEmpty(negativeSign) && value.StartsWith(negativeSign))
                     {
-                        sign = -1;
+                        isNegative = true;
                         index += negativeSign.Length;
                         if ((uint)index >= (uint)value.Length)
                             goto FalseExit;
@@ -560,8 +561,8 @@ namespace System
                 }
             }
 
-            bool overflow = false;
-            int answer = 0;
+            bool overflow = TInteger.IsUnsigned && isNegative;
+            TInteger answer = TInteger.Zero;
 
             if (IsDigit(num))
             {
@@ -579,30 +580,58 @@ namespace System
                         goto HasTrailingChars;
                 }
 
-                // Parse most digits, up to the potential for overflow, which can't happen until after 9 digits.
-                answer = num - '0'; // first digit
+                // Parse most digits, up to the potential for overflow, which can't happen until after MaxDigitCount - 1 digits.
+                answer = TInteger.CreateTruncating(num - '0'); // first digit
                 index++;
-                for (int i = 0; i < 8; i++) // next 8 digits can't overflow
+                for (int i = 0; i < TInteger.MaxDigitCount - 2; i++) // next MaxDigitCount - 2 digits can't overflow
                 {
                     if ((uint)index >= (uint)value.Length)
-                        goto DoneAtEnd;
+                    {
+                        if (TInteger.IsUnsigned)
+                            goto DoneAtEndButPotentialOverflow;
+                        else
+                            goto DoneAtEnd;
+                    }
                     num = value[index];
                     if (!IsDigit(num))
+                    {
+                        if (TInteger.IsUnsigned)
+                        {
+                            overflow = false;
+                        }
                         goto HasTrailingChars;
+                    }
                     index++;
-                    answer = 10 * answer + num - '0';
+                    answer = TInteger.MultiplyBy10(answer);
+                    answer += TInteger.CreateTruncating(num - '0');
                 }
 
                 if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEnd;
+                {
+                    if (TInteger.IsUnsigned)
+                        goto DoneAtEndButPotentialOverflow;
+                    else
+                        goto DoneAtEnd;
+                }
                 num = value[index];
                 if (!IsDigit(num))
                     goto HasTrailingChars;
                 index++;
-                // Potential overflow now processing the 10th digit.
-                overflow = answer > int.MaxValue / 10;
-                answer = answer * 10 + num - '0';
-                overflow |= (uint)answer > int.MaxValue + (((uint)sign) >> 31);
+                // Potential overflow now processing the MaxDigitCount digit.
+                if (TInteger.IsUnsigned)
+                {
+                    overflow |= (answer > TInteger.MaxValueDiv10) || (answer == TInteger.MaxValueDiv10) && (num > '5');
+                }
+                else
+                {
+                    overflow = answer > TInteger.MaxValueDiv10;
+                }
+                answer = TInteger.MultiplyBy10(answer);
+                answer += TInteger.CreateTruncating(num - '0');
+                if (TInteger.IsSigned)
+                {
+                    overflow |= TInteger.IsGreaterThanAsUnsigned(answer, TInteger.MaxValue + (isNegative ? TInteger.One : TInteger.Zero));
+                }
                 if ((uint)index >= (uint)value.Length)
                     goto DoneAtEndButPotentialOverflow;
 
@@ -627,196 +656,25 @@ namespace System
                 goto OverflowExit;
             }
         DoneAtEnd:
-            result = answer * sign;
+            if (TInteger.IsUnsigned)
+            {
+                Debug.Assert(!isNegative);
+                result = answer;
+            }
+            else
+            {
+                result = isNegative ? -answer : answer;
+            }
             ParsingStatus status = ParsingStatus.OK;
         Exit:
             return status;
 
         FalseExit: // parsing failed
-            result = 0;
+            result = TInteger.Zero;
             status = ParsingStatus.Failed;
             goto Exit;
         OverflowExit:
-            result = 0;
-            status = ParsingStatus.Overflow;
-            goto Exit;
-
-        HasTrailingChars: // we've successfully parsed, but there are still remaining characters in the span
-            // Skip past trailing whitespace, then past trailing zeros, and if anything else remains, fail.
-            if (IsWhite(num))
-            {
-                if ((styles & NumberStyles.AllowTrailingWhite) == 0)
-                    goto FalseExit;
-                for (index++; index < value.Length; index++)
-                {
-                    if (!IsWhite(value[index]))
-                        break;
-                }
-                if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEndButPotentialOverflow;
-            }
-
-            if (!TrailingZeros(value, index))
-                goto FalseExit;
-
-            goto DoneAtEndButPotentialOverflow;
-        }
-
-        /// <summary>Parses long inputs limited to styles that make up NumberStyles.Integer.</summary>
-        internal static ParsingStatus TryParseInt64IntegerStyle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out long result)
-        {
-            Debug.Assert((styles & ~NumberStyles.Integer) == 0, "Only handles subsets of Integer format");
-
-            if (value.IsEmpty)
-                goto FalseExit;
-
-            int index = 0;
-            int num = value[0];
-
-            // Skip past any whitespace at the beginning.
-            if ((styles & NumberStyles.AllowLeadingWhite) != 0 && IsWhite(num))
-            {
-                do
-                {
-                    index++;
-                    if ((uint)index >= (uint)value.Length)
-                        goto FalseExit;
-                    num = value[index];
-                }
-                while (IsWhite(num));
-            }
-
-            // Parse leading sign.
-            int sign = 1;
-            if ((styles & NumberStyles.AllowLeadingSign) != 0)
-            {
-                if (info.HasInvariantNumberSigns)
-                {
-                    if (num == '-')
-                    {
-                        sign = -1;
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                    else if (num == '+')
-                    {
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                }
-                else if (info.AllowHyphenDuringParsing && num == '-')
-                {
-                    sign = -1;
-                    index++;
-                    if ((uint)index >= (uint)value.Length)
-                        goto FalseExit;
-                    num = value[index];
-                }
-                else
-                {
-                    value = value.Slice(index);
-                    index = 0;
-                    string positiveSign = info.PositiveSign, negativeSign = info.NegativeSign;
-                    if (!string.IsNullOrEmpty(positiveSign) && value.StartsWith(positiveSign))
-                    {
-                        index += positiveSign.Length;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                    else if (!string.IsNullOrEmpty(negativeSign) && value.StartsWith(negativeSign))
-                    {
-                        sign = -1;
-                        index += negativeSign.Length;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                }
-            }
-
-            bool overflow = false;
-            long answer = 0;
-
-            if (IsDigit(num))
-            {
-                // Skip past leading zeros.
-                if (num == '0')
-                {
-                    do
-                    {
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto DoneAtEnd;
-                        num = value[index];
-                    } while (num == '0');
-                    if (!IsDigit(num))
-                        goto HasTrailingChars;
-                }
-
-                // Parse most digits, up to the potential for overflow, which can't happen until after 18 digits.
-                answer = num - '0'; // first digit
-                index++;
-                for (int i = 0; i < 17; i++) // next 17 digits can't overflow
-                {
-                    if ((uint)index >= (uint)value.Length)
-                        goto DoneAtEnd;
-                    num = value[index];
-                    if (!IsDigit(num))
-                        goto HasTrailingChars;
-                    index++;
-                    answer = 10 * answer + num - '0';
-                }
-
-                if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEnd;
-                num = value[index];
-                if (!IsDigit(num))
-                    goto HasTrailingChars;
-                index++;
-                // Potential overflow now processing the 19th digit.
-                overflow = answer > long.MaxValue / 10;
-                answer = answer * 10 + num - '0';
-                overflow |= (ulong)answer > (ulong)long.MaxValue + (((uint)sign) >> 31);
-                if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEndButPotentialOverflow;
-
-                // At this point, we're either overflowing or hitting a formatting error.
-                // Format errors take precedence for compatibility.
-                num = value[index];
-                while (IsDigit(num))
-                {
-                    overflow = true;
-                    index++;
-                    if ((uint)index >= (uint)value.Length)
-                        goto OverflowExit;
-                    num = value[index];
-                }
-                goto HasTrailingChars;
-            }
-            goto FalseExit;
-
-        DoneAtEndButPotentialOverflow:
-            if (overflow)
-            {
-                goto OverflowExit;
-            }
-        DoneAtEnd:
-            result = answer * sign;
-            ParsingStatus status = ParsingStatus.OK;
-        Exit:
-            return status;
-
-        FalseExit: // parsing failed
-            result = 0;
-            status = ParsingStatus.Failed;
-            goto Exit;
-        OverflowExit:
-            result = 0;
+            result = TInteger.Zero;
             status = ParsingStatus.Overflow;
             goto Exit;
 
@@ -847,7 +705,7 @@ namespace System
             if ((styles & ~NumberStyles.Integer) == 0)
             {
                 // Optimized path for the common case of anything that's allowed for integer style.
-                return TryParseInt64IntegerStyle(value, styles, info, out result);
+                return TryParseBinaryIntegerStyle(value, styles, info, out result);
             }
 
             if ((styles & NumberStyles.AllowHexSpecifier) != 0)
@@ -877,192 +735,13 @@ namespace System
             return ParsingStatus.OK;
         }
 
-        /// <summary>Parses Int128 inputs limited to styles that make up NumberStyles.Integer.</summary>
-        internal static ParsingStatus TryParseInt128IntegerStyle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out Int128 result)
-        {
-            Debug.Assert((styles & ~NumberStyles.Integer) == 0, "Only handles subsets of Integer format");
-
-            if (value.IsEmpty)
-                goto FalseExit;
-
-            int index = 0;
-            int num = value[0];
-
-            // Skip past any whitespace at the beginning.
-            if ((styles & NumberStyles.AllowLeadingWhite) != 0 && IsWhite(num))
-            {
-                do
-                {
-                    index++;
-                    if ((uint)index >= (uint)value.Length)
-                        goto FalseExit;
-                    num = value[index];
-                }
-                while (IsWhite(num));
-            }
-
-            // Parse leading sign.
-            int sign = 1;
-            if ((styles & NumberStyles.AllowLeadingSign) != 0)
-            {
-                if (info.HasInvariantNumberSigns)
-                {
-                    if (num == '-')
-                    {
-                        sign = -1;
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                    else if (num == '+')
-                    {
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                }
-                else if (info.AllowHyphenDuringParsing && num == '-')
-                {
-                    sign = -1;
-                    index++;
-                    if ((uint)index >= (uint)value.Length)
-                        goto FalseExit;
-                    num = value[index];
-                }
-                else
-                {
-                    value = value.Slice(index);
-                    index = 0;
-                    string positiveSign = info.PositiveSign, negativeSign = info.NegativeSign;
-                    if (!string.IsNullOrEmpty(positiveSign) && value.StartsWith(positiveSign))
-                    {
-                        index += positiveSign.Length;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                    else if (!string.IsNullOrEmpty(negativeSign) && value.StartsWith(negativeSign))
-                    {
-                        sign = -1;
-                        index += negativeSign.Length;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                }
-            }
-
-            bool overflow = false;
-            Int128 answer = 0;
-
-            if (IsDigit(num))
-            {
-                // Skip past leading zeros.
-                if (num == '0')
-                {
-                    do
-                    {
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto DoneAtEnd;
-                        num = value[index];
-                    } while (num == '0');
-                    if (!IsDigit(num))
-                        goto HasTrailingChars;
-                }
-
-                // Parse most digits, up to the potential for overflow, which can't happen until after 18 digits.
-                answer = num - '0'; // first digit
-                index++;
-                for (int i = 0; i < 37; i++) // next 37 digits can't overflow
-                {
-                    if ((uint)index >= (uint)value.Length)
-                        goto DoneAtEnd;
-                    num = value[index];
-                    if (!IsDigit(num))
-                        goto HasTrailingChars;
-                    index++;
-                    answer = 10 * answer + num - '0';
-                }
-
-                if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEnd;
-                num = value[index];
-                if (!IsDigit(num))
-                    goto HasTrailingChars;
-                index++;
-                // Potential overflow now processing the 39th digit.
-                overflow = answer > new Int128(0x0CCCCCCCCCCCCCCC, 0xCCCCCCCCCCCCCCCC); // Int128.MaxValue / 10
-                answer = answer * 10 + num - '0';
-                overflow |= (UInt128)answer > new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF) + (((uint)sign) >> 31);
-                if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEndButPotentialOverflow;
-
-                // At this point, we're either overflowing or hitting a formatting error.
-                // Format errors take precedence for compatibility.
-                num = value[index];
-                while (IsDigit(num))
-                {
-                    overflow = true;
-                    index++;
-                    if ((uint)index >= (uint)value.Length)
-                        goto OverflowExit;
-                    num = value[index];
-                }
-                goto HasTrailingChars;
-            }
-            goto FalseExit;
-
-        DoneAtEndButPotentialOverflow:
-            if (overflow)
-            {
-                goto OverflowExit;
-            }
-        DoneAtEnd:
-            result = answer * sign;
-            ParsingStatus status = ParsingStatus.OK;
-        Exit:
-            return status;
-
-        FalseExit: // parsing failed
-            result = 0;
-            status = ParsingStatus.Failed;
-            goto Exit;
-        OverflowExit:
-            result = 0;
-            status = ParsingStatus.Overflow;
-            goto Exit;
-
-        HasTrailingChars: // we've successfully parsed, but there are still remaining characters in the span
-            // Skip past trailing whitespace, then past trailing zeros, and if anything else remains, fail.
-            if (IsWhite(num))
-            {
-                if ((styles & NumberStyles.AllowTrailingWhite) == 0)
-                    goto FalseExit;
-                for (index++; index < value.Length; index++)
-                {
-                    if (!IsWhite(value[index]))
-                        break;
-                }
-                if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEndButPotentialOverflow;
-            }
-
-            if (!TrailingZeros(value, index))
-                goto FalseExit;
-
-            goto DoneAtEndButPotentialOverflow;
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ParsingStatus TryParseInt128(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out Int128 result)
         {
             if ((styles & ~NumberStyles.Integer) == 0)
             {
                 // Optimized path for the common case of anything that's allowed for integer style.
-                return TryParseInt128IntegerStyle(value, styles, info, out result);
+                return TryParseBinaryIntegerStyle(value, styles, info, out result);
             }
 
             if ((styles & NumberStyles.AllowHexSpecifier) != 0)
@@ -1099,7 +778,7 @@ namespace System
             if ((styles & ~NumberStyles.Integer) == 0)
             {
                 // Optimized path for the common case of anything that's allowed for integer style.
-                return TryParseUInt32IntegerStyle(value, styles, info, out result);
+                return TryParseBinaryIntegerStyle(value, styles, info, out result);
             }
 
             if ((styles & NumberStyles.AllowHexSpecifier) != 0)
@@ -1126,185 +805,6 @@ namespace System
             }
 
             return ParsingStatus.OK;
-        }
-
-        /// <summary>Parses uint limited to styles that make up NumberStyles.Integer.</summary>
-        internal static ParsingStatus TryParseUInt32IntegerStyle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out uint result)
-        {
-            Debug.Assert((styles & ~NumberStyles.Integer) == 0, "Only handles subsets of Integer format");
-
-            if (value.IsEmpty)
-                goto FalseExit;
-
-            int index = 0;
-            int num = value[0];
-
-            // Skip past any whitespace at the beginning.
-            if ((styles & NumberStyles.AllowLeadingWhite) != 0 && IsWhite(num))
-            {
-                do
-                {
-                    index++;
-                    if ((uint)index >= (uint)value.Length)
-                        goto FalseExit;
-                    num = value[index];
-                }
-                while (IsWhite(num));
-            }
-
-            // Parse leading sign.
-            bool overflow = false;
-            if ((styles & NumberStyles.AllowLeadingSign) != 0)
-            {
-                if (info.HasInvariantNumberSigns)
-                {
-                    if (num == '+')
-                    {
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                    else if (num == '-')
-                    {
-                        overflow = true;
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                }
-                else if (info.AllowHyphenDuringParsing && num == '-')
-                {
-                    overflow = true;
-                    index++;
-                    if ((uint)index >= (uint)value.Length)
-                        goto FalseExit;
-                    num = value[index];
-                }
-                else
-                {
-                    value = value.Slice(index);
-                    index = 0;
-                    string positiveSign = info.PositiveSign, negativeSign = info.NegativeSign;
-                    if (!string.IsNullOrEmpty(positiveSign) && value.StartsWith(positiveSign))
-                    {
-                        index += positiveSign.Length;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                    else if (!string.IsNullOrEmpty(negativeSign) && value.StartsWith(negativeSign))
-                    {
-                        overflow = true;
-                        index += negativeSign.Length;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                }
-            }
-
-            int answer = 0;
-
-            if (IsDigit(num))
-            {
-                // Skip past leading zeros.
-                if (num == '0')
-                {
-                    do
-                    {
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto DoneAtEnd;
-                        num = value[index];
-                    } while (num == '0');
-                    if (!IsDigit(num))
-                        goto HasTrailingCharsZero;
-                }
-
-                // Parse most digits, up to the potential for overflow, which can't happen until after 9 digits.
-                answer = num - '0'; // first digit
-                index++;
-                for (int i = 0; i < 8; i++) // next 8 digits can't overflow
-                {
-                    if ((uint)index >= (uint)value.Length)
-                        goto DoneAtEndButPotentialOverflow;
-                    num = value[index];
-                    if (!IsDigit(num))
-                        goto HasTrailingChars;
-                    index++;
-                    answer = 10 * answer + num - '0';
-                }
-
-                if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEndButPotentialOverflow;
-                num = value[index];
-                if (!IsDigit(num))
-                    goto HasTrailingChars;
-                index++;
-                // Potential overflow now processing the 10th digit.
-                overflow |= (uint)answer > uint.MaxValue / 10 || ((uint)answer == uint.MaxValue / 10 && num > '5');
-                answer = answer * 10 + num - '0';
-                if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEndButPotentialOverflow;
-
-                // At this point, we're either overflowing or hitting a formatting error.
-                // Format errors take precedence for compatibility.
-                num = value[index];
-                while (IsDigit(num))
-                {
-                    overflow = true;
-                    index++;
-                    if ((uint)index >= (uint)value.Length)
-                        goto OverflowExit;
-                    num = value[index];
-                }
-                goto HasTrailingChars;
-            }
-            goto FalseExit;
-
-        DoneAtEndButPotentialOverflow:
-            if (overflow)
-            {
-                goto OverflowExit;
-            }
-        DoneAtEnd:
-            result = (uint)answer;
-            ParsingStatus status = ParsingStatus.OK;
-        Exit:
-            return status;
-
-        FalseExit: // parsing failed
-            result = 0;
-            status = ParsingStatus.Failed;
-            goto Exit;
-        OverflowExit:
-            result = 0;
-            status = ParsingStatus.Overflow;
-            goto Exit;
-
-        HasTrailingCharsZero:
-            overflow = false;
-        HasTrailingChars: // we've successfully parsed, but there are still remaining characters in the span
-            // Skip past trailing whitespace, then past trailing zeros, and if anything else remains, fail.
-            if (IsWhite(num))
-            {
-                if ((styles & NumberStyles.AllowTrailingWhite) == 0)
-                    goto FalseExit;
-                for (index++; index < value.Length; index++)
-                {
-                    if (!IsWhite(value[index]))
-                        break;
-                }
-                if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEndButPotentialOverflow;
-            }
-
-            if (!TrailingZeros(value, index))
-                goto FalseExit;
-
-            goto DoneAtEndButPotentialOverflow;
         }
 
         /// <summary>Parses uint limited to styles that make up NumberStyles.HexNumber.</summary>
@@ -1434,7 +934,7 @@ namespace System
             if ((styles & ~NumberStyles.Integer) == 0)
             {
                 // Optimized path for the common case of anything that's allowed for integer style.
-                return TryParseUInt64IntegerStyle(value, styles, info, out result);
+                return TryParseBinaryIntegerStyle(value, styles, info, out result);
             }
 
             if ((styles & NumberStyles.AllowHexSpecifier) != 0)
@@ -1461,185 +961,6 @@ namespace System
             }
 
             return ParsingStatus.OK;
-        }
-
-        /// <summary>Parses ulong limited to styles that make up NumberStyles.Integer.</summary>
-        internal static ParsingStatus TryParseUInt64IntegerStyle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out ulong result)
-        {
-            Debug.Assert((styles & ~NumberStyles.Integer) == 0, "Only handles subsets of Integer format");
-
-            if (value.IsEmpty)
-                goto FalseExit;
-
-            int index = 0;
-            int num = value[0];
-
-            // Skip past any whitespace at the beginning.
-            if ((styles & NumberStyles.AllowLeadingWhite) != 0 && IsWhite(num))
-            {
-                do
-                {
-                    index++;
-                    if ((uint)index >= (uint)value.Length)
-                        goto FalseExit;
-                    num = value[index];
-                }
-                while (IsWhite(num));
-            }
-
-            // Parse leading sign.
-            bool overflow = false;
-            if ((styles & NumberStyles.AllowLeadingSign) != 0)
-            {
-                if (info.HasInvariantNumberSigns)
-                {
-                    if (num == '+')
-                    {
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                    else if (num == '-')
-                    {
-                        overflow = true;
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                }
-                else if (info.AllowHyphenDuringParsing && num == '-')
-                {
-                    overflow = true;
-                    index++;
-                    if ((uint)index >= (uint)value.Length)
-                        goto FalseExit;
-                    num = value[index];
-                }
-                else
-                {
-                    value = value.Slice(index);
-                    index = 0;
-                    string positiveSign = info.PositiveSign, negativeSign = info.NegativeSign;
-                    if (!string.IsNullOrEmpty(positiveSign) && value.StartsWith(positiveSign))
-                    {
-                        index += positiveSign.Length;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                    else if (!string.IsNullOrEmpty(negativeSign) && value.StartsWith(negativeSign))
-                    {
-                        overflow = true;
-                        index += negativeSign.Length;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                }
-            }
-
-            long answer = 0;
-
-            if (IsDigit(num))
-            {
-                // Skip past leading zeros.
-                if (num == '0')
-                {
-                    do
-                    {
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto DoneAtEnd;
-                        num = value[index];
-                    } while (num == '0');
-                    if (!IsDigit(num))
-                        goto HasTrailingCharsZero;
-                }
-
-                // Parse most digits, up to the potential for overflow, which can't happen until after 19 digits.
-                answer = num - '0'; // first digit
-                index++;
-                for (int i = 0; i < 18; i++) // next 18 digits can't overflow
-                {
-                    if ((uint)index >= (uint)value.Length)
-                        goto DoneAtEndButPotentialOverflow;
-                    num = value[index];
-                    if (!IsDigit(num))
-                        goto HasTrailingChars;
-                    index++;
-                    answer = 10 * answer + num - '0';
-                }
-
-                if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEndButPotentialOverflow;
-                num = value[index];
-                if (!IsDigit(num))
-                    goto HasTrailingChars;
-                index++;
-                // Potential overflow now processing the 20th digit.
-                overflow |= (ulong)answer > ulong.MaxValue / 10 || ((ulong)answer == ulong.MaxValue / 10 && num > '5');
-                answer = answer * 10 + num - '0';
-                if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEndButPotentialOverflow;
-
-                // At this point, we're either overflowing or hitting a formatting error.
-                // Format errors take precedence for compatibility.
-                num = value[index];
-                while (IsDigit(num))
-                {
-                    overflow = true;
-                    index++;
-                    if ((uint)index >= (uint)value.Length)
-                        goto OverflowExit;
-                    num = value[index];
-                }
-                goto HasTrailingChars;
-            }
-            goto FalseExit;
-
-        DoneAtEndButPotentialOverflow:
-            if (overflow)
-            {
-                goto OverflowExit;
-            }
-        DoneAtEnd:
-            result = (ulong)answer;
-            ParsingStatus status = ParsingStatus.OK;
-        Exit:
-            return status;
-
-        FalseExit: // parsing failed
-            result = 0;
-            status = ParsingStatus.Failed;
-            goto Exit;
-        OverflowExit:
-            result = 0;
-            status = ParsingStatus.Overflow;
-            goto Exit;
-
-        HasTrailingCharsZero:
-            overflow = false;
-        HasTrailingChars: // we've successfully parsed, but there are still remaining characters in the span
-            // Skip past trailing whitespace, then past trailing zeros, and if anything else remains, fail.
-            if (IsWhite(num))
-            {
-                if ((styles & NumberStyles.AllowTrailingWhite) == 0)
-                    goto FalseExit;
-                for (index++; index < value.Length; index++)
-                {
-                    if (!IsWhite(value[index]))
-                        break;
-                }
-                if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEndButPotentialOverflow;
-            }
-
-            if (!TrailingZeros(value, index))
-                goto FalseExit;
-
-            goto DoneAtEndButPotentialOverflow;
         }
 
         /// <summary>Parses ulong limited to styles that make up NumberStyles.HexNumber.</summary>
@@ -1769,7 +1090,7 @@ namespace System
             if ((styles & ~NumberStyles.Integer) == 0)
             {
                 // Optimized path for the common case of anything that's allowed for integer style.
-                return TryParseUInt128IntegerStyle(value, styles, info, out result);
+                return TryParseBinaryIntegerStyle(value, styles, info, out result);
             }
 
             if ((styles & NumberStyles.AllowHexSpecifier) != 0)
@@ -1796,187 +1117,6 @@ namespace System
             }
 
             return ParsingStatus.OK;
-        }
-
-        /// <summary>Parses UInt128 limited to styles that make up NumberStyles.Integer.</summary>
-        internal static ParsingStatus TryParseUInt128IntegerStyle(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out UInt128 result)
-        {
-            Debug.Assert((styles & ~NumberStyles.Integer) == 0, "Only handles subsets of Integer format");
-
-            if (value.IsEmpty)
-                goto FalseExit;
-
-            int index = 0;
-            int num = value[0];
-
-            // Skip past any whitespace at the beginning.
-            if ((styles & NumberStyles.AllowLeadingWhite) != 0 && IsWhite(num))
-            {
-                do
-                {
-                    index++;
-                    if ((uint)index >= (uint)value.Length)
-                        goto FalseExit;
-                    num = value[index];
-                }
-                while (IsWhite(num));
-            }
-
-            // Parse leading sign.
-            bool overflow = false;
-            if ((styles & NumberStyles.AllowLeadingSign) != 0)
-            {
-                if (info.HasInvariantNumberSigns)
-                {
-                    if (num == '+')
-                    {
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                    else if (num == '-')
-                    {
-                        overflow = true;
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                }
-                else if (info.AllowHyphenDuringParsing && num == '-')
-                {
-                    overflow = true;
-                    index++;
-                    if ((uint)index >= (uint)value.Length)
-                        goto FalseExit;
-                    num = value[index];
-                }
-                else
-                {
-                    value = value.Slice(index);
-                    index = 0;
-                    string positiveSign = info.PositiveSign, negativeSign = info.NegativeSign;
-                    if (!string.IsNullOrEmpty(positiveSign) && value.StartsWith(positiveSign))
-                    {
-                        index += positiveSign.Length;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                    else if (!string.IsNullOrEmpty(negativeSign) && value.StartsWith(negativeSign))
-                    {
-                        overflow = true;
-                        index += negativeSign.Length;
-                        if ((uint)index >= (uint)value.Length)
-                            goto FalseExit;
-                        num = value[index];
-                    }
-                }
-            }
-
-            Int128 answer = 0;
-
-            if (IsDigit(num))
-            {
-                // Skip past leading zeros.
-                if (num == '0')
-                {
-                    do
-                    {
-                        index++;
-                        if ((uint)index >= (uint)value.Length)
-                            goto DoneAtEnd;
-                        num = value[index];
-                    } while (num == '0');
-                    if (!IsDigit(num))
-                        goto HasTrailingCharsZero;
-                }
-
-                // Parse most digits, up to the potential for overflow, which can't happen until after 38 digits.
-                answer = num - '0'; // first digit
-                index++;
-                for (int i = 0; i < 37; i++) // next 37 digits can't overflow
-                {
-                    if ((uint)index >= (uint)value.Length)
-                        goto DoneAtEndButPotentialOverflow;
-                    num = value[index];
-                    if (!IsDigit(num))
-                        goto HasTrailingChars;
-                    index++;
-                    answer = 10 * answer + num - '0';
-                }
-
-                if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEndButPotentialOverflow;
-                num = value[index];
-                if (!IsDigit(num))
-                    goto HasTrailingChars;
-                index++;
-                // Potential overflow now processing the 39th digit.
-                UInt128 maxValueDiv10 = new UInt128(0x1999999999999999, 0x9999999999999999); // UInt128.MaxValue / 10
-                overflow |= (UInt128)answer > maxValueDiv10;
-                overflow |= ((UInt128)answer == maxValueDiv10 && num > '5');
-                answer = answer * 10 + num - '0';
-                if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEndButPotentialOverflow;
-
-                // At this point, we're either overflowing or hitting a formatting error.
-                // Format errors take precedence for compatibility.
-                num = value[index];
-                while (IsDigit(num))
-                {
-                    overflow = true;
-                    index++;
-                    if ((uint)index >= (uint)value.Length)
-                        goto OverflowExit;
-                    num = value[index];
-                }
-                goto HasTrailingChars;
-            }
-            goto FalseExit;
-
-        DoneAtEndButPotentialOverflow:
-            if (overflow)
-            {
-                goto OverflowExit;
-            }
-        DoneAtEnd:
-            result = (UInt128)answer;
-            ParsingStatus status = ParsingStatus.OK;
-        Exit:
-            return status;
-
-        FalseExit: // parsing failed
-            result = 0U;
-            status = ParsingStatus.Failed;
-            goto Exit;
-        OverflowExit:
-            result = 0U;
-            status = ParsingStatus.Overflow;
-            goto Exit;
-
-        HasTrailingCharsZero:
-            overflow = false;
-        HasTrailingChars: // we've successfully parsed, but there are still remaining characters in the span
-            // Skip past trailing whitespace, then past trailing zeros, and if anything else remains, fail.
-            if (IsWhite(num))
-            {
-                if ((styles & NumberStyles.AllowTrailingWhite) == 0)
-                    goto FalseExit;
-                for (index++; index < value.Length; index++)
-                {
-                    if (!IsWhite(value[index]))
-                        break;
-                }
-                if ((uint)index >= (uint)value.Length)
-                    goto DoneAtEndButPotentialOverflow;
-            }
-
-            if (!TrailingZeros(value, index))
-                goto FalseExit;
-
-            goto DoneAtEndButPotentialOverflow;
         }
 
         /// <summary>Parses UInt128 limited to styles that make up NumberStyles.HexNumber.</summary>

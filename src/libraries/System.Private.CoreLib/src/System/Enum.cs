@@ -726,41 +726,41 @@ namespace System
             switch (InternalGetCorElementType(rt))
             {
                 case CorElementType.ELEMENT_TYPE_I1:
-                    parsed = TryParseByValueOrName<sbyte, byte>(rt, value, ignoreCase, throwOnFailure, out *(sbyte*)&longScratch);
+                    parsed = TryParseBinaryIntegerByValueOrName<sbyte, byte>(rt, value, ignoreCase, throwOnFailure, out *(sbyte*)&longScratch);
                     longScratch = *(sbyte*)&longScratch;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_U1:
-                    parsed = TryParseByValueOrName<byte, byte>(rt, value, ignoreCase, throwOnFailure, out *(byte*)&longScratch);
+                    parsed = TryParseBinaryIntegerByValueOrName<byte, byte>(rt, value, ignoreCase, throwOnFailure, out *(byte*)&longScratch);
                     longScratch = *(byte*)&longScratch;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_I2:
-                    parsed = TryParseByValueOrName<short, ushort>(rt, value, ignoreCase, throwOnFailure, out *(short*)&longScratch);
+                    parsed = TryParseBinaryIntegerByValueOrName<short, ushort>(rt, value, ignoreCase, throwOnFailure, out *(short*)&longScratch);
                     longScratch = *(short*)&longScratch;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_U2:
-                    parsed = TryParseByValueOrName<ushort, ushort>(rt, value, ignoreCase, throwOnFailure, out *(ushort*)&longScratch);
+                    parsed = TryParseBinaryIntegerByValueOrName<ushort, ushort>(rt, value, ignoreCase, throwOnFailure, out *(ushort*)&longScratch);
                     longScratch = *(ushort*)&longScratch;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_I4:
-                    parsed = TryParseByValueOrName<int, uint>(rt, value, ignoreCase, throwOnFailure, out *(int*)&longScratch);
+                    parsed = TryParseBinaryIntegerByValueOrName<int, uint>(rt, value, ignoreCase, throwOnFailure, out *(int*)&longScratch);
                     longScratch = *(int*)&longScratch;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_U4:
-                    parsed = TryParseByValueOrName<uint, uint>(rt, value, ignoreCase, throwOnFailure, out *(uint*)&longScratch);
+                    parsed = TryParseBinaryIntegerByValueOrName<uint, uint>(rt, value, ignoreCase, throwOnFailure, out *(uint*)&longScratch);
                     longScratch = *(uint*)&longScratch;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_I8:
-                    parsed = TryParseByValueOrName<long, ulong>(rt, value, ignoreCase, throwOnFailure, out longScratch);
+                    parsed = TryParseBinaryIntegerByValueOrName<long, ulong>(rt, value, ignoreCase, throwOnFailure, out longScratch);
                     break;
 
                 case CorElementType.ELEMENT_TYPE_U8:
-                    parsed = TryParseByValueOrName<ulong, ulong>(rt, value, ignoreCase, throwOnFailure, out *(ulong*)&longScratch);
+                    parsed = TryParseBinaryIntegerByValueOrName<ulong, ulong>(rt, value, ignoreCase, throwOnFailure, out *(ulong*)&longScratch);
                     break;
 
                 default:
@@ -781,35 +781,35 @@ namespace System
                 {
                     case CorElementType.ELEMENT_TYPE_R4:
                         {
-                            parsed = TryParseByValueOrName<float, float>(rt, value, ignoreCase, throwOnFailure, out float localResult);
+                            parsed = TryParseRareTypeByValueOrName<float, float>(rt, value, ignoreCase, throwOnFailure, out float localResult);
                             result = BitConverter.SingleToInt32Bits(localResult);
                         }
                         break;
 
                     case CorElementType.ELEMENT_TYPE_R8:
                         {
-                            parsed = TryParseByValueOrName<double, double>(rt, value, ignoreCase, throwOnFailure, out double localResult);
+                            parsed = TryParseRareTypeByValueOrName<double, double>(rt, value, ignoreCase, throwOnFailure, out double localResult);
                             result = BitConverter.DoubleToInt64Bits(localResult);
                         }
                         break;
 
                     case CorElementType.ELEMENT_TYPE_I:
                         {
-                            parsed = TryParseByValueOrName<nint, nuint>(rt, value, ignoreCase, throwOnFailure, out nint localResult);
+                            parsed = TryParseRareTypeByValueOrName<nint, nuint>(rt, value, ignoreCase, throwOnFailure, out nint localResult);
                             result = localResult;
                         }
                         break;
 
                     case CorElementType.ELEMENT_TYPE_U:
                         {
-                            parsed = TryParseByValueOrName<nuint, nuint>(rt, value, ignoreCase, throwOnFailure, out nuint localResult);
+                            parsed = TryParseRareTypeByValueOrName<nuint, nuint>(rt, value, ignoreCase, throwOnFailure, out nuint localResult);
                             result = (long)localResult;
                         }
                         break;
 
                     case CorElementType.ELEMENT_TYPE_CHAR:
                         {
-                            parsed = TryParseByValueOrName<char, char>(rt, value, ignoreCase, throwOnFailure, out char localResult);
+                            parsed = TryParseRareTypeByValueOrName<char, char>(rt, value, ignoreCase, throwOnFailure, out char localResult);
                             result = localResult;
                         }
                         break;
@@ -892,30 +892,30 @@ namespace System
             RuntimeType rt = (RuntimeType)typeof(TEnum);
             Type underlyingType = typeof(TEnum).GetEnumUnderlyingType();
 
-            if (underlyingType == typeof(sbyte)) return TryParseByValueOrName<sbyte, byte>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, sbyte>(ref result));
-            if (underlyingType == typeof(byte)) return TryParseByValueOrName<byte, byte>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, byte>(ref result));
-            if (underlyingType == typeof(short)) return TryParseByValueOrName<short, ushort>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, short>(ref result));
-            if (underlyingType == typeof(ushort)) return TryParseByValueOrName<ushort, ushort>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, ushort>(ref result));
-            if (underlyingType == typeof(int)) return TryParseByValueOrName<int, uint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, int>(ref result));
-            if (underlyingType == typeof(uint)) return TryParseByValueOrName<uint, uint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, uint>(ref result));
-            if (underlyingType == typeof(long)) return TryParseByValueOrName<long, ulong>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, long>(ref result));
-            if (underlyingType == typeof(ulong)) return TryParseByValueOrName<ulong, ulong>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, ulong>(ref result));
+            if (underlyingType == typeof(sbyte)) return TryParseBinaryIntegerByValueOrName<sbyte, byte>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, sbyte>(ref result));
+            if (underlyingType == typeof(byte)) return TryParseBinaryIntegerByValueOrName<byte, byte>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, byte>(ref result));
+            if (underlyingType == typeof(short)) return TryParseBinaryIntegerByValueOrName<short, ushort>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, short>(ref result));
+            if (underlyingType == typeof(ushort)) return TryParseBinaryIntegerByValueOrName<ushort, ushort>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, ushort>(ref result));
+            if (underlyingType == typeof(int)) return TryParseBinaryIntegerByValueOrName<int, uint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, int>(ref result));
+            if (underlyingType == typeof(uint)) return TryParseBinaryIntegerByValueOrName<uint, uint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, uint>(ref result));
+            if (underlyingType == typeof(long)) return TryParseBinaryIntegerByValueOrName<long, ulong>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, long>(ref result));
+            if (underlyingType == typeof(ulong)) return TryParseBinaryIntegerByValueOrName<ulong, ulong>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, ulong>(ref result));
 #if RARE_ENUMS
-            if (underlyingType == typeof(nint)) return TryParseByValueOrName<nint, nuint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, nint>(ref result));
-            if (underlyingType == typeof(nuint)) return TryParseByValueOrName<nuint, nuint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, nuint>(ref result));
-            if (underlyingType == typeof(float)) return TryParseByValueOrName<float, float>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, float>(ref result));
-            if (underlyingType == typeof(double)) return TryParseByValueOrName<double, double>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, double>(ref result));
-            if (underlyingType == typeof(char)) return TryParseByValueOrName<char, char>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, char>(ref result));
+            if (underlyingType == typeof(nint)) return TryParseRareTypeByValueOrName<nint, nuint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, nint>(ref result));
+            if (underlyingType == typeof(nuint)) return TryParseRareTypeByValueOrName<nuint, nuint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, nuint>(ref result));
+            if (underlyingType == typeof(float)) return TryParseRareTypeByValueOrName<float, float>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, float>(ref result));
+            if (underlyingType == typeof(double)) return TryParseRareTypeByValueOrName<double, double>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, double>(ref result));
+            if (underlyingType == typeof(char)) return TryParseRareTypeByValueOrName<char, char>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, char>(ref result));
 #endif
 
             throw CreateUnknownEnumTypeException();
         }
 
         /// <summary>Core implementation for all {Try}Parse methods, both generic and non-generic, parsing either by value or by name.</summary>
-        private static unsafe bool TryParseByValueOrName<TUnderlying, TStorage>(
+        private static unsafe bool TryParseBinaryIntegerByValueOrName<TUnderlying, TStorage>(
             RuntimeType enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, out TUnderlying result)
-            where TUnderlying : struct, INumber<TUnderlying>, IBitwiseOperators<TUnderlying, TUnderlying, TUnderlying>, IMinMaxValue<TUnderlying>
-            where TStorage : struct, INumber<TStorage>, IBitwiseOperators<TStorage, TStorage, TStorage>, IMinMaxValue<TStorage>
+            where TUnderlying : unmanaged, IBinaryIntegerParseAndFormatInfo<TUnderlying>
+            where TStorage : unmanaged, IBinaryIntegerParseAndFormatInfo<TStorage>
         {
             AssertValidGenerics<TUnderlying, TStorage>();
 
@@ -942,89 +942,10 @@ namespace System
                 NumberFormatInfo numberFormat = CultureInfo.InvariantCulture.NumberFormat;
                 const NumberStyles NumberStyle = NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingWhite;
 
-                Number.ParsingStatus status;
-                if (typeof(TUnderlying) == typeof(int))
+                Number.ParsingStatus status = Number.TryParseBinaryIntegerStyle(value, NumberStyle, numberFormat, out result);
+                if (status == Number.ParsingStatus.OK)
                 {
-                    Unsafe.SkipInit(out result);
-                    status = Number.TryParseInt32IntegerStyle(value, NumberStyle, numberFormat, out Unsafe.As<TUnderlying, int>(ref result));
-                    if (status == Number.ParsingStatus.OK)
-                    {
-                        return true;
-                    }
-                }
-                else if (typeof(TUnderlying) == typeof(uint))
-                {
-                    Unsafe.SkipInit(out result);
-                    status = Number.TryParseUInt32IntegerStyle(value, NumberStyle, numberFormat, out Unsafe.As<TUnderlying, uint>(ref result));
-                    if (status == Number.ParsingStatus.OK)
-                    {
-                        return true;
-                    }
-                }
-                else if (typeof(TUnderlying) == typeof(long))
-                {
-                    Unsafe.SkipInit(out result);
-                    status = Number.TryParseInt64IntegerStyle(value, NumberStyle, numberFormat, out Unsafe.As<TUnderlying, long>(ref result));
-                    if (status == Number.ParsingStatus.OK)
-                    {
-                        return true;
-                    }
-                }
-                else if (typeof(TUnderlying) == typeof(ulong))
-                {
-                    Unsafe.SkipInit(out result);
-                    status = Number.TryParseUInt64IntegerStyle(value, NumberStyle, numberFormat, out Unsafe.As<TUnderlying, ulong>(ref result));
-                    if (status == Number.ParsingStatus.OK)
-                    {
-                        return true;
-                    }
-                }
-                else if (typeof(TUnderlying) == typeof(byte) || typeof(TUnderlying) == typeof(ushort))
-                {
-                    status = Number.TryParseUInt32IntegerStyle(value, NumberStyle, numberFormat, out uint uint32result);
-                    if (status == Number.ParsingStatus.OK)
-                    {
-                        if (uint32result <= uint.CreateTruncating(TUnderlying.MaxValue))
-                        {
-                            result = TUnderlying.CreateTruncating(uint32result);
-                            return true;
-                        }
-                        status = Number.ParsingStatus.Overflow;
-                    }
-                }
-                else if (typeof(TUnderlying) == typeof(sbyte) || typeof(TUnderlying) == typeof(short))
-                {
-                    status = Number.TryParseInt32IntegerStyle(value, NumberStyle, numberFormat, out int int32result);
-                    if (status == Number.ParsingStatus.OK)
-                    {
-                        if (int32result >= int.CreateTruncating(TUnderlying.MinValue) && int32result <= int.CreateTruncating(TUnderlying.MaxValue))
-                        {
-                            result = TUnderlying.CreateTruncating(int32result);
-                            return true;
-                        }
-                        status = Number.ParsingStatus.Overflow;
-                    }
-                }
-                else
-                {
-#if RARE_ENUMS
-                    Type underlyingType = GetUnderlyingType(enumType);
-                    try
-                    {
-                        result = (TUnderlying)ToObject(enumType, Convert.ChangeType(value.ToString(), underlyingType, CultureInfo.InvariantCulture)!);
-                        return true;
-                    }
-                    catch (FormatException)
-                    {
-                        status = Number.ParsingStatus.Failed; // e.g. tlbimp enums that can have values of the form "3D"
-                    }
-                    catch when (!throwOnFailure)
-                    {
-                        status = Number.ParsingStatus.Overflow; // fall through to returning failure
-                    }
-#else
-                    throw CreateUnknownEnumTypeException();
-#endif
+                    return true;
                 }
 
                 if (status != Number.ParsingStatus.Overflow)
@@ -1039,6 +960,76 @@ namespace System
                 }
             }
 
+        ParseFailure:
+            if (throwOnFailure)
+            {
+                ThrowInvalidEmptyParseArgument();
+            }
+
+            result = default;
+            return false;
+        }
+
+        private static unsafe bool TryParseRareTypeByValueOrName<TUnderlying, TStorage>(
+            RuntimeType enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, out TUnderlying result)
+            where TUnderlying : struct, INumber<TUnderlying>, IBitwiseOperators<TUnderlying, TUnderlying, TUnderlying>, IMinMaxValue<TUnderlying>
+            where TStorage : struct, INumber<TStorage>, IBitwiseOperators<TStorage, TStorage, TStorage>, IMinMaxValue<TStorage>
+        {
+            AssertValidGenerics<TUnderlying, TStorage>();
+
+            if (!value.IsEmpty)
+            {
+                char c = value[0];
+                if (char.IsWhiteSpace(c))
+                {
+                    value = value.TrimStart();
+                    if (value.IsEmpty)
+                    {
+                        goto ParseFailure;
+                    }
+
+                    c = value[0];
+                }
+
+                if (!char.IsAsciiDigit(c) && c != '-' && c != '+')
+                {
+                    Unsafe.SkipInit(out result);
+                    return TryParseByName(enumType, value, ignoreCase, throwOnFailure, out Unsafe.As<TUnderlying, TStorage>(ref result));
+                }
+
+#if RARE_ENUMS
+                Number.ParsingStatus status;
+                Type underlyingType = GetUnderlyingType(enumType);
+
+                try
+                {
+                    result = (TUnderlying)ToObject(enumType, Convert.ChangeType(value.ToString(), underlyingType, CultureInfo.InvariantCulture)!);
+                    return true;
+                }
+                catch (FormatException)
+                {
+                    status = Number.ParsingStatus.Failed; // e.g. tlbimp enums that can have values of the form "3D"
+                }
+                catch when (!throwOnFailure)
+                {
+                    status = Number.ParsingStatus.Overflow; // fall through to returning failure
+                }
+
+                if (status != Number.ParsingStatus.Overflow)
+                {
+                    Unsafe.SkipInit(out result);
+                    return TryParseByName(enumType, value, ignoreCase, throwOnFailure, out Unsafe.As<TUnderlying, TStorage>(ref result));
+                }
+
+                if (throwOnFailure)
+                {
+                    Number.ThrowOverflowException(Type.GetTypeCode(typeof(TUnderlying)));
+                }
+#else
+                throw CreateUnknownEnumTypeException();
+#endif
+            }
+
             ParseFailure:
             if (throwOnFailure)
             {
@@ -1049,7 +1040,7 @@ namespace System
             return false;
         }
 
-        /// <summary>Handles just the name parsing portion of <see cref="TryParseByValueOrName"/>.</summary>
+        /// <summary>Handles just the name parsing portion of <see cref="TryParseRareTypeByValueOrName"/>.</summary>
         private static bool TryParseByName<TStorage>(RuntimeType enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, out TStorage result)
             where TStorage : struct, INumber<TStorage>, IBitwiseOperators<TStorage, TStorage, TStorage>
         {
