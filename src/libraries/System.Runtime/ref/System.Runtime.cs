@@ -7058,7 +7058,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public override string? ToString() { throw null; }
     }
-    public sealed partial class Version : System.ICloneable, System.IComparable, System.IComparable<System.Version?>, System.IEquatable<System.Version?>, System.IFormattable, System.ISpanFormattable
+    public sealed partial class Version : System.ICloneable, System.IComparable, System.IComparable<System.Version?>, System.IEquatable<System.Version?>, System.IFormattable, System.ISpanFormattable, System.IUtf8SpanFormattable
     {
         public Version() { }
         public Version(int major, int minor) { }
@@ -7087,6 +7087,7 @@ namespace System
         public static System.Version Parse(string input) { throw null; }
         string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
         bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(int fieldCount) { throw null; }
         public bool TryFormat(System.Span<char> destination, int fieldCount, out int charsWritten) { throw null; }
