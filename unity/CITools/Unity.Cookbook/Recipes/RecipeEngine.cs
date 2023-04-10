@@ -5,6 +5,7 @@ using RecipeEngine.Api.Extensions;
 using RecipeEngine.Api.Jobs;
 using RecipeEngine.Api.Platforms;
 using RecipeEngine.Api.Recipes;
+using RecipeEngine.Platforms;
 using Unity.Cookbook.Platforms;
 
 namespace Unity.Cookbook.Recipes;
@@ -23,6 +24,7 @@ public class RecipeEngine: RecipeBase
     protected override ISet<Job> LoadJobs()
     {
         var platform = _platformSet.MacOS;
+        var dotnetExecutable = platform.RunsOnWindows() ? "dotnet.cmd" : "dotnet.sh";
         return new[]
         {
             JobBuilder.Create(JobName)
@@ -30,8 +32,8 @@ public class RecipeEngine: RecipeBase
                 .WithBlockCommand(block =>
                     block
                         .WithLine("cd unity/CITools")
-                        .WithLine("dotnet run --project Unity.Cookbook/Unity.Cookbook.csproj")
-                        .WithLine("dotnet run --project CheckYamatoFiles/CheckYamatoFiles.csproj"))
+                        .WithLine($"../../{dotnetExecutable} run --project Unity.Cookbook/Unity.Cookbook.csproj")
+                        .WithLine($"../../{dotnetExecutable} run --project CheckYamatoFiles/CheckYamatoFiles.csproj"))
                 .Build()
         }.ToHashSet();
     }
