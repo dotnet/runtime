@@ -173,8 +173,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var startupHookVar = "";
             dotnet.Exec(appDll)
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
-                .CaptureStdErr()
                 .CaptureStdOut()
+                .CaptureStdErr()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
