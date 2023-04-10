@@ -31,7 +31,7 @@ resources:
         ROOTFS_DIR: /crossrootfs/x64
 
     - container: linux_musl_arm
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm-20230410173854-290f679
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm-alpine-20230410173854-290f679
       env:
         ROOTFS_DIR: /crossrootfs/arm
 
