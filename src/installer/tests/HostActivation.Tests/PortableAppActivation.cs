@@ -193,7 +193,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 // Verify running with the default working directory
                 Command.Create(appExe)
-                    .EnableTracingAndCaptureOutputs()
+                    .CaptureStdErr()
+                    .CaptureStdOut()
                     .MultilevelLookup(false)
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
                     .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, useRegisteredLocation ? null : builtDotnet)
@@ -202,11 +203,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")
                     .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion)
-                    .And.NotHaveStdErrContaining("Failed to read environment variable");
+                    .And.NotHaveStdErr();
 
                 // Verify running from within the working directory
                 Command.Create(appExe)
-                    .EnableTracingAndCaptureOutputs()
+                    .CaptureStdErr()
+                    .CaptureStdOut()
                     .MultilevelLookup(false)
                     .WorkingDirectory(fixture.TestProject.OutputDirectory)
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
@@ -216,7 +218,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")
                     .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion)
-                    .And.NotHaveStdErrContaining("Failed to read environment variable");
+                    .And.NotHaveStdErr();
             }
         }
 
