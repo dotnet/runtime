@@ -7,6 +7,7 @@ using System.IO;
 using System.Reflection;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
 using Internal.TypeSystem;
@@ -89,7 +90,7 @@ namespace ILCompiler.Diagnostics
         Dictionary<SymDocument,int> _documentToChecksumOffsetMapping;
 
         UIntPtr _pdbMod;
-        SymNgenWriterWrapper _ngenWriter;
+        ISymNGenWriter2 _ngenWriter;
 
         static PdbWriter()
         {
@@ -145,7 +146,7 @@ namespace ILCompiler.Diagnostics
                     if ((_ngenWriter != null) && (_pdbMod != UIntPtr.Zero))
                     {
                         _ngenWriter.CloseMod(_pdbMod);
-                        _ngenWriter?.Dispose();
+                        //_ngenWriter?.Dispose();
                     }
                 }
 
@@ -208,22 +209,24 @@ namespace ILCompiler.Diagnostics
             // Delete any preexisting PDB file upfront, otherwise CreateNGenPdbWriter silently opens it
             File.Delete(_pdbFilePath);
 
-            var comWrapper = new ILCompilerComWrappers();
+            var comWrapper = new ILCompilerStrategyBasedComWrappers();
             CreateNGenPdbWriter(dllPath, _pdbFilePath, out var pdbWriterInst);
-            _ngenWriter = (SymNgenWriterWrapper)comWrapper.GetOrCreateObjectForComInstance(pdbWriterInst, CreateObjectFlags.UniqueInstance);
+            _ngenWriter = (ISymNGenWriter2)comWrapper.GetOrCreateObjectForComInstance(pdbWriterInst, CreateObjectFlags.UniqueInstance);
 
             {
                 // PDB file is now created. Get its path and update _pdbFilePath so the PDB file
                 // can be deleted if we don't make it successfully to the end.
                 const int capacity = 1024;
-                var pdbFilePathBuilder = new char[capacity];
+                var pdbFilePathBuilder = new ushort[capacity];
                 _ngenWriter.QueryPDBNameExW(pdbFilePathBuilder, new IntPtr(capacity - 1) /* remove 1 byte for null */);
+                var chars = new char[capacity];
                 int length = 0;
                 while (length < pdbFilePathBuilder.Length && pdbFilePathBuilder[length] != '\0')
                 {
+                    chars[length] = Convert.ToChar(pdbFilePathBuilder[length]);
                     length++;
                 }
-                _pdbFilePath = new string(pdbFilePathBuilder, 0, length);
+                _pdbFilePath = new string(chars, 0, length);
             }
 
             _ngenWriter.OpenModW(originalDllPath, Path.GetFileName(originalDllPath), out _pdbMod);
