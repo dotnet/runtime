@@ -1,6 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using Xunit;
 
 namespace System.Net.Primitives.Functional.Tests
@@ -237,30 +241,60 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.False(network.Equals(null));
         }
 
-        [Fact]
-        public void TryFormatSpan_EnoughLength_Succeeds()
+        public static IEnumerable<object[]> CidrInputs() =>
+            new[]
+            {
+                "127.0.0.0/24",
+                "172.16.0.0/12",
+                "10.0.0.0/16",
+                "192.168.2.0/24",
+            }.Select(s => new object[] { s });
+
+        [Theory]
+        [MemberData(nameof(CidrInputs))]
+        public void TryFormatSpan_NotEnoughLength_ReturnsFalse(string input)
         {
-            var input = "127.0.0.0/24";
-            var network = IPNetwork.Parse(input);
+            IPNetwork network = IPNetwork.Parse(input);
 
-            Span<char> span = stackalloc char[15]; // IPAddress.TryFormat requires a size of 15
+            // UTF16
+            {
+                Span<char> span = stackalloc char[input.Length - 1];
+                Assert.False(network.TryFormat(span, out int charsWritten));
+                Assert.Equal(0, charsWritten);
+            }
 
-            Assert.True(network.TryFormat(span, out int charsWritten));
-            Assert.Equal(input.Length, charsWritten);
-            Assert.Equal(input, span.Slice(0, charsWritten).ToString());
+            // UTF8
+            {
+                Span<byte> span = stackalloc byte[input.Length - 1];
+                Assert.False(((IUtf8SpanFormattable)network).TryFormat(span, out int bytesWritten, default, null));
+                Assert.Equal(0, bytesWritten);
+            }
         }
 
         [Theory]
-        [InlineData("127.127.127.127/32", 15)]
-        [InlineData("127.127.127.127/32", 0)]
-        [InlineData("127.127.127.127/32", 1)]
-        public void TryFormatSpan_NotEnoughLength_ReturnsFalse(string input, int spanLengthToTest)
+        [MemberData(nameof(CidrInputs))]
+        public void TryFormatSpan_EnoughLength_Succeeds(string input)
         {
-            var network = IPNetwork.Parse(input);
+            IPNetwork network = IPNetwork.Parse(input);
 
-            Span<char> span = stackalloc char[spanLengthToTest];
+            for (int additionalLength = 0; additionalLength < 3; additionalLength++)
+            {
+                // UTF16
+                {
+                    Span<char> span = stackalloc char[input.Length + additionalLength];
+                    Assert.True(network.TryFormat(span, out int charsWritten));
+                    Assert.Equal(input.Length, charsWritten);
+                    Assert.Equal(input, span.Slice(0, charsWritten).ToString());
+                }
 
-            Assert.False(network.TryFormat(span, out int charsWritten));
+                // UTF8
+                {
+                    Span<byte> span = stackalloc byte[input.Length + additionalLength];
+                    Assert.True(((IUtf8SpanFormattable)network).TryFormat(span, out int bytesWritten, default, null));
+                    Assert.Equal(input.Length, bytesWritten);
+                    Assert.Equal(input, Encoding.UTF8.GetString(span.Slice(0, bytesWritten)));
+                }
+            }
         }
 
         [Fact]
