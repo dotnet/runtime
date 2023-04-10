@@ -173,11 +173,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var startupHookVar = "";
             dotnet.Exec(appDll)
                 .EnvironmentVariable(startupHookVarName, startupHookVar)
-                .EnableTracingAndCaptureOutputs()
+                .CaptureStdErr()
+                .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.NotHaveStdErrContaining("Failed to read environment variable");
+                .And.NotHaveStdErr();
         }
 
         // Run the app with a startup hook assembly that depends on assemblies not on the TPA list
