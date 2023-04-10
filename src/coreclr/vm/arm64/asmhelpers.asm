@@ -476,10 +476,15 @@ CheckCardTable
         ldr      x12,  wbs_ephemeral_low
         cbz      x12,  SkipEphemeralCheck
         cmp      x15,  x12
-        blo      Exit
 
         ldr      x12,  wbs_ephemeral_high
-        cmp      x15,  x12
+
+        ; Compare against the upper bound if the previous comparison indicated
+        ; that the destination address is greater than or equal to the lower
+        ; bound. Otherwise, set the C flag (specified by the 0x2) so that the
+        ; branch to exit is taken.
+        ccmp     x15,  x12, #0x2, hs
+
         bhs      Exit
 
 SkipEphemeralCheck
