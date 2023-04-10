@@ -12199,6 +12199,10 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         }
     }
 
+#ifdef DEBUG
+    regMaskTP inUseOrBusyRegsMask = RBM_NONE;
+#endif
+
     // Eliminate candidates that are in-use or busy.
     if (!found)
     {
@@ -12207,6 +12211,10 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         // and we end up with that candidate is no longer available.
         regMaskTP busyRegs = linearScan->regsBusyUntilKill | linearScan->regsInUseThisLocation;
         candidates &= ~busyRegs;
+
+#ifdef DEBUG
+        inUseOrBusyRegsMask |= ~busyRegs;
+#endif
 
         // Also eliminate as busy any register with a conflicting fixed reference at this or
         // the next location.
@@ -12223,6 +12231,9 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
                 (refPosition->delayRegFree && (checkConflictLocation == (refPosition->nodeLocation + 1))))
             {
                 candidates &= ~checkConflictBit;
+#ifdef DEBUG
+                inUseOrBusyRegsMask |= ~checkConflictBit;
+#endif
             }
         }
         candidates |= fixedRegMask;
@@ -12258,13 +12269,6 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         prevRegBit = RBM_NONE;
     }
 
-    if (!found && (candidates == RBM_NONE))
-    {
-        assert(refPosition->RegOptional());
-        currentInterval->assignedReg = nullptr;
-        return RBM_NONE;
-    }
-
     // TODO-Cleanup: Previously, the "reverseSelect" stress mode reversed the order of the heuristics.
     // It needs to be re-engineered with this refactoring.
     // In non-debug builds, this will simply get optimized away
@@ -12273,9 +12277,9 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     reverseSelect = linearScan->doReverseSelect();
 #endif // DEBUG
 
-#ifdef TARGET_ARM64
     if (needsConsecutiveRegisters)
     {
+#ifdef TARGET_ARM64
         regMaskTP busyConsecutiveCandidates = RBM_NONE;
         if (refPosition->isFirstRefPositionOfConsecutiveRegisters())
         {
@@ -12300,12 +12304,50 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
 
         if ((freeCandidates == RBM_NONE) && (candidates == RBM_NONE))
         {
+#ifdef  DEBUG
+            // Need to make sure that candidates has N consecutive registers to assign
+            if (linearScan->getStressLimitRegs() != LSRA_LIMIT_NONE)
+            {
+                // If the refPosition needs consecutive registers, then we want to make sure that
+                // the candidates have atleast one range of N registers that are consecutive, where N
+                // is the number of consecutive registers needed.
+                // Remove the `inUseOrBusyRegsMask` from the original candidates list and find one
+                // such range that is consecutive. Next, append that range to the `candidates`.
+                //                
+                regMaskTP limitCandidatesForConsecutive = refPosition->registerAssignment & inUseOrBusyRegsMask;
+                regMaskTP overallLimitCandidates;
+                regMaskTP limitConsecutiveResult =
+                    linearScan->filterConsecutiveCandidates(limitCandidatesForConsecutive, refPosition->regCount,
+                                                            &overallLimitCandidates);
+                assert(limitConsecutiveResult != RBM_NONE);
+
+                DWORD startRegister = 0;
+                BitScanForward64(&startRegister, static_cast<DWORD64>(limitConsecutiveResult));
+
+                regMaskTP registersNeededMask = (1ULL << refPosition->regCount) - 1;
+                candidates |= (registersNeededMask << startRegister);
+            }
+
+            if (candidates == RBM_NONE)
+#endif //  DEBUG
+            
+
+        {
             noway_assert(!"Not sufficient consecutive registers available.");
         }
     }
-    else
 #endif // TARGET_ARM64
+    }
+    else
     {
+
+        if (!found && (candidates == RBM_NONE))
+        {
+            assert(refPosition->RegOptional());
+            currentInterval->assignedReg = nullptr;
+            return RBM_NONE;
+        }
+
         freeCandidates = linearScan->getFreeCandidates(candidates ARM_ARG(regType));
     }
 
