@@ -3318,7 +3318,7 @@ hot_reload_get_static_field_addr (MonoClassField *field)
 static MonoMethod *
 hot_reload_find_method_by_name (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error)
 {
-	g_assert (mono_class_is_ginst (klass));
+	g_assert (!mono_class_is_ginst (klass));
 
 	GSList *members = hot_reload_get_added_members (klass);
 	if (!members)
