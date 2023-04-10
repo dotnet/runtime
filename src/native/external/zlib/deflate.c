@@ -752,7 +752,8 @@ uLong ZEXPORT deflateBound(strm, sourceLen)
 
     /* if not default parameters, return one of the conservative bounds */
     if (s->w_bits != 15 || s->hash_bits != 8 + 7)
-        return (s->w_bits <= s->hash_bits ? fixedlen : storelen) + wraplen;
+        return (s->w_bits <= s->hash_bits && s->level ? fixedlen : storelen) +
+               wraplen;
 
     /* default settings: return tight bound for that case -- ~0.03% overhead
        plus a small constant */
