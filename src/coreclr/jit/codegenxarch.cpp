@@ -2581,12 +2581,8 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
     regNumber src  = genConsumeReg(srcIndir->Addr());
     unsigned  size = tree->Size();
 
-    // TODO-XARCH-AVX512: Consider enabling it here
-    unsigned simdSize = (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
-                            ? YMM_REGSIZE_BYTES
-                            : XMM_REGSIZE_BYTES;
-
-    if (size >= simdSize)
+    const unsigned simdSize = compiler->roundDownSIMDSize(size);
+    if ((size >= simdSize) && (simdSize > 0))
     {
         // Number of SIMD regs needed to save the whole src to regs.
         unsigned numberOfSimdRegs = tree->AvailableTempRegCount(RBM_ALLFLOAT);
@@ -2603,33 +2599,37 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
         }
 
         auto emitSimdLoadStore = [&](bool load) {
-            unsigned    offset   = 0;
-            int         regIndex = 0;
-            instruction simdMov  = simdUnalignedMovIns();
+            unsigned    offset      = 0;
+            int         regIndex    = 0;
+            instruction simdMov     = simdUnalignedMovIns();
+            unsigned    curSimdSize = simdSize;
             do
             {
+                assert(curSimdSize >= XMM_REGSIZE_BYTES);
                 if (load)
                 {
                     // vmovdqu  ymm, ymmword ptr[src + offset]
-                    GetEmitter()->emitIns_R_AR(simdMov, EA_ATTR(simdSize), tempRegs[regIndex++], src, offset);
+                    GetEmitter()->emitIns_R_AR(simdMov, EA_ATTR(curSimdSize), tempRegs[regIndex++], src, offset);
                 }
                 else
                 {
                     // vmovdqu  ymmword ptr[dst + offset], ymm
-                    GetEmitter()->emitIns_AR_R(simdMov, EA_ATTR(simdSize), tempRegs[regIndex++], dst, offset);
+                    GetEmitter()->emitIns_AR_R(simdMov, EA_ATTR(curSimdSize), tempRegs[regIndex++], dst, offset);
                 }
-                offset += simdSize;
+                offset += curSimdSize;
                 if (size == offset)
                 {
                     break;
                 }
 
+                // Overlap with the previously processed data. We'll always use SIMD for simplicity
                 assert(size > offset);
-                if ((size - offset) < simdSize)
+                unsigned remainder = size - offset;
+                if (remainder < curSimdSize)
                 {
-                    // Overlap with the previously processed data. We'll always use SIMD for simplicity
-                    // TODO-CQ: Consider using smaller SIMD reg or GPR for the remainder.
-                    offset = size - simdSize;
+                    // Switch to smaller SIMD size if necessary
+                    curSimdSize = compiler->roundUpSIMDSize(remainder);
+                    offset      = size - curSimdSize;
                 }
             } while (true);
         };
@@ -5646,6 +5646,25 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
                             assert((ival >= 0) && (ival <= 255));
                             op2->gtIconVal = static_cast<int8_t>(ival);
+                            break;
+                        }
+
+                        case NI_AVX512F_ConvertToVector128Int16:
+                        case NI_AVX512F_ConvertToVector128Int32:
+                        case NI_AVX512F_ConvertToVector128UInt16:
+                        case NI_AVX512F_ConvertToVector128UInt32:
+                        case NI_AVX512F_ConvertToVector256Int16:
+                        case NI_AVX512F_ConvertToVector256Int32:
+                        case NI_AVX512F_ConvertToVector256UInt16:
+                        case NI_AVX512F_ConvertToVector256UInt32:
+                        case NI_AVX512BW_ConvertToVector128Byte:
+                        case NI_AVX512BW_ConvertToVector128SByte:
+                        case NI_AVX512BW_ConvertToVector256Byte:
+                        case NI_AVX512BW_ConvertToVector256SByte:
+                        {
+                            // These intrinsics are "ins reg/mem, xmm"
+                            ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+                            attr = emitActualTypeSize(Compiler::getSIMDTypeForSize(hwintrinsic->GetSimdSize()));
                             break;
                         }
 

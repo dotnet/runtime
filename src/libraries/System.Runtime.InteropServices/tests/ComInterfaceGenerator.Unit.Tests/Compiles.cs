@@ -35,6 +35,10 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new[] { ID(), codeSnippets.SpecifiedMethodIndexNoExplicitParametersNoImplicitThis };
             yield return new[] { ID(), codeSnippets.SpecifiedMethodIndexNoExplicitParametersCallConvWithCallingConventions };
 
+            // Use different method modifiers
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers("int", "public") };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers("int", "internal") };
+
             // Basic marshalling validation
             yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<byte>() };
             yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<sbyte>() };
