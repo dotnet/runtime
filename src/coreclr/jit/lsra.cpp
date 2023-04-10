@@ -496,13 +496,6 @@ regMaskTP LinearScan::stressLimitRegs(RefPosition* refPosition, regMaskTP mask)
         {
             mask |= refPosition->registerAssignment;
         }
-
-#ifdef TARGET_ARM64
-        if ((refPosition != nullptr) && refPosition->isFirstRefPositionOfConsecutiveRegisters())
-        {
-            mask |= LsraLimitFPSetForConsecutive;
-        }
-#endif
     }
 
     return mask;
