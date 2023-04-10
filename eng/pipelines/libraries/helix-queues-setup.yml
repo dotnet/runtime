@@ -119,7 +119,7 @@ jobs:
     - ${{ if in(parameters.platform, 'ios_arm64') }}:
       # split traffic for runtime-extra-platforms (which mostly runs on rolling builds)
       - ${{ if ne(parameters.jobParameters.isExtraPlatforms, true) }}:
-        - OSX.1200.Amd64.Iphone.Open
+        - OSX.13.Arm64.Iphone.Open
 
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvos_arm64') }}:
