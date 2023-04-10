@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -23,6 +24,22 @@ namespace System
     // by the Parse methods if the NumberStyles.Any style is
     // specified. Note, however, that the Parse methods do not accept
     // NaNs or Infinities.
+
+    internal interface IBinaryIntegerParseAndFormatInfo<TSelf> : IBinaryInteger<TSelf>, IMinMaxValue<TSelf>
+            where TSelf : unmanaged, IBinaryIntegerParseAndFormatInfo<TSelf>
+    {
+        static abstract bool IsSigned { get; }
+
+        static abstract bool IsUnsigned { get; }
+
+        static abstract int MaxDigitCount { get; }
+
+        static abstract TSelf MaxValueDiv10 { get; }
+
+        static abstract bool IsGreaterThanAsUnsigned(TSelf left, TSelf right);
+
+        static abstract TSelf MultiplyBy10(TSelf value);
+    }
 
     internal static partial class Number
     {
@@ -45,233 +62,62 @@ namespace System
         private const int HalfMaxExponent = 5;
         private const int HalfMinExponent = -8;
 
-        private static unsafe bool TryNumberToInt32(ref NumberBuffer number, ref int value)
+        private static unsafe bool TryNumberBufferToBinaryInteger<TInteger>(ref NumberBuffer number, ref TInteger value)
+            where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
             number.CheckConsistency();
 
             int i = number.Scale;
-            if (i > Int32Precision || i < number.DigitsCount)
+
+            if ((i > TInteger.MaxDigitCount) || (i < number.DigitsCount) || (TInteger.IsUnsigned && number.IsNegative))
             {
                 return false;
             }
+
             byte* p = number.GetDigitsPointer();
+
             Debug.Assert(p != null);
-            int n = 0;
+            TInteger n = TInteger.Zero;
+
             while (--i >= 0)
             {
-                if ((uint)n > (0x7FFFFFFF / 10))
+                if (TInteger.IsGreaterThanAsUnsigned(n, TInteger.MaxValueDiv10))
                 {
                     return false;
                 }
-                n *= 10;
+
+                n = TInteger.MultiplyBy10(n);
+
                 if (*p != '\0')
                 {
-                    n += (*p++ - '0');
-                }
-            }
-            if (number.IsNegative)
-            {
-                n = -n;
-                if (n > 0)
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                if (n < 0)
-                {
-                    return false;
-                }
-            }
-            value = n;
-            return true;
-        }
+                    TInteger newN = n + TInteger.CreateTruncating(*p++ - '0');
 
-        private static unsafe bool TryNumberToInt64(ref NumberBuffer number, ref long value)
-        {
-            number.CheckConsistency();
-
-            int i = number.Scale;
-            if (i > Int64Precision || i < number.DigitsCount)
-            {
-                return false;
-            }
-            byte* p = number.GetDigitsPointer();
-            Debug.Assert(p != null);
-            long n = 0;
-            while (--i >= 0)
-            {
-                if ((ulong)n > (0x7FFFFFFFFFFFFFFF / 10))
-                {
-                    return false;
-                }
-                n *= 10;
-                if (*p != '\0')
-                {
-                    n += (*p++ - '0');
-                }
-            }
-            if (number.IsNegative)
-            {
-                n = -n;
-                if (n > 0)
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                if (n < 0)
-                {
-                    return false;
-                }
-            }
-            value = n;
-            return true;
-        }
-
-        private static unsafe bool TryNumberToInt128(ref NumberBuffer number, ref Int128 value)
-        {
-            number.CheckConsistency();
-
-            int i = number.Scale;
-            if ((i > Int128Precision) || (i < number.DigitsCount))
-            {
-                return false;
-            }
-            byte* p = number.GetDigitsPointer();
-            Debug.Assert(p != null);
-            Int128 n = 0;
-            while (--i >= 0)
-            {
-                if ((UInt128)n > new UInt128(0x0CCCCCCCCCCCCCCC, 0xCCCCCCCCCCCCCCCC)) // Int128.MaxValue / 10
-                {
-                    return false;
-                }
-                n *= 10;
-                if (*p != '\0')
-                {
-                    n += (*p++ - '0');
-                }
-            }
-            if (number.IsNegative)
-            {
-                n = -n;
-                if (n > 0)
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                if (n < 0)
-                {
-                    return false;
-                }
-            }
-            value = n;
-            return true;
-        }
-
-        private static unsafe bool TryNumberToUInt32(ref NumberBuffer number, ref uint value)
-        {
-            number.CheckConsistency();
-
-            int i = number.Scale;
-            if (i > UInt32Precision || i < number.DigitsCount || number.IsNegative)
-            {
-                return false;
-            }
-            byte* p = number.GetDigitsPointer();
-            Debug.Assert(p != null);
-            uint n = 0;
-            while (--i >= 0)
-            {
-                if (n > (0xFFFFFFFF / 10))
-                {
-                    return false;
-                }
-                n *= 10;
-                if (*p != '\0')
-                {
-                    uint newN = n + (uint)(*p++ - '0');
-                    // Detect an overflow here...
-                    if (newN < n)
+                    if (TInteger.IsUnsigned && (newN < n))
                     {
                         return false;
                     }
+
                     n = newN;
                 }
             }
-            value = n;
-            return true;
-        }
 
-        private static unsafe bool TryNumberToUInt64(ref NumberBuffer number, ref ulong value)
-        {
-            number.CheckConsistency();
+            if (TInteger.IsSigned)
+            {
+                if (number.IsNegative)
+                {
+                    n = -n;
 
-            int i = number.Scale;
-            if (i > UInt64Precision || i < number.DigitsCount || number.IsNegative)
-            {
-                return false;
-            }
-            byte* p = number.GetDigitsPointer();
-            Debug.Assert(p != null);
-            ulong n = 0;
-            while (--i >= 0)
-            {
-                if (n > (0xFFFFFFFFFFFFFFFF / 10))
-                {
-                    return false;
-                }
-                n *= 10;
-                if (*p != '\0')
-                {
-                    ulong newN = n + (ulong)(*p++ - '0');
-                    // Detect an overflow here...
-                    if (newN < n)
+                    if (n > TInteger.Zero)
                     {
                         return false;
                     }
-                    n = newN;
                 }
-            }
-            value = n;
-            return true;
-        }
-
-        private static unsafe bool TryNumberToUInt128(ref NumberBuffer number, ref UInt128 value)
-        {
-            number.CheckConsistency();
-
-            int i = number.Scale;
-            if (i > UInt128Precision || (i < number.DigitsCount) || number.IsNegative)
-            {
-                return false;
-            }
-            byte* p = number.GetDigitsPointer();
-            Debug.Assert(p != null);
-            UInt128 n = 0U;
-            while (--i >= 0)
-            {
-                if (n > new UInt128(0x1999999999999999, 0x9999999999999999)) // UInt128.MaxValue / 10
+                else if (n < TInteger.Zero)
                 {
                     return false;
                 }
-                n *= 10U;
-                if (*p != '\0')
-                {
-                    UInt128 newN = n + (UInt128)(*p++ - '0');
-                    // Detect an overflow here...
-                    if (newN < n)
-                    {
-                        return false;
-                    }
-                    n = newN;
-                }
             }
+
             value = n;
             return true;
         }
@@ -629,7 +475,7 @@ namespace System
                 return ParsingStatus.Failed;
             }
 
-            if (!TryNumberToInt32(ref number, ref result))
+            if (!TryNumberBufferToBinaryInteger(ref number, ref result))
             {
                 return ParsingStatus.Overflow;
             }
@@ -1023,7 +869,7 @@ namespace System
                 return ParsingStatus.Failed;
             }
 
-            if (!TryNumberToInt64(ref number, ref result))
+            if (!TryNumberBufferToBinaryInteger(ref number, ref result))
             {
                 return ParsingStatus.Overflow;
             }
@@ -1239,7 +1085,7 @@ namespace System
                 return ParsingStatus.Failed;
             }
 
-            if (!TryNumberToInt128(ref number, ref result))
+            if (!TryNumberBufferToBinaryInteger(ref number, ref result))
             {
                 return ParsingStatus.Overflow;
             }
@@ -1274,7 +1120,7 @@ namespace System
                 return ParsingStatus.Failed;
             }
 
-            if (!TryNumberToUInt32(ref number, ref result))
+            if (!TryNumberBufferToBinaryInteger(ref number, ref result))
             {
                 return ParsingStatus.Overflow;
             }
@@ -1609,7 +1455,7 @@ namespace System
                 return ParsingStatus.Failed;
             }
 
-            if (!TryNumberToUInt64(ref number, ref result))
+            if (!TryNumberBufferToBinaryInteger(ref number, ref result))
             {
                 return ParsingStatus.Overflow;
             }
@@ -1944,7 +1790,7 @@ namespace System
                 return ParsingStatus.Failed;
             }
 
-            if (!TryNumberToUInt128(ref number, ref result))
+            if (!TryNumberBufferToBinaryInteger(ref number, ref result))
             {
                 return ParsingStatus.Overflow;
             }

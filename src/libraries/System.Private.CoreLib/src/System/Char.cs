@@ -35,7 +35,8 @@ namespace System
           IBinaryInteger<char>,
           IMinMaxValue<char>,
           IUnsignedNumber<char>,
-          IUtf8SpanFormattable
+          IUtf8SpanFormattable,
+          IBinaryIntegerParseAndFormatInfo<char>
     {
         //
         // Member Variables
@@ -2010,5 +2011,21 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static char IUnaryPlusOperators<char, char>.operator +(char value) => (char)(+value);
+
+        //
+        // IBinaryIntegerParseAndFormatInfo
+        //
+
+        static bool IBinaryIntegerParseAndFormatInfo<char>.IsSigned => false;
+
+        static bool IBinaryIntegerParseAndFormatInfo<char>.IsUnsigned => true;
+
+        static int IBinaryIntegerParseAndFormatInfo<char>.MaxDigitCount => 5; // 65_535
+
+        static char IBinaryIntegerParseAndFormatInfo<char>.MaxValueDiv10 => (char)(MaxValue / 10);
+
+        static bool IBinaryIntegerParseAndFormatInfo<char>.IsGreaterThanAsUnsigned(char left, char positiveRight) => left > positiveRight;
+
+        static char IBinaryIntegerParseAndFormatInfo<char>.MultiplyBy10(char value) => (char)(value * 10);
     }
 }

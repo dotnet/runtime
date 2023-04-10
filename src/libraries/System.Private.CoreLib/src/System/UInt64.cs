@@ -23,7 +23,8 @@ namespace System
           IEquatable<ulong>,
           IBinaryInteger<ulong>,
           IMinMaxValue<ulong>,
-          IUnsignedNumber<ulong>
+          IUnsignedNumber<ulong>,
+          IBinaryIntegerParseAndFormatInfo<ulong>
     {
         private readonly ulong m_value; // Do not rename (binary serialization)
 
@@ -1230,5 +1231,21 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static ulong IUnaryPlusOperators<ulong, ulong>.operator +(ulong value) => +value;
+
+        //
+        // IBinaryIntegerParseAndFormatInfo
+        //
+
+        static bool IBinaryIntegerParseAndFormatInfo<ulong>.IsSigned => false;
+
+        static bool IBinaryIntegerParseAndFormatInfo<ulong>.IsUnsigned => true;
+
+        static int IBinaryIntegerParseAndFormatInfo<ulong>.MaxDigitCount => 20; // 18_446_744_073_709_551_615
+
+        static ulong IBinaryIntegerParseAndFormatInfo<ulong>.MaxValueDiv10 => MaxValue / 10;
+
+        static bool IBinaryIntegerParseAndFormatInfo<ulong>.IsGreaterThanAsUnsigned(ulong left, ulong positiveRight) => left > positiveRight;
+
+        static ulong IBinaryIntegerParseAndFormatInfo<ulong>.MultiplyBy10(ulong value) => value * 10;
     }
 }

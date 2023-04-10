@@ -22,7 +22,8 @@ namespace System
           IEquatable<byte>,
           IBinaryInteger<byte>,
           IMinMaxValue<byte>,
-          IUnsignedNumber<byte>
+          IUnsignedNumber<byte>,
+          IBinaryIntegerParseAndFormatInfo<byte>
     {
         private readonly byte m_value; // Do not rename (binary serialization)
 
@@ -1196,5 +1197,21 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static byte IUnaryPlusOperators<byte, byte>.operator +(byte value) => (byte)(+value);
+
+        //
+        // IBinaryIntegerParseAndFormatInfo
+        //
+
+        static bool IBinaryIntegerParseAndFormatInfo<byte>.IsSigned => false;
+
+        static bool IBinaryIntegerParseAndFormatInfo<byte>.IsUnsigned => true;
+
+        static int IBinaryIntegerParseAndFormatInfo<byte>.MaxDigitCount => 3; // 255
+
+        static byte IBinaryIntegerParseAndFormatInfo<byte>.MaxValueDiv10 => MaxValue / 10;
+
+        static bool IBinaryIntegerParseAndFormatInfo<byte>.IsGreaterThanAsUnsigned(byte left, byte positiveRight) => left > positiveRight;
+
+        static byte IBinaryIntegerParseAndFormatInfo<byte>.MultiplyBy10(byte value) => (byte)(value * 10);
     }
 }

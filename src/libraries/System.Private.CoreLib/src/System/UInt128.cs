@@ -18,7 +18,8 @@ namespace System
     public readonly struct UInt128
         : IBinaryInteger<UInt128>,
           IMinMaxValue<UInt128>,
-          IUnsignedNumber<UInt128>
+          IUnsignedNumber<UInt128>,
+          IBinaryIntegerParseAndFormatInfo<UInt128>
     {
         internal const int Size = 16;
 
@@ -2155,5 +2156,21 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         public static UInt128 operator +(UInt128 value) => value;
+
+        //
+        // IBinaryIntegerParseAndFormatInfo
+        //
+
+        static bool IBinaryIntegerParseAndFormatInfo<UInt128>.IsSigned => false;
+
+        static bool IBinaryIntegerParseAndFormatInfo<UInt128>.IsUnsigned => true;
+
+        static int IBinaryIntegerParseAndFormatInfo<UInt128>.MaxDigitCount => 39; // 340_282_366_920_938_463_463_374_607_431_768_211_455
+
+        static UInt128 IBinaryIntegerParseAndFormatInfo<UInt128>.MaxValueDiv10 => new UInt128(0x1999_9999_9999_9999, 0x9999_9999_9999_9999);
+
+        static bool IBinaryIntegerParseAndFormatInfo<UInt128>.IsGreaterThanAsUnsigned(UInt128 left, UInt128 positiveRight) => left > positiveRight;
+
+        static UInt128 IBinaryIntegerParseAndFormatInfo<UInt128>.MultiplyBy10(UInt128 value) => value * 10;
     }
 }
