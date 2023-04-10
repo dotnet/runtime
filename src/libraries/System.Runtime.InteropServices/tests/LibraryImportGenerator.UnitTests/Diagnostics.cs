@@ -248,10 +248,10 @@ namespace LibraryImportGenerator.UnitTests
                 partial class Test
                 {
                     [LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Utf8)]
-                    public static partial void Method1(string s);
+                    public static partial void {|#0:Method1|}(string s);
 
                     [LibraryImport("DoesNotExist", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Native))]
-                    public static partial void Method2(string s);
+                    public static partial void Method2(string {|#1:s|});
 
                     struct Native
                     {
@@ -260,26 +260,23 @@ namespace LibraryImportGenerator.UnitTests
                     }
                 }
                 """ + CodeSnippets.LibraryImportAttributeDeclaration;
-
-            // Compile against Standard so that we generate forwarders
-            Compilation comp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
-            TestUtils.AssertPreSourceGeneratorCompilation(comp);
-            Compilation newComp = TestUtils.RunGenerators(
-                comp,
-                new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(TestTargetFramework.Standard)),
-                out var generatorDiags,
-                new Microsoft.Interop.LibraryImportGenerator());
             DiagnosticResult[] expectedDiags = new DiagnosticResult[]
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.CannotForwardToDllImport)
-                    .WithSpan(6, 32, 6, 39)
+                    .WithLocation(0)
                     .WithArguments($"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}={nameof(StringMarshalling)}{Type.Delimiter}{nameof(StringMarshalling.Utf8)}"),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
-                    .WithSpan(9, 47, 9, 48)
+                    .WithLocation(1)
+                    .WithArguments("Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.", "s")
             };
-            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
-            var newCompDiags = newComp.GetDiagnostics();
-            Assert.Empty(newCompDiags);
+
+            var test = new VerifyCS.Test(TestTargetFramework.Standard)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
+            test.ExpectedDiagnostics.AddRange(expectedDiags);
+            await test.RunAsync();
         }
 
         [Fact]

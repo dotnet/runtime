@@ -55,12 +55,30 @@ namespace Microsoft.Interop.UnitTests.Verifiers
 
         internal class Test : CSharpSourceGeneratorTest<TSourceGenerator, XUnitVerifier>
         {
-            public Test(bool referenceAncillaryInterop)
+            public Test(TestTargetFramework targetFramework)
             {
-                // Clear out the default reference assemblies. We explicitly add references from the live ref pack,
-                // so we don't want the Roslyn test infrastructure to resolve/add any default reference assemblies
-                ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
-                TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
+                if (targetFramework == TestTargetFramework.Net)
+                {
+                    // Clear out the default reference assemblies. We explicitly add references from the live ref pack,
+                    // so we don't want the Roslyn test infrastructure to resolve/add any default reference assemblies
+                    ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
+                    TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
+                }
+                else
+                {
+                    ReferenceAssemblies = targetFramework switch
+                    {
+                        TestTargetFramework.Framework => ReferenceAssemblies.NetFramework.Net48.Default,
+                        TestTargetFramework.Standard => ReferenceAssemblies.NetStandard.NetStandard21,
+                        TestTargetFramework.Core => ReferenceAssemblies.NetCore.NetCoreApp31,
+                        TestTargetFramework.Net6 => ReferenceAssemblies.Net.Net60,
+                        _ => ReferenceAssemblies.Default
+                    };
+                }
+            }
+            public Test(bool referenceAncillaryInterop)
+                :this(TestTargetFramework.Net)
+            {
                 if (referenceAncillaryInterop)
                 {
                     TestState.AdditionalReferences.Add(TestUtils.GetAncillaryReference());
