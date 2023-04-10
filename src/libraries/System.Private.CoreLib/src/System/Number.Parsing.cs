@@ -466,13 +466,14 @@ namespace System
                 return TryParseBinaryIntegerHexNumberStyle(value, styles, out Unsafe.As<int, uint>(ref result));
             }
 
-            return TryParseInt32Number(value, styles, info, out result);
+            return TryParseBinaryIntegerNumber(value, styles, info, out result);
         }
 
-        private static unsafe ParsingStatus TryParseInt32Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out int result)
+        private static unsafe ParsingStatus TryParseBinaryIntegerNumber<TInteger>(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out TInteger result)
+            where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
-            result = 0;
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, stackalloc byte[Int32NumberBufferLength]);
+            result = TInteger.Zero;
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, stackalloc byte[TInteger.MaxDigitCount + 1]);
 
             if (!TryStringToNumber(value, styles, ref number, info))
             {
@@ -718,25 +719,7 @@ namespace System
                 return TryParseBinaryIntegerHexNumberStyle(value, styles, out Unsafe.As<long, ulong>(ref result));
             }
 
-            return TryParseInt64Number(value, styles, info, out result);
-        }
-
-        private static unsafe ParsingStatus TryParseInt64Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out long result)
-        {
-            result = 0;
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, stackalloc byte[Int64NumberBufferLength]);
-
-            if (!TryStringToNumber(value, styles, ref number, info))
-            {
-                return ParsingStatus.Failed;
-            }
-
-            if (!TryNumberBufferToBinaryInteger(ref number, ref result))
-            {
-                return ParsingStatus.Overflow;
-            }
-
-            return ParsingStatus.OK;
+            return TryParseBinaryIntegerNumber(value, styles, info, out result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -755,25 +738,7 @@ namespace System
                 return status;
             }
 
-            return TryParseInt128Number(value, styles, info, out result);
-        }
-
-        private static unsafe ParsingStatus TryParseInt128Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out Int128 result)
-        {
-            result = 0;
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, stackalloc byte[Int128NumberBufferLength]);
-
-            if (!TryStringToNumber(value, styles, ref number, info))
-            {
-                return ParsingStatus.Failed;
-            }
-
-            if (!TryNumberBufferToBinaryInteger(ref number, ref result))
-            {
-                return ParsingStatus.Overflow;
-            }
-
-            return ParsingStatus.OK;
+            return TryParseBinaryIntegerNumber(value, styles, info, out result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -790,25 +755,7 @@ namespace System
                 return TryParseBinaryIntegerHexNumberStyle(value, styles, out result);
             }
 
-            return TryParseUInt32Number(value, styles, info, out result);
-        }
-
-        private static unsafe ParsingStatus TryParseUInt32Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out uint result)
-        {
-            result = 0;
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, stackalloc byte[UInt32NumberBufferLength]);
-
-            if (!TryStringToNumber(value, styles, ref number, info))
-            {
-                return ParsingStatus.Failed;
-            }
-
-            if (!TryNumberBufferToBinaryInteger(ref number, ref result))
-            {
-                return ParsingStatus.Overflow;
-            }
-
-            return ParsingStatus.OK;
+            return TryParseBinaryIntegerNumber(value, styles, info, out result);
         }
 
         /// <summary>Parses uint limited to styles that make up NumberStyles.HexNumber.</summary>
@@ -948,25 +895,7 @@ namespace System
                 return TryParseBinaryIntegerHexNumberStyle(value, styles, out result);
             }
 
-            return TryParseUInt64Number(value, styles, info, out result);
-        }
-
-        private static unsafe ParsingStatus TryParseUInt64Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out ulong result)
-        {
-            result = 0;
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, stackalloc byte[UInt64NumberBufferLength]);
-
-            if (!TryStringToNumber(value, styles, ref number, info))
-            {
-                return ParsingStatus.Failed;
-            }
-
-            if (!TryNumberBufferToBinaryInteger(ref number, ref result))
-            {
-                return ParsingStatus.Overflow;
-            }
-
-            return ParsingStatus.OK;
+            return TryParseBinaryIntegerNumber(value, styles, info, out result);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -983,25 +912,7 @@ namespace System
                 return TryParseBinaryIntegerHexNumberStyle(value, styles, out result);
             }
 
-            return TryParseUInt128Number(value, styles, info, out result);
-        }
-
-        private static unsafe ParsingStatus TryParseUInt128Number(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out UInt128 result)
-        {
-            result = 0U;
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Integer, stackalloc byte[UInt128NumberBufferLength]);
-
-            if (!TryStringToNumber(value, styles, ref number, info))
-            {
-                return ParsingStatus.Failed;
-            }
-
-            if (!TryNumberBufferToBinaryInteger(ref number, ref result))
-            {
-                return ParsingStatus.Overflow;
-            }
-
-            return ParsingStatus.OK;
+            return TryParseBinaryIntegerNumber(value, styles, info, out result);
         }
 
         internal static decimal ParseDecimal(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
