@@ -3855,9 +3855,24 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_CREATE_SCALAR: {
-			const int t = get_type_size_macro (ins->inst_c1);
-			arm_neon_eor_16b (code, dreg, dreg, dreg);
-			arm_neon_ins_g(code, t, dreg, sreg1, 0);
+			int t = get_type_size_macro (ins->inst_c1);
+			switch (ins->inst_c1) {
+			case MONO_TYPE_R4:
+				t = SIZE_4;
+				break;
+			case MONO_TYPE_R8:
+				t = SIZE_8;
+				break;
+			}
+			if (is_type_float_macro (ins->inst_c1)) {
+				// ins expects an integer register
+				arm_fmov_double_to_rx(code, NEON_TMP_REG, sreg1);
+				arm_neon_eor_16b (code, dreg, dreg, dreg);
+				arm_neon_ins_g(code, t, dreg, NEON_TMP_REG, 0);
+			} else {
+				arm_neon_eor_16b (code, dreg, dreg, dreg);
+				arm_neon_ins_g(code, t, dreg, sreg1, 0);
+			}
 			break;
 		}
 		case OP_CREATE_SCALAR_UNSAFE: {

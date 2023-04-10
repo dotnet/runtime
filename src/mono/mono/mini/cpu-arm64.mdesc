@@ -521,7 +521,7 @@ expand_i4: dest:x src1:i len:4
 expand_i8: dest:x src1:i len:4
 expand_r4: dest:x src1:f len:4
 expand_r8: dest:x src1:f len:4
-create_scalar: dest:x src1:i len:8
+create_scalar: dest:x src1:i len:12
 create_scalar_unsafe: dest:x src1:i len:4
 
 generic_class_init: src1:a len:44 clob:c
