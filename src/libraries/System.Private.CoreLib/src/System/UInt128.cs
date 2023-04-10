@@ -2164,10 +2164,14 @@ namespace System
 
         static int IBinaryIntegerParseAndFormatInfo<UInt128>.MaxDigitCount => 39; // 340_282_366_920_938_463_463_374_607_431_768_211_455
 
+        static int IBinaryIntegerParseAndFormatInfo<UInt128>.MaxHexDigitCount => 32; // 0xFFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF_FFFF
+
         static UInt128 IBinaryIntegerParseAndFormatInfo<UInt128>.MaxValueDiv10 => new UInt128(0x1999_9999_9999_9999, 0x9999_9999_9999_9999);
 
         static bool IBinaryIntegerParseAndFormatInfo<UInt128>.IsGreaterThanAsUnsigned(UInt128 left, UInt128 right) => left > right;
 
         static UInt128 IBinaryIntegerParseAndFormatInfo<UInt128>.MultiplyBy10(UInt128 value) => value * 10;
+
+        static UInt128 IBinaryIntegerParseAndFormatInfo<UInt128>.MultiplyBy16(UInt128 value) => value * 16;
     }
 }

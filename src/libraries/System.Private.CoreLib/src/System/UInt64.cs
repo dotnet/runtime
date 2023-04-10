@@ -1241,10 +1241,14 @@ namespace System
 
         static int IBinaryIntegerParseAndFormatInfo<ulong>.MaxDigitCount => 20; // 18_446_744_073_709_551_615
 
+        static int IBinaryIntegerParseAndFormatInfo<ulong>.MaxHexDigitCount => 16; // 0xFFFF_FFFF_FFFF_FFFF
+
         static ulong IBinaryIntegerParseAndFormatInfo<ulong>.MaxValueDiv10 => MaxValue / 10;
 
         static bool IBinaryIntegerParseAndFormatInfo<ulong>.IsGreaterThanAsUnsigned(ulong left, ulong right) => left > right;
 
         static ulong IBinaryIntegerParseAndFormatInfo<ulong>.MultiplyBy10(ulong value) => value * 10;
+
+        static ulong IBinaryIntegerParseAndFormatInfo<ulong>.MultiplyBy16(ulong value) => value * 16;
     }
 }

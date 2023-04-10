@@ -1248,10 +1248,14 @@ namespace System
 
         static int IBinaryIntegerParseAndFormatInfo<uint>.MaxDigitCount => 10; // 4_294_967_295
 
+        static int IBinaryIntegerParseAndFormatInfo<uint>.MaxHexDigitCount => 8; // 0xFFFF_FFFF
+
         static uint IBinaryIntegerParseAndFormatInfo<uint>.MaxValueDiv10 => MaxValue / 10;
 
         static bool IBinaryIntegerParseAndFormatInfo<uint>.IsGreaterThanAsUnsigned(uint left, uint right) => left > right;
 
         static uint IBinaryIntegerParseAndFormatInfo<uint>.MultiplyBy10(uint value) => value * 10;
+
+        static uint IBinaryIntegerParseAndFormatInfo<uint>.MultiplyBy16(uint value) => value * 16;
     }
 }

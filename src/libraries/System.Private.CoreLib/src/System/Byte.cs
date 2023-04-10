@@ -1207,10 +1207,14 @@ namespace System
 
         static int IBinaryIntegerParseAndFormatInfo<byte>.MaxDigitCount => 3; // 255
 
+        static int IBinaryIntegerParseAndFormatInfo<byte>.MaxHexDigitCount => 2; // 0xFF
+
         static byte IBinaryIntegerParseAndFormatInfo<byte>.MaxValueDiv10 => MaxValue / 10;
 
         static bool IBinaryIntegerParseAndFormatInfo<byte>.IsGreaterThanAsUnsigned(byte left, byte right) => left > right;
 
         static byte IBinaryIntegerParseAndFormatInfo<byte>.MultiplyBy10(byte value) => (byte)(value * 10);
+
+        static byte IBinaryIntegerParseAndFormatInfo<byte>.MultiplyBy16(byte value) => (byte)(value * 16);
     }
 }

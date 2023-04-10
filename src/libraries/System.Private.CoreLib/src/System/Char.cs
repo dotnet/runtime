@@ -2020,10 +2020,14 @@ namespace System
 
         static int IBinaryIntegerParseAndFormatInfo<char>.MaxDigitCount => 5; // 65_535
 
+        static int IBinaryIntegerParseAndFormatInfo<char>.MaxHexDigitCount => 4; // 0xFFFF
+
         static char IBinaryIntegerParseAndFormatInfo<char>.MaxValueDiv10 => (char)(MaxValue / 10);
 
         static bool IBinaryIntegerParseAndFormatInfo<char>.IsGreaterThanAsUnsigned(char left, char right) => left > right;
 
         static char IBinaryIntegerParseAndFormatInfo<char>.MultiplyBy10(char value) => (char)(value * 10);
+
+        static char IBinaryIntegerParseAndFormatInfo<char>.MultiplyBy16(char value) => (char)(value * 16);
     }
 }
