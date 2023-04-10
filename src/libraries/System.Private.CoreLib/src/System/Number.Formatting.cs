@@ -4,6 +4,7 @@
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -1581,22 +1582,24 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void WriteTwoDigits(char* ptr, uint value)
+        internal static unsafe void WriteTwoDigits<TChar>(TChar* ptr, uint value) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(value <= 99);
-            Unsafe.WriteUnaligned(ptr,
-                Unsafe.ReadUnaligned<uint>(
-                    ref Unsafe.As<char, byte>(
-                        ref Unsafe.Add(ref TwoDigitsChars.GetRawStringData(), (int)value * 2))));
-        }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe void WriteTwoDigits(byte* ptr, uint value)
-        {
-            Debug.Assert(value <= 99);
-            Unsafe.WriteUnaligned(ptr,
-                Unsafe.ReadUnaligned<ushort>(
-                    ref Unsafe.Add(ref MemoryMarshal.GetReference(TwoDigitsBytes), (int)value * 2)));
+            if (typeof(TChar) == typeof(char))
+            {
+                Unsafe.WriteUnaligned(ptr,
+                    Unsafe.ReadUnaligned<uint>(
+                        ref Unsafe.As<char, byte>(
+                            ref Unsafe.Add(ref TwoDigitsChars.GetRawStringData(), (int)value * 2))));
+            }
+            else
+            {
+                Unsafe.WriteUnaligned(ptr,
+                    Unsafe.ReadUnaligned<ushort>(
+                        ref Unsafe.Add(ref MemoryMarshal.GetReference(TwoDigitsBytes), (int)value * 2)));
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

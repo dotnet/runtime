@@ -650,6 +650,34 @@ public:
                 PopValue();
                 break;
 
+            case GT_SUB:
+            {
+                Value& rhs = TopValue(0);
+                Value& lhs = TopValue(1);
+                if (m_compiler->opts.OptimizationEnabled() && lhs.IsAddress() && rhs.IsAddress() &&
+                    (lhs.LclNum() == rhs.LclNum()) && (rhs.Offset() <= lhs.Offset()) &&
+                    FitsIn<int>(lhs.Offset() - rhs.Offset()))
+                {
+                    // TODO-Bug: Due to inlining we may end up with incorrectly typed SUB trees here.
+                    assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
+
+                    ssize_t result = (ssize_t)(lhs.Offset() - rhs.Offset());
+                    node->BashToConst(result, TYP_I_IMPL);
+                    INDEBUG(lhs.Consume());
+                    INDEBUG(rhs.Consume());
+                    PopValue();
+                    PopValue();
+                    m_stmtModified = true;
+                    break;
+                }
+
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                EscapeValue(TopValue(0), node);
+                PopValue();
+                break;
+            }
+
             case GT_FIELD_ADDR:
                 if (node->AsField()->IsInstance())
                 {
@@ -1133,16 +1161,14 @@ private:
                 {
                     GenTree* indexNode = m_compiler->gtNewIconNode(val.Offset() / genTypeSize(elementType));
                     hwiNode = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode, CORINFO_TYPE_FLOAT,
-                                                                  genTypeSize(varDsc),
-                                                                  /* isSimdAsHWIntrinsic */ true);
+                                                                  genTypeSize(varDsc));
                 }
                 else
                 {
                     assert(elementType == TYP_SIMD12);
                     assert(genTypeSize(varDsc) == 16);
-                    hwiNode =
-                        m_compiler->gtNewSimdHWIntrinsicNode(elementType, lclNode, NI_Vector128_AsVector3,
-                                                             CORINFO_TYPE_FLOAT, 16, /* isSimdAsHWIntrinsic */ true);
+                    hwiNode = m_compiler->gtNewSimdHWIntrinsicNode(elementType, lclNode, NI_Vector128_AsVector3,
+                                                                   CORINFO_TYPE_FLOAT, 16);
                 }
 
                 indir      = hwiNode;
@@ -1163,9 +1189,9 @@ private:
                 if (elementType == TYP_FLOAT)
                 {
                     GenTree* indexNode = m_compiler->gtNewIconNode(val.Offset() / genTypeSize(elementType));
-                    hwiNode            = m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode,
-                                                                   elementNode, CORINFO_TYPE_FLOAT, genTypeSize(varDsc),
-                                                                   /* isSimdAsHWIntrinsic */ true);
+                    hwiNode =
+                        m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode, elementNode,
+                                                             CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
                 }
                 else
                 {
@@ -1175,9 +1201,8 @@ private:
                     // We inverse the operands here and take elementNode as the main value and simdLclNode[3] as the
                     // new value. This gives us a new TYP_SIMD16 with all elements in the right spots
                     GenTree* indexNode = m_compiler->gtNewIconNode(3, TYP_INT);
-                    hwiNode =
-                        m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode, simdLclNode,
-                                                             CORINFO_TYPE_FLOAT, 16, /* isSimdAsHWIntrinsic */ true);
+                    hwiNode = m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode, simdLclNode,
+                                                                   CORINFO_TYPE_FLOAT, 16);
                 }
 
                 user->AsOp()->gtOp2 = hwiNode;

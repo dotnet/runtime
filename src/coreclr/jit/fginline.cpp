@@ -1447,6 +1447,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
     lvaGenericsContextInUse |= InlineeCompiler->lvaGenericsContextInUse;
 
+#ifdef TARGET_ARM64
+    info.compNeedsConsecutiveRegisters |= InlineeCompiler->info.compNeedsConsecutiveRegisters;
+#endif
+
     // If the inlinee compiler encounters switch tables, disable hot/cold splitting in the root compiler.
     // TODO-CQ: Implement hot/cold splitting of methods with switch tables.
     if (InlineeCompiler->fgHasSwitch && opts.compProcedureSplitting)
@@ -1654,14 +1658,12 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
                     if (varTypeIsStruct(argType))
                     {
-                        structHnd = gtGetStructHandleIfPresent(argNode);
-                        noway_assert((structHnd != NO_CLASS_HANDLE) || (argType != TYP_STRUCT));
+                        structHnd = lclVarInfo[argNum].lclVerTypeInfo.GetClassHandleForValueClass();
+                        assert(structHnd != NO_CLASS_HANDLE);
                     }
 
-                    // Unsafe value cls check is not needed for
-                    // argTmpNum here since in-linee compiler instance
-                    // would have iterated over these and marked them
-                    // accordingly.
+                    // Unsafe value cls check is not needed for argTmpNum here since in-linee compiler instance
+                    // would have iterated over these and marked them accordingly.
                     impAssignTempGen(tmpNum, argNode, structHnd, CHECK_SPILL_NONE, &afterStmt, callDI, block);
 
                     // We used to refine the temp type here based on

@@ -22,26 +22,26 @@ namespace System.Buffers.Text
             value.GetDate(out int year, out int month, out int day);
             value.GetTime(out int hour, out int minute, out int second);
 
-            FormattingHelpers.CopyFourBytes("sun,mon,tue,wed,thu,fri,sat,"u8.Slice(4 * (int)value.DayOfWeek), destination);
+            FormattingHelpers.CopyFour("sun,mon,tue,wed,thu,fri,sat,"u8.Slice(4 * (int)value.DayOfWeek), destination);
             destination[4] = Utf8Constants.Space;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)day, destination, 5);
+            FormattingHelpers.WriteTwoDigits((uint)day, destination, 5);
             destination[7] = Utf8Constants.Space;
 
-            FormattingHelpers.CopyFourBytes("jan feb mar apr may jun jul aug sep oct nov dec "u8.Slice(4 * (month - 1)), destination.Slice(8));
+            FormattingHelpers.CopyFour("jan feb mar apr may jun jul aug sep oct nov dec "u8.Slice(4 * (month - 1)), destination.Slice(8));
 
-            FormattingHelpers.WriteFourDecimalDigits((uint)year, destination, 12);
+            FormattingHelpers.WriteFourDigits((uint)year, destination, 12);
             destination[16] = Utf8Constants.Space;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)hour, destination, 17);
+            FormattingHelpers.WriteTwoDigits((uint)hour, destination, 17);
             destination[19] = Utf8Constants.Colon;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)minute, destination, 20);
+            FormattingHelpers.WriteTwoDigits((uint)minute, destination, 20);
             destination[22] = Utf8Constants.Colon;
 
-            FormattingHelpers.WriteTwoDecimalDigits((uint)second, destination, 23);
+            FormattingHelpers.WriteTwoDigits((uint)second, destination, 23);
 
-            FormattingHelpers.CopyFourBytes(" gmt"u8, destination.Slice(25));
+            FormattingHelpers.CopyFour(" gmt"u8, destination.Slice(25));
 
             bytesWritten = 29;
             return true;

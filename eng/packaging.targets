@@ -48,7 +48,7 @@
     <_IsWindowsDesktopApp Condition="$(WindowsDesktopCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsWindowsDesktopApp>
     <_IsAspNetCoreApp Condition="$(AspNetCoreAppLibrary.Contains('$(AssemblyName);'))">true</_IsAspNetCoreApp>
     <_AssemblyInTargetingPack Condition="('$(IsNETCoreAppSrc)' == 'true' or '$(IsNetCoreAppRef)' == 'true' or '$(_IsAspNetCoreApp)' == 'true' or '$(_IsWindowsDesktopApp)' == 'true') and '$(TargetFrameworkIdentifier)' != '.NETFramework'">true</_AssemblyInTargetingPack>
-    <!-- Assembly version do not get updated in non-netfx ref pack assemblies. -->
+    <!-- The assembly version gets updated when the assembly isn't part of a targeting pack. -->
     <AssemblyVersion Condition="'$(_AssemblyInTargetingPack)' != 'true'">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
   </PropertyGroup>
 
@@ -193,41 +193,6 @@
                       Overwrite="true" />
   </Target>
 
-  <PropertyGroup>
-    <_OffByDefaultRoslynComponentTargetsTemplate>$(MSBuildThisFileDirectory)OffByDefaultRoslynComponent.targets.template</_OffByDefaultRoslynComponentTargetsTemplate>
-    <OffByDefaultRoslynComponentTargetsFileIntermediatePath>$(IntermediateOutputPath)OffByDefaultRoslynComponent.targets</OffByDefaultRoslynComponentTargetsFileIntermediatePath>
-    <RoslynComponentsAreOffByDefault Condition="'$(RoslynComponentsAreOffByDefault)' == ''">false</RoslynComponentsAreOffByDefault>
-  </PropertyGroup>
-
-  <!-- In packages that contain Analyzers that are off by default, include a .targets file that will exclude the analyzer. -->
-  <Target Name="ExcludeOffByDefaultRoslynComponentTargetsInPackage"
-          AfterTargets="IncludeAnalyzersInPackage"
-          Condition="'@(ProjectReference)' != '' and
-                     @(ProjectReference->AnyHaveMetadataValue('PackAsAnalyzer', 'true')) and
-                     '$(RoslynComponentsAreOffByDefault)' == 'true'"
-          DependsOnTargets="GenerateOffByDefaultRoslynComponentTargetsFile">
-    <ItemGroup>
-      <Content Include="$(OffByDefaultRoslynComponentTargetsFileIntermediatePath)" PackagePath="buildTransitive\netstandard2.0\$(PackageId).targets" />
-      <Content Include="$(OffByDefaultRoslynComponentTargetsFileIntermediatePath)" PackagePath="buildTransitive\%(NETStandardCompatError.Supported)\$(PackageId).targets" Condition="'@(NETStandardCompatError)' != ''" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="GenerateOffByDefaultRoslynComponentTargetsFile"
-          Inputs="$(MSBuildProjectFullPath);$(_OffByDefaultRoslynComponentTargetsTemplate)"
-          Outputs="$(OffByDefaultRoslynComponentTargetsFileIntermediatePath)">
-    <PropertyGroup>
-      <_OffByDefaultRoslynComponentTargetPrefix>$(PackageId.Replace('.', '_'))</_OffByDefaultRoslynComponentTargetPrefix>
-      <EnableSourceGeneratorPropertyName Condition="'$(EnableSourceGeneratorPropertyName)' == ''">Enable$(PackageId.Replace('.', ''))SourceGenerator</EnableSourceGeneratorPropertyName>
-    </PropertyGroup>
-
-    <WriteLinesToFile File="$(OffByDefaultRoslynComponentTargetsFileIntermediatePath)"
-                      Lines="$([System.IO.File]::ReadAllText('$(_OffByDefaultRoslynComponentTargetsTemplate)')
-                                                 .Replace('{TargetPrefix}', '$(_OffByDefaultRoslynComponentTargetPrefix)')
-                                                 .Replace('{NuGetPackageId}', '$(PackageId)')
-                                                 .Replace('{EnableSourceGeneratorPropertyName}', '$(EnableSourceGeneratorPropertyName)'))"
-                      Overwrite="true" />
-  </Target>
-
   <!-- Add targets file that marks a .NETStandard applicable tfm as unsupported. -->
   <Target Name="AddNETStandardCompatErrorFileForPackaging"
           Condition="'@(NETStandardCompatError)' != '' and '$(DisableNETStandardCompatErrors)' != 'true'"
@@ -316,12 +281,6 @@
       <!-- Remove symbols from the non symbol package. -->
       <TfmSpecificPackageFile Remove="@(TfmSpecificPackageFile->WithMetadataValue('Extension', '.pdb'))" />
     </ItemGroup>
-  </Target>
-
-  <Target Name="ValidateAssemblyVersionsInRefPack"
-          Condition="'$(SkipValidateAssemblyVersion)' != 'true' and '$(_AssemblyInTargetingPack)' == 'true' and '$(PreReleaseVersionLabel)' == 'servicing'"
-          AfterTargets="CoreCompile" >
-    <Error Condition="'$(AssemblyVersion)' != '$(LastReleasedStableAssemblyVersion)'" Text="AssemblyVersion should match last released assembly version $(LastReleasedStableAssemblyVersion)" />
   </Target>
 
   <Target Name="ValidateServicingVersionIsProperlySet"
