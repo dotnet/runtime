@@ -1859,21 +1859,11 @@ void CallArgs::SetNeedsTemp(CallArg* arg)
 //    'TempInfo' data that contains the GT_ASG and GT_LCL_VAR nodes for assignment
 //    and variable load respectively.
 //
-TempInfo Compiler::fgMakeTemp(GenTree* rhs, CORINFO_CLASS_HANDLE structType /*= nullptr*/)
+TempInfo Compiler::fgMakeTemp(GenTree* rhs)
 {
     unsigned lclNum = lvaGrabTemp(true DEBUGARG("fgMakeTemp is creating a new local variable"));
-
-    if (varTypeIsStruct(rhs))
-    {
-        assert(structType != nullptr);
-        lvaSetStruct(lclNum, structType, false);
-    }
-
-    // If rhs->TypeGet() == TYP_STRUCT, gtNewTempAssign() will create a GT_COPYBLK tree.
-    // The type of GT_COPYBLK is TYP_VOID.  Therefore, we should use type of rhs for
-    // setting type of lcl vars created.
-    GenTree* asg  = gtNewTempAssign(lclNum, rhs);
-    GenTree* load = gtNewLclvNode(lclNum, genActualType(rhs));
+    GenTree* asg    = gtNewTempAssign(lclNum, rhs);
+    GenTree* load   = gtNewLclvNode(lclNum, genActualType(rhs));
 
     TempInfo tempInfo{};
     tempInfo.asg  = asg;
@@ -1890,8 +1880,6 @@ TempInfo Compiler::fgMakeTemp(GenTree* rhs, CORINFO_CLASS_HANDLE structType /*= 
 //    ppTree     - a pointer to the child node we will be replacing with the comma expression that
 //                 evaluates ppTree to a temp and returns the result
 //
-//    structType - value type handle if the temp created is of TYP_STRUCT.
-//
 // Return Value:
 //    A fresh GT_LCL_VAR node referencing the temp which has not been used
 //
@@ -1901,7 +1889,7 @@ TempInfo Compiler::fgMakeTemp(GenTree* rhs, CORINFO_CLASS_HANDLE structType /*= 
 //    original use and new use is possible. Otherwise, fgInsertCommaFormTemp
 //    should be used directly.
 //
-GenTree* Compiler::fgMakeMultiUse(GenTree** pOp, CORINFO_CLASS_HANDLE structType /*= nullptr*/)
+GenTree* Compiler::fgMakeMultiUse(GenTree** pOp)
 {
     GenTree* const tree = *pOp;
 
@@ -1910,7 +1898,7 @@ GenTree* Compiler::fgMakeMultiUse(GenTree** pOp, CORINFO_CLASS_HANDLE structType
         return gtCloneExpr(tree);
     }
 
-    return fgInsertCommaFormTemp(pOp, structType);
+    return fgInsertCommaFormTemp(pOp);
 }
 
 //------------------------------------------------------------------------------
@@ -1921,17 +1909,15 @@ GenTree* Compiler::fgMakeMultiUse(GenTree** pOp, CORINFO_CLASS_HANDLE structType
 //    ppTree     - a pointer to the child node we will be replacing with the comma expression that
 //                 evaluates ppTree to a temp and returns the result
 //
-//    structType - value type handle if the temp created is of TYP_STRUCT.
-//
 // Return Value:
 //    A fresh GT_LCL_VAR node referencing the temp which has not been used
 //
 
-GenTree* Compiler::fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE structType /*= nullptr*/)
+GenTree* Compiler::fgInsertCommaFormTemp(GenTree** ppTree)
 {
     GenTree* subTree = *ppTree;
 
-    TempInfo tempInfo = fgMakeTemp(subTree, structType);
+    TempInfo tempInfo = fgMakeTemp(subTree);
     GenTree* asg      = tempInfo.asg;
     GenTree* load     = tempInfo.load;
 
@@ -10908,9 +10894,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
             if (sqrt != nullptr)
             {
-                CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-                node = gtNewSimdSqrtNode(simdType, hwop1, simdBaseJitType, simdSize, node->IsSimdAsHWIntrinsic())
-                           ->AsHWIntrinsic();
+                node = gtNewSimdSqrtNode(simdType, hwop1, node->GetSimdBaseJitType(), simdSize)->AsHWIntrinsic();
                 DEBUG_DESTROY_NODE(sqrt);
             }
             else
