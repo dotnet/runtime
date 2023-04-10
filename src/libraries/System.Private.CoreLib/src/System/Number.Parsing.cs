@@ -529,8 +529,15 @@ namespace System
                             goto DoneAtEnd;
                         num = value[index];
                     } while (num == '0');
+
                     if (!IsDigit(num))
+                    {
+                        if (TInteger.IsUnsigned)
+                        {
+                            overflow = false;
+                        }
                         goto HasTrailingChars;
+                    }
                 }
 
                 // Parse most digits, up to the potential for overflow, which can't happen until after MaxDigitCount - 1 digits.
@@ -547,13 +554,7 @@ namespace System
                     }
                     num = value[index];
                     if (!IsDigit(num))
-                    {
-                        if (TInteger.IsUnsigned)
-                        {
-                            overflow = false;
-                        }
                         goto HasTrailingChars;
-                    }
                     index++;
                     answer = TInteger.MultiplyBy10(answer);
                     answer += TInteger.CreateTruncating(num - '0');
@@ -611,7 +612,6 @@ namespace System
         DoneAtEnd:
             if (TInteger.IsUnsigned)
             {
-                Debug.Assert(!isNegative);
                 result = answer;
             }
             else
