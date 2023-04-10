@@ -56,6 +56,11 @@ enum instruction : unsigned
     #include "instrs.h"
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
+#elif defined(TARGET_RISCV64)
+    #define INST(id, nm, ldst, e1) INS_##id,
+    #include "instrs.h"
+
+    INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 #else
 #error Unsupported target architecture
 #endif
@@ -119,6 +124,7 @@ enum insFlags : uint64_t
     // Resets
     Resets_OF = 1ULL << 12,
     Resets_SF = 1ULL << 13,
+    Resets_ZF = 1ULL << 39,
     Resets_AF = 1ULL << 14,
     Resets_PF = 1ULL << 15,
     Resets_CF = 1ULL << 16,
@@ -154,11 +160,30 @@ enum insFlags : uint64_t
     Input_64Bit = 1ULL << 32,
     Input_Mask = (0xFULL) << 29,
 
+    // encoding of the REX.W-bit
+    REX_W0  = 1ULL << 33,
+    REX_W1  = 1ULL << 34,
+    REX_WX  = 1ULL << 35,
+
+    // encoding of the REX.W-bit is considered for EVEX only and W0 or WIG otherwise
+    REX_W0_EVEX = REX_W0,
+    REX_W1_EVEX = 1ULL << 36,
+
+    // encoding of the REX.W-bit is ignored
+    REX_WIG     = REX_W0,
+
+    // whether VEX or EVEX encodings are directly supported
+    Encoding_VEX   = 1ULL << 37,
+    Encoding_EVEX  = 1ULL << 38,
+
+    // Listed above so it is "inline" with the other Resets_* flags
+    // Resets_ZF = 1ULL << 39,
+
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
 };
 
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 // TODO-Cleanup: Move 'insFlags' under TARGET_ARM
 enum insFlags: unsigned
 {
@@ -314,6 +339,26 @@ enum insBarrier : unsigned
     INS_BARRIER_REL   =  INS_BARRIER_FULL,//18,
     INS_BARRIER_RMB   =  INS_BARRIER_FULL,//19,
 };
+#elif defined(TARGET_RISCV64)
+enum insOpts : unsigned
+{
+    INS_OPTS_NONE,
+
+    INS_OPTS_RC,     // see ::emitIns_R_C().
+    INS_OPTS_RL,     // see ::emitIns_R_L().
+    INS_OPTS_JALR,   // see ::emitIns_J_R().
+    INS_OPTS_J,      // see ::emitIns_J().
+    INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
+    INS_OPTS_I,      // see ::emitIns_I_la().
+    INS_OPTS_C,      // see ::emitIns_Call().
+    INS_OPTS_RELOC,  // see ::emitIns_R_AI().
+};
+
+enum insBarrier : unsigned
+{
+    INS_BARRIER_FULL  =  0x33,
+};
+
 #endif
 
 #if defined(TARGET_XARCH)
@@ -350,8 +395,14 @@ enum emitAttr : unsigned
                 EA_4BYTE         = 0x004,
                 EA_8BYTE         = 0x008,
                 EA_16BYTE        = 0x010,
+
+#if defined(TARGET_XARCH)
                 EA_32BYTE        = 0x020,
-                EA_SIZE_MASK     = 0x03F,
+                EA_64BYTE        = 0x040,
+                EA_SIZE_MASK     = 0x07F,
+#else
+                EA_SIZE_MASK     = 0x01F,
+#endif
 
 #ifdef TARGET_64BIT
                 EA_PTRSIZE       = EA_8BYTE,
@@ -359,14 +410,14 @@ enum emitAttr : unsigned
                 EA_PTRSIZE       = EA_4BYTE,
 #endif
 
-                EA_OFFSET_FLG    = 0x040,
+                EA_OFFSET_FLG    = 0x080,
                 EA_OFFSET        = EA_OFFSET_FLG | EA_PTRSIZE,       /* size ==  0 */
-                EA_GCREF_FLG     = 0x080,
+                EA_GCREF_FLG     = 0x100,
                 EA_GCREF         = EA_GCREF_FLG |  EA_PTRSIZE,       /* size == -1 */
-                EA_BYREF_FLG     = 0x100,
+                EA_BYREF_FLG     = 0x200,
                 EA_BYREF         = EA_BYREF_FLG |  EA_PTRSIZE,       /* size == -2 */
-                EA_DSP_RELOC_FLG = 0x200, // Is the displacement of the instruction relocatable?
-                EA_CNS_RELOC_FLG = 0x400, // Is the immediate of the instruction relocatable?
+                EA_DSP_RELOC_FLG = 0x400, // Is the displacement of the instruction relocatable?
+                EA_CNS_RELOC_FLG = 0x800, // Is the immediate of the instruction relocatable?
 };
 
 #define EA_ATTR(x)                  ((emitAttr)(x))

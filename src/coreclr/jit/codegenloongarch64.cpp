@@ -2765,7 +2765,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 // Generate code for InitBlk by performing a loop unroll
 // Preconditions:
 //   a) Both the size and fill byte value are integer constants.
-//   b) The size of the struct to initialize is smaller than INITBLK_UNROLL_LIMIT bytes.
+//   b) The size of the struct to initialize is smaller than getUnrollThreshold() bytes.
 void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 {
     assert(node->OperIs(GT_STORE_BLK));
@@ -2788,7 +2788,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     }
     else
     {
-        assert(dstAddr->OperIsLocalAddr());
+        assert(dstAddr->OperIs(GT_LCL_ADDR));
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
@@ -2921,7 +2921,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIsLocalAddr();
+    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -2957,7 +2957,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         assert(tmpReg2 != REG_WRITE_BARRIER_SRC_BYREF);
     }
 
-    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpObjNode->IsVolatile())
     {
         // issue a full memory barrier before a volatile CpObj operation
         instGen_MemoryBarrier();
@@ -3065,7 +3065,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         assert(gcPtrCount == 0);
     }
 
-    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpObjNode->IsVolatile())
     {
         // issue a INS_BARRIER_RMB after a volatile CpObj operation
         // TODO-LOONGARCH64: there is only BARRIER_FULL for LOONGARCH64.
@@ -4355,8 +4355,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
     int cond = ((int)tree->gtFlags >> 25) & 0xf; // GenCondition::Code.
     assert((((int)tree->gtFlags >> 25) & GenCondition::Float) == 0);
 
-    bool IsUnsigned = (((cond & GenCondition::OperMask) > 1) && ((cond & GenCondition::Unsigned) != 0));
-    assert(((tree->gtFlags & GTF_UNSIGNED) != 0) == IsUnsigned);
+    bool IsUnsigned = (cond & GenCondition::Unsigned) != 0;
 
     emitAttr  cmpSize = EA_ATTR(genTypeSize(op1Type));
     regNumber regOp1  = op1->GetRegNum();
@@ -4746,7 +4745,7 @@ void CodeGen::genStoreLclTypeSIMD12(GenTree* treeNode)
 
 /*****************************************************************************
  * Unit testing of the LOONGARCH64 emitter: generate a bunch of instructions into the prolog
- * (it's as good a place as any), then use COMPlus_JitLateDisasm=* to see if the late
+ * (it's as good a place as any), then use DOTNET_JitLateDisasm=* to see if the late
  * disassembler thinks the instructions as the same as we do.
  */
 
@@ -5001,9 +5000,8 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForBitCast(treeNode->AsOp());
             break;
 
-        case GT_LCL_FLD_ADDR:
-        case GT_LCL_VAR_ADDR:
-            genCodeForLclAddr(treeNode->AsLclVarCommon());
+        case GT_LCL_ADDR:
+            genCodeForLclAddr(treeNode->AsLclFld());
             break;
 
         case GT_LCL_FLD:
@@ -5076,7 +5074,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_LE:
         case GT_GE:
         case GT_GT:
-        case GT_CMP:
             genConsumeOperands(treeNode->AsOp());
             genCodeForCompare(treeNode->AsOp());
             break;
@@ -5505,15 +5502,15 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
                 addrNode = source->AsOp()->gtOp1;
 
-                // addrNode can either be a GT_LCL_VAR_ADDR or an address expression
+                // addrNode can either be a GT_LCL_ADDR<0> or an address expression
                 //
-                if (addrNode->OperGet() == GT_LCL_VAR_ADDR)
+                if (addrNode->IsLclVarAddr())
                 {
-                    // We have a GT_OBJ(GT_LCL_VAR_ADDR)
+                    // We have a GT_OBJ(GT_LCL_ADDR<0>)
                     //
                     // We will treat this case the same as above
                     // (i.e if we just had this GT_LCL_VAR directly as the source)
-                    // so update 'source' to point this GT_LCL_VAR_ADDR node
+                    // so update 'source' to point this GT_LCL_ADDR node
                     // and continue to the codegen for the LCL_VAR node below
                     //
                     varNode  = addrNode->AsLclVarCommon();
@@ -5780,15 +5777,15 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
         addrNode = source->AsOp()->gtOp1;
 
-        // addrNode can either be a GT_LCL_VAR_ADDR or an address expression
+        // addrNode can either be a GT_LCL_ADDR<0> or an address expression
         //
-        if (addrNode->OperGet() == GT_LCL_VAR_ADDR)
+        if (addrNode->IsLclVarAddr())
         {
-            // We have a GT_OBJ(GT_LCL_VAR_ADDR)
+            // We have a GT_OBJ(GT_LCL_ADDR<0>)
             //
             // We will treat this case the same as above
             // (i.e if we just had this GT_LCL_VAR directly as the source)
-            // so update 'source' to point this GT_LCL_VAR_ADDR node
+            // so update 'source' to point this GT_LCL_ADDR node
             // and continue to the codegen for the LCL_VAR node below
             //
             varNode  = addrNode->AsLclVarCommon();
@@ -6187,14 +6184,14 @@ void CodeGen::genCodeForShift(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// genCodeForLclAddr: Generates the code for GT_LCL_FLD_ADDR/GT_LCL_VAR_ADDR.
+// genCodeForLclAddr: Generates the code for GT_LCL_ADDR.
 //
 // Arguments:
 //    tree - the node.
 //
-void CodeGen::genCodeForLclAddr(GenTreeLclVarCommon* lclAddrNode)
+void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
 {
-    assert(lclAddrNode->OperIs(GT_LCL_FLD_ADDR, GT_LCL_VAR_ADDR));
+    assert(lclAddrNode->OperIs(GT_LCL_ADDR));
 
     var_types targetType = lclAddrNode->TypeGet();
     emitAttr  size       = emitTypeSize(targetType);
@@ -6434,7 +6431,7 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
     // genConsumeBlockOp takes care of this for us.
     genConsumeBlockOp(cpBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
 
-    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpBlkNode->IsVolatile())
     {
         // issue a full memory barrier before a volatile CpBlk operation
         instGen_MemoryBarrier();
@@ -6442,7 +6439,7 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
 
     genEmitHelperCall(CORINFO_HELP_MEMCPY, 0, EA_UNKNOWN);
 
-    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpBlkNode->IsVolatile())
     {
         // issue a INS_BARRIER_RMB after a volatile CpBlk operation
         instGen_MemoryBarrier(BARRIER_FULL);
@@ -6459,7 +6456,7 @@ void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
 //    None
 //
 // Assumption:
-//  The size argument of the CpBlk node is a constant and <= CPBLK_UNROLL_LIMIT bytes.
+//  The size argument of the CpBlk node is a constant and <= getUnrollThreshold() bytes.
 //
 void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 {
@@ -6483,7 +6480,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
     }
     else
     {
-        assert(dstAddr->OperIsLocalAddr());
+        assert(dstAddr->OperIs(GT_LCL_ADDR));
         dstLclNum = dstAddr->AsLclVarCommon()->GetLclNum();
         dstOffset = dstAddr->AsLclVarCommon()->GetLclOffs();
     }
@@ -6516,7 +6513,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
         }
         else
         {
-            assert(srcAddr->OperIsLocalAddr());
+            assert(srcAddr->OperIs(GT_LCL_ADDR));
             srcLclNum = srcAddr->AsLclVarCommon()->GetLclNum();
             srcOffset = srcAddr->AsLclVarCommon()->GetLclOffs();
         }
@@ -6647,7 +6644,7 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
     // genConsumeBlockOp takes care of this for us.
     genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
 
-    if (initBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    if (initBlkNode->IsVolatile())
     {
         // issue a full memory barrier before a volatile initBlock Operation
         instGen_MemoryBarrier();
@@ -6663,9 +6660,9 @@ void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst
 {
     emitter* emit = GetEmitter();
 
-    if (base->OperIsLocalAddr())
+    if (base->OperIs(GT_LCL_ADDR))
     {
-        if (base->gtOper == GT_LCL_FLD_ADDR)
+        if (base->gtOper == GT_LCL_ADDR)
         {
             offset += base->AsLclFld()->GetLclOffs();
         }

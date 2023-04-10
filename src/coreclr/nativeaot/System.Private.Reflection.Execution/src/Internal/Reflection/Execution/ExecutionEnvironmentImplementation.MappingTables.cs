@@ -890,8 +890,7 @@ namespace Internal.Reflection.Execution
                 {
                     if ((entryFlags & InvokeTableFlags.RequiresInstArg) != 0)
                     {
-                        MethodNameAndSignature dummyNameAndSignature;
-                        bool success = TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(instantiationArgument, out declaringTypeHandle, out dummyNameAndSignature, out genericMethodTypeArgumentHandles);
+                        bool success = TypeLoaderEnvironment.Instance.TryGetGenericMethodComponents(instantiationArgument, out declaringTypeHandle, out genericMethodTypeArgumentHandles);
                         Debug.Assert(success);
                     }
                     else
@@ -924,6 +923,7 @@ namespace Internal.Reflection.Execution
             }
             else
             {
+#if FEATURE_SHARED_LIBRARY
                 uint nameAndSigOffset = entryMethodHandleOrNameAndSigRaw;
                 MethodNameAndSignature nameAndSig;
                 if (!TypeLoaderEnvironment.Instance.TryGetMethodNameAndSignatureFromNativeLayoutOffset(mappingTableModule.Handle, nameAndSigOffset, out nameAndSig))
@@ -937,6 +937,9 @@ namespace Internal.Reflection.Execution
                     Debug.Assert(false);
                     return false;
                 }
+#else
+                throw NotImplemented.ByDesign;
+#endif
             }
 
             return true;

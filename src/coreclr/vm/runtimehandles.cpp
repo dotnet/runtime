@@ -59,25 +59,6 @@ extern "C" BOOL QCALLTYPE MdUtf8String_EqualsCaseInsensitive(LPCUTF8 szLhs, LPCU
     return fStringsEqual;
 }
 
-extern "C" ULONG QCALLTYPE MdUtf8String_HashCaseInsensitive(LPCUTF8 sz, INT32 stringNumBytes)
-{
-    QCALL_CONTRACT;
-
-    // Important: the string in pSsz isn't null terminated so the length must be used
-    // when performing operations on the string.
-
-    ULONG hashValue = 0;
-
-    BEGIN_QCALL;
-
-    StackSString str(SString::Utf8, sz, stringNumBytes);
-    hashValue = str.HashCaseInsensitive();
-
-    END_QCALL;
-
-    return hashValue;
-}
-
 static BOOL CheckCAVisibilityFromDecoratedType(MethodTable* pCAMT, MethodDesc* pCACtor, MethodTable* pDecoratedMT, Module* pDecoratedModule)
 {
     CONTRACTL
@@ -896,7 +877,7 @@ FCIMPL1(Object *, RuntimeTypeHandle::GetArgumentTypesFromFunctionPointer, Reflec
         FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
 
     FnPtrTypeDesc* fnPtr = typeHandle.AsFnPtrType();
-    
+
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
     {
         MethodTable *pMT = CoreLibBinder::GetClass(CLASS__TYPE);
@@ -908,7 +889,7 @@ FCIMPL1(Object *, RuntimeTypeHandle::GetArgumentTypesFromFunctionPointer, Reflec
         {
             TypeHandle typeHandle = fnPtr->GetRetAndArgTypes()[position];
             OBJECTREF refType = typeHandle.GetManagedClassObject();
-            gc.retVal->SetAt(position, refType);                
+            gc.retVal->SetAt(position, refType);
         }
     }
     HELPER_METHOD_FRAME_END();
@@ -933,7 +914,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsUnmanagedFunctionPointer, ReflectClass
         FnPtrTypeDesc* fnPtr = typeHandle.AsFnPtrType();
         unmanaged = (fnPtr->GetCallConv() & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_UNMANAGED;
     }
-    
+
     FC_RETURN_BOOL(unmanaged);
 }
 FCIMPLEND
@@ -1340,73 +1321,6 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CanCastTo, ReflectClassBaseObject *pType
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeByNameUsingCARules(LPCWSTR pwzClassName, QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retType)
-{
-    QCALL_CONTRACT;
-
-    TypeHandle typeHandle;
-
-    BEGIN_QCALL;
-
-    if (!pwzClassName)
-        COMPlusThrowArgumentNull(W("className"),W("ArgumentNull_String"));
-
-    typeHandle = TypeName::GetTypeUsingCASearchRules(pwzClassName, pModule->GetAssembly());
-
-    GCX_COOP();
-    retType.Set(typeHandle.GetManagedClassObject());
-
-    END_QCALL;
-
-    return;
-}
-
-extern "C" void QCALLTYPE RuntimeTypeHandle_GetTypeByName(LPCWSTR pwzClassName, BOOL bThrowOnError, BOOL bIgnoreCase,
-                                               QCall::StackCrawlMarkHandle pStackMark,
-                                               QCall::ObjectHandleOnStack pAssemblyLoadContext,
-                                               QCall::ObjectHandleOnStack retType,
-                                               QCall::ObjectHandleOnStack keepAlive)
-{
-    QCALL_CONTRACT;
-
-    TypeHandle typeHandle;
-
-    BEGIN_QCALL;
-
-    if (!pwzClassName)
-            COMPlusThrowArgumentNull(W("className"),W("ArgumentNull_String"));
-
-    {
-        AssemblyBinder * pBinder = NULL;
-
-        if (*pAssemblyLoadContext.m_ppObject != NULL)
-        {
-            GCX_COOP();
-            ASSEMBLYLOADCONTEXTREF * pAssemblyLoadContextRef = reinterpret_cast<ASSEMBLYLOADCONTEXTREF *>(pAssemblyLoadContext.m_ppObject);
-
-            INT_PTR nativeAssemblyBinder = (*pAssemblyLoadContextRef)->GetNativeAssemblyBinder();
-
-            pBinder = reinterpret_cast<AssemblyBinder *>(nativeAssemblyBinder);
-        }
-
-
-        typeHandle = TypeName::GetTypeManaged(pwzClassName, NULL, bThrowOnError, bIgnoreCase, /*bProhibitAsmQualifiedName =*/ FALSE,
-                                              SystemDomain::GetCallersAssembly(pStackMark),
-                                              (OBJECTREF*)keepAlive.m_ppObject,
-                                              pBinder);
-    }
-
-    if (!typeHandle.IsNull())
-    {
-        GCX_COOP();
-        retType.Set(typeHandle.GetManagedClassObject());
-    }
-
-    END_QCALL;
-
-    return;
-}
-
 FCIMPL6(FC_BOOL_RET, RuntimeTypeHandle::SatisfiesConstraints, PTR_ReflectClassBaseObject pParamTypeUNSAFE, TypeHandle *typeContextArgs, INT32 typeContextCount, TypeHandle *methodContextArgs, INT32 methodContextCount, PTR_ReflectClassBaseObject pArgumentTypeUNSAFE);
 {
     CONTRACTL {
@@ -1666,6 +1580,29 @@ extern "C" void* QCALLTYPE RuntimeTypeHandle_AllocateTypeAssociatedMemory(QCall:
     return allocatedMemory;
 }
 
+extern "C" void QCALLTYPE RuntimeTypeHandle_RegisterCollectibleTypeDependency(QCall::TypeHandle pTypeHandle, QCall::AssemblyHandle pAssembly)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    LoaderAllocator* pLoaderAllocator = pTypeHandle.AsTypeHandle().GetLoaderAllocator();
+
+    if (pLoaderAllocator->IsCollectible())
+    {
+        if ((pAssembly == NULL) || !pAssembly->GetLoaderAllocator()->IsCollectible())
+        {
+            COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
+        }
+        else
+        {
+            pAssembly->GetLoaderAllocator()->EnsureReference(pLoaderAllocator);
+        }
+    }
+
+    END_QCALL;
+}
+
 //***********************************************************************************
 //***********************************************************************************
 //***********************************************************************************
@@ -1719,14 +1656,6 @@ FCIMPL1(LPCUTF8, RuntimeMethodHandle::GetUtf8Name, MethodDesc *pMethod) {
     _ASSERTE(CheckPointer(szName, NULL_OK));
 
     return szName;
-}
-FCIMPLEND
-
-FCIMPL2(FC_BOOL_RET, RuntimeMethodHandle::MatchesNameHash, MethodDesc * pMethod, ULONG hash)
-{
-    FCALL_CONTRACT;
-
-    FC_RETURN_BOOL(pMethod->MightHaveName(hash));
 }
 FCIMPLEND
 
@@ -2159,7 +2088,7 @@ FCIMPL6(void, SignatureNative::GetSignature,
                 pMethod, declType.GetClassOrArrayInstantiation(), pMethod->LoadMethodInstantiation(), &typeContext);
         else
             SigTypeContext::InitTypeContext(declType, &typeContext);
-        
+
         MetaSig msig(pCorSig, cCorSig, pModule, &typeContext,
             (callConv & IMAGE_CEE_CS_CALLCONV_MASK) == IMAGE_CEE_CS_CALLCONV_FIELD ? MetaSig::sigField : MetaSig::sigMember);
 
@@ -2731,14 +2660,6 @@ FCIMPL1(LPCUTF8, RuntimeFieldHandle::GetUtf8Name, FieldDesc *pField) {
         FCThrow(kBadImageFormatException);
     }
     return szFieldName;
-}
-FCIMPLEND
-
-FCIMPL2(FC_BOOL_RET, RuntimeFieldHandle::MatchesNameHash, FieldDesc * pField, ULONG hash)
-{
-    FCALL_CONTRACT;
-
-    FC_RETURN_BOOL(pField->MightHaveName(hash));
 }
 FCIMPLEND
 

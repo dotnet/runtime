@@ -407,9 +407,11 @@ jobs:
           - jitstress_isas_nohwintrinsic
           - jitstress_isas_nohwintrinsic_nosimd
           - jitstress_isas_nosimd
+          - jitstress_isas_x86_evex
           - jitstress_isas_x86_noaes
           - jitstress_isas_x86_noavx
           - jitstress_isas_x86_noavx2
+          - jitstress_isas_x86_noavx512
           - jitstress_isas_x86_nobmi1
           - jitstress_isas_x86_nobmi2
           - jitstress_isas_x86_nofma
@@ -427,6 +429,7 @@ jobs:
           - jitstress_isas_1_x86_noaes
           - jitstress_isas_1_x86_noavx
           - jitstress_isas_1_x86_noavx2
+          - jitstress_isas_1_x86_noavx512
           - jitstress_isas_1_x86_nobmi1
           - jitstress_isas_1_x86_nobmi2
           - jitstress_isas_1_x86_nofma
@@ -444,6 +447,7 @@ jobs:
           - jitstress_isas_2_x86_noaes
           - jitstress_isas_2_x86_noavx
           - jitstress_isas_2_x86_noavx2
+          - jitstress_isas_2_x86_noavx512
           - jitstress_isas_2_x86_nobmi1
           - jitstress_isas_2_x86_nobmi2
           - jitstress_isas_2_x86_nofma
@@ -460,8 +464,9 @@ jobs:
           - jitstress_isas_2_x86_nossse3
         ${{ if in(parameters.testGroup, 'jitstress-isas-avx512') }}:
           scenarios:
-          - jitstress_isas_avx512_forceevex
-          - jitstress_isas_avx512_forceevex_stresshighregs
+          - jitstress_isas_x86_evex
+          - jitstress_isas_x86_noavx512
+          - jitstressregs0x2000
         ${{ if in(parameters.testGroup, 'jitstressregs-x86') }}:
           scenarios:
           - jitstressregs1_x86_noavx
@@ -472,6 +477,7 @@ jobs:
           - jitstressregs0x10_x86_noavx
           - jitstressregs0x80_x86_noavx
           - jitstressregs0x1000_x86_noavx
+          - jitstressregs0x2000_x86_noavx
         ${{ if in(parameters.testGroup, 'jitstressregs' ) }}:
           scenarios:
           - jitstressregs1
@@ -482,6 +488,7 @@ jobs:
           - jitstressregs0x10
           - jitstressregs0x80
           - jitstressregs0x1000
+          - jitstressregs0x2000
         ${{ if in(parameters.testGroup, 'jitstress2-jitstressregs') }}:
           scenarios:
           - jitstress2_jitstressregs1
@@ -492,6 +499,7 @@ jobs:
           - jitstress2_jitstressregs0x10
           - jitstress2_jitstressregs0x80
           - jitstress2_jitstressregs0x1000
+          - jitstress2_jitstressregs0x2000
         ${{ if in(parameters.testGroup, 'gcstress0x3-gcstress0xc') }}:
           scenarios:
           - gcstress0x3
@@ -520,6 +528,7 @@ jobs:
           - jitstressregs0x10
           - jitstressregs0x80
           - jitstressregs0x1000
+          - jitstressregs0x2000
           - jitminopts
           - forcerelocs
           - gcstress0xc
@@ -541,6 +550,8 @@ jobs:
             - fullpgo_random_gdv_methodprofiling_only
             - fullpgo_random_gdv_edge
             - fullpgo_methodprofiling_always_optimized
+            - syntheticpgo
+            - syntheticpgo_blend
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:

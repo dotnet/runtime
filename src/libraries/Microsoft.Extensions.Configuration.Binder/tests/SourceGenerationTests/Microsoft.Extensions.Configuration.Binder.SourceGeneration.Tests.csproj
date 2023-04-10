@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <DefineConstants>$(DefineConstants);BUILDING_SOURCE_GENERATOR_TESTS;ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
+    <!-- Type not supported; property on type not suppported. -->
+    <NoWarn>SYSLIB1100,SYSLIB1101</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" Link="System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommonPath)..\tests\SourceGenerators\RoslynTestUtils.cs" Link="SourceGenerators\RoslynTestUtils.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\ConfigurationProviderExtensions.cs" Link="Common\ConfigurationProviderExtensions.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\tests\Common\TestStreamHelpers.cs" Link="Common\TestStreamHelpers.cs" />
+    <Compile Include="..\Common\ConfigurationBinderTests.cs" Link="Common\ConfigurationBinderTests.cs" />
+    <Compile Include="..\Common\ConfigurationBinderTests.Collections.cs" Link="Common\ConfigurationBinderTests.Collections.cs" />
+    <Compile Include="..\Common\ConfigurationBinderTests.Helpers.cs" Link="Common\ConfigurationBinderTests.Helpers.cs" />
+    <Compile Include="..\Common\ConfigurationBinderTests.TestClasses.cs" Link="Common\ConfigurationBinderTests.TestClasses.cs" />
+    <Compile Include="..\Common\ConfigurationBinderTests.TestClasses.Collections.cs" Link="Common\ConfigurationBinderTests.TestClasses.Collections.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" /> 
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration\src\Microsoft.Extensions.Configuration.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Json\src\Microsoft.Extensions.Configuration.Json.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.FileProviders.Abstractions\src\Microsoft.Extensions.FileProviders.Abstractions.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options.ConfigurationExtensions\src\Microsoft.Extensions.Options.ConfigurationExtensions.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="..\..\src\Microsoft.Extensions.Configuration.Binder.csproj" SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="..\..\gen\Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Baselines\*.generated.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <Target Name="FixIncrementalCoreCompileWithAnalyzers" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <CustomAdditionalCompileInputs Include="@(Analyzer)" />
+    </ItemGroup>
+  </Target>
+</Project>

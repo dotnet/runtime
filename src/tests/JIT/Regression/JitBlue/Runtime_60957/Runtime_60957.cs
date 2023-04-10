@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace mdarray
 {
@@ -319,7 +320,8 @@ namespace mdarray
             }
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             const int n = 10;
             int[,] a = new int[n,n];

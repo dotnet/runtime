@@ -130,8 +130,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.G.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.L.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.O.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Date.R.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.E.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Text\Utf8Formatter\Utf8Formatter.Decimal.F.cs" />
@@ -343,9 +341,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Invariant.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Nls.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.WebAssembly.cs" Condition="'$(TargetsWasi)' == 'true' or '$(TargetsBrowser)' == 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Icu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureData.Nls.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CultureNotFoundException.cs" />
@@ -399,6 +399,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Nls.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.WebAssembly.cs" Condition="'$(TargetsWasi)' == 'true' or '$(TargetsBrowser)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ThaiBuddhistCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanFormat.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanParse.cs" />
@@ -515,6 +516,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IObserver.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IProgress.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ISpanFormattable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IUtf8SpanFormattable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Lazy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\LazyOfTTMetadata.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\LoaderOptimization.cs" />
@@ -771,6 +773,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncValueTaskMethodBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncValueTaskMethodBuilderT.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\AsyncVoidMethodBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CastCache.cs" Condition="'$(FeatureCoreCLR)' == 'true' or '$(FeatureNativeAot)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerFilePathAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CallerLineNumberAttribute.cs" />
@@ -808,6 +811,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\InternalsVisibleToAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IntrinsicAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsByRefLikeAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\InlineArrayAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsConst.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsExternalInit.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsReadOnlyAttribute.cs" />
@@ -1256,6 +1260,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.T.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ComAwareWeakReference.cs" />
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.CompareInfo.cs" Condition="'$(TargetsWasi)' == 'true' or '$(TargetsBrowser)' == 'true'">
+      <Link>Common\Interop\Interop.CompareInfo.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Browser\Interop.TextInfo.cs" Condition="'$(TargetsWasi)' == 'true' or '$(TargetsBrowser)' == 'true'">
+      <Link>Common\Interop\Interop.TextInfo.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Calendar.cs">
       <Link>Common\Interop\Interop.Calendar.cs</Link>
     </Compile>
@@ -1276,6 +1286,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Locale.cs">
       <Link>Common\Interop\Interop.Locale.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.Locale.OSX.cs" Condition="'$(IsOSXLike)' == 'true'">
+      <Link>Common\Interop\Interop.Locale.OSX.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Normalization.cs">
       <Link>Common\Interop\Interop.Normalization.cs</Link>
@@ -1316,6 +1329,9 @@
     </Compile>
     <Compile Include="$(CommonPath)SkipLocalsInit.cs">
       <Link>Common\SkipLocalsInit.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\TimeProvider.cs">
+      <Link>Common\System\TimeProvider.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs">
       <Link>Common\System\LocalAppContextSwitches.Common.cs</Link>
@@ -1359,6 +1375,9 @@
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs">
       <Link>Common\System\IO\PathInternal.CaseSensitivity.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)System\Reflection\TypeNameParser.cs">
+      <Link>Common\System\Reflection\TypeNameParser.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)System\Runtime\Versioning\NonVersionableAttribute.cs">
       <Link>Common\System\Runtime\Versioning\NonVersionableAttribute.cs</Link>
     </Compile>
@@ -1370,6 +1389,9 @@
     </Compile>
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs">
       <Link>Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)System\Threading\ITimer.cs">
+      <Link>Common\System\Threading\ITimer.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)System\Threading\OpenExistingResult.cs">
       <Link>Common\System\Threading\OpenExistingResult.cs</Link>
@@ -1755,6 +1777,12 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalAlloc.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.LocalAlloc.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalFree.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.LocalFree.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LocalReAlloc.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.LocalReAlloc.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.LockFile.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.LockFile.cs</Link>
     </Compile>
@@ -1937,9 +1965,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Secur32\Interop.GetUserNameExW.cs">
       <Link>Common\Interop\Windows\Secur32\Interop.GetUserNameExW.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.CommandLineToArgv.cs">
-      <Link>Common\Interop\Windows\Shell32\Interop.CommandLineToArgv.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Shell32\Interop.SHGetKnownFolderPath.cs">
       <Link>Common\Interop\Windows\Shell32\Interop.SHGetKnownFolderPath.cs</Link>
@@ -2425,6 +2450,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx2.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512BW.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512CD.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512DQ.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512F.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\AvxVnni.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Bmi1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Bmi2.cs" />
@@ -2445,6 +2474,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Aes.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx2.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512BW.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512CD.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512DQ.PlatformNotSupported.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Avx512F.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\AvxVnni.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Bmi1.PlatformNotSupported.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\Intrinsics\X86\Bmi2.PlatformNotSupported.cs" />

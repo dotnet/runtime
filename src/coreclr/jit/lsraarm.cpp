@@ -755,8 +755,7 @@ int LinearScan::BuildNode(GenTree* tree)
         }
         break;
 
-        case GT_LCL_FLD_ADDR:
-        case GT_LCL_VAR_ADDR:
+        case GT_LCL_ADDR:
         case GT_PHYSREG:
         case GT_CLS_VAR_ADDR:
         case GT_IL_OFFSET:
@@ -767,6 +766,11 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_MEMORYBARRIER:
         case GT_OBJ:
             srcCount = BuildSimple(tree);
+            break;
+
+        case GT_JTRUE:
+            BuildOperandUses(tree->gtGetOp1(), RBM_NONE);
+            srcCount = 1;
             break;
 
         case GT_INDEX_ADDR:

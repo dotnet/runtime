@@ -139,7 +139,7 @@ namespace JIT.HardwareIntrinsics.X86
                 int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<{Op1BaseType}>();
                 int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<{Op2BaseType}>();
                 int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
-                if ((alignment != 32 && alignment != 16) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray)
+                if (((alignment != 64) && (alignment != 32) && (alignment != 16)) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray)
                 {
                     throw new ArgumentException("Invalid value of alignment");
                 }
@@ -487,7 +487,7 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
         }
-        
+
         public void RunStructFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));

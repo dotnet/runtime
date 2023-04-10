@@ -86,10 +86,10 @@ namespace ILCompiler
                 var resultDef = result.GetMethodILDefinition();
                 if (resultDef != result)
                 {
-                    MethodIL newBodyDef = GetMethodILWithInlinedSubstitutions(resultDef);
+                    MethodIL newBodyDef = GetMethodILWithInlinedSubstitutions(result);
 
                     // If we didn't rewrite the body, we can keep the existing result.
-                    if (newBodyDef != resultDef)
+                    if (newBodyDef != result)
                         result = new InstantiatedMethodIL(method, newBodyDef);
                 }
                 else
@@ -149,8 +149,6 @@ namespace ILCompiler
             //
             // We also attempt to rewrite calls to SR.SomeResourceString accessors with string
             // literals looked up from the managed resources.
-
-            Debug.Assert(method.GetMethodILDefinition() == method);
 
             // Do not attempt to inline resource strings if we only want to use resource keys.
             // The optimizations are not compatible.
@@ -542,7 +540,7 @@ namespace ILCompiler
                 }
             }
 
-            return new SubstitutedMethodIL(method, newBody, newEHRegions.ToArray(), debugInfo, newStrings.ToArray());
+            return new SubstitutedMethodIL(method.GetMethodILDefinition(), newBody, newEHRegions.ToArray(), debugInfo, newStrings.ToArray());
         }
 
         private bool TryGetConstantArgument(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, int argIndex, out int constant)
@@ -570,6 +568,13 @@ namespace ILCompiler
                             && (opcode != ILOpcode.callvirt || !method.IsVirtual))
                         {
                             constant = (int)substitution.Value;
+                            return true;
+                        }
+                        else if (method.IsIntrinsic && method.Name is "op_Inequality" or "op_Equality"
+                            && method.OwningType is MetadataType mdType
+                            && mdType.Name == "Type" && mdType.Namespace == "System" && mdType.Module == mdType.Context.SystemModule
+                            && TryExpandTypeEquality(methodIL, body, flags, currentOffset, method.Name, out constant))
+                        {
                             return true;
                         }
                         else
@@ -724,6 +729,87 @@ namespace ILCompiler
             }
 
             return null;
+        }
+
+        private static bool TryExpandTypeEquality(MethodIL methodIL, byte[] body, OpcodeFlags[] flags, int offset, string op, out int constant)
+        {
+            // We expect to see a sequence:
+            // ldtoken Foo
+            // call GetTypeFromHandle
+            // ldtoken Bar
+            // call GetTypeFromHandle
+            // -> offset points here
+            constant = 0;
+            const int SequenceLength = 20;
+            if (offset < SequenceLength)
+                return false;
+
+            if ((flags[offset - SequenceLength] & OpcodeFlags.InstructionStart) == 0)
+                return false;
+
+            ILReader reader = new ILReader(body, offset - SequenceLength);
+
+            TypeDesc type1 = ReadLdToken(ref reader, methodIL, flags);
+            if (type1 == null)
+                return false;
+
+            if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
+                return false;
+
+            TypeDesc type2 = ReadLdToken(ref reader, methodIL, flags);
+            if (type1 == null)
+                return false;
+
+            if (!ReadGetTypeFromHandle(ref reader, methodIL, flags))
+                return false;
+
+            // Dataflow runs on top of uninstantiated IL and we can't answer some questions there.
+            // Unfortunately this means dataflow will still see code that the rest of the system
+            // might have optimized away. It should not be a problem in practice.
+            if (type1.ContainsSignatureVariables() || type2.ContainsSignatureVariables())
+                return false;
+
+            bool? equality = TypeExtensions.CompareTypesForEquality(type1, type2);
+            if (!equality.HasValue)
+                return false;
+
+            constant = equality.Value ? 1 : 0;
+
+            if (op == "op_Inequality")
+                constant ^= 1;
+
+            return true;
+
+            static TypeDesc ReadLdToken(ref ILReader reader, MethodIL methodIL, OpcodeFlags[] flags)
+            {
+                ILOpcode opcode = reader.ReadILOpcode();
+                if (opcode != ILOpcode.ldtoken)
+                    return null;
+
+                TypeDesc t = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
+
+                if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
+                    return null;
+
+                return t;
+            }
+
+            static bool ReadGetTypeFromHandle(ref ILReader reader, MethodIL methodIL, OpcodeFlags[] flags)
+            {
+                ILOpcode opcode = reader.ReadILOpcode();
+                if (opcode != ILOpcode.call)
+                    return false;
+
+                MethodDesc method = (MethodDesc)methodIL.GetObject(reader.ReadILToken());
+
+                if (!method.IsIntrinsic || method.Name != "GetTypeFromHandle")
+                    return false;
+
+                if ((flags[reader.Offset] & OpcodeFlags.BasicBlockStart) != 0)
+                    return false;
+
+                return true;
+            }
         }
 
         private sealed class SubstitutedMethodIL : MethodIL

@@ -39,34 +39,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsInstanceOfType(RuntimeType type, [NotNullWhen(true)] object? o);
 
-        [RequiresUnreferencedCode("MakeGenericType cannot be statically analyzed. It's not possible to guarantee the availability of requirements of the generic type.")]
-        internal static Type GetTypeHelper(Type typeStart, Type[]? genericArgs, IntPtr pModifiers, int cModifiers) // called by VM
-            => GetTypeHelper(typeStart, genericArgs, new ReadOnlySpan<int>((void*)pModifiers, cModifiers));
-
-        [RequiresUnreferencedCode("MakeGenericType cannot be statically analyzed. It's not possible to guarantee the availability of requirements of the generic type.")]
-        internal static Type GetTypeHelper(Type typeStart, Type[]? genericArgs, ReadOnlySpan<int> modifiers)
-        {
-            Type type = typeStart;
-
-            if (genericArgs != null)
-            {
-                type = type.MakeGenericType(genericArgs);
-            }
-
-            for (int i = 0; i < modifiers.Length; i++)
-            {
-                type = (CorElementType)modifiers[i] switch
-                {
-                    CorElementType.ELEMENT_TYPE_PTR => type.MakePointerType(),
-                    CorElementType.ELEMENT_TYPE_BYREF => type.MakeByRefType(),
-                    CorElementType.ELEMENT_TYPE_SZARRAY => type.MakeArrayType(),
-                    _ => type.MakeArrayType(modifiers[++i])
-                };
-            }
-
-            return type;
-        }
-
         /// <summary>
         /// Returns a new <see cref="RuntimeTypeHandle"/> object created from a handle to a RuntimeType.
         /// </summary>
@@ -539,53 +511,6 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IRuntimeMethodInfo GetDeclaringMethod(RuntimeType type);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeByName", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void GetTypeByName(string name, [MarshalAs(UnmanagedType.Bool)] bool throwOnError, [MarshalAs(UnmanagedType.Bool)] bool ignoreCase, StackCrawlMarkHandle stackMark,
-            ObjectHandleOnStack assemblyLoadContext,
-            ObjectHandleOnStack type, ObjectHandleOnStack keepalive);
-
-        // Wrapper function to reduce the need for ifdefs.
-        internal static RuntimeType? GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
-        {
-            return GetTypeByName(name, throwOnError, ignoreCase, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext!);
-        }
-
-        internal static RuntimeType? GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark,
-                                                  AssemblyLoadContext assemblyLoadContext)
-        {
-            if (string.IsNullOrEmpty(name))
-            {
-                if (throwOnError)
-                    throw new TypeLoadException(SR.Arg_TypeLoadNullStr);
-
-                return null;
-            }
-
-            RuntimeType? type = null;
-            object? keepAlive = null;
-            AssemblyLoadContext assemblyLoadContextStack = assemblyLoadContext;
-            GetTypeByName(name, throwOnError, ignoreCase,
-                new StackCrawlMarkHandle(ref stackMark),
-                ObjectHandleOnStack.Create(ref assemblyLoadContextStack),
-                ObjectHandleOnStack.Create(ref type), ObjectHandleOnStack.Create(ref keepAlive));
-            GC.KeepAlive(keepAlive);
-
-            return type;
-        }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetTypeByNameUsingCARules", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void GetTypeByNameUsingCARules(string name, QCallModule scope, ObjectHandleOnStack type);
-
-        internal static RuntimeType GetTypeByNameUsingCARules(string name, RuntimeModule scope)
-        {
-            ArgumentException.ThrowIfNullOrEmpty(name);
-
-            RuntimeType? type = null;
-            GetTypeByNameUsingCARules(name, new QCallModule(ref scope), ObjectHandleOnStack.Create(ref type));
-
-            return type!;
-        }
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetInstantiation")]
         internal static partial void GetInstantiation(QCallTypeHandle type, ObjectHandleOnStack types, Interop.BOOL fAsRuntimeTypeArray);
 
@@ -732,6 +657,14 @@ namespace System
         internal static MetadataImport GetMetadataImport(RuntimeType type)
         {
             return new MetadataImport(_GetMetadataImport(type), type);
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_RegisterCollectibleTypeDependency")]
+        private static partial void RegisterCollectibleTypeDependency(QCallTypeHandle type, QCallAssembly assembly);
+
+        internal static void RegisterCollectibleTypeDependency(RuntimeType type, RuntimeAssembly? assembly)
+        {
+            RegisterCollectibleTypeDependency(new QCallTypeHandle(ref type), new QCallAssembly(ref assembly!));
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -994,9 +927,6 @@ namespace System
             return new MdUtf8String(_GetUtf8Name(method));
         }
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool MatchesNameHash(RuntimeMethodHandleInternal method, uint hash);
-
         [DebuggerStepThrough]
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -1253,9 +1183,6 @@ namespace System
         private static extern void* _GetUtf8Name(RuntimeFieldHandleInternal field);
 
         internal static MdUtf8String GetUtf8Name(RuntimeFieldHandleInternal field) { return new MdUtf8String(_GetUtf8Name(field)); }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool MatchesNameHash(RuntimeFieldHandleInternal handle, uint hash);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern FieldAttributes GetAttributes(RuntimeFieldHandleInternal field);

@@ -99,15 +99,16 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), CodeSnippets.MarshalUsingArrayParameterWithSizeParam<bool>(isByRef: false), 2, 0 };
 
             // Custom type marshalling with invalid members
-            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.NonStaticMarshallerEntryPoint, 2, 0 };
-            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.Stateless.ManagedToNativeOnlyOutParameter, 1, 0 };
-            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.Stateless.ManagedToNativeOnlyReturnValue, 1, 0 };
-            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.Stateless.NativeToManagedOnlyInParameter, 1, 0 };
-            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.Stateless.StackallocOnlyRefParameter, 1, 0 };
-            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.Stateful.ManagedToNativeOnlyOutParameter, 1, 0 };
-            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.Stateful.ManagedToNativeOnlyReturnValue, 1, 0 };
-            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.Stateful.NativeToManagedOnlyInParameter, 1, 0 };
-            yield return new object[] { ID(), CustomStructMarshallingCodeSnippets<CodeSnippets>.Stateful.StackallocOnlyRefParameter, 1, 0 };
+            CustomStructMarshallingCodeSnippets customStructMarshallingCodeSnippets = new(new CodeSnippets());
+            yield return new object[] { ID(), customStructMarshallingCodeSnippets.NonStaticMarshallerEntryPoint, 2, 0 };
+            yield return new object[] { ID(), customStructMarshallingCodeSnippets.Stateless.ManagedToNativeOnlyOutParameter, 1, 0 };
+            yield return new object[] { ID(), customStructMarshallingCodeSnippets.Stateless.ManagedToNativeOnlyReturnValue, 1, 0 };
+            yield return new object[] { ID(), customStructMarshallingCodeSnippets.Stateless.NativeToManagedOnlyInParameter, 1, 0 };
+            yield return new object[] { ID(), customStructMarshallingCodeSnippets.Stateless.StackallocOnlyRefParameter, 1, 0 };
+            yield return new object[] { ID(), customStructMarshallingCodeSnippets.Stateful.ManagedToNativeOnlyOutParameter, 1, 0 };
+            yield return new object[] { ID(), customStructMarshallingCodeSnippets.Stateful.ManagedToNativeOnlyReturnValue, 1, 0 };
+            yield return new object[] { ID(), customStructMarshallingCodeSnippets.Stateful.NativeToManagedOnlyInParameter, 1, 0 };
+            yield return new object[] { ID(), customStructMarshallingCodeSnippets.Stateful.StackallocOnlyRefParameter, 1, 0 };
 
             // Abstract SafeHandle type by reference
             yield return new object[] { ID(), CodeSnippets.BasicParameterWithByRefModifier("ref", "System.Runtime.InteropServices.SafeHandle"), 1, 0 };
@@ -119,7 +120,8 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), CodeSnippets.MarshalUsingCollectionWithNullElementName, 2, 0 };
 
             // Generic collection marshaller has different arity than collection.
-            yield return new object[] { ID(), CustomCollectionMarshallingCodeSnippets<CodeSnippets>.Stateless.GenericCollectionMarshallingArityMismatch, 2, 0 };
+            CustomCollectionMarshallingCodeSnippets customCollectionMarshallingCodeSnippets = new(new CodeSnippets());
+            yield return new object[] { ID(), customCollectionMarshallingCodeSnippets.Stateless.GenericCollectionMarshallingArityMismatch, 2, 0 };
 
             yield return new object[] { ID(), CodeSnippets.MarshalAsAndMarshalUsingOnReturnValue, 1, 0 };
             yield return new object[] { ID(), CodeSnippets.CustomElementMarshallingDuplicateElementIndirectionDepth, 1, 0 };
@@ -187,11 +189,11 @@ namespace LibraryImportGenerator.UnitTests
         [Fact]
         public async Task ValidateDisableRuntimeMarshallingForBlittabilityCheckFromAssemblyReference()
         {
-            string assemblySource = $@"
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-{CodeSnippets.ValidateDisableRuntimeMarshalling.NonBlittableUserDefinedTypeWithNativeType}
-";
+            string assemblySource = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+                {{CodeSnippets.ValidateDisableRuntimeMarshalling.NonBlittableUserDefinedTypeWithNativeType}}
+                """;
             Compilation assemblyComp = await TestUtils.CreateCompilation(assemblySource);
             TestUtils.AssertPreSourceGeneratorCompilation(assemblyComp);
 

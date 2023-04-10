@@ -153,6 +153,7 @@
       <ActivateCmd>$(EMSDK_PATH)/emsdk$(EmsdkExt) activate $(EmscriptenVersion)</ActivateCmd>
       <InstallCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(InstallCmd); Exit $LastExitCode &quot;</InstallCmd>
       <ActivateCmd Condition="'$(HostOS)' == 'windows'">powershell -NonInteractive -command &quot;&amp; $(ActivateCmd); Exit $LastExitCode &quot;</ActivateCmd>
+      <PythonCmd Condition="'$(HostOS)' == 'windows'and '$(TargetsBrowser)' == 'true'">setlocal EnableDelayedExpansion &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; !EMSDK_PYTHON!</PythonCmd>
     </PropertyGroup>
 
     <RemoveDir Directories="$(EMSDK_PATH)" />
@@ -160,6 +161,10 @@
           WorkingDirectory="$(WasmLocalPath)"
           IgnoreStandardErrorWarningFormat="true" />
     <Exec Command="git checkout $(EmscriptenVersion) &amp;&amp; $(InstallCmd) &amp;&amp; $(ActivateCmd)"
+          WorkingDirectory="$(EMSDK_PATH)"
+          IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="$(PythonCmd) -m pip install certifi &amp;&amp; $(PythonCmd) -m pip install pip-system-certs"
+          Condition="'$(HostOS)' == 'windows'"
           WorkingDirectory="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
   </Target>
@@ -651,7 +656,7 @@
       <_Objcopy Condition="'$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true'">$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/$(MonoToolchainPrebuiltOS)/bin/llvm-objcopy</_Objcopy>
       <_Objcopy Condition="'$(TargetsLinuxMusl)' == 'true' and '$(CrossBuild)' != 'true'">objcopy</_Objcopy>
 
-      <_ObjcopyPrefix Condition="'$(MonoCrossDir)' != '' and '$(Platform)' == 'riscv64'">llvm-objcopy-</_ObjcopyPrefix>
+      <_ObjcopyPrefix Condition="'$(MonoCrossDir)' != '' and '$(Platform)' == 'riscv64' and $(_Objcopy) == ''">llvm-objcopy-</_ObjcopyPrefix>
     </PropertyGroup>
     <!-- test viability of objcopy command -->
     <Exec Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and ('$(TargetsLinux)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsLinuxBionic)' == 'true')" Command="$(_Objcopy) -V" IgnoreStandardErrorWarningFormat="true" ContinueOnError="WarnAndContinue" IgnoreExitCode="true" EchoOff="true" ConsoleToMsBuild="true">

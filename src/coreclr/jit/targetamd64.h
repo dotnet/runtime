@@ -13,8 +13,6 @@
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
 
-  #define CPBLK_UNROLL_LIMIT       64      // Upper bound to let the code generator to loop unroll CpBlk.
-  #define INITBLK_UNROLL_LIMIT     128     // Upper bound to let the code generator to loop unroll InitBlk.
   #define CPOBJ_NONGC_SLOTS_LIMIT  4       // For CpObj code generation, this is the threshold of the number
                                            // of contiguous non-gc slots that trigger generating rep movsq instead of
                                            // sequences of movsq instructions
@@ -85,11 +83,18 @@
   #define RBM_ALLFLOAT_INIT       RBM_LOWFLOAT
 
   #define RBM_ALLFLOAT             get_RBM_ALLFLOAT()
-  
+
   #define RBM_ALLDOUBLE            RBM_ALLFLOAT
   #define REG_FP_FIRST             REG_XMM0
   #define REG_FP_LAST              REG_XMM31
   #define FIRST_FP_ARGREG          REG_XMM0
+
+  #define REG_MASK_FIRST           REG_K0
+  #define REG_MASK_LAST            REG_K7
+
+  #define RBM_ALLMASK              RBM_K1
+
+  #define CNT_MASK_REGS            8
 
 #ifdef    UNIX_AMD64_ABI
   #define LAST_FP_ARGREG        REG_XMM7
@@ -101,6 +106,7 @@
   #define REGSIZE_BYTES            8       // number of bytes in one register
   #define XMM_REGSIZE_BYTES        16      // XMM register size in bytes
   #define YMM_REGSIZE_BYTES        32      // YMM register size in bytes
+  #define ZMM_REGSIZE_BYTES        64      // ZMM register size in bytes
 
   #define CODE_ALIGN               1       // code alignment requirement
   #define STACK_ALIGN              16      // stack alignment requirement
@@ -142,19 +148,23 @@
   #define RBM_INT_CALLEE_SAVED    (RBM_EBX|RBM_ESI|RBM_EDI|RBM_ETW_FRAMED_EBP|RBM_R12|RBM_R13|RBM_R14|RBM_R15)
   #define RBM_INT_CALLEE_TRASH    (RBM_EAX|RBM_ECX|RBM_EDX|RBM_R8|RBM_R9|RBM_R10|RBM_R11)
   #define RBM_FLT_CALLEE_SAVED    (RBM_XMM6|RBM_XMM7|RBM_XMM8|RBM_XMM9|RBM_XMM10|RBM_XMM11|RBM_XMM12|RBM_XMM13|RBM_XMM14|RBM_XMM15)
+
   /* NOTE: Sync with variable name defined in compiler.h */
   #define RBM_FLT_CALLEE_TRASH_INIT (RBM_XMM0|RBM_XMM1|RBM_XMM2|RBM_XMM3|RBM_XMM4|RBM_XMM5)
 #endif // !UNIX_AMD64_ABI
 
   #define RBM_FLT_CALLEE_TRASH    get_RBM_FLT_CALLEE_TRASH()
 
+  #define RBM_MSK_CALLEE_SAVED    (0)
+  #define RBM_MSK_CALLEE_TRASH    RBM_ALLMASK
+
   #define RBM_OSR_INT_CALLEE_SAVED  (RBM_INT_CALLEE_SAVED | RBM_EBP)
 
   #define REG_FLT_CALLEE_SAVED_FIRST   REG_XMM6
   #define REG_FLT_CALLEE_SAVED_LAST    REG_XMM15
 
+  // TODO-AVX512: Add RBM_MSK_CALLEE_*
   #define RBM_CALLEE_TRASH        (RBM_INT_CALLEE_TRASH | RBM_FLT_CALLEE_TRASH)
-
   #define RBM_CALLEE_SAVED        (RBM_INT_CALLEE_SAVED | RBM_FLT_CALLEE_SAVED)
 
   #define RBM_ALLINT              (RBM_INT_CALLEE_SAVED | RBM_INT_CALLEE_TRASH)
@@ -217,9 +227,12 @@
 #endif
 
   #define REG_VAR_ORDER_FLT      REG_XMM0,REG_XMM1,REG_XMM2,REG_XMM3,REG_XMM4,REG_XMM5,REG_XMM6,REG_XMM7,          \
-                                 REG_XMM8,REG_XMM9,REG_XMM10,REG_XMM11,REG_XMM12,REG_XMM13,REG_XMM14,REG_XMM15,    \
-                                 REG_XMM16,REG_XMM17,REG_XMM18,REG_XMM19,REG_XMM20,REG_XMM21,REG_XMM22,REG_XMM23,  \
-                                 REG_XMM24,REG_XMM25,REG_XMM26,REG_XMM27,REG_XMM28,REG_XMM29,REG_XMM30,REG_XMM31   
+                                 REG_XMM8,REG_XMM9,REG_XMM10,REG_XMM11,REG_XMM12,REG_XMM13,REG_XMM14,REG_XMM15
+#if defined(TARGET_AMD64)
+    #define REG_VAR_ORDER_FLT_UPPER REG_XMM16,REG_XMM17,REG_XMM18,REG_XMM19,REG_XMM20,REG_XMM21,REG_XMM22,REG_XMM23,  \
+                                    REG_XMM24,REG_XMM25,REG_XMM26,REG_XMM27,REG_XMM28,REG_XMM29,REG_XMM30,REG_XMM31   
+#endif  //  TARGET_AMD64
+                                 
 
 #ifdef UNIX_AMD64_ABI
   #define CNT_CALLEE_SAVED         (5 + REG_ETW_FRAMED_EBP_COUNT)

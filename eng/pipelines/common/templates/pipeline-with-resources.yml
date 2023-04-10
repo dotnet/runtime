@@ -44,8 +44,10 @@ resources:
       env:
         ROOTFS_DIR: /crossrootfs/x86
 
+    # CentOS 8 Stream is the closest image to RHEL8, which has the oldest toolsets we support building against
+    # for our source-build partners.
     - container: SourceBuild_linux_x64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-source-build
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-stream8
 
     - container: linux_s390x
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-s390x
@@ -58,10 +60,10 @@ resources:
         ROOTFS_DIR: /crossrootfs/ppc64le
 
     - container: browser_wasm
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-webassembly
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-webassembly-net8-20230322221728-80fdceb
 
     - container: wasi_wasm
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-webassembly
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-webassembly-net8-20230322221804-80fdceb
 
     - container: freebsd_x64
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12

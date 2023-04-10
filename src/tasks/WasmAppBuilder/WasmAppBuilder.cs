@@ -18,7 +18,6 @@ namespace Microsoft.WebAssembly.Build.Tasks;
 
 public class WasmAppBuilder : WasmAppBuilderBaseTask
 {
-    public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
     public bool IncludeThreadsWorker {get; set; }
     public int PThreadPoolSize {get; set; }
@@ -50,6 +49,8 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         public List<object> Assets { get; } = new List<object>();
         [JsonPropertyName("remoteSources")]
         public List<string> RemoteSources { get; set; } = new List<string>();
+        [JsonPropertyName("globalizationMode")]
+        public string? GlobalizationMode { get; set; }
         [JsonExtensionData]
         public Dictionary<string, object?> Extra { get; set; } = new();
         [JsonPropertyName("assetsHash")]
@@ -117,6 +118,11 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         public bool LoadRemote { get; set; }
     }
 
+    private sealed class SymbolsData : AssetEntry
+    {
+        public SymbolsData(string name, string hash) : base(name, hash, "symbols") {}
+    }
+
     protected override bool ValidateArguments()
     {
         if (!base.ValidateArguments())
@@ -150,6 +156,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         var config = new WasmAppConfig ()
         {
             MainAssemblyName = MainAssemblyName,
+            GlobalizationMode = InvariantGlobalization ? "invariant" : HybridGlobalization ? "hybrid" : "icu"
         };
 
         // Create app
@@ -198,6 +205,10 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             else if (IncludeThreadsWorker && name == "dotnet.worker.js")
             {
                 config.Assets.Add(new ThreadsWorkerEntry (name, Utils.ComputeIntegrity(item.ItemSpec)));
+            }
+            else if(name == "dotnet.js.symbols")
+            {
+                config.Assets.Add(new SymbolsData(name, Utils.ComputeIntegrity(item.ItemSpec)));
             }
         }
 
@@ -265,7 +276,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
             }
         });
 
-        if (FilesToIncludeInFileSystem != null)
+        if (FilesToIncludeInFileSystem.Length > 0)
         {
             string supportFilesDir = Path.Combine(AppDir, "supportFiles");
             Directory.CreateDirectory(supportFilesDir);
@@ -335,7 +346,7 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         {
             throw new LogAsErrorException($"PThreadPoolSize must be -1, 0 or positive, but got {PThreadPoolSize}");
         }
-        else
+        else if (PThreadPoolSize > -1)
         {
             config.Extra["pthreadPoolSize"] = PThreadPoolSize;
         }
@@ -366,29 +377,26 @@ public class WasmAppBuilder : WasmAppBuilderBaseTask
         Utils.CopyIfDifferent(tmpMonoConfigPath, monoConfigPath, useHash: false);
         _fileWrites.Add(monoConfigPath);
 
-        if (ExtraFilesToDeploy != null)
+        foreach (ITaskItem item in ExtraFilesToDeploy!)
         {
-            foreach (ITaskItem item in ExtraFilesToDeploy!)
+            string src = item.ItemSpec;
+            string dst;
+
+            string tgtPath = item.GetMetadata("TargetPath");
+            if (!string.IsNullOrEmpty(tgtPath))
             {
-                string src = item.ItemSpec;
-                string dst;
-
-                string tgtPath = item.GetMetadata("TargetPath");
-                if (!string.IsNullOrEmpty(tgtPath))
-                {
-                    dst = Path.Combine(AppDir!, tgtPath);
-                    string? dstDir = Path.GetDirectoryName(dst);
-                    if (!string.IsNullOrEmpty(dstDir) && !Directory.Exists(dstDir))
-                        Directory.CreateDirectory(dstDir!);
-                }
-                else
-                {
-                    dst = Path.Combine(AppDir!, Path.GetFileName(src));
-                }
-
-                if (!FileCopyChecked(src, dst, "ExtraFilesToDeploy"))
-                    return false;
+                dst = Path.Combine(AppDir!, tgtPath);
+                string? dstDir = Path.GetDirectoryName(dst);
+                if (!string.IsNullOrEmpty(dstDir) && !Directory.Exists(dstDir))
+                    Directory.CreateDirectory(dstDir!);
             }
+            else
+            {
+                dst = Path.Combine(AppDir!, Path.GetFileName(src));
+            }
+
+            if (!FileCopyChecked(src, dst, "ExtraFilesToDeploy"))
+                return false;
         }
 
         UpdateRuntimeConfigJson();

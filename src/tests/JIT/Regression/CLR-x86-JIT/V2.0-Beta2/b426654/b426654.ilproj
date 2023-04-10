@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Needed for GCStressIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <OutputType>Exe</OutputType>
     <!-- This test is too slow under GCStress=3. Issue: https://github.com/dotnet/runtime/issues/50615 -->
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>

@@ -76,11 +76,7 @@ namespace Internal.Runtime.InteropServices
                 string typeName = MarshalToString(typeNameNative, nameof(typeNameNative));
                 string methodName = MarshalToString(methodNameNative, nameof(methodNameNative));
 
-                if (reserved != IntPtr.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(reserved));
-                }
-
+                ArgumentOutOfRangeException.ThrowIfNotEqual(reserved, IntPtr.Zero);
                 ArgumentNullException.ThrowIfNull(functionHandle);
 
                 // Set up the AssemblyLoadContext for this delegate.
@@ -119,15 +115,8 @@ namespace Internal.Runtime.InteropServices
             {
                 string assemblyPath = MarshalToString(assemblyPathNative, nameof(assemblyPathNative));
 
-                if (loadContext != IntPtr.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(loadContext));
-                }
-
-                if (reserved != IntPtr.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(reserved));
-                }
+                ArgumentOutOfRangeException.ThrowIfNotEqual(loadContext, IntPtr.Zero);
+                ArgumentOutOfRangeException.ThrowIfNotEqual(reserved, IntPtr.Zero);
 
                 LoadAssemblyLocal(assemblyPath);
             }
@@ -140,26 +129,34 @@ namespace Internal.Runtime.InteropServices
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "The same feature switch applies to GetFunctionPointer and this function. We rely on the warning from GetFunctionPointer.")]
-            static void LoadAssemblyLocal(string assemblyPath)
+            static void LoadAssemblyLocal(string assemblyPath) => LoadAssemblyImpl(assemblyPath);
+        }
+
+        [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
+        private static void LoadAssemblyImpl(string assemblyPath)
+        {
+            lock(s_loadedInDefaultContext)
             {
-                lock(s_loadedInDefaultContext)
-                {
-                    if (s_loadedInDefaultContext.Contains(assemblyPath))
-                        return;
+                if (s_loadedInDefaultContext.Contains(assemblyPath))
+                    return;
 
-                    var resolver = new AssemblyDependencyResolver(assemblyPath);
-                    AssemblyLoadContext.Default.Resolving +=
-                        (context, assemblyName) =>
-                        {
-                            string? assemblyPath = resolver.ResolveAssemblyToPath(assemblyName);
-                            return assemblyPath != null
-                                ? context.LoadFromAssemblyPath(assemblyPath)
-                                : null;
-                        };
+                var resolver = new AssemblyDependencyResolver(assemblyPath);
+                AssemblyLoadContext.Default.Resolving +=
+                    (context, assemblyName) =>
+                    {
+                        string? assemblyPath = resolver.ResolveAssemblyToPath(assemblyName);
+                        return assemblyPath != null
+                            ? context.LoadFromAssemblyPath(assemblyPath)
+                            : null;
+                    };
 
-                    AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyPath);
-                    s_loadedInDefaultContext.Add(assemblyPath);
-                }
+                AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyPath);
+                s_loadedInDefaultContext.Add(assemblyPath);
             }
         }
 
@@ -207,16 +204,8 @@ namespace Internal.Runtime.InteropServices
                 string typeName = MarshalToString(typeNameNative, nameof(typeNameNative));
                 string methodName = MarshalToString(methodNameNative, nameof(methodNameNative));
 
-                if (loadContext != IntPtr.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(loadContext));
-                }
-
-                if (reserved != IntPtr.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(reserved));
-                }
-
+                ArgumentOutOfRangeException.ThrowIfNotEqual(loadContext, IntPtr.Zero);
+                ArgumentOutOfRangeException.ThrowIfNotEqual(reserved, IntPtr.Zero);
                 ArgumentNullException.ThrowIfNull(functionHandle);
 
 #pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml

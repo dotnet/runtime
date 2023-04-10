@@ -755,9 +755,6 @@ mono_lookup_dynamic_token (MonoImage *image, guint32 token, MonoGenericContext *
 gpointer
 mono_lookup_dynamic_token_class (MonoImage *image, guint32 token, gboolean check_token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
 
-gpointer
-mono_runtime_create_delegate_trampoline (MonoClass *klass);
-
 void
 mono_install_get_cached_class_info (MonoGetCachedClassInfo func);
 
@@ -1432,6 +1429,9 @@ mono_method_has_no_body (MonoMethod *method);
 // Internal callers expected to use ERROR_DECL. External callers are not.
 MONO_COMPONENT_API MonoMethodHeader*
 mono_method_get_header_internal (MonoMethod *method, MonoError *error);
+
+MONO_COMPONENT_API void
+mono_method_get_param_names_internal (MonoMethod *method, const char **names);
 
 MonoType*
 mono_class_find_enum_basetype (MonoClass *klass, MonoError *error);

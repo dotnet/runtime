@@ -2332,11 +2332,11 @@ namespace System.Diagnostics.Tracing
         {
             if (opcode == EventOpcode.Info && eventName != null)
             {
-                if (eventName.EndsWith(s_ActivityStartSuffix, StringComparison.Ordinal))
+                if (eventName.EndsWith(ActivityStartSuffix, StringComparison.Ordinal))
                 {
                     return EventOpcode.Start;
                 }
-                else if (eventName.EndsWith(s_ActivityStopSuffix, StringComparison.Ordinal))
+                else if (eventName.EndsWith(ActivityStopSuffix, StringComparison.Ordinal))
                 {
                     return EventOpcode.Stop;
                 }
@@ -2629,9 +2629,6 @@ namespace System.Diagnostics.Tracing
                         m_eventSourceEnabled = true;
                     }
 
-                    this.OnEventCommand(commandArgs);
-                    this.m_eventCommandExecuted?.Invoke(this, commandArgs);
-
                     if (!commandArgs.enable)
                     {
                         // If we are disabling, maybe we can turn on 'quick checks' to filter
@@ -2663,6 +2660,9 @@ namespace System.Diagnostics.Tracing
                             m_eventSourceEnabled = false;
                         }
                     }
+
+                    this.OnEventCommand(commandArgs);
+                    this.m_eventCommandExecuted?.Invoke(this, commandArgs);
                 }
                 else
                 {
@@ -3199,10 +3199,10 @@ namespace System.Diagnostics.Tracing
                             {
                                 if (eventAttribute.Opcode == EventOpcode.Start)
                                 {
-                                    string taskName = eventName.Substring(0, eventName.Length - s_ActivityStartSuffix.Length); // Remove the Stop suffix to get the task name
-                                    if (string.Compare(eventName, 0, taskName, 0, taskName.Length) == 0 &&
-                                        string.Compare(eventName, taskName.Length, s_ActivityStartSuffix, 0, Math.Max(eventName.Length - taskName.Length, s_ActivityStartSuffix.Length)) == 0)
+                                    if (eventName.EndsWith(ActivityStartSuffix, StringComparison.Ordinal))
                                     {
+                                        string taskName = eventName[..^ActivityStartSuffix.Length]; // Remove the Start suffix to get the task name
+
                                         // Add a task that is just the task name for the start event.   This suppress the auto-task generation
                                         // That would otherwise happen (and create 'TaskName'Start as task name rather than just 'TaskName'
                                         manifest.AddTask(taskName, (int)eventAttribute.Task);
@@ -3219,10 +3219,11 @@ namespace System.Diagnostics.Tracing
 
                                         // If you remove the Stop and add a Start does that name match the Start Event's Name?
                                         // Ideally we would throw an error
-                                        string taskName = eventName.Substring(0, eventName.Length - s_ActivityStopSuffix.Length); // Remove the Stop suffix to get the task name
                                         if (startEventMetadata.Descriptor.Opcode == (byte)EventOpcode.Start &&
-                                            string.Compare(startEventMetadata.Name, 0, taskName, 0, taskName.Length) == 0 &&
-                                            string.Compare(startEventMetadata.Name, taskName.Length, s_ActivityStartSuffix, 0, Math.Max(startEventMetadata.Name.Length - taskName.Length, s_ActivityStartSuffix.Length)) == 0)
+                                            startEventMetadata.Name.EndsWith(ActivityStartSuffix, StringComparison.Ordinal) &&
+                                            eventName.EndsWith(ActivityStopSuffix, StringComparison.Ordinal) &&
+                                            startEventMetadata.Name.AsSpan()[..^ActivityStartSuffix.Length].SequenceEqual(
+                                                eventName.AsSpan()[..^ActivityStopSuffix.Length]))
                                         {
                                             // Make the stop event match the start event
                                             eventAttribute.Task = (EventTask)startEventMetadata.Descriptor.Task;
@@ -3823,8 +3824,8 @@ namespace System.Diagnostics.Tracing
         // We use a single instance of ActivityTracker for all EventSources instances to allow correlation between multiple event providers.
         // We have m_activityTracker field simply because instance field is more efficient than static field fetch.
         private ActivityTracker m_activityTracker = null!;
-        internal const string s_ActivityStartSuffix = "Start";
-        internal const string s_ActivityStopSuffix = "Stop";
+        internal const string ActivityStartSuffix = "Start";
+        internal const string ActivityStopSuffix = "Stop";
 
         // This switch controls an opt-in, off-by-default mechanism for allowing multiple EventSources to have the same
         // name and by extension GUID. This is not considered a mainline scenario and is explicitly intended as a release
@@ -4218,6 +4219,38 @@ namespace System.Diagnostics.Tracing
             }
         }
 
+        // If an EventListener calls Dispose without calling DisableEvents first we want to issue the Disable command now
+        private static void CallDisableEventsIfNecessary(EventDispatcher eventDispatcher, EventSource eventSource)
+        {
+#if DEBUG
+            // Disable validation of EventSource/EventListener connections in case a call to EventSource.AddListener
+            // causes a recursive call into this method.
+            bool previousValue = s_ConnectingEventSourcesAndListener;
+            s_ConnectingEventSourcesAndListener = true;
+            try
+            {
+#endif
+                if (eventDispatcher.m_EventEnabled == null)
+                {
+                    return;
+                }
+
+                for (int i = 0; i < eventDispatcher.m_EventEnabled.Length; ++i)
+                {
+                    if (eventDispatcher.m_EventEnabled[i])
+                    {
+                        eventDispatcher.m_Listener.DisableEvents(eventSource);
+                    }
+                }
+#if DEBUG
+            }
+            finally
+            {
+                s_ConnectingEventSourcesAndListener = previousValue;
+            }
+#endif
+        }
+
         /// <summary>
         /// Helper used in code:Dispose that removes any references to 'listenerToRemove' in any of the
         /// eventSources in the appdomain.
@@ -4229,14 +4262,38 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
             // Foreach existing EventSource in the appdomain
             Debug.Assert(s_EventSources != null);
-            foreach (WeakReference<EventSource> eventSourceRef in s_EventSources)
+
+            // First pass to call DisableEvents
+            WeakReference<EventSource>[] eventSourcesSnapshot = s_EventSources.ToArray();
+            foreach (WeakReference<EventSource> eventSourceRef in eventSourcesSnapshot)
             {
                 if (eventSourceRef.TryGetTarget(out EventSource? eventSource))
                 {
-                    Debug.Assert(eventSource.m_Dispatchers != null);
+                    EventDispatcher? cur = eventSource.m_Dispatchers;
+                    while (cur != null)
+                    {
+                        if (cur.m_Listener == listenerToRemove)
+                        {
+                            CallDisableEventsIfNecessary(cur!, eventSource);
+                        }
+
+                        cur = cur.m_Next;
+                    }
+                }
+            }
+
+            // DisableEvents can call back to user code and we have to start over since s_EventSources and
+            // eventSource.m_Dispatchers could have mutated
+            foreach (WeakReference<EventSource> eventSourceRef in s_EventSources)
+            {
+                if (eventSourceRef.TryGetTarget(out EventSource? eventSource)
+                    && eventSource.m_Dispatchers != null)
+                {
                     // Is the first output dispatcher the dispatcher we are removing?
                     if (eventSource.m_Dispatchers.m_Listener == listenerToRemove)
+                    {
                         eventSource.m_Dispatchers = eventSource.m_Dispatchers.m_Next;
+                    }
                     else
                     {
                         // Remove 'listenerToRemove' from the eventSource.m_Dispatchers linked list.
@@ -4265,6 +4322,7 @@ namespace System.Diagnostics.Tracing
             EventPipeEventDispatcher.Instance.RemoveEventListener(listenerToRemove);
 #endif // FEATURE_PERFTRACING
         }
+
 
         /// <summary>
         /// Checks internal consistency of EventSources/Listeners.
@@ -5636,7 +5694,7 @@ namespace System.Diagnostics.Tracing
             }
             else
             {
-                // Work around a cornercase ETW issue where a manifest with no templates causes
+                // Work around a corner-case ETW issue where a manifest with no templates causes
                 // ETW events to not get sent to their associated channel.
                 sb.AppendLine("    <template tid=\"_empty\"></template>");
             }
@@ -5651,7 +5709,7 @@ namespace System.Diagnostics.Tracing
 
             var sortedStrings = new string[stringTab.Keys.Count];
             stringTab.Keys.CopyTo(sortedStrings, 0);
-            Array.Sort<string>(sortedStrings, 0, sortedStrings.Length);
+            Array.Sort<string>(sortedStrings, StringComparer.Ordinal);
 
             CultureInfo ci = CultureInfo.CurrentUICulture;
             sb.Append(" <resources culture=\"").Append(ci.Name).AppendLine("\">");

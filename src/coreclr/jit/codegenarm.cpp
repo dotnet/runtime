@@ -821,7 +821,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIsLocalAddr();
+    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR);
 
 #ifdef DEBUG
     assert(!dstAddr->isContained());
@@ -841,7 +841,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     regNumber tmpReg = cpObjNode->ExtractTempReg();
     assert(genIsValidIntReg(tmpReg));
 
-    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpObjNode->IsVolatile())
     {
         // issue a full memory barrier before & after a volatile CpObj operation
         instGen_MemoryBarrier();
@@ -888,7 +888,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         assert(gcPtrCount == 0);
     }
 
-    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    if (cpObjNode->IsVolatile())
     {
         // issue a full memory barrier before & after a volatile CpObj operation
         instGen_MemoryBarrier();
@@ -1272,6 +1272,22 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         inst_SETCC(GenCondition::FromRelop(tree), tree->TypeGet(), targetReg);
         genProduceReg(tree);
     }
+}
+
+//------------------------------------------------------------------------
+// genCodeForJTrue: Produce code for a GT_JTRUE node.
+//
+// Arguments:
+//    jtrue - the node
+//
+void CodeGen::genCodeForJTrue(GenTreeOp* jtrue)
+{
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+
+    GenTree*  op  = jtrue->gtGetOp1();
+    regNumber reg = genConsumeReg(op);
+    inst_RV_RV(INS_tst, reg, reg, genActualType(op));
+    inst_JMP(EJ_ne, compiler->compCurBB->bbJumpDest);
 }
 
 //------------------------------------------------------------------------

@@ -118,16 +118,16 @@
     <HelixPreCommand Include="set __TestEnv=%HELIX_CORRELATION_PAYLOAD%\$(TestEnvFileName)" />
     <HelixPreCommand Include="type %__TestEnv%" />
     <HelixPreCommand Include="call %__TestEnv%" />
-    <!-- Display the interesting COMPlus variables that are set in the environment -->
-    <HelixPreCommand Include="set COMPlus" />
+    <!-- Display the interesting DOTNET variables that are set in the environment -->
+    <HelixPreCommand Include="set DOTNET" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TestEnvFileName)' != '' and '$(TargetOS)' != 'windows' ">
     <HelixPreCommand Include="export __TestEnv=$HELIX_CORRELATION_PAYLOAD/$(TestEnvFileName)" />
     <HelixPreCommand Include="cat $__TestEnv" />
     <HelixPreCommand Include=". $__TestEnv" /> <!-- Use "." not "source"; some clients appear to run scripts with "sh" not "bash" -->
-    <!-- Display the interesting COMPlus variables that are set in the environment -->
-    <HelixPreCommand Include="printenv | grep COMPlus" />
+    <!-- Display the interesting DOTNET variables that are set in the environment -->
+    <HelixPreCommand Include="printenv | grep DOTNET" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(NeedsWorkload)' == 'true'">
