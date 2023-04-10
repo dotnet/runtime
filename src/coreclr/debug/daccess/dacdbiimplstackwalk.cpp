@@ -153,9 +153,12 @@ void DacDbiInterfaceImpl::GetStackWalkCurrentContext(StackWalkHandle pSFIHandle,
 void DacDbiInterfaceImpl::GetStackWalkCurrentContext(StackFrameIterator * pIter,
                                                      DT_CONTEXT *         pContext)
 {
-    // convert the current REGDISPLAY to a CONTEXT
+    // convert the current REGDISPLAY to a DT_CONTEXT
     CrawlFrame * pCF = &(pIter->m_crawl);
-    UpdateContextFromRegDisp(pCF->GetRegisterSet(), reinterpret_cast<T_CONTEXT *>(pContext));
+    T_CONTEXT tmpContext = { };
+    UpdateContextFromRegDisp(pCF->GetRegisterSet(), &tmpContext);
+    CopyMemory(pContext, &tmpContext, sizeof(*pContext));
+    pContext->ContextFlags &= ~(CONTEXT_XSTATE & CONTEXT_AREA_MASK);
 }
 
 
@@ -180,7 +183,7 @@ void DacDbiInterfaceImpl::SetStackWalkCurrentContext(VMPTR_Thread           vmTh
     // Allocate a context in DDImpl's memory space. DDImpl can't contain raw pointers back into
     // the client space since that may not marshal.
     T_CONTEXT * pContext2 = GetContextBufferFromHandle(pSFIHandle);
-    *pContext2  = *reinterpret_cast<T_CONTEXT *>(pContext); // memcpy
+    CopyMemory(pContext2, pContext, sizeof(*pContext));
 
     // update the REGDISPLAY with the given CONTEXT.
     // Be sure that the context is in DDImpl's memory space and not the Right-sides.
@@ -657,8 +660,12 @@ void DacDbiInterfaceImpl::ConvertContextToDebuggerRegDisplay(const DT_CONTEXT * 
 
     // This is a bit cumbersome.  First we need to convert the CONTEXT into a REGDISPLAY.  Then we need
     // to convert the REGDISPLAY to a DebuggerREGDISPLAY.
+    T_CONTEXT tmpContext = { };
+    CopyMemory(&tmpContext, pInContext, sizeof(*pInContext));
+
     REGDISPLAY rd;
-    FillRegDisplay(&rd, reinterpret_cast<T_CONTEXT *>(const_cast<DT_CONTEXT *>(pInContext)));
+    FillRegDisplay(&rd, &tmpContext);
+
     SetDebuggerREGDISPLAYFromREGDISPLAY(pOutDRD, &rd);
 }
 
@@ -1162,12 +1169,9 @@ void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
     {
         *pContext = *pRegDisp->pContext;
     }
-#elif !defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-    memcpy(pContext, pRegDisp->pCurrentContext, offsetof(T_CONTEXT, XStateFeaturesMask));
-    pContext->ContextFlags = (CONTEXT_INTEGER | CONTEXT_CONTROL);
-#else
+#else // TARGET_X86 && !FEATURE_EH_FUNCLETS
     *pContext = *pRegDisp->pCurrentContext;
-#endif
+#endif // !TARGET_X86 || FEATURE_EH_FUNCLETS
 }
 
 //---------------------------------------------------------------------------------------
