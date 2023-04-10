@@ -7012,7 +7012,16 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                 printf("\n%s:", emitLabelString(ig));
                 if (!emitComp->opts.disDiffable)
                 {
-                    printf("              ;; offset=%04XH", emitCurCodeOffs(cp));
+#ifdef DEBUG
+                    if (emitComp->opts.disAddr)
+                    {
+                        printf("              ;; offset=%04XH", emitCurCodeOffs(cp));
+                    }
+                    else
+#endif // DEBUG
+                    {
+                        printf("  ;; offset=%04XH", emitCurCodeOffs(cp));
+                    }
                 }
                 printf("\n");
             }
