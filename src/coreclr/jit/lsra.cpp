@@ -12077,7 +12077,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     else
 #endif
     {
-    candidates = linearScan->stressLimitRegs(refPosition, candidates);
+        candidates = linearScan->stressLimitRegs(refPosition, candidates);
     }
 #endif
     assert(candidates != RBM_NONE);
@@ -12279,12 +12279,10 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         prevRegBit            = genRegMask(prevRegRec->regNum);
         if ((prevRegRec->assignedInterval == currentInterval) && ((candidates & prevRegBit) != RBM_NONE))
         {
-#ifdef TARGET_ARM64
-            // If this is allocating for consecutive register, we need to make sure that
-            // we allocate register, whose consecutive registers are also free.
             if (!needsConsecutiveRegisters)
-#endif
             {
+                // If this is allocating for consecutive register, we need to make sure that
+                // we allocate register, whose consecutive registers are also free.
                 candidates = prevRegBit;
                 found      = true;
 #ifdef DEBUG
@@ -12333,7 +12331,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
 
         if ((freeCandidates == RBM_NONE) && (candidates == RBM_NONE))
         {
-#ifdef  DEBUG
+#ifdef DEBUG
             // Need to make sure that candidates has N consecutive registers to assign
             if (linearScan->getStressLimitRegs() != LSRA_LIMIT_NONE)
             {
@@ -12358,18 +12356,15 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
             }
 
             if (candidates == RBM_NONE)
-#endif //  DEBUG
-            
-
-        {
-            noway_assert(!"Not sufficient consecutive registers available.");
+#endif // DEBUG
+            {
+                noway_assert(!"Not sufficient consecutive registers available.");
+            }
         }
-    }
 #endif // TARGET_ARM64
     }
     else
     {
-
         if (!found && (candidates == RBM_NONE))
         {
             assert(refPosition->RegOptional());
