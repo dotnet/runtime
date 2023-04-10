@@ -123,30 +123,16 @@ namespace System
             return Number.TryFormatUInt64(m_value, format, provider, destination, out charsWritten);
         }
 
-        public static ulong Parse(string s)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseBinaryInteger<ulong>(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
-        }
+        public static ulong Parse(string s) => Parse(s, NumberStyles.Integer, provider: null);
 
-        public static ulong Parse(string s, NumberStyles style)
-        {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseBinaryInteger<ulong>(s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static ulong Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
-        public static ulong Parse(string s, IFormatProvider? provider)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseBinaryInteger<ulong>(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
-        }
+        public static ulong Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Integer, provider);
 
         public static ulong Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseBinaryInteger<ulong>(s, style, NumberFormatInfo.GetInstance(provider));
+            ArgumentNullException.ThrowIfNull(s);
+            return Parse(s.AsSpan(), style, provider);
         }
 
         public static ulong Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
@@ -155,31 +141,18 @@ namespace System
             return Number.ParseBinaryInteger<ulong>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse([NotNullWhen(true)] string? s, out ulong result)
-        {
-            if (s is null)
-            {
-                result = 0;
-                return false;
-            }
-            return Number.TryParseBinaryIntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
+        public static bool TryParse([NotNullWhen(true)] string? s, out ulong result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-        public static bool TryParse(ReadOnlySpan<char> s, out ulong result)
-        {
-            return Number.TryParseBinaryIntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out ulong result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out ulong result)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-
             if (s is null)
             {
                 result = 0;
                 return false;
             }
-            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return TryParse(s.AsSpan(), style, provider, out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out ulong result)

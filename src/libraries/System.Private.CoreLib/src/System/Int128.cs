@@ -119,30 +119,16 @@ namespace System
             return Number.TryFormatInt128(this, format, provider, destination, out charsWritten);
         }
 
-        public static Int128 Parse(string s)
-        {
-            ArgumentNullException.ThrowIfNull(s);
-            return Number.ParseBinaryInteger<Int128>(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
-        }
+        public static Int128 Parse(string s) => Parse(s, NumberStyles.Integer, provider: null);
 
-        public static Int128 Parse(string s, NumberStyles style)
-        {
-            ArgumentNullException.ThrowIfNull(s);
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseBinaryInteger<Int128>(s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static Int128 Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
-        public static Int128 Parse(string s, IFormatProvider? provider)
-        {
-            ArgumentNullException.ThrowIfNull(s);
-            return Number.ParseBinaryInteger<Int128>(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
-        }
+        public static Int128 Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Integer, provider);
 
         public static Int128 Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
             ArgumentNullException.ThrowIfNull(s);
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseBinaryInteger<Int128>(s, style, NumberFormatInfo.GetInstance(provider));
+            return Parse(s.AsSpan(), style, provider);
         }
 
         public static Int128 Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
@@ -151,31 +137,18 @@ namespace System
             return Number.ParseBinaryInteger<Int128>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse([NotNullWhen(true)] string? s, out Int128 result)
-        {
-            if (s is null)
-            {
-                result = 0;
-                return false;
-            }
-            return Number.TryParseBinaryIntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
+        public static bool TryParse([NotNullWhen(true)] string? s, out Int128 result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-        public static bool TryParse(ReadOnlySpan<char> s, out Int128 result)
-        {
-            return Number.TryParseBinaryIntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out Int128 result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Int128 result)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-
             if (s is null)
             {
                 result = 0;
                 return false;
             }
-            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return TryParse(s.AsSpan(), style, provider, out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Int128 result)

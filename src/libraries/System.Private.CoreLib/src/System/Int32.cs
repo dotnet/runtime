@@ -129,38 +129,16 @@ namespace System
             return Number.TryFormatInt32(m_value, ~0, format, provider, destination, out charsWritten);
         }
 
-        public static int Parse(string s)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseBinaryInteger<int>(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
-        }
+        public static int Parse(string s) => Parse(s, NumberStyles.Integer, provider: null);
 
-        public static int Parse(string s, NumberStyles style)
-        {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseBinaryInteger<int>(s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static int Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
-        // Parses an integer from a String in the given style. If
-        // a NumberFormatInfo isn't specified, the current culture's
-        // NumberFormatInfo is assumed.
-        //
-        public static int Parse(string s, IFormatProvider? provider)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseBinaryInteger<int>(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
-        }
+        public static int Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Integer, provider);
 
-        // Parses an integer from a String in the given style. If
-        // a NumberFormatInfo isn't specified, the current culture's
-        // NumberFormatInfo is assumed.
-        //
         public static int Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseBinaryInteger<int>(s, style, NumberFormatInfo.GetInstance(provider));
+            ArgumentNullException.ThrowIfNull(s);
+            return Parse(s.AsSpan(), style, provider);
         }
 
         public static int Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
@@ -169,37 +147,18 @@ namespace System
             return Number.ParseBinaryInteger<int>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        // Parses an integer from a String. Returns false rather
-        // than throwing an exception if input is invalid.
-        //
-        public static bool TryParse([NotNullWhen(true)] string? s, out int result)
-        {
-            if (s is null)
-            {
-                result = 0;
-                return false;
-            }
-            return Number.TryParseBinaryIntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
+        public static bool TryParse([NotNullWhen(true)] string? s, out int result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-        public static bool TryParse(ReadOnlySpan<char> s, out int result)
-        {
-            return Number.TryParseBinaryIntegerStyle(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out int result) => TryParse(s, NumberStyles.Integer, provider: null, out result);
 
-        // Parses an integer from a String in the given style. Returns false rather
-        // than throwing an exception if input is invalid.
-        //
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out int result)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-
             if (s is null)
             {
                 result = 0;
                 return false;
             }
-            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
+            return TryParse(s.AsSpan(), style, provider, out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out int result)
