@@ -4,10 +4,12 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64'">true</CLRTestTargetUnsupported>
+    <!-- Sanitizers increase the binary size, so it ends up outside of our expected range. -->
+    <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);VEX_INTRINSICS</DefineConstants>
     <StripSymbols>true</StripSymbols>
-    
+
     <!-- We should be able to delete once CI machines no longer use ancient LLVM -->
     <ObjCopyName>objcopy</ObjCopyName>
   </PropertyGroup>
