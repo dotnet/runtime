@@ -193,13 +193,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 // Verify running with the default working directory
                 Command.Create(appExe)
-                    .CaptureStdErr()
-                    .CaptureStdOut()
+                    .EnableTracingAndCaptureOutputs()
                     .MultilevelLookup(false)
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
                     .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, useRegisteredLocation ? null : builtDotnet)
-                    .EnvironmentVariable(Constants.HostTracing.TraceLevelEnvironmentVariable, "1")
-                    .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "2")
                     .DotNetRoot(null)
                     .Execute()
                     .Should().Pass()
@@ -209,14 +206,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 // Verify running from within the working directory
                 Command.Create(appExe)
-                    .CaptureStdErr()
-                    .CaptureStdOut()
+                    .EnableTracingAndCaptureOutputs()
                     .MultilevelLookup(false)
                     .WorkingDirectory(fixture.TestProject.OutputDirectory)
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
                     .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, useRegisteredLocation ? null : builtDotnet)
-                    .EnvironmentVariable(Constants.HostTracing.TraceLevelEnvironmentVariable, "1")
-                    .EnvironmentVariable(Constants.HostTracing.VerbosityEnvironmentVariable, "2")
                     .DotNetRoot(null)
                     .Execute()
                     .Should().Pass()
