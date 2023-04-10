@@ -5313,7 +5313,7 @@ public:
     void SplitTreesRemoveCommas();
 
     template <bool (Compiler::*ExpansionFunction)(BasicBlock*, Statement*, GenTreeCall*)>
-    PhaseStatus fgExpandHelper();
+    PhaseStatus fgExpandHelper(bool skipRarelyRunBlocks);
 
     template <bool (Compiler::*ExpansionFunction)(BasicBlock*, Statement*, GenTreeCall*)>
     bool fgExpandHelperForBlock(BasicBlock* block);

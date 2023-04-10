@@ -90,7 +90,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
         return result;
     }
 
-    return fgExpandHelper<&Compiler::fgExpandRuntimeLookupsForCall>();
+    return fgExpandHelper<&Compiler::fgExpandRuntimeLookupsForCall>(false);
 }
 
 bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call)
@@ -433,7 +433,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
         return result;
     }
 
-    return fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCall>();
+    return fgExpandHelper<&Compiler::fgExpandThreadLocalAccessForCall>(true);
 }
 
 //------------------------------------------------------------------------------
@@ -691,12 +691,12 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
 //    true if there was any helper that was expanded.
 //
 template <bool (Compiler::*ExpansionFunction)(BasicBlock*, Statement*, GenTreeCall*)>
-PhaseStatus                Compiler::fgExpandHelper()
+PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
-        if (block->isRunRarely())
+        if (skipRarelyRunBlocks && block->isRunRarely())
         {
             // It's just an optimization - don't waste time on rarely executed blocks
             continue;
@@ -789,7 +789,7 @@ PhaseStatus Compiler::fgExpandStaticInit()
         return result;
     }
 
-    return fgExpandHelper<&Compiler::fgExpandStaticInitForCall>();
+    return fgExpandHelper<&Compiler::fgExpandStaticInitForCall>(true);
 }
 
 //------------------------------------------------------------------------------
@@ -840,7 +840,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, Gen
     }
 
     JITDUMP("Expanding static initialization for '%s', call: [%06d] in " FMT_BB "\n",
-            eeGetClassName(call->gtInitClsHnd), dspTreeID(call), block->bbNum)
+            eeGetClassName(call->gtInitClsHnd), dspTreeID(call), block->bbNum);
 
     DebugInfo debugInfo = stmt->GetDebugInfo();
 
