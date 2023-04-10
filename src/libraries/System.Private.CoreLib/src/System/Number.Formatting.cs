@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Text;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
@@ -271,8 +272,8 @@ namespace System
         /// <remarks>
         /// This is a semi-arbitrary bound. For mono, which is often used for more size-constrained workloads,
         /// we keep the size really small, supporting only single digit values.  For coreclr, we use a larger
-        /// value, still relatively small but large enough to accomodate common sources of numbers to strings, e.g. HTTP success status codes.
-        /// By being >= 255, it also accomodates all byte.ToString()s.  If no small numbers are ever formatted, we incur
+        /// value, still relatively small but large enough to accommodate common sources of numbers to strings, e.g. HTTP success status codes.
+        /// By being >= 255, it also accommodates all byte.ToString()s.  If no small numbers are ever formatted, we incur
         /// the ~2400 bytes on 64-bit for the array itself.  If all small numbers are formatted, we incur ~11,500 bytes
         /// on 64-bit for the array and all the strings.
         /// </remarks>
@@ -353,22 +354,26 @@ namespace System
             DecimalToNumber(ref value, ref number);
 
             char* stackPtr = stackalloc char[CharStackBufferSize];
-            ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+            var vlb = new ValueListBuilder<char>(new Span<char>(stackPtr, CharStackBufferSize));
 
             if (fmt != 0)
             {
-                NumberToString(ref sb, ref number, fmt, digits, info);
+                NumberToString(ref vlb, ref number, fmt, digits, info);
             }
             else
             {
-                NumberToStringFormat(ref sb, ref number, format, info);
+                NumberToStringFormat(ref vlb, ref number, format, info);
             }
 
-            return sb.ToString();
+            string result = vlb.AsSpan().ToString();
+            vlb.Dispose();
+            return result;
         }
 
-        public static unsafe bool TryFormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        public static unsafe bool TryFormatDecimal<TChar>(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             char fmt = ParseFormatSpecifier(format, out int digits);
 
             byte* pDigits = stackalloc byte[DecimalNumberBufferLength];
@@ -376,19 +381,21 @@ namespace System
 
             DecimalToNumber(ref value, ref number);
 
-            char* stackPtr = stackalloc char[CharStackBufferSize];
-            ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+            TChar* stackPtr = stackalloc TChar[CharStackBufferSize];
+            var vlb = new ValueListBuilder<TChar>(new Span<TChar>(stackPtr, CharStackBufferSize));
 
             if (fmt != 0)
             {
-                NumberToString(ref sb, ref number, fmt, digits, info);
+                NumberToString(ref vlb, ref number, fmt, digits, info);
             }
             else
             {
-                NumberToStringFormat(ref sb, ref number, format, info);
+                NumberToStringFormat(ref vlb, ref number, format, info);
             }
 
-            return sb.TryCopyTo(destination, out charsWritten);
+            bool success = vlb.TryCopyTo(destination, out charsWritten);
+            vlb.Dispose();
+            return success;
         }
 
         internal static unsafe void DecimalToNumber(scoped ref decimal d, ref NumberBuffer number)
@@ -414,24 +421,31 @@ namespace System
             {
                 *dst++ = *p++;
             }
-            *dst = (byte)('\0');
+            *dst = (byte)'\0';
 
             number.CheckConsistency();
         }
 
         public static string FormatDouble(double value, string? format, NumberFormatInfo info)
         {
-            var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            return FormatDouble(ref sb, value, format, info) ?? sb.ToString();
+            var vlb = new ValueListBuilder<char>(stackalloc char[CharStackBufferSize]);
+            string result = FormatDouble(ref vlb, value, format, info) ?? vlb.AsSpan().ToString();
+            vlb.Dispose();
+            return result;
         }
 
-        public static bool TryFormatDouble(double value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        public static bool TryFormatDouble<TChar>(double value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            string? s = FormatDouble(ref sb, value, format, info);
-            return s != null ?
+            var vlb = new ValueListBuilder<TChar>(stackalloc TChar[CharStackBufferSize]);
+            string? s = FormatDouble(ref vlb, value, format, info);
+
+            Debug.Assert(s is null || typeof(TChar) == typeof(char));
+            bool success = s != null ?
                 TryCopyTo(s, destination, out charsWritten) :
-                sb.TryCopyTo(destination, out charsWritten);
+                vlb.TryCopyTo(destination, out charsWritten);
+
+            vlb.Dispose();
+            return success;
         }
 
         private static int GetFloatingPointMaxDigitsAndPrecision(char fmt, ref int precision, NumberFormatInfo info, out bool isSignificantDigits)
@@ -448,107 +462,108 @@ namespace System
             {
                 case 'C':
                 case 'c':
-                {
-                    // The currency format uses the precision specifier to indicate the number of
-                    // decimal digits to format. This defaults to NumberFormatInfo.CurrencyDecimalDigits.
-
-                    if (precision == -1)
                     {
-                        precision = info.CurrencyDecimalDigits;
-                    }
-                    isSignificantDigits = false;
+                        // The currency format uses the precision specifier to indicate the number of
+                        // decimal digits to format. This defaults to NumberFormatInfo.CurrencyDecimalDigits.
 
-                    break;
-                }
+                        if (precision == -1)
+                        {
+                            precision = info.CurrencyDecimalDigits;
+                        }
+                        isSignificantDigits = false;
+
+                        break;
+                    }
 
                 case 'E':
                 case 'e':
-                {
-                    // The exponential format uses the precision specifier to indicate the number of
-                    // decimal digits to format. This defaults to 6. However, the exponential format
-                    // also always formats a single integral digit, so we need to increase the precision
-                    // specifier and treat it as the number of significant digits to account for this.
-
-                    if (precision == -1)
                     {
-                        precision = DefaultPrecisionExponentialFormat;
+                        // The exponential format uses the precision specifier to indicate the number of
+                        // decimal digits to format. This defaults to 6. However, the exponential format
+                        // also always formats a single integral digit, so we need to increase the precision
+                        // specifier and treat it as the number of significant digits to account for this.
+
+                        if (precision == -1)
+                        {
+                            precision = DefaultPrecisionExponentialFormat;
+                        }
+
+                        precision++;
+                        isSignificantDigits = true;
+
+                        break;
                     }
-
-                    precision++;
-                    isSignificantDigits = true;
-
-                    break;
-                }
 
                 case 'F':
                 case 'f':
                 case 'N':
                 case 'n':
-                {
-                    // The fixed-point and number formats use the precision specifier to indicate the number
-                    // of decimal digits to format. This defaults to NumberFormatInfo.NumberDecimalDigits.
-
-                    if (precision == -1)
                     {
-                        precision = info.NumberDecimalDigits;
-                    }
-                    isSignificantDigits = false;
+                        // The fixed-point and number formats use the precision specifier to indicate the number
+                        // of decimal digits to format. This defaults to NumberFormatInfo.NumberDecimalDigits.
 
-                    break;
-                }
+                        if (precision == -1)
+                        {
+                            precision = info.NumberDecimalDigits;
+                        }
+                        isSignificantDigits = false;
+
+                        break;
+                    }
 
                 case 'G':
                 case 'g':
-                {
-                    // The general format uses the precision specifier to indicate the number of significant
-                    // digits to format. This defaults to the shortest roundtrippable string. Additionally,
-                    // given that we can't return zero significant digits, we treat 0 as returning the shortest
-                    // roundtrippable string as well.
-
-                    if (precision == 0)
                     {
-                        precision = -1;
-                    }
-                    isSignificantDigits = true;
+                        // The general format uses the precision specifier to indicate the number of significant
+                        // digits to format. This defaults to the shortest roundtrippable string. Additionally,
+                        // given that we can't return zero significant digits, we treat 0 as returning the shortest
+                        // roundtrippable string as well.
 
-                    break;
-                }
+                        if (precision == 0)
+                        {
+                            precision = -1;
+                        }
+                        isSignificantDigits = true;
+
+                        break;
+                    }
 
                 case 'P':
                 case 'p':
-                {
-                    // The percent format uses the precision specifier to indicate the number of
-                    // decimal digits to format. This defaults to NumberFormatInfo.PercentDecimalDigits.
-                    // However, the percent format also always multiplies the number by 100, so we need
-                    // to increase the precision specifier to ensure we get the appropriate number of digits.
-
-                    if (precision == -1)
                     {
-                        precision = info.PercentDecimalDigits;
+                        // The percent format uses the precision specifier to indicate the number of
+                        // decimal digits to format. This defaults to NumberFormatInfo.PercentDecimalDigits.
+                        // However, the percent format also always multiplies the number by 100, so we need
+                        // to increase the precision specifier to ensure we get the appropriate number of digits.
+
+                        if (precision == -1)
+                        {
+                            precision = info.PercentDecimalDigits;
+                        }
+
+                        precision += 2;
+                        isSignificantDigits = false;
+
+                        break;
                     }
-
-                    precision += 2;
-                    isSignificantDigits = false;
-
-                    break;
-                }
 
                 case 'R':
                 case 'r':
-                {
-                    // The roundtrip format ignores the precision specifier and always returns the shortest
-                    // roundtrippable string.
+                    {
+                        // The roundtrip format ignores the precision specifier and always returns the shortest
+                        // roundtrippable string.
 
-                    precision = -1;
-                    isSignificantDigits = true;
+                        precision = -1;
+                        isSignificantDigits = true;
 
-                    break;
-                }
+                        break;
+                    }
 
                 default:
-                {
-                    throw new FormatException(SR.Argument_BadFormatSpecifier);
-                }
+                    {
+                        ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+                        goto case 'r'; // unreachable
+                    }
             }
 
             return maxDigits;
@@ -559,16 +574,32 @@ namespace System
         /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
         /// Null if no existing string was returned, in which case the formatted output is in the builder.
         /// </returns>
-        private static unsafe string? FormatDouble(ref ValueStringBuilder sb, double value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        private static unsafe string? FormatDouble<TChar>(ref ValueListBuilder<TChar> vlb, double value, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IBinaryInteger<TChar>
         {
             if (!double.IsFinite(value))
             {
                 if (double.IsNaN(value))
                 {
-                    return info.NaNSymbol;
+                    if (typeof(TChar) == typeof(char))
+                    {
+                        return info.NaNSymbol;
+                    }
+                    else
+                    {
+                        vlb.Append(info.NaNSymbolTChar<TChar>());
+                        return null;
+                    }
                 }
 
-                return double.IsNegative(value) ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
+                if (typeof(TChar) == typeof(char))
+                {
+                    return double.IsNegative(value) ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
+                }
+                else
+                {
+                    vlb.Append(double.IsNegative(value) ? info.NegativeInfinitySymbolTChar<TChar>() : info.PositiveInfinitySymbolTChar<TChar>());
+                    return null;
+                }
             }
 
             char fmt = ParseFormatSpecifier(format, out int precision);
@@ -615,29 +646,36 @@ namespace System
 
                     nMaxDigits = Math.Max(number.DigitsCount, DoublePrecision);
                 }
-                NumberToString(ref sb, ref number, fmt, nMaxDigits, info);
+                NumberToString(ref vlb, ref number, fmt, nMaxDigits, info);
             }
             else
             {
                 Debug.Assert(precision == DoublePrecisionCustomFormat);
-                NumberToStringFormat(ref sb, ref number, format, info);
+                NumberToStringFormat(ref vlb, ref number, format, info);
             }
             return null;
         }
 
         public static string FormatSingle(float value, string? format, NumberFormatInfo info)
         {
-            var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            return FormatSingle(ref sb, value, format, info) ?? sb.ToString();
+            var vlb = new ValueListBuilder<char>(stackalloc char[CharStackBufferSize]);
+            string result = FormatSingle(ref vlb, value, format, info) ?? vlb.AsSpan().ToString();
+            vlb.Dispose();
+            return result;
         }
 
-        public static bool TryFormatSingle(float value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        public static bool TryFormatSingle<TChar>(float value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            string? s = FormatSingle(ref sb, value, format, info);
-            return s != null ?
+            var vlb = new ValueListBuilder<TChar>(stackalloc TChar[CharStackBufferSize]);
+            string? s = FormatSingle(ref vlb, value, format, info);
+
+            Debug.Assert(s is null || typeof(TChar) == typeof(char));
+            bool success = s != null ?
                 TryCopyTo(s, destination, out charsWritten) :
-                sb.TryCopyTo(destination, out charsWritten);
+                vlb.TryCopyTo(destination, out charsWritten);
+
+            vlb.Dispose();
+            return success;
         }
 
         /// <summary>Formats the specified value according to the specified format and info.</summary>
@@ -645,16 +683,34 @@ namespace System
         /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
         /// Null if no existing string was returned, in which case the formatted output is in the builder.
         /// </returns>
-        private static unsafe string? FormatSingle(ref ValueStringBuilder sb, float value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        private static unsafe string? FormatSingle<TChar>(ref ValueListBuilder<TChar> vlb, float value, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             if (!float.IsFinite(value))
             {
                 if (float.IsNaN(value))
                 {
-                    return info.NaNSymbol;
+                    if (typeof(TChar) == typeof(char))
+                    {
+                        return info.NaNSymbol;
+                    }
+                    else
+                    {
+                        vlb.Append(info.NaNSymbolTChar<TChar>());
+                        return null;
+                    }
                 }
 
-                return float.IsNegative(value) ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
+                if (typeof(TChar) == typeof(char))
+                {
+                    return float.IsNegative(value) ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
+                }
+                else
+                {
+                    vlb.Append(float.IsNegative(value) ? info.NegativeInfinitySymbolTChar<TChar>() : info.PositiveInfinitySymbolTChar<TChar>());
+                    return null;
+                }
             }
 
             char fmt = ParseFormatSpecifier(format, out int precision);
@@ -701,20 +757,22 @@ namespace System
 
                     nMaxDigits = Math.Max(number.DigitsCount, SinglePrecision);
                 }
-                NumberToString(ref sb, ref number, fmt, nMaxDigits, info);
+                NumberToString(ref vlb, ref number, fmt, nMaxDigits, info);
             }
             else
             {
                 Debug.Assert(precision == SinglePrecisionCustomFormat);
-                NumberToStringFormat(ref sb, ref number, format, info);
+                NumberToStringFormat(ref vlb, ref number, format, info);
             }
             return null;
         }
 
         public static string FormatHalf(Half value, string? format, NumberFormatInfo info)
         {
-            var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            return FormatHalf(ref sb, value, format, info) ?? sb.ToString();
+            var vlb = new ValueListBuilder<char>(stackalloc char[CharStackBufferSize]);
+            string result = FormatHalf(ref vlb, value, format, info) ?? vlb.AsSpan().ToString();
+            vlb.Dispose();
+            return result;
         }
 
         /// <summary>Formats the specified value according to the specified format and info.</summary>
@@ -722,16 +780,34 @@ namespace System
         /// Non-null if an existing string can be returned, in which case the builder will be unmodified.
         /// Null if no existing string was returned, in which case the formatted output is in the builder.
         /// </returns>
-        private static unsafe string? FormatHalf(ref ValueStringBuilder sb, Half value, ReadOnlySpan<char> format, NumberFormatInfo info)
+        private static unsafe string? FormatHalf<TChar>(ref ValueListBuilder<TChar> vlb, Half value, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             if (!Half.IsFinite(value))
             {
                 if (Half.IsNaN(value))
                 {
-                    return info.NaNSymbol;
+                    if (typeof(TChar) == typeof(char))
+                    {
+                        return info.NaNSymbol;
+                    }
+                    else
+                    {
+                        vlb.Append(info.NaNSymbolTChar<TChar>());
+                        return null;
+                    }
                 }
 
-                return Half.IsNegative(value) ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
+                if (typeof(TChar) == typeof(char))
+                {
+                    return Half.IsNegative(value) ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
+                }
+                else
+                {
+                    vlb.Append(Half.IsNegative(value) ? info.NegativeInfinitySymbolTChar<TChar>() : info.PositiveInfinitySymbolTChar<TChar>());
+                    return null;
+                }
             }
 
             char fmt = ParseFormatSpecifier(format, out int precision);
@@ -776,38 +852,52 @@ namespace System
 
                     nMaxDigits = Math.Max(number.DigitsCount, HalfPrecision);
                 }
-                NumberToString(ref sb, ref number, fmt, nMaxDigits, info);
+                NumberToString(ref vlb, ref number, fmt, nMaxDigits, info);
             }
             else
             {
                 Debug.Assert(precision == HalfPrecisionCustomFormat);
-                NumberToStringFormat(ref sb, ref number, format, info);
+                NumberToStringFormat(ref vlb, ref number, format, info);
             }
             return null;
         }
 
-        public static bool TryFormatHalf(Half value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<char> destination, out int charsWritten)
+        public static bool TryFormatHalf<TChar>(Half value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
-            string? s = FormatHalf(ref sb, value, format, info);
-            return s != null ?
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            var vlb = new ValueListBuilder<TChar>(stackalloc TChar[CharStackBufferSize]);
+            string? s = FormatHalf(ref vlb, value, format, info);
+
+            Debug.Assert(s is null || typeof(TChar) == typeof(char));
+            bool success = s != null ?
                 TryCopyTo(s, destination, out charsWritten) :
-                sb.TryCopyTo(destination, out charsWritten);
+                vlb.TryCopyTo(destination, out charsWritten);
+
+            vlb.Dispose();
+            return success;
         }
 
-
-        private static bool TryCopyTo(string source, Span<char> destination, out int charsWritten)
+        private static bool TryCopyTo<TChar>(string source, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(source != null);
 
-            if (source.TryCopyTo(destination))
+            if (typeof(TChar) == typeof(char))
             {
-                charsWritten = source.Length;
-                return true;
-            }
+                if (source.TryCopyTo(MemoryMarshal.Cast<TChar, char>(destination)))
+                {
+                    charsWritten = source.Length;
+                    return true;
+                }
 
-            charsWritten = 0;
-            return false;
+                charsWritten = 0;
+                return false;
+            }
+            else
+            {
+                return Encoding.UTF8.TryGetBytes(source, MemoryMarshal.Cast<TChar, byte>(destination), out charsWritten);
+            }
         }
 
         private static char GetHexBase(char fmt)
@@ -854,34 +944,38 @@ namespace System
                     Int32ToNumber(value, ref number);
 
                     char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    var vlb = new ValueListBuilder<char>(new Span<char>(stackPtr, CharStackBufferSize));
 
                     if (fmt != 0)
                     {
-                        NumberToString(ref sb, ref number, fmt, digits, info);
+                        NumberToString(ref vlb, ref number, fmt, digits, info);
                     }
                     else
                     {
-                        NumberToStringFormat(ref sb, ref number, formatSpan, info);
+                        NumberToStringFormat(ref vlb, ref number, formatSpan, info);
                     }
-                    return sb.ToString();
+
+                    string result = vlb.AsSpan().ToString();
+                    vlb.Dispose();
+                    return result;
                 }
             }
         }
 
-        public static bool TryFormatInt32(int value, int hexMask, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // expose to caller's likely-const format to trim away slow path
+        public static bool TryFormatInt32<TChar>(int value, int hexMask, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
             // Fast path for default format
             if (format.Length == 0)
             {
                 return value >= 0 ?
                     TryUInt32ToDecStr((uint)value, destination, out charsWritten) :
-                    TryNegativeInt32ToDecStr(value, digits: -1, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
+                    TryNegativeInt32ToDecStr(value, digits: -1, NumberFormatInfo.GetInstance(provider).NegativeSignTChar<TChar>(), destination, out charsWritten);
             }
 
             return TryFormatInt32Slow(value, hexMask, format, provider, destination, out charsWritten);
 
-            static unsafe bool TryFormatInt32Slow(int value, int hexMask, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+            static unsafe bool TryFormatInt32Slow(int value, int hexMask, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten)
             {
                 char fmt = ParseFormatSpecifier(format, out int digits);
                 char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
@@ -889,7 +983,7 @@ namespace System
                 {
                     return value >= 0 ?
                         TryUInt32ToDecStr((uint)value, digits, destination, out charsWritten) :
-                        TryNegativeInt32ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
+                        TryNegativeInt32ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSignTChar<TChar>(), destination, out charsWritten);
                 }
                 else if (fmtUpper == 'X')
                 {
@@ -904,18 +998,21 @@ namespace System
 
                     Int32ToNumber(value, ref number);
 
-                    char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    TChar* stackPtr = stackalloc TChar[CharStackBufferSize];
+                    var vlb = new ValueListBuilder<TChar>(new Span<TChar>(stackPtr, CharStackBufferSize));
 
                     if (fmt != 0)
                     {
-                        NumberToString(ref sb, ref number, fmt, digits, info);
+                        NumberToString(ref vlb, ref number, fmt, digits, info);
                     }
                     else
                     {
-                        NumberToStringFormat(ref sb, ref number, format, info);
+                        NumberToStringFormat(ref vlb, ref number, format, info);
                     }
-                    return sb.TryCopyTo(destination, out charsWritten);
+
+                    bool success = vlb.TryCopyTo(destination, out charsWritten);
+                    vlb.Dispose();
+                    return success;
                 }
             }
         }
@@ -953,23 +1050,29 @@ namespace System
                     UInt32ToNumber(value, ref number);
 
                     char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    var vlb = new ValueListBuilder<char>(new Span<char>(stackPtr, CharStackBufferSize));
 
                     if (fmt != 0)
                     {
-                        NumberToString(ref sb, ref number, fmt, digits, info);
+                        NumberToString(ref vlb, ref number, fmt, digits, info);
                     }
                     else
                     {
-                        NumberToStringFormat(ref sb, ref number, formatSpan, info);
+                        NumberToStringFormat(ref vlb, ref number, formatSpan, info);
                     }
-                    return sb.ToString();
+
+                    string result = vlb.AsSpan().ToString();
+                    vlb.Dispose();
+                    return result;
                 }
             }
         }
 
-        public static bool TryFormatUInt32(uint value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // expose to caller's likely-const format to trim away slow path
+        public static bool TryFormatUInt32<TChar>(uint value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             // Fast path for default format
             if (format.Length == 0)
             {
@@ -978,7 +1081,7 @@ namespace System
 
             return TryFormatUInt32Slow(value, format, provider, destination, out charsWritten);
 
-            static unsafe bool TryFormatUInt32Slow(uint value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+            static unsafe bool TryFormatUInt32Slow(uint value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten)
             {
                 char fmt = ParseFormatSpecifier(format, out int digits);
                 char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
@@ -999,18 +1102,21 @@ namespace System
 
                     UInt32ToNumber(value, ref number);
 
-                    char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    TChar* stackPtr = stackalloc TChar[CharStackBufferSize];
+                    var vlb = new ValueListBuilder<TChar>(new Span<TChar>(stackPtr, CharStackBufferSize));
 
                     if (fmt != 0)
                     {
-                        NumberToString(ref sb, ref number, fmt, digits, info);
+                        NumberToString(ref vlb, ref number, fmt, digits, info);
                     }
                     else
                     {
-                        NumberToStringFormat(ref sb, ref number, format, info);
+                        NumberToStringFormat(ref vlb, ref number, format, info);
                     }
-                    return sb.TryCopyTo(destination, out charsWritten);
+
+                    bool success = vlb.TryCopyTo(destination, out charsWritten);
+                    vlb.Dispose();
+                    return success;
                 }
             }
         }
@@ -1052,34 +1158,40 @@ namespace System
                     Int64ToNumber(value, ref number);
 
                     char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    var vlb = new ValueListBuilder<char>(new Span<char>(stackPtr, CharStackBufferSize));
 
                     if (fmt != 0)
                     {
-                        NumberToString(ref sb, ref number, fmt, digits, info);
+                        NumberToString(ref vlb, ref number, fmt, digits, info);
                     }
                     else
                     {
-                        NumberToStringFormat(ref sb, ref number, formatSpan, info);
+                        NumberToStringFormat(ref vlb, ref number, formatSpan, info);
                     }
-                    return sb.ToString();
+
+                    string result = vlb.AsSpan().ToString();
+                    vlb.Dispose();
+                    return result;
                 }
             }
         }
 
-        public static bool TryFormatInt64(long value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // expose to caller's likely-const format to trim away slow path
+        public static bool TryFormatInt64<TChar>(long value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             // Fast path for default format
             if (format.Length == 0)
             {
                 return value >= 0 ?
                     TryUInt64ToDecStr((ulong)value, destination, out charsWritten) :
-                    TryNegativeInt64ToDecStr(value, digits: -1, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
+                    TryNegativeInt64ToDecStr(value, digits: -1, NumberFormatInfo.GetInstance(provider).NegativeSignTChar<TChar>(), destination, out charsWritten);
             }
 
             return TryFormatInt64Slow(value, format, provider, destination, out charsWritten);
 
-            static unsafe bool TryFormatInt64Slow(long value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+            static unsafe bool TryFormatInt64Slow(long value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten)
             {
                 char fmt = ParseFormatSpecifier(format, out int digits);
                 char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
@@ -1087,7 +1199,7 @@ namespace System
                 {
                     return value >= 0 ?
                         TryUInt64ToDecStr((ulong)value, digits, destination, out charsWritten) :
-                        TryNegativeInt64ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
+                        TryNegativeInt64ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSignTChar<TChar>(), destination, out charsWritten);
                 }
                 else if (fmtUpper == 'X')
                 {
@@ -1103,17 +1215,20 @@ namespace System
                     Int64ToNumber(value, ref number);
 
                     char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    var vlb = new ValueListBuilder<TChar>(new Span<TChar>(stackPtr, CharStackBufferSize));
 
                     if (fmt != 0)
                     {
-                        NumberToString(ref sb, ref number, fmt, digits, info);
+                        NumberToString(ref vlb, ref number, fmt, digits, info);
                     }
                     else
                     {
-                        NumberToStringFormat(ref sb, ref number, format, info);
+                        NumberToStringFormat(ref vlb, ref number, format, info);
                     }
-                    return sb.TryCopyTo(destination, out charsWritten);
+
+                    bool success = vlb.TryCopyTo(destination, out charsWritten);
+                    vlb.Dispose();
+                    return success;
                 }
             }
         }
@@ -1151,23 +1266,29 @@ namespace System
                     UInt64ToNumber(value, ref number);
 
                     char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    var vlb = new ValueListBuilder<char>(new Span<char>(stackPtr, CharStackBufferSize));
 
                     if (fmt != 0)
                     {
-                        NumberToString(ref sb, ref number, fmt, digits, info);
+                        NumberToString(ref vlb, ref number, fmt, digits, info);
                     }
                     else
                     {
-                        NumberToStringFormat(ref sb, ref number, formatSpan, info);
+                        NumberToStringFormat(ref vlb, ref number, formatSpan, info);
                     }
-                    return sb.ToString();
+
+                    string result = vlb.AsSpan().ToString();
+                    vlb.Dispose();
+                    return result;
                 }
             }
         }
 
-        public static bool TryFormatUInt64(ulong value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] // expose to caller's likely-const format to trim away slow path
+        public static bool TryFormatUInt64<TChar>(ulong value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             // Fast path for default format
             if (format.Length == 0)
             {
@@ -1176,7 +1297,7 @@ namespace System
 
             return TryFormatUInt64Slow(value, format, provider, destination, out charsWritten);
 
-            static unsafe bool TryFormatUInt64Slow(ulong value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+            static unsafe bool TryFormatUInt64Slow(ulong value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten)
             {
                 char fmt = ParseFormatSpecifier(format, out int digits);
                 char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
@@ -1197,18 +1318,21 @@ namespace System
 
                     UInt64ToNumber(value, ref number);
 
-                    char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    TChar* stackPtr = stackalloc TChar[CharStackBufferSize];
+                    var vlb = new ValueListBuilder<TChar>(new Span<TChar>(stackPtr, CharStackBufferSize));
 
                     if (fmt != 0)
                     {
-                        NumberToString(ref sb, ref number, fmt, digits, info);
+                        NumberToString(ref vlb, ref number, fmt, digits, info);
                     }
                     else
                     {
-                        NumberToStringFormat(ref sb, ref number, format, info);
+                        NumberToStringFormat(ref vlb, ref number, format, info);
                     }
-                    return sb.TryCopyTo(destination, out charsWritten);
+
+                    bool success = vlb.TryCopyTo(destination, out charsWritten);
+                    vlb.Dispose();
+                    return success;
                 }
             }
         }
@@ -1252,35 +1376,39 @@ namespace System
                     Int128ToNumber(value, ref number);
 
                     char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    var vlb = new ValueListBuilder<char>(new Span<char>(stackPtr, CharStackBufferSize));
 
                     if (fmt != 0)
                     {
-                        NumberToString(ref sb, ref number, fmt, digits, info);
+                        NumberToString(ref vlb, ref number, fmt, digits, info);
                     }
                     else
                     {
-                        NumberToStringFormat(ref sb, ref number, formatSpan, info);
+                        NumberToStringFormat(ref vlb, ref number, formatSpan, info);
                     }
 
-                    return sb.ToString();
+                    string result = vlb.AsSpan().ToString();
+                    vlb.Dispose();
+                    return result;
                 }
             }
         }
 
-        public static bool TryFormatInt128(Int128 value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+        public static bool TryFormatInt128<TChar>(Int128 value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             // Fast path for default format
             if (format.Length == 0)
             {
                 return Int128.IsPositive(value)
                      ? TryUInt128ToDecStr((UInt128)value, digits: -1, destination, out charsWritten)
-                     : TryNegativeInt128ToDecStr(value, digits: -1, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
+                     : TryNegativeInt128ToDecStr(value, digits: -1, NumberFormatInfo.GetInstance(provider).NegativeSignTChar<TChar>(), destination, out charsWritten);
             }
 
             return TryFormatInt128Slow(value, format, provider, destination, out charsWritten);
 
-            static unsafe bool TryFormatInt128Slow(Int128 value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+            static unsafe bool TryFormatInt128Slow(Int128 value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten)
             {
                 char fmt = ParseFormatSpecifier(format, out int digits);
                 char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
@@ -1289,7 +1417,7 @@ namespace System
                 {
                     return Int128.IsPositive(value)
                         ? TryUInt128ToDecStr((UInt128)value, digits, destination, out charsWritten)
-                        : TryNegativeInt128ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSign, destination, out charsWritten);
+                        : TryNegativeInt128ToDecStr(value, digits, NumberFormatInfo.GetInstance(provider).NegativeSignTChar<TChar>(), destination, out charsWritten);
                 }
                 else if (fmtUpper == 'X')
                 {
@@ -1304,19 +1432,21 @@ namespace System
 
                     Int128ToNumber(value, ref number);
 
-                    char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    TChar* stackPtr = stackalloc TChar[CharStackBufferSize];
+                    var vlb = new ValueListBuilder<TChar>(new Span<TChar>(stackPtr, CharStackBufferSize));
 
                     if (fmt != 0)
                     {
-                        NumberToString(ref sb, ref number, fmt, digits, info);
+                        NumberToString(ref vlb, ref number, fmt, digits, info);
                     }
                     else
                     {
-                        NumberToStringFormat(ref sb, ref number, format, info);
+                        NumberToStringFormat(ref vlb, ref number, format, info);
                     }
 
-                    return sb.TryCopyTo(destination, out charsWritten);
+                    bool success = vlb.TryCopyTo(destination, out charsWritten);
+                    vlb.Dispose();
+                    return success;
                 }
             }
         }
@@ -1356,24 +1486,28 @@ namespace System
                     UInt128ToNumber(value, ref number);
 
                     char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    var vlb = new ValueListBuilder<char>(new Span<char>(stackPtr, CharStackBufferSize));
 
                     if (fmt != 0)
                     {
-                        NumberToString(ref sb, ref number, fmt, digits, info);
+                        NumberToString(ref vlb, ref number, fmt, digits, info);
                     }
                     else
                     {
-                        NumberToStringFormat(ref sb, ref number, formatSpan, info);
+                        NumberToStringFormat(ref vlb, ref number, formatSpan, info);
                     }
 
-                    return sb.ToString();
+                    string result = vlb.AsSpan().ToString();
+                    vlb.Dispose();
+                    return result;
                 }
             }
         }
 
-        public static bool TryFormatUInt128(UInt128 value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+        public static bool TryFormatUInt128<TChar>(UInt128 value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             // Fast path for default format
             if (format.Length == 0)
             {
@@ -1382,7 +1516,7 @@ namespace System
 
             return TryFormatUInt128Slow(value, format, provider, destination, out charsWritten);
 
-            static unsafe bool TryFormatUInt128Slow(UInt128 value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<char> destination, out int charsWritten)
+            static unsafe bool TryFormatUInt128Slow(UInt128 value, ReadOnlySpan<char> format, IFormatProvider? provider, Span<TChar> destination, out int charsWritten)
             {
                 char fmt = ParseFormatSpecifier(format, out int digits);
                 char fmtUpper = (char)(fmt & 0xFFDF); // ensure fmt is upper-cased for purposes of comparison
@@ -1404,19 +1538,21 @@ namespace System
 
                     UInt128ToNumber(value, ref number);
 
-                    char* stackPtr = stackalloc char[CharStackBufferSize];
-                    ValueStringBuilder sb = new ValueStringBuilder(new Span<char>(stackPtr, CharStackBufferSize));
+                    TChar* stackPtr = stackalloc TChar[CharStackBufferSize];
+                    var vlb = new ValueListBuilder<TChar>(new Span<TChar>(stackPtr, CharStackBufferSize));
 
                     if (fmt != 0)
                     {
-                        NumberToString(ref sb, ref number, fmt, digits, info);
+                        NumberToString(ref vlb, ref number, fmt, digits, info);
                     }
                     else
                     {
-                        NumberToStringFormat(ref sb, ref number, format, info);
+                        NumberToStringFormat(ref vlb, ref number, format, info);
                     }
 
-                    return sb.TryCopyTo(destination, out charsWritten);
+                    bool success = vlb.TryCopyTo(destination, out charsWritten);
+                    vlb.Dispose();
+                    return success;
                 }
             }
         }
@@ -1446,25 +1582,27 @@ namespace System
 
             byte* dst = number.GetDigitsPointer();
             while (--i >= 0)
+            {
                 *dst++ = *p++;
-            *dst = (byte)('\0');
+            }
+            *dst = (byte)'\0';
 
             number.CheckConsistency();
         }
 
-        public static string Int32ToDecStr(int value)
-        {
-            return value >= 0 ?
+        public static string Int32ToDecStr(int value) =>
+            value >= 0 ?
                 UInt32ToDecStr((uint)value) :
                 NegativeInt32ToDecStr(value, -1, NumberFormatInfo.CurrentInfo.NegativeSign);
-        }
 
         private static unsafe string NegativeInt32ToDecStr(int value, int digits, string sNegative)
         {
             Debug.Assert(value < 0);
 
             if (digits < 1)
+            {
                 digits = 1;
+            }
 
             int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits((uint)(-value))) + sNegative.Length;
             string result = string.FastAllocateString(bufferLength);
@@ -1482,12 +1620,15 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryNegativeInt32ToDecStr(int value, int digits, string sNegative, Span<char> destination, out int charsWritten)
+        private static unsafe bool TryNegativeInt32ToDecStr<TChar>(int value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(value < 0);
 
             if (digits < 1)
+            {
                 digits = 1;
+            }
 
             int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits((uint)(-value))) + sNegative.Length;
             if (bufferLength > destination.Length)
@@ -1497,9 +1638,9 @@ namespace System
             }
 
             charsWritten = bufferLength;
-            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+            fixed (TChar* buffer = &MemoryMarshal.GetReference(destination))
             {
-                char* p = UInt32ToDecChars(buffer + bufferLength, (uint)(-value), digits);
+                TChar* p = UInt32ToDecChars(buffer + bufferLength, (uint)(-value), digits);
                 Debug.Assert(p == buffer + sNegative.Length);
 
                 for (int i = sNegative.Length - 1; i >= 0; i--)
@@ -1514,7 +1655,9 @@ namespace System
         private static unsafe string Int32ToHexStr(int value, char hexBase, int digits)
         {
             if (digits < 1)
+            {
                 digits = 1;
+            }
 
             int bufferLength = Math.Max(digits, FormattingHelpers.CountHexDigits((uint)value));
             string result = string.FastAllocateString(bufferLength);
@@ -1526,10 +1669,14 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryInt32ToHexStr(int value, char hexBase, int digits, Span<char> destination, out int charsWritten)
+        private static unsafe bool TryInt32ToHexStr<TChar>(int value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             if (digits < 1)
+            {
                 digits = 1;
+            }
 
             int bufferLength = Math.Max(digits, FormattingHelpers.CountHexDigits((uint)value));
             if (bufferLength > destination.Length)
@@ -1539,21 +1686,23 @@ namespace System
             }
 
             charsWritten = bufferLength;
-            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+            fixed (TChar* buffer = &MemoryMarshal.GetReference(destination))
             {
-                char* p = Int32ToHexChars(buffer + bufferLength, (uint)value, hexBase, digits);
+                TChar* p = Int32ToHexChars(buffer + bufferLength, (uint)value, hexBase, digits);
                 Debug.Assert(p == buffer);
             }
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe char* Int32ToHexChars(char* buffer, uint value, int hexBase, int digits)
+        private static unsafe TChar* Int32ToHexChars<TChar>(TChar* buffer, uint value, int hexBase, int digits) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             while (--digits >= 0 || value != 0)
             {
                 byte digit = (byte)(value & 0xF);
-                *(--buffer) = (char)(digit + (digit < 10 ? (byte)'0' : hexBase));
+                *(--buffer) = TChar.CreateTruncating(digit + (digit < 10 ? (byte)'0' : hexBase));
                 value >>= 4;
             }
             return buffer;
@@ -1575,10 +1724,29 @@ namespace System
 
             byte* dst = number.GetDigitsPointer();
             while (--i >= 0)
+            {
                 *dst++ = *p++;
-            *dst = (byte)('\0');
+            }
+            *dst = (byte)'\0';
 
             number.CheckConsistency();
+        }
+
+        /// <summary>
+        /// Writes a value [ 00 .. 99 ] to the buffer starting at the specified offset.
+        /// This method performs best when the starting index is a constant literal.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void WriteTwoDigits<TChar>(uint value, Span<TChar> buffer, int startingIndex = 0) where TChar : unmanaged, IBinaryInteger<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            Debug.Assert(value <= 99);
+            Debug.Assert(startingIndex <= buffer.Length - 2);
+
+            fixed (TChar* bufferPtr = &MemoryMarshal.GetReference(buffer))
+            {
+                WriteTwoDigits(bufferPtr + startingIndex, value);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1592,19 +1760,72 @@ namespace System
                 Unsafe.WriteUnaligned(ptr,
                     Unsafe.ReadUnaligned<uint>(
                         ref Unsafe.As<char, byte>(
-                            ref Unsafe.Add(ref TwoDigitsChars.GetRawStringData(), (int)value * 2))));
+                            ref Unsafe.Add(ref TwoDigitsChars.GetRawStringData(), (nuint)value * 2))));
             }
             else
             {
                 Unsafe.WriteUnaligned(ptr,
                     Unsafe.ReadUnaligned<ushort>(
-                        ref Unsafe.Add(ref MemoryMarshal.GetReference(TwoDigitsBytes), (int)value * 2)));
+                        ref Unsafe.Add(ref MemoryMarshal.GetReference(TwoDigitsBytes), (nuint)value * 2)));
+            }
+        }
+
+        /// <summary>
+        /// Writes a value [ 0000 .. 9999 ] to the buffer starting at the specified offset.
+        /// This method performs best when the starting index is a constant literal.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe void WriteFourDigits<TChar>(uint value, Span<TChar> buffer, int startingIndex = 0) where TChar : unmanaged, IBinaryInteger<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            Debug.Assert(value <= 9999);
+            Debug.Assert(startingIndex <= buffer.Length - 4);
+
+            (value, uint remainder) = Math.DivRem(value, 100);
+            fixed (TChar* bufferPtr = &MemoryMarshal.GetReference(buffer))
+            {
+                WriteTwoDigits(bufferPtr + startingIndex, value);
+                WriteTwoDigits(bufferPtr + startingIndex + 2, remainder);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe byte* UInt32ToDecChars(byte* bufferEnd, uint value)
+        internal static void CopyFour<TChar>(ReadOnlySpan<TChar> source, Span<TChar> destination) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            if (typeof(TChar) == typeof(byte))
+            {
+                Unsafe.WriteUnaligned(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(destination)),
+                    Unsafe.ReadUnaligned<uint>(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(source))));
+            }
+            else
+            {
+                Debug.Assert(typeof(TChar) == typeof(char));
+                Unsafe.WriteUnaligned(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(destination)),
+                    Unsafe.ReadUnaligned<ulong>(ref Unsafe.As<TChar, byte>(ref MemoryMarshal.GetReference(source))));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void WriteDigits<TChar>(uint value, Span<TChar> buffer) where TChar : unmanaged, IBinaryInteger<TChar>
+        {
+            Debug.Assert(buffer.Length > 0);
+
+            for (int i = buffer.Length - 1; i >= 1; i--)
+            {
+                uint temp = '0' + value;
+                value /= 10;
+                buffer[i] = TChar.CreateTruncating(temp - (value * 10));
+            }
+
+            Debug.Assert(value < 10);
+            buffer[0] = TChar.CreateTruncating('0' + value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe TChar* UInt32ToDecChars<TChar>(TChar* bufferEnd, uint value) where TChar : unmanaged, IBinaryInteger<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             if (value >= 10)
             {
                 // Handle all values >= 100 two-digits at a time so as to avoid expensive integer division operations.
@@ -1625,13 +1846,15 @@ namespace System
             }
 
             // Otherwise, store the single digit remaining.
-            *(--bufferEnd) = (byte)(value + '0');
+            *(--bufferEnd) = TChar.CreateTruncating(value + '0');
             return bufferEnd;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe byte* UInt32ToDecChars(byte* bufferEnd, uint value, int digits)
+        internal static unsafe TChar* UInt32ToDecChars<TChar>(TChar* bufferEnd, uint value, int digits) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             uint remainder;
             while (value >= 100)
             {
@@ -1645,58 +1868,7 @@ namespace System
             {
                 digits--;
                 (value, remainder) = Math.DivRem(value, 10);
-                *(--bufferEnd) = (byte)(remainder + '0');
-            }
-
-            return bufferEnd;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe char* UInt32ToDecChars(char* bufferEnd, uint value)
-        {
-            if (value >= 10)
-            {
-                // Handle all values >= 100 two-digits at a time so as to avoid expensive integer division operations.
-                while (value >= 100)
-                {
-                    bufferEnd -= 2;
-                    (value, uint remainder) = Math.DivRem(value, 100);
-                    WriteTwoDigits(bufferEnd, remainder);
-                }
-
-                // If there are two digits remaining, store them.
-                if (value >= 10)
-                {
-                    bufferEnd -= 2;
-                    WriteTwoDigits(bufferEnd, value);
-                    return bufferEnd;
-                }
-            }
-
-            // Otherwise, store the single digit remaining.
-            *(--bufferEnd) = (char)(value + '0');
-            return bufferEnd;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe char* UInt32ToDecChars(char* bufferEnd, uint value, int digits)
-        {
-            // Handle all values >= 100 two-digits at a time so as to avoid expensive integer division operations.
-            uint remainder;
-            while (value >= 100)
-            {
-                bufferEnd -= 2;
-                digits -= 2;
-                (value, remainder) = Math.DivRem(value, 100);
-                WriteTwoDigits(bufferEnd, remainder);
-            }
-
-            // Continue writing single digits until we've exhausted both the value and the requested number of digits.
-            while (value != 0 || digits > 0)
-            {
-                digits--;
-                (value, remainder) = Math.DivRem(value, 10);
-                *(--bufferEnd) = (char)(remainder + '0');
+                *(--bufferEnd) = TChar.CreateTruncating(remainder + '0');
             }
 
             return bufferEnd;
@@ -1753,15 +1925,17 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryUInt32ToDecStr(uint value, Span<char> destination, out int charsWritten)
+        private static unsafe bool TryUInt32ToDecStr<TChar>(uint value, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             int bufferLength = FormattingHelpers.CountDigits(value);
             if (bufferLength <= destination.Length)
             {
                 charsWritten = bufferLength;
-                fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+                fixed (TChar* buffer = &MemoryMarshal.GetReference(destination))
                 {
-                    char* p = UInt32ToDecChars(buffer + bufferLength, value);
+                    TChar* p = UInt32ToDecChars(buffer + bufferLength, value);
                     Debug.Assert(p == buffer);
                 }
                 return true;
@@ -1771,16 +1945,18 @@ namespace System
             return false;
         }
 
-        private static unsafe bool TryUInt32ToDecStr(uint value, int digits, Span<char> destination, out int charsWritten)
+        private static unsafe bool TryUInt32ToDecStr<TChar>(uint value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             int countedDigits = FormattingHelpers.CountDigits(value);
             int bufferLength = Math.Max(digits, countedDigits);
             if (bufferLength <= destination.Length)
             {
                 charsWritten = bufferLength;
-                fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+                fixed (TChar* buffer = &MemoryMarshal.GetReference(destination))
                 {
-                    char* p = buffer + bufferLength;
+                    TChar* p = buffer + bufferLength;
                     p = digits > countedDigits ?
                         UInt32ToDecChars(p, value, digits) :
                         UInt32ToDecChars(p, value);
@@ -1818,8 +1994,10 @@ namespace System
 
             byte* dst = number.GetDigitsPointer();
             while (--i >= 0)
+            {
                 *dst++ = *p++;
-            *dst = (byte)('\0');
+            }
+            *dst = (byte)'\0';
 
             number.CheckConsistency();
         }
@@ -1836,7 +2014,9 @@ namespace System
             Debug.Assert(value < 0);
 
             if (digits < 1)
+            {
                 digits = 1;
+            }
 
             int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits((ulong)(-value))) + sNegative.Length;
             string result = string.FastAllocateString(bufferLength);
@@ -1854,12 +2034,15 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryNegativeInt64ToDecStr(long value, int digits, string sNegative, Span<char> destination, out int charsWritten)
+        private static unsafe bool TryNegativeInt64ToDecStr<TChar>(long value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(value < 0);
 
             if (digits < 1)
+            {
                 digits = 1;
+            }
 
             int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits((ulong)(-value))) + sNegative.Length;
             if (bufferLength > destination.Length)
@@ -1869,9 +2052,9 @@ namespace System
             }
 
             charsWritten = bufferLength;
-            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+            fixed (TChar* buffer = &MemoryMarshal.GetReference(destination))
             {
-                char* p = UInt64ToDecChars(buffer + bufferLength, (ulong)(-value), digits);
+                TChar* p = UInt64ToDecChars(buffer + bufferLength, (ulong)(-value), digits);
                 Debug.Assert(p == buffer + sNegative.Length);
 
                 for (int i = sNegative.Length - 1; i >= 0; i--)
@@ -1886,7 +2069,9 @@ namespace System
         private static unsafe string Int64ToHexStr(long value, char hexBase, int digits)
         {
             if (digits < 1)
+            {
                 digits = 1;
+            }
 
             int bufferLength = Math.Max(digits, FormattingHelpers.CountHexDigits((ulong)value));
             string result = string.FastAllocateString(bufferLength);
@@ -1898,10 +2083,14 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryInt64ToHexStr(long value, char hexBase, int digits, Span<char> destination, out int charsWritten)
+        private static unsafe bool TryInt64ToHexStr<TChar>(long value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             if (digits < 1)
+            {
                 digits = 1;
+            }
 
             int bufferLength = Math.Max(digits, FormattingHelpers.CountHexDigits((ulong)value));
             if (bufferLength > destination.Length)
@@ -1911,9 +2100,9 @@ namespace System
             }
 
             charsWritten = bufferLength;
-            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+            fixed (TChar* buffer = &MemoryMarshal.GetReference(destination))
             {
-                char* p = Int64ToHexChars(buffer + bufferLength, (ulong)value, hexBase, digits);
+                TChar* p = Int64ToHexChars(buffer + bufferLength, (ulong)value, hexBase, digits);
                 Debug.Assert(p == buffer);
             }
             return true;
@@ -1922,8 +2111,9 @@ namespace System
 #if TARGET_64BIT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        private static unsafe char* Int64ToHexChars(char* buffer, ulong value, int hexBase, int digits)
+        private static unsafe TChar* Int64ToHexChars<TChar>(TChar* buffer, ulong value, int hexBase, int digits) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 #if TARGET_32BIT
             uint lower = (uint)value;
             uint upper = (uint)(value >> 32);
@@ -1941,7 +2131,7 @@ namespace System
             while (--digits >= 0 || value != 0)
             {
                 byte digit = (byte)(value & 0xF);
-                *(--buffer) = (char)(digit + (digit < 10 ? (byte)'0' : hexBase));
+                *(--buffer) = TChar.CreateTruncating(digit + (digit < 10 ? (byte)'0' : hexBase));
                 value >>= 4;
             }
             return buffer;
@@ -1964,8 +2154,10 @@ namespace System
 
             byte* dst = number.GetDigitsPointer();
             while (--i >= 0)
+            {
                 *dst++ = *p++;
-            *dst = (byte)('\0');
+            }
+            *dst = (byte)'\0';
 
             number.CheckConsistency();
         }
@@ -1981,8 +2173,10 @@ namespace System
 #if TARGET_64BIT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        internal static unsafe byte* UInt64ToDecChars(byte* bufferEnd, ulong value)
+        internal static unsafe TChar* UInt64ToDecChars<TChar>(TChar* bufferEnd, ulong value) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
 #if TARGET_32BIT
             while ((uint)(value >> 32) != 0)
             {
@@ -2010,7 +2204,7 @@ namespace System
             }
 
             // Otherwise, store the single digit remaining.
-            *(--bufferEnd) = (byte)(value + '0');
+            *(--bufferEnd) = TChar.CreateTruncating(value + '0');
             return bufferEnd;
 #endif
         }
@@ -2018,8 +2212,10 @@ namespace System
 #if TARGET_64BIT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        internal static unsafe byte* UInt64ToDecChars(byte* bufferEnd, ulong value, int digits)
+        internal static unsafe TChar* UInt64ToDecChars<TChar>(TChar* bufferEnd, ulong value, int digits) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
 #if TARGET_32BIT
             while ((uint)(value >> 32) != 0)
             {
@@ -2041,77 +2237,7 @@ namespace System
             {
                 digits--;
                 (value, remainder) = Math.DivRem(value, 10);
-                *(--bufferEnd) = (byte)(remainder + '0');
-            }
-
-            return bufferEnd;
-#endif
-        }
-
-#if TARGET_64BIT
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        internal static unsafe char* UInt64ToDecChars(char* bufferEnd, ulong value)
-        {
-#if TARGET_32BIT
-            while ((uint)(value >> 32) != 0)
-            {
-                bufferEnd = UInt32ToDecChars(bufferEnd, Int64DivMod1E9(ref value), 9);
-            }
-            return UInt32ToDecChars(bufferEnd, (uint)value);
-#else
-            if (value >= 10)
-            {
-                // Handle all values >= 100 two-digits at a time so as to avoid expensive integer division operations.
-                while (value >= 100)
-                {
-                    bufferEnd -= 2;
-                    (value, ulong remainder) = Math.DivRem(value, 100);
-                    WriteTwoDigits(bufferEnd, (uint)remainder);
-                }
-
-                // If there are two digits remaining, store them.
-                if (value >= 10)
-                {
-                    bufferEnd -= 2;
-                    WriteTwoDigits(bufferEnd, (uint)value);
-                    return bufferEnd;
-                }
-            }
-
-            // Otherwise, store the single digit remaining.
-            *(--bufferEnd) = (char)(value + '0');
-            return bufferEnd;
-#endif
-        }
-
-#if TARGET_64BIT
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-#endif
-        internal static unsafe char* UInt64ToDecChars(char* bufferEnd, ulong value, int digits)
-        {
-#if TARGET_32BIT
-            while ((uint)(value >> 32) != 0)
-            {
-                bufferEnd = UInt32ToDecChars(bufferEnd, Int64DivMod1E9(ref value), 9);
-                digits -= 9;
-            }
-            return UInt32ToDecChars(bufferEnd, (uint)value, digits);
-#else
-            ulong remainder;
-            while (value >= 100)
-            {
-                bufferEnd -= 2;
-                digits -= 2;
-                (value, remainder) = Math.DivRem(value, 100);
-                WriteTwoDigits(bufferEnd, (uint)remainder);
-            }
-
-            while (value != 0 || digits > 0)
-            {
-                digits--;
-                (value, remainder) = Math.DivRem(value, 10);
-                *(--bufferEnd) = (char)(remainder + '0');
+                *(--bufferEnd) = TChar.CreateTruncating(remainder + '0');
             }
 
             return bufferEnd;
@@ -2141,7 +2267,9 @@ namespace System
         internal static unsafe string UInt64ToDecStr(ulong value, int digits)
         {
             if (digits <= 1)
+            {
                 return UInt64ToDecStr(value);
+            }
 
             int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
             string result = string.FastAllocateString(bufferLength);
@@ -2154,15 +2282,17 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryUInt64ToDecStr(ulong value, Span<char> destination, out int charsWritten)
+        private static unsafe bool TryUInt64ToDecStr<TChar>(ulong value, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             int bufferLength = FormattingHelpers.CountDigits(value);
             if (bufferLength <= destination.Length)
             {
                 charsWritten = bufferLength;
-                fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+                fixed (TChar* buffer = &MemoryMarshal.GetReference(destination))
                 {
-                    char* p = buffer + bufferLength;
+                    TChar* p = buffer + bufferLength;
                     p = UInt64ToDecChars(p, value);
                     Debug.Assert(p == buffer);
                 }
@@ -2173,16 +2303,16 @@ namespace System
             return false;
         }
 
-        private static unsafe bool TryUInt64ToDecStr(ulong value, int digits, Span<char> destination, out int charsWritten)
+        private static unsafe bool TryUInt64ToDecStr<TChar>(ulong value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
             int countedDigits = FormattingHelpers.CountDigits(value);
             int bufferLength = Math.Max(digits, countedDigits);
             if (bufferLength <= destination.Length)
             {
                 charsWritten = bufferLength;
-                fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+                fixed (TChar* buffer = &MemoryMarshal.GetReference(destination))
                 {
-                    char* p = buffer + bufferLength;
+                    TChar* p = buffer + bufferLength;
                     p = digits > countedDigits ?
                         UInt64ToDecChars(p, value, digits) :
                         UInt64ToDecChars(p, value);
@@ -2219,8 +2349,10 @@ namespace System
 
             byte* dst = number.GetDigitsPointer();
             while (--i >= 0)
+            {
                 *dst++ = *p++;
-            *dst = (byte)('\0');
+            }
+            *dst = (byte)'\0';
 
             number.CheckConsistency();
         }
@@ -2237,7 +2369,9 @@ namespace System
             Debug.Assert(Int128.IsNegative(value));
 
             if (digits < 1)
+            {
                 digits = 1;
+            }
 
             UInt128 absValue = (UInt128)(-value);
 
@@ -2257,12 +2391,15 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryNegativeInt128ToDecStr(Int128 value, int digits, string sNegative, Span<char> destination, out int charsWritten)
+        private static unsafe bool TryNegativeInt128ToDecStr<TChar>(Int128 value, int digits, ReadOnlySpan<TChar> sNegative, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(Int128.IsNegative(value));
 
             if (digits < 1)
+            {
                 digits = 1;
+            }
 
             UInt128 absValue = (UInt128)(-value);
 
@@ -2274,9 +2411,9 @@ namespace System
             }
 
             charsWritten = bufferLength;
-            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+            fixed (TChar* buffer = &MemoryMarshal.GetReference(destination))
             {
-                char* p = UInt128ToDecChars(buffer + bufferLength, absValue, digits);
+                TChar* p = UInt128ToDecChars(buffer + bufferLength, absValue, digits);
                 Debug.Assert(p == buffer + sNegative.Length);
 
                 for (int i = sNegative.Length - 1; i >= 0; i--)
@@ -2291,7 +2428,9 @@ namespace System
         private static unsafe string Int128ToHexStr(Int128 value, char hexBase, int digits)
         {
             if (digits < 1)
+            {
                 digits = 1;
+            }
 
             UInt128 uValue = (UInt128)value;
 
@@ -2305,10 +2444,14 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryInt128ToHexStr(Int128 value, char hexBase, int digits, Span<char> destination, out int charsWritten)
+        private static unsafe bool TryInt128ToHexStr<TChar>(Int128 value, char hexBase, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             if (digits < 1)
+            {
                 digits = 1;
+            }
 
             UInt128 uValue = (UInt128)value;
 
@@ -2320,16 +2463,16 @@ namespace System
             }
 
             charsWritten = bufferLength;
-            fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+            fixed (TChar* buffer = &MemoryMarshal.GetReference(destination))
             {
-                char* p = Int128ToHexChars(buffer + bufferLength, uValue, hexBase, digits);
+                TChar* p = Int128ToHexChars(buffer + bufferLength, uValue, hexBase, digits);
                 Debug.Assert(p == buffer);
             }
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe char* Int128ToHexChars(char* buffer, UInt128 value, int hexBase, int digits)
+        private static unsafe TChar* Int128ToHexChars<TChar>(TChar* buffer, UInt128 value, int hexBase, int digits) where TChar : unmanaged, IBinaryInteger<TChar>
         {
             ulong lower = value.Lower;
             ulong upper = value.Upper;
@@ -2360,8 +2503,10 @@ namespace System
 
             byte* dst = number.GetDigitsPointer();
             while (--i >= 0)
+            {
                 *dst++ = *p++;
-            *dst = (byte)('\0');
+            }
+            *dst = (byte)'\0';
 
             number.CheckConsistency();
         }
@@ -2375,19 +2520,10 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe byte* UInt128ToDecChars(byte* bufferEnd, UInt128 value, int digits)
+        internal static unsafe TChar* UInt128ToDecChars<TChar>(TChar* bufferEnd, UInt128 value) where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            while (value.Upper != 0)
-            {
-                bufferEnd = UInt64ToDecChars(bufferEnd, Int128DivMod1E19(ref value), 19);
-                digits -= 19;
-            }
-            return UInt64ToDecChars(bufferEnd, value.Lower, digits);
-        }
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe char* UInt128ToDecChars(char* bufferEnd, UInt128 value)
-        {
             while (value.Upper != 0)
             {
                 bufferEnd = UInt64ToDecChars(bufferEnd, Int128DivMod1E19(ref value), 19);
@@ -2396,8 +2532,10 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static unsafe char* UInt128ToDecChars(char* bufferEnd, UInt128 value, int digits)
+        internal static unsafe TChar* UInt128ToDecChars<TChar>(TChar* bufferEnd, UInt128 value, int digits) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             while (value.Upper != 0)
             {
                 bufferEnd = UInt64ToDecChars(bufferEnd, Int128DivMod1E19(ref value), 19);
@@ -2428,7 +2566,9 @@ namespace System
         internal static unsafe string UInt128ToDecStr(UInt128 value, int digits)
         {
             if (digits <= 1)
+            {
                 return UInt128ToDecStr(value);
+            }
 
             int bufferLength = Math.Max(digits, FormattingHelpers.CountDigits(value));
             string result = string.FastAllocateString(bufferLength);
@@ -2441,16 +2581,16 @@ namespace System
             return result;
         }
 
-        private static unsafe bool TryUInt128ToDecStr(UInt128 value, int digits, Span<char> destination, out int charsWritten)
+        private static unsafe bool TryUInt128ToDecStr<TChar>(UInt128 value, int digits, Span<TChar> destination, out int charsWritten) where TChar : unmanaged, IBinaryInteger<TChar>
         {
             int countedDigits = FormattingHelpers.CountDigits(value);
             int bufferLength = Math.Max(digits, countedDigits);
             if (bufferLength <= destination.Length)
             {
                 charsWritten = bufferLength;
-                fixed (char* buffer = &MemoryMarshal.GetReference(destination))
+                fixed (TChar* buffer = &MemoryMarshal.GetReference(destination))
                 {
-                    char* p = buffer + bufferLength;
+                    TChar* p = buffer + bufferLength;
                     p = digits > countedDigits ?
                         UInt128ToDecChars(p, value, digits) :
                         UInt128ToDecChars(p, value);
@@ -2511,9 +2651,9 @@ namespace System
                         // Check if we are about to overflow past our limit of 9 digits
                         if (n >= 100_000_000)
                         {
-                            throw new FormatException(SR.Argument_BadFormatSpecifier);
+                            ThrowHelper.ThrowFormatException_BadFormatSpecifier();
                         }
-                        n = ((n * 10) + format[i++] - '0');
+                        n = (n * 10) + format[i++] - '0';
                     }
 
                     // If we're at the end of the digits rather than having stopped because we hit something
@@ -2533,8 +2673,10 @@ namespace System
                 '\0';
         }
 
-        internal static unsafe void NumberToString(ref ValueStringBuilder sb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info)
+        internal static unsafe void NumberToString<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             number.CheckConsistency();
             bool isCorrectlyRounded = (number.Kind == NumberBufferKind.FloatingPoint);
 
@@ -2542,129 +2684,148 @@ namespace System
             {
                 case 'C':
                 case 'c':
-                {
-                    if (nMaxDigits < 0)
-                        nMaxDigits = info.CurrencyDecimalDigits;
+                    {
+                        if (nMaxDigits < 0)
+                        {
+                            nMaxDigits = info.CurrencyDecimalDigits;
+                        }
 
-                    RoundNumber(ref number, number.Scale + nMaxDigits, isCorrectlyRounded); // Don't change this line to use digPos since digCount could have its sign changed.
+                        RoundNumber(ref number, number.Scale + nMaxDigits, isCorrectlyRounded); // Don't change this line to use digPos since digCount could have its sign changed.
 
-                    FormatCurrency(ref sb, ref number, nMaxDigits, info);
+                        FormatCurrency(ref vlb, ref number, nMaxDigits, info);
 
-                    break;
-                }
+                        break;
+                    }
 
                 case 'F':
                 case 'f':
-                {
-                    if (nMaxDigits < 0)
-                        nMaxDigits = info.NumberDecimalDigits;
+                    {
+                        if (nMaxDigits < 0)
+                        {
+                            nMaxDigits = info.NumberDecimalDigits;
+                        }
 
-                    RoundNumber(ref number, number.Scale + nMaxDigits, isCorrectlyRounded);
+                        RoundNumber(ref number, number.Scale + nMaxDigits, isCorrectlyRounded);
 
-                    if (number.IsNegative)
-                        sb.Append(info.NegativeSign);
+                        if (number.IsNegative)
+                        {
+                            vlb.Append(info.NegativeSignTChar<TChar>());
+                        }
 
-                    FormatFixed(ref sb, ref number, nMaxDigits, null, info.NumberDecimalSeparator, null);
+                        FormatFixed(ref vlb, ref number, nMaxDigits, null, info.NumberDecimalSeparatorTChar<TChar>(), null);
 
-                    break;
-                }
+                        break;
+                    }
 
                 case 'N':
                 case 'n':
-                {
-                    if (nMaxDigits < 0)
-                        nMaxDigits = info.NumberDecimalDigits; // Since we are using digits in our calculation
+                    {
+                        if (nMaxDigits < 0)
+                        {
+                            nMaxDigits = info.NumberDecimalDigits; // Since we are using digits in our calculation
+                        }
 
-                    RoundNumber(ref number, number.Scale + nMaxDigits, isCorrectlyRounded);
+                        RoundNumber(ref number, number.Scale + nMaxDigits, isCorrectlyRounded);
 
-                    FormatNumber(ref sb, ref number, nMaxDigits, info);
+                        FormatNumber(ref vlb, ref number, nMaxDigits, info);
 
-                    break;
-                }
+                        break;
+                    }
 
                 case 'E':
                 case 'e':
-                {
-                    if (nMaxDigits < 0)
-                        nMaxDigits = DefaultPrecisionExponentialFormat;
-                    nMaxDigits++;
+                    {
+                        if (nMaxDigits < 0)
+                        {
+                            nMaxDigits = DefaultPrecisionExponentialFormat;
+                        }
+                        nMaxDigits++;
 
-                    RoundNumber(ref number, nMaxDigits, isCorrectlyRounded);
+                        RoundNumber(ref number, nMaxDigits, isCorrectlyRounded);
 
-                    if (number.IsNegative)
-                        sb.Append(info.NegativeSign);
+                        if (number.IsNegative)
+                        {
+                            vlb.Append(info.NegativeSignTChar<TChar>());
+                        }
 
-                    FormatScientific(ref sb, ref number, nMaxDigits, info, format);
+                        FormatScientific(ref vlb, ref number, nMaxDigits, info, format);
 
-                    break;
-                }
+                        break;
+                    }
 
                 case 'G':
                 case 'g':
-                {
-                    bool noRounding = false;
-                    if (nMaxDigits < 1)
                     {
-                        if ((number.Kind == NumberBufferKind.Decimal) && (nMaxDigits == -1))
+                        bool noRounding = false;
+                        if (nMaxDigits < 1)
                         {
-                            noRounding = true;  // Turn off rounding for ECMA compliance to output trailing 0's after decimal as significant
-
-                            if (number.Digits[0] == 0)
+                            if ((number.Kind == NumberBufferKind.Decimal) && (nMaxDigits == -1))
                             {
-                                // -0 should be formatted as 0 for decimal. This is normally handled by RoundNumber (which we are skipping)
-                                goto SkipSign;
+                                noRounding = true;  // Turn off rounding for ECMA compliance to output trailing 0's after decimal as significant
+
+                                if (number.Digits[0] == 0)
+                                {
+                                    // -0 should be formatted as 0 for decimal. This is normally handled by RoundNumber (which we are skipping)
+                                    goto SkipSign;
+                                }
+
+                                goto SkipRounding;
                             }
-
-                            goto SkipRounding;
+                            else
+                            {
+                                // This ensures that the PAL code pads out to the correct place even when we use the default precision
+                                nMaxDigits = number.DigitsCount;
+                            }
                         }
-                        else
+
+                        RoundNumber(ref number, nMaxDigits, isCorrectlyRounded);
+
+                    SkipRounding:
+                        if (number.IsNegative)
                         {
-                            // This ensures that the PAL code pads out to the correct place even when we use the default precision
-                            nMaxDigits = number.DigitsCount;
+                            vlb.Append(info.NegativeSignTChar<TChar>());
                         }
+
+                        SkipSign:
+                        FormatGeneral(ref vlb, ref number, nMaxDigits, info, (char)(format - ('G' - 'E')), noRounding);
+
+                        break;
                     }
-
-                    RoundNumber(ref number, nMaxDigits, isCorrectlyRounded);
-
-                SkipRounding:
-                    if (number.IsNegative)
-                        sb.Append(info.NegativeSign);
-
-                SkipSign:
-                    FormatGeneral(ref sb, ref number, nMaxDigits, info, (char)(format - ('G' - 'E')), noRounding);
-
-                    break;
-                }
 
                 case 'P':
                 case 'p':
-                {
-                    if (nMaxDigits < 0)
-                        nMaxDigits = info.PercentDecimalDigits;
-                    number.Scale += 2;
+                    {
+                        if (nMaxDigits < 0)
+                        {
+                            nMaxDigits = info.PercentDecimalDigits;
+                        }
+                        number.Scale += 2;
 
-                    RoundNumber(ref number, number.Scale + nMaxDigits, isCorrectlyRounded);
+                        RoundNumber(ref number, number.Scale + nMaxDigits, isCorrectlyRounded);
 
-                    FormatPercent(ref sb, ref number, nMaxDigits, info);
+                        FormatPercent(ref vlb, ref number, nMaxDigits, info);
 
-                    break;
-                }
+                        break;
+                    }
 
                 case 'R':
                 case 'r':
-                {
-                    format = (char)(format - ('R' - 'G'));
-                    Debug.Assert((format == 'G') || (format == 'g'));
-                    goto case 'G';
-                }
+                    {
+                        format = (char)(format - ('R' - 'G'));
+                        Debug.Assert(format is 'G' or 'g');
+                        goto case 'G';
+                    }
 
                 default:
-                    throw new FormatException(SR.Argument_BadFormatSpecifier);
+                    ThrowHelper.ThrowFormatException_BadFormatSpecifier();
+                    break;
             }
         }
 
-        internal static unsafe void NumberToStringFormat(ref ValueStringBuilder sb, ref NumberBuffer number, ReadOnlySpan<char> format, NumberFormatInfo info)
+        internal static unsafe void NumberToStringFormat<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, ReadOnlySpan<char> format, NumberFormatInfo info) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             number.CheckConsistency();
 
             int digitCount;
@@ -2707,16 +2868,23 @@ namespace System
                             case '#':
                                 digitCount++;
                                 break;
+
                             case '0':
                                 if (firstDigit == 0x7FFFFFFF)
+                                {
                                     firstDigit = digitCount;
+                                }
                                 digitCount++;
                                 lastDigit = digitCount;
                                 break;
+
                             case '.':
                                 if (decimalPos < 0)
+                                {
                                     decimalPos = digitCount;
+                                }
                                 break;
+
                             case ',':
                                 if (digitCount > 0 && decimalPos < 0)
                                 {
@@ -2733,28 +2901,33 @@ namespace System
                                     thousandCount = 1;
                                 }
                                 break;
+
                             case '%':
                                 scaleAdjust += 2;
                                 break;
+
                             case '\x2030':
                                 scaleAdjust += 3;
                                 break;
+
                             case '\'':
                             case '"':
-                                while (src < format.Length && pFormat[src] != 0 && pFormat[src++] != ch)
-                                    ;
+                                while (src < format.Length && pFormat[src] != 0 && pFormat[src++] != ch);
                                 break;
+
                             case '\\':
                                 if (src < format.Length && pFormat[src] != 0)
+                                {
                                     src++;
+                                }
                                 break;
+
                             case 'E':
                             case 'e':
                                 if ((src < format.Length && pFormat[src] == '0') ||
                                     (src + 1 < format.Length && (pFormat[src] == '+' || pFormat[src] == '-') && pFormat[src + 1] == '0'))
                                 {
-                                    while (++src < format.Length && pFormat[src] == '0')
-                                        ;
+                                    while (++src < format.Length && pFormat[src] == '0');
                                     scientific = true;
                                 }
                                 break;
@@ -2763,14 +2936,20 @@ namespace System
                 }
 
                 if (decimalPos < 0)
+                {
                     decimalPos = digitCount;
+                }
 
                 if (thousandPos >= 0)
                 {
                     if (thousandPos == decimalPos)
+                    {
                         scaleAdjust -= thousandCount * 3;
+                    }
                     else
+                    {
                         thousandSeps = true;
+                    }
                 }
 
                 if (dig[0] != 0)
@@ -2839,7 +3018,9 @@ namespace System
                     int groupTotalSizeCount = 0;
                     int groupSizeLen = groupDigits.Length;    // The length of groupDigits array.
                     if (groupSizeLen != 0)
+                    {
                         groupTotalSizeCount = groupDigits[groupSizeIndex];   // The current running total of group size.
+                    }
                     int groupSize = groupTotalSizeCount;
 
                     int totalDigits = digPos + ((adjust < 0) ? adjust : 0); // Actual number of digits in o/p
@@ -2847,7 +3028,10 @@ namespace System
                     while (numDigits > groupTotalSizeCount)
                     {
                         if (groupSize == 0)
+                        {
                             break;
+                        }
+
                         ++thousandsSepCtr;
                         if (thousandsSepCtr >= thousandsSepPos.Length)
                         {
@@ -2868,7 +3052,9 @@ namespace System
             }
 
             if (number.IsNegative && (section == 0) && (number.Scale != 0))
-                sb.Append(info.NegativeSign);
+            {
+                vlb.Append(info.NegativeSignTChar<TChar>());
+            }
 
             bool decimalWritten = false;
 
@@ -2889,12 +3075,12 @@ namespace System
                                 {
                                     // digPos will be one greater than thousandsSepPos[thousandsSepCtr] since we are at
                                     // the character after which the groupSeparator needs to be appended.
-                                    sb.Append(*cur != 0 ? (char)(*cur++) : '0');
+                                    vlb.Append(TChar.CreateTruncating(*cur != 0 ? (char)(*cur++) : '0'));
                                     if (thousandSeps && digPos > 1 && thousandsSepCtr >= 0)
                                     {
                                         if (digPos == thousandsSepPos[thousandsSepCtr] + 1)
                                         {
-                                            sb.Append(info.NumberGroupSeparator);
+                                            vlb.Append(info.NumberGroupSeparatorTChar<TChar>());
                                             thousandsSepCtr--;
                                         }
                                     }
@@ -2909,129 +3095,160 @@ namespace System
                     {
                         case '#':
                         case '0':
-                        {
-                            if (adjust < 0)
                             {
-                                adjust++;
-                                ch = digPos <= firstDigit ? '0' : '\0';
-                            }
-                            else
-                            {
-                                ch = *cur != 0 ? (char)(*cur++) : digPos > lastDigit ? '0' : '\0';
-                            }
-                            if (ch != 0)
-                            {
-                                sb.Append(ch);
-                                if (thousandSeps && digPos > 1 && thousandsSepCtr >= 0)
+                                if (adjust < 0)
                                 {
-                                    if (digPos == thousandsSepPos[thousandsSepCtr] + 1)
-                                    {
-                                        sb.Append(info.NumberGroupSeparator);
-                                        thousandsSepCtr--;
-                                    }
-                                }
-                            }
-
-                            digPos--;
-                            break;
-                        }
-                        case '.':
-                        {
-                            if (digPos != 0 || decimalWritten)
-                            {
-                                // For compatibility, don't echo repeated decimals
-                                break;
-                            }
-                            // If the format has trailing zeros or the format has a decimal and digits remain
-                            if (lastDigit < 0 || (decimalPos < digitCount && *cur != 0))
-                            {
-                                sb.Append(info.NumberDecimalSeparator);
-                                decimalWritten = true;
-                            }
-                            break;
-                        }
-                        case '\x2030':
-                            sb.Append(info.PerMilleSymbol);
-                            break;
-                        case '%':
-                            sb.Append(info.PercentSymbol);
-                            break;
-                        case ',':
-                            break;
-                        case '\'':
-                        case '"':
-                            while (src < format.Length && pFormat[src] != 0 && pFormat[src] != ch)
-                                sb.Append(pFormat[src++]);
-                            if (src < format.Length && pFormat[src] != 0)
-                                src++;
-                            break;
-                        case '\\':
-                            if (src < format.Length && pFormat[src] != 0)
-                                sb.Append(pFormat[src++]);
-                            break;
-                        case 'E':
-                        case 'e':
-                        {
-                            bool positiveSign = false;
-                            int i = 0;
-                            if (scientific)
-                            {
-                                if (src < format.Length && pFormat[src] == '0')
-                                {
-                                    // Handles E0, which should format the same as E-0
-                                    i++;
-                                }
-                                else if (src + 1 < format.Length && pFormat[src] == '+' && pFormat[src + 1] == '0')
-                                {
-                                    // Handles E+0
-                                    positiveSign = true;
-                                }
-                                else if (src + 1 < format.Length && pFormat[src] == '-' && pFormat[src + 1] == '0')
-                                {
-                                    // Handles E-0
-                                    // Do nothing, this is just a place holder s.t. we don't break out of the loop.
+                                    adjust++;
+                                    ch = digPos <= firstDigit ? '0' : '\0';
                                 }
                                 else
                                 {
-                                    sb.Append(ch);
+                                    ch = *cur != 0 ? (char)(*cur++) : digPos > lastDigit ? '0' : '\0';
+                                }
+
+                                if (ch != 0)
+                                {
+                                    vlb.Append(TChar.CreateTruncating(ch));
+                                    if (thousandSeps && digPos > 1 && thousandsSepCtr >= 0)
+                                    {
+                                        if (digPos == thousandsSepPos[thousandsSepCtr] + 1)
+                                        {
+                                            vlb.Append(info.NumberGroupSeparatorTChar<TChar>());
+                                            thousandsSepCtr--;
+                                        }
+                                    }
+                                }
+
+                                digPos--;
+                                break;
+                            }
+
+                        case '.':
+                            {
+                                if (digPos != 0 || decimalWritten)
+                                {
+                                    // For compatibility, don't echo repeated decimals
                                     break;
                                 }
 
-                                while (++src < format.Length && pFormat[src] == '0')
-                                    i++;
-                                if (i > 10)
-                                    i = 10;
-
-                                int exp = dig[0] == 0 ? 0 : number.Scale - decimalPos;
-                                FormatExponent(ref sb, info, exp, ch, i, positiveSign);
-                                scientific = false;
-                            }
-                            else
-                            {
-                                sb.Append(ch); // Copy E or e to output
-                                if (src < format.Length)
+                                // If the format has trailing zeros or the format has a decimal and digits remain
+                                if (lastDigit < 0 || (decimalPos < digitCount && *cur != 0))
                                 {
-                                    if (pFormat[src] == '+' || pFormat[src] == '-')
-                                        sb.Append(pFormat[src++]);
-                                    while (src < format.Length && pFormat[src] == '0')
-                                        sb.Append(pFormat[src++]);
+                                    vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
+                                    decimalWritten = true;
                                 }
+                                break;
+                            }
+
+                        case '\x2030':
+                            vlb.Append(info.PerMilleSymbolTChar<TChar>());
+                            break;
+
+                        case '%':
+                            vlb.Append(info.PercentSymbolTChar<TChar>());
+                            break;
+
+                        case ',':
+                            break;
+
+                        case '\'':
+                        case '"':
+                            while (src < format.Length && pFormat[src] != 0 && pFormat[src] != ch)
+                            {
+                                AppendUnknownChar(ref vlb, pFormat[src++]);
+                            }
+
+                            if (src < format.Length && pFormat[src] != 0)
+                            {
+                                src++;
                             }
                             break;
-                        }
+
+                        case '\\':
+                            if (src < format.Length && pFormat[src] != 0)
+                            {
+                                AppendUnknownChar(ref vlb, pFormat[src++]);
+                            }
+                            break;
+
+                        case 'E':
+                        case 'e':
+                            {
+                                bool positiveSign = false;
+                                int i = 0;
+                                if (scientific)
+                                {
+                                    if (src < format.Length && pFormat[src] == '0')
+                                    {
+                                        // Handles E0, which should format the same as E-0
+                                        i++;
+                                    }
+                                    else if (src + 1 < format.Length && pFormat[src] == '+' && pFormat[src + 1] == '0')
+                                    {
+                                        // Handles E+0
+                                        positiveSign = true;
+                                    }
+                                    else if (src + 1 < format.Length && pFormat[src] == '-' && pFormat[src + 1] == '0')
+                                    {
+                                        // Handles E-0
+                                        // Do nothing, this is just a place holder s.t. we don't break out of the loop.
+                                    }
+                                    else
+                                    {
+                                        vlb.Append(TChar.CreateTruncating(ch));
+                                        break;
+                                    }
+
+                                    while (++src < format.Length && pFormat[src] == '0')
+                                    {
+                                        i++;
+                                    }
+
+                                    if (i > 10)
+                                    {
+                                        i = 10;
+                                    }
+
+                                    int exp = dig[0] == 0 ? 0 : number.Scale - decimalPos;
+                                    FormatExponent(ref vlb, info, exp, ch, i, positiveSign);
+                                    scientific = false;
+                                }
+                                else
+                                {
+                                    vlb.Append(TChar.CreateTruncating(ch));
+                                    if (src < format.Length)
+                                    {
+                                        if (pFormat[src] == '+' || pFormat[src] == '-')
+                                        {
+                                            AppendUnknownChar(ref vlb, pFormat[src++]);
+                                        }
+
+                                        while (src < format.Length && pFormat[src] == '0')
+                                        {
+                                            AppendUnknownChar(ref vlb, pFormat[src++]);
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+
                         default:
-                            sb.Append(ch);
+                            AppendUnknownChar(ref vlb, ch);
                             break;
                     }
                 }
             }
 
-            if (number.IsNegative && (section == 0) && (number.Scale == 0) && (sb.Length > 0))
-                sb.Insert(0, info.NegativeSign);
+            if (number.IsNegative && (section == 0) && (number.Scale == 0) && (vlb.Length > 0))
+            {
+                vlb.Insert(0, info.NegativeSignTChar<TChar>());
+            }
         }
 
-        private static void FormatCurrency(ref ValueStringBuilder sb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info)
+        private static void FormatCurrency<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             string fmt = number.IsNegative ?
                 s_negCurrencyFormats[info.CurrencyNegativePattern] :
                 s_posCurrencyFormats[info.CurrencyPositivePattern];
@@ -3041,23 +3258,31 @@ namespace System
                 switch (ch)
                 {
                     case '#':
-                        FormatFixed(ref sb, ref number, nMaxDigits, info._currencyGroupSizes, info.CurrencyDecimalSeparator, info.CurrencyGroupSeparator);
+                        FormatFixed(ref vlb, ref number, nMaxDigits, info._currencyGroupSizes, info.CurrencyDecimalSeparatorTChar<TChar>(), info.CurrencyGroupSeparatorTChar<TChar>());
                         break;
+
                     case '-':
-                        sb.Append(info.NegativeSign);
+                        vlb.Append(info.NegativeSignTChar<TChar>());
                         break;
+
                     case '$':
-                        sb.Append(info.CurrencySymbol);
+                        vlb.Append(info.CurrencySymbolTChar<TChar>());
                         break;
+
                     default:
-                        sb.Append(ch);
+                        vlb.Append(TChar.CreateTruncating(ch));
                         break;
                 }
             }
         }
 
-        private static unsafe void FormatFixed(ref ValueStringBuilder sb, ref NumberBuffer number, int nMaxDigits, int[]? groupDigits, string? sDecimal, string? sGroup)
+        private static unsafe void FormatFixed<TChar>(
+            ref ValueListBuilder<TChar> vlb, ref NumberBuffer number,
+            int nMaxDigits, int[]? groupDigits,
+            ReadOnlySpan<TChar> sDecimal, ReadOnlySpan<TChar> sGroup) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             int digPos = number.Scale;
             byte* dig = number.GetDigitsPointer();
 
@@ -3079,15 +3304,21 @@ namespace System
                         {
                             groupSize = groupDigits[groupSizeIndex];
                             if (groupSize == 0)
+                            {
                                 break;
+                            }
 
                             bufferSize += sGroup.Length;
                             if (groupSizeIndex < groupDigits.Length - 1)
+                            {
                                 groupSizeIndex++;
+                            }
 
                             groupSizeCount += groupDigits[groupSizeIndex];
-                            if (groupSizeCount < 0 || bufferSize < 0)
-                                throw new ArgumentOutOfRangeException(); // If we overflow
+                            if ((groupSizeCount | bufferSize) < 0)
+                            {
+                                ThrowHelper.ThrowArgumentOutOfRangeException(); // If we overflow
+                            }
                         }
 
                         groupSize = groupSizeCount == 0 ? 0 : groupDigits[0]; // If you passed in an array with one entry as 0, groupSizeCount == 0
@@ -3097,12 +3328,12 @@ namespace System
                     int digitCount = 0;
                     int digLength = number.DigitsCount;
                     int digStart = (digPos < digLength) ? digPos : digLength;
-                    fixed (char* spanPtr = &MemoryMarshal.GetReference(sb.AppendSpan(bufferSize)))
+                    fixed (TChar* spanPtr = &MemoryMarshal.GetReference(vlb.AppendSpan(bufferSize)))
                     {
-                        char* p = spanPtr + bufferSize - 1;
+                        TChar* p = spanPtr + bufferSize - 1;
                         for (int i = digPos - 1; i >= 0; i--)
                         {
-                            *(p--) = (i < digStart) ? (char)(dig[i]) : '0';
+                            *(p--) = TChar.CreateTruncating((i < digStart) ? (char)dig[i] : '0');
 
                             if (groupSize > 0)
                             {
@@ -3110,7 +3341,9 @@ namespace System
                                 if ((digitCount == groupSize) && (i != 0))
                                 {
                                     for (int j = sGroup.Length - 1; j >= 0; j--)
+                                    {
                                         *(p--) = sGroup[j];
+                                    }
 
                                     if (groupSizeIndex < groupDigits.Length - 1)
                                     {
@@ -3130,38 +3363,67 @@ namespace System
                 {
                     do
                     {
-                        sb.Append(*dig != 0 ? (char)(*dig++) : '0');
+                        vlb.Append(TChar.CreateTruncating(*dig != 0 ? (char)(*dig++) : '0'));
                     }
                     while (--digPos > 0);
                 }
             }
             else
             {
-                sb.Append('0');
+                vlb.Append(TChar.CreateTruncating('0'));
             }
 
             if (nMaxDigits > 0)
             {
                 Debug.Assert(sDecimal != null);
-                sb.Append(sDecimal);
+                vlb.Append(sDecimal);
                 if ((digPos < 0) && (nMaxDigits > 0))
                 {
                     int zeroes = Math.Min(-digPos, nMaxDigits);
-                    sb.Append('0', zeroes);
+                    for (int i = 0; i < zeroes; i++)
+                    {
+                        vlb.Append(TChar.CreateTruncating('0'));
+                    }
                     digPos += zeroes;
                     nMaxDigits -= zeroes;
                 }
 
                 while (nMaxDigits > 0)
                 {
-                    sb.Append((*dig != 0) ? (char)(*dig++) : '0');
+                    vlb.Append(TChar.CreateTruncating((*dig != 0) ? (char)(*dig++) : '0'));
                     nMaxDigits--;
                 }
             }
         }
 
-        private static void FormatNumber(ref ValueStringBuilder sb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info)
+        /// <summary>Appends a char to the builder when the char is not known to be ASCII.</summary>
+        /// <remarks>This requires a helper as if the character isn't ASCII, for UTF8 encoding it will result in multiple bytes added.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void AppendUnknownChar<TChar>(ref ValueListBuilder<TChar> vlb, char ch) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            if (typeof(TChar) == typeof(char) || char.IsAscii(ch))
+            {
+                vlb.Append(TChar.CreateTruncating(ch));
+            }
+            else
+            {
+                AppendNonAsciiBytes(ref vlb, ch);
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void AppendNonAsciiBytes(ref ValueListBuilder<TChar> vlb, char ch)
+            {
+                var r = new Rune(ch);
+                r.EncodeToUtf8(MemoryMarshal.AsBytes(vlb.AppendSpan(r.Utf8SequenceLength)));
+            }
+        }
+
+        private static void FormatNumber<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IBinaryInteger<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             string fmt = number.IsNegative ?
                 s_negNumberFormats[info.NumberNegativePattern] :
                 PosNumberFormat;
@@ -3171,60 +3433,74 @@ namespace System
                 switch (ch)
                 {
                     case '#':
-                        FormatFixed(ref sb, ref number, nMaxDigits, info._numberGroupSizes, info.NumberDecimalSeparator, info.NumberGroupSeparator);
+                        FormatFixed(ref vlb, ref number, nMaxDigits, info._numberGroupSizes, info.NumberDecimalSeparatorTChar<TChar>(), info.NumberGroupSeparatorTChar<TChar>());
                         break;
+
                     case '-':
-                        sb.Append(info.NegativeSign);
+                        vlb.Append(info.NegativeSignTChar<TChar>());
                         break;
+
                     default:
-                        sb.Append(ch);
+                        vlb.Append(TChar.CreateTruncating(ch));
                         break;
                 }
             }
         }
 
-        private static unsafe void FormatScientific(ref ValueStringBuilder sb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar)
+        private static unsafe void FormatScientific<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             byte* dig = number.GetDigitsPointer();
 
-            sb.Append((*dig != 0) ? (char)(*dig++) : '0');
+            vlb.Append(TChar.CreateTruncating((*dig != 0) ? (char)(*dig++) : '0'));
 
             if (nMaxDigits != 1) // For E0 we would like to suppress the decimal point
-                sb.Append(info.NumberDecimalSeparator);
+            {
+                vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
+            }
 
             while (--nMaxDigits > 0)
-                sb.Append((*dig != 0) ? (char)(*dig++) : '0');
+            {
+                vlb.Append(TChar.CreateTruncating((*dig != 0) ? (char)(*dig++) : '0'));
+            }
 
             int e = number.Digits[0] == 0 ? 0 : number.Scale - 1;
-            FormatExponent(ref sb, info, e, expChar, 3, true);
+            FormatExponent(ref vlb, info, e, expChar, 3, true);
         }
 
-        private static unsafe void FormatExponent(ref ValueStringBuilder sb, NumberFormatInfo info, int value, char expChar, int minDigits, bool positiveSign)
+        private static unsafe void FormatExponent<TChar>(ref ValueListBuilder<TChar> vlb, NumberFormatInfo info, int value, char expChar, int minDigits, bool positiveSign) where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            sb.Append(expChar);
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            vlb.Append(TChar.CreateTruncating(expChar));
 
             if (value < 0)
             {
-                sb.Append(info.NegativeSign);
+                vlb.Append(info.NegativeSignTChar<TChar>());
                 value = -value;
             }
             else
             {
                 if (positiveSign)
-                    sb.Append(info.PositiveSign);
+                {
+                    vlb.Append(info.PositiveSignTChar<TChar>());
+                }
             }
 
-            char* digits = stackalloc char[MaxUInt32DecDigits];
-            char* p = UInt32ToDecChars(digits + MaxUInt32DecDigits, (uint)value, minDigits);
-            sb.Append(p, (int)(digits + MaxUInt32DecDigits - p));
+            TChar* digits = stackalloc TChar[MaxUInt32DecDigits];
+            TChar* p = UInt32ToDecChars(digits + MaxUInt32DecDigits, (uint)value, minDigits);
+            vlb.Append(new ReadOnlySpan<TChar>(p, (int)(digits + MaxUInt32DecDigits - p)));
         }
 
-        private static unsafe void FormatGeneral(ref ValueStringBuilder sb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar, bool bSuppressScientific)
+        private static unsafe void FormatGeneral<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info, char expChar, bool suppressScientific) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             int digPos = number.Scale;
             bool scientific = false;
 
-            if (!bSuppressScientific)
+            if (!suppressScientific)
             {
                 // Don't switch to scientific notation
                 if (digPos > nMaxDigits || digPos < -3)
@@ -3240,34 +3516,41 @@ namespace System
             {
                 do
                 {
-                    sb.Append((*dig != 0) ? (char)(*dig++) : '0');
-                } while (--digPos > 0);
+                    vlb.Append(TChar.CreateTruncating((*dig != 0) ? (char)(*dig++) : '0'));
+                }
+                while (--digPos > 0);
             }
             else
             {
-                sb.Append('0');
+                vlb.Append(TChar.CreateTruncating('0'));
             }
 
             if (*dig != 0 || digPos < 0)
             {
-                sb.Append(info.NumberDecimalSeparator);
+                vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
 
                 while (digPos < 0)
                 {
-                    sb.Append('0');
+                    vlb.Append(TChar.CreateTruncating('0'));
                     digPos++;
                 }
 
                 while (*dig != 0)
-                    sb.Append((char)(*dig++));
+                {
+                    vlb.Append(TChar.CreateTruncating(*dig++));
+                }
             }
 
             if (scientific)
-                FormatExponent(ref sb, info, number.Scale - 1, expChar, 2, true);
+            {
+                FormatExponent(ref vlb, info, number.Scale - 1, expChar, 2, true);
+            }
         }
 
-        private static void FormatPercent(ref ValueStringBuilder sb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info)
+        private static void FormatPercent<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, int nMaxDigits, NumberFormatInfo info) where TChar : unmanaged, IBinaryInteger<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
             string fmt = number.IsNegative ?
                 s_negPercentFormats[info.PercentNegativePattern] :
                 s_posPercentFormats[info.PercentPositivePattern];
@@ -3277,16 +3560,19 @@ namespace System
                 switch (ch)
                 {
                     case '#':
-                        FormatFixed(ref sb, ref number, nMaxDigits, info._percentGroupSizes, info.PercentDecimalSeparator, info.PercentGroupSeparator);
+                        FormatFixed(ref vlb, ref number, nMaxDigits, info._percentGroupSizes, info.PercentDecimalSeparatorTChar<TChar>(), info.PercentGroupSeparatorTChar<TChar>());
                         break;
+
                     case '-':
-                        sb.Append(info.NegativeSign);
+                        vlb.Append(info.NegativeSignTChar<TChar>());
                         break;
+
                     case '%':
-                        sb.Append(info.PercentSymbol);
+                        vlb.Append(info.PercentSymbolTChar<TChar>());
                         break;
+
                     default:
-                        sb.Append(ch);
+                        vlb.Append(TChar.CreateTruncating(ch));
                         break;
                 }
             }
@@ -3298,12 +3584,16 @@ namespace System
 
             int i = 0;
             while (i < pos && dig[i] != '\0')
+            {
                 i++;
+            }
 
             if ((i == pos) && ShouldRoundUp(dig, i, number.Kind, isCorrectlyRounded))
             {
                 while (i > 0 && dig[i - 1] == '9')
+                {
                     i--;
+                }
 
                 if (i > 0)
                 {
@@ -3319,7 +3609,9 @@ namespace System
             else
             {
                 while (i > 0 && dig[i - 1] == '0')
+                {
                     i--;
+                }
             }
 
             if (i == 0)
@@ -3375,7 +3667,9 @@ namespace System
             char ch;
 
             if (section == 0)
+            {
                 return 0;
+            }
 
             fixed (char* pFormat = &MemoryMarshal.GetReference(format))
             {
@@ -3393,16 +3687,26 @@ namespace System
                         case '"':
                             while (src < format.Length && pFormat[src] != 0 && pFormat[src++] != ch) ;
                             break;
+
                         case '\\':
                             if (src < format.Length && pFormat[src] != 0)
+                            {
                                 src++;
+                            }
                             break;
+
                         case ';':
                             if (--section != 0)
+                            {
                                 break;
+                            }
+
                             if (src < format.Length && pFormat[src] != 0 && pFormat[src] != ';')
+                            {
                                 return src;
+                            }
                             goto case '\0';
+
                         case '\0':
                             return 0;
                     }

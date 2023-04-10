@@ -235,7 +235,7 @@ namespace System
                 int valueCharsWritten;
                 bool formatted = typeof(TChar) == typeof(char) ?
                     ((uint)value).TryFormat(MemoryMarshal.Cast<TChar, char>(destination), out valueCharsWritten) :
-                    Utf8Formatter.TryFormat((uint)value, MemoryMarshal.Cast<TChar, byte>(destination), out valueCharsWritten); // TODO https://github.com/dotnet/runtime/issues/84527: Use UInt32's IUtf8SpanFormattable when available
+                    ((IUtf8SpanFormattable)(uint)value).TryFormat(MemoryMarshal.Cast<TChar, byte>(destination), out valueCharsWritten, default, CultureInfo.InvariantCulture);
 
                 if (!formatted)
                 {

@@ -240,7 +240,7 @@ namespace System.Globalization
             // Write day and separator, if necessary
             if (dayDigits != 0)
             {
-                FormattingHelpers.WriteDigits(days, destination.Slice(idx, dayDigits));
+                Number.WriteDigits(days, destination.Slice(idx, dayDigits));
                 idx += dayDigits;
                 destination[idx++] = TChar.CreateTruncating(format == StandardFormat.C ? '.' : ':');
             }
@@ -249,7 +249,7 @@ namespace System.Globalization
             Debug.Assert(hourDigits == 1 || hourDigits == 2);
             if (hourDigits == 2)
             {
-                FormattingHelpers.WriteTwoDigits(hours, destination, idx);
+                Number.WriteTwoDigits(hours, destination, idx);
                 idx += 2;
             }
             else
@@ -257,10 +257,10 @@ namespace System.Globalization
                 destination[idx++] = TChar.CreateTruncating('0' + hours);
             }
             destination[idx++] = TChar.CreateTruncating(':');
-            FormattingHelpers.WriteTwoDigits((uint)minutes, destination, idx);
+            Number.WriteTwoDigits((uint)minutes, destination, idx);
             idx += 2;
             destination[idx++] = TChar.CreateTruncating(':');
-            FormattingHelpers.WriteTwoDigits((uint)seconds, destination, idx);
+            Number.WriteTwoDigits((uint)seconds, destination, idx);
             idx += 2;
 
             // Write fraction and separator, if necessary
@@ -295,7 +295,7 @@ namespace System.Globalization
                         idx += Encoding.UTF8.GetBytes(decimalSeparator, MemoryMarshal.Cast<TChar, byte>(destination).Slice(idx));
                     }
                 }
-                FormattingHelpers.WriteDigits(fraction, destination.Slice(idx, fractionDigits));
+                Number.WriteDigits(fraction, destination.Slice(idx, fractionDigits));
                 idx += fractionDigits;
             }
 

@@ -43,22 +43,22 @@ namespace System.Buffers.Text
             value.GetDate(out int year, out int month, out int day);
             value.GetTime(out int hour, out int minute, out int second);
 
-            FormattingHelpers.WriteTwoDigits((uint)month, destination, 0);
+            Number.WriteTwoDigits((uint)month, destination, 0);
             destination[2] = Utf8Constants.Slash;
 
-            FormattingHelpers.WriteTwoDigits((uint)day, destination, 3);
+            Number.WriteTwoDigits((uint)day, destination, 3);
             destination[5] = Utf8Constants.Slash;
 
-            FormattingHelpers.WriteFourDigits((uint)year, destination, 6);
+            Number.WriteFourDigits((uint)year, destination, 6);
             destination[10] = Utf8Constants.Space;
 
-            FormattingHelpers.WriteTwoDigits((uint)hour, destination, 11);
+            Number.WriteTwoDigits((uint)hour, destination, 11);
             destination[13] = Utf8Constants.Colon;
 
-            FormattingHelpers.WriteTwoDigits((uint)minute, destination, 14);
+            Number.WriteTwoDigits((uint)minute, destination, 14);
             destination[16] = Utf8Constants.Colon;
 
-            FormattingHelpers.WriteTwoDigits((uint)second, destination, 17);
+            Number.WriteTwoDigits((uint)second, destination, 17);
 
             if (offset != Utf8Constants.NullUtcOffset)
             {
@@ -80,9 +80,9 @@ namespace System.Buffers.Text
                 // Writing the value backward allows the JIT to optimize by
                 // performing a single bounds check against buffer.
 
-                FormattingHelpers.WriteTwoDigits((uint)offsetMinutes, destination, 24);
+                Number.WriteTwoDigits((uint)offsetMinutes, destination, 24);
                 destination[23] = Utf8Constants.Colon;
-                FormattingHelpers.WriteTwoDigits((uint)offsetHours, destination, 21);
+                Number.WriteTwoDigits((uint)offsetHours, destination, 21);
                 destination[20] = sign;
                 destination[19] = Utf8Constants.Space;
             }

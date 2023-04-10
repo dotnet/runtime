@@ -762,11 +762,13 @@ namespace System
 
         internal static void FormatFraction<TChar>(ref ValueListBuilder<TChar> result, int fraction, ReadOnlySpan<char> fractionFormat) where TChar : unmanaged, IBinaryInteger<TChar>
         {
-            // TODO https://github.com/dotnet/runtime/issues/84527: Update when Int32 implements IUtf8SpanFormattable
-            Span<char> chars = stackalloc char[11];
-            fraction.TryFormat(chars, out int charsWritten, fractionFormat, CultureInfo.InvariantCulture);
-            Debug.Assert(charsWritten != 0);
-            AppendString(ref result, chars.Slice(0, charsWritten));
+            Span<TChar> chars = stackalloc TChar[11];
+            int charCount;
+            bool formatted = typeof(TChar) == typeof(char) ?
+                fraction.TryFormat(MemoryMarshal.Cast<TChar, char>(chars), out charCount, fractionFormat, CultureInfo.InvariantCulture) :
+                ((IUtf8SpanFormattable)fraction).TryFormat(MemoryMarshal.Cast<TChar, byte>(chars), out charCount, fractionFormat, CultureInfo.InvariantCulture);
+            Debug.Assert(charCount != 0);
+            result.Append(chars.Slice(0, charCount));
         }
 
         // output the 'z' family of formats, which output a the offset from UTC, e.g. "-07:30"
@@ -817,11 +819,11 @@ namespace System
             else
             {
                 // 'zz' or longer format e.g "-07"
-                FormattingHelpers.WriteTwoDigits((uint)offset.Hours, result.AppendSpan(2), 0);
+                Number.WriteTwoDigits((uint)offset.Hours, result.AppendSpan(2), 0);
                 if (tokenLen >= 3)
                 {
                     result.Append(TChar.CreateTruncating(':'));
-                    FormattingHelpers.WriteTwoDigits((uint)offset.Minutes, result.AppendSpan(2), 0);
+                    Number.WriteTwoDigits((uint)offset.Minutes, result.AppendSpan(2), 0);
                 }
             }
         }
@@ -864,9 +866,9 @@ namespace System
             }
 
             Span<TChar> hoursMinutes = result.AppendSpan(5);
-            FormattingHelpers.WriteTwoDigits((uint)offset.Hours, hoursMinutes, 0);
+            Number.WriteTwoDigits((uint)offset.Hours, hoursMinutes, 0);
             hoursMinutes[2] = TChar.CreateTruncating(':');
-            FormattingHelpers.WriteTwoDigits((uint)offset.Minutes, hoursMinutes, 3);
+            Number.WriteTwoDigits((uint)offset.Minutes, hoursMinutes, 3);
         }
 
         internal static string GetRealFormat(ReadOnlySpan<char> format, DateTimeFormatInfo dtfi)
@@ -1245,13 +1247,13 @@ namespace System
                 return false;
             }
 
-            FormattingHelpers.WriteTwoDigits((uint)hour, destination, 0);
+            Number.WriteTwoDigits((uint)hour, destination, 0);
             destination[2] = TChar.CreateTruncating(':');
-            FormattingHelpers.WriteTwoDigits((uint)minute, destination, 3);
+            Number.WriteTwoDigits((uint)minute, destination, 3);
             destination[5] = TChar.CreateTruncating(':');
-            FormattingHelpers.WriteTwoDigits((uint)second, destination, 6);
+            Number.WriteTwoDigits((uint)second, destination, 6);
             destination[8] = TChar.CreateTruncating('.');
-            FormattingHelpers.WriteDigits((uint)fraction, destination.Slice(9, 7));
+            Number.WriteDigits((uint)fraction, destination.Slice(9, 7));
 
             return true;
         }
@@ -1266,11 +1268,11 @@ namespace System
                 return false;
             }
 
-            FormattingHelpers.WriteTwoDigits((uint)hour, destination, 0);
+            Number.WriteTwoDigits((uint)hour, destination, 0);
             destination[2] = TChar.CreateTruncating(':');
-            FormattingHelpers.WriteTwoDigits((uint)minute, destination, 3);
+            Number.WriteTwoDigits((uint)minute, destination, 3);
             destination[5] = TChar.CreateTruncating(':');
-            FormattingHelpers.WriteTwoDigits((uint)second, destination, 6);
+            Number.WriteTwoDigits((uint)second, destination, 6);
 
             return true;
         }
@@ -1286,11 +1288,11 @@ namespace System
                 return false;
             }
 
-            FormattingHelpers.WriteFourDigits((uint)year, destination, 0);
+            Number.WriteFourDigits((uint)year, destination, 0);
             destination[4] = TChar.CreateTruncating('-');
-            FormattingHelpers.WriteTwoDigits((uint)month, destination, 5);
+            Number.WriteTwoDigits((uint)month, destination, 5);
             destination[7] = TChar.CreateTruncating('-');
-            FormattingHelpers.WriteTwoDigits((uint)day, destination, 8);
+            Number.WriteTwoDigits((uint)day, destination, 8);
             return true;
         }
 
@@ -1311,24 +1313,24 @@ namespace System
             {
                 Span<char> dest = MemoryMarshal.Cast<TChar, char>(destination);
 
-                FormattingHelpers.CopyFour("Sun,Mon,Tue,Wed,Thu,Fri,Sat,".AsSpan(4 * (int)dayOfWeek), dest);
+                Number.CopyFour("Sun,Mon,Tue,Wed,Thu,Fri,Sat,".AsSpan(4 * (int)dayOfWeek), dest);
                 dest[4] = ' ';
-                FormattingHelpers.WriteTwoDigits((uint)day, dest, 5);
+                Number.WriteTwoDigits((uint)day, dest, 5);
                 dest[7] = ' ';
-                FormattingHelpers.CopyFour("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec ".AsSpan(4 * (month - 1)), dest.Slice(8));
-                FormattingHelpers.WriteFourDigits((uint)year, dest, 12);
+                Number.CopyFour("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec ".AsSpan(4 * (month - 1)), dest.Slice(8));
+                Number.WriteFourDigits((uint)year, dest, 12);
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
                 Span<byte> dest = MemoryMarshal.Cast<TChar, byte>(destination);
 
-                FormattingHelpers.CopyFour("Sun,Mon,Tue,Wed,Thu,Fri,Sat,"u8.Slice(4 * (int)dayOfWeek), dest);
+                Number.CopyFour("Sun,Mon,Tue,Wed,Thu,Fri,Sat,"u8.Slice(4 * (int)dayOfWeek), dest);
                 dest[4] = (byte)' ';
-                FormattingHelpers.WriteTwoDigits((uint)day, dest, 5);
+                Number.WriteTwoDigits((uint)day, dest, 5);
                 dest[7] = (byte)' ';
-                FormattingHelpers.CopyFour("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec "u8.Slice(4 * (month - 1)), dest.Slice(8));
-                FormattingHelpers.WriteFourDigits((uint)year, dest, 12);
+                Number.CopyFour("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec "u8.Slice(4 * (month - 1)), dest.Slice(8));
+                Number.WriteFourDigits((uint)year, dest, 12);
             }
 
             return true;
@@ -1378,19 +1380,19 @@ namespace System
             dateTime.GetDate(out int year, out int month, out int day);
             dateTime.GetTimePrecise(out int hour, out int minute, out int second, out int tick);
 
-            FormattingHelpers.WriteFourDigits((uint)year, destination, 0);
+            Number.WriteFourDigits((uint)year, destination, 0);
             destination[4] = TChar.CreateTruncating('-');
-            FormattingHelpers.WriteTwoDigits((uint)month, destination, 5);
+            Number.WriteTwoDigits((uint)month, destination, 5);
             destination[7] = TChar.CreateTruncating('-');
-            FormattingHelpers.WriteTwoDigits((uint)day, destination, 8);
+            Number.WriteTwoDigits((uint)day, destination, 8);
             destination[10] = TChar.CreateTruncating('T');
-            FormattingHelpers.WriteTwoDigits((uint)hour, destination, 11);
+            Number.WriteTwoDigits((uint)hour, destination, 11);
             destination[13] = TChar.CreateTruncating(':');
-            FormattingHelpers.WriteTwoDigits((uint)minute, destination, 14);
+            Number.WriteTwoDigits((uint)minute, destination, 14);
             destination[16] = TChar.CreateTruncating(':');
-            FormattingHelpers.WriteTwoDigits((uint)second, destination, 17);
+            Number.WriteTwoDigits((uint)second, destination, 17);
             destination[19] = TChar.CreateTruncating('.');
-            FormattingHelpers.WriteDigits((uint)tick, destination.Slice(20, 7));
+            Number.WriteDigits((uint)tick, destination.Slice(20, 7));
 
             if (kind == DateTimeKind.Local)
             {
@@ -1407,9 +1409,9 @@ namespace System
 
                 // Writing the value backward allows the JIT to optimize by
                 // performing a single bounds check against buffer.
-                FormattingHelpers.WriteTwoDigits((uint)offsetMinutes, destination, 31);
+                Number.WriteTwoDigits((uint)offsetMinutes, destination, 31);
                 destination[30] = TChar.CreateTruncating(':');
-                FormattingHelpers.WriteTwoDigits((uint)offsetHours, destination, 28);
+                Number.WriteTwoDigits((uint)offsetHours, destination, 28);
                 destination[27] = TChar.CreateTruncating(sign);
             }
             else if (kind == DateTimeKind.Utc)
@@ -1445,38 +1447,38 @@ namespace System
             {
                 Span<char> dest = MemoryMarshal.Cast<TChar, char>(destination);
 
-                FormattingHelpers.CopyFour("Sun,Mon,Tue,Wed,Thu,Fri,Sat,".AsSpan(4 * (int)dateTime.DayOfWeek), dest);
+                Number.CopyFour("Sun,Mon,Tue,Wed,Thu,Fri,Sat,".AsSpan(4 * (int)dateTime.DayOfWeek), dest);
                 dest[4] = ' ';
-                FormattingHelpers.WriteTwoDigits((uint)day, dest, 5);
+                Number.WriteTwoDigits((uint)day, dest, 5);
                 dest[7] = ' ';
-                FormattingHelpers.CopyFour("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec ".AsSpan(4 * (month - 1)), dest.Slice(8));
-                FormattingHelpers.WriteFourDigits((uint)year, dest, 12);
+                Number.CopyFour("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec ".AsSpan(4 * (month - 1)), dest.Slice(8));
+                Number.WriteFourDigits((uint)year, dest, 12);
                 dest[16] = ' ';
-                FormattingHelpers.WriteTwoDigits((uint)hour, dest, 17);
+                Number.WriteTwoDigits((uint)hour, dest, 17);
                 dest[19] = ':';
-                FormattingHelpers.WriteTwoDigits((uint)minute, dest, 20);
+                Number.WriteTwoDigits((uint)minute, dest, 20);
                 dest[22] = ':';
-                FormattingHelpers.WriteTwoDigits((uint)second, dest, 23);
-                FormattingHelpers.CopyFour(" GMT", dest.Slice(25));
+                Number.WriteTwoDigits((uint)second, dest, 23);
+                Number.CopyFour(" GMT", dest.Slice(25));
             }
             else
             {
                 Debug.Assert(typeof(TChar) == typeof(byte));
                 Span<byte> dest = MemoryMarshal.Cast<TChar, byte>(destination);
 
-                FormattingHelpers.CopyFour("Sun,Mon,Tue,Wed,Thu,Fri,Sat,"u8.Slice(4 * (int)dateTime.DayOfWeek), dest);
+                Number.CopyFour("Sun,Mon,Tue,Wed,Thu,Fri,Sat,"u8.Slice(4 * (int)dateTime.DayOfWeek), dest);
                 dest[4] = (byte)' ';
-                FormattingHelpers.WriteTwoDigits((uint)day, dest, 5);
+                Number.WriteTwoDigits((uint)day, dest, 5);
                 dest[7] = (byte)' ';
-                FormattingHelpers.CopyFour("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec "u8.Slice(4 * (month - 1)), dest.Slice(8));
-                FormattingHelpers.WriteFourDigits((uint)year, dest, 12);
+                Number.CopyFour("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec "u8.Slice(4 * (month - 1)), dest.Slice(8));
+                Number.WriteFourDigits((uint)year, dest, 12);
                 dest[16] = (byte)' ';
-                FormattingHelpers.WriteTwoDigits((uint)hour, dest, 17);
+                Number.WriteTwoDigits((uint)hour, dest, 17);
                 dest[19] = (byte)':';
-                FormattingHelpers.WriteTwoDigits((uint)minute, dest, 20);
+                Number.WriteTwoDigits((uint)minute, dest, 20);
                 dest[22] = (byte)':';
-                FormattingHelpers.WriteTwoDigits((uint)second, dest, 23);
-                FormattingHelpers.CopyFour(" GMT"u8, dest.Slice(25));
+                Number.WriteTwoDigits((uint)second, dest, 23);
+                Number.CopyFour(" GMT"u8, dest.Slice(25));
             }
 
             charsWritten = 29;

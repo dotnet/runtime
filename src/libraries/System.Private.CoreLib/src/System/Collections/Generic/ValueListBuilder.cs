@@ -58,7 +58,24 @@ namespace System.Collections.Generic
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Append(scoped ReadOnlySpan<T> source)
+        {
+            int pos = _pos;
+            Span<T> span = _span;
+            if (source.Length == 1 && (uint)pos < (uint)span.Length)
+            {
+                span[pos] = source[0];
+                _pos = pos + 1;
+            }
+            else
+            {
+                AppendMultiChar(source);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AppendMultiChar(scoped ReadOnlySpan<T> source)
         {
             if ((uint)(_pos + source.Length) > (uint)_span.Length)
             {
@@ -66,6 +83,20 @@ namespace System.Collections.Generic
             }
 
             source.CopyTo(_span.Slice(_pos));
+            _pos += source.Length;
+        }
+
+        public void Insert(int index, scoped ReadOnlySpan<T> source)
+        {
+            Debug.Assert(index >= 0 && index <= _pos);
+
+            if ((uint)(_pos + source.Length) > (uint)_span.Length)
+            {
+                Grow(source.Length);
+            }
+
+            _span.Slice(0, _pos).CopyTo(_span.Slice(source.Length));
+            source.CopyTo(_span);
             _pos += source.Length;
         }
 
