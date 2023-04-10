@@ -1413,7 +1413,7 @@ bool gc_heap::should_move_heap (GCSpinLock* msl)
 }
 #pragma optimize("", on)
 
-// All the places where we could be stopped because a GC happened should call should_move_heap to check if we need to return
+// All the places where we could be stopped because there was a suspension should call should_move_heap to check if we need to return
 // so we can try another heap or we can continue the allocation on the same heap.
 enter_msl_status gc_heap::enter_spin_lock_msl (GCSpinLock* msl)
 {
@@ -18301,7 +18301,8 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
             }
             else if (spin_for_allocation < 0)
             {
-                wait_for_background (awr_uoh_alloc_during_bgc, true);
+                msl_status = wait_for_background (awr_uoh_alloc_during_bgc, true);
+                check_msl_status ("uoh a_state_acquire_seg", size);
             }
         }
     }
@@ -24374,12 +24375,12 @@ void gc_heap::check_decommissioned_heap()
     // bgc_thread;
 
     // we don't want to hold on to this storage for unused heaps, so zap these fields
-    assert (background_mark_stack_tos           == DECOMMISSIONED_UINT8_T_PP);
-    assert (background_mark_stack_array         == DECOMMISSIONED_UINT8_T_PP);
-    assert (background_mark_stack_array_length  == DECOMMISSIONED_SIZE_T);
+    //assert (background_mark_stack_tos           == DECOMMISSIONED_UINT8_T_PP);
+    //assert (background_mark_stack_array         == DECOMMISSIONED_UINT8_T_PP);
+    //assert (background_mark_stack_array_length  == DECOMMISSIONED_SIZE_T);
 
-    assert (c_mark_list                         == DECOMMISSIONED_UINT8_T_PP);
-    assert (c_mark_list_length                  == DECOMMISSIONED_SIZE_T);
+    //assert (c_mark_list                         == DECOMMISSIONED_UINT8_T_PP);
+    //assert (c_mark_list_length                  == DECOMMISSIONED_SIZE_T);
 
     assert (freeable_soh_segment                == DECOMMISSIONED_REGION_P);
 #endif //BACKGROUND_GC
@@ -24495,13 +24496,14 @@ void gc_heap::decommission_heap()
     // bgc_thread_running; // gc thread is its main loop
     // bgc_thread;
 
-    // we don't want to hold on to this storage for unused heaps, so zap these fields
-    background_mark_stack_tos           = DECOMMISSIONED_UINT8_T_PP;
-    background_mark_stack_array         = DECOMMISSIONED_UINT8_T_PP;
-    background_mark_stack_array_length  = DECOMMISSIONED_SIZE_T;
+    // We can set these to the decommission value (or wait till they are not used for N GCs before we do that) but if we do we'll
+    // need to allocate them in recommission_heap. For now I'm leaving them as they are.
+    //background_mark_stack_tos           = DECOMMISSIONED_UINT8_T_PP;
+    //background_mark_stack_array         = DECOMMISSIONED_UINT8_T_PP;
+    //background_mark_stack_array_length  = DECOMMISSIONED_SIZE_T;
 
-    c_mark_list                         = DECOMMISSIONED_UINT8_T_PP;
-    c_mark_list_length                  = DECOMMISSIONED_SIZE_T;
+    //c_mark_list                         = DECOMMISSIONED_UINT8_T_PP;
+    //c_mark_list_length                  = DECOMMISSIONED_SIZE_T;
 
     freeable_soh_segment                = DECOMMISSIONED_REGION_P;
 #endif //BACKGROUND_GC
@@ -24634,13 +24636,12 @@ void gc_heap::recommission_heap()
     // bgc_thread_running; // gc thread is its main loop
     // bgc_thread;
 
-    // we don't want to hold on to this storage for unused heaps, so zap these fields
-    background_mark_stack_tos           = nullptr;
-    background_mark_stack_array         = nullptr;
-    background_mark_stack_array_length  = 0;
+    //background_mark_stack_tos           = nullptr;
+    //background_mark_stack_array         = nullptr;
+    //background_mark_stack_array_length  = 0;
 
-    c_mark_list                         = nullptr;
-    c_mark_list_length                  = 0;
+    //c_mark_list                         = nullptr;
+    //c_mark_list_length                  = 0;
 
     freeable_soh_segment                = nullptr;
 #endif //BACKGROUND_GC
@@ -30309,24 +30310,6 @@ void gc_heap::decide_on_demotion_pin_surv (heap_segment* region, int* no_pinned_
             new_gen_num = get_plan_gen_num (heap_segment_gen_num (region));
         }
     }
-    else if (pinned_surv)
-    {
-        // get the next gen that doesn't have any planned region yet.
-        int next_gen_needing_plan = -1;
-        for (int gen_idx = settings.condemned_generation; gen_idx >= 0; gen_idx--)
-        {
-            if (planned_regions_per_gen[gen_idx] == 0)
-            {
-                next_gen_needing_plan = gen_idx;
-                break;
-            }
-        }
-
-        if (next_gen_needing_plan != -1)
-        {
-            new_gen_num = next_gen_needing_plan;
-        }
-    }
 
     set_region_plan_gen_num (region, new_gen_num);
 }
@@ -30448,12 +30431,40 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
     {
         assert (!settings.promotion);
         current_plan_gen_num = 0;
+
+        // For the non promotion case we need to take care of the alloc region we are on right
+        // now if there's already planned allocations in it. We cannot let it go through
+        // decide_on_demotion_pin_surv which is only concerned with pinned surv.
         heap_segment* alloc_region = generation_allocation_segment (consing_gen);
         if (generation_allocation_pointer (consing_gen) > heap_segment_mem (alloc_region))
         {
             skip_pins_in_alloc_region (consing_gen, current_plan_gen_num);
             heap_segment* next_region = heap_segment_next_non_sip (alloc_region);
-            init_alloc_info (consing_gen, next_region);
+
+            if ((next_region == 0) && (heap_segment_gen_num (alloc_region) > 0))
+            {
+                next_region = generation_start_segment (generation_of (heap_segment_gen_num (alloc_region) - 1));
+            }
+
+            if (next_region)
+            {
+                init_alloc_info (consing_gen, next_region);
+            }
+            else
+            {
+                assert (pinned_plug_que_empty_p ());
+                if (!pinned_plug_que_empty_p ())
+                {
+                    dprintf (1, ("we still have a pin at %Ix but no more regions!?", pinned_plug (oldest_pin ())));
+                    GCToOSInterface::DebugBreak ();
+                }
+
+                // Instead of checking for this condition we just set the alloc region to 0 so it's easier to check
+                // later.
+                generation_allocation_segment (consing_gen) = 0;
+                generation_allocation_pointer (consing_gen) = 0;
+                generation_allocation_limit (consing_gen) = 0;
+            }
         }
     }
 
@@ -30548,56 +30559,61 @@ void gc_heap::process_remaining_regions (int current_plan_gen_num, generation* c
 
     if (special_sweep_p)
     {
-        assert (heap_segment_next_rw (current_region) == 0);
+        assert ((current_region == 0) || (heap_segment_next_rw (current_region) == 0));
         return;
     }
 
     dprintf (1, ("after going through the rest of regions - regions in g2: %d, g1: %d, g0: %d",
         planned_regions_per_gen[2], planned_regions_per_gen[1], planned_regions_per_gen[0]));
 
-    decide_on_demotion_pin_surv (current_region, &to_be_empty_regions);
-
-    if (!heap_segment_swept_in_plan (current_region))
+    if (current_region)
     {
-        heap_segment_plan_allocated (current_region) = generation_allocation_pointer (consing_gen);
-        dprintf (REGIONS_LOG, ("h%d setting alloc seg %p plan alloc to %p",
-            heap_number, heap_segment_mem (current_region),
-            heap_segment_plan_allocated (current_region)));
+        decide_on_demotion_pin_surv (current_region, &to_be_empty_regions);
+
+        if (!heap_segment_swept_in_plan (current_region))
+        {
+            heap_segment_plan_allocated (current_region) = generation_allocation_pointer (consing_gen);
+            dprintf (1, ("h%d setting alloc seg %p plan alloc to %p",
+                heap_number, heap_segment_mem (current_region),
+                heap_segment_plan_allocated (current_region)));
+        }
+
+        dprintf (1, ("before going through the rest of empty regions - regions in g2: %d, g1: %d, g0: %d, to be empty %d now",
+            planned_regions_per_gen[2], planned_regions_per_gen[1], planned_regions_per_gen[0], to_be_empty_regions));
+
+        heap_segment* region_no_pins = heap_segment_next (current_region);
+        int region_no_pins_gen_num = heap_segment_gen_num (current_region);
+
+        do
+        {
+            region_no_pins = heap_segment_non_sip (region_no_pins);
+
+            if (region_no_pins)
+            {
+                set_region_plan_gen_num (region_no_pins, current_plan_gen_num);
+                to_be_empty_regions++;
+
+                heap_segment_plan_allocated (region_no_pins) = heap_segment_mem (region_no_pins);
+                dprintf (1, ("h%d setting empty seg %p(no pins) plan gen to 0, plan alloc to %p",
+                    heap_number, heap_segment_mem (region_no_pins),
+                    heap_segment_plan_allocated (region_no_pins)));
+
+                region_no_pins = heap_segment_next (region_no_pins);
+            }
+
+            if (!region_no_pins)
+            {
+                if (region_no_pins_gen_num > 0)
+                {
+                    region_no_pins_gen_num--;
+                    region_no_pins = generation_start_segment (generation_of (region_no_pins_gen_num));
+                }
+                else
+                    break;
+            }
+        } while (region_no_pins);
     }
 
-    dprintf (1, ("before going through the rest of empty regions - regions in g2: %d, g1: %d, g0: %d",
-        planned_regions_per_gen[2], planned_regions_per_gen[1], planned_regions_per_gen[0]));
-
-    heap_segment* region_no_pins = heap_segment_next (current_region);
-    int region_no_pins_gen_num = heap_segment_gen_num (current_region);
-
-    do
-    {
-        region_no_pins = heap_segment_non_sip (region_no_pins);
-
-        if (region_no_pins)
-        {
-            set_region_plan_gen_num (region_no_pins, current_plan_gen_num);
-            to_be_empty_regions++;
-            
-            heap_segment_plan_allocated (region_no_pins) = heap_segment_mem (region_no_pins);
-            dprintf (REGIONS_LOG, ("h%d setting seg %p(no pins) plan gen to 0, plan alloc to %p",
-                heap_number, heap_segment_mem (region_no_pins),
-                heap_segment_plan_allocated (region_no_pins)));
-
-            region_no_pins = heap_segment_next (region_no_pins);
-        }
-        if (!region_no_pins)
-        {
-            if (region_no_pins_gen_num > 0)
-            {
-                region_no_pins_gen_num--;
-                region_no_pins = generation_start_segment (generation_of (region_no_pins_gen_num));
-            }
-            else
-                break;
-        }
-    } while (region_no_pins);
     if (to_be_empty_regions)
     {
         assert (planned_regions_per_gen[0] != 0);
