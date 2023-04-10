@@ -129,20 +129,20 @@ namespace System
         public static long Parse(string s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt64(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.ParseBinaryInteger<long>(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
         public static long Parse(string s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt64(s, style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseBinaryInteger<long>(s, style, NumberFormatInfo.CurrentInfo);
         }
 
         public static long Parse(string s, IFormatProvider? provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt64(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<long>(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
         // Parses a long from a String in the given style.  If
@@ -153,13 +153,13 @@ namespace System
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt64(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<long>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static long Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseInt64(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<long>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static bool TryParse([NotNullWhen(true)] string? s, out long result)

@@ -126,69 +126,15 @@ namespace System
             return true;
         }
 
-        internal static int ParseInt32(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
+        internal static TInteger ParseBinaryInteger<TInteger>(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
+            where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
-            ParsingStatus status = TryParseBinaryInteger(value, styles, info, out int result);
+            ParsingStatus status = TryParseBinaryInteger(value, styles, info, out TInteger result);
+
             if (status != ParsingStatus.OK)
             {
                 ThrowOverflowOrFormatException(status, value, TypeCode.Int32);
             }
-
-            return result;
-        }
-
-        internal static long ParseInt64(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
-        {
-            ParsingStatus status = TryParseBinaryInteger(value, styles, info, out long result);
-            if (status != ParsingStatus.OK)
-            {
-                ThrowOverflowOrFormatException(status, value, TypeCode.Int64);
-            }
-
-            return result;
-        }
-
-        internal static Int128 ParseInt128(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
-        {
-            ParsingStatus status = TryParseBinaryInteger(value, styles, info, out Int128 result);
-            if (status != ParsingStatus.OK)
-            {
-                ThrowOverflowOrFormatExceptionInt128(status);
-            }
-
-            return result;
-        }
-
-        internal static uint ParseUInt32(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
-        {
-            ParsingStatus status = TryParseBinaryInteger(value, styles, info, out uint result);
-            if (status != ParsingStatus.OK)
-            {
-                ThrowOverflowOrFormatException(status, value, TypeCode.UInt32);
-            }
-
-            return result;
-        }
-
-        internal static ulong ParseUInt64(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
-        {
-            ParsingStatus status = TryParseBinaryInteger(value, styles, info, out ulong result);
-            if (status != ParsingStatus.OK)
-            {
-                ThrowOverflowOrFormatException(status, value, TypeCode.UInt64);
-            }
-
-            return result;
-        }
-
-        internal static UInt128 ParseUInt128(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
-        {
-            ParsingStatus status = TryParseBinaryInteger(value, styles, info, out UInt128 result);
-            if (status != ParsingStatus.OK)
-            {
-                ThrowOverflowOrFormatExceptionUInt128(status);
-            }
-
             return result;
         }
 

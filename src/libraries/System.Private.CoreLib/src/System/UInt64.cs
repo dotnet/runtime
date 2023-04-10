@@ -126,33 +126,33 @@ namespace System
         public static ulong Parse(string s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseUInt64(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.ParseBinaryInteger<ulong>(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
         public static ulong Parse(string s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseUInt64(s, style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseBinaryInteger<ulong>(s, style, NumberFormatInfo.CurrentInfo);
         }
 
         public static ulong Parse(string s, IFormatProvider? provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseUInt64(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<ulong>(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
         public static ulong Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseUInt64(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<ulong>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static ulong Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseUInt64(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<ulong>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static bool TryParse([NotNullWhen(true)] string? s, out ulong result)

@@ -132,14 +132,14 @@ namespace System
         public static int Parse(string s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.ParseBinaryInteger<int>(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
         public static int Parse(string s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt32(s, style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseBinaryInteger<int>(s, style, NumberFormatInfo.CurrentInfo);
         }
 
         // Parses an integer from a String in the given style. If
@@ -149,7 +149,7 @@ namespace System
         public static int Parse(string s, IFormatProvider? provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt32(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<int>(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
         // Parses an integer from a String in the given style. If
@@ -160,13 +160,13 @@ namespace System
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt32(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<int>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static int Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseInt32(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<int>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         // Parses an integer from a String. Returns false rather

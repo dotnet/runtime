@@ -122,33 +122,33 @@ namespace System
         public static Int128 Parse(string s)
         {
             ArgumentNullException.ThrowIfNull(s);
-            return Number.ParseInt128(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.ParseBinaryInteger<Int128>(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
         public static Int128 Parse(string s, NumberStyles style)
         {
             ArgumentNullException.ThrowIfNull(s);
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseInt128(s, style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseBinaryInteger<Int128>(s, style, NumberFormatInfo.CurrentInfo);
         }
 
         public static Int128 Parse(string s, IFormatProvider? provider)
         {
             ArgumentNullException.ThrowIfNull(s);
-            return Number.ParseInt128(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<Int128>(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
         public static Int128 Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
             ArgumentNullException.ThrowIfNull(s);
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseInt128(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<Int128>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static Int128 Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseInt128(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<Int128>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static bool TryParse([NotNullWhen(true)] string? s, out Int128 result)

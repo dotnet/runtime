@@ -127,33 +127,33 @@ namespace System
         public static uint Parse(string s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseUInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.ParseBinaryInteger<uint>(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
         public static uint Parse(string s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseUInt32(s, style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseBinaryInteger<uint>(s, style, NumberFormatInfo.CurrentInfo);
         }
 
         public static uint Parse(string s, IFormatProvider? provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseUInt32(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<uint>(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
         public static uint Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseUInt32(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<uint>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static uint Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseUInt32(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<uint>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static bool TryParse([NotNullWhen(true)] string? s, out uint result)

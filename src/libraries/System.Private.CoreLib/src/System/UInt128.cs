@@ -123,33 +123,33 @@ namespace System
         public static UInt128 Parse(string s)
         {
             ArgumentNullException.ThrowIfNull(s);
-            return Number.ParseUInt128(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.ParseBinaryInteger<UInt128>(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
         public static UInt128 Parse(string s, NumberStyles style)
         {
             ArgumentNullException.ThrowIfNull(s);
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseUInt128(s, style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseBinaryInteger<UInt128>(s, style, NumberFormatInfo.CurrentInfo);
         }
 
         public static UInt128 Parse(string s, IFormatProvider? provider)
         {
             ArgumentNullException.ThrowIfNull(s);
-            return Number.ParseUInt128(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<UInt128>(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
         public static UInt128 Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
             ArgumentNullException.ThrowIfNull(s);
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseUInt128(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<UInt128>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static UInt128 Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseUInt128(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseBinaryInteger<UInt128>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static bool TryParse([NotNullWhen(true)] string? s, out UInt128 result)
