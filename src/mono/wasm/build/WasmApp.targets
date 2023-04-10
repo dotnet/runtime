@@ -100,7 +100,6 @@
   <PropertyGroup>
     <WasmDedup Condition="'$(WasmDedup)' == ''">true</WasmDedup>
     <!-- Post Wasm MVP features -->
-    <
     <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">true</WasmEnableExceptionHandling>
     <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">$(WasmEnableExceptionHandling)</WasmEnableSIMD>
     <WasmEnableLegacyJsInterop Condition="'$(WasmEnableLegacyJsInterop)' == ''">true</WasmEnableLegacyJsInterop>
