@@ -88,7 +88,8 @@ struct ThreadBuffer
     uintptr_t               m_uHijackedReturnValueFlags;            
     PTR_ExInfo              m_pExInfoStackHead;
     Object*                 m_threadAbortException;                 // ThreadAbortException instance -set only during thread abort
-    Object*                 m_pThreadLocalModuleStatics;
+    Object*                 m_pThreadLocalStatics;
+    Object*                 m_pInlineThreadLocalStatics;
     GCFrameRegistration*    m_pGCFrameRegistrations;
     PTR_VOID                m_pStackLow;
     PTR_VOID                m_pStackHigh;
@@ -287,6 +288,7 @@ public:
     void SetThreadAbortException(Object *exception);
 
     Object** GetThreadStaticStorage();
+    Object** GetInlineThreadStaticStorage();
 
     NATIVE_CONTEXT* GetInterruptedContext();
 

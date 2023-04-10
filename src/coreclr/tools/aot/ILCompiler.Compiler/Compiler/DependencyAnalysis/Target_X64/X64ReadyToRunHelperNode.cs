@@ -70,6 +70,8 @@ namespace ILCompiler.DependencyAnalysis
 
                 case ReadyToRunHelperId.GetThreadStaticBase:
                     {
+                        bool isMultiFile = !factory.CompilationModuleGroup.IsSingleFileCompilation;
+
                         MetadataType target = (MetadataType)Target;
 
                         encoder.EmitLEAQ(encoder.TargetRegister.Arg2, factory.TypeThreadStaticIndex(target));
@@ -84,9 +86,13 @@ namespace ILCompiler.DependencyAnalysis
                         AddrMode loadFromArg2AndDelta = new AddrMode(encoder.TargetRegister.Arg2, null, factory.Target.PointerSize, 0, AddrModeSize.Int32);
                         encoder.EmitMOV(encoder.TargetRegister.Arg1, ref loadFromArg2AndDelta);
 
+                        ISymbolNode helper = isMultiFile ?
+                            factory.HelperEntrypoint(HelperEntrypoint.GetThreadStaticBaseForType) :
+                            factory.ExternSymbol("RhpGetThreadStaticBaseForType");
+
                         if (!factory.PreinitializationManager.HasLazyStaticConstructor(target))
                         {
-                            encoder.EmitJMP(factory.ExternSymbol("RhpGetThreadStaticBaseForType"));
+                            encoder.EmitJMP(helper);
                         }
                         else
                         {
@@ -94,7 +100,7 @@ namespace ILCompiler.DependencyAnalysis
 
                             AddrMode initialized = new AddrMode(encoder.TargetRegister.Arg2, null, 0, 0, AddrModeSize.Int64);
                             encoder.EmitCMP(ref initialized, 0);
-                            encoder.EmitJE(factory.ExternSymbol("RhpGetThreadStaticBaseForType"));
+                            encoder.EmitJE(helper);
 
                             encoder.EmitJMP(factory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
                         }

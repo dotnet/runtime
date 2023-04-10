@@ -4,7 +4,7 @@
 using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
-
+using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerHelpers;
 
 using Debug = System.Diagnostics.Debug;
@@ -17,11 +17,72 @@ namespace Internal.Runtime
     /// </summary>
     internal static class ThreadStatics
     {
+        private static int s_inlineTlsLength;
+        private static unsafe int GetInlineTlsLength(TypeManagerHandle typeManager)
+        {
+            int length = s_inlineTlsLength;
+            if (length == 0)
+            {
+                RuntimeImports.RhGetModuleSection(typeManager, ReadyToRunSectionType.ThreadStaticRegion, out int sectionLength);
+                s_inlineTlsLength = length = sectionLength / IntPtr.Size;
+            }
+
+            return length;
+        }
+
+        private static unsafe bool IsInlineThreadStatic(TypeManagerSlot* pModuleData, int typeTlsIndex)
+        {
+            if (pModuleData->ModuleIndex != 0)
+                return false;
+
+            return typeTlsIndex < GetInlineTlsLength(pModuleData->TypeManager);
+        }
+
         /// <summary>
         /// This method is called from a ReadyToRun helper to get base address of thread
         /// static storage for the given type.
         /// </summary>
         internal static unsafe object GetThreadStaticBaseForType(TypeManagerSlot* pModuleData, int typeTlsIndex)
+        {
+            if (!IsInlineThreadStatic(pModuleData, typeTlsIndex))
+                return GetUninlinedThreadStaticBaseForType(pModuleData, typeTlsIndex);
+
+            ref object[] threadStorage = ref RuntimeImports.RhGetInlineThreadStaticStorage();
+            if (threadStorage == null)
+                InitInlineThreadStaticsImpl(pModuleData->TypeManager);
+
+            return threadStorage[typeTlsIndex];
+        }
+
+        // entry point for unmanaged callers (thread attach)
+        [UnmanagedCallersOnly(EntryPoint = "InitInlineThreadStatics", CallConvs = new Type[] { typeof(CallConvCdecl) })]
+        internal static unsafe void InitInlineThreadStatics(TypeManagerHandle typeManager)
+        {
+            InitInlineThreadStaticsImpl(typeManager);
+        }
+
+        internal static unsafe void InitInlineThreadStaticsImpl(TypeManagerHandle typeManager)
+        {
+            // Get the array that holds thread statics for the current thread, if none present
+            // allocate a new one big enough to hold the current module data
+            ref object[] threadStorage = ref RuntimeImports.RhGetInlineThreadStaticStorage();
+            if (threadStorage != null)
+                return;
+
+            int inlineThreaStaticsLen = GetInlineTlsLength(typeManager);
+            threadStorage = new object[inlineThreaStaticsLen];
+
+            for(int i = 0; i < inlineThreaStaticsLen; i++)
+            {
+                // Allocate an object that will represent a memory block for all thread static fields of the type
+                object threadStaticBase = AllocateThreadStaticStorageForType(typeManager, i);
+
+                Debug.Assert(threadStorage[i] == null);
+                threadStorage[i] = threadStaticBase;
+            }
+        }
+
+        internal static unsafe object GetUninlinedThreadStaticBaseForType(TypeManagerSlot* pModuleData, int typeTlsIndex)
         {
             Debug.Assert(typeTlsIndex >= 0);
             int moduleIndex = pModuleData->ModuleIndex;
@@ -31,26 +92,34 @@ namespace Internal.Runtime
             if (threadStorage != null && threadStorage.Length > moduleIndex)
             {
                 object[] moduleStorage = threadStorage[moduleIndex];
-                if (moduleStorage != null && moduleStorage.Length > typeTlsIndex)
+                if (moduleStorage != null)
                 {
-                    object threadStaticBase = moduleStorage[typeTlsIndex];
-                    if (threadStaticBase != null)
+                    int storeIndex = typeTlsIndex;
+                    // threadstatics up to InlineTlsLength for module0 are stored separately.
+                    // we can reduce the storage index by that much
+                    if (moduleIndex == 0)
+                        storeIndex -= GetInlineTlsLength(pModuleData->TypeManager);
+
+                    if (moduleStorage.Length > storeIndex)
                     {
-                        return threadStaticBase;
+                        object threadStaticBase = moduleStorage[storeIndex];
+                        if (threadStaticBase != null)
+                        {
+                            return threadStaticBase;
+                        }
                     }
                 }
             }
 
-            return GetThreadStaticBaseForTypeSlow(pModuleData, typeTlsIndex);
+            return GetUninlinedThreadStaticBaseForTypeSlow(pModuleData, typeTlsIndex);
         }
 
-        [RuntimeExport("RhpGetThreadStaticBaseForTypeSlow")]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static unsafe object GetThreadStaticBaseForTypeSlow(TypeManagerSlot* pModuleData, int typeTlsIndex)
+        internal static unsafe object GetUninlinedThreadStaticBaseForTypeSlow(TypeManagerSlot* pModuleData, int typeTlsIndex)
         {
             Debug.Assert(typeTlsIndex >= 0);
             int moduleIndex = pModuleData->ModuleIndex;
-            Debug.Assert(typeTlsIndex >= 0);
+            Debug.Assert(moduleIndex >= 0);
 
             // Get the array that holds thread statics for the current thread, if none present
             // allocate a new one big enough to hold the current module data
@@ -64,25 +133,31 @@ namespace Internal.Runtime
                 Array.Resize(ref threadStorage, moduleIndex + 1);
             }
 
+            int storeIndex = typeTlsIndex;
+            // threadstatics up to InlineTlsLength for module0 are stored separately.
+            // we can reduce the storage index by that much
+            if (moduleIndex == 0)
+                storeIndex -= GetInlineTlsLength(pModuleData->TypeManager);
+
             // Get the array that holds thread static memory blocks for each type in the given module
             ref object[] moduleStorage = ref threadStorage[moduleIndex];
             if (moduleStorage == null)
             {
-                moduleStorage = new object[typeTlsIndex + 1];
+                moduleStorage = new object[storeIndex + 1];
             }
-            else if (typeTlsIndex >= moduleStorage.Length)
+            else if (storeIndex >= moduleStorage.Length)
             {
-                // typeTlsIndex could have a big range, we do not want to reallocate every time we see +1 index
+                // storeIndex could have a big range, we do not want to reallocate every time we see +1 index
                 // so we double up from previous size to guarantee a worst case linear complexity
-                int newSize = Math.Max(typeTlsIndex + 1, moduleStorage.Length * 2);
+                int newSize = Math.Max(storeIndex + 1, moduleStorage.Length * 2);
                 Array.Resize(ref moduleStorage, newSize);
             }
 
             // Allocate an object that will represent a memory block for all thread static fields of the type
             object threadStaticBase = AllocateThreadStaticStorageForType(pModuleData->TypeManager, typeTlsIndex);
 
-            Debug.Assert(moduleStorage[typeTlsIndex] == null);
-            moduleStorage[typeTlsIndex] = threadStaticBase;
+            Debug.Assert(moduleStorage[storeIndex] == null);
+            moduleStorage[storeIndex] = threadStaticBase;
             return threadStaticBase;
         }
 
