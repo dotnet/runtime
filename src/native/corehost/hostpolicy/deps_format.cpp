@@ -203,7 +203,11 @@ namespace
         RID_CURRENT_ARCH_LIST("linux")
         RID_CURRENT_ARCH_LIST("unix")
 #else
-        RID_CURRENT_ARCH_LIST(FALLBACK_HOST_OS)
+        RID_CURRENT_ARCH_LIST(FALLBACK_HOST_OS) # covers non-portable RIDs
+#ifndef FALLBACK_OS_IS_SAME_AS_TARGET_OS
+        RID_CURRENT_ARCH_LIST(CURRENT_OS_NAME) # covers "linux" and non-linux like "freebsd", "illumos"
+#endif
+        RID_CURRENT_ARCH_LIST("unix")
         RID_CURRENT_ARCH_LIST("unix")
 #endif
         _X("any"),
