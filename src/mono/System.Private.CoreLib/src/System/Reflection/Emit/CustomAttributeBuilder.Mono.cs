@@ -494,10 +494,6 @@ namespace System.Reflection.Emit
             public object?[] namedParamValues;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2057:UnrecognizedReflectionPattern",
-            Justification = "Types referenced from custom attributes are preserved")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-            Justification = "Types referenced from custom attributes are preserved")]
         internal static CustomAttributeInfo decode_cattr(CustomAttributeBuilder customBuilder)
         {
             byte[] data = customBuilder.Data;

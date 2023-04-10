@@ -13,7 +13,8 @@ namespace System.Reflection.Emit
         private readonly Type _returnType;
         private readonly Type[]? _parameterTypes;
         private readonly ModuleBuilderImpl _module;
-        private readonly MethodAttributes _attributes;
+        private MethodAttributes _attributes;
+        private MethodImplAttributes _methodImplFlags;
         private readonly string _name;
         private readonly CallingConventions _callingConventions;
         private readonly TypeBuilderImpl _declaringType;
@@ -38,6 +39,8 @@ namespace System.Reflection.Emit
                     ArgumentNullException.ThrowIfNull(_parameterTypes[i] = parameterTypes[i], nameof(parameterTypes));
                 }
             }
+
+            _methodImplFlags = MethodImplAttributes.IL;
         }
 
         internal BlobBuilder GetMethodSignatureBlob() =>
@@ -49,9 +52,79 @@ namespace System.Reflection.Emit
         protected override ILGenerator GetILGeneratorCore(int size) => throw new NotImplementedException();
         protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+            if (!IsPseudoCustomAttribute(con.ReflectedType!.FullName!, con, binaryAttribute))
+            {
+                _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+            }
         }
-        protected override void SetImplementationFlagsCore(MethodImplAttributes attributes) => throw new NotImplementedException();
+
+        private bool IsPseudoCustomAttribute(string attributeName, ConstructorInfo con, byte[] data)
+        {
+            switch (attributeName)
+            {
+                case "System.Runtime.CompilerServices.MethodImplAttribute":
+                    int impla = data[2];
+                    impla |= data[3] << 8;
+                    _methodImplFlags |= (MethodImplAttributes)impla;
+                    break;
+
+                case "System.Runtime.InteropServices.DllImportAttribute":
+                    CustomAttributeInfo attr = CustomAttributeInfo.DecodeCustomAttribute(con, data);
+                    bool preserveSig = true;
+
+                    /* TODO
+                     * pi_dll = (string?)attr._ctorArgs[0];
+                    if (pi_dll == null || pi_dll.Length == 0)
+                        throw new ArgumentException(SR.Arg_DllNameCannotBeEmpty);
+
+                    native_cc = Runtime.InteropServices.CallingConvention.Winapi;*/
+
+                    for (int i = 0; i < attr._namedParamNames.Length; ++i)
+                    {
+                        string name = attr._namedParamNames[i];
+                        object? value = attr._namedParamValues[i];
+
+                        if (name == "PreserveSig")
+                            preserveSig = (bool)value!;
+                        /*else if (name == "CallingConvention") // TODO: this values might need to be covered
+                            native_cc = (CallingConvention)value!;
+                        else if (name == "CharSet")
+                            charset = (CharSet)value!;
+                        else if (name == "EntryPoint")
+                            pi_entry = (string)value!;
+                        else if (name == "ExactSpelling")
+                            ExactSpelling = (bool)value!;
+                        else if (name == "SetLastError")
+                            SetLastError = (bool)value!;
+                        else if (name == "BestFitMapping")
+                            BestFitMapping = (bool)value!;
+                        else if (name == "ThrowOnUnmappableChar")
+                            ThrowOnUnmappableChar = (bool)value!;*/
+                    }
+
+                    _attributes |= MethodAttributes.PinvokeImpl;
+                    if (preserveSig)
+                        _methodImplFlags |= MethodImplAttributes.PreserveSig;
+                    break;
+                case "System.Runtime.InteropServices.PreserveSigAttribute":
+                    _methodImplFlags |= MethodImplAttributes.PreserveSig;
+                    break;
+                case "System.Runtime.CompilerServices.SpecialNameAttribute":
+                    _attributes |= MethodAttributes.SpecialName;
+                    break;
+                case "System.Security.SuppressUnmanagedCodeSecurityAttribute":
+                    _attributes |= MethodAttributes.HasSecurity;
+                    return false;
+                default: return false;
+            }
+
+            return true;
+        }
+
+        protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
+        {
+            _methodImplFlags = attributes;
+        }
         protected override void SetSignatureCore(Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes,
             Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers) => throw new NotImplementedException();
         public override string Name => _name;
@@ -88,7 +161,7 @@ namespace System.Reflection.Emit
             => throw new NotImplementedException();
 
         public override MethodImplAttributes GetMethodImplementationFlags()
-            => throw new NotImplementedException();
+            => _methodImplFlags;
 
         public override ParameterInfo[] GetParameters()
             => throw new NotImplementedException();

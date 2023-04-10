@@ -92,7 +92,7 @@ namespace System.Reflection.Emit
             return null;
         }
 
-        internal void AppendMetadata(MetadataBuilder metadata, AssemblyDefinitionHandle assemlbyHandle, List<CustomAttributeWrapper> assemblyAttributes)
+        internal void AppendMetadata(MetadataBuilder metadata, AssemblyDefinitionHandle assemblyHandle, List<CustomAttributeWrapper> assemblyAttributes)
         {
             // Add module metadata
             ModuleDefinitionHandle moduleHandle = metadata.AddModule(
@@ -111,7 +111,7 @@ namespace System.Reflection.Emit
                 fieldList: MetadataTokens.FieldDefinitionHandle(1),
                 methodList: MetadataTokens.MethodDefinitionHandle(1));
 
-            WriteCustomAttributes(metadata, assemblyAttributes, assemlbyHandle);
+            WriteCustomAttributes(metadata, assemblyAttributes, assemblyHandle);
             WriteCustomAttributes(metadata, _customAttributes, moduleHandle);
 
             // Add each type definition to metadata table.
@@ -161,7 +161,7 @@ namespace System.Reflection.Emit
 
             TypeReferenceHandle parentHandle = GetTypeReference(metadata, constructorInfo.DeclaringType!);
 
-            constructorHandle = MetadataHelper.AddConstructorReference(metadata, parentHandle, constructorInfo);
+            constructorHandle = MetadataHelper.AddConstructorReference(this, metadata, parentHandle, constructorInfo);
             _constructorRefStore.Add(constructorInfo, constructorHandle);
             return constructorHandle;
         }
@@ -204,7 +204,7 @@ namespace System.Reflection.Emit
         protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet) => throw new NotImplementedException();
         protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr, [DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
-            TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this);
+            TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this, packingSize, typesize);
             _typeDefStore.Add(_type);
             return _type;
         }

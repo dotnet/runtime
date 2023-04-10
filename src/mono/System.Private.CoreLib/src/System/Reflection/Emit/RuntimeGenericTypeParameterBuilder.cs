@@ -424,7 +424,6 @@ namespace System.Reflection.Emit
             get { return mbuilder; }
         }
 
-        // FIXME: "unverified implementation"
         protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
             CustomAttributeBuilder customBuilder = new CustomAttributeBuilder(con, binaryAttribute);

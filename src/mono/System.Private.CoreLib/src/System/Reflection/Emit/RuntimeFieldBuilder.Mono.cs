@@ -174,13 +174,6 @@ namespace System.Reflection.Emit
             def_value = defaultValue;
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            RejectIfCreated();
-
-            
-        }
-
         protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
             RejectIfCreated();

@@ -9,7 +9,7 @@ using Xunit;
 namespace System.Reflection.Emit.Tests
 {
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    public class AssemblySaveTestsWithVariousTypes
+    public class AssemblySaveWithVariousMembersTests
     {
         private static readonly AssemblyName s_assemblyName = new AssemblyName("MyDynamicAssembly")
         {

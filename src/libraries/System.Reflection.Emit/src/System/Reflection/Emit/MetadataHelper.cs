@@ -59,7 +59,7 @@ namespace System.Reflection.Emit
         {
             return metadata.AddMethodDefinition(
                 attributes: methodBuilder.Attributes,
-                implAttributes: MethodImplAttributes.IL,
+                implAttributes: methodBuilder.GetMethodImplementationFlags(),
                 name: metadata.GetOrAddString(methodBuilder.Name),
                 signature: metadata.GetOrAddBlob(methodSignatureBlob),
                 bodyOffset: -1, // No body supported yet
@@ -75,9 +75,9 @@ namespace System.Reflection.Emit
                 signature: metadata.GetOrAddBlob(fieldSignatureBlob));
         }
 
-        internal static MemberReferenceHandle AddConstructorReference(MetadataBuilder metadata, TypeReferenceHandle parent, MethodBase method)
+        internal static MemberReferenceHandle AddConstructorReference(ModuleBuilderImpl moduleBuilder, MetadataBuilder metadata, TypeReferenceHandle parent, MethodBase method)
         {
-            var blob = MetadataSignatureHelper.ConstructorSignatureEncoder(method.GetParameters(), (ModuleBuilderImpl)method.Module);
+            var blob = MetadataSignatureHelper.ConstructorSignatureEncoder(method.GetParameters(), moduleBuilder);
             return metadata.AddMemberReference(
                 parent: parent,
                 name: metadata.GetOrAddString(method.Name),

@@ -10,7 +10,7 @@ namespace System.Reflection.Emit
     {
         private readonly TypeBuilderImpl _typeBuilder;
         private readonly string _fieldName;
-        private readonly FieldAttributes _attributes;
+        private FieldAttributes _attributes;
         private readonly Type _fieldType;
 
         internal List<CustomAttributeWrapper> _customAttributes = new();
@@ -26,7 +26,37 @@ namespace System.Reflection.Emit
         protected override void SetConstantCore(object? defaultValue) => throw new NotImplementedException();
         protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+            if (!IsPseudoAttribute(con.ReflectedType!.FullName!))
+            {
+                _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+            }
+        }
+
+        private bool IsPseudoAttribute(string attributeName)
+        {
+            switch (attributeName)
+            {
+                case "System.Runtime.InteropServices.FieldOffsetAttribute":
+                    /* TODO:  Not sure how to apply this
+                     * byte[] data = customBuilder.Data;
+                        offset = (int)data[2];
+                        offset |= ((int)data[3]) << 8;
+                        offset |= ((int)data[4]) << 16;
+                        offset |= ((int)data[5]) << 24;*/
+                    break;
+                case "System.NonSerializedAttribute":
+                    _attributes |= FieldAttributes.NotSerialized;
+                    break;
+                case "System.Runtime.CompilerServices.SpecialNameAttribute":
+                    _attributes |= FieldAttributes.SpecialName;
+                    break;
+                case "System.Runtime.InteropServices.MarshalAsAttribute":
+                    _attributes |= FieldAttributes.HasFieldMarshal;
+                    return false;
+                default: return false;
+            }
+
+            return true;
         }
 
         protected override void SetOffsetCore(int iOffset) => throw new NotImplementedException();

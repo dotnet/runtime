@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.InteropServices;
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
@@ -16,17 +16,21 @@ namespace System.Reflection.Emit
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         private Type? _typeParent;
         private TypeAttributes _attributes;
+        private PackingSize _packingSize;
+        private int _typeSize;
 
         internal List<MethodBuilderImpl> _methodDefStore = new();
         internal List<FieldBuilderImpl> _fieldDefStore = new();
         internal List<CustomAttributeWrapper> _customAttributes = new();
 
         internal TypeBuilderImpl(string fullName, TypeAttributes typeAttributes,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, ModuleBuilderImpl module)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, ModuleBuilderImpl module, PackingSize packingSize, int typeSize)
         {
             _name = fullName;
             _module = module;
             _attributes = typeAttributes;
+            _packingSize = packingSize;
+            _typeSize = typeSize;
             SetParent(parent);
 
             // Extract namespace from fullName
@@ -39,8 +43,8 @@ namespace System.Reflection.Emit
         }
 
         internal ModuleBuilderImpl GetModuleBuilder() => _module;
-        protected override PackingSize PackingSizeCore => throw new NotImplementedException();
-        protected override int SizeCore => throw new NotImplementedException();
+        protected override PackingSize PackingSizeCore => _packingSize;
+        protected override int SizeCore => _typeSize;
         protected override void AddInterfaceImplementationCore([DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type interfaceType) => throw new NotImplementedException();
         [return: DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))]
         protected override TypeInfo CreateTypeInfoCore() => throw new NotImplementedException();
@@ -72,23 +76,82 @@ namespace System.Reflection.Emit
         protected override bool IsCreatedCore() => throw new NotImplementedException();
         protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con.DeclaringType == null)
-            {
-                throw new ArgumentException("Attribute constructor has no type.");
-            }
-
-            // We check whether the custom attribute is actually a pseudo-custom attribute.
-            // (We have only done ComImport for the prototype, eventually all pseudo-custom attributes will be hard-coded.)
-            // If it is, simply alter the TypeAttributes.
-            // We want to handle this before the type metadata is generated.
-
-            if (con.DeclaringType.Name.Equals("ComImportAttribute"))
-            {
-                _attributes |= TypeAttributes.Import;
-            }
-            else
+            if (!IsPseudoCustomAttribute(con.ReflectedType!.FullName!, con, binaryAttribute))
             {
                 _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
+            }
+        }
+
+        private bool IsPseudoCustomAttribute(string attributeName, ConstructorInfo con, byte[] data)
+        {
+            switch (attributeName)
+            {
+                case "System.Runtime.InteropServices.StructLayoutAttribute":
+                    ParseStructLayoutAttribute(con, data);
+                    break;
+                case "System.Runtime.CompilerServices.SpecialNameAttribute":
+                    _attributes |= TypeAttributes.SpecialName;
+                    break;
+                case "System.SerializableAttribute":
+                    _attributes |= TypeAttributes.Serializable;
+                    break;
+                case "System.Runtime.InteropServices.ComImportAttribute":
+                    _attributes |= TypeAttributes.Import;
+                    break;
+                case "System.Security.SuppressUnmanagedCodeSecurityAttribute":
+                    _attributes |= TypeAttributes.HasSecurity;
+                    return false;
+                default: return false;
+            }
+            return true;
+        }
+
+        private void ParseStructLayoutAttribute(ConstructorInfo con, byte[] data)
+        {
+            CustomAttributeInfo attributeInfo = CustomAttributeInfo.DecodeCustomAttribute(con, data);
+            LayoutKind layoutKind = (LayoutKind)attributeInfo._ctorArgs[0]!;
+            _attributes &= ~TypeAttributes.LayoutMask;
+            _attributes |= layoutKind switch
+            {
+                LayoutKind.Auto => TypeAttributes.AutoLayout,
+                LayoutKind.Explicit => TypeAttributes.ExplicitLayout,
+                LayoutKind.Sequential => TypeAttributes.SequentialLayout,
+                _ => throw new ArgumentException(SR.Argument_InvalidKindOfTypeForCA),
+            };
+
+            for (int i = 0; i < attributeInfo._namedParamNames.Length; ++i)
+            {
+                string name = attributeInfo._namedParamNames[i];
+                int value = (int)attributeInfo._namedParamValues[i]!;
+
+                switch (name)
+                {
+                    case "CharSet":
+                        switch ((CharSet)value)
+                        {
+                            case CharSet.None:
+                            case CharSet.Ansi:
+                                _attributes &= ~(TypeAttributes.UnicodeClass | TypeAttributes.AutoClass);
+                                break;
+                            case CharSet.Unicode:
+                                _attributes &= ~TypeAttributes.AutoClass;
+                                _attributes |= TypeAttributes.UnicodeClass;
+                                break;
+                            case CharSet.Auto:
+                                _attributes &= ~TypeAttributes.UnicodeClass;
+                                _attributes |= TypeAttributes.AutoClass;
+                                break;
+                        }
+                        break;
+                    case "Pack":
+                        _packingSize = (PackingSize)value;
+                        break;
+                    case "Size":
+                        _typeSize = value;
+                        break;
+                    default:
+                        throw new InvalidOperationException(SR.Format(SR.InvalidOperation_UnknownNamedType, name));
+                }
             }
         }
 

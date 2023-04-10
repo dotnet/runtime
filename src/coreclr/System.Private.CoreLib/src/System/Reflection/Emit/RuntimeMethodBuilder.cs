@@ -678,7 +678,7 @@ namespace System.Reflection.Emit
                 m_isDllImport)
             {
                 // cannot attach method body if methodimpl is marked not marked as managed IL
-                // supress
+                //
                 throw new InvalidOperationException(SR.InvalidOperation_ShouldNotHaveMethodBody);
             }
         }
