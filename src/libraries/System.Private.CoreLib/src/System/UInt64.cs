@@ -1217,6 +1217,8 @@ namespace System
 
         static ulong IBinaryIntegerParseAndFormatInfo<ulong>.MaxValueDiv10 => MaxValue / 10;
 
+        static string IBinaryIntegerParseAndFormatInfo<ulong>.OverflowMessage => SR.Overflow_UInt64;
+
         static bool IBinaryIntegerParseAndFormatInfo<ulong>.IsGreaterThanAsUnsigned(ulong left, ulong right) => left > right;
 
         static ulong IBinaryIntegerParseAndFormatInfo<ulong>.MultiplyBy10(ulong value) => value * 10;

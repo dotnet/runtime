@@ -1409,6 +1409,8 @@ namespace System
 
         static long IBinaryIntegerParseAndFormatInfo<long>.MaxValueDiv10 => MaxValue / 10;
 
+        static string IBinaryIntegerParseAndFormatInfo<long>.OverflowMessage => SR.Overflow_Int64;
+
         static bool IBinaryIntegerParseAndFormatInfo<long>.IsGreaterThanAsUnsigned(long left, long right) => (ulong)(left) > (ulong)(right);
 
         static long IBinaryIntegerParseAndFormatInfo<long>.MultiplyBy10(long value) => value * 10;

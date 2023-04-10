@@ -2138,6 +2138,8 @@ namespace System
 
         static UInt128 IBinaryIntegerParseAndFormatInfo<UInt128>.MaxValueDiv10 => new UInt128(0x1999_9999_9999_9999, 0x9999_9999_9999_9999);
 
+        static string IBinaryIntegerParseAndFormatInfo<UInt128>.OverflowMessage => SR.Overflow_UInt128;
+
         static bool IBinaryIntegerParseAndFormatInfo<UInt128>.IsGreaterThanAsUnsigned(UInt128 left, UInt128 right) => left > right;
 
         static UInt128 IBinaryIntegerParseAndFormatInfo<UInt128>.MultiplyBy10(UInt128 value) => value * 10;

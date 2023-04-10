@@ -38,6 +38,8 @@ namespace System
 
         static abstract TSelf MaxValueDiv10 { get; }
 
+        static abstract string OverflowMessage { get; }
+
         static abstract bool IsGreaterThanAsUnsigned(TSelf left, TSelf right);
 
         static abstract TSelf MultiplyBy10(TSelf value);
@@ -133,7 +135,7 @@ namespace System
 
             if (status != ParsingStatus.OK)
             {
-                ThrowOverflowOrFormatException(status, value, TypeCode.Int32);
+                ThrowOverflowOrFormatException<TInteger>(status, value);
             }
             return result;
         }
@@ -1239,6 +1241,13 @@ namespace System
         internal static void ThrowOverflowOrFormatException(ParsingStatus status, ReadOnlySpan<char> value, TypeCode type = 0) => throw GetException(status, value, type);
 
         [DoesNotReturn]
+        internal static void ThrowOverflowOrFormatException<TInteger>(ParsingStatus status, ReadOnlySpan<char> value)
+            where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
+        {
+            throw GetException<TInteger>(status, value);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowOverflowException(TypeCode type) => throw GetOverflowException(type);
 
         [DoesNotReturn]
@@ -1253,6 +1262,15 @@ namespace System
                 return new FormatException(SR.Format(SR.Format_InvalidStringWithValue, value.ToString()));
 
             return GetOverflowException(type);
+        }
+
+        private static Exception GetException<TInteger>(ParsingStatus status, ReadOnlySpan<char> value)
+            where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
+        {
+            if (status == ParsingStatus.Failed)
+                return new FormatException(SR.Format(SR.Format_InvalidStringWithValue, value.ToString()));
+
+            return new OverflowException(TInteger.OverflowMessage);
         }
 
         private static OverflowException GetOverflowException(TypeCode type)

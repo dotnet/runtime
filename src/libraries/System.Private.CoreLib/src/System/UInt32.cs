@@ -1224,6 +1224,8 @@ namespace System
 
         static uint IBinaryIntegerParseAndFormatInfo<uint>.MaxValueDiv10 => MaxValue / 10;
 
+        static string IBinaryIntegerParseAndFormatInfo<uint>.OverflowMessage => SR.Overflow_UInt32;
+
         static bool IBinaryIntegerParseAndFormatInfo<uint>.IsGreaterThanAsUnsigned(uint left, uint right) => left > right;
 
         static uint IBinaryIntegerParseAndFormatInfo<uint>.MultiplyBy10(uint value) => value * 10;

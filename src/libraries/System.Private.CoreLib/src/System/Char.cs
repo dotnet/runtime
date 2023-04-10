@@ -2002,6 +2002,8 @@ namespace System
 
         static char IBinaryIntegerParseAndFormatInfo<char>.MaxValueDiv10 => (char)(MaxValue / 10);
 
+        static string IBinaryIntegerParseAndFormatInfo<char>.OverflowMessage => SR.Overflow_Char;
+
         static bool IBinaryIntegerParseAndFormatInfo<char>.IsGreaterThanAsUnsigned(char left, char right) => left > right;
 
         static char IBinaryIntegerParseAndFormatInfo<char>.MultiplyBy10(char value) => (char)(value * 10);

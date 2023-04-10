@@ -1185,6 +1185,8 @@ namespace System
 
         static ushort IBinaryIntegerParseAndFormatInfo<ushort>.MaxValueDiv10 => MaxValue / 10;
 
+        static string IBinaryIntegerParseAndFormatInfo<ushort>.OverflowMessage => SR.Overflow_UInt16;
+
         static bool IBinaryIntegerParseAndFormatInfo<ushort>.IsGreaterThanAsUnsigned(ushort left, ushort right) => left > right;
 
         static ushort IBinaryIntegerParseAndFormatInfo<ushort>.MultiplyBy10(ushort value) => (ushort)(value * 10);
