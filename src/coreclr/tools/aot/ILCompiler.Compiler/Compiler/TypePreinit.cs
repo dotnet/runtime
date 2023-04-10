@@ -1475,7 +1475,7 @@ namespace ILCompiler
 
         private static BaseValueTypeValue NewUninitializedLocationValue(TypeDesc locationType)
         {
-            if (locationType.IsGCPointer || locationType.IsByRef)
+            if (locationType.IsGCPointer || locationType.IsByRef || locationType.IsFunctionPointer)
             {
                 return null;
             }
@@ -2180,7 +2180,7 @@ namespace ILCompiler
             }
         }
 
-        private sealed class MethodPointerValue : BaseValueTypeValue, IInternalModelingOnlyValue
+        private sealed class MethodPointerValue : BaseValueTypeValue
         {
             public MethodDesc PointedToMethod { get; }
 
@@ -2203,7 +2203,7 @@ namespace ILCompiler
 
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
-                throw new NotSupportedException();
+                builder.EmitPointerReloc(factory.ExactCallableAddress(PointedToMethod));
             }
 
             public override bool GetRawData(NodeFactory factory, out object data)
