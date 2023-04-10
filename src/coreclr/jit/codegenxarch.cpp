@@ -2582,7 +2582,7 @@ void CodeGen::genCodeForMemmove(GenTreeBlk* tree)
     unsigned  size = tree->Size();
 
     unsigned simdSize = compiler->roundDownSIMDSize(size);
-    if (size <= 128)
+    if (size <= ZMM_RECOMMENDED_THRESHOLD)
     {
         // Only use ZMM for large data due to possible CPU throttle issues
         simdSize = min(YMM_REGSIZE_BYTES, simdSize);

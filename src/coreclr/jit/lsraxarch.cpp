@@ -1537,7 +1537,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     assert(size > 0);
 
                     unsigned simdSize = compiler->roundDownSIMDSize(size);
-                    if (size <= 128)
+                    if (size <= ZMM_RECOMMENDED_THRESHOLD)
                     {
                         // Only use ZMM for large data due to possible CPU throttle issues
                         simdSize = min(YMM_REGSIZE_BYTES, compiler->roundDownSIMDSize(size));
