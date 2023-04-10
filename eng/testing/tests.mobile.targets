@@ -137,6 +137,9 @@
           DestinationFolder="$(TestArchiveTestsDir)"
           SkipUnchangedFiles="true"
           Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" />
+
+    <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" 
+               Directories="$(OutDir)" />
   </Target>
 
   <!-- Generate a self-contained app bundle for iOS with tests. -->
