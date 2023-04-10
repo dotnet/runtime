@@ -18,7 +18,7 @@ using Microsoft.Interop.Analyzers;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Interop;
 
-using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpCodeFixVerifier<
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpCodeFixVerifier<
     LibraryImportGenerator.UnitTests.AddDisableRuntimeMarshallingAttributeFixerTests.MockAnalyzer,
     Microsoft.Interop.Analyzers.AddDisableRuntimeMarshallingAttributeFixer>;
 using Xunit;

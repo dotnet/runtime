@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop.UnitTests;
 using SourceGenerators.Tests;
 using System.Collections.Generic;

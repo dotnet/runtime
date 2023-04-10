@@ -9,9 +9,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Interop.Analyzers;
 using Xunit;
-using static Microsoft.Interop.Analyzers.ConvertToLibraryImportFixer;
 
-using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpCodeFixVerifier<
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpCodeFixVerifier<
     Microsoft.Interop.Analyzers.ConvertToLibraryImportAnalyzer,
     Microsoft.Interop.Analyzers.ConvertToLibraryImportFixer>;
 

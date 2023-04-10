@@ -2,11 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Testing;
 
-namespace LibraryImportGenerator.UnitTests.Verifiers
+namespace Microsoft.Interop.UnitTests.Verifiers
 {
     internal static class CSharpVerifierHelper
     {
@@ -24,6 +27,54 @@ namespace LibraryImportGenerator.UnitTests.Verifiers
             string[] args = { "/warnaserror:nullable" };
             var commandLineArguments = CSharpCommandLineParser.Default.Parse(args, baseDirectory: Environment.CurrentDirectory, sdkDirectory: Environment.CurrentDirectory);
             return commandLineArguments.CompilationOptions.SpecificDiagnosticOptions;
+        }
+
+        internal static Func<Solution, ProjectId, Solution> GetAllDiagonsticsEnabledTransform(IEnumerable<DiagnosticAnalyzer> analyzers)
+        {
+            return (solution, projectId) =>
+            {
+                var project = solution.GetProject(projectId)!;
+                var compilationOptions = project.CompilationOptions!;
+                var diagnosticOptions = compilationOptions.SpecificDiagnosticOptions.SetItems(NullableWarnings);
+
+                // Explicitly enable diagnostics that are not enabled by default
+                var enableAnalyzersOptions = new Dictionary<string, ReportDiagnostic>();
+                foreach (var analyzer in analyzers)
+                {
+                    foreach (var diagnostic in analyzer.SupportedDiagnostics)
+                    {
+                        if (diagnostic.IsEnabledByDefault)
+                            continue;
+
+                        // Map the default severity to the reporting behaviour.
+                        // We cannot simply use ReportDiagnostic.Default here, as diagnostics that are not enabled by default
+                        // are treated as suppressed (regardless of their default severity).
+                        var report = diagnostic.DefaultSeverity switch
+                        {
+                            DiagnosticSeverity.Error => ReportDiagnostic.Error,
+                            DiagnosticSeverity.Warning => ReportDiagnostic.Warn,
+                            DiagnosticSeverity.Info => ReportDiagnostic.Info,
+                            DiagnosticSeverity.Hidden => ReportDiagnostic.Hidden,
+                            _ => ReportDiagnostic.Default
+                        };
+                        enableAnalyzersOptions.Add(diagnostic.Id, report);
+                    }
+                }
+
+                compilationOptions = compilationOptions.WithSpecificDiagnosticOptions(
+                    compilationOptions.SpecificDiagnosticOptions
+                        .SetItems(NullableWarnings)
+                        .AddRange(enableAnalyzersOptions)
+                        .AddRange(TestUtils.BindingRedirectWarnings));
+                solution = solution.WithProjectCompilationOptions(projectId, compilationOptions);
+                return solution;
+            };
+        }
+
+        internal static Solution SetPreviewLanguageVersion(Solution solution, ProjectId projectId)
+        {
+            var project = solution.GetProject(projectId)!;
+            return solution.WithProjectParseOptions(projectId, ((CSharpParseOptions)project.ParseOptions!).WithLanguageVersion(LanguageVersion.Preview));
         }
     }
 }

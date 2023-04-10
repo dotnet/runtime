@@ -10,7 +10,7 @@ using Xunit;
 
 using static Microsoft.Interop.Analyzers.ConvertToLibraryImportAnalyzer;
 
-using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.ConvertToLibraryImportAnalyzer>;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.ConvertToLibraryImportAnalyzer>;
 
 namespace LibraryImportGenerator.UnitTests
 {
