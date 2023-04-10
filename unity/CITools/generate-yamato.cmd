@@ -1,3 +1,3 @@
 @echo off
 
-dotnet run --project %~dp0Unity.Cookbook/Unity.Cookbook.csproj %*
+%~dp0../../dotnet.cmd run --project %~dp0Unity.Cookbook/Unity.Cookbook.csproj %*

@@ -9,6 +9,6 @@ yamato_files_update-to-date:
   commands:
   - command: |-
       cd unity/CITools
-      dotnet run --project Unity.Cookbook/Unity.Cookbook.csproj
-      dotnet run --project CheckYamatoFiles/CheckYamatoFiles.csproj
+      ../../dotnet.sh run --project Unity.Cookbook/Unity.Cookbook.csproj
+      ../../dotnet.sh run --project CheckYamatoFiles/CheckYamatoFiles.csproj
 
