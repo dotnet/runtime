@@ -1304,10 +1304,7 @@ TEST(mono_array_new_creates_array_instance)
     GET_AND_CHECK(int32Class, mono_class_from_name(mono_get_corlib(), "System", "Int32"));
     GET_AND_CHECK(arrayInt32Class, mono_array_class_get(int32Class, 1));
     GET_AND_CHECK(arrayInt32Instance, mono_array_new(g_domain, int32Class, 5));
-
-// Todo
-//    if (coreclr_array_length)
-  //      CHECK_EQUAL(5, coreclr_array_length(arrayInt32Instance));
+    CHECK_EQUAL(5, coreclr_array_length(arrayInt32Instance));
 }
 
 TEST(mono_gchandle_new_creates_gc_handle)

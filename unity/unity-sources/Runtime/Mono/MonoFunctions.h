@@ -128,6 +128,7 @@ DO_API(MonoClass*, mono_get_double_class, ())
 DO_API(MonoArray*, mono_array_new, (MonoDomain * domain, MonoClass * eclass, guint32 n))
 DO_API(MonoArray*, mono_unity_array_new_2d, (MonoDomain * domain, MonoClass * eclass, size_t size0, size_t size1))
 DO_API(MonoArray*, mono_unity_array_new_3d, (MonoDomain * domain, MonoClass * eclass, size_t size0, size_t size1, size_t size2))
+DO_API(int, coreclr_array_length, (MonoArray* array))
 
 DO_API(MonoClass *, mono_array_class_get, (MonoClass * eclass, guint32 rank))
 
