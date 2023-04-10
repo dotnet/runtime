@@ -553,6 +553,10 @@
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
 
+  <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
+    <Content Include="@(SanitizerRuntimeToCopy->'$(CoreCLRArtifactsPath)/%(Identity)')" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <Target Name="BuildNativeAot"
           DependsOnTargets="Build;LinkNativeIfBuildAndRun" />
 
