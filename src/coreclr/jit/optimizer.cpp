@@ -389,8 +389,6 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
 
     noway_assert(!opts.MinOpts());
 
-    bool removeLoop = false;
-
     // If an unreachable block is a loop entry or bottom then the loop is unreachable.
     // Special case: the block was the head of a loop - or pointing to a loop entry.
 
@@ -456,101 +454,37 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         // If `block` flows to the loop entry then the whole loop will become unreachable if it is the
         // only non-loop predecessor.
 
-        switch (block->bbJumpKind)
+        bool removeLoop = false;
+        if (!loop.lpContains(block))
         {
-            case BBJ_NONE:
-                if (block->bbNext == loop.lpEntry)
-                {
-                    removeLoop = true;
-                }
-                break;
-
-            case BBJ_COND:
-                if ((block->bbNext == loop.lpEntry) || (block->bbJumpDest == loop.lpEntry))
-                {
-                    removeLoop = true;
-                }
-                break;
-
-            case BBJ_ALWAYS:
-                if (block->bbJumpDest == loop.lpEntry)
-                {
-                    removeLoop = true;
-                }
-                break;
-
-            case BBJ_SWITCH:
-                for (BasicBlock* const bTarget : block->SwitchTargets())
-                {
-                    if (bTarget == loop.lpEntry)
-                    {
-                        removeLoop = true;
-                        break;
-                    }
-                }
-                break;
-
-            default:
-                break;
-        }
-
-        if (removeLoop)
-        {
-            // Check if the entry has other predecessors outside the loop.
-            // TODO: Replace this when predecessors are available.
-
-            for (BasicBlock* const auxBlock : Blocks())
+            for (BasicBlock* const succ : block->Succs())
             {
-                // Ignore blocks in the loop.
-                if (loop.lpContains(auxBlock))
+                if (loop.lpEntry == succ)
                 {
-                    continue;
-                }
-
-                switch (auxBlock->bbJumpKind)
-                {
-                    case BBJ_NONE:
-                        if (auxBlock->bbNext == loop.lpEntry)
-                        {
-                            removeLoop = false;
-                        }
-                        break;
-
-                    case BBJ_COND:
-                        if ((auxBlock->bbNext == loop.lpEntry) || (auxBlock->bbJumpDest == loop.lpEntry))
-                        {
-                            removeLoop = false;
-                        }
-                        break;
-
-                    case BBJ_ALWAYS:
-                        if (auxBlock->bbJumpDest == loop.lpEntry)
-                        {
-                            removeLoop = false;
-                        }
-                        break;
-
-                    case BBJ_SWITCH:
-                        for (BasicBlock* const bTarget : auxBlock->SwitchTargets())
-                        {
-                            if (bTarget == loop.lpEntry)
-                            {
-                                removeLoop = false;
-                                break;
-                            }
-                        }
-                        break;
-
-                    default:
-                        break;
+                    removeLoop = true;
+                    break;
                 }
             }
 
             if (removeLoop)
             {
-                reportBefore();
-                optMarkLoopRemoved(loopNum);
+                // If the entry has any non-loop block that is not the known 'block' predecessor of entry
+                // (found above), then don't remove the loop.
+                for (BasicBlock* const predBlock : loop.lpEntry->PredBlocks())
+                {
+                    if (!loop.lpContains(predBlock) && (predBlock != block))
+                    {
+                        removeLoop = false;
+                        break;
+                    }
+                }
             }
+        }
+
+        if (removeLoop)
+        {
+            reportBefore();
+            optMarkLoopRemoved(loopNum);
         }
         else if (loop.lpHead == block)
         {
