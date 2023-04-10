@@ -2090,7 +2090,7 @@ private:
                 continue;
             }
 
-            // This blocks is lexically between TOP and BOTTOM, but it does not
+            // This block is lexically between TOP and BOTTOM, but it does not
             // participate in the flow cycle.  Check for a run of consecutive
             // such blocks.
             //
@@ -2504,6 +2504,21 @@ private:
                 if (!loopBlocks.IsMember(exitPoint->bbNum))
                 {
                     // Exit from a block other than BOTTOM
+                    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if !defined(FEATURE_EH_FUNCLETS)
+                    // On non-funclet platforms (x86), the catch exit is a BBJ_ALWAYS, but we don't want that to
+                    // be considered a loop exit block, as catch handlers don't have predecessor lists and don't
+                    // show up as might be expected in the dominator tree.
+                    if (block->bbJumpKind == BBJ_ALWAYS)
+                    {
+                        if (!BasicBlock::sameHndRegion(block, exitPoint))
+                        {
+                            break;
+                        }
+                    }
+#endif // !defined(FEATURE_EH_FUNCLETS)
+
                     lastExit = block;
                     exitCount++;
                 }
@@ -6990,7 +7005,6 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     // convenient). But note that it is arbitrary because there is not guaranteed execution order amongst
     // the child loops.
 
-    int childLoopPreHeaders = 0;
     for (BasicBlock::loopNumber childLoop = pLoopDsc->lpChild; //
          childLoop != BasicBlock::NOT_IN_LOOP;                 //
          childLoop = optLoopTable[childLoop].lpSibling)
@@ -7020,7 +7034,6 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
         }
         JITDUMP("  --  " FMT_BB " (child loop pre-header)\n", childPreHead->bbNum);
         defExec.Push(childPreHead);
-        ++childLoopPreHeaders;
     }
 
     if (pLoopDsc->lpExitCnt == 1)
@@ -7033,22 +7046,14 @@ bool Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
         // Push dominators, until we reach "entry" or exit the loop.
 
         BasicBlock* cur = pLoopDsc->lpExit;
-        while (cur != nullptr && pLoopDsc->lpContains(cur) && cur != pLoopDsc->lpEntry)
+        while ((cur != nullptr) && (cur != pLoopDsc->lpEntry))
         {
             JITDUMP("  --  " FMT_BB " (dominate exit block)\n", cur->bbNum);
+            assert(pLoopDsc->lpContains(cur));
             defExec.Push(cur);
             cur = cur->bbIDom;
         }
-
-        // If we didn't reach the entry block, give up and *just* push the entry block (and the pre-headers).
-        if (cur != pLoopDsc->lpEntry)
-        {
-            JITDUMP("  -- odd, we didn't reach entry from exit via dominators. Only considering hoisting in entry "
-                    "block " FMT_BB "\n",
-                    pLoopDsc->lpEntry->bbNum);
-            defExec.Pop(defExec.Height() - childLoopPreHeaders);
-            assert(defExec.Height() == childLoopPreHeaders);
-        }
+        noway_assert(cur == pLoopDsc->lpEntry);
     }
     else // More than one exit
     {

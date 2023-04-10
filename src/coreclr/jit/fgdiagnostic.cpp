@@ -4301,7 +4301,7 @@ void Compiler::fgDebugCheckSsa()
         }
     };
 
-    // Visit the blocks that SSA intially renamed
+    // Visit the blocks that SSA initially renamed
     //
     SsaCheckVisitor        scv(this);
     SsaCheckDomTreeVisitor visitor(this, scv);
@@ -4664,6 +4664,32 @@ void Compiler::fgDebugCheckLoopTable()
         {
             loop.VERIFY_lpIterTree();
             loop.VERIFY_lpTestTree();
+        }
+
+        // If we have dominators, we check more things:
+        // 1. The pre-header dominates the entry (if pre-headers are required).
+        // 2. The entry dominates the exit.
+        // 3. The IDom tree from the exit reaches the entry.
+        if (fgDomsComputed)
+        {
+            if (optLoopsRequirePreHeaders)
+            {
+                assert(fgDominate(loop.lpHead, loop.lpEntry));
+            }
+
+            if (loop.lpExitCnt == 1)
+            {
+                assert(loop.lpExit != nullptr);
+                assert(fgDominate(loop.lpEntry, loop.lpExit));
+
+                BasicBlock* cur = loop.lpExit;
+                while ((cur != nullptr) && (cur != loop.lpEntry))
+                {
+                    assert(fgDominate(cur, loop.lpExit));
+                    cur = cur->bbIDom;
+                }
+                assert(cur == loop.lpEntry); // We must be able to reach the entry from the exit via the IDom tree.
+            }
         }
     }
 
