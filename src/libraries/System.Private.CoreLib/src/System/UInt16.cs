@@ -148,7 +148,7 @@ namespace System
 
         private static ushort Parse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info)
         {
-            Number.ParsingStatus status = Number.TryParseUInt32(s, style, info, out uint i);
+            Number.ParsingStatus status = Number.TryParseBinaryInteger(s, style, info, out uint i);
             if (status != Number.ParsingStatus.OK)
             {
                 Number.ThrowOverflowOrFormatException(status, s, TypeCode.UInt16);
@@ -177,31 +177,18 @@ namespace System
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
-            if (s == null)
+            if (s is null)
             {
                 result = 0;
                 return false;
             }
-
-            return TryParse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out ushort result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
-        }
-
-        private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out ushort result)
-        {
-            if (Number.TryParseUInt32(s, style, info, out uint i) != Number.ParsingStatus.OK
-                || i > MaxValue)
-            {
-                result = 0;
-                return false;
-            }
-            result = (ushort)i;
-            return true;
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         //

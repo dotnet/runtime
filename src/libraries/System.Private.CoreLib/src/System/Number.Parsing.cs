@@ -128,7 +128,7 @@ namespace System
 
         internal static int ParseInt32(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
         {
-            ParsingStatus status = TryParseInt32(value, styles, info, out int result);
+            ParsingStatus status = TryParseBinaryInteger(value, styles, info, out int result);
             if (status != ParsingStatus.OK)
             {
                 ThrowOverflowOrFormatException(status, value, TypeCode.Int32);
@@ -139,7 +139,7 @@ namespace System
 
         internal static long ParseInt64(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
         {
-            ParsingStatus status = TryParseInt64(value, styles, info, out long result);
+            ParsingStatus status = TryParseBinaryInteger(value, styles, info, out long result);
             if (status != ParsingStatus.OK)
             {
                 ThrowOverflowOrFormatException(status, value, TypeCode.Int64);
@@ -150,7 +150,7 @@ namespace System
 
         internal static Int128 ParseInt128(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
         {
-            ParsingStatus status = TryParseInt128(value, styles, info, out Int128 result);
+            ParsingStatus status = TryParseBinaryInteger(value, styles, info, out Int128 result);
             if (status != ParsingStatus.OK)
             {
                 ThrowOverflowOrFormatExceptionInt128(status);
@@ -161,7 +161,7 @@ namespace System
 
         internal static uint ParseUInt32(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
         {
-            ParsingStatus status = TryParseUInt32(value, styles, info, out uint result);
+            ParsingStatus status = TryParseBinaryInteger(value, styles, info, out uint result);
             if (status != ParsingStatus.OK)
             {
                 ThrowOverflowOrFormatException(status, value, TypeCode.UInt32);
@@ -172,7 +172,7 @@ namespace System
 
         internal static ulong ParseUInt64(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
         {
-            ParsingStatus status = TryParseUInt64(value, styles, info, out ulong result);
+            ParsingStatus status = TryParseBinaryInteger(value, styles, info, out ulong result);
             if (status != ParsingStatus.OK)
             {
                 ThrowOverflowOrFormatException(status, value, TypeCode.UInt64);
@@ -183,7 +183,7 @@ namespace System
 
         internal static UInt128 ParseUInt128(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)
         {
-            ParsingStatus status = TryParseUInt128(value, styles, info, out UInt128 result);
+            ParsingStatus status = TryParseBinaryInteger(value, styles, info, out UInt128 result);
             if (status != ParsingStatus.OK)
             {
                 ThrowOverflowOrFormatExceptionUInt128(status);
@@ -452,7 +452,8 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ParsingStatus TryParseInt32(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out int result)
+        internal static ParsingStatus TryParseBinaryInteger<TInteger>(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out TInteger result)
+            where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
         {
             if ((styles & ~NumberStyles.Integer) == 0)
             {
@@ -462,8 +463,7 @@ namespace System
 
             if ((styles & NumberStyles.AllowHexSpecifier) != 0)
             {
-                result = 0;
-                return TryParseBinaryIntegerHexNumberStyle(value, styles, out Unsafe.As<int, uint>(ref result));
+                return TryParseBinaryIntegerHexNumberStyle(value, styles, out result);
             }
 
             return TryParseBinaryIntegerNumber(value, styles, info, out result);
@@ -704,60 +704,6 @@ namespace System
             goto DoneAtEndButPotentialOverflow;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ParsingStatus TryParseInt64(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out long result)
-        {
-            if ((styles & ~NumberStyles.Integer) == 0)
-            {
-                // Optimized path for the common case of anything that's allowed for integer style.
-                return TryParseBinaryIntegerStyle(value, styles, info, out result);
-            }
-
-            if ((styles & NumberStyles.AllowHexSpecifier) != 0)
-            {
-                result = 0;
-                return TryParseBinaryIntegerHexNumberStyle(value, styles, out Unsafe.As<long, ulong>(ref result));
-            }
-
-            return TryParseBinaryIntegerNumber(value, styles, info, out result);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ParsingStatus TryParseInt128(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out Int128 result)
-        {
-            if ((styles & ~NumberStyles.Integer) == 0)
-            {
-                // Optimized path for the common case of anything that's allowed for integer style.
-                return TryParseBinaryIntegerStyle(value, styles, info, out result);
-            }
-
-            if ((styles & NumberStyles.AllowHexSpecifier) != 0)
-            {
-                ParsingStatus status = TryParseBinaryIntegerHexNumberStyle(value, styles, out UInt128 unsignedResult);
-                result = new Int128(unsignedResult.Upper, unsignedResult.Lower);
-                return status;
-            }
-
-            return TryParseBinaryIntegerNumber(value, styles, info, out result);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ParsingStatus TryParseUInt32(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out uint result)
-        {
-            if ((styles & ~NumberStyles.Integer) == 0)
-            {
-                // Optimized path for the common case of anything that's allowed for integer style.
-                return TryParseBinaryIntegerStyle(value, styles, info, out result);
-            }
-
-            if ((styles & NumberStyles.AllowHexSpecifier) != 0)
-            {
-                return TryParseBinaryIntegerHexNumberStyle(value, styles, out result);
-            }
-
-            return TryParseBinaryIntegerNumber(value, styles, info, out result);
-        }
-
         /// <summary>Parses uint limited to styles that make up NumberStyles.HexNumber.</summary>
         internal static ParsingStatus TryParseBinaryIntegerHexNumberStyle<TInteger>(ReadOnlySpan<char> value, NumberStyles styles, out TInteger result)
             where TInteger : unmanaged, IBinaryIntegerParseAndFormatInfo<TInteger>
@@ -879,40 +825,6 @@ namespace System
                 goto FalseExit;
 
             goto DoneAtEndButPotentialOverflow;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ParsingStatus TryParseUInt64(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out ulong result)
-        {
-            if ((styles & ~NumberStyles.Integer) == 0)
-            {
-                // Optimized path for the common case of anything that's allowed for integer style.
-                return TryParseBinaryIntegerStyle(value, styles, info, out result);
-            }
-
-            if ((styles & NumberStyles.AllowHexSpecifier) != 0)
-            {
-                return TryParseBinaryIntegerHexNumberStyle(value, styles, out result);
-            }
-
-            return TryParseBinaryIntegerNumber(value, styles, info, out result);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static ParsingStatus TryParseUInt128(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info, out UInt128 result)
-        {
-            if ((styles & ~NumberStyles.Integer) == 0)
-            {
-                // Optimized path for the common case of anything that's allowed for integer style.
-                return TryParseBinaryIntegerStyle(value, styles, info, out result);
-            }
-
-            if ((styles & NumberStyles.AllowHexSpecifier) != 0)
-            {
-                return TryParseBinaryIntegerHexNumberStyle(value, styles, out result);
-            }
-
-            return TryParseBinaryIntegerNumber(value, styles, info, out result);
         }
 
         internal static decimal ParseDecimal(ReadOnlySpan<char> value, NumberStyles styles, NumberFormatInfo info)

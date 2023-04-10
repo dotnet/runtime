@@ -160,7 +160,7 @@ namespace System
 
         private static sbyte Parse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info)
         {
-            Number.ParsingStatus status = Number.TryParseInt32(s, style, info, out int i);
+            Number.ParsingStatus status = Number.TryParseBinaryInteger(s, style, info, out int i);
             if (status != Number.ParsingStatus.OK)
             {
                 Number.ThrowOverflowOrFormatException(status, s, TypeCode.SByte);
@@ -194,33 +194,18 @@ namespace System
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
-            if (s == null)
+            if (s is null)
             {
                 result = 0;
                 return false;
             }
-
-            return TryParse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out sbyte result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
-        }
-
-        private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out sbyte result)
-        {
-            // For hex number styles AllowHexSpecifier >> 2 == 0x80 and cancels out MinValue so the check is effectively: (uint)i > byte.MaxValue
-            // For integer styles it's zero and the effective check is (uint)(i - MinValue) > byte.MaxValue
-            if (Number.TryParseInt32(s, style, info, out int i) != Number.ParsingStatus.OK
-                || (uint)(i - MinValue - ((int)(style & NumberStyles.AllowHexSpecifier) >> 2)) > byte.MaxValue)
-            {
-                result = 0;
-                return false;
-            }
-            result = (sbyte)i;
-            return true;
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         //
