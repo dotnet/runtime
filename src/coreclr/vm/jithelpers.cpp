@@ -5736,6 +5736,72 @@ HCIMPL3(void, JIT_VTableProfile64, Object* obj, CORINFO_METHOD_HANDLE baseMethod
 }
 HCIMPLEND
 
+// Helpers for scalable approximate counters
+//
+// Here 13 means we count accurately up to 2^13 = 8192 and
+// then start counting probabialistically.
+//
+// See docs/design/features/ScalableApproximateCounting.md
+//
+HCIMPL1(void, JIT_CountProfile32, volatile LONG* pCounter)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    LONG count = *pCounter;
+    LONG delta = 1;
+
+    if (count > 0)
+    {
+        DWORD logCount = 0;
+        BitScanReverse(&logCount, count);
+
+        if (logCount >= 13)
+        {
+            delta = 1 << (logCount - 12);
+            const unsigned rand = HandleHistogramProfileRand();
+            const bool update = (rand & (delta - 1)) == 0;
+            if (!update)
+            {
+                return;
+            }
+
+        }
+    }
+
+    InterlockedAdd(pCounter, delta);
+}
+HCIMPLEND
+
+HCIMPL1(void, JIT_CountProfile64, volatile LONG64* pCounter)
+{
+    FCALL_CONTRACT;
+    FC_GC_POLL_NOT_NEEDED();
+
+    LONG64 count = *pCounter;
+    LONG64 delta = 1;
+
+    if (count > 0)
+    {
+        DWORD logCount = 0;
+        BitScanReverse64(&logCount, count);
+
+        if (logCount >= 13)
+        {
+            delta = 1LL << (logCount - 12);
+            const unsigned rand = HandleHistogramProfileRand();
+            const bool update = (rand & (delta - 1)) == 0;
+            if (!update)
+            {
+                return;
+            }
+        }
+    }
+
+    InterlockedAdd64(pCounter, delta);
+}
+HCIMPLEND
+
 //========================================================================
 //
 //      INTEROP HELPERS

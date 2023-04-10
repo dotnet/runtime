@@ -31,28 +31,6 @@ static GenTree* SpillExpression(Compiler* comp, GenTree* expr, BasicBlock* exprB
     return comp->gtNewLclvNode(tmpNum, genActualType(expr));
 };
 
-// Create block from the given tree
-static BasicBlock* CreateBlockFromTree(Compiler*   comp,
-                                       BasicBlock* insertAfter,
-                                       BBjumpKinds blockKind,
-                                       GenTree*    tree,
-                                       DebugInfo&  debugInfo,
-                                       bool        updateSideEffects = false)
-{
-    // Fast-path basic block
-    BasicBlock* newBlock = comp->fgNewBBafter(blockKind, insertAfter, true);
-    newBlock->bbFlags |= BBF_INTERNAL;
-    Statement* stmt = comp->fgNewStmtFromTree(tree, debugInfo);
-    comp->fgInsertStmtAtEnd(newBlock, stmt);
-    newBlock->bbCodeOffs    = insertAfter->bbCodeOffsEnd;
-    newBlock->bbCodeOffsEnd = insertAfter->bbCodeOffsEnd;
-    if (updateSideEffects)
-    {
-        comp->gtUpdateStmtSideEffects(stmt);
-    }
-    return newBlock;
-}
-
 //------------------------------------------------------------------------------
 // gtNewRuntimeLookupHelperCallNode : Helper to create a runtime lookup call helper node.
 //
@@ -295,18 +273,15 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 GenTree* nullcheckOp = gtNewOperNode(GT_EQ, TYP_INT, fastPathValue, gtNewIconNode(0, TYP_I_IMPL));
                 nullcheckOp->gtFlags |= GTF_RELOP_JMP_USED;
                 BasicBlock* nullcheckBb =
-                    CreateBlockFromTree(this, prevBb, BBJ_COND, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp),
-                                        debugInfo);
+                    fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, nullcheckOp), debugInfo);
 
                 // Fallback basic block
                 GenTree*    asgFallbackValue = gtNewAssignNode(gtClone(rtLookupLcl), call);
-                BasicBlock* fallbackBb =
-                    CreateBlockFromTree(this, nullcheckBb, BBJ_NONE, asgFallbackValue, debugInfo, true);
+                BasicBlock* fallbackBb = fgNewBBFromTreeAfter(BBJ_NONE, nullcheckBb, asgFallbackValue, debugInfo, true);
 
                 // Fast-path basic block
                 GenTree*    asgFastpathValue = gtNewAssignNode(gtClone(rtLookupLcl), fastPathValueClone);
-                BasicBlock* fastPathBb =
-                    CreateBlockFromTree(this, nullcheckBb, BBJ_ALWAYS, asgFastpathValue, debugInfo);
+                BasicBlock* fastPathBb = fgNewBBFromTreeAfter(BBJ_ALWAYS, nullcheckBb, asgFastpathValue, debugInfo);
 
                 BasicBlock* sizeCheckBb = nullptr;
                 if (needsSizeCheck)
@@ -349,7 +324,7 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                     sizeCheck->gtFlags |= GTF_RELOP_JMP_USED;
 
                     GenTree* jtrue = gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck);
-                    sizeCheckBb    = CreateBlockFromTree(this, prevBb, BBJ_COND, jtrue, debugInfo);
+                    sizeCheckBb    = fgNewBBFromTreeAfter(BBJ_COND, prevBb, jtrue, debugInfo);
                 }
 
                 //
@@ -410,22 +385,14 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
                 }
 
                 //
-                // Update loop info if loop table is known to be valid
+                // Update loop info
                 //
-                if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+                nullcheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
+                fastPathBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
+                fallbackBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
+                if (needsSizeCheck)
                 {
-                    nullcheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-                    fastPathBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
-                    fallbackBb->bbNatLoopNum  = prevBb->bbNatLoopNum;
-                    if (needsSizeCheck)
-                    {
-                        sizeCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-                    }
-                    // Update lpBottom after block split
-                    if (optLoopTable[prevBb->bbNatLoopNum].lpBottom == prevBb)
-                    {
-                        optLoopTable[prevBb->bbNatLoopNum].lpBottom = block;
-                    }
+                    sizeCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
                 }
 
                 // All blocks are expected to be in the same EH region

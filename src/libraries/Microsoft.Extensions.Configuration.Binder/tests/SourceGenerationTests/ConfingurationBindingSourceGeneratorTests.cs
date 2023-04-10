@@ -3,8 +3,12 @@
 
 using System;
 using System.Collections;
+using System.Collections.Immutable;
+using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Extensions.DependencyInjection;
 using SourceGenerators.Tests;
 using Xunit;
@@ -15,10 +19,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
     public class ConfingurationBindingSourceGeneratorTests
     {
-        [Fact]
-        public async Task TestBaseline_TestBindCallGen()
-        {
-            string testSourceCode = @"
+        private const string BindCallSampleCode = @"
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 
@@ -45,8 +46,11 @@ public class Program
     public class MyClass2 { }
 }";
 
-            await VerifyAgainstBaselineUsingFile("TestBindCallGen.generated.txt", testSourceCode);
-        }
+        [Theory]
+        [InlineData(LanguageVersion.Preview)]
+        [InlineData(LanguageVersion.CSharp11)]
+        public async Task TestBaseline_TestBindCallGen(LanguageVersion langVersion) =>
+            await VerifyAgainstBaselineUsingFile("TestBindCallGen.generated.txt", BindCallSampleCode, langVersion);
 
         [Fact]
         public async Task TestBaseline_TestGetCallGen()
@@ -110,13 +114,40 @@ public class Program
             await VerifyAgainstBaselineUsingFile("TestConfigureCallGen.generated.txt", testSourceCode);
         }
 
-        private async Task VerifyAgainstBaselineUsingFile(string filename, string testSourceCode)
+        [Fact]
+        public async Task LangVersionMustBeCharp11OrHigher()
+        {
+            var (d, r) = await RunGenerator(BindCallSampleCode, LanguageVersion.CSharp10);
+            Assert.Empty(r);
+
+            Diagnostic diagnostic = Assert.Single(d);
+            Assert.True(diagnostic.Id == "SYSLIB1102");
+            Assert.Contains("C# 11", diagnostic.Descriptor.Title.ToString(CultureInfo.InvariantCulture));
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        }
+
+        private async Task VerifyAgainstBaselineUsingFile(
+            string filename,
+            string testSourceCode,
+            LanguageVersion languageVersion = LanguageVersion.Preview)
         {
             string baseline = LineEndingsHelper.Normalize(await File.ReadAllTextAsync(Path.Combine("Baselines", filename)).ConfigureAwait(false));
             string[] expectedLines = baseline.Replace("%VERSION%", typeof(ConfigurationBindingSourceGenerator).Assembly.GetName().Version?.ToString())
                                              .Split(Environment.NewLine);
 
-            var (d, r) = await RoslynTestUtils.RunGenerator(
+            var (d, r) = await RunGenerator(testSourceCode, languageVersion);
+
+            Assert.Empty(d);
+            Assert.Single(r);
+
+            Assert.True(RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText,
+                out string errorMessage), errorMessage);
+        }
+
+        private async Task<(ImmutableArray<Diagnostic>, ImmutableArray<GeneratedSourceResult>)> RunGenerator(
+            string testSourceCode,
+            LanguageVersion langVersion = LanguageVersion.CSharp11) =>
+            await RoslynTestUtils.RunGenerator(
                 new ConfigurationBindingSourceGenerator(),
                 new[] {
                     typeof(ConfigurationBinder).Assembly,
@@ -126,14 +157,8 @@ public class Program
                     typeof(ServiceCollection).Assembly,
                     typeof(OptionsConfigurationServiceCollectionExtensions).Assembly,
                 },
-                new[] { testSourceCode }).ConfigureAwait(false);
-
-            Assert.Empty(d);
-            Assert.Single(r);
-
-            Assert.True(RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText,
-                out string errorMessage), errorMessage);
-        }
+                new[] { testSourceCode },
+                langVersion: langVersion).ConfigureAwait(false);
     }
 #endif
 }

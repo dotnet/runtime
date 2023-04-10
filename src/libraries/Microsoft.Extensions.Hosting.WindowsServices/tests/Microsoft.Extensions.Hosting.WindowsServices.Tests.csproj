@@ -4,10 +4,43 @@
     <!-- Use "$(NetCoreAppCurrent)-windows" to avoid PlatformNotSupportedExceptions from ServiceController. -->
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetFrameworkMinimum)</TargetFrameworks> 
     <EnableDefaultItems>true</EnableDefaultItems>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\src\Microsoft.Extensions.Hosting.WindowsServices.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)System.ServiceProcess.ServiceController\src\Microsoft\Win32\SafeHandles\SafeServiceHandle.cs"
+             Link="Microsoft\Win32\SafeHandles\SafeServiceHandle.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs"
+             Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Errors.cs"
+             Link="Common\Interop\Windows\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ServiceProcessOptions.cs"
+             Link="Common\Interop\Windows\Interop.ServiceProcessOptions.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CloseServiceHandle.cs"
+             Link="Common\Interop\Windows\Interop.CloseServiceHandle.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CreateService.cs"
+             Link="Common\Interop\Windows\Interop.CreateService.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.DeleteService.cs"
+             Link="Common\Interop\Windows\Interop.DeleteService.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenService.cs"
+             Link="Common\Interop\Windows\Interop.OpenService.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.OpenSCManager.cs"
+             Link="Common\Interop\Windows\Interop.OpenSCManager.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.QueryServiceStatus.cs"
+             Link="Common\Interop\Windows\Interop.QueryServiceStatus.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.QueryServiceStatusEx.cs"
+             Link="Common\Interop\Windows\Interop.QueryServiceStatusEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.SERVICE_STATUS.cs"
+             Link="Common\Interop\Windows\Interop.SERVICE_STATUS.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">

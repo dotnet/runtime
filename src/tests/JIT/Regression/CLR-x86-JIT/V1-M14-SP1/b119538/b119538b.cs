@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 class C
 {
     private string s = "This is private";
@@ -15,7 +16,8 @@ class B
 
 public class Class1
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         B[,] ab = new B[1, 1];
         object[,] ao = ab;

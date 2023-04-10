@@ -8,6 +8,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 namespace Runtime_64125
 {
@@ -6932,7 +6933,8 @@ namespace Runtime_64125
             return true;
         }
 
-        public static unsafe int Main()
+        [Fact]
+        public static unsafe int TestEntryPoint()
         {
             var anyLocation = new AnyLocation();
 

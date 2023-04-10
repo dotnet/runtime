@@ -85,16 +85,20 @@ namespace Internal.TypeSystem
         }
 
         private static readonly Guid s_guid = new Guid("97F4DBD4-F6D1-4FAD-91B3-1001F92068E5");
-        private static readonly BlobContentId s_contentId = new BlobContentId(s_guid, 0x04030201);
+        protected static readonly BlobContentId s_contentId = new BlobContentId(s_guid, 0x04030201);
 
         public MetadataBuilder Builder => _metadataBuilder;
 
-        public void SerializeToStream(Stream peStream)
+        protected virtual ManagedPEBuilder CreateManagedPEBuilder(BlobBuilder ilBuilder)
         {
             var peHeaderBuilder = new PEHeaderBuilder();
-            var peBuilder = new ManagedPEBuilder(peHeaderBuilder, new MetadataRootBuilder(_metadataBuilder), _ilBuilder,
+            return new ManagedPEBuilder(peHeaderBuilder, new MetadataRootBuilder(_metadataBuilder), ilBuilder,
                 deterministicIdProvider: content => s_contentId);
+        }
 
+        public void SerializeToStream(Stream peStream)
+        {
+            var peBuilder = CreateManagedPEBuilder(_ilBuilder);
             var peBlob = new BlobBuilder();
             var contentId = peBuilder.Serialize(peBlob);
             new BlobWriter(_mvidFixup).WriteGuid(contentId.Guid);
