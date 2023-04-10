@@ -663,6 +663,8 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
 #ifdef DEBUG
     maxNodeLocation   = 0;
+    consecutiveRegistersLocation = 0;
+
     activeRefPosition = nullptr;
     currBuildNode     = nullptr;
 
@@ -4901,6 +4903,24 @@ void LinearScan::allocateRegisters()
             }
         }
         prevLocation = currentLocation;
+#ifdef TARGET_ARM64
+
+#ifdef DEBUG
+        if (hasConsecutiveRegister)
+        {
+            if (currentRefPosition.needsConsecutive)
+            {
+                // track all the refpositions around the location that is also
+                // allocating consecutive registers.
+                consecutiveRegistersLocation = currentLocation;
+            }
+            else if (consecutiveRegistersLocation < currentLocation)
+            {
+                consecutiveRegistersLocation = MinLocation;
+            }
+        }
+#endif // DEBUG
+#endif // TARGET_ARM64
 
         // get previous refposition, then current refpos is the new previous
         if (currentReferent != nullptr)
@@ -12049,7 +12069,19 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     }
 
 #ifdef DEBUG
+#ifdef TARGET_ARM64
+    if (!refPosition->needsConsecutive && (linearScan->consecutiveRegistersLocation == refPosition->nodeLocation))
+    {
+        // If a method has consecutive registers and we are assigning to refPositions that are not part
+        // of consecutive registers, but are live at same location, skip the limit stress for them, because
+        // there are high chances that many registers are busy for consecutive requirements and we don't
+        // have enough remaining for other refpositions (like operands). 
+    }
+    else
+#endif
+    {
     candidates = linearScan->stressLimitRegs(refPosition, candidates);
+    }
 #endif
     assert(candidates != RBM_NONE);
 
