@@ -12014,6 +12014,10 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
     *registerScore = NONE;
 #endif
 
+#ifdef TARGET_ARM64
+    assert(!needsConsecutiveRegisters || refPosition->needsConsecutive);
+#endif
+
     reset(currentInterval, refPosition);
 
     // process data-structures
