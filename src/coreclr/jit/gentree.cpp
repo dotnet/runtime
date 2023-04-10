@@ -20172,6 +20172,11 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
 
     NamedIntrinsic intrinsic = NI_Illegal;
 
+    if (simdSize == 64)
+    {
+        assert(op == GT_EQ);
+    }
+
     switch (op)
     {
 #if defined(TARGET_XARCH)
@@ -20190,6 +20195,11 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
                     assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
                     intrinsic = NI_AVX2_CompareEqual;
                 }
+            }
+            else if (simdSize == 64)
+            {
+                assert(IsBaselineVector512IsaSupportedDebugOnly());
+                intrinsic = NI_AVX512F_CompareEqualSpecial;
             }
             else if (simdBaseType == TYP_FLOAT)
             {
@@ -20760,7 +20770,20 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
     }
 
     assert(intrinsic != NI_Illegal);
+
+#if defined(TARGET_XARCH)
+    if (simdSize != 64)
+    {
+        return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
+    }
+    else
+    {
+        GenTree* cmp = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, intrinsic, simdBaseJitType, simdSize);
+        return gtNewSimdHWIntrinsicNode(type, cmp, NI_AVX512F_MoveMaskToVectorSpecial, simdBaseJitType, simdSize);
+    }
+#else
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
+#endif
 }
 
 GenTree* Compiler::gtNewSimdCmpOpAllNode(
@@ -20788,7 +20811,12 @@ GenTree* Compiler::gtNewSimdCmpOpAllNode(
 #if defined(TARGET_XARCH)
         case GT_EQ:
         {
-            if (simdSize == 32)
+            if (simdSize == 64)
+            {
+                assert(IsBaselineVector512IsaSupportedDebugOnly());
+                intrinsic = NI_Vector512_op_Equality;
+            }
+            else if (simdSize == 32)
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                 assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
@@ -20934,6 +20962,11 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
 
                 intrinsic = NI_Vector256_op_Inequality;
             }
+            else if (simdSize == 64)
+            {
+                assert(IsBaselineVector512IsaSupportedDebugOnly());
+                intrinsic = NI_Vector512_op_Inequality;
+            }
             else
             {
                 intrinsic = NI_Vector128_op_Inequality;
@@ -20957,7 +20990,12 @@ GenTree* Compiler::gtNewSimdCmpOpAnyNode(
 
         case GT_NE:
         {
-            if (simdSize == 32)
+            if (simdSize == 64)
+            {
+                assert(IsBaselineVector512IsaSupportedDebugOnly());
+                intrinsic = NI_Vector512_op_Inequality;
+            }
+            else if (simdSize == 32)
             {
                 assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
                 assert(varTypeIsFloating(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));

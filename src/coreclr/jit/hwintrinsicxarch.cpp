@@ -1338,6 +1338,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Equals:
         case NI_Vector256_Equals:
+        case NI_Vector512_Equals:
         {
             assert(sig->numArgs == 2);
 
@@ -1348,6 +1349,21 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 retNode = gtNewSimdCmpOpNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize);
             }
+            break;
+        }
+
+        case NI_Vector512_EqualsAll:
+        case NI_Vector512_op_Equality:
+        {
+            assert(sig->numArgs == 2);
+            assert(IsBaselineVector512IsaSupportedDebugOnly());
+
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            op2 = impSIMDPopStack(simdType);
+            op1 = impSIMDPopStack(simdType);
+
+            retNode = gtNewSimdCmpOpAllNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1367,6 +1383,21 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 retNode = gtNewSimdCmpOpAllNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize);
             }
+            break;
+        }
+
+        case NI_Vector512_EqualsAny:
+        {
+            assert(sig->numArgs == 2);
+            assert(simdSize == 64);
+            assert(IsBaselineVector512IsaSupportedDebugOnly());
+
+            var_types simdType = getSIMDTypeForSize(simdSize);
+
+            op2 = impSIMDPopStack(simdType);
+            op1 = impSIMDPopStack(simdType);
+
+            retNode = gtNewSimdCmpOpAnyNode(GT_EQ, retType, op1, op2, simdBaseJitType, simdSize);
             break;
         }
 
@@ -2008,6 +2039,23 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
                 retNode = gtNewSimdCmpOpAnyNode(GT_NE, retType, op1, op2, simdBaseJitType, simdSize);
             }
+            break;
+        }
+
+        case NI_Vector512_op_Inequality:
+        {
+            assert(sig->numArgs == 2);
+
+            if (IsBaselineVector512IsaSupported())
+            {
+                var_types simdType = getSIMDTypeForSize(simdSize);
+
+                op2 = impSIMDPopStack(simdType);
+                op1 = impSIMDPopStack(simdType);
+
+                retNode = gtNewSimdCmpOpAnyNode(GT_NE, retType, op1, op2, simdBaseJitType, simdSize);
+            }
+
             break;
         }
 
