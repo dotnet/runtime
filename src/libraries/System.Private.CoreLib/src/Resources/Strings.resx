@@ -2984,6 +2984,12 @@
   <data name="InvalidOperation_SpanOverlappedOperation" xml:space="preserve">
     <value>This operation is invalid on overlapping buffers.</value>
   </data>
+  <data name="InvalidOperation_TimeProviderNullLocalTimeZone" xml:space="preserve">
+    <value>The operation cannot be performed when TimeProvider.LocalTimeZone is null.</value>
+  </data>
+  <data name="InvalidOperation_TimeProviderInvalidTimestampFrequency" xml:space="preserve">
+    <value>The operation cannot be performed when TimeProvider.TimestampFrequency is zero or negative.</value>
+  </data>
   <data name="NotSupported_IDispInvokeDefaultMemberWithNamedArgs" xml:space="preserve">
     <value>Invoking default method with named arguments is not supported.</value>
   </data>

@@ -1536,13 +1536,8 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     // Lowering was expected to get rid of memmove in case of zero
                     assert(size > 0);
 
-                    // TODO-XARCH-AVX512: Consider enabling it here
-                    unsigned simdSize =
-                        (size >= YMM_REGSIZE_BYTES) && compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
-                            ? YMM_REGSIZE_BYTES
-                            : XMM_REGSIZE_BYTES;
-
-                    if (size >= simdSize)
+                    const unsigned simdSize = compiler->roundDownSIMDSize(size);
+                    if ((size >= simdSize) && (simdSize > 0))
                     {
                         unsigned simdRegs = size / simdSize;
                         if ((size % simdSize) != 0)
