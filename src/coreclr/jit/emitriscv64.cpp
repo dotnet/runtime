@@ -319,9 +319,10 @@ void emitter::emitIns_S_R_R(instruction ins, emitAttr attr, regNumber reg1, regN
 
     id->idIns(ins);
 
+    assert(isGeneralRegister(reg2));
     code_t code = emitInsCode(ins);
     code |= (code_t)(reg1 & 0x1f) << 20;
-    code |= (code_t)(reg2 & 0x1f) << 15;
+    code |= (code_t)reg2 << 15;
     code |= (((imm >> 5) & 0x7f) << 25) | ((imm & 0x1f) << 7);
 
     id->idAddr()->iiaSetInstrEncode(code);
@@ -570,7 +571,7 @@ void emitter::emitIns_R_R(
     {
         assert(isGeneralRegisterOrR0(reg1));
         assert(isFloatReg(reg2));
-        code |= (reg1 & 0x1f) << 7;
+        code |= reg1 << 7;
         code |= (reg2 & 0x1f) << 15;
     }
     else if (INS_fcvt_w_s == ins || INS_fcvt_wu_s == ins || INS_fcvt_w_d == ins || INS_fcvt_wu_d == ins ||
@@ -578,17 +579,17 @@ void emitter::emitIns_R_R(
     {
         assert(isGeneralRegisterOrR0(reg1));
         assert(isFloatReg(reg2));
-        code |= (reg1 & 0x1f) << 7;
+        code |= reg1 << 7;
         code |= (reg2 & 0x1f) << 15;
         // TODO-RISCV64-CQ: Check rounding mode
-        code |= 0x7 << 12;
+        code |= 0x1 << 12;
     }
     else if (INS_fmv_w_x == ins || INS_fmv_d_x == ins)
     {
         assert(isFloatReg(reg1));
         assert(isGeneralRegisterOrR0(reg2));
         code |= (reg1 & 0x1f) << 7;
-        code |= (reg2 & 0x1f) << 15;
+        code |= reg2 << 15;
     }
     else if (INS_fcvt_s_w == ins || INS_fcvt_s_wu == ins || INS_fcvt_d_w == ins || INS_fcvt_d_wu == ins ||
              INS_fcvt_s_l == ins || INS_fcvt_s_lu == ins || INS_fcvt_d_l == ins || INS_fcvt_d_lu == ins)
@@ -596,7 +597,7 @@ void emitter::emitIns_R_R(
         assert(isFloatReg(reg1));
         assert(isGeneralRegisterOrR0(reg2));
         code |= (reg1 & 0x1f) << 7;
-        code |= (reg2 & 0x1f) << 15;
+        code |= reg2 << 15;
         // TODO-RISCV64-CQ: Check rounding mode
         code |= 0x7 << 12;
     }
@@ -638,20 +639,24 @@ void emitter::emitIns_R_R_I(
         (INS_lb <= ins && INS_lhu >= ins) || INS_ld == ins || INS_lw == ins || INS_jalr == ins || INS_fld == ins ||
         INS_flw == ins)
     {
+        assert(isGeneralRegister(reg2));
         code |= (reg1 & 0x1f) << 7;  // rd
-        code |= (reg2 & 0x1f) << 15; // rs1
+        code |= reg2 << 15;          // rs1
         code |= imm << 20;           // imm
     }
     else if (INS_sd == ins || INS_sw == ins || INS_sh == ins || INS_sb == ins || INS_fsw == ins || INS_fsd == ins)
     {
+        assert(isGeneralRegister(reg2));
         code |= (reg1 & 0x1f) << 20;                               // rs2
-        code |= (reg2 & 0x1f) << 15;                               // rs1
+        code |= reg2 << 15;                                        // rs1
         code |= (((imm >> 5) & 0x7f) << 25) | ((imm & 0x1f) << 7); // imm
     }
     else if (INS_beq <= ins && INS_bgeu >= ins)
     {
-        code |= (reg1 & 0x1f) << 15;
-        code |= (reg2 & 0x1f) << 20;
+        assert(isGeneralRegister(reg1));
+        assert(isGeneralRegister(reg2));
+        code |= reg1 << 15;
+        code |= reg2 << 20;
         code |= ((imm >> 11) & 0x1) << 7;
         code |= ((imm >> 1) & 0xf) << 8;
         code |= ((imm >> 5) & 0x3f) << 25;
@@ -1509,7 +1514,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
         dst += 4;
 
         code = emitInsCode(INS_jalr);
-        code |= (code_t)(reg2 & 0x1f) << 7;
+        code |= (code_t)reg2 << 7;
         code |= (code_t)REG_T2 << 15;
         code |= (low & 0x3ff) << 20;
         // the offset default is 0;
@@ -2236,12 +2241,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                     assert(code == 0x00000013);
 #endif
                     code            = 0x00000013 | (codeGen->rsGetRsvdReg() << 15);
-                    *(code_t*)dstRW = code | ((code_t)(reg1 & 0x1f) << 7) | (((code_t)doff & 0xfff) << 20);
+                    *(code_t*)dstRW = code | ((code_t)reg1 << 7) | (((code_t)doff & 0xfff) << 20);
                 }
                 else
                 {
                     code = emitInsCode(ins);
-                    code |= (code_t)((reg1 & 0x1f) << 7);
+                    code |= (code_t)(reg1 & 0x1f) << 7;
                     code |= (code_t)codeGen->rsGetRsvdReg() << 15;
                     code |= (code_t)(doff & 0xfff) << 20;
                     *(code_t*)dstRW = code;
@@ -2448,8 +2453,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                                 assert((INS_bne & 0xefff) == INS_beq);
 
                                 code = emitInsCode((instruction)((int)ins ^ 0x1000));
-                                code |= ((code_t)(reg1) /*& 0x1f */) << 15; /* rj */
-                                code |= ((code_t)(reg2) /*& 0x1f */) << 20; /* rd */
+                                code |= (code_t)reg1 << 15; /* rj */
+                                code |= (code_t)reg2 << 20; /* rd */
                                 code |= 0x8 << 7;
                                 *(code_t*)dstRW = code;
                                 dstRW += 4;
@@ -2471,8 +2476,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                             assert((INS_bgeu & 0xefff) == INS_bltu);
 
                             code = emitInsCode((instruction)((int)ins ^ 0x1000));
-                            code |= ((code_t)(reg1) /*& 0x1f */) << 15; /* rj */
-                            code |= ((code_t)(reg2) /*& 0x1f */) << 20; /* rd */
+                            code |= (code_t)reg1 << 15; /* rj */
+                            code |= (code_t)reg2 << 20; /* rd */
                             code |= 0x8 << 7;
                             *(code_t*)dstRW = code;
                             dstRW += 4;
