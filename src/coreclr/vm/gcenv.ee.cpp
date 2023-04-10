@@ -1191,6 +1191,15 @@ bool GCToEEInterface::GetIntConfigValue(const char* privateKey, const char* publ
         return true;
     }
 
+    if ((g_gcHeapHardLimitInfo.specifiedFlags & 1) && strcmp(privateKey, "GCHeapHardLimit") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimit; return true; }
+    if ((g_gcHeapHardLimitInfo.specifiedFlags & 2) && strcmp(privateKey, "GCHeapHardLimitPercent") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitPercent; return true; }
+    if ((g_gcHeapHardLimitInfo.specifiedFlags & 4) && strcmp(privateKey, "GCHeapHardLimitSOH") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitSOH; return true; }
+    if ((g_gcHeapHardLimitInfo.specifiedFlags & 8) && strcmp(privateKey, "GCHeapHardLimitLOH") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitLOH; return true; }
+    if ((g_gcHeapHardLimitInfo.specifiedFlags & 16) && strcmp(privateKey, "GCHeapHardLimitPOH") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitPOH; return true; }
+    if ((g_gcHeapHardLimitInfo.specifiedFlags & 32) && strcmp(privateKey, "GCHeapHardLimitSOHPercent") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitSOHPercent; return true; }
+    if ((g_gcHeapHardLimitInfo.specifiedFlags & 64) && strcmp(privateKey, "GCHeapHardLimitLOHPercent") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitLOHPercent; return true; }
+    if ((g_gcHeapHardLimitInfo.specifiedFlags & 128) && strcmp(privateKey, "GCHeapHardLimitPOHPercent") == 0) { *value = g_gcHeapHardLimitInfo.heapHardLimitPOHPercent; return true; }
+
     WCHAR configKey[MaxConfigKeyLength];
     if (MultiByteToWideChar(CP_ACP, 0, privateKey, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
     {

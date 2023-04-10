@@ -148,7 +148,7 @@ inline void FATAL_GC_ERROR()
 // + creates some ro segs
 // We can add more mechanisms here.
 //#define STRESS_REGIONS
-//#define COMMITTED_BYTES_SHADOW
+#define COMMITTED_BYTES_SHADOW
 #define MARK_PHASE_PREFETCH
 #endif //USE_REGIONS
 
@@ -1355,6 +1355,7 @@ class region_free_list
     size_t  num_free_regions_removed;
     heap_segment* head_free_region;
     heap_segment* tail_free_region;
+
     static free_region_kind get_region_kind(heap_segment* region);
     void update_added_region_info (heap_segment* region);
 
@@ -1639,6 +1640,9 @@ private:
 
     // Compute the size committed for the mark array for this region.
     PER_HEAP_METHOD size_t get_mark_array_size(heap_segment* seg);
+
+    // Accumulate the committed bytes for both the region and the mark array for this list of regions.
+    PER_HEAP_METHOD void accumulate_committed_bytes(heap_segment* seg, size_t& committed_bytes, size_t& mark_array_committed_bytes, gc_oh_num oh = unknown);
 
     PER_HEAP_ISOLATED_METHOD void verify_region_to_generation_map();
 
@@ -1998,7 +2002,12 @@ private:
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED_METHOD bool on_used_changed (uint8_t* left);
 
-    PER_HEAP_ISOLATED_METHOD bool get_card_table_commit_layout (uint8_t* from, uint8_t* to, uint8_t* commit_begins[total_bookkeeping_elements], size_t commit_sizes[total_bookkeeping_elements], size_t new_sizes[total_bookkeeping_elements]);
+    // new_sizes are the logical sizes of the card table elements while
+    // commit_sizes are the physical sizes of the card table elements due to alignment constraints.
+    PER_HEAP_ISOLATED_METHOD bool get_card_table_commit_layout (uint8_t* from, uint8_t* to,
+                                        uint8_t* commit_begins[total_bookkeeping_elements],
+                                        size_t commit_sizes[total_bookkeeping_elements],
+                                        size_t new_sizes[total_bookkeeping_elements]);
 
     PER_HEAP_ISOLATED_METHOD bool inplace_commit_card_table (uint8_t* from, uint8_t* to);
 #else //USE_REGIONS
@@ -3248,7 +3257,10 @@ private:
 
     PER_HEAP_ISOLATED_METHOD BOOL dt_high_memory_load_p();
 
-    PER_HEAP_ISOLATED_METHOD void configure_memory_settings(bool is_initialization, uint32_t& nhp, uint32_t& nhp_from_config, size_t& seg_size_from_config);
+    PER_HEAP_ISOLATED_METHOD bool compute_hard_limit();
+
+    PER_HEAP_ISOLATED_METHOD bool compute_memory_settings(bool is_initialization, uint32_t& nhp, uint32_t nhp_from_config, size_t& seg_size_from_config,
+        size_t new_current_total_committed);
 
     PER_HEAP_METHOD void update_collection_counts ();
 
@@ -3743,9 +3755,7 @@ private:
 #ifdef MULTIPLE_HEAPS
 #ifdef _DEBUG
     PER_HEAP_FIELD_DIAG_ONLY size_t committed_by_oh_per_heap[total_oh_count];
-#ifdef COMMITTED_BYTES_SHADOW
-    PER_HEAP_FIELD_DIAG_ONLY size_t committed_by_oh_per_heap_shadow[total_oh_count];
-#endif //COMMITTED_BYTES_SHADOW
+    PER_HEAP_FIELD_DIAG_ONLY size_t committed_by_oh_per_heap_refresh[total_oh_count];
 #endif //_DEBUG
 #else //MULTIPLE_HEAPS
 #endif //MULTIPLE_HEAPS
@@ -4097,11 +4107,6 @@ private:
     PER_HEAP_ISOLATED_FIELD_MAINTAINED_ALLOC size_t current_total_committed;
     PER_HEAP_ISOLATED_FIELD_MAINTAINED_ALLOC size_t committed_by_oh[recorded_committed_bucket_counts];
 
-#ifdef COMMITTED_BYTES_SHADOW
-    PER_HEAP_ISOLATED_FIELD_MAINTAINED_ALLOC size_t current_total_committed_shadow;
-    PER_HEAP_ISOLATED_FIELD_MAINTAINED_ALLOC size_t committed_by_oh_shadow[recorded_committed_bucket_counts];
-#endif //COMMITTED_BYTES_SHADOW
-
     /********************************************/
     // PER_HEAP_ISOLATED_FIELD_INIT_ONLY fields //
     /********************************************/
@@ -4185,9 +4190,6 @@ private:
 
     // Used both in a GC and on the allocator code paths when heap_hard_limit is non zero
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY CLRCriticalSection check_commit_cs;
-#ifdef COMMITTED_BYTES_SHADOW
-    PER_HEAP_ISOLATED_FIELD_INIT_ONLY CLRCriticalSection check_commit_shadow_cs;
-#endif //COMMITTED_BYTES_SHADOW
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY CLRCriticalSection decommit_lock;
 
     // Indicate to use large pages. This only works if hardlimit is also enabled.
@@ -4261,9 +4263,6 @@ private:
 
     // This is what GC uses for its own bookkeeping.
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY size_t current_total_committed_bookkeeping;
-#ifdef COMMITTED_BYTES_SHADOW
-    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY size_t current_total_committed_bookkeeping_shadow;
-#endif //COMMITTED_BYTES_SHADOW
 
     // For implementation of GCHeap::GetMemoryInfo which is called by
     // the GC.GetGCMemoryInfo API
@@ -4429,7 +4428,7 @@ public:
 
     PER_HEAP_ISOLATED_METHOD uint32_t wait_for_gc_done(int32_t timeOut = INFINITE);
 
-    PER_HEAP_ISOLATED_METHOD void refresh_memory_limit();
+    PER_HEAP_ISOLATED_METHOD int refresh_memory_limit();
 
     /***************************************************************************************************/
     // public fields                                                                                   //

@@ -325,7 +325,7 @@ public:
 
     static void ReportGenerationBounds();
 
-    virtual void RefreshMemoryLimit();
+    virtual int RefreshMemoryLimit();
 };
 
 #endif  // GCIMPL_H_

@@ -2258,18 +2258,6 @@ size_t      gc_heap::committed_by_oh[recorded_committed_bucket_counts];
 
 size_t      gc_heap::current_total_committed_bookkeeping = 0;
 
-#ifdef COMMITTED_BYTES_SHADOW
-
-CLRCriticalSection gc_heap::check_commit_shadow_cs;
-
-size_t      gc_heap::current_total_committed_shadow = 0;
-
-size_t      gc_heap::committed_by_oh_shadow[recorded_committed_bucket_counts];
-
-size_t      gc_heap::current_total_committed_bookkeeping_shadow = 0;
-
-#endif //COMMITTED_BYTES_SHADOW
-
 BOOL        gc_heap::reset_mm_p = TRUE;
 
 #ifdef FEATURE_EVENT_TRACE
@@ -7002,26 +6990,9 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
 
     dprintf(3, ("commit-accounting:  commit in %d [%p, %p) for heap %d", bucket, address, ((uint8_t*)address + size), h_number));
 
-#ifdef COMMITTED_BYTES_SHADOW
-    check_commit_shadow_cs.Enter();
-    if (!(((heap_hard_limit_oh[soh]) && (bucket < total_oh_count) && ((committed_by_oh_shadow[bucket] + size) > heap_hard_limit_oh[bucket])) ||
-        (heap_hard_limit && (current_total_committed_shadow + size > heap_hard_limit))))
-    {
-#if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
-        if ((h_number != -1) && (bucket < total_oh_count))
-        {
-            g_heaps[h_number]->committed_by_oh_per_heap_shadow[bucket] += size;
-        }
-#endif // _DEBUG && MULTIPLE_HEAPS
-        committed_by_oh_shadow[bucket] += size;
-        current_total_committed_shadow += size;
-        if (h_number < 0)
-            current_total_committed_bookkeeping_shadow += size;
-    }
-    check_commit_shadow_cs.Leave();
-#endif //COMMITTED_BYTES_SHADOW
-
+#ifndef COMMITTED_BYTES_SHADOW
     if (heap_hard_limit)
+#endif //!COMMITTED_BYTES_SHADOW
     {
         check_commit_cs.Enter();
         bool exceeded_p = false;
@@ -7044,6 +7015,11 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
                 exceeded_p = true;
             }
         }
+#ifdef COMMITTED_BYTES_SHADOW
+        if (!heap_hard_limit) {
+            exceeded_p = false;
+        }
+#endif //COMMITTED_BYTES_SHADOW
 
         if (!exceeded_p)
         {
@@ -7122,28 +7098,10 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_nu
 
     dprintf(3, ("commit-accounting:  decommit in %d [%p, %p) for heap %d", bucket, address, ((uint8_t*)address + size), h_number));
 
-#ifdef COMMITTED_BYTES_SHADOW
-    check_commit_shadow_cs.Enter();
-    assert (committed_by_oh_shadow[bucket] >= size);
-    committed_by_oh_shadow[bucket] -= size;
-#if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
-    if ((h_number != -1) && (bucket < total_oh_count))
-    {
-        assert (g_heaps[h_number]->committed_by_oh_per_heap_shadow[bucket] >= size);
-        g_heaps[h_number]->committed_by_oh_per_heap_shadow[bucket] -= size;
-    }
-#endif // _DEBUG && MULTIPLE_HEAPS
-    assert (current_total_committed_shadow >= size);
-    current_total_committed_shadow -= size;
-    if (bucket == recorded_committed_bookkeeping_bucket)
-    {
-        assert (current_total_committed_bookkeeping_shadow >= size);
-        current_total_committed_bookkeeping_shadow -= size;
-    }
-    check_commit_shadow_cs.Leave();
-#endif //COMMITTED_BYTES_SHADOW
-
-    if (decommit_succeeded_p && heap_hard_limit)
+    if (decommit_succeeded_p)
+#ifndef COMMITTED_BYTES_SHADOW
+    if (heap_hard_limit)
+#endif //!COMMITTED_BYTES_SHADOW
     {
         check_commit_cs.Enter();
         assert (committed_by_oh[bucket] >= size);
@@ -8915,7 +8873,10 @@ bool gc_heap::on_used_changed (uint8_t* new_used)
     return true;
 }
 
-bool gc_heap::get_card_table_commit_layout (uint8_t* from, uint8_t* to, uint8_t* commit_begins[total_bookkeeping_elements], size_t commit_sizes[total_bookkeeping_elements], size_t new_sizes[total_bookkeeping_elements])
+bool gc_heap::get_card_table_commit_layout (uint8_t* from, uint8_t* to,
+                    uint8_t* commit_begins[total_bookkeeping_elements],
+                    size_t commit_sizes[total_bookkeeping_elements],
+                    size_t new_sizes[total_bookkeeping_elements])
 {
     uint8_t* start = g_gc_lowest_address;
     uint8_t* end = g_gc_highest_address;
@@ -11435,24 +11396,9 @@ void gc_heap::return_free_region (heap_segment* region)
 {
     gc_oh_num oh = heap_segment_oh (region);
     dprintf(3, ("commit-accounting:  from %d to free [%p, %p) for heap %d", oh, get_region_start (region), heap_segment_committed (region), heap_number));
-#ifdef COMMITTED_BYTES_SHADOW
-    {
-        size_t committed = heap_segment_committed (region) - get_region_start (region);
-        if (committed > 0)
-        {
-            check_commit_shadow_cs.Enter();
-            assert (committed_by_oh_shadow[oh] >= committed);
-            committed_by_oh_shadow[oh] -= committed;
-            committed_by_oh_shadow[recorded_committed_free_bucket] += committed;
-#if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
-            assert (committed_by_oh_per_heap_shadow[oh] >= committed);
-            committed_by_oh_per_heap_shadow[oh] -= committed;
-#endif // _DEBUG && MULTIPLE_HEAPS
-            check_commit_shadow_cs.Leave();
-        }
-    }
-#endif //COMMITTED_BYTES_SHADOW
+#ifndef COMMITTED_BYTES_SHADOW
     if (heap_hard_limit)
+#endif //!COMMITTED_BYTES_SHADOW
     {
         size_t committed = heap_segment_committed (region) - get_region_start (region);
         if (committed > 0)
@@ -11538,23 +11484,9 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
 
         gc_oh_num oh = gen_to_oh (gen_number);
         dprintf(3, ("commit-accounting:  from free to %d [%p, %p) for heap %d", oh, get_region_start (region), heap_segment_committed (region), heap_number));
-#ifdef COMMITTED_BYTES_SHADOW
-        {
-            size_t committed = heap_segment_committed (region) - get_region_start (region);
-            if (committed > 0)
-            {
-                check_commit_shadow_cs.Enter();
-                committed_by_oh_shadow[oh] += committed;
-                assert (committed_by_oh_shadow[recorded_committed_free_bucket] >= committed);
-                committed_by_oh_shadow[recorded_committed_free_bucket] -= committed;
-#if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
-                committed_by_oh_per_heap_shadow[oh] += committed;
-#endif // _DEBUG && MULTIPLE_HEAPS
-                check_commit_shadow_cs.Leave();
-            }
-        }
-#endif //COMMITTED_BYTES_SHADOW
+#ifndef COMMITTED_BYTES_SHADOW
         if (heap_hard_limit)
+#endif //!COMMITTED_BYTES_SHADOW
         {
             size_t committed = heap_segment_committed (region) - get_region_start (region);
             if (committed > 0)
@@ -13808,13 +13740,12 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     int number_of_heaps = 1;
 #endif //MULTIPLE_HEAPS
 
+#ifndef COMMITTED_BYTES_SHADOW
     if (heap_hard_limit)
+#endif //!COMMITTED_BYTES_SHADOW
     {
         check_commit_cs.Initialize();
     }
-#ifdef COMMITTED_BYTES_SHADOW
-    check_commit_shadow_cs.Initialize();
-#endif //COMMITTED_BYTES_SHADOW
     decommit_lock.Initialize();
 
 #ifdef USE_REGIONS
@@ -14422,9 +14353,6 @@ int
 gc_heap::init_gc_heap (int h_number)
 {
 #ifdef MULTIPLE_HEAPS
-#if defined(COMMITTED_BYTES_SHADOW) && defined(_DEBUG)
-    memset (committed_by_oh_per_heap_shadow, 0, sizeof (committed_by_oh_per_heap_shadow));
-#endif //COMMITTED_BYTES_SHADOW && _DEBUG
 #ifdef _DEBUG
     memset (committed_by_oh_per_heap, 0, sizeof (committed_by_oh_per_heap));
 #endif
@@ -23358,20 +23286,10 @@ heap_segment* gc_heap::unlink_first_rw_region (int gen_idx)
     assert (!heap_segment_read_only_p (region));
     dprintf (REGIONS_LOG, ("unlink_first_rw_region on heap: %d gen: %d region: %p", heap_number, gen_idx, heap_segment_mem (region)));
 
-#if defined(COMMITTED_BYTES_SHADOW) && defined(_DEBUG) && defined(HOST_64BIT)
-    {
-        int old_oh = heap_segment_oh (region);
-        int old_heap = heap_segment_heap (region)->heap_number;
-        size_t committed = heap_segment_committed (region) - get_region_start (region);
-        check_commit_shadow_cs.Enter();
-        assert (g_heaps[old_heap]->committed_by_oh_per_heap_shadow[old_oh] >= committed);
-        g_heaps[old_heap]->committed_by_oh_per_heap_shadow[old_oh] -= committed;
-        check_commit_shadow_cs.Leave();
-    }
-#endif //COMMITTED_BYTES_SHADOW && _DEBUG && HOST_64BIT
-
 #if defined(_DEBUG) && defined(HOST_64BIT)
+#ifndef COMMITTED_BYTES_SHADOW
     if (heap_hard_limit)
+#endif //!COMMITTED_BYTES_SHADOW
     {
         int old_oh = heap_segment_oh (region);
         int old_heap = heap_segment_heap (region)->heap_number;
@@ -23407,20 +23325,10 @@ void gc_heap::thread_rw_region_front (int gen_idx, heap_segment* region)
     }
     dprintf (REGIONS_LOG, ("thread_rw_region_front on heap: %d gen: %d region: %p", heap_number, gen_idx, heap_segment_mem (region)));
 
-#if defined(COMMITTED_BYTES_SHADOW) && defined(_DEBUG)
-    {
-        int new_oh = gen_to_oh (gen_idx);
-        int new_heap = this->heap_number;
-        size_t committed = heap_segment_committed (region) - get_region_start (region);
-        check_commit_shadow_cs.Enter();
-        assert (heap_segment_heap (region) == nullptr);
-        g_heaps[new_heap]->committed_by_oh_per_heap_shadow[new_oh] += committed;
-        check_commit_shadow_cs.Leave();
-    }
-#endif // COMMITTED_BYTES_SHADOW && _DEBUG
-
 #if defined(_DEBUG) && defined(HOST_64BIT)
+#ifndef COMMITTED_BYTES_SHADOW
     if (heap_hard_limit)
+#endif //!COMMITTED_BYTES_SHADOW
     {
         int new_oh = gen_to_oh (gen_idx);
         int new_heap = this->heap_number;
@@ -45421,78 +45329,11 @@ HRESULT GCHeap::Initialize()
     {
         gc_heap::total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&gc_heap::is_restricted_physical_mem);
     }
-    gc_heap::heap_hard_limit_oh[soh] = 0;
-#ifdef HOST_64BIT
-    gc_heap::heap_hard_limit = (size_t)GCConfig::GetGCHeapHardLimit();
-    gc_heap::heap_hard_limit_oh[soh] = (size_t)GCConfig::GetGCHeapHardLimitSOH();
-    gc_heap::heap_hard_limit_oh[loh] = (size_t)GCConfig::GetGCHeapHardLimitLOH();
-    gc_heap::heap_hard_limit_oh[poh] = (size_t)GCConfig::GetGCHeapHardLimitPOH();
-
-#ifdef COMMITTED_BYTES_SHADOW
-    memset (gc_heap::committed_by_oh_shadow, 0, sizeof (gc_heap::committed_by_oh_shadow));
-#endif //COMMITTED_BYTES_SHADOW
     memset (gc_heap::committed_by_oh, 0, sizeof (gc_heap::committed_by_oh));
-
-    gc_heap::use_large_pages_p = GCConfig::GetGCLargePages();
-
-    if (gc_heap::heap_hard_limit_oh[soh] || gc_heap::heap_hard_limit_oh[loh] || gc_heap::heap_hard_limit_oh[poh])
-    {
-        if (!gc_heap::heap_hard_limit_oh[soh])
-        {
-            return CLR_E_GC_BAD_HARD_LIMIT;
-        }
-        if (!gc_heap::heap_hard_limit_oh[loh])
-        {
-            return CLR_E_GC_BAD_HARD_LIMIT;
-        }
-        gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[soh] +
-            gc_heap::heap_hard_limit_oh[loh] + gc_heap::heap_hard_limit_oh[poh];
-    }
-    else
-    {
-        uint32_t percent_of_mem_soh = (uint32_t)GCConfig::GetGCHeapHardLimitSOHPercent();
-        uint32_t percent_of_mem_loh = (uint32_t)GCConfig::GetGCHeapHardLimitLOHPercent();
-        uint32_t percent_of_mem_poh = (uint32_t)GCConfig::GetGCHeapHardLimitPOHPercent();
-        if (percent_of_mem_soh || percent_of_mem_loh || percent_of_mem_poh)
-        {
-            if ((percent_of_mem_soh <= 0) || (percent_of_mem_soh >= 100))
-            {
-                return CLR_E_GC_BAD_HARD_LIMIT;
-            }
-            if ((percent_of_mem_loh <= 0) || (percent_of_mem_loh >= 100))
-            {
-                return CLR_E_GC_BAD_HARD_LIMIT;
-            }
-            else if ((percent_of_mem_poh < 0) || (percent_of_mem_poh >= 100))
-            {
-                return CLR_E_GC_BAD_HARD_LIMIT;
-            }
-            if ((percent_of_mem_soh + percent_of_mem_loh + percent_of_mem_poh) >= 100)
-            {
-                return CLR_E_GC_BAD_HARD_LIMIT;
-            }
-            gc_heap::heap_hard_limit_oh[soh] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_soh / (uint64_t)100);
-            gc_heap::heap_hard_limit_oh[loh] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_loh / (uint64_t)100);
-            gc_heap::heap_hard_limit_oh[poh] = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem_poh / (uint64_t)100);
-            gc_heap::heap_hard_limit = gc_heap::heap_hard_limit_oh[soh] +
-                gc_heap::heap_hard_limit_oh[loh] + gc_heap::heap_hard_limit_oh[poh];
-        }
-    }
-
-    if (gc_heap::heap_hard_limit_oh[soh] && (!gc_heap::heap_hard_limit_oh[poh]) && (!gc_heap::use_large_pages_p))
+    if (!gc_heap::compute_hard_limit())
     {
         return CLR_E_GC_BAD_HARD_LIMIT;
     }
-
-    if (!(gc_heap::heap_hard_limit))
-    {
-        uint32_t percent_of_mem = (uint32_t)GCConfig::GetGCHeapHardLimitPercent();
-        if ((percent_of_mem > 0) && (percent_of_mem < 100))
-        {
-            gc_heap::heap_hard_limit = (size_t)(gc_heap::total_physical_mem * (uint64_t)percent_of_mem / (uint64_t)100);
-        }
-    }
-#endif //HOST_64BIT
 
     uint32_t nhp = 1;
     uint32_t nhp_from_config = 0;
@@ -45564,7 +45405,8 @@ HRESULT GCHeap::Initialize()
     }
 
     size_t seg_size_from_config = 0;
-    gc_heap::configure_memory_settings(true, nhp, nhp_from_config, seg_size_from_config);
+    bool compute_memory_settings_succeed = gc_heap::compute_memory_settings(true, nhp, nhp_from_config, seg_size_from_config, 0);
+    assert (compute_memory_settings_succeed);
 
     if ((!gc_heap::heap_hard_limit) && gc_heap::use_large_pages_p)
     {
@@ -49447,12 +49289,84 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->bookkeeping_start = &gc_heap::bookkeeping_start;
 }
 
-void GCHeap::RefreshMemoryLimit()
+int GCHeap::RefreshMemoryLimit()
 {
-    gc_heap::refresh_memory_limit();
+    return gc_heap::refresh_memory_limit();
 }
 
-void gc_heap::configure_memory_settings(bool is_initialization, uint32_t& nhp, uint32_t& nhp_from_config, size_t& seg_size_from_config)
+bool gc_heap::compute_hard_limit()
+{
+    heap_hard_limit_oh[soh] = 0;
+#ifdef HOST_64BIT
+    heap_hard_limit = (size_t)GCConfig::GetGCHeapHardLimit();
+    heap_hard_limit_oh[soh] = (size_t)GCConfig::GetGCHeapHardLimitSOH();
+    heap_hard_limit_oh[loh] = (size_t)GCConfig::GetGCHeapHardLimitLOH();
+    heap_hard_limit_oh[poh] = (size_t)GCConfig::GetGCHeapHardLimitPOH();
+
+    use_large_pages_p = GCConfig::GetGCLargePages();
+
+    if (heap_hard_limit_oh[soh] || heap_hard_limit_oh[loh] || heap_hard_limit_oh[poh])
+    {
+        if (!heap_hard_limit_oh[soh])
+        {
+            return false;
+        }
+        if (!heap_hard_limit_oh[loh])
+        {
+            return false;
+        }
+        heap_hard_limit = heap_hard_limit_oh[soh] +
+            heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh];
+    }
+    else
+    {
+        uint32_t percent_of_mem_soh = (uint32_t)GCConfig::GetGCHeapHardLimitSOHPercent();
+        uint32_t percent_of_mem_loh = (uint32_t)GCConfig::GetGCHeapHardLimitLOHPercent();
+        uint32_t percent_of_mem_poh = (uint32_t)GCConfig::GetGCHeapHardLimitPOHPercent();
+        if (percent_of_mem_soh || percent_of_mem_loh || percent_of_mem_poh)
+        {
+            if ((percent_of_mem_soh <= 0) || (percent_of_mem_soh >= 100))
+            {
+                return false;
+            }
+            if ((percent_of_mem_loh <= 0) || (percent_of_mem_loh >= 100))
+            {
+                return false;
+            }
+            else if ((percent_of_mem_poh < 0) || (percent_of_mem_poh >= 100))
+            {
+                return false;
+            }
+            if ((percent_of_mem_soh + percent_of_mem_loh + percent_of_mem_poh) >= 100)
+            {
+                return false;
+            }
+            heap_hard_limit_oh[soh] = (size_t)(total_physical_mem * (uint64_t)percent_of_mem_soh / (uint64_t)100);
+            heap_hard_limit_oh[loh] = (size_t)(total_physical_mem * (uint64_t)percent_of_mem_loh / (uint64_t)100);
+            heap_hard_limit_oh[poh] = (size_t)(total_physical_mem * (uint64_t)percent_of_mem_poh / (uint64_t)100);
+            heap_hard_limit = heap_hard_limit_oh[soh] +
+                heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh];
+        }
+    }
+
+    if (heap_hard_limit_oh[soh] && (!heap_hard_limit_oh[poh]) && (!use_large_pages_p))
+    {
+        return false;
+    }
+
+    if (!(heap_hard_limit))
+    {
+        uint32_t percent_of_mem = (uint32_t)GCConfig::GetGCHeapHardLimitPercent();
+        if ((percent_of_mem > 0) && (percent_of_mem < 100))
+        {
+            heap_hard_limit = (size_t)(total_physical_mem * (uint64_t)percent_of_mem / (uint64_t)100);
+        }
+    }
+#endif //HOST_64BIT
+    return true;
+}
+
+bool gc_heap::compute_memory_settings(bool is_initialization, uint32_t& nhp, uint32_t nhp_from_config, size_t& seg_size_from_config, size_t new_current_total_committed)
 {
     // If the hard limit is specified, the user is saying even if the process is already
     // running in a container, use this limit for the GC heap.
@@ -49462,18 +49376,26 @@ void gc_heap::configure_memory_settings(bool is_initialization, uint32_t& nhp, u
         {
             uint64_t physical_mem_for_gc = total_physical_mem * (uint64_t)75 / (uint64_t)100;
 #ifndef USE_REGIONS
+            // Establishing a heap_hard_limit when we don't already have one requires
+            // us to figure out how many bytes are committed for what purposes. This is going
+            // to be very tedious for segments and therefore we chose not to support this scenario.
             if (is_initialization)
 #endif //USE_REGIONS
             {
                 heap_hard_limit = (size_t)max ((20 * 1024 * 1024), physical_mem_for_gc);
             }
-
         }
+    }
+
+    if (heap_hard_limit && (heap_hard_limit < new_current_total_committed))
+    {
+        return false;
     }
 
 #ifdef USE_REGIONS
     {
 #else
+    // Changing segment size in the hard limit case for segments is not supported
     if (is_initialization)
     {
 #endif //USE_REGIONS
@@ -49533,17 +49455,124 @@ void gc_heap::configure_memory_settings(bool is_initialization, uint32_t& nhp, u
     }
 
     m_high_memory_load_th = min ((high_memory_load_th + 5), v_high_memory_load_th);
+
+    return true;
 }
 
-void gc_heap::refresh_memory_limit()
+int gc_heap::refresh_memory_limit()
 {
+    int status = REFRESH_MEMORY_SUCCEED;
+
     if (GCConfig::GetGCTotalPhysicalMemory() != 0)
     {
-        return;
+        return status;
     }
 
     GCToEEInterface::SuspendEE(SUSPEND_FOR_GC);
+
+#ifdef USE_REGIONS
     decommit_lock.Enter();
+    size_t total_committed = 0;
+    size_t committed_bookkeeping = 0;
+    size_t new_current_total_committed;
+    size_t new_current_total_committed_bookkeeping;
+    size_t new_committed_by_oh[recorded_committed_bucket_counts];
+
+    // Accounting for the bytes committed for the regions
+    for (int oh = soh; oh < total_oh_count; oh++)
+    {
+        int start_generation = (oh == 0) ? 0 : oh + max_generation;
+        int end_generation = oh + max_generation;
+        size_t total_committed_per_oh = 0;
+#ifdef MULTIPLE_HEAPS
+        for (int h = 0; h < n_heaps; h++)
+        {
+            gc_heap* heap = g_heaps [h];
+#else
+        {
+            gc_heap* heap = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+            size_t total_committed_per_heap = 0;
+            for (int gen = start_generation; gen <= end_generation; gen++)
+            {
+                heap->accumulate_committed_bytes ( generation_start_segment (heap->generation_of (gen)), total_committed_per_heap, committed_bookkeeping);
+            }
+            if (oh == soh)
+            {
+                heap->accumulate_committed_bytes (heap->freeable_soh_segment, total_committed_per_heap, committed_bookkeeping);
+            }
+            else
+            {
+                heap->accumulate_committed_bytes (heap->freeable_uoh_segment, total_committed_per_heap, committed_bookkeeping, (gc_oh_num)oh);
+            }
+#if defined(MULTIPLE_HEAPS) && defined(_DEBUG)
+            heap->committed_by_oh_per_heap_refresh [oh] = total_committed_per_heap;
+#endif //MULTIPLE_HEAPS && _DEBUG
+            total_committed_per_oh += total_committed_per_heap;
+        }
+        new_committed_by_oh [oh] = total_committed_per_oh;
+        total_committed += total_committed_per_oh;
+    }
+
+    // Accounting for the bytes committed for the free lists
+    size_t committed_free = 0;
+#ifdef MULTIPLE_HEAPS
+    for (int h = 0; h < n_heaps; h++)
+    {
+        gc_heap* heap = g_heaps [h];
+#else
+    {
+        gc_heap* heap = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+        for (int i = 0; i < count_free_region_kinds; i++)
+        {
+            heap_segment* seg = heap->free_regions [i].get_first_free_region();
+            heap->accumulate_committed_bytes (seg, committed_free, committed_bookkeeping);
+        }
+    }
+    for (int i = 0; i < count_free_region_kinds; i++)
+    {
+        heap_segment* seg = global_regions_to_decommit [i].get_first_free_region();
+#ifdef MULTIPLE_HEAPS
+        gc_heap* heap = g_heaps [0];
+#else
+        gc_heap* heap = nullptr;
+#endif //MULTIPLE_HEAPS
+        heap->accumulate_committed_bytes (seg, committed_free, committed_bookkeeping);
+    }
+    {
+        heap_segment* seg = global_free_huge_regions.get_first_free_region();
+#ifdef MULTIPLE_HEAPS
+        gc_heap* heap = g_heaps [0];
+#else
+        gc_heap* heap = pGenGCHeap;
+#endif //MULTIPLE_HEAPS
+        heap->accumulate_committed_bytes (seg, committed_free, committed_bookkeeping);
+    }
+
+    new_committed_by_oh [recorded_committed_free_bucket] = committed_free;
+    total_committed += committed_free;
+
+    // Accounting for the bytes committed for the book keeping elements
+    uint8_t* commit_begins[total_bookkeeping_elements];
+    size_t commit_sizes[total_bookkeeping_elements];
+    size_t new_sizes[total_bookkeeping_elements];
+    bool get_card_table_commit_layout_result = get_card_table_commit_layout(g_gc_lowest_address, bookkeeping_covered_committed, commit_begins, commit_sizes, new_sizes);
+    assert (get_card_table_commit_layout_result);
+
+    for (int i = card_table_element; i <= seg_mapping_table_element; i++)
+    {
+        // In case background GC is disabled - the software write watch table is still there
+        // but with size 0
+        assert (commit_sizes [i] >= 0);
+        committed_bookkeeping += commit_sizes [i];
+    }
+
+    new_current_total_committed_bookkeeping = committed_bookkeeping;
+    new_committed_by_oh [recorded_committed_bookkeeping_bucket] = committed_bookkeeping;
+    total_committed += committed_bookkeeping;
+    new_current_total_committed = total_committed;
+#endif //USE_REGIONS
 
     uint32_t nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
 #ifdef MULTIPLE_HEAPS
@@ -49553,174 +49582,114 @@ void gc_heap::refresh_memory_limit()
 #endif //MULTIPLE_HEAPS
     size_t seg_size_from_config;
 
+    bool old_is_restricted_physical_mem = is_restricted_physical_mem;
+    uint64_t old_total_physical_mem = total_physical_mem;
+    size_t old_heap_hard_limit = heap_hard_limit;
+    size_t old_heap_hard_limit_soh = heap_hard_limit_oh[soh];
+    size_t old_heap_hard_limit_loh = heap_hard_limit_oh[loh];
+    size_t old_heap_hard_limit_poh = heap_hard_limit_oh[poh];
+    bool old_hard_limit_config_p = hard_limit_config_p;
+
     total_physical_mem = GCToOSInterface::GetPhysicalMemoryLimit (&is_restricted_physical_mem);
 
-    bool had_hard_limit = heap_hard_limit != 0;
-#ifdef COMMITTED_BYTES_SHADOW
-    // Stress the committed bytes reconstruction logic by pretending a job object exists
-    // with memory == physical memory limit and pretending a hard limit was not there
-    // The combined result is that we will force the committed bytes reconstruction all the time.
-    is_restricted_physical_mem = true;
-    had_hard_limit = false;
-#endif //COMMITTED_BYTES_SHADOW
+    bool succeed = true;
 
-    configure_memory_settings(false, nhp, nhp_from_config, seg_size_from_config);
-
-    if (!had_hard_limit && heap_hard_limit)
-    {
-#ifndef USE_REGIONS
-        assert (!"NYI - Segments");
-#endif //!USE_REGIONS
-        check_commit_cs.Initialize();
-
-        // Accounting for the bytes committed for the regions
-        size_t total_committed = 0;
-        size_t committed_bookkeeping = 0;
 #ifdef USE_REGIONS
-        for (int oh = soh; oh < total_oh_count; oh++)
-        {
-            int s = (oh == 0) ? 0 : oh + 2;
-            int e = oh + 2;
-            size_t total_committed_per_oh = 0;
-#ifdef MULTIPLE_HEAPS
-            for (int h = 0; h < n_heaps; h++)
-            {
-                gc_heap* heap = g_heaps [h];
-#else
-            {
-                gc_heap* heap = nullptr;
-#endif //MULTIPLE_HEAPS
-                size_t total_committed_per_heap = 0;
-                for (int gen = s; gen <= e; gen++)
-                {
-                    heap_segment* seg = generation_start_segment (heap->generation_of (gen));
-                    while (seg != nullptr)
-                    {
-                        committed_bookkeeping += heap->get_mark_array_size (seg);
-                        if (!heap_segment_read_only_p (seg))
-                        {
-                            size_t committed = heap_segment_committed (seg) - get_region_start (seg);
-                            total_committed_per_heap += committed;
-                        }
-                        seg = heap_segment_next (seg);
-                    }
-                }
-                if (oh == soh)
-                {
-                    heap_segment* seg = heap->freeable_soh_segment;
-                    while (seg)
-                    {
-                        committed_bookkeeping += heap->get_mark_array_size (seg);
-                        total_committed_per_heap += (heap_segment_committed (seg) - get_region_start (seg));
-                        seg = heap_segment_next (seg);
-                    }
-                }
-                else
-                {
-                    heap_segment* seg = heap->freeable_uoh_segment;
-                    while (seg)
-                    {
-                        if (heap_segment_oh (seg) == oh)
-                        {
-                            committed_bookkeeping += heap->get_mark_array_size (seg);
-                            total_committed_per_heap += (heap_segment_committed (seg) - get_region_start (seg));
-                        }
-                        seg = heap_segment_next (seg);
-                    }
-                }
-#if defined(MULTIPLE_HEAPS) && defined(_DEBUG)
-                heap->committed_by_oh_per_heap [oh] = total_committed_per_heap;
-#endif //MULTIPLE_HEAPS && _DEBUG
-                total_committed_per_oh += total_committed_per_heap;
-            }
-            committed_by_oh [oh] = total_committed_per_oh;
-            total_committed += total_committed_per_oh;
-        }
+    GCConfig::RefreshHeapHardLimitSettings();
 
-        // Accounting for the bytes committed for the free lists
-        size_t committed_free = 0;
+    if (!compute_hard_limit())
+    {
+        succeed = false;
+        status = REFRESH_MEMORY_HARD_LIMIT_INVALID;
+    }
+    hard_limit_config_p = heap_hard_limit != 0;
+#else
+    size_t new_current_total_committed = 0;
+#endif //USE_REGIONS
+
+    if (succeed && !compute_memory_settings(false, nhp, nhp_from_config, seg_size_from_config, new_current_total_committed))
+    {
+        succeed = false;
+        status = REFRESH_MEMORY_HARD_LIMIT_TOO_LOW;
+    }
+
+    if (!succeed)
+    {
+        is_restricted_physical_mem = old_is_restricted_physical_mem;
+        total_physical_mem = old_total_physical_mem;
+        heap_hard_limit = old_heap_hard_limit;
+        heap_hard_limit_oh[soh] = old_heap_hard_limit_soh;
+        heap_hard_limit_oh[loh] = old_heap_hard_limit_loh;
+        heap_hard_limit_oh[poh] = old_heap_hard_limit_poh;
+        hard_limit_config_p = old_hard_limit_config_p;
+    }
+    else
+#ifndef COMMITTED_BYTES_SHADOW
+    if (!old_heap_hard_limit && heap_hard_limit)
+#endif //COMMITTED_BYTES_SHADOW
+    {
+#ifdef USE_REGIONS
+        check_commit_cs.Initialize();
+#ifdef COMMITTED_BYTES_SHADOW
+        assert (new_current_total_committed == current_total_committed);
+        assert (new_current_total_committed_bookkeeping == current_total_committed_bookkeeping);
+#else
+        current_total_committed = new_current_total_committed;
+        current_total_committed_bookkeeping = new_current_total_committed_bookkeeping;
+#endif
+        for (int i = 0; i < recorded_committed_bucket_counts; i++)
+        {
+#ifdef COMMITTED_BYTES_SHADOW
+            assert (new_committed_by_oh [i] == committed_by_oh [i]);
+#else
+            new_committed_by_oh [i] = committed_by_oh [i];
+#endif
+        }
 #ifdef MULTIPLE_HEAPS
+#ifdef _DEBUG
         for (int h = 0; h < n_heaps; h++)
         {
-            gc_heap* heap = g_heaps [h];
-#else
-        {
-            gc_heap* heap = nullptr;
-#endif //MULTIPLE_HEAPS
-            for (int i = 0; i < count_free_region_kinds; i++)
+            for (int oh = soh; oh < total_oh_count; oh++)
             {
-                committed_free += heap->free_regions [i].get_size_committed_in_free();
-                heap_segment* seg = heap->free_regions [i].get_first_free_region();
-                while (seg != nullptr)
-                {
-                    committed_bookkeeping += heap->get_mark_array_size (seg);
-                    seg = seg->next;
-                }
-            }
-        }
-        for (int i = 0; i < count_free_region_kinds; i++)
-        {
-            committed_free += global_regions_to_decommit [i].get_size_committed_in_free();
-            heap_segment* seg = global_regions_to_decommit [i].get_first_free_region();
-            while (seg != nullptr)
-            {
-#ifdef MULTIPLE_HEAPS
-                gc_heap* heap = g_heaps [0];
-#else
-                gc_heap* heap = nullptr;
-#endif //MULTIPLE_HEAPS
-                committed_bookkeeping += heap->get_mark_array_size (seg);
-                seg = seg->next;
-            }
-        }
-        committed_free += global_free_huge_regions.get_size_committed_in_free();
-        {
-            heap_segment* seg = global_free_huge_regions.get_first_free_region();
-            while (seg != nullptr)
-            {
-#ifdef MULTIPLE_HEAPS
-                gc_heap* heap = g_heaps [0];
-#else
-                gc_heap* heap = nullptr;
-#endif //MULTIPLE_HEAPS
-                committed_bookkeeping += heap->get_mark_array_size (seg);
-                seg = seg->next;
-            }
-        }
-
-        committed_by_oh [recorded_committed_free_bucket] = committed_free;
-        total_committed += committed_free;
-
-        // Accounting for the bytes committed for the book keeping elements
-        uint8_t* commit_begins[total_bookkeeping_elements];
-        size_t commit_sizes[total_bookkeeping_elements];
-        size_t new_sizes[total_bookkeeping_elements];
-        bool get_card_table_commit_layout_result = get_card_table_commit_layout(g_gc_lowest_address, bookkeeping_covered_committed, commit_begins, commit_sizes, new_sizes);
-        assert (get_card_table_commit_layout_result);
-
-        for (int i = card_table_element; i <= seg_mapping_table_element; i++)
-        {
-            // In case background GC is disabled - the software write watch table is still there
-            // but with size 0
-            assert (commit_sizes [i] >= 0);
-            committed_bookkeeping += commit_sizes [i];
-        }
-        current_total_committed_bookkeeping = committed_bookkeeping;
-        committed_by_oh [recorded_committed_bookkeeping_bucket] = committed_bookkeeping;
-        total_committed += committed_bookkeeping;
-
-        current_total_committed = total_committed;
-#endif //USE_REGIONS
 #ifdef COMMITTED_BYTES_SHADOW
-        assert (current_total_committed == current_total_committed_shadow);
-        assert (current_total_committed_bookkeeping == current_total_committed_bookkeeping_shadow);
-#endif //COMMITTED_BYTES_SHADOW
+                assert (g_heaps [h]->committed_by_oh_per_heap [oh] == g_heaps [h]->committed_by_oh_per_heap_refresh [oh]);
+#else
+                g_heaps [h]->committed_by_oh_per_heap [oh] = g_heaps [h]->committed_by_oh_per_heap_refresh [oh];
+#endif
+            }
+        }
+#endif //_DEBUG
+#endif //MULTIPLE_HEAPS
+#else
+        assert (!"NYI - Segments");
+#endif //USE_REGIONS
     }
+
+
+#ifdef USE_REGIONS
     decommit_lock.Leave();
+#endif
     GCToEEInterface::RestartEE(TRUE);
+
+    return status;
 }
 
 #ifdef USE_REGIONS
+
+void gc_heap::accumulate_committed_bytes(heap_segment* seg, size_t& committed_bytes, size_t& mark_array_committed_bytes, gc_oh_num oh)
+{
+    seg = heap_segment_rw (seg);
+    while (seg)
+    {
+        if ((oh == unknown) || (heap_segment_oh (seg) == oh))
+        {
+            mark_array_committed_bytes += get_mark_array_size (seg);
+            committed_bytes += (heap_segment_committed (seg) - get_region_start (seg));
+        }
+        seg = heap_segment_next_rw (seg);
+    }
+}
+
 size_t gc_heap::get_mark_array_size (heap_segment* seg)
 {
     if (seg->flags & heap_segment_flags_ma_committed)

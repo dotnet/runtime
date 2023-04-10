@@ -570,6 +570,10 @@ enum class GCConfigurationType
 
 using ConfigurationValueFunc = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
 
+const int REFRESH_MEMORY_SUCCEED = 0;
+const int REFRESH_MEMORY_HARD_LIMIT_TOO_LOW = 1;
+const int REFRESH_MEMORY_HARD_LIMIT_INVALID = 2;
+
 // IGCHeap is the interface that the VM will use when interacting with the GC.
 class IGCHeap {
 public:
@@ -975,7 +979,7 @@ public:
     virtual void UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed) PURE_VIRTUAL
 
     // Refresh the memory limit
-    virtual void RefreshMemoryLimit() PURE_VIRTUAL
+    virtual int RefreshMemoryLimit() PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK

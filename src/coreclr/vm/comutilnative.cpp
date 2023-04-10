@@ -1210,27 +1210,41 @@ void GCInterface::EnumerateConfigurationValues(void* configurationContext, Enume
     pHeap->EnumerateConfigurationValues(configurationContext, callback);
 }
 
-extern "C" void QCALLTYPE GCInterface_RefreshMemoryLimit()
+extern "C" int QCALLTYPE GCInterface_RefreshMemoryLimit()
 {
     QCALL_CONTRACT;
 
+    int result = 0;
+
     BEGIN_QCALL;
-    GCInterface::RefreshMemoryLimit();
+    result = GCInterface::RefreshMemoryLimit();
     END_QCALL;
+
+    return result;
 }
 
-void GCInterface::RefreshMemoryLimit()
+int GCInterface::RefreshMemoryLimit()
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        MODE_ANY;
     }
     CONTRACTL_END;
 
-    GCHeapUtilities::GetGCHeap()->RefreshMemoryLimit();
+    return GCHeapUtilities::GetGCHeap()->RefreshMemoryLimit();
+}
+
+GCHeapHardLimitInfo g_gcHeapHardLimitInfo;
+
+extern "C" void QCALLTYPE GCInterface_UpdateHeapHardLimits(GCHeapHardLimitInfo heapHardLimitInfo)
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    BEGIN_QCALL;
+    g_gcHeapHardLimitInfo = heapHardLimitInfo;
+    END_QCALL;
 }
 
 #ifdef HOST_64BIT
