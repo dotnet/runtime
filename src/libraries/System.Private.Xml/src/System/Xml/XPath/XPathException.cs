@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.ComponentModel;
 using System.Resources;
 using System.Runtime.Serialization;
 using System.Diagnostics;
@@ -22,6 +23,8 @@ namespace System.Xml.XPath
         // message == null for created V2 exceptions; the exception message is stored in Exception._message
         private readonly string? _message;
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected XPathException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             _res = (string)info.GetValue("res", typeof(string))!;
@@ -49,6 +52,8 @@ namespace System.Xml.XPath
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

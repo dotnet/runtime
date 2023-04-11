@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -404,6 +405,30 @@ namespace System.Tests
             dest = new char[0];
             AssertExtensions.Throws<ArgumentException>("fieldCount", () => version.TryFormat(dest, -1, out charsWritten)); // Index < 0
             AssertExtensions.Throws<ArgumentException>("fieldCount", () => version.TryFormat(dest, maxFieldCount + 1, out charsWritten)); // Index > version.fieldCount
+        }
+
+        [Theory]
+        [MemberData(nameof(ToString_TestData))]
+        public static void IUtf8SpanFormattableTryFormat_Invoke_WritesExpected(Version version, string[] expectedFieldCounts)
+        {
+            string expected = expectedFieldCounts[^1];
+
+            // Too small
+            byte[] dest = new byte[expected.Length - 1];
+            Assert.False(((IUtf8SpanFormattable)version).TryFormat(dest, out int charsWritten, default, null));
+            Assert.Equal(0, charsWritten);
+
+            // Just right
+            dest = new byte[expected.Length];
+            Assert.True(((IUtf8SpanFormattable)version).TryFormat(dest, out charsWritten, default, null));
+            Assert.Equal(expected.Length, charsWritten);
+            Assert.Equal(expected, Encoding.UTF8.GetString(dest.AsSpan(0, charsWritten)));
+
+            // More than needed
+            dest = new byte[expected.Length + 10];
+            Assert.True(((IUtf8SpanFormattable)version).TryFormat(dest, out charsWritten, default, null));
+            Assert.Equal(expected.Length, charsWritten);
+            Assert.Equal(expected, Encoding.UTF8.GetString(dest.AsSpan(0, charsWritten)));
         }
     }
 }

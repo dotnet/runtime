@@ -708,6 +708,7 @@ function generate_wasm (
                     "math_rhs64": WasmValtype.i64,
                     "temp_f32": WasmValtype.f32,
                     "temp_f64": WasmValtype.f64,
+                    "backbranched": WasmValtype.i32,
                 }
             }, () => {
                 if (emitPadding) {

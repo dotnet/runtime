@@ -724,7 +724,6 @@ public:
                 }
                 break;
 
-            case GT_OBJ:
             case GT_BLK:
             case GT_IND:
                 assert(TopValue(1).Node() == node);
@@ -1028,7 +1027,7 @@ private:
     //
     unsigned GetIndirSize(GenTree* indir)
     {
-        assert(indir->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_FIELD));
+        assert(indir->OperIs(GT_IND, GT_BLK, GT_FIELD));
 
         if (indir->TypeGet() != TYP_STRUCT)
         {
@@ -1102,7 +1101,7 @@ private:
             if (node->TypeIs(TYP_STRUCT))
             {
                 ClassLayout* layout = node->GetLayout(m_compiler);
-                node->SetOper(GT_OBJ);
+                node->SetOper(GT_BLK);
                 node->AsBlk()->Initialize(layout);
             }
             else
@@ -1162,16 +1161,14 @@ private:
                 {
                     GenTree* indexNode = m_compiler->gtNewIconNode(val.Offset() / genTypeSize(elementType));
                     hwiNode = m_compiler->gtNewSimdGetElementNode(elementType, lclNode, indexNode, CORINFO_TYPE_FLOAT,
-                                                                  genTypeSize(varDsc),
-                                                                  /* isSimdAsHWIntrinsic */ true);
+                                                                  genTypeSize(varDsc));
                 }
                 else
                 {
                     assert(elementType == TYP_SIMD12);
                     assert(genTypeSize(varDsc) == 16);
-                    hwiNode =
-                        m_compiler->gtNewSimdHWIntrinsicNode(elementType, lclNode, NI_Vector128_AsVector3,
-                                                             CORINFO_TYPE_FLOAT, 16, /* isSimdAsHWIntrinsic */ true);
+                    hwiNode = m_compiler->gtNewSimdHWIntrinsicNode(elementType, lclNode, NI_Vector128_AsVector3,
+                                                                   CORINFO_TYPE_FLOAT, 16);
                 }
 
                 indir      = hwiNode;
@@ -1192,9 +1189,9 @@ private:
                 if (elementType == TYP_FLOAT)
                 {
                     GenTree* indexNode = m_compiler->gtNewIconNode(val.Offset() / genTypeSize(elementType));
-                    hwiNode            = m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode,
-                                                                   elementNode, CORINFO_TYPE_FLOAT, genTypeSize(varDsc),
-                                                                   /* isSimdAsHWIntrinsic */ true);
+                    hwiNode =
+                        m_compiler->gtNewSimdWithElementNode(varDsc->TypeGet(), simdLclNode, indexNode, elementNode,
+                                                             CORINFO_TYPE_FLOAT, genTypeSize(varDsc));
                 }
                 else
                 {
@@ -1204,9 +1201,8 @@ private:
                     // We inverse the operands here and take elementNode as the main value and simdLclNode[3] as the
                     // new value. This gives us a new TYP_SIMD16 with all elements in the right spots
                     GenTree* indexNode = m_compiler->gtNewIconNode(3, TYP_INT);
-                    hwiNode =
-                        m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode, simdLclNode,
-                                                             CORINFO_TYPE_FLOAT, 16, /* isSimdAsHWIntrinsic */ true);
+                    hwiNode = m_compiler->gtNewSimdWithElementNode(TYP_SIMD16, elementNode, indexNode, simdLclNode,
+                                                                   CORINFO_TYPE_FLOAT, 16);
                 }
 
                 user->AsOp()->gtOp2 = hwiNode;
@@ -1297,7 +1293,7 @@ private:
 
         // We don't expect indirections that cannot be turned into local nodes here.
         assert(val.Offset() <= UINT16_MAX);
-        assert(indir->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_FIELD) && ((indir->gtFlags & GTF_IND_VOLATILE) == 0));
+        assert(indir->OperIs(GT_IND, GT_BLK, GT_FIELD) && ((indir->gtFlags & GTF_IND_VOLATILE) == 0));
 
         if (IsUnused(indir, user))
         {
@@ -1358,17 +1354,15 @@ private:
             }
 #endif // FEATURE_HW_INTRINSICS
 
-            // Turn this into a narrow-cast if we can.
-            if (!isDef && varTypeIsIntegral(indir) && varTypeIsIntegral(varDsc))
+            if (!isDef)
             {
-                return IndirTransform::NarrowCast;
-            }
+                if (varTypeIsIntegral(indir) && varTypeIsIntegral(varDsc))
+                {
+                    return IndirTransform::NarrowCast;
+                }
 
-            // Turn this into a bitcast if we can.
-            if ((genTypeSize(indir) == genTypeSize(varDsc)) && (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)))
-            {
-                // TODO-ADDR: enable this optimization for all users and all targets.
-                if (user->OperIs(GT_RETURN) && (genTypeSize(indir) <= TARGET_POINTER_SIZE))
+                if ((genTypeSize(indir) == genTypeSize(varDsc)) && (genTypeSize(indir) <= TARGET_POINTER_SIZE) &&
+                    (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)))
                 {
                     return IndirTransform::BitCast;
                 }
@@ -1495,7 +1489,7 @@ private:
 
                     if (node->TypeIs(TYP_STRUCT))
                     {
-                        node->SetOper(GT_OBJ);
+                        node->SetOper(GT_BLK);
                         node->AsBlk()->Initialize(layout);
                     }
                     else
@@ -1600,7 +1594,7 @@ public:
 
             node = m_ancestors.Top(1);
 
-            if (!node->OperIs(GT_OBJ))
+            if (!node->OperIs(GT_BLK))
             {
                 return;
             }

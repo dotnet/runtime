@@ -66,3 +66,17 @@ extends:
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
             condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
+            diffType: asmdiffs
+
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/coreclr/templates/superpmi-diffs-job.yml
+          buildConfig: checked
+          platforms:
+          - windows_x64
+          - windows_x86
+          helixQueueGroup: ci
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          jobParameters:
+            condition: not(eq(dependencies.evaluate_paths.outputs['SetPathVars_jiteeversionguid.containsChange'], true))
+            diffType: tpdiff

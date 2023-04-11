@@ -2901,7 +2901,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
 // bl CORINFO_HELP_ASSIGN_BYREF
 // ld tempReg, 8(A5)
 // sd tempReg, 8(A6)
-void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
+void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 {
     GenTree*  dstAddr       = cpObjNode->Addr();
     GenTree*  source        = cpObjNode->Data();
@@ -5477,9 +5477,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         {
             genPutArgStkFieldList(treeNode, varNumOut);
         }
-        else // We must have a GT_OBJ or a GT_LCL_VAR
+        else // We must have a GT_BLK or a GT_LCL_VAR
         {
-            noway_assert((source->OperGet() == GT_LCL_VAR) || (source->OperGet() == GT_OBJ));
+            noway_assert((source->OperGet() == GT_LCL_VAR) || (source->OperGet() == GT_BLK));
 
             var_types targetType = source->TypeGet();
             noway_assert(varTypeIsStruct(targetType));
@@ -5496,9 +5496,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             {
                 varNode = source->AsLclVarCommon();
             }
-            else // we must have a GT_OBJ
+            else // we must have a GT_BLK
             {
-                assert(source->OperGet() == GT_OBJ);
+                assert(source->OperGet() == GT_BLK);
 
                 addrNode = source->AsOp()->gtOp1;
 
@@ -5506,7 +5506,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 //
                 if (addrNode->IsLclVarAddr())
                 {
-                    // We have a GT_OBJ(GT_LCL_ADDR<0>)
+                    // We have a GT_BLK(GT_LCL_ADDR<0>)
                     //
                     // We will treat this case the same as above
                     // (i.e if we just had this GT_LCL_VAR directly as the source)
@@ -5549,18 +5549,16 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                                             // as that is how much stack is allocated for this LclVar
                 layout = varDsc->GetLayout();
             }
-            else // we must have a GT_OBJ
+            else // we must have a GT_BLK
             {
-                assert(source->OperGet() == GT_OBJ);
+                assert(source->OperGet() == GT_BLK);
 
-                // If the source is an OBJ node then we need to use the type information
+                // If the source is an BLK node then we need to use the type information
                 // it provides (size and GC layout) even if the node wraps a lclvar. Due
                 // to struct reinterpretation (e.g. Unsafe.As<X, Y>) it is possible that
-                // the OBJ node has a different type than the lclvar.
-                CORINFO_CLASS_HANDLE objClass = source->AsObj()->GetLayout()->GetClassHandle();
-
-                srcSize = compiler->info.compCompHnd->getClassSize(objClass);
-                layout  = source->AsObj()->GetLayout();
+                // the BLK node has a different type than the lclvar.
+                layout  = source->AsBlk()->GetLayout();
+                srcSize = layout->GetSize();
             }
 
             unsigned structSize;
@@ -5766,7 +5764,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
     else
     {
         var_types targetType = source->TypeGet();
-        assert(source->OperGet() == GT_OBJ);
+        assert(source->OperGet() == GT_BLK);
         assert(varTypeIsStruct(targetType));
 
         regNumber baseReg = treeNode->ExtractTempReg();
@@ -5781,7 +5779,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         //
         if (addrNode->IsLclVarAddr())
         {
-            // We have a GT_OBJ(GT_LCL_ADDR<0>)
+            // We have a GT_BLK(GT_LCL_ADDR<0>)
             //
             // We will treat this case the same as above
             // (i.e if we just had this GT_LCL_VAR directly as the source)
@@ -5818,12 +5816,9 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             // Because the candidate mask for the internal baseReg does not include any of the target register,
             // we can ensure that baseReg, addrReg, and the last target register are not all same.
             assert(baseReg != addrReg);
-
-            // We don't split HFA struct
-            assert(!compiler->IsHfa(source->AsObj()->GetLayout()->GetClassHandle()));
         }
 
-        ClassLayout* layout = source->AsObj()->GetLayout();
+        ClassLayout* layout = source->AsBlk()->GetLayout();
 
         // Put on stack first
         unsigned structOffset  = treeNode->gtNumRegs * TARGET_POINTER_SIZE;
@@ -7562,8 +7557,8 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     {
         assert(!blkOp->gtBlkOpGcUnsafe);
         assert(blkOp->OperIsCopyBlkOp());
-        assert(blkOp->AsObj()->GetLayout()->HasGCPtr());
-        genCodeForCpObj(blkOp->AsObj());
+        assert(blkOp->AsBlk()->GetLayout()->HasGCPtr());
+        genCodeForCpObj(blkOp->AsBlk());
         return;
     }
     if (blkOp->gtBlkOpGcUnsafe)
@@ -9112,75 +9107,4 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         return;
     }
 }
-
-// return size
-// alignmentWB is out param
-unsigned CodeGenInterface::InferOpSizeAlign(GenTree* op, unsigned* alignmentWB)
-{
-    unsigned alignment = 0;
-    unsigned opSize    = 0;
-
-    if (op->gtType == TYP_STRUCT || op->OperIsCopyBlkOp())
-    {
-        opSize = InferStructOpSizeAlign(op, &alignment);
-    }
-    else
-    {
-        alignment = genTypeAlignments[op->TypeGet()];
-        opSize    = genTypeSizes[op->TypeGet()];
-    }
-
-    assert(opSize != 0);
-    assert(alignment != 0);
-
-    (*alignmentWB) = alignment;
-    return opSize;
-}
-
-// return size
-// alignmentWB is out param
-unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignmentWB)
-{
-    unsigned alignment = 0;
-    unsigned opSize    = 0;
-
-    while (op->gtOper == GT_COMMA)
-    {
-        op = op->AsOp()->gtOp2;
-    }
-
-    if (op->gtOper == GT_OBJ)
-    {
-        CORINFO_CLASS_HANDLE clsHnd = op->AsObj()->GetLayout()->GetClassHandle();
-        opSize                      = op->AsObj()->GetLayout()->GetSize();
-        alignment = roundUp(compiler->info.compCompHnd->getClassAlignmentRequirement(clsHnd), TARGET_POINTER_SIZE);
-    }
-    else if (op->gtOper == GT_LCL_VAR)
-    {
-        const LclVarDsc* varDsc = compiler->lvaGetDesc(op->AsLclVarCommon());
-        assert(varDsc->lvType == TYP_STRUCT);
-        opSize = varDsc->lvSize();
-        {
-            alignment = TARGET_POINTER_SIZE;
-        }
-    }
-    else if (op->gtOper == GT_MKREFANY)
-    {
-        opSize    = TARGET_POINTER_SIZE * 2;
-        alignment = TARGET_POINTER_SIZE;
-    }
-    else
-    {
-        assert(!"Unhandled gtOper");
-        opSize    = TARGET_POINTER_SIZE;
-        alignment = TARGET_POINTER_SIZE;
-    }
-
-    assert(opSize != 0);
-    assert(alignment != 0);
-
-    (*alignmentWB) = alignment;
-    return opSize;
-}
-
 #endif // TARGET_LOONGARCH64
