@@ -24,7 +24,7 @@
   <PropertyGroup>
     <BUILD_SOURCESDIRECTORY>c:\gh\runtime</BUILD_SOURCESDIRECTORY>
     <CorrelationPayloadDirectory>c:\bugs\es\payload\correlation</CorrelationPayloadDirectory>
-    <WorkItemDirectory>c:\bugs\es\payload\workitem</WorkItemDirectory>
+    <WorkItemDirectory>c:\bugs\spmicollect3\payload\workitem</WorkItemDirectory>
     <_Scenarios>normal</_Scenarios>
     <_Creator></_Creator>
     <_HelixAccessToken></_HelixAccessToken>
