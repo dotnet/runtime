@@ -16265,6 +16265,10 @@ bool Compiler::gtSplitTree(
 
         bool IsValue(const UseInfo& useInf)
         {
+            if ((*useInf.Use)->TypeIs(TYP_VOID))
+            {
+                return false;
+            }
             GenTree* node = (*useInf.Use)->gtEffectiveVal();
             if (!node->IsValue())
             {
