@@ -16265,10 +16265,6 @@ bool Compiler::gtSplitTree(
 
         bool IsValue(const UseInfo& useInf)
         {
-            if ((*useInf.Use)->TypeIs(TYP_VOID))
-            {
-                return false;
-            }
             GenTree* node = (*useInf.Use)->gtEffectiveVal();
             if (!node->IsValue())
             {
@@ -16290,6 +16286,17 @@ bool Compiler::gtSplitTree(
             if (user->OperIs(GT_COMMA) && (&user->AsOp()->gtOp1 == useInf.Use))
             {
                 return false;
+            }
+
+            if (user->OperIs(GT_CALL))
+            {
+                for (CallArg& callArg : user->AsCall()->gtArgs.Args())
+                {
+                    if ((&callArg.EarlyNodeRef() == useInf.Use) && (callArg.GetLateNode() != nullptr))
+                    {
+                        return false;
+                    }
+                }
             }
 
             return true;
