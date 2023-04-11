@@ -593,10 +593,8 @@ PhaseStatus Compiler::fgInline()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-#ifdef DEBUG
     fgPrintInlinedMethods =
         JitConfig.JitPrintInlinedMethods().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
-#endif // DEBUG
 
     noway_assert(fgFirstBB != nullptr);
 
@@ -717,8 +715,13 @@ PhaseStatus Compiler::fgInline()
         printf("\n");
         m_inlineStrategy->Dump(verbose || JitConfig.JitPrintInlinedMethodsVerbose());
     }
-
-#endif // DEBUG
+#else // DEBUG
+    if (fgPrintInlinedMethods)
+    {
+        printf("\n");
+        m_inlineStrategy->Dump(false);
+    }
+#endif
 
     if (madeChanges)
     {

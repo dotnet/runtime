@@ -16,9 +16,7 @@ void Compiler::fgInit()
 
     fgFirstBBScratch = nullptr;
 
-#ifdef DEBUG
     fgPrintInlinedMethods = false;
-#endif // DEBUG
 
     /* We haven't yet computed the bbPreds lists */
     fgPredsComputed = false;

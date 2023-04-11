@@ -138,12 +138,6 @@ CONFIG_INTEGER(JitReportFastTailCallDecisions, W("JitReportFastTailCallDecisions
 CONFIG_INTEGER(JitPInvokeCheckEnabled, W("JITPInvokeCheckEnabled"), 0)
 CONFIG_INTEGER(JitPInvokeEnabled, W("JITPInvokeEnabled"), 1)
 
-// Controls verbosity for JitPrintInlinedMethods. Ignored for JitDump where
-// it's always set.
-CONFIG_INTEGER(JitPrintInlinedMethodsVerbose, W("JitPrintInlinedMethodsVerboseLevel"), 0)
-// Prints a tree of inlinees for a specific method (use '*' for all methods)
-CONFIG_METHODSET(JitPrintInlinedMethods, W("JitPrintInlinedMethods"))
-
 CONFIG_METHODSET(JitPrintDevirtualizedMethods, W("JitPrintDevirtualizedMethods"))
 CONFIG_INTEGER(JitProfileChecks, W("JitProfileChecks"), 0) // Bitflag: 0x1 check classic, 0x2 check likely, 0x4 enable
                                                            // asserts
@@ -251,6 +245,14 @@ CONFIG_STRING(JitStressRange, W("JitStressRange"))               // Internal Jit
 ///
 CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // Enable testing not-yet-implemented
 #endif                                                                     // defined(DEBUG)
+
+#ifdef DEBUG
+// Controls verbosity for JitPrintInlinedMethods. Ignored for JitDump where
+// it's always set.
+CONFIG_INTEGER(JitPrintInlinedMethodsVerbose, W("JitPrintInlinedMethodsVerboseLevel"), 0)
+#endif
+// Prints a tree of inlinees for a specific method (use '*' for all methods)
+CONFIG_METHODSET(JitPrintInlinedMethods, W("JitPrintInlinedMethods"))
 
 CONFIG_METHODSET(JitDisasm, W("JitDisasm"))                  // Print codegen for given methods
 CONFIG_INTEGER(JitDisasmDiffable, W("JitDisasmDiffable"), 0) // Make the disassembly diff-able

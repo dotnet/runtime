@@ -4629,8 +4629,8 @@ public:
 
 #if defined(DEBUG)
     unsigned impInlinedCodeSize;
-    bool     fgPrintInlinedMethods;
 #endif
+    bool     fgPrintInlinedMethods;
 
     jitstd::vector<FlowEdge*>* fgPredListSortVector;
 

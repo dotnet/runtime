@@ -738,10 +738,9 @@ class InlineContext
     friend class InlineStrategy;
 
 public:
-#if defined(DEBUG) || defined(INLINE_DATA)
-
     // Dump the full subtree, including failures
     void Dump(bool verbose, unsigned indent = 0);
+#if defined(DEBUG) || defined(INLINE_DATA)
 
     // Dump only the success subtree, with rich data
     void DumpData(unsigned indent = 0);
@@ -1010,10 +1009,10 @@ public:
     // Check if inlining is disabled for the method being jitted
     bool IsInliningDisabled();
 
-#if defined(DEBUG) || defined(INLINE_DATA)
-
     // Dump textual description of inlines done so far.
     void Dump(bool verbose);
+
+#if defined(DEBUG) || defined(INLINE_DATA)
 
     // Dump data-format description of inlines done so far.
     void DumpData();

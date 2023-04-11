@@ -352,8 +352,6 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     // Empty
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
-
 //------------------------------------------------------------------------
 // Dump: Dump an InlineContext entry and all descendants to jitstdout
 //
@@ -380,15 +378,10 @@ void InlineContext::Dump(bool verbose, unsigned indent)
     }
     else
     {
-
-#if defined(DEBUG)
         calleeName = compiler->eeGetMethodFullName(m_Callee);
-#else
-        calleeName         = "callee";
-#endif // defined(DEBUG)
     }
 
-    mdMethodDef calleeToken = compiler->info.compCompHnd->getMethodDefFromMethod(m_Callee);
+    INDEBUG(mdMethodDef calleeToken = compiler->info.compCompHnd->getMethodDefFromMethod(m_Callee));
 
     // Dump this node
     if (m_Parent == nullptr)
@@ -396,11 +389,13 @@ void InlineContext::Dump(bool verbose, unsigned indent)
         // Root method
         InlinePolicy* policy = InlinePolicy::GetPolicy(compiler, true);
 
+#if defined(DEBUG)
         if (verbose)
         {
             printf("\nInlines into %08X [via %s] %s:\n", calleeToken, policy->GetName(), calleeName);
         }
         else
+#endif
         {
             printf("\nInlines into %s:\n", calleeName);
         }
@@ -417,6 +412,7 @@ void InlineContext::Dump(bool verbose, unsigned indent)
 
         IL_OFFSET offs = m_ActualCallOffset;
 
+#if defined(DEBUG)
         if (verbose)
         {
             if (offs == BAD_IL_OFFSET)
@@ -433,6 +429,7 @@ void InlineContext::Dump(bool verbose, unsigned indent)
             }
         }
         else
+#endif
         {
             printf("%*s[%s%s%s%s%s] %s\n", indent, "", inlineResult, inlineReason, guarded, devirtualized, unboxed,
                    calleeName);
@@ -445,6 +442,8 @@ void InlineContext::Dump(bool verbose, unsigned indent)
         m_Child->Dump(verbose, indent + 2);
     }
 }
+
+#if defined(DEBUG) || defined(INLINE_DATA)
 
 //------------------------------------------------------------------------
 // DumpData: Dump a successful InlineContext entry, detailed data, and
@@ -1357,8 +1356,6 @@ void InlineContext::SetFailed(const InlineResult* result)
     m_InlineStrategy->NoteOutcome(this);
 }
 
-#if defined(DEBUG) || defined(INLINE_DATA)
-
 //------------------------------------------------------------------------
 // Dump: dump description of inline behavior
 //
@@ -1394,6 +1391,8 @@ void InlineStrategy::Dump(bool verbose)
 
     printf("Budget: initialSize=%d, finalSize=%d\n", m_InitialSizeEstimate, m_CurrentSizeEstimate);
 }
+
+#if defined(DEBUG) || defined(INLINE_DATA)
 
 // Static to track emission of the inline data header
 
