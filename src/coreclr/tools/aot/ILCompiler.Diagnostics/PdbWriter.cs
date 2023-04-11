@@ -146,7 +146,6 @@ namespace ILCompiler.Diagnostics
                     if ((_ngenWriter != null) && (_pdbMod != UIntPtr.Zero))
                     {
                         _ngenWriter.CloseMod(_pdbMod);
-                        //_ngenWriter?.Dispose();
                     }
                 }
 
@@ -209,7 +208,7 @@ namespace ILCompiler.Diagnostics
             // Delete any preexisting PDB file upfront, otherwise CreateNGenPdbWriter silently opens it
             File.Delete(_pdbFilePath);
 
-            var comWrapper = new ILCompilerStrategyBasedComWrappers();
+            var comWrapper = new StrategyBasedComWrappers();
             CreateNGenPdbWriter(dllPath, _pdbFilePath, out var pdbWriterInst);
             _ngenWriter = (ISymNGenWriter2)comWrapper.GetOrCreateObjectForComInstance(pdbWriterInst, CreateObjectFlags.UniqueInstance);
 

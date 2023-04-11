@@ -60,20 +60,20 @@ namespace Microsoft.DiaSymReader
     [Flags]
     internal enum OMF : ushort
     {
-        Const_Read = 0x0001,
-        Const_Write = 0x0002,
-        Const_Exec = 0x0004,
-        Const_F32Bit = 0x0008,
-        Const_ReservedBits1 = 0x00f0,
-        Const_FSel = 0x0100,
-        Const_FAbs = 0x0200,
-        Const_ReservedBits2 = 0x0C00,
-        Const_FGroup = 0x1000,
-        Const_ReservedBits3 = 0xE000,
+        Const_Read =            0x0001,
+        Const_Write =          0x0002,
+        Const_Exec =           0x0004,
+        Const_F32Bit =         0x0008,
+        Const_ReservedBits1 =  0x00f0,
+        Const_FSel =           0x0100,
+        Const_FAbs =           0x0200,
+        Const_ReservedBits2 =  0x0C00,
+        Const_FGroup =         0x1000,
+        Const_ReservedBits3 =  0xE000,
 
 
-        StandardText = (Const_FSel | Const_F32Bit | Const_Exec | Const_Read), // 0x10D
-        SentinelType = (Const_FAbs | Const_F32Bit) // 0x208
+        StandardText = (Const_FSel|Const_F32Bit|Const_Exec|Const_Read), // 0x10D
+        SentinelType = (Const_FAbs|Const_F32Bit) // 0x208
     }
 
 
