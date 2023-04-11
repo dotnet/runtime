@@ -59,7 +59,8 @@ typedef BitVec_ValRet_T ASSERT_VALRET_TP;
 
 enum BBjumpKinds : BYTE
 {
-    BBJ_EHFINALLYRET,// block ends with 'endfinally' (for finally or fault)
+    BBJ_EHFINALLYRET,// block ends with 'endfinally' (for finally)
+    BBJ_EHFAULTRET,  // block ends with 'endfinally' (IL alias for 'endfault') (for fault)
     BBJ_EHFILTERRET, // block ends with 'endfilter'
     BBJ_EHCATCHRET,  // block ends with a leave out of a catch (only #if defined(FEATURE_EH_FUNCLETS))
     BBJ_THROW,       // block ends with 'throw'
@@ -73,6 +74,24 @@ enum BBjumpKinds : BYTE
 
     BBJ_COUNT
 };
+
+#ifdef DEBUG
+const char* const BBjumpKindNames[] = {
+    "BBJ_EHFINALLYRET",
+    "BBJ_EHFAULTRET",
+    "BBJ_EHFILTERRET",
+    "BBJ_EHCATCHRET",
+    "BBJ_THROW",
+    "BBJ_RETURN",
+    "BBJ_NONE",
+    "BBJ_ALWAYS",
+    "BBJ_LEAVE",
+    "BBJ_CALLFINALLY",
+    "BBJ_COND",
+    "BBJ_SWITCH",
+    "BBJ_COUNT"
+};
+#endif // DEBUG
 
 // clang-format on
 
@@ -829,7 +848,7 @@ struct BasicBlock : private LIR::Range
     // GetSucc() without a Compiler*.
     //
     // The behavior of NumSucc()/GetSucc() is different when passed a Compiler* for blocks that end in:
-    // (1) BBJ_EHFINALLYRET (a return from a finally or fault block)
+    // (1) BBJ_EHFINALLYRET (a return from a finally block)
     // (2) BBJ_EHFILTERRET (a return from EH filter block)
     // (3) BBJ_SWITCH
     //
@@ -1656,6 +1675,7 @@ inline BasicBlock::BBSuccList::BBSuccList(const BasicBlock* block)
         case BBJ_THROW:
         case BBJ_RETURN:
         case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
             // We don't need m_succs.
             m_begin = nullptr;

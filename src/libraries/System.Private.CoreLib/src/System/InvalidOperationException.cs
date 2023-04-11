@@ -11,6 +11,7 @@
 **
 =============================================================================*/
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System
@@ -37,6 +38,8 @@ namespace System
             HResult = HResults.COR_E_INVALIDOPERATION;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected InvalidOperationException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

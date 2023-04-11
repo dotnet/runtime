@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -203,6 +204,8 @@ namespace System.Net
                 IsMatchInBypassList(host);
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected WebProxy(SerializationInfo serializationInfo, StreamingContext streamingContext) =>
             throw new PlatformNotSupportedException();
 
