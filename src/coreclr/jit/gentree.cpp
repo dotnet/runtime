@@ -13428,7 +13428,8 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     //
     // Here if we can get the exact class of LCL_VAR we can fold the whole check
     //
-    if (op1->OperIs(GT_IND) && op2->IsIconHandle(GTF_ICON_CLASS_HDL))
+    if (op1->OperIs(GT_IND) && op2->IsIconHandle(GTF_ICON_CLASS_HDL) && op1->TypeIs(TYP_I_IMPL) &&
+        op2->TypeIs(TYP_I_IMPL))
     {
         GenTreeIndir* indir = op1->AsIndir();
         if (indir->HasBase() && !indir->HasIndex() && (indir->Offset() == 0) && indir->Base()->TypeIs(TYP_REF))
@@ -13447,6 +13448,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
                 {
                     result = gtNewIconNode(oper == GT_EQ ? 0 : 1);
                 }
+                assert((oper == GT_EQ) || (oper == GT_NE));
 
                 GenTree* op1SideEffects = nullptr;
                 gtExtractSideEffList(op1, &op1SideEffects, GTF_ALL_EFFECT);
