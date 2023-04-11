@@ -58,15 +58,13 @@ namespace Microsoft.Extensions.Hosting.Tests
         public async Task StartAsync_StopAsync_Concurrency(bool stopConcurrently, bool startConcurrently, int hostedServiceCount)
         {
             var hostedServices = new DelegateHostedService[hostedServiceCount];
-            bool[][] events = new bool[hostedServiceCount][];
+            bool[,] events = new bool[hostedServiceCount, 2];
 
             for (int i = 0; i < hostedServiceCount; i++)
             {
-                var index = i;
-                events[index] = new bool[2];
-                var service = new DelegateHostedService(() => { events[index][0] = true; }, () => { events[index][1] = true; } , () => { });
+                var service = new DelegateHostedService(() => { events[i, 0] = true; }, () => { events[i, 1] = true; } , () => { });
 
-                hostedServices[index] = service;
+                hostedServices[i] = service;
             }
 
             using var host = Host.CreateDefaultBuilder().ConfigureHostConfiguration(configBuilder =>
@@ -89,8 +87,8 @@ namespace Microsoft.Extensions.Hosting.Tests
             // Verifies that StartAsync had been called and that StopAsync had not been launched yet
             for (int i = 0; i < hostedServiceCount; i++)
             {
-                Assert.True(events[i][0]);
-                Assert.False(events[i][1]);
+                Assert.True(events[i, 0]);
+                Assert.False(events[i, 1]);
             }
 
             // Ensures that IHostedService instances are started in FIFO order
@@ -101,7 +99,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             // Verifies that StopAsync had been called
             for (int i = 0; i < hostedServiceCount; i++)
             {
-                Assert.True(events[i][1]);
+                Assert.True(events[i, 1]);
             }
 
             // Ensures that IHostedService instances are stopped in LIFO order

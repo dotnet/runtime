@@ -1160,16 +1160,24 @@ namespace Microsoft.Extensions.Hosting.Internal
                 var stopping = RegisterCallbacksThatThrow(applicationLifetime.ApplicationStopping);
 
                 if (concurrentStartup && eventCount > 1)
+                {
                     await Assert.ThrowsAsync<AggregateException>(() => host.StartAsync());
+                }
                 else
+                {
                     await Assert.ThrowsAsync<InvalidOperationException>(() => host.StartAsync());
+                }
 
                 for (int i = 0; i < eventCount; i++)
                 {
                     if (i == 0 || concurrentStartup)
+                    {
                         Assert.True(events[i][0]);
+                    }
                     else
+                    {
                         Assert.False(events[i][0]);
+                    }
                 }
 
                 Assert.False(started.All(s => s));
