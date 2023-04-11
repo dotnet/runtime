@@ -3514,7 +3514,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         }
         else // Not a struct type
         {
-            storeType = regArgTab[argNum].type;
+            storeType = genActualType(regArgTab[argNum].type);
         }
         size = emitActualTypeSize(storeType);
 #ifdef TARGET_X86
