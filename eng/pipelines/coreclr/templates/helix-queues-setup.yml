@@ -62,10 +62,6 @@ jobs:
 
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvos_arm64') }}:
-      # split traffic for runtime-extra-platforms (which mostly runs on rolling builds)
-      - ${{ if ne(parameters.jobParameters.isExtraPlatforms, true) }}:
-        - OSX.12.Amd64.AppleTV.Open
-      - ${{ if eq(parameters.jobParameters.isExtraPlatforms, true) }}:
         - OSX.13.Amd64.AppleTV.Open
 
     # Linux arm
