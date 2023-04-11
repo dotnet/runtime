@@ -2531,7 +2531,8 @@ VOLATILE(uint8_t*)    gc_heap::ephemeral_high;
 #ifndef MULTIPLE_HEAPS
 #ifdef SPINLOCK_HISTORY
 int         gc_heap::spinlock_info_index = 0;
-spinlock_info gc_heap::last_spinlock_info[max_saved_spinlock_info + 8];
+spinlock_info gc_heap::last_spinlock_info[max_saved_spinlock_info];
+allocation_state gc_heap::current_uoh_alloc_state = (allocation_state)-1;
 #endif //SPINLOCK_HISTORY
 
 uint32_t    gc_heap::fgn_maxgen_percent = 0;
@@ -6140,7 +6141,7 @@ gc_heap::get_uoh_segment (int gen_number, size_t size, BOOL* did_full_compact_gc
     size_t last_full_compact_gc_count = get_full_compact_gc_count();
 
     //access to get_segment needs to be serialized
-    add_saved_spinlock_info (true, me_release, mt_get_large_seg);
+    add_saved_spinlock_info (true, me_release, mt_get_large_seg, msl_entered);
     leave_spin_lock (&more_space_lock_uoh);
     enter_spin_lock (&gc_heap::gc_lock);
     dprintf (SPINLOCK_LOG, ("[%d]Seg: Egc", heap_number));
@@ -6171,7 +6172,7 @@ gc_heap::get_uoh_segment (int gen_number, size_t size, BOOL* did_full_compact_gc
     *msl_status = enter_spin_lock_msl (&more_space_lock_uoh);
     if (*msl_status == msl_retry_different_heap) return NULL;
 
-    add_saved_spinlock_info (true, me_acquire, mt_get_large_seg);
+    add_saved_spinlock_info (true, me_acquire, mt_get_large_seg, *msl_status);
 
     return res;
 }
@@ -7060,7 +7061,7 @@ void gc_heap::gc_thread_function ()
                 gc_heap* hp = gc_heap::g_heaps[i];
                 if (spin_lock_taken_p (&hp->more_space_lock_soh))
                 {
-                    hp->add_saved_spinlock_info (false, me_release, mt_block_gc);
+                    hp->add_saved_spinlock_info (false, me_release, mt_block_gc, msl_entered);
                     leave_spin_lock(&hp->more_space_lock_soh);
                 }
 
@@ -14528,14 +14529,20 @@ VOLATILE(bool) gc_heap::internal_gc_done;
 void gc_heap::add_saved_spinlock_info (
             bool loh_p,
             msl_enter_state enter_state,
-            msl_take_state take_state)
-
+            msl_take_state take_state,
+            enter_msl_status msl_status)
 {
 #ifdef SPINLOCK_HISTORY
+    if (!loh_p || (msl_status == msl_retry_different_heap))
+    {
+        return;
+    }
+
     spinlock_info* current = &last_spinlock_info[spinlock_info_index];
 
     current->enter_state = enter_state;
     current->take_state = take_state;
+    current->current_uoh_alloc_state = current_uoh_alloc_state;
     current->thread_id.SetToCurrentThread();
     current->loh_p = loh_p;
     dprintf (SPINLOCK_LOG, ("[%d]%s %s %s",
@@ -16547,7 +16554,7 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
     // check if space to clear is all dirty from prior use or only partially
     if ((seg == 0) || (clear_limit <= heap_segment_used (seg)))
     {
-        add_saved_spinlock_info (uoh_p, me_release, mt_clr_mem);
+        add_saved_spinlock_info (uoh_p, me_release, mt_clr_mem, msl_entered);
         leave_spin_lock (msl);
 
         if (clear_start < clear_limit)
@@ -16562,7 +16569,7 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
         uint8_t* used = heap_segment_used (seg);
         heap_segment_used (seg) = clear_limit;
 
-        add_saved_spinlock_info (uoh_p, me_release, mt_clr_mem);
+        add_saved_spinlock_info (uoh_p, me_release, mt_clr_mem, msl_entered);
         leave_spin_lock (msl);
 
         if (clear_start < used)
@@ -17114,7 +17121,7 @@ void gc_heap::bgc_uoh_alloc_clr (uint8_t* alloc_start,
     bool fire_event_p = update_alloc_info (gen_number, allocated_size, &etw_allocation_amount);
 
     dprintf (SPINLOCK_LOG, ("[%d]Lmsl to clear uoh obj", heap_number));
-    add_saved_spinlock_info (true, me_release, mt_clr_large_mem);
+    add_saved_spinlock_info (true, me_release, mt_clr_large_mem, msl_entered);
     leave_spin_lock (&more_space_lock_uoh);
 
 #ifdef FEATURE_EVENT_TRACE
@@ -17469,11 +17476,11 @@ enter_msl_status gc_heap::wait_for_background (alloc_wait_reason awr, bool loh_p
     enter_msl_status msl_status = msl_entered;
 
     dprintf (2, ("BGC is already in progress, waiting for it to finish"));
-    add_saved_spinlock_info (loh_p, me_release, mt_wait_bgc);
+    add_saved_spinlock_info (loh_p, me_release, mt_wait_bgc, msl_status);
     leave_spin_lock (msl);
     background_gc_wait (awr);
     msl_status = enter_spin_lock_msl (msl);
-    add_saved_spinlock_info (loh_p, me_acquire, mt_wait_bgc);
+    add_saved_spinlock_info (loh_p, me_acquire, mt_wait_bgc, msl_status);
 
     return msl_status;
 }
@@ -17516,7 +17523,7 @@ BOOL gc_heap::trigger_ephemeral_gc (gc_reason gr, enter_msl_status* msl_status)
 #ifdef MULTIPLE_HEAPS
     *msl_status = enter_spin_lock_msl (&more_space_lock_soh);
     if (*msl_status == msl_retry_different_heap) return FALSE;
-    add_saved_spinlock_info (false, me_acquire, mt_t_eph_gc);
+    add_saved_spinlock_info (false, me_acquire, mt_t_eph_gc, *msl_status);
 #endif //MULTIPLE_HEAPS
 
     size_t current_full_compact_gc_count = get_full_compact_gc_count();
@@ -17630,7 +17637,7 @@ allocation_state gc_heap::allocate_soh (int gen_number,
         background_soh_alloc_count++;
         if ((background_soh_alloc_count % bgc_alloc_spin_count) == 0)
         {
-            add_saved_spinlock_info (false, me_release, mt_alloc_small);
+            add_saved_spinlock_info (false, me_release, mt_alloc_small, msl_status);
             leave_spin_lock (&more_space_lock_soh);
             bool cooperative_mode = enable_preemptive();
             GCToOSInterface::Sleep (bgc_alloc_spin);
@@ -17639,7 +17646,7 @@ allocation_state gc_heap::allocate_soh (int gen_number,
             msl_status = enter_spin_lock_msl (&more_space_lock_soh);
             if (msl_status == msl_retry_different_heap) return a_state_retry_allocate;
 
-            add_saved_spinlock_info (false, me_acquire, mt_alloc_small);
+            add_saved_spinlock_info (false, me_acquire, mt_alloc_small, msl_status);
         }
         else
         {
@@ -17881,7 +17888,7 @@ exit:
                     heap_segment_allocated (ephemeral_heap_segment),
                     heap_segment_reserved (ephemeral_heap_segment));
 
-        add_saved_spinlock_info (false, me_release, mt_alloc_small_cant);
+        add_saved_spinlock_info (false, me_release, mt_alloc_small_cant, msl_entered);
         leave_spin_lock (&more_space_lock_soh);
     }
 
@@ -18167,6 +18174,7 @@ void gc_heap::add_saved_loh_state (allocation_state loh_state_to_save, EEThreadI
     if (loh_state_to_save != a_state_can_allocate)
     {
         last_loh_states[loh_state_index].alloc_state = loh_state_to_save;
+        last_loh_states[loh_state_index].gc_index = VolatileLoadWithoutBarrier (&settings.gc_index);
         last_loh_states[loh_state_index].thread_id = thread_id;
         loh_state_index++;
 
@@ -18209,6 +18217,19 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
 {
     enter_msl_status msl_status = msl_entered;
 
+    // No variable values should be "carried over" from one state to the other.
+    // That's why there are local variable for each state
+    allocation_state uoh_alloc_state = a_state_start;
+
+#ifdef SPINLOCK_HISTORY
+    current_uoh_alloc_state = uoh_alloc_state;
+#endif //SPINLOCK_HISTORY
+
+#ifdef RECORD_LOH_STATE
+    EEThreadId current_thread_id;
+    current_thread_id.SetToCurrentThread ();
+#endif //RECORD_LOH_STATE
+
 #ifdef BACKGROUND_GC
     if (gc_heap::background_running_p())
     {
@@ -18236,7 +18257,7 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
 
             if (spin_for_allocation > 0)
             {
-                add_saved_spinlock_info (true, me_release, mt_alloc_large);
+                add_saved_spinlock_info (true, me_release, mt_alloc_large, msl_status);
                 leave_spin_lock (&more_space_lock_uoh);
                 bool cooperative_mode = enable_preemptive();
                 GCToOSInterface::YieldThread (spin_for_allocation);
@@ -18245,7 +18266,7 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
                 msl_status = enter_spin_lock_msl (&more_space_lock_uoh);
                 if (msl_status == msl_retry_different_heap) return a_state_retry_allocate;
 
-                add_saved_spinlock_info (true, me_acquire, mt_alloc_large);
+                add_saved_spinlock_info (true, me_acquire, mt_alloc_large, msl_status);
                 dprintf (SPINLOCK_LOG, ("[%d]spin Emsl uoh", heap_number));
             }
             else if (spin_for_allocation < 0)
@@ -18268,21 +18289,18 @@ allocation_state gc_heap::allocate_uoh (int gen_number,
     oom_reason oom_r = oom_no_failure;
     size_t current_full_compact_gc_count = 0;
 
-    // No variable values should be "carried over" from one state to the other.
-    // That's why there are local variable for each state
-    allocation_state uoh_alloc_state = a_state_start;
-#ifdef RECORD_LOH_STATE
-    EEThreadId current_thread_id;
-    current_thread_id.SetToCurrentThread();
-#endif //RECORD_LOH_STATE
-
     // If we can get a new seg it means allocation will succeed.
     while (1)
     {
         dprintf (3, ("[h%d]loh state is %s", heap_number, allocation_state_str[uoh_alloc_state]));
 
+#ifdef SPINLOCK_HISTORY
+        current_uoh_alloc_state = uoh_alloc_state;
+#endif //SPINLOCK_HISTORY
+
 #ifdef RECORD_LOH_STATE
-        add_saved_loh_state (loh_uoh_alloc_state, current_thread_id);
+        current_uoh_alloc_state = uoh_alloc_state;
+        add_saved_loh_state (uoh_alloc_state, current_thread_id);
 #endif //RECORD_LOH_STATE
         switch (uoh_alloc_state)
         {
@@ -18488,7 +18506,7 @@ exit:
                         0,
                         0);
         }
-        add_saved_spinlock_info (true, me_release, mt_alloc_large_cant);
+        add_saved_spinlock_info (true, me_release, mt_alloc_large_cant, msl_entered);
         leave_spin_lock (&more_space_lock_uoh);
     }
 
@@ -18512,7 +18530,7 @@ enter_msl_status gc_heap::trigger_gc_for_alloc (int gen_number, gc_reason gr,
         uoh_msl_before_gc_p = true;
         dprintf (5555, ("h%d uoh alloc before GC", heap_number));
 #endif //MULTIPLE_HEAPS
-        add_saved_spinlock_info (loh_p, me_release, take_state);
+        add_saved_spinlock_info (loh_p, me_release, take_state, msl_status);
         leave_spin_lock (msl);
     }
 #endif //BACKGROUND_GC
@@ -18523,7 +18541,7 @@ enter_msl_status gc_heap::trigger_gc_for_alloc (int gen_number, gc_reason gr,
     if (!loh_p)
     {
         msl_status = enter_spin_lock_msl (msl);
-        add_saved_spinlock_info (loh_p, me_acquire, take_state);
+        add_saved_spinlock_info (loh_p, me_acquire, take_state, msl_status);
     }
 #endif //MULTIPLE_HEAPS
 
@@ -18531,7 +18549,7 @@ enter_msl_status gc_heap::trigger_gc_for_alloc (int gen_number, gc_reason gr,
     if (loh_p)
     {
         msl_status = enter_spin_lock_msl (msl);
-        add_saved_spinlock_info (loh_p, me_acquire, take_state);
+        add_saved_spinlock_info (loh_p, me_acquire, take_state, msl_status);
     }
 #endif //BACKGROUND_GC
 
@@ -18581,7 +18599,7 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
     msl_status = enter_spin_lock_msl (msl);
     check_msl_status ("TAMS", size);
     //if (msl_status == msl_retry_different_heap) return a_state_retry_allocate;
-    add_saved_spinlock_info (loh_p, me_acquire, mt_try_alloc);
+    add_saved_spinlock_info (loh_p, me_acquire, mt_try_alloc, msl_status);
     dprintf (SPINLOCK_LOG, ("[%d]Emsl for alloc", heap_number));
 #ifdef SYNCHRONIZATION_STATS
     int64_t msl_acquire = GCToOSInterface::QueryPerformanceCounter() - msl_acquire_start;
@@ -24708,6 +24726,15 @@ void gc_heap::recommission_heap()
 
         dd_gc_elapsed_time                 (dd) = UNINITIALIZED_VALUE;
     }
+
+#ifdef SPINLOCK_HISTORY
+    spinlock_info_index = 0;
+    current_uoh_alloc_state = (allocation_state)-1;
+#endif //SPINLOCK_HISTORY
+
+#ifdef RECORD_LOH_STATE
+    loh_state_index = 0;
+#endif //RECORD_LOH_STATE
 }
 
 bool gc_heap::change_heap_count (int new_n_heaps)
@@ -42955,7 +42982,7 @@ size_t gc_heap::decommit_ephemeral_segment_pages_step ()
                 {
                     continue;
                 }
-                add_saved_spinlock_info (false, me_acquire, mt_decommit_step);
+                add_saved_spinlock_info (false, me_acquire, mt_decommit_step, msl_entered);
                 seg = generation_tail_region (gen);
 #ifndef STRESS_DECOMMIT
                 decommit_target = heap_segment_decommit_target (seg);
@@ -42988,7 +43015,7 @@ size_t gc_heap::decommit_ephemeral_segment_pages_step ()
             if (gen_number == soh_gen0)
             {
                 // for gen 0, we took the more space lock - leave it again
-                add_saved_spinlock_info (false, me_release, mt_decommit_step);
+                add_saved_spinlock_info (false, me_release, mt_decommit_step, msl_entered);
                 leave_spin_lock (&more_space_lock_soh);
             }
 #endif // USE_REGIONS
@@ -44864,7 +44891,7 @@ void gc_heap::background_sweep()
             FIRE_EVENT(BGC1stSweepEnd, 0);
 
             enter_spin_lock (&more_space_lock_uoh);
-            add_saved_spinlock_info (true, me_acquire, mt_bgc_uoh_sweep);
+            add_saved_spinlock_info (true, me_acquire, mt_bgc_uoh_sweep, msl_entered);
 
             concurrent_print_time_delta ("Swe UOH took msl");
 
@@ -44956,7 +44983,7 @@ void gc_heap::background_sweep()
 
     disable_preemptive (true);
 
-    add_saved_spinlock_info (true, me_release, mt_bgc_uoh_sweep);
+    add_saved_spinlock_info (true, me_release, mt_bgc_uoh_sweep, msl_entered);
     leave_spin_lock (&more_space_lock_uoh);
 
     //dprintf (GTC_LOG, ("---- (GC%zu)End Background Sweep Phase ----", VolatileLoad(&settings.gc_index)));
