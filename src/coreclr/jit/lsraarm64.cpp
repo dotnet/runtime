@@ -196,13 +196,13 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
     consecutiveResult |= availableRegistersMask & (selectionEndMask & ~selectionStartMask);                            \
     overallResult |= availableRegistersMask;
 
-    DWORD regAvailableStartIndex = 0, regAvailableEndIndex = 0;
+    unsigned regAvailableStartIndex = 0, regAvailableEndIndex = 0;
 
     do
     {
         // From LSB, find the first available register (bit `1`)
-        BitScanForward64(&regAvailableStartIndex, static_cast<DWORD64>(currAvailableRegs));
-        regMaskTP startMask = (1ULL << regAvailableStartIndex) - 1;
+        regAvailableStartIndex = BitOperations::BitScanForward(static_cast<DWORD64>(currAvailableRegs));
+        regMaskTP startMask    = (1ULL << regAvailableStartIndex) - 1;
 
         // Mask all the bits that are processed from LSB thru regAvailableStart until the last `1`.
         regMaskTP maskProcessed = ~(currAvailableRegs | startMask);
@@ -219,7 +219,7 @@ regMaskTP LinearScan::filterConsecutiveCandidates(regMaskTP    candidates,
         }
         else
         {
-            BitScanForward64(&regAvailableEndIndex, static_cast<DWORD64>(maskProcessed));
+            regAvailableEndIndex = BitOperations::BitScanForward(static_cast<DWORD64>(maskProcessed));
         }
         regMaskTP endMask = (1ULL << regAvailableEndIndex) - 1;
 
@@ -325,13 +325,13 @@ regMaskTP LinearScan::filterConsecutiveCandidatesForSpill(regMaskTP consecutiveC
     assert((registersNeeded >= 2) && (registersNeeded <= 4));
     regMaskTP consecutiveResultForBusy = RBM_NONE;
     regMaskTP unprocessedRegs          = consecutiveCandidates;
-    DWORD     regAvailableStartIndex = 0, regAvailableEndIndex = 0;
+    unsigned  regAvailableStartIndex = 0, regAvailableEndIndex = 0;
     int       maxSpillRegs        = registersNeeded;
     regMaskTP registersNeededMask = (1ULL << registersNeeded) - 1;
     do
     {
         // From LSB, find the first available register (bit `1`)
-        BitScanForward64(&regAvailableStartIndex, static_cast<DWORD64>(unprocessedRegs));
+        regAvailableStartIndex = BitOperations::BitScanForward(static_cast<DWORD64>(unprocessedRegs));
 
         // For the current range, find how many registers are free vs. busy
         regMaskTP maskForCurRange        = RBM_NONE;
