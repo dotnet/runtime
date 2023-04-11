@@ -16295,6 +16295,17 @@ bool Compiler::gtSplitTree(
                 return false;
             }
 
+            if (user->OperIs(GT_CALL))
+            {
+                for (CallArg& callArg : user->AsCall()->gtArgs.Args())
+                {
+                    if ((&callArg.EarlyNodeRef() == useInf.Use) && (callArg.GetLateNode() != nullptr))
+                    {
+                        return false;
+                    }
+                }
+            }
+
             return true;
         }
 
