@@ -2345,7 +2345,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     }
 }
 
-void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
+void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
 {
     GenTree*  dstAddr       = cpObjNode->Addr();
     GenTree*  source        = cpObjNode->Data();
