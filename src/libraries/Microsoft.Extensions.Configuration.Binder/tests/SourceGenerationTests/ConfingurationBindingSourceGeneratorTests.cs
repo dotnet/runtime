@@ -119,7 +119,6 @@ public class Program
         {
             string testSourceCode = """
                 using System;
-                using System.Collections.Generic;
                 using System.Globalization;
                 using Microsoft.Extensions.Configuration;
 
@@ -130,22 +129,43 @@ public class Program
                         ConfigurationBuilder configurationBuilder = new();
                         IConfigurationRoot config = configurationBuilder.Build();
 
-                        MyClass options = config.Get<MyClass>();
+                        MyClass obj = new();
+                        config.Bind(obj);
                     }
 
                     public class MyClass
                     {
-                        public string MyString { get; set; }
-                        public Int128 MyInt128 { get; set; }
-                        public int MyInt { get; set; }
-                        public UInt128 MyUInt128 { get; set; }
-                        public long MyLong { get; set; }
-                        public Uri MyUri { get; set; }
-                        public CultureInfo MyCultureInfo { get; set; }
-                        public Half MyHalf { get; set; }
-                        public bool MyBool { get; set; }
-                        public object MyObject { get; set; }
-                        public byte[] MyByteArray { get; set; }
+                        public bool Prop0 { get; set; }
+                        public byte Prop1 { get; set; }
+                        public sbyte Prop2 { get; set; }
+                        public char Prop3 { get; set; }
+                        public double Prop4 { get; set; }
+                        public string Prop5 { get; set; }
+                        public int Prop6 { get; set; }
+                        public short Prop8 { get; set; }
+                        public long Prop9 { get; set; }
+                        public float Prop10 { get; set; }
+                        public ushort Prop13 { get; set; }
+                        public uint Prop14 { get; set; }
+                        public ulong Prop15 { get; set; }
+                        public object Prop16 { get; set; }
+                        public CultureInfo Prop17 { get; set; }
+                        public DateTime Prop19 { get; set; }
+                        public DateTimeOffset Prop20 { get; set; }
+                        public decimal Prop21 { get; set; }
+                        public TimeSpan Prop23 { get; set; }
+                        public Guid Prop24 { get; set; }
+                        public Uri Prop25 { get; set; }
+                        public Version Prop26 { get; set; }
+                        public DayOfWeek Prop27 { get; set; }
+                        public Int128 Prop7 { get; set; }
+                        public Half Prop11 { get; set; }
+                        public UInt128 Prop12 { get; set; }
+                        public DateOnly Prop18 { get; set; }
+                        public TimeOnly Prop22 { get; set; }
+                        public byte[] Prop22 { get; set; }
+                        public int Prop23 { get; set; }
+                        public DateTime Prop24 { get; set; }
                     }
                 }
                 """;
@@ -178,11 +198,6 @@ public class Program
 
             Assert.Empty(d);
             Assert.Single(r);
-
-            if (!RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText, out _))
-            {
-                Console.WriteLine(r[0].SourceText);
-            }
 
             Assert.True(RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText,
                 out string errorMessage), errorMessage);

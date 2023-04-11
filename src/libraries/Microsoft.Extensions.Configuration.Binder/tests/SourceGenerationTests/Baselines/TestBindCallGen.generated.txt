@@ -29,15 +29,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     int element;
                     if (section.Value is string stringValue0)
                     {
-                        try
-                        {
-                            element = int.Parse(stringValue0, NumberStyles.Integer, CultureInfo.InvariantCulture);
-                            obj.Add(element);
-                        }
-                        catch (Exception exception)
-                        {
-                            throw new InvalidOperationException($"Failed to convert configuration value at '{section.Path}' to type '{typeof(int)}'.", exception);
-                        }
+                        element = ParseInt(stringValue0, () => section.Path);
+                        obj.Add(element);
                     }
                 }
             }
@@ -103,14 +96,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["MyInt"] is string stringValue4)
             {
-                try
-                {
-                    obj.MyInt = int.Parse(stringValue4, NumberStyles.Integer, CultureInfo.InvariantCulture);
-                }
-                catch (Exception exception)
-                {
-                    throw new InvalidOperationException($"Failed to convert configuration value at '{configuration.GetSection("MyInt").Path}' to type '{typeof(int)}'.", exception);
-                }
+                obj.MyInt = ParseInt(stringValue4, () => configuration.GetSection("MyInt").Path);
             }
 
             IConfigurationSection section5 = configuration.GetSection("MyList");
@@ -148,6 +134,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return true;
             }
             return false;
+        }
+
+        public static int ParseInt(string stringValue, Func<string?> getPath)
+        {
+            try
+            {
+                return int.Parse(stringValue, NumberStyles.Integer, CultureInfo.InvariantCulture);
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(int)}'.", exception);
+            }
         }
     }
 }

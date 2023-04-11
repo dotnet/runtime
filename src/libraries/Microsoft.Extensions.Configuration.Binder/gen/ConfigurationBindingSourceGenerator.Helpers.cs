@@ -34,13 +34,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             defaultSeverity: DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        // Runtime exception messages; not localized so we keep them in source.
-        private static class ExceptionMessages
-        {
-            public const string TypeNotSupported = "Unable to bind to type '{0}': '{1}'";
-            public const string FailedBinding = "Failed to convert configuration value at '{0}' to type '{1}'.";
-        }
-
         private static class NotSupportedReason
         {
             public const string AbstractOrInterfaceNotSupported = "Abstract or interface types are not supported";
@@ -60,6 +53,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             public const string element = nameof(element);
             public const string enumValue = nameof(enumValue);
             public const string exception = nameof(exception);
+            public const string getPath = nameof(getPath);
             public const string key = nameof(key);
             public const string obj = nameof(obj);
             public const string originalCount = nameof(originalCount);
@@ -71,7 +65,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             public const string Add = nameof(Add);
             public const string Any = nameof(Any);
-            public const string ArgumentNullException = nameof(ArgumentNullException);
             public const string Array = nameof(Array);
             public const string Bind = nameof(Bind);
             public const string BindCore = nameof(BindCore);
@@ -82,12 +75,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             public const string CultureInfo = nameof(CultureInfo);
             public const string CultureNotFoundException = nameof(CultureNotFoundException);
             public const string Enum = nameof(Enum);
-            public const string Exception = nameof(Exception);
-            public const string Float = nameof(Float);
             public const string GeneratedConfigurationBinder = nameof(GeneratedConfigurationBinder);
             public const string Get = nameof(Get);
             public const string GetChildren = nameof(GetChildren);
-            public const string GetCultureInfoByIetfLanguageTag = nameof(GetCultureInfoByIetfLanguageTag);
             public const string GetSection = nameof(GetSection);
             public const string HasChildren = nameof(HasChildren);
             public const string HasValueOrChildren = nameof(HasValueOrChildren);
@@ -96,20 +86,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             public const string IConfiguration = nameof(IConfiguration);
             public const string IConfigurationSection = nameof(IConfigurationSection);
             public const string Int32 = "int";
-            public const string Integer = nameof(Integer);
             public const string InvalidOperationException = nameof(InvalidOperationException);
             public const string InvariantCulture = nameof(InvariantCulture);
             public const string Length = nameof(Length);
-            public const string NumberStyles = nameof(NumberStyles);
             public const string Parse = nameof(Parse);
             public const string Path = nameof(Path);
-            public const string RelativeOrAbsolute = nameof(RelativeOrAbsolute);
             public const string Resize = nameof(Resize);
             public const string TryCreate = nameof(TryCreate);
             public const string TryGetValue = nameof(TryGetValue);
             public const string TryParse = nameof(TryParse);
             public const string Uri = nameof(Uri);
-            public const string UriKind = nameof(UriKind);
             public const string Value = nameof(Value);
         }
 

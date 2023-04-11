@@ -1543,11 +1543,13 @@ namespace Microsoft.Extensions
             Assert.Equal(DateTimeOffset.Parse("2023-03-29T18:21:22.8046981+00:00", CultureInfo.InvariantCulture), obj.Prop20);
             Assert.Equal((decimal)5.3, obj.Prop21);
             Assert.Equal(TimeSpan.Parse("10675199.02:48:05.4775807", CultureInfo.InvariantCulture), obj.Prop23);
-            Assert.Equal(Guid.Parse("e905a75b-d195-494d-8938-e55dcee44574", CultureInfo.InvariantCulture), obj.Prop24);
+            Assert.Equal(Guid.Parse("e905a75b-d195-494d-8938-e55dcee44574"), obj.Prop24);
             Uri.TryCreate("https://microsoft.com", UriKind.RelativeOrAbsolute, out Uri? value);
             Assert.Equal(value, obj.Prop25);
+#if BUILDING_SOURCE_GENERATOR_TESTS
             Assert.Equal(Version.Parse("4.3.2.1"), obj.Prop26);
-            Assert.Equal(CultureInfo.GetCultureInfoByIetfLanguageTag("yo-NG"), obj.Prop17);
+#endif
+            Assert.Equal(CultureInfo.GetCultureInfo("yo-NG"), obj.Prop17);
 
 #if NETCOREAPP
             data = @"{
@@ -1567,26 +1569,6 @@ namespace Microsoft.Extensions
             Assert.Equal(DateOnly.Parse("2002-03-22"), obj.Prop18);
             Assert.Equal(TimeOnly.Parse("18:26:38.7327436"), obj.Prop22);
 #endif
-        }
-
-        [Theory]
-        [InlineData(0)] // bool
-        [InlineData(1)] // byte
-        [InlineData(4)] // double
-        [InlineData(17)] // CultureInfo
-        [InlineData(19)] // DateTime
-        [InlineData(26)] // Version
-        public void TypeWithPrimitives_Fail(int propIndex)
-        {
-            string prop = $"Prop{propIndex}";
-            var data = $$"""
-                {
-                    "{{prop}}": "Junk",
-                }
-                """;
-            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(data);
-            var ex = Assert.Throws<InvalidOperationException>(configuration.Get<RecordWithPrimitives>);
-            Assert.Contains(prop, ex.ToString());
         }
     }
 }

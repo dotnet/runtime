@@ -15,27 +15,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             private static class Expression
             {
-                public const string nullableSectionValue = "section?.Value";
                 public const string sectionKey = "section.Key";
                 public const string sectionPath = "section.Path";
                 public const string sectionValue = "section.Value";
-
-                public const string ConvertFromBase64String = "Convert.FromBase64String";
             }
 
             private static class FullyQualifiedDisplayName
             {
-                public const string ArgumentNullException = "global::System.ArgumentNullException";
-                public const string CultureInfo = "global::System.Globalization.CultureInfo";
-                public const string CultureNotFoundException = "global::System.Globalization.CultureNotFoundException";
-                public const string FormatException = "global::System.FormatException";
                 public const string Helpers = $"global::{GeneratorProjectName}.{Identifier.Helpers}";
                 public const string IConfiguration = "global::Microsoft.Extensions.Configuration.IConfiguration";
                 public const string IConfigurationSection = IConfiguration + "Section";
                 public const string InvalidOperationException = "global::System.InvalidOperationException";
                 public const string IServiceCollection = "global::Microsoft.Extensions.DependencyInjection.IServiceCollection";
-                public const string NotSupportedException = "global::System.NotSupportedException";
-                public const string NumberStyles = "global::System.Globalization.NumberStyles";
             }
 
             private enum InitializationKind
@@ -96,7 +87,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EmitCheckForNullArgument_WithBlankLine(Identifier.configuration, useFullyQualifiedNames: true);
 
-                foreach (TypeSpec type in _generationSpec.Methods[MethodSpecifier.Configure])
+                foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.Configure])
                 {
                     string typeDisplayString = type.FullyQualifiedDisplayString;
 
@@ -133,7 +124,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EmitIConfigurationHasValueOrChildrenCheck();
 
-                foreach (TypeSpec type in _generationSpec.Methods[MethodSpecifier.Get])
+                foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.Get])
                 {
                     string typeDisplayString = type.FullyQualifiedDisplayString;
 
@@ -160,7 +151,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _writer.WriteBlankLine();
                 }
 
-                foreach (TypeSpec type in _generationSpec.Methods[MethodSpecifier.Bind])
+                foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.Bind])
                 {
                     EmitBindMethod(type);
                     _writer.WriteBlankLine();
@@ -207,7 +198,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitBindCoreMethods()
             {
-                foreach (TypeSpec type in _generationSpec.Methods[MethodSpecifier.BindCore])
+                foreach (TypeSpec type in _generationSpec.RootConfigTypes[MethodSpecifier.BindCore])
                 {
                     EmitBindCoreMethod(type);
                     _writer.WriteBlankLine();
@@ -228,17 +219,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     case TypeSpecKind.Array:
                         {
-                            EmitBindCoreImplForArray((type as ArraySpec)!);
+                            EmitBindCoreImplForArray((ArraySpec)type);
                         }
                         break;
                     case TypeSpecKind.Enumerable:
                         {
-                            EmitBindCoreImplForEnumerable((type as EnumerableSpec)!);
+                            EmitBindCoreImplForEnumerable((EnumerableSpec)type);
                         }
                         break;
                     case TypeSpecKind.Dictionary:
                         {
-                            EmitBindCoreImplForDictionary((type as DictionarySpec)!);
+                            EmitBindCoreImplForDictionary((DictionarySpec)type);
                         }
                         break;
                     case TypeSpecKind.IConfigurationSection:
@@ -249,12 +240,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         break;
                     case TypeSpecKind.Object:
                         {
-                            EmitBindCoreImplForObject((type as ObjectSpec)!);
+                            EmitBindCoreImplForObject((ObjectSpec)type);
                         }
                         break;
                     case TypeSpecKind.Nullable:
                         {
-                            EmitBindCoreImpl((type as NullableSpec)!.UnderlyingType);
+                            EmitBindCoreImpl(((NullableSpec)type).UnderlyingType);
                         }
                         break;
                     default:
@@ -265,8 +256,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitBindCoreImplForArray(ArraySpec type)
             {
-                EnumerableSpec concreteType = (type.ConcreteType as EnumerableSpec)!;
-                Debug.Assert(type.SpecKind == TypeSpecKind.Array && type.ConcreteType is not null);
+                EnumerableSpec concreteType = (EnumerableSpec)type.ConcreteType;
 
                 EmitCheckForNullArgument_WithBlankLine_IfRequired(isValueType: false);
 
@@ -274,7 +264,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string tempVarName = GetIncrementalVarName(Identifier.temp);
                 EmitBindCoreCall(concreteType, tempVarName, Identifier.configuration, InitializationKind.Declaration);
 
-                // Resize array and copy fill with additional
+                // Resize array and copy additional elements.
                 _writer.WriteBlock($$"""
                     {{Identifier.Int32}} {{Identifier.originalCount}} = {{Identifier.obj}}.{{Identifier.Length}};
                     {{Identifier.Array}}.{{Identifier.Resize}}(ref {{Identifier.obj}}, {{Identifier.originalCount}} + {{tempVarName}}.{{Identifier.Count}});
@@ -296,7 +286,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (elementType.SpecKind is TypeSpecKind.ParsableFromString)
                 {
                     ParsableFromStringTypeSpec stringParsableType = (ParsableFromStringTypeSpec)elementType;
-                    if (stringParsableType.StringParseableTypeKind is StringParsableTypeKind.ConfigValue)
+                    if (stringParsableType.StringParsableTypeKind is StringParsableTypeKind.ConfigValue)
                     {
                         string tempVarName = GetIncrementalVarName(Identifier.stringValue);
                         _writer.WriteBlockStart($"if ({Expression.sectionValue} is string {tempVarName})");
@@ -329,7 +319,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 // Parse key
                 ParsableFromStringTypeSpec keyType = type.KeyType;
 
-                if (keyType.StringParseableTypeKind is StringParsableTypeKind.ConfigValue)
+                if (keyType.StringParsableTypeKind is StringParsableTypeKind.ConfigValue)
                 {
                     _writer.WriteLine($"{keyType.MinimalDisplayString} {Identifier.key} = {Expression.sectionKey};");
                     Emit_BindAndAddLogic_ForElement();
@@ -352,7 +342,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     if (elementType.SpecKind == TypeSpecKind.ParsableFromString)
                     {
                         ParsableFromStringTypeSpec stringParsableType = (ParsableFromStringTypeSpec)elementType;
-                        if (stringParsableType.StringParseableTypeKind is StringParsableTypeKind.ConfigValue)
+                        if (stringParsableType.StringParsableTypeKind is StringParsableTypeKind.ConfigValue)
                         {
                             string tempVarName = GetIncrementalVarName(Identifier.stringValue);
                             _writer.WriteBlockStart($"if ({Expression.sectionValue} is string {tempVarName})");
@@ -433,7 +423,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             if (canSet)
                             {
                                 EmitBindLogicFromString(
-                                    (propertyType as ParsableFromStringTypeSpec)!,
+                                    (ParsableFromStringTypeSpec)propertyType,
                                     expressionForPropertyAccess,
                                     expressionForConfigValueIndexer,
                                     expressionForConfigValuePath: $@"{expressionForConfigSectionAccess}.{Identifier.Path}");
@@ -456,7 +446,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         break;
                     case TypeSpecKind.Nullable:
                         {
-                            TypeSpec underlyingType = (propertyType as NullableSpec)!.UnderlyingType;
+                            TypeSpec underlyingType = ((NullableSpec)propertyType).UnderlyingType;
                             EmitBindCoreImplForProperty(property, underlyingType, parentType);
                         }
                         break;
@@ -485,7 +475,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         EmitCastToIConfigurationSection();
                     }
-                    EmitBindLogicFromString((type as ParsableFromStringTypeSpec)!, expressionForMemberAccess, Expression.sectionValue, Expression.sectionPath);
+                    EmitBindLogicFromString((ParsableFromStringTypeSpec)type, expressionForMemberAccess, Expression.sectionValue, Expression.sectionPath);
                 }
                 else
                 {
@@ -599,113 +589,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string expressionForConfigValuePath,
                 Action? writeOnSuccess = null)
             {
-                StringParsableTypeKind typeKind = type.StringParseableTypeKind;
-                string typeDisplayString = GetTypeDisplayString(type);
+                StringParsableTypeKind typeKind = type.StringParsableTypeKind;
+                Debug.Assert(typeKind is not StringParsableTypeKind.None);
 
                 string stringValueVarName = GetIncrementalVarName(Identifier.stringValue);
 
-                string innerExceptionTypeDisplayString;
-                string cultureInfoTypeDisplayString;
-                string numberStylesTypeDisplayString;
-                if (_useFullyQualifiedNames)
-                {
-                    innerExceptionTypeDisplayString = FullyQualifiedDisplayName.FormatException;
-                    cultureInfoTypeDisplayString = FullyQualifiedDisplayName.CultureInfo;
-                    numberStylesTypeDisplayString = FullyQualifiedDisplayName.NumberStyles;
-                }
-                else
-                {
-                    innerExceptionTypeDisplayString = Identifier.Exception;
-                    cultureInfoTypeDisplayString = Identifier.CultureInfo;
-                    numberStylesTypeDisplayString = Identifier.NumberStyles;
-                }
-
                 _writer.WriteBlockStart($"if ({expressionForConfigStringValue} is string {stringValueVarName})");
 
-                if (typeKind is StringParsableTypeKind.ConfigValue)
-                {
-                    EmitAssignment(expressionForMemberAccess, stringValueVarName);
-                    writeOnSuccess?.Invoke();
-                    _writer.WriteBlockEnd();
-                    return;
-                }
-                else if (typeKind is StringParsableTypeKind.Uri)
-                {
-                    string uriVarName = GetIncrementalVarName(Identifier.temp);
-                    _writer.WriteLine($"{Identifier.Uri}.{Identifier.TryCreate}({stringValueVarName}, {Identifier.UriKind}.{Identifier.RelativeOrAbsolute}, out {Identifier.Uri}? {uriVarName});");
-                    _writer.WriteBlock($$"""
-                        if ({{uriVarName}} is not null)
-                        {
-                            {{expressionForMemberAccess}} = {{uriVarName}};
-                        }
-                        """);
-                    _writer.WriteBlockEnd();
-                    return;
-                }
+                string parsedValue = typeKind is StringParsableTypeKind.ConfigValue
+                    ? stringValueVarName
+                    : $"{GetHelperMethodDisplayString(type.ParseMethodName)}({stringValueVarName}, () => {expressionForConfigValuePath})";
 
-                // Types we catch exceptions for.
-                string rhs;
-                switch (typeKind)
-                {
-                    case StringParsableTypeKind.Enum:
-                        {
-                            rhs = $"({typeDisplayString}){Identifier.Enum}.{Identifier.Parse}(typeof({typeDisplayString}), {stringValueVarName}, true)";
-                        }
-                        break;
-                    case StringParsableTypeKind.ByteArray:
-                        {
-                            rhs = $"{Expression.ConvertFromBase64String}({stringValueVarName})";
-                        }
-                        break;
-                    case StringParsableTypeKind.Integer:
-                    case StringParsableTypeKind.Float:
-                        {
-                            string numberInfoKind = typeKind is StringParsableTypeKind.Integer ? Identifier.Integer : Identifier.Float;
-                            rhs = $"{typeDisplayString}.{Identifier.Parse}({stringValueVarName}, {numberStylesTypeDisplayString}.{numberInfoKind}, {cultureInfoTypeDisplayString}.{Identifier.InvariantCulture})";
-                        }
-                        break;
-                    case StringParsableTypeKind.Parse:
-                        {
-                            rhs = $"{typeDisplayString}.{Identifier.Parse}({stringValueVarName})";
-                        }
-                        break;
-                    case StringParsableTypeKind.ParseInvariant:
-                        {
-                            rhs = $"{typeDisplayString}.{Identifier.Parse}({stringValueVarName}, {cultureInfoTypeDisplayString}.{Identifier.InvariantCulture})"; ;
-                        }
-                        break;
-                    case StringParsableTypeKind.CultureInfo:
-                        {
-                            rhs = $"{cultureInfoTypeDisplayString}.{Identifier.GetCultureInfoByIetfLanguageTag}({stringValueVarName})";
-                        }
-                        break;
-                    default:
-                        {
-                            Debug.Fail("Invalid string parsable kind", typeKind.ToString());
-                            return;
-                        }
-                }
-
-                string exceptionTypeDisplayString = _useFullyQualifiedNames ? FullyQualifiedDisplayName.InvalidOperationException : Identifier.InvalidOperationException;
-                string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{expressionForConfigValuePath}}}", $"{{typeof({typeDisplayString})}}");
-                string exceptionExpression = $@"throw new {exceptionTypeDisplayString}($""{exceptionArg1}"", {Identifier.exception})";
-
-                _writer.WriteBlock($$"""
-                    try
-                    {
-                        {{expressionForMemberAccess}} = {{rhs}};
-                    """);
-
+                EmitAssignment(expressionForMemberAccess, parsedValue);
                 writeOnSuccess?.Invoke();
-
-                _writer.WriteBlock($$"""
-                    }
-                    catch ({{innerExceptionTypeDisplayString}} {{Identifier.exception}})
-                    {
-                        {{exceptionExpression}};
-                    }
-                    """);
-
                 _writer.WriteBlockEnd();
 
                 return;
@@ -775,6 +671,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     EmitHasChildrenMethod();
                 }
+
+                if (_generationSpec.PrimitivesForHelperGen.Count > 0)
+                {
+                    foreach (ParsableFromStringTypeSpec type in _generationSpec.PrimitivesForHelperGen)
+                    {
+                        _writer.WriteBlankLine();
+                        EmitPrimitiveParseMethod(type);
+                    }
+                }
             }
 
             private void EmitHasValueOrChildrenMethod()
@@ -805,6 +710,102 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     """);
             }
 
+            private void EmitPrimitiveParseMethod(ParsableFromStringTypeSpec type)
+            {
+                string innerExceptionTypeDisplayString;
+                string cultureInfoTypeDisplayString;
+                string numberStylesTypeDisplayString;
+
+                if (_useFullyQualifiedNames)
+                {
+                    innerExceptionTypeDisplayString = "global::System.Exception";
+                    cultureInfoTypeDisplayString = "global::System.Globalization.CultureInfo";
+                    numberStylesTypeDisplayString = "global::System.Globalization.NumberStyles";
+                }
+                else
+                {
+                    innerExceptionTypeDisplayString = "Exception";
+                    cultureInfoTypeDisplayString = "CultureInfo";
+                    numberStylesTypeDisplayString = "NumberStyles";
+                }
+
+                string invariantCultureExpression = $"{cultureInfoTypeDisplayString}.InvariantCulture";
+
+                string expressionForParsedValue;
+                StringParsableTypeKind typeKind = type.StringParsableTypeKind;
+                string typeDisplayString = type.MinimalDisplayString;
+
+                switch (typeKind)
+                {
+                    case StringParsableTypeKind.Enum:
+                        {
+                            expressionForParsedValue = $"({typeDisplayString}){Identifier.Enum}.{Identifier.Parse}(typeof({typeDisplayString}), {Identifier.stringValue}, ignoreCase: true)";
+                        }
+                        break;
+                    case StringParsableTypeKind.ByteArray:
+                        {
+                            expressionForParsedValue = $"Convert.FromBase64String({Identifier.stringValue})";
+                        }
+                        break;
+                    case StringParsableTypeKind.Integer:
+                        {
+                            expressionForParsedValue = $"{typeDisplayString}.{Identifier.Parse}({Identifier.stringValue}, {numberStylesTypeDisplayString}.Integer, {invariantCultureExpression})";
+                        }
+                        break;
+                    case StringParsableTypeKind.Float:
+                        {
+                            expressionForParsedValue = $"{typeDisplayString}.{Identifier.Parse}({Identifier.stringValue}, {numberStylesTypeDisplayString}.Float, {invariantCultureExpression})";
+                        }
+                        break;
+                    case StringParsableTypeKind.Parse:
+                        {
+                            expressionForParsedValue = $"{typeDisplayString}.{Identifier.Parse}({Identifier.stringValue})";
+                        }
+                        break;
+                    case StringParsableTypeKind.ParseInvariant:
+                        {
+                            expressionForParsedValue = $"{typeDisplayString}.{Identifier.Parse}({Identifier.stringValue}, {invariantCultureExpression})"; ;
+                        }
+                        break;
+                    case StringParsableTypeKind.CultureInfo:
+                        {
+                            expressionForParsedValue = $"{cultureInfoTypeDisplayString}.GetCultureInfo({Identifier.stringValue})";
+                        }
+                        break;
+                    case StringParsableTypeKind.Uri:
+                        {
+                            expressionForParsedValue = $"new Uri({Identifier.stringValue}, UriKind.RelativeOrAbsolute)";
+                        }
+                        break;
+                    default:
+                        {
+                            Debug.Fail($"Invalid string parsable kind: {typeKind}");
+                            return;
+                        }
+                }
+
+                string exceptionTypeDisplayString = _useFullyQualifiedNames ? FullyQualifiedDisplayName.InvalidOperationException : Identifier.InvalidOperationException;
+
+                _writer.WriteBlock($$"""
+                    public static {{typeDisplayString}} {{type.ParseMethodName}}(string {{Identifier.stringValue}}, Func<string?> {{Identifier.getPath}})
+                    {
+                        try
+                        {
+                            return {{expressionForParsedValue}};
+                    """);
+
+                string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.getPath}()}}", $"{{typeof({typeDisplayString})}}");
+
+                _writer.WriteBlock($$"""
+                        }
+                        catch ({{innerExceptionTypeDisplayString}} {{Identifier.exception}})
+                        {
+                            throw new {{exceptionTypeDisplayString}}($"{{exceptionArg1}}", {{Identifier.exception}});
+                        }
+                    }
+                    """);
+            }
+
             private void EmitVarDeclaration(TypeSpec type, string varName) => _writer.WriteLine($"{type.MinimalDisplayString} {varName};");
 
             private void EmitAssignment(string lhsSource, string rhsSource) => _writer.WriteLine($"{lhsSource} = {rhsSource};");
@@ -815,7 +816,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string exceptionTypeDisplayString;
                 if (_useFullyQualifiedNames)
                 {
-                    sectionTypeDisplayString = FullyQualifiedDisplayName.IConfigurationSection;
+                    sectionTypeDisplayString = "global::Microsoft.Extensions.Configuration.IConfigurationSection";
                     exceptionTypeDisplayString = FullyQualifiedDisplayName.InvalidOperationException;
                 }
                 else
@@ -833,7 +834,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             private void Emit_NotSupportedException_UnableToBindType(string reason, string typeDisplayString = "{typeof(T)}") =>
-                _writer.WriteLine(@$"throw new {FullyQualifiedDisplayName.NotSupportedException}($""{string.Format(ExceptionMessages.TypeNotSupported, typeDisplayString, reason)}"");");
+                _writer.WriteLine(@$"throw new global::System.NotSupportedException($""{string.Format(ExceptionMessages.TypeNotSupported, typeDisplayString, reason)}"");");
 
             private void EmitCheckForNullArgument_WithBlankLine_IfRequired(bool isValueType)
             {
@@ -846,8 +847,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void EmitCheckForNullArgument_WithBlankLine(string argName, bool useFullyQualifiedNames = false)
             {
                 string exceptionTypeDisplayString = useFullyQualifiedNames
-                    ? FullyQualifiedDisplayName.ArgumentNullException
-                    : Identifier.ArgumentNullException;
+                    ? "global::System.ArgumentNullException"
+                    : "ArgumentNullException";
 
                 _writer.WriteBlock($$"""
                     if ({{argName}} is null)

@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             public KnownTypeSymbols(CSharpCompilation compilation)
             {
-                // Primitives
+                // Primitives (needed because they are Microsoft.CodeAnalysis.SpecialType.None)
                 CultureInfo = compilation.GetBestTypeByMetadataName(TypeFullName.CultureInfo);
                 DateOnly = compilation.GetBestTypeByMetadataName(TypeFullName.DateOnly);
                 DateTimeOffset = compilation.GetBestTypeByMetadataName(TypeFullName.DateTimeOffset);
