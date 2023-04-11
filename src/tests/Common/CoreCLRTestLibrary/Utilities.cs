@@ -68,6 +68,9 @@ namespace TestLibrary
         public static bool IsWindows7 => IsWindows && Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor == 1;
         public static bool IsWindowsNanoServer => (!IsWindowsIoTCore && GetInstallationType().Equals("Nano Server", StringComparison.OrdinalIgnoreCase));
 
+        private static string _variant = Environment.GetEnvironmentVariable("DOTNET_RUNTIME_VARIANT");
+        public static bool IsMonoLLVMFULLAOT => _variant == "llvmfullaot";
+
         // Windows 10 October 2018 Update
         public static bool IsWindows10Version1809OrGreater =>
             IsWindows && GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 17763;
