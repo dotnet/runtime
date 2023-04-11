@@ -13419,6 +13419,52 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
         return compare;
     }
 
+    // Assist GDV and remove the guard if we can get the actual type of object, e.g.
+    //
+    //   *  NE        int
+    //   +--*  IND       long
+    //   |  \--*  LCL_VAR   ref    V02 tmp1
+    //   \--*  CNS_INT(h) long   0x7ffe684d6df8 class
+    //
+    // Here if we can get the exact class of LCL_VAR we can fold the whole check
+    //
+    if (op1->OperIs(GT_IND) && op2->IsIconHandle(GTF_ICON_CLASS_HDL))
+    {
+        GenTreeIndir* indir = op1->AsIndir();
+        if (indir->HasBase() && !indir->HasIndex() && (indir->Offset() == 0) && indir->Base()->TypeIs(TYP_REF))
+        {
+            bool                 isExact   = false;
+            bool                 isNonNull = false;
+            CORINFO_CLASS_HANDLE handle    = gtGetClassHandle(indir->Base(), &isExact, &isNonNull);
+            if ((handle != NO_CLASS_HANDLE) && isExact)
+            {
+                GenTree* result;
+                if (reinterpret_cast<ssize_t>(handle) == op2->AsIntCon()->IconValue())
+                {
+                    result = gtNewIconNode(oper == GT_EQ ? 1 : 0);
+                }
+                else
+                {
+                    result = gtNewIconNode(oper == GT_EQ ? 0 : 1);
+                }
+
+                GenTree* op1SideEffects = nullptr;
+                gtExtractSideEffList(op1, &op1SideEffects, GTF_ALL_EFFECT);
+                if (op1SideEffects != nullptr)
+                {
+                    // Keep side-effects of op1
+                    DEBUG_DESTROY_NODE(tree);
+                    return gtNewOperNode(GT_COMMA, TYP_INT, op1SideEffects, result);
+                }
+                else
+                {
+                    DEBUG_DESTROY_NODE(tree, op1);
+                    return result;
+                }
+            }
+        }
+    }
+
     // If one operand creates a type from a handle and the other operand is fetching the type from an object,
     // we can sometimes optimize the type compare into a simpler
     // method table comparison.
