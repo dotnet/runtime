@@ -3237,6 +3237,12 @@ static int *resources_bundled_counts = NULL;
 void
 mono_add_bundled_resource (const char *name, const char *culture, const unsigned char *data, unsigned int size, BundledResourceType type)
 {
+	if (type == BUNDLED_PDB)
+	{
+		mono_register_symfile_for_assembly (name, data, size);
+		return;
+	}
+
 	if (!bundled_resources)
 		bundled_resources = g_hash_table_new (g_str_hash, g_str_equal);
 
