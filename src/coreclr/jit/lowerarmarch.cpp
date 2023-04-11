@@ -2271,7 +2271,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         return;
 
 #ifdef TARGET_ARM64
-    if (comp->opts.OptimizationEnabled())
+    if (comp->opts.OptimizationEnabled() && cmp->OperIsCompare())
     {
         if (IsContainableBinaryOp(cmp, op2))
         {
@@ -2279,11 +2279,11 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             return;
         }
 
-        if (cmp->OperIs(GT_EQ, GT_NE) && IsContainableBinaryOp(cmp, op1))
+        if (IsContainableBinaryOp(cmp, op1))
         {
             MakeSrcContained(cmp, op1);
-
             std::swap(cmp->gtOp1, cmp->gtOp2);
+            cmp->ChangeOper(cmp->SwapRelop(cmp->gtOper));
             return;
         }
     }
