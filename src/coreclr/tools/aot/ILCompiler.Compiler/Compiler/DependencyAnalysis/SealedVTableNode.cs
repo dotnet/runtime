@@ -99,7 +99,7 @@ namespace ILCompiler.DependencyAnalysis
             if (_sealedVTableEntries != null)
                 return true;
 
-            TypeDesc declType = _type.GetClosestDefType();
+            DefType declType = _type.GetClosestDefType();
 
             // It's only okay to touch the actual list of slots if we're in the final emission phase
             // or the vtable is not built lazily.

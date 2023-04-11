@@ -34,11 +34,6 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <_SampleProject>Wasm.Browser.EventPipe.Sample.csproj</_SampleProject>
-  </PropertyGroup>
-
-
-  <PropertyGroup>
     <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 

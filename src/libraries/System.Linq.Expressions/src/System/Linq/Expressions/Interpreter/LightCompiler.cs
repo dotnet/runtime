@@ -200,6 +200,7 @@ namespace System.Linq.Expressions.Interpreter
     internal sealed class RethrowException : Exception
     {
         public RethrowException() : base() { }
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         internal RethrowException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 

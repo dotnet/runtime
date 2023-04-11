@@ -13,8 +13,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 	{
 		public SetupCompileAfterAttribute (string outputName, string[] sourceFiles, string[] references = null, string[] defines = null, object[] resources = null, string additionalArguments = null, string compilerToUse = null, bool addAsReference = true, bool removeFromLinkerInput = false)
 		{
-			if (sourceFiles == null)
-				throw new ArgumentNullException (nameof (sourceFiles));
+			ArgumentNullException.ThrowIfNull (sourceFiles);
 
 			if (string.IsNullOrEmpty (outputName))
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (outputName));

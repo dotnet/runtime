@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
@@ -67,6 +68,8 @@ namespace System.Security.Authentication.ExtendedProtection
             _protectionScenario = ProtectionScenario.TransportSelected;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected ExtendedProtectionPolicy(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();

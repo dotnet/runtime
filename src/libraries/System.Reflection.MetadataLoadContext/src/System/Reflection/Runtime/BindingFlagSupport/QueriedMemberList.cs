@@ -192,7 +192,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
         private int _declaredOnlyCount; // # of entries for members only in the most derived class.
         private M[] _members;  // Length is equal to or greater than _totalCount. Entries beyond _totalCount contain null or garbage and should be read.
         private BindingFlags[] _allFlagsThatMustMatch; // Length will be equal to _members.Length
-        private RuntimeTypeInfo? _typeThatBlockedBrowsing; // If non-null, one of the base classes was missing metadata.
+        private readonly RuntimeTypeInfo? _typeThatBlockedBrowsing; // If non-null, one of the base classes was missing metadata.
         private const int Grow = 64;
     }
 }

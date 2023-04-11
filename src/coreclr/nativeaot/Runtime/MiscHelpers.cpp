@@ -16,7 +16,6 @@
 #include "holder.h"
 #include "Crst.h"
 #include "rhbinder.h"
-#include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "regdisplay.h"
 #include "gcrhinterface.h"
@@ -98,8 +97,6 @@ COOP_PINVOKE_HELPER(uint32_t, RhGetLoadedOSModules, (Array * pResultArray))
     HANDLE * pResultElements = pResultArray ? (HANDLE*)(pResultArray + 1) : NULL;
 
     uint32_t cModules = 0;
-
-    ReaderWriterLock::ReadHolder read(&GetRuntimeInstance()->GetTypeManagerLock());
 
     RuntimeInstance::OsModuleList *osModules = GetRuntimeInstance()->GetOsModuleList();
 
@@ -362,18 +359,6 @@ extern "C" void RhpUniversalTransition();
 COOP_PINVOKE_HELPER(void*, RhGetUniversalTransitionThunk, ())
 {
     return (void*)RhpUniversalTransition;
-}
-
-extern CrstStatic g_CastCacheLock;
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpAcquireCastCacheLock()
-{
-    g_CastCacheLock.Enter();
-}
-
-EXTERN_C NATIVEAOT_API void __cdecl RhpReleaseCastCacheLock()
-{
-    g_CastCacheLock.Leave();
 }
 
 extern CrstStatic g_ThunkPoolLock;

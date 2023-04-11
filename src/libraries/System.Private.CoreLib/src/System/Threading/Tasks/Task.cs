@@ -15,6 +15,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace System.Threading.Tasks
@@ -118,19 +119,15 @@ namespace System.Threading.Tasks
         [ThreadStatic]
         internal static Task? t_currentTask;  // The currently executing task.
 
-        internal static int s_taskIdCounter; // static counter used to generate unique task IDs
+        private static int s_taskIdCounter; // static counter used to generate unique task IDs
 
         private int m_taskId; // this task's unique ID. initialized only if it is ever requested
 
-        internal Delegate? m_action;    // The body of the task.  Might be Action<object>, Action<TState> or Action.  Or possibly a Func.
-        // If m_action is set to null it will indicate that we operate in the
-        // "externally triggered completion" mode, which is exclusively meant
-        // for the signalling Task<TResult> (aka. promise). In this mode,
-        // we don't call InnerInvoke() in response to a Wait(), but simply wait on
-        // the completion event which will be set when the Future class calls Finish().
-        // But the event would now be signalled if Cancel() is called
+        // The delegate to invoke for a delegate-backed Task.
+        // This field also may be used by async state machines to cache an Action.
+        internal Delegate? m_action;
 
-        internal object? m_stateObject; // A state object that can be optionally supplied, passed to action.
+        private protected object? m_stateObject; // A state object that can be optionally supplied, passed to action.
         internal TaskScheduler? m_taskScheduler; // The task scheduler this task runs under.
 
         internal volatile int m_stateFlags; // SOS DumpAsync command depends on this name
@@ -564,6 +561,7 @@ namespace System.Threading.Tasks
             int illegalInternalOptions =
                     (int)(internalOptions &
                             ~(InternalTaskOptions.PromiseTask |
+                              InternalTaskOptions.HiddenState |
                               InternalTaskOptions.ContinuationTask |
                               InternalTaskOptions.LazyCancellation |
                               InternalTaskOptions.QueuedByRuntime));
@@ -1444,7 +1442,7 @@ namespace System.Threading.Tasks
         /// Gets the state object supplied when the <see cref="Task">Task</see> was created,
         /// or null if none was supplied.
         /// </summary>
-        public object? AsyncState => m_stateObject;
+        public object? AsyncState => (m_stateFlags & (int)InternalTaskOptions.HiddenState) == 0 ? m_stateObject : null;
 
         /// <summary>
         /// Gets an indication of whether the asynchronous operation completed synchronously.
@@ -2779,21 +2777,44 @@ namespace System.Threading.Tasks
         /// <summary>Gets a <see cref="Task"/> that will complete when this <see cref="Task"/> completes or when the specified <see cref="CancellationToken"/> has cancellation requested.</summary>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
         /// <returns>The <see cref="Task"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
-        public Task WaitAsync(CancellationToken cancellationToken) => WaitAsync(Timeout.UnsignedInfinite, cancellationToken);
+        public Task WaitAsync(CancellationToken cancellationToken) => WaitAsync(Timeout.UnsignedInfinite, TimeProvider.System, cancellationToken);
 
         /// <summary>Gets a <see cref="Task"/> that will complete when this <see cref="Task"/> completes or when the specified timeout expires.</summary>
         /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
         /// <returns>The <see cref="Task"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
-        public Task WaitAsync(TimeSpan timeout) => WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), default);
+        public Task WaitAsync(TimeSpan timeout) => WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), TimeProvider.System, default);
+
+        /// <summary>Gets a <see cref="Task"/> that will complete when this <see cref="Task"/> completes or when the specified timeout expires.</summary>
+        /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret <paramref name="timeout"/>.</param>
+        /// <returns>The <see cref="Task"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="timeProvider"/> argument is null.</exception>
+        public Task WaitAsync(TimeSpan timeout, TimeProvider timeProvider)
+        {
+            ArgumentNullException.ThrowIfNull(timeProvider);
+            return WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), timeProvider, default);
+        }
 
         /// <summary>Gets a <see cref="Task"/> that will complete when this <see cref="Task"/> completes, when the specified timeout expires, or when the specified <see cref="CancellationToken"/> has cancellation requested.</summary>
         /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
         /// <returns>The <see cref="Task"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
         public Task WaitAsync(TimeSpan timeout, CancellationToken cancellationToken) =>
-            WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), cancellationToken);
+            WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), TimeProvider.System, cancellationToken);
 
-        private Task WaitAsync(uint millisecondsTimeout, CancellationToken cancellationToken)
+        /// <summary>Gets a <see cref="Task"/> that will complete when this <see cref="Task"/> completes, when the specified timeout expires, or when the specified <see cref="CancellationToken"/> has cancellation requested.</summary>
+        /// <param name="timeout">The timeout after which the <see cref="Task"/> should be faulted with a <see cref="TimeoutException"/> if it hasn't otherwise completed.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret <paramref name="timeout"/>.</param>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for a cancellation request.</param>
+        /// <returns>The <see cref="Task"/> representing the asynchronous wait.  It may or may not be the same instance as the current instance.</returns>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="timeProvider"/> argument is null.</exception>
+        public Task WaitAsync(TimeSpan timeout, TimeProvider timeProvider, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(timeProvider);
+            return WaitAsync(ValidateTimeout(timeout, ExceptionArgument.timeout), timeProvider, cancellationToken);
+        }
+
+        private Task WaitAsync(uint millisecondsTimeout, TimeProvider timeProvider, CancellationToken cancellationToken)
         {
             if (IsCompleted || (!cancellationToken.CanBeCanceled && millisecondsTimeout == Timeout.UnsignedInfinite))
             {
@@ -2810,7 +2831,7 @@ namespace System.Threading.Tasks
                 return FromException(new TimeoutException());
             }
 
-            return new CancellationPromise<VoidTaskResult>(this, millisecondsTimeout, cancellationToken);
+            return new CancellationPromise<VoidTaskResult>(this, millisecondsTimeout, timeProvider, cancellationToken);
         }
 
         /// <summary>Task that's completed when another task, timeout, or cancellation token triggers.</summary>
@@ -2821,9 +2842,9 @@ namespace System.Threading.Tasks
             /// <summary>Cancellation registration used to unregister from the token source upon timeout or the task completing.</summary>
             private readonly CancellationTokenRegistration _registration;
             /// <summary>The timer used to implement the timeout.  It's stored so that it's rooted and so that we can dispose it upon cancellation or the task completing.</summary>
-            private readonly TimerQueueTimer? _timer;
+            private readonly ITimer? _timer;
 
-            internal CancellationPromise(Task source, uint millisecondsDelay, CancellationToken token)
+            internal CancellationPromise(Task source, uint millisecondsDelay, TimeProvider timeProvider, CancellationToken token)
             {
                 Debug.Assert(source != null);
                 Debug.Assert(millisecondsDelay != 0);
@@ -2835,14 +2856,26 @@ namespace System.Threading.Tasks
                 // Register with a timer if it's needed.
                 if (millisecondsDelay != Timeout.UnsignedInfinite)
                 {
-                    _timer = new TimerQueueTimer(static state =>
+                    TimerCallback callback = static state =>
                     {
                         var thisRef = (CancellationPromise<TResult>)state!;
                         if (thisRef.TrySetException(new TimeoutException()))
                         {
                             thisRef.Cleanup();
                         }
-                    }, this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
+                    };
+
+                    if (timeProvider == TimeProvider.System)
+                    {
+                        _timer = new TimerQueueTimer(callback, this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
+                    }
+                    else
+                    {
+                        using (ExecutionContext.SuppressFlow())
+                        {
+                            _timer = timeProvider.CreateTimer(callback, this, TimeSpan.FromMilliseconds(millisecondsDelay), Timeout.InfiniteTimeSpan);
+                        }
+                    }
                 }
 
                 // Register with the cancellation token.
@@ -2886,7 +2919,7 @@ namespace System.Threading.Tasks
             private void Cleanup()
             {
                 _registration.Dispose();
-                _timer?.Close();
+                _timer?.Dispose();
                 _task.RemoveContinuation(this);
             }
         }
@@ -3268,8 +3301,6 @@ namespace System.Threading.Tasks
         /// <returns>true if the task was transitioned to ran to completion; false if it was already completed.</returns>
         internal bool TrySetResult()
         {
-            Debug.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
-
             if (AtomicStateUpdate(
                 (int)TaskStateFlags.CompletionReserved | (int)TaskStateFlags.RanToCompletion,
                 (int)TaskStateFlags.CompletionReserved | (int)TaskStateFlags.RanToCompletion | (int)TaskStateFlags.Faulted | (int)TaskStateFlags.Canceled))
@@ -3296,8 +3327,6 @@ namespace System.Threading.Tasks
         // Called from TaskCompletionSource<T>.SetException(IEnumerable<Exception>).
         internal bool TrySetException(object exceptionObject)
         {
-            Debug.Assert(m_action == null, "Task<T>.TrySetException(): non-null m_action");
-
             // TCS.{Try}SetException() should have checked for this
             Debug.Assert(exceptionObject != null, "Expected non-null exceptionObject argument");
 
@@ -3344,7 +3373,6 @@ namespace System.Threading.Tasks
         // This method is only valid for promise tasks.
         internal bool TrySetCanceled(CancellationToken tokenToRecord, object? cancellationException)
         {
-            Debug.Assert(m_action == null, "Task<T>.TrySetCanceled(): non-null m_action");
             Debug.Assert(
                 cancellationException == null ||
                 cancellationException is OperationCanceledException ||
@@ -5517,7 +5545,16 @@ namespace System.Threading.Tasks
         /// <remarks>
         /// After the specified time delay, the Task is completed in RanToCompletion state.
         /// </remarks>
-        public static Task Delay(TimeSpan delay) => Delay(delay, default);
+        public static Task Delay(TimeSpan delay) => Delay(delay, TimeProvider.System, default);
+
+        /// <summary>Creates a task that completes after a specified time interval.</summary>
+        /// <param name="delay">The <see cref="TimeSpan"/> to wait before completing the returned task, or <see cref="Timeout.InfiniteTimeSpan"/> to wait indefinitely.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret <paramref name="delay"/>.</param>
+        /// <returns>A task that represents the time delay.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="delay"/> represents a negative time interval other than <see cref="Timeout.InfiniteTimeSpan"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="delay"/>'s <see cref="TimeSpan.TotalMilliseconds"/> property is greater than 4294967294.</exception>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="timeProvider"/> argument is null.</exception>
+        public static Task Delay(TimeSpan delay, TimeProvider timeProvider) => Delay(delay, timeProvider, default);
 
         /// <summary>
         /// Creates a Task that will complete after a time delay.
@@ -5538,7 +5575,21 @@ namespace System.Threading.Tasks
         /// delay has expired.
         /// </remarks>
         public static Task Delay(TimeSpan delay, CancellationToken cancellationToken) =>
-            Delay(ValidateTimeout(delay, ExceptionArgument.delay), cancellationToken);
+            Delay(delay, TimeProvider.System, cancellationToken);
+
+        /// <summary>Creates a cancellable task that completes after a specified time interval.</summary>
+        /// <param name="delay">The <see cref="TimeSpan"/> to wait before completing the returned task, or <see cref="Timeout.InfiniteTimeSpan"/> to wait indefinitely.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret <paramref name="delay"/>.</param>
+        /// <param name="cancellationToken">A cancellation token to observe while waiting for the task to complete.</param>
+        /// <returns>A task that represents the time delay.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="delay"/> represents a negative time interval other than <see cref="Timeout.InfiniteTimeSpan"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="delay"/>'s <see cref="TimeSpan.TotalMilliseconds"/> property is greater than 4294967294.</exception>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="timeProvider"/> argument is null.</exception>
+        public static Task Delay(TimeSpan delay, TimeProvider timeProvider, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(timeProvider);
+            return Delay(ValidateTimeout(delay, ExceptionArgument.delay), timeProvider, cancellationToken);
+        }
 
         /// <summary>
         /// Creates a Task that will complete after a time delay.
@@ -5579,14 +5630,14 @@ namespace System.Threading.Tasks
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsDelay, ExceptionResource.Task_Delay_InvalidMillisecondsDelay);
             }
 
-            return Delay((uint)millisecondsDelay, cancellationToken);
+            return Delay((uint)millisecondsDelay, TimeProvider.System, cancellationToken);
         }
 
-        private static Task Delay(uint millisecondsDelay, CancellationToken cancellationToken) =>
+        private static Task Delay(uint millisecondsDelay, TimeProvider timeProvider, CancellationToken cancellationToken) =>
             cancellationToken.IsCancellationRequested ? FromCanceled(cancellationToken) :
             millisecondsDelay == 0 ? CompletedTask :
-            cancellationToken.CanBeCanceled ? new DelayPromiseWithCancellation(millisecondsDelay, cancellationToken) :
-            new DelayPromise(millisecondsDelay);
+            cancellationToken.CanBeCanceled ? new DelayPromiseWithCancellation(millisecondsDelay, timeProvider, cancellationToken) :
+            new DelayPromise(millisecondsDelay, timeProvider);
 
         internal static uint ValidateTimeout(TimeSpan timeout, ExceptionArgument argument)
         {
@@ -5603,9 +5654,9 @@ namespace System.Threading.Tasks
         private class DelayPromise : Task
         {
             private static readonly TimerCallback s_timerCallback = TimerCallback;
-            private readonly TimerQueueTimer? _timer;
+            private readonly ITimer? _timer;
 
-            internal DelayPromise(uint millisecondsDelay)
+            internal DelayPromise(uint millisecondsDelay, TimeProvider timeProvider)
             {
                 Debug.Assert(millisecondsDelay != 0);
 
@@ -5617,13 +5668,24 @@ namespace System.Threading.Tasks
 
                 if (millisecondsDelay != Timeout.UnsignedInfinite) // no need to create the timer if it's an infinite timeout
                 {
-                    _timer = new TimerQueueTimer(s_timerCallback, this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
+                    if (timeProvider == TimeProvider.System)
+                    {
+                        _timer = new TimerQueueTimer(s_timerCallback, this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
+                    }
+                    else
+                    {
+                        using (ExecutionContext.SuppressFlow())
+                        {
+                            _timer = timeProvider.CreateTimer(s_timerCallback, this, TimeSpan.FromMilliseconds(millisecondsDelay), Timeout.InfiniteTimeSpan);
+                        }
+                    }
+
                     if (IsCompleted)
                     {
                         // Handle rare race condition where the timer fires prior to our having stored it into the field, in which case
                         // the timer won't have been cleaned up appropriately.  This call to close might race with the Cleanup call to Close,
                         // but Close is thread-safe and will be a nop if it's already been closed.
-                        _timer.Close();
+                        _timer.Dispose();
                     }
                 }
             }
@@ -5645,7 +5707,7 @@ namespace System.Threading.Tasks
                 }
             }
 
-            protected virtual void Cleanup() => _timer?.Close();
+            protected virtual void Cleanup() => _timer?.Dispose();
         }
 
         /// <summary>DelayPromise that also supports cancellation.</summary>
@@ -5653,7 +5715,7 @@ namespace System.Threading.Tasks
         {
             private readonly CancellationTokenRegistration _registration;
 
-            internal DelayPromiseWithCancellation(uint millisecondsDelay, CancellationToken token) : base(millisecondsDelay)
+            internal DelayPromiseWithCancellation(uint millisecondsDelay, TimeProvider timeProvider, CancellationToken token) : base(millisecondsDelay, timeProvider)
             {
                 Debug.Assert(token.CanBeCanceled);
 
@@ -5729,36 +5791,36 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task WhenAll(IEnumerable<Task> tasks)
         {
-            // Skip a List allocation/copy if tasks is a collection
+            if (tasks is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
+            }
+
             if (tasks is ICollection<Task> taskCollection)
             {
-                // Take a more efficient path if tasks is actually an array
                 if (tasks is Task[] taskArray)
                 {
-                    return WhenAll(taskArray);
+                    return WhenAll((ReadOnlySpan<Task>)taskArray);
                 }
 
-                int index = 0;
+                if (tasks is List<Task> taskList)
+                {
+                    return WhenAll(CollectionsMarshal.AsSpan(taskList));
+                }
+
                 taskArray = new Task[taskCollection.Count];
+                taskCollection.CopyTo(taskArray, 0);
+                return WhenAll((ReadOnlySpan<Task>)taskArray);
+            }
+            else
+            {
+                var taskList = new List<Task>();
                 foreach (Task task in tasks)
                 {
-                    if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
-                    taskArray[index++] = task;
+                    taskList.Add(task);
                 }
-                return InternalWhenAll(taskArray);
+                return WhenAll(CollectionsMarshal.AsSpan(taskList));
             }
-
-            // Do some argument checking and convert tasks to a List (and later an array).
-            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
-            List<Task> taskList = new List<Task>();
-            foreach (Task task in tasks)
-            {
-                if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
-                taskList.Add(task);
-            }
-
-            // Delegate the rest to InternalWhenAll()
-            return InternalWhenAll(taskList.ToArray());
         }
 
         /// <summary>
@@ -5790,149 +5852,212 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task WhenAll(params Task[] tasks)
         {
-            // Do some argument checking and make a defensive copy of the tasks array
-            if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
-
-            int taskCount = tasks.Length;
-            if (taskCount == 0) return InternalWhenAll(tasks); // Small optimization in the case of an empty array.
-
-            Task[] tasksCopy = new Task[taskCount];
-            for (int i = 0; i < taskCount; i++)
+            if (tasks is null)
             {
-                Task task = tasks[i];
-                if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
-                tasksCopy[i] = task;
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
             }
 
-            // The rest can be delegated to InternalWhenAll()
-            return InternalWhenAll(tasksCopy);
+            return WhenAll((ReadOnlySpan<Task>)tasks);
         }
 
-        // Some common logic to support WhenAll() methods
-        // tasks should be a defensive copy.
-        private static Task InternalWhenAll(Task[] tasks)
-        {
-            Debug.Assert(tasks != null, "Expected a non-null tasks array");
-            return (tasks.Length == 0) ? // take shortcut if there are no tasks upon which to wait
-                Task.CompletedTask :
-                new WhenAllPromise(tasks);
-        }
+        /// <summary>
+        /// Creates a task that will complete when all of the supplied tasks have completed.
+        /// </summary>
+        /// <param name="tasks">The tasks to wait on for completion.</param>
+        /// <returns>A task that represents the completion of all of the supplied tasks.</returns>
+        /// <remarks>
+        /// <para>
+        /// If any of the supplied tasks completes in a faulted state, the returned task will also complete in a Faulted state,
+        /// where its exceptions will contain the aggregation of the set of unwrapped exceptions from each of the supplied tasks.
+        /// </para>
+        /// <para>
+        /// If none of the supplied tasks faulted but at least one of them was canceled, the returned task will end in the Canceled state.
+        /// </para>
+        /// <para>
+        /// If none of the tasks faulted and none of the tasks were canceled, the resulting task will end in the RanToCompletion state.
+        /// </para>
+        /// <para>
+        /// If the supplied span contains no tasks, the returned task will immediately transition to a RanToCompletion
+        /// state before it's returned to the caller.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="System.ArgumentException">The <paramref name="tasks"/> array contained a null task.</exception>
+        internal static Task WhenAll(ReadOnlySpan<Task> tasks) => // TODO https://github.com/dotnet/runtime/issues/77873: Make this public.
+            tasks.Length != 0 ? new WhenAllPromise(tasks) : CompletedTask;
 
-        // A Task that gets completed when all of its constituent tasks complete.
-        // Completion logic will analyze the antecedents in order to choose completion status.
-        // This type allows us to replace this logic:
-        //      Task promise = new Task(...);
-        //      Action<Task> completionAction = delegate { <completion logic>};
-        //      TaskFactory.CommonCWAllLogic(tasksCopy).AddCompletionAction(completionAction);
-        //      return promise;
-        // which involves several allocations, with this logic:
-        //      return new WhenAllPromise(tasksCopy);
-        // which saves a couple of allocations and enables debugger notification specialization.
-        //
-        // Used in InternalWhenAll(Task[])
+        /// <summary>A Task that gets completed when all of its constituent tasks complete.</summary>
         private sealed class WhenAllPromise : Task, ITaskCompletionAction
         {
-            /// <summary>
-            /// Stores all of the constituent tasks.  Tasks clear themselves out of this
-            /// array as they complete, but only if they don't have their wait notification bit set.
-            /// </summary>
-            private readonly Task?[] m_tasks;
+            /// <summary>Either a single faulted/canceled task, or a list of faulted/canceled tasks.</summary>
+            private object? _failedOrCanceled;
             /// <summary>The number of tasks remaining to complete.</summary>
-            private int m_count;
+            private int _remainingToComplete;
 
-            internal WhenAllPromise(Task[] tasks)
+            internal WhenAllPromise(ReadOnlySpan<Task> tasks)
             {
-                Debug.Assert(tasks != null, "Expected a non-null task array");
-                Debug.Assert(tasks.Length > 0, "Expected a non-zero length task array");
+                Debug.Assert(tasks.Length != 0, "Expected a non-zero length task array");
+
+                // Throw if any of the provided tasks is null. This is best effort to inform the caller
+                // they've made a mistake.  If between the time we check for nulls and the time we hook
+                // up callbacks one of the entries is changed from non-null to null, we'll just ignore
+                // the null at that point; any such use (e.g. calling WhenAll with an array that's mutated
+                // concurrently with the synchronous call to WhenAll) is erroneous.
+                foreach (Task task in tasks)
+                {
+                    if (task is null)
+                    {
+                        ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
+                    }
+                }
 
                 if (TplEventSource.Log.IsEnabled())
-                    TplEventSource.Log.TraceOperationBegin(this.Id, "Task.WhenAll", 0);
+                {
+                    TplEventSource.Log.TraceOperationBegin(Id, "Task.WhenAll", 0);
+                }
 
                 if (s_asyncDebuggingEnabled)
+                {
                     AddToActiveTasks(this);
+                }
 
-                m_tasks = tasks;
-                m_count = tasks.Length;
+                _remainingToComplete = tasks.Length;
 
                 foreach (Task task in tasks)
                 {
-                    if (task.IsCompleted) this.Invoke(task); // short-circuit the completion action, if possible
-                    else task.AddCompletionAction(this); // simple completion action
-                }
-            }
-
-            public void Invoke(Task completedTask)
-            {
-                if (TplEventSource.Log.IsEnabled())
-                    TplEventSource.Log.TraceOperationRelation(this.Id, CausalityRelation.Join);
-
-                // Decrement the count, and only continue to complete the promise if we're the last one.
-                if (Interlocked.Decrement(ref m_count) == 0)
-                {
-                    // Set up some accounting variables
-                    List<ExceptionDispatchInfo>? observedExceptions = null;
-                    Task? canceledTask = null;
-
-                    // Loop through antecedents:
-                    //   If any one of them faults, the result will be faulted
-                    //   If none fault, but at least one is canceled, the result will be canceled
-                    //   If none fault or are canceled, then result will be RanToCompletion
-                    for (int i = 0; i < m_tasks.Length; i++)
+                    if (task is null || task.IsCompleted)
                     {
-                        Task? task = m_tasks[i];
-                        Debug.Assert(task != null, "Constituent task in WhenAll should never be null");
-
-                        if (task.IsFaulted)
-                        {
-                            observedExceptions ??= new List<ExceptionDispatchInfo>();
-                            observedExceptions.AddRange(task.GetExceptionDispatchInfos());
-                        }
-                        else if (task.IsCanceled)
-                        {
-                            canceledTask ??= task; // use the first task that's canceled
-                        }
-
-                        // Regardless of completion state, if the task has its debug bit set, transfer it to the
-                        // WhenAll task.  We must do this before we complete the task.
-                        if (task.IsWaitNotificationEnabled) this.SetNotificationForWaitCompletion(enabled: true);
-                        else m_tasks[i] = null; // avoid holding onto tasks unnecessarily
-                    }
-
-                    if (observedExceptions != null)
-                    {
-                        Debug.Assert(observedExceptions.Count > 0, "Expected at least one exception");
-
-                        // We don't need to TraceOperationCompleted here because TrySetException will call Finish and we'll log it there
-
-                        TrySetException(observedExceptions);
-                    }
-                    else if (canceledTask != null)
-                    {
-                        TrySetCanceled(canceledTask.CancellationToken, canceledTask.GetCancellationExceptionDispatchInfo());
+                        Invoke(task); // short-circuit the completion action, if possible
                     }
                     else
                     {
-                        if (TplEventSource.Log.IsEnabled())
-                            TplEventSource.Log.TraceOperationEnd(this.Id, AsyncCausalityStatus.Completed);
-
-                        if (s_asyncDebuggingEnabled)
-                            RemoveFromActiveTasks(this);
-
-                        TrySetResult();
+                        task.AddCompletionAction(this); // simple completion action
                     }
                 }
-                Debug.Assert(m_count >= 0, "Count should never go below 0");
+            }
+
+            public void Invoke(Task? completedTask)
+            {
+                if (TplEventSource.Log.IsEnabled())
+                {
+                    TplEventSource.Log.TraceOperationRelation(Id, CausalityRelation.Join);
+                }
+
+                if (completedTask is not null)
+                {
+                    if (completedTask.IsWaitNotificationEnabled)
+                    {
+                        SetNotificationForWaitCompletion(enabled: true);
+                    }
+
+                    if (!completedTask.IsCompletedSuccessfully)
+                    {
+                        // Try to store the completed task as the first that's failed or faulted.
+                        if (Interlocked.CompareExchange(ref _failedOrCanceled, completedTask, null) != null)
+                        {
+                            // There was already something there.
+                            while (true)
+                            {
+                                object? failedOrCanceled = _failedOrCanceled;
+                                Debug.Assert(failedOrCanceled is not null);
+
+                                // If it was a list, add it to the list.
+                                if (_failedOrCanceled is List<Task> list)
+                                {
+                                    lock (list)
+                                    {
+                                        list.Add(completedTask);
+                                    }
+                                    break;
+                                }
+
+                                // Otherwise, it was a Task. Create a new list containing that task and this one, and store it in.
+                                Debug.Assert(failedOrCanceled is Task, $"Expected Task, got {failedOrCanceled}");
+                                if (Interlocked.CompareExchange(ref _failedOrCanceled, new List<Task> { (Task)failedOrCanceled, completedTask }, failedOrCanceled) == failedOrCanceled)
+                                {
+                                    break;
+                                }
+
+                                // We lost the race, which means we should loop around one more time and it'll be a list.
+                                Debug.Assert(_failedOrCanceled is List<Task>);
+                            }
+                        }
+                    }
+                }
+
+                // Decrement the count, and only continue to complete the promise if we're the last one.
+                if (Interlocked.Decrement(ref _remainingToComplete) == 0)
+                {
+                    object? failedOrCanceled = _failedOrCanceled;
+                    if (failedOrCanceled is null)
+                    {
+                        if (TplEventSource.Log.IsEnabled())
+                        {
+                            TplEventSource.Log.TraceOperationEnd(Id, AsyncCausalityStatus.Completed);
+                        }
+
+                        if (s_asyncDebuggingEnabled)
+                        {
+                            RemoveFromActiveTasks(this);
+                        }
+
+                        bool completed = TrySetResult();
+                        Debug.Assert(completed);
+                    }
+                    else
+                    {
+                        // Set up some accounting variables
+                        List<ExceptionDispatchInfo>? observedExceptions = null;
+                        Task? canceledTask = null;
+
+                        void HandleTask(Task task)
+                        {
+                            if (task.IsFaulted)
+                            {
+                                (observedExceptions ??= new()).AddRange(task.GetExceptionDispatchInfos());
+                            }
+                            else if (task.IsCanceled)
+                            {
+                                canceledTask ??= task; // use the first task that's canceled
+                            }
+                        }
+
+                        // Loop through the completed or faulted tasks:
+                        //   If any one of them faults, the result will be faulted
+                        //   If none fault, but at least one is canceled, the result will be canceled
+                        if (failedOrCanceled is List<Task> list)
+                        {
+                            foreach (Task task in list)
+                            {
+                                HandleTask(task);
+                            }
+                        }
+                        else
+                        {
+                            Debug.Assert(failedOrCanceled is Task);
+                            HandleTask((Task)failedOrCanceled);
+                        }
+
+                        if (observedExceptions != null)
+                        {
+                            Debug.Assert(observedExceptions.Count > 0, "Expected at least one exception");
+
+                            // We don't need to TraceOperationCompleted here because TrySetException will call Finish and we'll log it there
+
+                            TrySetException(observedExceptions);
+                        }
+                        else if (canceledTask != null)
+                        {
+                            TrySetCanceled(canceledTask.CancellationToken, canceledTask.GetCancellationExceptionDispatchInfo());
+                        }
+                    }
+
+                    Debug.Assert(IsCompleted);
+                }
+
+                Debug.Assert(_remainingToComplete >= 0, "Count should never go below 0");
             }
 
             public bool InvokeMayRunArbitraryCode => true;
-
-            /// <summary>
-            /// Returns whether we should notify the debugger of a wait completion.  This returns
-            /// true iff at least one constituent task has its bit set.
-            /// </summary>
-            private protected override bool ShouldNotifyDebuggerOfWaitCompletion =>
-                base.ShouldNotifyDebuggerOfWaitCompletion &&
-                AnyTaskRequiresNotifyDebuggerOfWaitCompletion(m_tasks);
         }
 
         /// <summary>
@@ -6505,7 +6630,6 @@ namespace System.Threading.Tasks
 
                 if (continuationObject is Task continuationTask)
                 {
-                    Debug.Assert(continuationTask.m_action == null);
                     Delegate[]? delegates = continuationTask.GetDelegateContinuationsForDebugger();
                     if (delegates != null)
                         return delegates;
@@ -6653,6 +6777,11 @@ namespace System.Threading.Tasks
         PromiseTask = 0x0400,
 
         /// <summary>
+        /// The state object should not be returned from the AsyncState property.
+        /// </summary>
+        HiddenState = 0x0800,
+
+        /// <summary>
         /// Store the presence of TaskContinuationOptions.LazyCancellation, since it does not directly
         /// translate into any TaskCreationOptions.
         /// </summary>
@@ -6763,7 +6892,7 @@ namespace System.Threading.Tasks
 
     // Special internal struct that we use to signify that we are not interested in
     // a Task<VoidTaskResult>'s result.
-    internal struct VoidTaskResult { }
+    internal readonly struct VoidTaskResult { }
 
     // Interface to which all completion actions must conform.
     // This interface allows us to combine functionality and reduce allocations.

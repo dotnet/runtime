@@ -196,8 +196,11 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [Fact]
         public async Task TestPrecancellation2()
         {
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
             var b = new JoinBlock<int, int>(new GroupingDataflowBlockOptions {
-                CancellationToken = new CancellationToken(canceled: true), MaxNumberOfGroups = 1
+                CancellationToken = cts.Token, MaxNumberOfGroups = 1
             });
 
             Assert.NotNull(b.LinkTo(DataflowBlock.NullTarget<Tuple<int, int>>()));
@@ -219,15 +222,18 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.NotNull(b.Completion);
             b.Complete();
 
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => b.Completion);
+            await AssertExtensions.CanceledAsync(cts.Token, b.Completion);
         }
 
         [Fact]
         public async Task TestPrecancellation3()
         {
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+
             var b = new JoinBlock<int, int, int>(new GroupingDataflowBlockOptions
             {
-                CancellationToken = new CancellationToken(canceled: true),
+                CancellationToken = cts.Token,
                 MaxNumberOfGroups = 1
             });
 
@@ -254,7 +260,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.NotNull(b.Completion);
             b.Complete();
 
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => b.Completion);
+            await AssertExtensions.CanceledAsync(cts.Token, b.Completion);
         }
 
         [Fact]
@@ -424,7 +430,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
             cts.Cancel();
             foreach (Task<bool> send in sends)
             {
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => send);
+                await AssertExtensions.CanceledAsync(cts.Token, send);
             }
 
             joinBlock.Target2.Post(1);

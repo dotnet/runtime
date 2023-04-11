@@ -2,7 +2,7 @@
   <PropertyGroup>
     <NoWarn>0436</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
-    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'browser'">true</DebuggerSupport>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and ('$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi')">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
@@ -11,6 +11,8 @@
     <Compile Include="$(CommonTestPath)System\Collections\DictionaryExtensions.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Link="Common\System\Collections\DictionaryExtensions.cs" />
     <Compile Include="BadHasher.cs" />
     <Compile Include="EverythingEqual.cs" />
+    <Compile Include="Frozen\FrozenFromKnownValuesTests.cs" />
+    <Compile Include="Frozen\KeyAnalyzerTests.cs" />
     <Compile Include="ImmutableArrayExtensionsTest.cs" />
     <Compile Include="ImmutableArrayTest.cs" />
     <Compile Include="ImmutableArrayTest.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
@@ -41,8 +43,6 @@
     <!-- Frozen Collections Tests -->
     <Compile Include="Frozen\FrozenSetTests.cs" />
     <Compile Include="Frozen\FrozenDictionaryTests.cs" />
-    <Compile Include="Frozen\ComparerPickerTests.cs" />
-    <Compile Include="Frozen\ComparerTests.cs" />
     <!-- Common Collections tests -->
     <Compile Include="$(CommonTestPath)System\Collections\CollectionAsserts.cs" Link="Common\System\Collections\CollectionAsserts.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\DelegateEqualityComparer.cs" Link="Common\System\Collections\DelegateEqualityComparer.cs" />
@@ -86,5 +86,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\src\System.Collections.Immutable.csproj" />
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
   </ItemGroup>
 </Project>

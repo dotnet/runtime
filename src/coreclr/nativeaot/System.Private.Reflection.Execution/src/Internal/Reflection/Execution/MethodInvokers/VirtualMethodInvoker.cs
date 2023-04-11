@@ -59,7 +59,14 @@ namespace Internal.Reflection.Execution.MethodInvokers
             {
                 ValidateThis(thisObject, _declaringTypeHandle);
 
-                resolvedVirtual = OpenMethodResolver.ResolveMethod(MethodInvokeInfo.VirtualResolveData, thisObject);
+                try
+                {
+                    resolvedVirtual = OpenMethodResolver.ResolveMethod(MethodInvokeInfo.VirtualResolveData, thisObject);
+                }
+                catch (Exception ex) when (wrapInTargetInvocationException)
+                {
+                    throw new TargetInvocationException(ex);
+                }
             }
 
             object? result = MethodInvokeInfo.Invoke(

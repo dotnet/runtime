@@ -61,18 +61,20 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
         _ASSERTE(token.IsValid());
         return VirtualCallStubManager::GetInterfaceMethodDescFromToken(token);
     }
-    if (RangeSectionStubManager::GetStubKind(target) == STUB_CODE_BLOCK_PRECODE)
+
+    auto stubKind = RangeSectionStubManager::GetStubKind(target);
+    if (stubKind == STUB_CODE_BLOCK_PRECODE)
     {
         // The address looks like a value stub, try to get the method descriptor.
         return MethodDesc::GetMethodDescFromStubAddr(target, TRUE);
     }
 
-    if (PrecodeStubManager::g_pManager->GetStubPrecodeRangeList()->IsInRange(target))
+    if (stubKind == STUB_CODE_BLOCK_STUBPRECODE)
     {
         return (MethodDesc*)((StubPrecode*)PCODEToPINSTR(target))->GetMethodDesc();
     }
 
-    if (PrecodeStubManager::g_pManager->GetFixupPrecodeRangeList()->IsInRange(target))
+    if (stubKind == STUB_CODE_BLOCK_FIXUPPRECODE)
     {
         if (!FixupPrecode::IsFixupPrecodeByASM(target))
         {
@@ -834,7 +836,7 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
                 //
                 // Given all of this, skip the ReplaceInstrAfterCall call by default to avoid
                 // unexpected AVs.  This implies leaving out the GC coverage breakpoints for direct calls
-                // unless COMPlus_GcStressOnDirectCalls=1 is explicitly set in the environment.
+                // unless DOTNET_GcStressOnDirectCalls=1 is explicitly set in the environment.
                 //
 
                 static ConfigDWORD fGcStressOnDirectCalls;

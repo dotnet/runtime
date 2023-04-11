@@ -42,7 +42,7 @@ namespace SVR
 extern void PopulateHandleTableDacVars(GcDacVars* dacVars);
 
 GC_EXPORT
-void
+void LOCALGC_CALLCONV
 GC_VersionInfo(/* InOut */ VersionInfo* info)
 {
 #ifdef BUILD_AS_STANDALONE
@@ -59,7 +59,7 @@ GC_VersionInfo(/* InOut */ VersionInfo* info)
 }
 
 GC_EXPORT
-HRESULT
+HRESULT LOCALGC_CALLCONV
 GC_Initialize(
     /* In  */ IGCToCLR* clrToGC,
     /* Out */ IGCHeap** gcHeap,
@@ -75,7 +75,7 @@ GC_Initialize(
 
 #ifdef BUILD_AS_STANDALONE
     assert(clrToGC != nullptr);
-    g_theGCToCLR = (IGCToCLR2*)clrToGC;
+    g_theGCToCLR = clrToGC;
 #else
     UNREFERENCED_PARAMETER(clrToGC);
     assert(clrToGC == nullptr);

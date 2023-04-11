@@ -128,7 +128,7 @@ namespace System.Text.Json.Nodes
                 InitializeIfRequired();
                 Debug.Assert(_dictionary != null);
                 string propertyName = _dictionary.FindValue(child)!.Value.Key;
-                if (propertyName.IndexOfAny(ReadStack.SpecialCharacters) != -1)
+                if (propertyName.AsSpan().ContainsSpecialCharacters())
                 {
                     path.Add($"['{propertyName}']");
                 }
@@ -164,7 +164,7 @@ namespace System.Text.Json.Nodes
         private sealed class DebugView
         {
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            private JsonObject _node;
+            private readonly JsonObject _node;
 
             public DebugView(JsonObject node)
             {

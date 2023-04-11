@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir>false</WasmCopyAppZipToHelixTestDir>
-    <WasmMainJSPath>package.json</WasmMainJSPath>
     <WasmAppDir>public</WasmAppDir>
   </PropertyGroup>
 

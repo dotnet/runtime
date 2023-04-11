@@ -11,7 +11,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 	public class DynamicDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction
 	{
 #if NETCOREAPP
-		[Kept]
+		[Kept (By = Tool.Trimmer)] // Native AOT doesn't really support copyused behavior
 		public DynamicDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction ()
 		{
 		}
@@ -23,7 +23,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 
 		[DynamicDependency ("MethodPreservedViaDependencyAttribute()", "Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies.DynamicDependencyOnUnusedMethodInNonReferencedAssemblyWithCopyUsedAction_Lib", "library")]
 #if NETCOREAPP
-		[Kept]
+		[Kept (By = Tool.Trimmer)] // Native AOT doesn't really support copyused behavior
 		[KeptAttributeAttribute (typeof (DynamicDependencyAttribute))]
 #endif
 		static void Dependency ()

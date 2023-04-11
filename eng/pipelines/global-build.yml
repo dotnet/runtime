@@ -12,7 +12,6 @@ pr:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     - eng/pipelines/global-build.yml
     exclude:
     - '**.md'
@@ -176,3 +175,5 @@ extends:
             extraStepsParameters:
               name: SourceBuildPackages
             timeoutInMinutes: 95
+            condition:
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true)

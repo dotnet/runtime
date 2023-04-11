@@ -275,6 +275,7 @@ namespace System.Text.Json.Serialization.Converters
             ref WriteStack state)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
+            jsonTypeInfo.ValidateCanBeUsedForPropertyMetadataSerialization();
 
             object obj = value; // box once
 

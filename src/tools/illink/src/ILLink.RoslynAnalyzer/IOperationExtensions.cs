@@ -17,25 +17,24 @@ namespace ILLink.RoslynAnalyzer
 		public static ValueUsageInfo GetValueUsageInfo (this IOperation operation, ISymbol containingSymbol)
 		{
 			/*
-            |    code                  | Read | Write | ReadableRef | WritableRef | NonReadWriteRef |
-            | x.Prop = 1               |      |  ✔️   |             |             |                 |
-            | x.Prop += 1              |  ✔️  |  ✔️   |             |             |                 |
-            | x.Prop++                 |  ✔️  |  ✔️   |             |             |                 |
-            | Foo(x.Prop)              |  ✔️  |       |             |             |                 |
-            | Foo(x.Prop),             |      |       |     ✔️      |             |                 |
-               where void Foo(in T v)
-            | Foo(out x.Prop)          |      |       |             |     ✔️      |                 |
-            | Foo(ref x.Prop)          |      |       |     ✔️      |     ✔️      |                 |
-            | nameof(x)                |      |       |             |             |       ✔️        | ️
-            | sizeof(x)                |      |       |             |             |       ✔️        | ️
-            | typeof(x)                |      |       |             |             |       ✔️        | ️
-            | out var x                |      |  ✔️   |             |             |                 | ️
-            | case X x:                |      |  ✔️   |             |             |                 | ️
-            | obj is X x               |      |  ✔️   |             |             |                 |
-            | ref var x =              |      |       |     ✔️      |     ✔️      |                 |
-            | ref readonly var x =     |      |       |     ✔️      |             |                 |
-
-            */
+			|    code                  | Read | Write | ReadableRef | WritableRef | NonReadWriteRef |
+			| x.Prop = 1               |      |  ✔️   |             |             |                 |
+			| x.Prop += 1              |  ✔️  |  ✔️   |             |             |                 |
+			| x.Prop++                 |  ✔️  |  ✔️   |             |             |                 |
+			| Foo(x.Prop)              |  ✔️  |       |             |             |                 |
+			| Foo(x.Prop),             |      |       |     ✔️      |             |                 |
+			   where void Foo(in T v)
+			| Foo(out x.Prop)          |      |       |             |     ✔️      |                 |
+			| Foo(ref x.Prop)          |      |       |     ✔️      |     ✔️      |                 |
+			| nameof(x)                |      |       |             |             |       ✔️        | ️
+			| sizeof(x)                |      |       |             |             |       ✔️        | ️
+			| typeof(x)                |      |       |             |             |       ✔️        | ️
+			| out var x                |      |  ✔️   |             |             |                 | ️
+			| case X x:                |      |  ✔️   |             |             |                 | ️
+			| obj is X x               |      |  ✔️   |             |             |                 |
+			| ref var x =              |      |       |     ✔️      |     ✔️      |                 |
+			| ref readonly var x =     |      |       |     ✔️      |             |                 |
+			*/
 			if (operation is ILocalReferenceOperation localReference &&
 				localReference.IsDeclaration &&
 				!localReference.IsImplicit) // Workaround for https://github.com/dotnet/roslyn/issues/30753

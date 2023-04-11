@@ -125,6 +125,76 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
 }
 
 //------------------------------------------------------------------------
+// Lowering::LowerJTrue: Lowers a JTRUE node.
+//
+// Arguments:
+//    jtrue - the JTRUE node
+//
+// Return Value:
+//    The next node to lower (usually nullptr).
+//
+GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
+{
+    GenTree*     op = jtrue->gtGetOp1();
+    GenCondition cond;
+    GenTree*     cmpOp1;
+    GenTree*     cmpOp2;
+
+    if (op->OperIsCompare())
+    {
+        // We do not expect any other relops on LA64
+        assert(op->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
+
+        cond = GenCondition::FromRelop(op);
+
+        cmpOp1 = op->gtGetOp1();
+        cmpOp2 = op->gtGetOp2();
+
+        // LA64's float compare and condition-branch instructions, have
+        // condition flags indicating the comparing results.
+        if (varTypeIsFloating(cmpOp1))
+        {
+            op->gtType = TYP_VOID;
+            op->gtFlags |= GTF_SET_FLAGS;
+            assert(op->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
+            jtrue->SetOper(GT_JCC);
+            jtrue->AsCC()->gtCondition = cond;
+            return nullptr;
+        }
+
+        // We will fall through and turn this into a JCMP(op1, op2, kind), but need to remove the relop here.
+        BlockRange().Remove(op);
+    }
+    else
+    {
+        cond = GenCondition(GenCondition::NE);
+
+        cmpOp1 = op;
+        cmpOp2 = comp->gtNewZeroConNode(cmpOp1->TypeGet());
+
+        BlockRange().InsertBefore(jtrue, cmpOp2);
+
+        // Fall through and turn this into a JCMP(op1, 0, NE).
+    }
+
+    // for LA64's integer compare and condition-branch instructions,
+    // it's very similar to the IL instructions.
+    jtrue->SetOper(GT_JCMP);
+    jtrue->gtOp1 = cmpOp1;
+    jtrue->gtOp2 = cmpOp2;
+
+    jtrue->gtFlags &= ~(GTF_JCMP_TST | GTF_JCMP_EQ | GTF_JCMP_MASK);
+    jtrue->gtFlags |= (GenTreeFlags)(cond.GetCode() << 25);
+
+    if (cmpOp2->IsCnsIntOrI())
+    {
+        cmpOp2->SetContained();
+    }
+
+    return jtrue->gtNext;
+}
+
+//------------------------------------------------------------------------
 // LowerBinaryArithmetic: lowers the given binary arithmetic node.
 //
 // Arguments:
@@ -225,7 +295,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             blkNode->SetOper(GT_STORE_BLK);
         }
 
-        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= INITBLK_UNROLL_LIMIT) && src->OperIs(GT_CNS_INT))
+        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memset)) &&
+            src->OperIs(GT_CNS_INT))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -277,13 +348,15 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
             comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
+
+        unsigned copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy);
         if (blkNode->OperIs(GT_STORE_OBJ))
         {
-            if (!blkNode->AsObj()->GetLayout()->HasGCPtr())
+            if (!blkNode->AsBlk()->GetLayout()->HasGCPtr())
             {
                 blkNode->SetOper(GT_STORE_BLK);
             }
-            else if (dstAddr->OperIsLocalAddr() && (size <= CPBLK_UNROLL_LIMIT))
+            else if (dstAddr->OperIs(GT_LCL_ADDR) && (size <= copyBlockUnrollLimit))
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the
@@ -300,8 +373,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
         }
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////
-        else if (blkNode->OperIs(GT_STORE_BLK) && (size <= CPBLK_UNROLL_LIMIT))
+        else if (blkNode->OperIs(GT_STORE_BLK) && (size <= copyBlockUnrollLimit))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
@@ -336,7 +408,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     assert(blkNode->OperIs(GT_STORE_BLK) && (blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindUnroll));
     assert(size < INT32_MAX);
 
-    if (addr->OperIsLocalAddr())
+    if (addr->OperIs(GT_LCL_ADDR))
     {
         addr->SetContained();
         return;
@@ -356,7 +428,7 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
         return;
     }
 
-    if (!IsSafeToContainMem(blkNode, addrParent, addr))
+    if (!IsInvariantInRange(addr, blkNode, addrParent))
     {
         return;
     }
@@ -403,21 +475,21 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
             else
             {
                 layout  = src->AsLclFld()->GetLayout();
-                lclAddr = comp->gtNewLclFldAddrNode(lclNum, src->AsLclFld()->GetLclOffs());
+                lclAddr = comp->gtNewLclAddrNode(lclNum, src->AsLclFld()->GetLclOffs());
             }
 
-            src->ChangeOper(GT_OBJ);
-            src->AsObj()->SetAddr(lclAddr);
-            src->AsObj()->Initialize(layout);
+            src->ChangeOper(GT_BLK);
+            src->AsBlk()->SetAddr(lclAddr);
+            src->AsBlk()->Initialize(layout);
 
             BlockRange().InsertBefore(src, lclAddr);
         }
 
-        // Codegen supports containment of local addresses under OBJs.
-        if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIs(GT_LCL_VAR_ADDR))
+        // Codegen supports containment of local addresses under BLKs.
+        if (src->OperIs(GT_BLK) && src->AsBlk()->Addr()->IsLclVarAddr())
         {
-            // TODO-LOONGARCH64-CQ: support containment of LCL_FLD_ADDR too.
-            MakeSrcContained(src, src->AsObj()->Addr());
+            // TODO-LOONGARCH64-CQ: support containment of LCL_ADDR with non-zero offset too.
+            MakeSrcContained(src, src->AsBlk()->Addr());
         }
     }
 }
@@ -629,14 +701,14 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 #endif // FEATURE_SIMD
 
     GenTree* addr = indirNode->Addr();
-    if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirNode, addr))
+    if ((addr->OperGet() == GT_LEA) && IsInvariantInRange(addr, indirNode))
     {
         MakeSrcContained(indirNode, addr);
     }
-    else if (addr->OperIs(GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
+    else if (addr->OperIs(GT_LCL_ADDR))
     {
         // These nodes go into an addr mode:
-        // - GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR is a stack addr mode.
+        // - GT_LCL_ADDR is a stack addr mode.
         MakeSrcContained(indirNode, addr);
     }
     else if (addr->OperIs(GT_CLS_VAR_ADDR))

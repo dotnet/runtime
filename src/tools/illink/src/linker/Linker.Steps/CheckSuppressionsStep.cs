@@ -19,7 +19,7 @@ namespace Mono.Linker.Steps
 
 		public override bool IsActiveFor (AssemblyDefinition assembly)
 		{
-			// Only process assemblies which went through marking. 
+			// Only process assemblies which went through marking.
 			// The code relies on MarkStep to identify the useful suppressions.
 			// Assemblies which didn't go through marking would not produce any warnings and thus would report all suppressions as redundant.
 			var assemblyAction = Annotations.GetAction (assembly);

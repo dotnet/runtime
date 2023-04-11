@@ -329,7 +329,7 @@ void Module::NotifyEtwLoadFinished(HRESULT hr)
 // The constructor phase initializes just enough so that Destruct() can be safely called.
 // It cannot throw or fail.
 //
-Module::Module(Assembly *pAssembly, mdFile moduleRef, PEAssembly *pPEAssembly)
+Module::Module(Assembly *pAssembly, PEAssembly *pPEAssembly)
 {
     CONTRACTL
     {
@@ -343,7 +343,6 @@ Module::Module(Assembly *pAssembly, mdFile moduleRef, PEAssembly *pPEAssembly)
 
     m_loaderAllocator = NULL;
     m_pAssembly = pAssembly;
-    m_moduleRef = moduleRef;
     m_pPEAssembly      = pPEAssembly;
     m_dwTransientFlags = CLASSES_FREED;
 
@@ -547,7 +546,7 @@ void Module::SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits)
 
 #ifndef DACCESS_COMPILE
 /* static */
-Module *Module::Create(Assembly *pAssembly, mdFile moduleRef, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker)
+Module *Module::Create(Assembly *pAssembly, PEAssembly *pPEAssembly, AllocMemTracker *pamTracker)
 {
     CONTRACT(Module *)
     {
@@ -555,6 +554,7 @@ Module *Module::Create(Assembly *pAssembly, mdFile moduleRef, PEAssembly *pPEAss
         PRECONDITION(CheckPointer(pAssembly));
         PRECONDITION(CheckPointer(pPEAssembly));
         POSTCONDITION(CheckPointer(RETVAL));
+        POSTCONDITION(RETVAL->GetAssembly() == pAssembly);
         POSTCONDITION(RETVAL->GetPEAssembly() == pPEAssembly);
     }
     CONTRACT_END;
@@ -572,13 +572,13 @@ Module *Module::Create(Assembly *pAssembly, mdFile moduleRef, PEAssembly *pPEAss
         // Debugger enables this by calling SetJITCompilerFlags on LoadModule callback.
 
         void* pMemory = pamTracker->Track(pAssembly->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(EditAndContinueModule))));
-        pModule = new (pMemory) EditAndContinueModule(pAssembly, moduleRef, pPEAssembly);
+        pModule = new (pMemory) EditAndContinueModule(pAssembly, pPEAssembly);
     }
     else
 #endif // EnC_SUPPORTED
     {
         void* pMemory = pamTracker->Track(pAssembly->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(Module))));
-        pModule = new (pMemory) Module(pAssembly, moduleRef, pPEAssembly);
+        pModule = new (pMemory) Module(pAssembly, pPEAssembly);
     }
 
     PREFIX_ASSUME(pModule != NULL);
@@ -1878,7 +1878,6 @@ void Module::AllocateMaps()
         m_FieldDefToDescMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
         m_GenericParamToDescMap.dwCount = GENERICPARAM_MAP_INITIAL_SIZE;
         m_GenericTypeDefToCanonMethodTableMap.dwCount = TYPEDEF_MAP_INITIAL_SIZE;
-        m_FileReferencesMap.dwCount = FILEREFERENCES_MAP_INITIAL_SIZE;
         m_ManifestModuleReferencesMap.dwCount = ASSEMBLYREFERENCES_MAP_INITIAL_SIZE;
         m_MethodDefToPropertyInfoMap.dwCount = MEMBERDEF_MAP_INITIAL_SIZE;
     }
@@ -1904,9 +1903,6 @@ void Module::AllocateMaps()
         // Get # GenericParams
         m_GenericParamToDescMap.dwCount = pImport->GetCountWithTokenKind(mdtGenericParam)+1;
 
-        // Get the number of FileReferences in the map
-        m_FileReferencesMap.dwCount = pImport->GetCountWithTokenKind(mdtFile)+1;
-
         // Get the number of AssemblyReferences in the map
         m_ManifestModuleReferencesMap.dwCount = pImport->GetCountWithTokenKind(mdtAssemblyRef)+1;
 
@@ -1923,7 +1919,6 @@ void Module::AllocateMaps()
     nTotal += m_FieldDefToDescMap.dwCount;
     nTotal += m_GenericParamToDescMap.dwCount;
     nTotal += m_GenericTypeDefToCanonMethodTableMap.dwCount;
-    nTotal += m_FileReferencesMap.dwCount;
     nTotal += m_ManifestModuleReferencesMap.dwCount;
     nTotal += m_MethodDefToPropertyInfoMap.dwCount;
 
@@ -1961,13 +1956,9 @@ void Module::AllocateMaps()
     m_GenericTypeDefToCanonMethodTableMap.supportedFlags = GENERIC_TYPE_DEF_MAP_ALL_FLAGS;
     m_GenericTypeDefToCanonMethodTableMap.pTable = &m_GenericParamToDescMap.pTable[m_GenericParamToDescMap.dwCount];
 
-    m_FileReferencesMap.pNext  = NULL;
-    m_FileReferencesMap.supportedFlags = FILE_REF_MAP_ALL_FLAGS;
-    m_FileReferencesMap.pTable = &m_GenericTypeDefToCanonMethodTableMap.pTable[m_GenericTypeDefToCanonMethodTableMap.dwCount];
-
     m_ManifestModuleReferencesMap.pNext  = NULL;
     m_ManifestModuleReferencesMap.supportedFlags = MANIFEST_MODULE_MAP_ALL_FLAGS;
-    m_ManifestModuleReferencesMap.pTable = &m_FileReferencesMap.pTable[m_FileReferencesMap.dwCount];
+    m_ManifestModuleReferencesMap.pTable = &m_GenericTypeDefToCanonMethodTableMap.pTable[m_GenericTypeDefToCanonMethodTableMap.dwCount];
 
     m_MethodDefToPropertyInfoMap.pNext = NULL;
     m_MethodDefToPropertyInfoMap.supportedFlags = PROPERTY_INFO_MAP_ALL_FLAGS;
@@ -2983,8 +2974,7 @@ Module::GetAssemblyIfLoaded(
                 AssemblySpec spec;
                 if (FAILED(spec.InitializeSpecInternal(kAssemblyRef,
                                                        pMDImport,
-                                                       pCurAssemblyInExamineDomain,
-                                                       FALSE /*fAllowAllocation*/)))
+                                                       pCurAssemblyInExamineDomain)))
                 {
                     continue;
                 }
@@ -3162,9 +3152,6 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
 
     if (kFile == mdFileNil)
     {
-#ifndef DACCESS_COMPILE
-        StoreFileNoThrow(kFile, this);
-#endif
         return this;
     }
 
@@ -3422,9 +3409,8 @@ void Module::DebugLogRidMapOccupancy()
     COMPUTE_RID_MAP_OCCUPANCY(4, m_FieldDefToDescMap);
     COMPUTE_RID_MAP_OCCUPANCY(5, m_GenericParamToDescMap);
     COMPUTE_RID_MAP_OCCUPANCY(6, m_GenericTypeDefToCanonMethodTableMap);
-    COMPUTE_RID_MAP_OCCUPANCY(7, m_FileReferencesMap);
-    COMPUTE_RID_MAP_OCCUPANCY(8, m_ManifestModuleReferencesMap);
-    COMPUTE_RID_MAP_OCCUPANCY(9, m_MethodDefToPropertyInfoMap);
+    COMPUTE_RID_MAP_OCCUPANCY(7, m_ManifestModuleReferencesMap);
+    COMPUTE_RID_MAP_OCCUPANCY(8, m_MethodDefToPropertyInfoMap);
 
     LOG((
         LF_EEMEM,
@@ -3436,7 +3422,6 @@ void Module::DebugLogRidMapOccupancy()
         "      FieldDefToDesc map:  %4d/%4d (%2d %%)\n"
         "      GenericParamToDesc map:  %4d/%4d (%2d %%)\n"
         "      GenericTypeDefToCanonMethodTable map:  %4d/%4d (%2d %%)\n"
-        "      FileReferences map:  %4d/%4d (%2d %%)\n"
         "      AssemblyReferences map:  %4d/%4d (%2d %%)\n"
         "      MethodDefToPropInfo map: %4d/%4d (%2d %%)\n"
         ,
@@ -3447,8 +3432,7 @@ void Module::DebugLogRidMapOccupancy()
         dwOccupied5, dwSize5, dwPercent5,
         dwOccupied6, dwSize6, dwPercent6,
         dwOccupied7, dwSize7, dwPercent7,
-        dwOccupied8, dwSize8, dwPercent8,
-        dwOccupied9, dwSize9, dwPercent9
+        dwOccupied8, dwSize8, dwPercent8
     ));
 
 #undef COMPUTE_RID_MAP_OCCUPANCY
@@ -4371,7 +4355,7 @@ void Module::RunEagerFixupsUnlocked()
     ExecutionManager::AddCodeRange(
         base, base + (TADDR)pNativeImage->GetVirtualSize(),
         ExecutionManager::GetReadyToRunJitManager(),
-        RangeSection::RANGE_SECTION_READYTORUN,
+        RangeSection::RANGE_SECTION_NONE,
         this /* pHeapListOrZapModule */);
 }
 #endif // !DACCESS_COMPILE
@@ -4538,14 +4522,11 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
 
     // Hoist CONTRACT into separate routine because of EX incompatibility
 
-    mdFile token;
-    token = mdFileNil;
-
     // Initial memory block for Modules must be zero-initialized (to make it harder
     // to introduce Destruct crashes arising from OOM's during initialization.)
 
     void* pMemory = pamTracker->Track(pAssembly->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ReflectionModule))));
-    ReflectionModuleHolder pModule(new (pMemory) ReflectionModule(pAssembly, token, pPEAssembly));
+    ReflectionModuleHolder pModule(new (pMemory) ReflectionModule(pAssembly, pPEAssembly));
 
     pModule->DoInit(pamTracker, szName);
 
@@ -4558,8 +4539,8 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
 // The constructor phase initializes just enough so that Destruct() can be safely called.
 // It cannot throw or fail.
 //
-ReflectionModule::ReflectionModule(Assembly *pAssembly, mdFile token, PEAssembly *pPEAssembly)
-  : Module(pAssembly, token, pPEAssembly)
+ReflectionModule::ReflectionModule(Assembly *pAssembly, PEAssembly *pPEAssembly)
+  : Module(pAssembly, pPEAssembly)
 {
     CONTRACTL
     {
@@ -5136,7 +5117,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         m_MemberRefMap.ListEnumMemoryRegions(flags);
         m_GenericParamToDescMap.ListEnumMemoryRegions(flags);
         m_GenericTypeDefToCanonMethodTableMap.ListEnumMemoryRegions(flags);
-        m_FileReferencesMap.ListEnumMemoryRegions(flags);
         m_ManifestModuleReferencesMap.ListEnumMemoryRegions(flags);
         m_MethodDefToPropertyInfoMap.ListEnumMemoryRegions(flags);
 
@@ -5196,16 +5176,6 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         }
 
     }   // !CLRDATA_ENUM_MEM_MINI && !CLRDATA_ENUM_MEM_TRIAGE && !CLRDATA_ENUM_MEM_HEAP2
-
-
-    LookupMap<PTR_Module>::Iterator fileRefIter(&m_FileReferencesMap);
-    while (fileRefIter.Next())
-    {
-        if (fileRefIter.GetElement())
-        {
-            fileRefIter.GetElement()->EnumMemoryRegions(flags, true);
-        }
-    }
 
     LookupMap<PTR_Module>::Iterator asmRefIter(&m_ManifestModuleReferencesMap);
     while (asmRefIter.Next())

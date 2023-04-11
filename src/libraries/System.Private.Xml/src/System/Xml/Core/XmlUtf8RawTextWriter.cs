@@ -363,13 +363,18 @@ namespace System.Xml
         {
             Debug.Assert(prefix != null);
 
+            if (_attrEndPos == _bufPos)
+            {
+                _bufBytes[_bufPos++] = (byte)' ';
+            }
+
             if (prefix.Length == 0)
             {
-                RawText(" xmlns=\"");
+                RawText("xmlns=\"");
             }
             else
             {
-                RawText(" xmlns:");
+                RawText("xmlns:");
                 RawText(prefix);
                 _bufBytes[_bufPos++] = (byte)'=';
                 _bufBytes[_bufPos++] = (byte)'"';
@@ -1892,6 +1897,18 @@ namespace System.Xml
             }
 
             base.WriteStartAttribute(prefix, localName, ns);
+        }
+
+        // Same as base class, plus possible indentation.
+        internal override void WriteStartNamespaceDeclaration(string prefix)
+        {
+            // Add indentation
+            if (_newLineOnAttributes)
+            {
+                WriteIndent();
+            }
+
+            base.WriteStartNamespaceDeclaration(prefix);
         }
 
         public override void WriteCData(string? text)

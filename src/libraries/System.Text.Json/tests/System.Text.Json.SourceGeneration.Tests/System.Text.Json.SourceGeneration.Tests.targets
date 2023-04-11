@@ -4,10 +4,12 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- SYSLIB0020: JsonSerializerOptions.IgnoreNullValues is obsolete -->
+    <!-- SYSLIB0049: JsonSerializerOptions.AddContext is obsolete -->
     <!-- SYSLIB1037: Suppress init-only property deserialization warning -->
     <!-- SYSLIB1038: Suppress JsonInclude on inaccessible members warning -->
     <!-- SYSLIB1039: Suppress Polymorphic types not supported warning -->
-    <NoWarn>$(NoWarn);SYSLIB0020;SYSLIB1037;SYSLIB1038;SYSLIB1039</NoWarn>
+    <NoWarn>$(NoWarn);SYSLIB0020;SYSLIB0049;SYSLIB1037;SYSLIB1038;SYSLIB1039</NoWarn>
+    <IgnoreForCI Condition="'$(TargetsMobile)' == 'true' or '$(TargetsLinuxBionic)' == 'true' or '$(TargetArchitecture)' == 'ARMv6'">true</IgnoreForCI> 
   </PropertyGroup>
 
   <PropertyGroup>
@@ -103,6 +105,7 @@
     <Compile Include="Serialization\UnsupportedTypesTests.cs" />
     <Compile Include="TestClasses.cs" />
     <Compile Include="TestClasses.CustomConverters.cs" />
+    <Compile Include="UnspeakableTypeTests.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RoslynSupportsRequiredAttributes)' == 'true'">

@@ -28,7 +28,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 
 		// Limit tracking array values to 32 values for performance reasons.
 		// There are many arrays much longer than 32 elements in .NET,
-		// but the interesting ones for the linker are nearly always less than 32 elements.
+		// but the interesting ones for the ILLink are nearly always less than 32 elements.
 		const int MaxTrackedArrayValues = 32;
 
 		public TrimAnalysisVisitor (
@@ -79,7 +79,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			var elements = operation.Initializer?.ElementValues.Select (val => Visit (val, state)).ToArray () ?? System.Array.Empty<MultiValue> ();
 			foreach (var array in arrayValue.Cast<ArrayValue> ()) {
 				for (int i = 0; i < elements.Length; i++) {
-					array.IndexValues.Add (i, elements[i]);
+					array.IndexValues.Add (i, ArrayValue.SanitizeArrayElementValue(elements[i]));
 				}
 			}
 
@@ -229,9 +229,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 						arr.IndexValues.Clear ();
 					} else {
 						if (arr.IndexValues.TryGetValue (index.Value, out _)) {
-							arr.IndexValues[index.Value] = valueToWrite;
+							arr.IndexValues[index.Value] = ArrayValue.SanitizeArrayElementValue(valueToWrite);
 						} else if (arr.IndexValues.Count < MaxTrackedArrayValues) {
-							arr.IndexValues[index.Value] = valueToWrite;
+							arr.IndexValues[index.Value] = ArrayValue.SanitizeArrayElementValue(valueToWrite);
 						}
 					}
 				}
@@ -248,7 +248,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// - The return here is also technically problematic, the return value is an instance of a known type,
 			//   but currently we return empty (since the .ctor is declared as returning void).
 			//   Especially with DAM on type, this can lead to incorrectly analyzed code (as in unknown type which leads
-			//   to noise). Linker has the same problem currently: https://github.com/dotnet/linker/issues/1952
+			//   to noise). ILLink has the same problem currently: https://github.com/dotnet/linker/issues/1952
 
 			var diagnosticContext = DiagnosticContext.CreateDisabled ();
 			var handleCallAction = new HandleCallAction (diagnosticContext, Method, operation);
@@ -328,16 +328,16 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					case SpecialType.System_Byte when constantValue is byte byteConstantValue:
 						constValue = new ConstIntValue (byteConstantValue);
 						return true;
-					case SpecialType.System_Int16 when constantValue is Int16 int16ConstantValue:
+					case SpecialType.System_Int16 when constantValue is short int16ConstantValue:
 						constValue = new ConstIntValue (int16ConstantValue);
 						return true;
-					case SpecialType.System_UInt16 when constantValue is UInt16 uint16ConstantValue:
+					case SpecialType.System_UInt16 when constantValue is ushort uint16ConstantValue:
 						constValue = new ConstIntValue (uint16ConstantValue);
 						return true;
-					case SpecialType.System_Int32 when constantValue is Int32 int32ConstantValue:
+					case SpecialType.System_Int32 when constantValue is int int32ConstantValue:
 						constValue = new ConstIntValue (int32ConstantValue);
 						return true;
-					case SpecialType.System_UInt32 when constantValue is UInt32 uint32ConstantValue:
+					case SpecialType.System_UInt32 when constantValue is uint uint32ConstantValue:
 						constValue = new ConstIntValue ((int) uint32ConstantValue);
 						return true;
 					}

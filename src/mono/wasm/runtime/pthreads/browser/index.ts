@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { MonoWorkerMessageChannelCreated, isMonoWorkerMessageChannelCreated, monoSymbol, makeMonoThreadMessageApplyMonoConfig } from "../shared";
+import { isMonoWorkerMessageChannelCreated, monoSymbol, makeMonoThreadMessageApplyMonoConfig, isMonoWorkerMessagePreload, MonoWorkerMessage } from "../shared";
 import { pthread_ptr } from "../shared/types";
 import { MonoThreadMessage } from "../shared";
 import { PromiseController, createPromiseController } from "../../promise-controller";
@@ -85,17 +85,20 @@ function monoDedicatedChannelMessageFromWorkerToMain(event: MessageEvent<unknown
 }
 
 // handler that runs in the main thread when a message is received from a pthread worker
-function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMessageChannelCreated<MessagePort>>): void {
+function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMessage<MessagePort>>): void {
     /// N.B. important to ignore messages we don't recognize - Emscripten uses the message event to send internal messages
     const data = ev.data;
-    if (isMonoWorkerMessageChannelCreated(data)) {
+    if (isMonoWorkerMessagePreload(data)) {
+        const port = data[monoSymbol].port;
+        port.postMessage(makeMonoThreadMessageApplyMonoConfig(runtimeHelpers.config));
+    }
+    else if (isMonoWorkerMessageChannelCreated(data)) {
         console.debug("MONO_WASM: received the channel created message", data, worker);
         const port = data[monoSymbol].port;
         const pthread_id = data[monoSymbol].thread_id;
         const thread = addThread(pthread_id, worker, port);
         port.addEventListener("message", (ev) => monoDedicatedChannelMessageFromWorkerToMain(ev, thread));
         port.start();
-        port.postMessage(makeMonoThreadMessageApplyMonoConfig(runtimeHelpers.config));
         resolvePromises(pthread_id, thread);
     }
 }
@@ -136,13 +139,7 @@ export async function instantiateWasmPThreadWorkerPool(): Promise<void> {
     // this is largely copied from emscripten's "receiveInstance" in "createWasm" in "src/preamble.js"
     const workers = Internals.getUnusedWorkerPool();
     if (workers.length > 0) {
-        const allLoaded = createPromiseController<void>();
-        let leftToLoad = workers.length;
-        workers.forEach((w) => {
-            Internals.loadWasmModuleToWorker(w, function () {
-                if (!--leftToLoad) allLoaded.promise_control.resolve();
-            });
-        });
-        await allLoaded.promise;
+        const promises = workers.map(Internals.loadWasmModuleToWorker);
+        await Promise.all(promises);
     }
 }

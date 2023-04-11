@@ -41,7 +41,7 @@ internal sealed class RunConfiguration
 
         HostProperties = rconfig.RuntimeOptions.WasmHostProperties;
         if (HostProperties == null)
-            throw new Exception($"Failed to deserialize {runtimeConfigPath} - config");
+            throw new Exception($"Could not find any {nameof(RuntimeOptions.WasmHostProperties)} in {runtimeConfigPath}");
 
         if (HostProperties.HostConfigs is null || HostProperties.HostConfigs.Count == 0)
             throw new Exception($"no perHostConfigs found");

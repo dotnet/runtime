@@ -96,11 +96,17 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // Runtime reflection stack needs to obtain the type handle of the field
                 // (but there's no type handles for function pointers)
-                TypeDesc fieldTypeToCheck = _field.FieldType;
-                while (fieldTypeToCheck.IsParameterizedType)
-                    fieldTypeToCheck = ((ParameterizedType)fieldTypeToCheck).ParameterType;
+                static bool ContainsFunctionPointers(TypeDesc type)
+                {
+                    if (type.IsParameterizedType)
+                        return ContainsFunctionPointers(((ParameterizedType)type).ParameterType);
+                    foreach (TypeDesc instArg in type.Instantiation)
+                        if (ContainsFunctionPointers(instArg))
+                            return true;
+                    return type.IsFunctionPointer;
+                }
 
-                if (!fieldTypeToCheck.IsFunctionPointer)
+                if (!ContainsFunctionPointers(_field.FieldType))
                     dependencies.Add(factory.MaximallyConstructableType(_field.FieldType.NormalizeInstantiation()), "Type of the field");
             }
 

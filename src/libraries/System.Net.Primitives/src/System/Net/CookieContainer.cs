@@ -113,10 +113,7 @@ namespace System.Net
 
         public CookieContainer(int capacity)
         {
-            if (capacity <= 0)
-            {
-                throw new ArgumentException(SR.net_toosmall, nameof(capacity));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
             m_maxCookies = capacity;
         }
 
@@ -127,10 +124,7 @@ namespace System.Net
                 throw new ArgumentOutOfRangeException(nameof(perDomainCapacity), SR.Format(SR.net_cookie_capacity_range, "PerDomainCapacity", 0, capacity));
             }
             m_maxCookiesPerDomain = perDomainCapacity;
-            if (maxCookieSize <= 0)
-            {
-                throw new ArgumentException(SR.net_toosmall, nameof(maxCookieSize));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxCookieSize);
             m_maxCookieSize = maxCookieSize;
         }
 

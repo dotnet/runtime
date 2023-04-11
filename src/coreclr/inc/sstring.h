@@ -518,6 +518,9 @@ private:
     //Returns the unicode string, the caller is responsible for lifetime of the string
     WCHAR *GetCopyOfUnicodeString();
 
+    //Returns the UTF8 string, the caller is responsible for the lifetime of the string
+    UTF8 *GetCopyOfUTF8String();
+
     // Get the max size that can be passed to OpenUnicodeBuffer without causing allocations.
     COUNT_T GetUnicodeAllocation();
 

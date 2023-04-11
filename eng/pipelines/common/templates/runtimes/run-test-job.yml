@@ -97,20 +97,6 @@ jobs:
       - name: monoAotBuildshCommand
         value: 'mono_fullaot'
 
-    - name: runtimeFlavorArgs
-      value: ''
-
-    - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-      - name: runtimeFlavorArgs
-        value: '-mono'
-
-    - name: runtimeVariantArg
-      value: ''
-
-    - ${{ if ne(parameters.runtimeVariant, '') }}:
-      - name: runtimeVariantArg
-        value: '/p:RuntimeVariant=${{ parameters.runtimeVariant }}'
-
     - name: codeFlowEnforcementArg
       value: ''
 
@@ -139,12 +125,8 @@ jobs:
 
     # Only build GCSimulator tests when the gc-simulator group is specified.
     - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
-      - ${{ if eq(parameters.osGroup, 'windows') }}:
-        - name: testTreeFilterArg
-          value: 'tree GC/Scenarios/GCSimulator'
-      - ${{ if ne(parameters.osGroup, 'windows') }}:
-        - name: testTreeFilterArg
-          value: '-tree:GC/Scenarios/GCSimulator'
+      - name: testTreeFilterArg
+        value: 'tree GC/Scenarios/GCSimulator'
 
     # Variables used for SuperPMI collection
     - ${{ if eq(parameters.SuperPmiCollect, true) }}:
@@ -176,71 +158,14 @@ jobs:
         - name: SpmiLogsLocation
           value: '$(Build.SourcesDirectory)/artifacts/spmi_logs/'
 
-    # Set job timeouts
-    #
-    # "timeoutPerTestCollectionInMinutes" is the time needed for the "biggest" xUnit test collection to complete.
-    # In case xUnit test wrappers get refactored this number should also be adjusted.
-    #
-    # "timeoutPerTestInMinutes" corresponds to individual test running time. This is implemented by setting
-    # the __TestTimeout variable, which is later read by the coreclr xunit test wrapper code (the code in the
-    # xunit test dlls that invokes the actual tests).
-    #
-    # Note that "timeoutInMinutes" is an Azure DevOps Pipelines parameter for a "job" that specifies the
-    # total time allowed for a job, and is specified lower down. Make sure you set it properly for any new testGroup.
-    #
-    # Please note that for Crossgen2 R2R runs, the "test running time" also includes the
-    # time needed to compile the test into native code with the Crossgen2 compiler.
-
-    - name: timeoutPerTestInMinutes
-      value: 10
-    - name: timeoutPerTestCollectionInMinutes
-      value: 30
-    - ${{ if in(parameters.testGroup, 'outerloop') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 120
-    - ${{ if eq(parameters.readyToRun, true) }}:
-        - name: timeoutPerTestCollectionInMinutes
-          value: 90
-        - name: timeoutPerTestInMinutes
-          value: 30
-    - ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 360
-      # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
-      - name: timeoutPerTestInMinutes
-        value: 240
-    - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstress-isas-avx512', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 120
-      - name: timeoutPerTestInMinutes
-        value: 30
-    - ${{ if in(parameters.testGroup, 'gcstress0x3-gcstress0xc') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 240
-      - name: timeoutPerTestInMinutes
-        value: 60
-    - ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 300
-      - name: timeoutPerTestInMinutes
-        value: 90
-    - ${{ if eq(parameters.testGroup, 'ilasm') }}:
-      # ilasm-ildasm round trip testing runs every test twice, plus runs ilasm and ildasm, so double the 'outerloop' timeout numbers.
-      - name: timeoutPerTestInMinutes
-        value: 20
-      - name: timeoutPerTestCollectionInMinutes
-        value: 240
-    - ${{ if in(parameters.testGroup, 'clrinterpreter') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 180
-      - name: timeoutPerTestInMinutes
-        value: 30
-    - ${{ if in(parameters.testGroup, 'pgo', 'pgostress') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 120
-    - ${{ if in(parameters.testGroup, 'jit-cfg') }}:
-      - name: timeoutPerTestCollectionInMinutes
-        value: 120
+    - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}
+        osSubgroup: ${{ parameters.osSubgroup }}
+        testGroup: ${{ parameters.testGroup }}
+        readyToRun: ${{ parameters.readyToRun }}
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        runtimeVariant: ${{ parameters.runtimeVariant }}
 
     - ${{ if eq(parameters.compositeBuildMode, true) }}:
       - name: crossgenArg
@@ -482,9 +407,11 @@ jobs:
           - jitstress_isas_nohwintrinsic
           - jitstress_isas_nohwintrinsic_nosimd
           - jitstress_isas_nosimd
+          - jitstress_isas_x86_evex
           - jitstress_isas_x86_noaes
           - jitstress_isas_x86_noavx
           - jitstress_isas_x86_noavx2
+          - jitstress_isas_x86_noavx512
           - jitstress_isas_x86_nobmi1
           - jitstress_isas_x86_nobmi2
           - jitstress_isas_x86_nofma
@@ -502,6 +429,7 @@ jobs:
           - jitstress_isas_1_x86_noaes
           - jitstress_isas_1_x86_noavx
           - jitstress_isas_1_x86_noavx2
+          - jitstress_isas_1_x86_noavx512
           - jitstress_isas_1_x86_nobmi1
           - jitstress_isas_1_x86_nobmi2
           - jitstress_isas_1_x86_nofma
@@ -519,6 +447,7 @@ jobs:
           - jitstress_isas_2_x86_noaes
           - jitstress_isas_2_x86_noavx
           - jitstress_isas_2_x86_noavx2
+          - jitstress_isas_2_x86_noavx512
           - jitstress_isas_2_x86_nobmi1
           - jitstress_isas_2_x86_nobmi2
           - jitstress_isas_2_x86_nofma
@@ -535,7 +464,9 @@ jobs:
           - jitstress_isas_2_x86_nossse3
         ${{ if in(parameters.testGroup, 'jitstress-isas-avx512') }}:
           scenarios:
-          - jitstress_isas_avx512_forceevex
+          - jitstress_isas_x86_evex
+          - jitstress_isas_x86_noavx512
+          - jitstressregs0x2000
         ${{ if in(parameters.testGroup, 'jitstressregs-x86') }}:
           scenarios:
           - jitstressregs1_x86_noavx
@@ -546,6 +477,7 @@ jobs:
           - jitstressregs0x10_x86_noavx
           - jitstressregs0x80_x86_noavx
           - jitstressregs0x1000_x86_noavx
+          - jitstressregs0x2000_x86_noavx
         ${{ if in(parameters.testGroup, 'jitstressregs' ) }}:
           scenarios:
           - jitstressregs1
@@ -556,6 +488,7 @@ jobs:
           - jitstressregs0x10
           - jitstressregs0x80
           - jitstressregs0x1000
+          - jitstressregs0x2000
         ${{ if in(parameters.testGroup, 'jitstress2-jitstressregs') }}:
           scenarios:
           - jitstress2_jitstressregs1
@@ -566,6 +499,7 @@ jobs:
           - jitstress2_jitstressregs0x10
           - jitstress2_jitstressregs0x80
           - jitstress2_jitstressregs0x1000
+          - jitstress2_jitstressregs0x2000
         ${{ if in(parameters.testGroup, 'gcstress0x3-gcstress0xc') }}:
           scenarios:
           - gcstress0x3
@@ -594,6 +528,7 @@ jobs:
           - jitstressregs0x10
           - jitstressregs0x80
           - jitstressregs0x1000
+          - jitstressregs0x2000
           - jitminopts
           - forcerelocs
           - gcstress0xc
@@ -615,6 +550,8 @@ jobs:
             - fullpgo_random_gdv_methodprofiling_only
             - fullpgo_random_gdv_edge
             - fullpgo_methodprofiling_always_optimized
+            - syntheticpgo
+            - syntheticpgo_blend
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
           longRunningGcTests: true
           scenarios:
@@ -646,6 +583,8 @@ jobs:
             - jitpartialcompilation
             - jitpartialcompilation_pgo
             - jitobjectstackallocation
+            - jitgeneralizedpromotion
+            - jitgeneralizedpromotion_full
 
         ${{ if in(parameters.testGroup, 'jit-cfg') }}:
           scenarios:

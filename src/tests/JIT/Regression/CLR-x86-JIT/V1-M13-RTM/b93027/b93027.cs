@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 public class AA
 {
     static Array Static1(ref Array[, ,] param1, ref int param2)
@@ -10,7 +11,8 @@ public class AA
         return param1[param2, param2,
             ((byte)(33 / param2)) | ((byte)((float)((byte)(33 / param2))))];
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

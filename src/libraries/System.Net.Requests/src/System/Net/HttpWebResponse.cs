@@ -35,6 +35,7 @@ namespace System.Net
         }
 
         [Obsolete("Serialization has been deprecated for HttpWebResponse.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected HttpWebResponse(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
             throw new PlatformNotSupportedException();

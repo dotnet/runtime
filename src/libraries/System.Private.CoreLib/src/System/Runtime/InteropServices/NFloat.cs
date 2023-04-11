@@ -164,7 +164,7 @@ namespace System.Runtime.InteropServices
         /// <summary>Multiplies two values together to compute their product.</summary>
         /// <param name="left">The value which <paramref name="right" /> multiplies.</param>
         /// <param name="right">The value which multiplies <paramref name="left" />.</param>
-        /// <returns>The product of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
+        /// <returns>The product of <paramref name="left" /> multiplied-by <paramref name="right" />.</returns>
         [NonVersionable]
         public static NFloat operator *(NFloat left, NFloat right) => new NFloat(left._value * right._value);
 
@@ -1163,6 +1163,9 @@ namespace System.Runtime.InteropServices
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(NFloat x) => NativeType.ILogB(x._value);
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
+        public static NFloat Lerp(NFloat value1, NFloat value2, NFloat amount) => new NFloat(NativeType.Lerp(value1._value, value2._value, amount._value));
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static NFloat ReciprocalEstimate(NFloat x) => new NFloat(NativeType.ReciprocalEstimate(x._value));

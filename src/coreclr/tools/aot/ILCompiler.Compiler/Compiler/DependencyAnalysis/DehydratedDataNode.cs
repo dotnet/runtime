@@ -123,7 +123,10 @@ namespace ILCompiler.DependencyAnalysis
                     int oldPosition = dehydratedSegmentPosition;
                     dehydratedSegmentPosition = dehydratedSegmentPosition.AlignUp(o.Alignment);
                     if (dehydratedSegmentPosition > oldPosition)
-                        builder.EmitByte(DehydratedDataCommand.EncodeShort(DehydratedDataCommand.ZeroFill, dehydratedSegmentPosition - oldPosition));
+                    {
+                        int written = DehydratedDataCommand.Encode(DehydratedDataCommand.ZeroFill, dehydratedSegmentPosition - oldPosition, buff);
+                        builder.EmitBytes(buff, 0, written);
+                    }
                 }
 
                 int currentReloc = 0;
