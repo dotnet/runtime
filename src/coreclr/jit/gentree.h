@@ -6283,7 +6283,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);
 
-    void Initialize(NamedIntrinsic intrinsicId, bool isSimdAsHWIntrinsic);
+    void Initialize(NamedIntrinsic intrinsicId);
 };
 #endif // FEATURE_HW_INTRINSICS
 

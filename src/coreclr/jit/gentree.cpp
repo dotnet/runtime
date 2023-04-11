@@ -24402,7 +24402,7 @@ void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
            OperandsAreEqual(op1, op2);
 }
 
-void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId, bool isSimdAsHWIntrinsic)
+void GenTreeHWIntrinsic::Initialize(NamedIntrinsic intrinsicId)
 {
     SetHWIntrinsicId(intrinsicId);
 
