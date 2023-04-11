@@ -24448,7 +24448,6 @@ void gc_heap::check_decommissioned_heap()
         assert (generation_free_list_space                 (gen) == DECOMMISSIONED_SIZE_T);
         assert (generation_free_obj_space                  (gen) == DECOMMISSIONED_SIZE_T);
         assert (generation_allocation_size                 (gen) == DECOMMISSIONED_SIZE_T);
-        assert (generation_pinned_allocated                (gen) == DECOMMISSIONED_SIZE_T);
         assert (generation_pinned_allocation_compact_size  (gen) == DECOMMISSIONED_SIZE_T);
         assert (generation_pinned_allocation_sweep_size    (gen) == DECOMMISSIONED_SIZE_T);
         assert (gen->gen_num                                     == DECOMMISSIONED_INT);
@@ -24585,7 +24584,6 @@ void gc_heap::decommission_heap()
         generation_free_obj_space                  (gen) = DECOMMISSIONED_SIZE_T;
         generation_allocation_size                 (gen) = DECOMMISSIONED_SIZE_T;
 
-        generation_pinned_allocated                (gen) = DECOMMISSIONED_SIZE_T;
         generation_pinned_allocation_compact_size  (gen) = DECOMMISSIONED_SIZE_T;
         generation_pinned_allocation_sweep_size    (gen) = DECOMMISSIONED_SIZE_T;
         gen->gen_num                                     = DECOMMISSIONED_INT;
@@ -24725,7 +24723,6 @@ void gc_heap::recommission_heap()
         generation_free_obj_space                  (gen) = 0;
         generation_allocation_size                 (gen) = 0;
 
-        generation_pinned_allocated                (gen) = 0;
         generation_pinned_allocation_compact_size  (gen) = 0;
         generation_pinned_allocation_sweep_size    (gen) = 0;
         gen->gen_num                                     = gen_idx;
