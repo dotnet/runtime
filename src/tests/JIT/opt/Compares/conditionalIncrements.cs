@@ -79,7 +79,7 @@ public class ConditionalIncrementTest
     static int cinc_float(float op1)
     {
         //ARM64-FULL-LINE: fcmp {{s[0-9]+}}, {{s[0-9]+}}
-        //ARM64-FULL-LINE-NEXT: csel {{w[0-9]+}}, {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
+        //ARM64-FULL-LINE-NEXT: cinc {{w[0-9]+}}, {{w[0-9]+}}, {{gt|le}}
         return op1 > 50.0f ? 6 : 5;
     }
 

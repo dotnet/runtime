@@ -867,27 +867,40 @@ int LinearScan::BuildCast(GenTreeCast* cast)
 }
 
 //------------------------------------------------------------------------
-// BuildSelect: Build RefPositions for a GT_SELECT node.
+// BuildConditional: Build RefPositions for a GT_SELECT/GT_SELECTCC/GT_CINC/GT_CINCC node.
 //
 // Arguments:
-//    select - The GT_SELECT node
+//    node - The node
 //
 // Return Value:
 //    The number of sources consumed by this node.
 //
-int LinearScan::BuildSelect(GenTreeOp* select)
+int LinearScan::BuildConditional(GenTreeOp* node)
 {
-    assert(select->OperIs(GT_SELECT, GT_SELECTCC));
+#ifdef TARGET_ARM64
+    assert(node->OperIs(GT_SELECT, GT_SELECTCC, GT_CINC, GT_CINCCC));
+#else
+    assert(node->OperIs(GT_SELECT, GT_SELECTCC));
+#endif
 
     int srcCount = 0;
-    if (select->OperIs(GT_SELECT))
+#ifdef TARGET_ARM64
+    if (node->OperIs(GT_SELECT, GT_CINC))
+#else
+    if (node->OperIs(GT_SELECT))
+#endif
     {
-        srcCount += BuildOperandUses(select->AsConditional()->gtCond);
+        srcCount += BuildOperandUses(node->AsConditional()->gtCond);
     }
 
-    srcCount += BuildOperandUses(select->gtOp1);
-    srcCount += BuildOperandUses(select->gtOp2);
-    BuildDef(select);
+    srcCount += BuildOperandUses(node->gtOp1);
+#ifdef TARGET_ARM64
+    if (!node->OperIs(GT_CINCCC))
+#endif
+    {
+        srcCount += BuildOperandUses(node->gtOp2);
+    }
+    BuildDef(node);
 
     return srcCount;
 }

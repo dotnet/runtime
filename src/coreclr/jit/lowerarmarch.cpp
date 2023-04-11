@@ -2516,7 +2516,6 @@ void Lowering::TryLowerCselToCinc(GenTreeOp* select, GenTree* cond)
         // Create a cinc node, insert it and update the use.
         if (select->OperIs(GT_SELECT))
         {
-            assert(!varTypeIsFloating(cond->gtGetOp2()->TypeGet()));
             if (shouldReverseCondition)
             {
                 // Reverse the condition so that op2 will be selected

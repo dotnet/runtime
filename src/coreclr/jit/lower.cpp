@@ -3803,8 +3803,7 @@ GenTree* Lowering::LowerSelect(GenTreeConditional* select)
     }
 
 #ifdef TARGET_ARM64
-    if (trueVal->IsCnsIntOrI() && falseVal->IsCnsIntOrI() &&
-        !(cond->OperIsSimple() && varTypeIsFloating(cond->gtGetOp1()->TypeGet())))
+    if (trueVal->IsCnsIntOrI() && falseVal->IsCnsIntOrI())
     {
         TryLowerCselToCinc(select, cond);
     }
