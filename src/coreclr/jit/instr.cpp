@@ -1775,7 +1775,6 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         assert(genIsValidFloatReg(srcReg));
         return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_fmv_x_w : INS_fmv_x_d;
     }
-    return INS_invalid;
 #else // TARGET*
 #error "Unknown TARGET"
 #endif
