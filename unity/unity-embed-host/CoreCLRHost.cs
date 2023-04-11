@@ -2,6 +2,7 @@ using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Text;
 
 [assembly:DisableRuntimeMarshalling]
@@ -132,6 +133,13 @@ static unsafe partial class CoreCLRHost
     [return: NativeCallbackType("int")]
     public static int array_length([NativeCallbackType("MonoArray*")] IntPtr array)
         => ((Array)array.ToManagedRepresentation()).Length;
+
+    [return: NativeCallbackType("MonoObject*")]
+    public static IntPtr object_new(
+        [NoManagedWrapper]
+        [NativeCallbackType("MonoDomain*")] IntPtr domain,
+        [NativeCallbackType("MonoClass*")] IntPtr klass)
+        => FormatterServices.GetUninitializedObject(klass.TypeFromHandleIntPtr()).ToNativeRepresentation();
 
     static StringPtr StringToPtr(string s)
     {

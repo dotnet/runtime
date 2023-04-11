@@ -3,7 +3,7 @@
 
 namespace UnityEmbedHost.Tests;
 
-class Mammal : Anaimal, IMammal
+class Mammal : Animal, IMammal
 {
 }
 
@@ -19,7 +19,7 @@ class Rock : IRock
 {
 }
 
-class Anaimal : IAnimal
+class Animal : IAnimal
 {
 }
 

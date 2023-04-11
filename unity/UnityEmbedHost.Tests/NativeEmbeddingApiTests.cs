@@ -14,6 +14,14 @@ namespace UnityEmbedHost.Tests;
 public class NativeEmbeddingApiTests
 {
     [Test]
+    public void MonoObjectGetClassReturnsClass()
+    {
+        var obj = CoreCLRHostWrappers.object_new(typeof(Single));
+        Assert.NotNull(obj);
+        Assert.That(typeof(Single), Is.EqualTo(CoreCLRHostWrappers.object_get_class(obj)));
+    }
+
+    [Test]
     public void GCHandleNewAndGetTarget()
     {
         var obj = new object();
@@ -37,9 +45,9 @@ public class NativeEmbeddingApiTests
     // Classes and classes
     [TestCase(typeof(object), typeof(object), true)]
     [TestCase(typeof(Mammal), typeof(Mammal), true)]
-    [TestCase(typeof(Mammal), typeof(Anaimal), true)]
-    [TestCase(typeof(Cat), typeof(Anaimal), true)]
-    [TestCase(typeof(Rock), typeof(Anaimal), false)]
+    [TestCase(typeof(Mammal), typeof(Animal), true)]
+    [TestCase(typeof(Cat), typeof(Animal), true)]
+    [TestCase(typeof(Rock), typeof(Animal), false)]
 
     // Classes and interfaces
     [TestCase(typeof(Mammal), typeof(IMammal), true)]
@@ -69,7 +77,7 @@ public class NativeEmbeddingApiTests
     }
 
     [TestCase(typeof(Mammal), 1, typeof(Mammal), 1, true)]
-    [TestCase(typeof(Mammal), 1, typeof(Anaimal), 1, true)]
+    [TestCase(typeof(Mammal), 1, typeof(Animal), 1, true)]
 
     [TestCase(typeof(Mammal), 1, typeof(Mammal), 3, false)]
 
@@ -89,7 +97,7 @@ public class NativeEmbeddingApiTests
     }
 
     [TestCase(typeof(Mammal), typeof(Mammal), 1, false)]
-    [TestCase(typeof(Mammal), typeof(Anaimal), 1, false)]
+    [TestCase(typeof(Mammal), typeof(Animal), 1, false)]
 
     [TestCase(typeof(Mammal), typeof(Mammal), 2, false)]
 
@@ -109,7 +117,7 @@ public class NativeEmbeddingApiTests
     }
 
     [TestCase(typeof(Mammal), 1, typeof(Mammal), false)]
-    [TestCase(typeof(Mammal), 1, typeof(Anaimal), false)]
+    [TestCase(typeof(Mammal), 1, typeof(Animal), false)]
 
     [TestCase(typeof(Mammal), 1, typeof(Mammal), false)]
 
@@ -148,7 +156,7 @@ public class NativeEmbeddingApiTests
         }
     }
 
-    [TestCase(typeof(Anaimal))]
+    [TestCase(typeof(Animal))]
     [TestCase(typeof(ValueAnimal))]
     public void GetClass(Type type)
     {

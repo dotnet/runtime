@@ -508,7 +508,7 @@ TEST(unity_mono_reflection_method_get_method_works)
 
 TEST(mono_object_isinst_works_with_same_class)
 {
-    MonoClass *klass = GetClassHelper(kTestDLLNameSpace, "BaseClass");
+    MonoClass *klass = GetClassHelper(kTestDLLNameSpace, "ClassWithNestedClass");
     MonoObject* testobj = mono_object_new(g_domain, klass);
     CHECK(mono_object_isinst(testobj, klass) != NULL);
 
