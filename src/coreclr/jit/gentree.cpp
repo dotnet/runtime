@@ -7012,7 +7012,7 @@ void GenTree::SetVtableForOper(genTreeOps oper)
 }
 #endif // DEBUGGABLE_GENTREE
 
-GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2)
+GenTreeOp* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2)
 {
     assert(op1 != nullptr);
     assert(op2 != nullptr);
@@ -7021,7 +7021,7 @@ GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, 
     // should call the appropriate constructor for the extended type.
     assert(!GenTree::IsExOp(GenTree::OperKind(oper)));
 
-    GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, op2);
+    GenTreeOp* node = new (this, oper) GenTreeOp(oper, type, op1, op2);
 
     return node;
 }
@@ -8397,7 +8397,7 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
                 return nullptr;
             }
 
-            if (tree->gtOper == GT_FIELD)
+            if (tree->OperIs(GT_FIELD))
             {
                 GenTree* objp = nullptr;
 
@@ -16263,6 +16263,34 @@ bool Compiler::gtSplitTree(
             return false;
         }
 
+        bool IsValue(const UseInfo& useInf)
+        {
+            GenTree* node = (*useInf.Use)->gtEffectiveVal();
+            if (!node->IsValue())
+            {
+                return false;
+            }
+
+            if (node->OperIs(GT_ASG))
+            {
+                return false;
+            }
+
+            GenTree* user = useInf.User;
+
+            if (user == nullptr)
+            {
+                return false;
+            }
+
+            if (user->OperIs(GT_COMMA) && (&user->AsOp()->gtOp1 == useInf.Use))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         void SplitOutUse(const UseInfo& useInf, bool userIsReturned)
         {
             GenTree** use  = useInf.Use;
@@ -16328,8 +16356,7 @@ bool Compiler::gtSplitTree(
             }
 
             Statement* stmt = nullptr;
-            if (!(*use)->IsValue() || (*use)->gtEffectiveVal()->OperIs(GT_ASG) || (user == nullptr) ||
-                (user->OperIs(GT_COMMA) && (user->gtGetOp1() == *use)))
+            if (!IsValue(useInf))
             {
                 GenTree* sideEffects = nullptr;
                 m_compiler->gtExtractSideEffList(*use, &sideEffects);

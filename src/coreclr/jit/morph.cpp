@@ -3328,7 +3328,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
                         if (argLclNum != BAD_VAR_NUM)
                         {
-                            argObj->ChangeType(argVarDsc->TypeGet());
+                            argx->ChangeType(argVarDsc->TypeGet());
                             argObj->SetOper(GT_LCL_VAR);
                             argObj->AsLclVar()->SetLclNum(argLclNum);
                         }
@@ -3346,7 +3346,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         {
                             // TODO-CQ: perform this transformation in lowering instead of here and
                             // avoid marking enregisterable structs DNER.
-                            argObj->ChangeType(structBaseType);
+                            argx->ChangeType(structBaseType);
                             if (argObj->OperIs(GT_LCL_VAR))
                             {
                                 argObj->SetOper(GT_LCL_FLD);
@@ -14750,6 +14750,14 @@ PhaseStatus Compiler::fgPromoteStructs()
         JITDUMP("  promotion disabled by JitNoStructPromotion\n");
         return PhaseStatus::MODIFIED_NOTHING;
     }
+
+#ifdef DEBUG
+    if (compStressCompile(STRESS_NO_OLD_PROMOTION, 10))
+    {
+        JITDUMP("  skipping due to stress\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+#endif
 
 #if 0
     // The code in this #if has been useful in debugging struct promotion issues, by

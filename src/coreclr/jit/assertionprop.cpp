@@ -1256,6 +1256,22 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                         goto DONE_ASSERTION; // Don't make an assertion
                     }
 
+                    // We process locals when we see the LCL_VAR node instead
+                    // of at its actual use point (its parent). That opens us
+                    // up to problems in a case like the following, assuming we
+                    // allowed creating an assertion like V10 = V35:
+                    //
+                    // └──▌  ADD       int
+                    //    ├──▌  LCL_VAR   int    V10 tmp6        -> copy propagated to [V35 tmp31]
+                    //    └──▌  COMMA     int
+                    //       ├──▌  ASG       int
+                    //       │  ├──▌  LCL_VAR   int    V35 tmp31
+                    //       │  └──▌  LCL_FLD   int    V03 loc1         [+4]
+                    if (lclVar2->lvRedefinedInEmbeddedStatement)
+                    {
+                        goto DONE_ASSERTION; // Don't make an assertion
+                    }
+
                     assertion.op2.kind       = O2K_LCLVAR_COPY;
                     assertion.op2.vn         = optConservativeNormalVN(op2);
                     assertion.op2.lcl.lclNum = lclNum2;

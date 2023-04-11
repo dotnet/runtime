@@ -158,6 +158,7 @@ set( JIT_SOURCES
   optimizer.cpp
   patchpoint.cpp
   phase.cpp
+  promotion.cpp
   rangecheck.cpp
   rationalize.cpp
   redundantbranchopts.cpp
@@ -348,6 +349,7 @@ set( JIT_HEADERS
   objectalloc.h
   opcode.h
   phase.h
+  promotion.h
   rangecheck.h
   rationalize.h
   regalloc.h
