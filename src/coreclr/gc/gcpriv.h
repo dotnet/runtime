@@ -138,7 +138,7 @@ inline void FATAL_GC_ERROR()
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
 // For now disable regions for StandAlone GC, NativeAOT and MacOS builds
-#if defined (HOST_64BIT) && defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
+#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
 
@@ -229,7 +229,7 @@ inline void FATAL_GC_ERROR()
 #endif // MAX_LONGPATH
 
 #define TRACE_GC
-#define SIMPLE_DPRINTF
+//#define SIMPLE_DPRINTF
 
 //#define JOIN_STATS         //amount of time spent in the join
 
