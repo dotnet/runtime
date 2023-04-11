@@ -468,6 +468,11 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
 
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo);
+    JITDUMP("getThreadLocalStaticBlocksInfo\n:");
+    JITDUMP("tlsIndex= %u\n", (ssize_t)threadStaticBlocksInfo.tlsIndex.addr);
+    JITDUMP("offsetOfMaxThreadStaticBlocks= %u\n", threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks);
+    JITDUMP("offsetOfThreadLocalStoragePointer= %u\n", threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer);
+    JITDUMP("offsetOfThreadStaticBlocks= %u\n", threadStaticBlocksInfo.offsetOfThreadStaticBlocks);
 
     assert(threadStaticBlocksInfo.tlsIndex.accessType == IAT_VALUE);
     assert(eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED);
@@ -499,18 +504,14 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
     GenTreeLclVar* threadStaticBlockLcl = nullptr;
 
     // Grab a temp to store result (it's assigned from either fastPathBb or fallbackBb)
-    if (threadStaticBlockLcl == nullptr)
-    {
-        // Define a local for the result
-        unsigned threadStaticBlockLclNum         = lvaGrabTemp(true DEBUGARG("TLS field access"));
-        lvaTable[threadStaticBlockLclNum].lvType = TYP_I_IMPL;
-        threadStaticBlockLcl                     = gtNewLclvNode(threadStaticBlockLclNum, call->TypeGet());
+    unsigned threadStaticBlockLclNum         = lvaGrabTemp(true DEBUGARG("TLS field access"));
+    lvaTable[threadStaticBlockLclNum].lvType = TYP_I_IMPL;
+    threadStaticBlockLcl                     = gtNewLclvNode(threadStaticBlockLclNum, call->TypeGet());
 
-        *callUse = gtClone(threadStaticBlockLcl);
+    *callUse = gtClone(threadStaticBlockLcl);
 
-        fgMorphStmtBlockOps(block, stmt);
-        gtUpdateStmtSideEffects(stmt);
-    }
+    fgMorphStmtBlockOps(block, stmt);
+    gtUpdateStmtSideEffects(stmt);
 
     GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
 
@@ -555,7 +556,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
 
     // Create tree for "if (maxThreadStaticBlocks < typeIndex)"
     GenTree* maxThreadStaticBlocksCond =
-        gtNewOperNode(GT_LT, TYP_UINT, maxThreadStaticBlocksValue, gtCloneExpr(typeThreadStaticBlockIndexValue));
+        gtNewOperNode(GT_LT, TYP_INT, maxThreadStaticBlocksValue, gtCloneExpr(typeThreadStaticBlockIndexValue));
     maxThreadStaticBlocksCond = gtNewOperNode(GT_JTRUE, TYP_VOID, maxThreadStaticBlocksCond);
 
     // Create tree for "threadStaticBlockBase = tls[offsetOfThreadStaticBlocks]"
@@ -566,8 +567,8 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
         gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     // Create tree to "threadStaticBlockValue = threadStaticBlockBase[typeIndex]"
-    typeThreadStaticBlockIndexValue = gtNewOperNode(GT_MUL, TYP_UINT, gtCloneExpr(typeThreadStaticBlockIndexValue),
-                                                    gtNewIconNode(TARGET_POINTER_SIZE, TYP_UINT));
+    typeThreadStaticBlockIndexValue = gtNewOperNode(GT_MUL, TYP_INT, gtCloneExpr(typeThreadStaticBlockIndexValue),
+                                                    gtNewIconNode(TARGET_POINTER_SIZE, TYP_INT));
     GenTree* typeThreadStaticBlockRef =
         gtNewOperNode(GT_ADD, TYP_I_IMPL, threadStaticBlocksValue, typeThreadStaticBlockIndexValue);
     GenTree* typeThreadStaticBlockValue =
@@ -581,7 +582,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
         gtCloneExpr(defThreadStaticBlockBaseLclValue); // StaticBlockBaseLclValue that will be used
     GenTree* asgThreadStaticBlockBase = gtNewAssignNode(defThreadStaticBlockBaseLclValue, typeThreadStaticBlockValue);
 
-    // Create tree for "if (threadStaticBlockValue == nullptr)"
+    // Create tree for "if (threadStaticBlockValue != nullptr)"
     GenTree* threadStaticBlockNullCond =
         gtNewOperNode(GT_NE, TYP_INT, useThreadStaticBlockBaseLclValue, gtNewIconNode(0, TYP_I_IMPL));
     threadStaticBlockNullCond = gtNewOperNode(GT_JTRUE, TYP_VOID, threadStaticBlockNullCond);
@@ -663,13 +664,10 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
     //
     // Update loop info if loop table is known to be valid
     //
-    if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
-    {
-        maxThreadStaticBlocksCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
-        threadStaticBlockNullCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
-        fastPathBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
-        fallbackBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
-    }
+    maxThreadStaticBlocksCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
+    threadStaticBlockNullCondBB->bbNatLoopNum = prevBb->bbNatLoopNum;
+    fastPathBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
+    fallbackBb->bbNatLoopNum                  = prevBb->bbNatLoopNum;
 
     // All blocks are expected to be in the same EH region
     assert(BasicBlock::sameEHRegion(prevBb, block));
@@ -677,7 +675,6 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
     assert(BasicBlock::sameEHRegion(prevBb, threadStaticBlockNullCondBB));
     assert(BasicBlock::sameEHRegion(prevBb, fastPathBb));
 
-    // Extra step: merge prevBb with isInitedBb if possible
     fgReorderBlocks(/* useProfileData */ false);
     fgUpdateChangedFlowGraph(FlowGraphUpdates::COMPUTE_BASICS);
 
