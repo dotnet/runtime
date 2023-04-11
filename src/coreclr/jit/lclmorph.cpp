@@ -1354,17 +1354,15 @@ private:
             }
 #endif // FEATURE_HW_INTRINSICS
 
-            // Turn this into a narrow-cast if we can.
-            if (!isDef && varTypeIsIntegral(indir) && varTypeIsIntegral(varDsc))
+            if (!isDef)
             {
-                return IndirTransform::NarrowCast;
-            }
+                if (varTypeIsIntegral(indir) && varTypeIsIntegral(varDsc))
+                {
+                    return IndirTransform::NarrowCast;
+                }
 
-            // Turn this into a bitcast if we can.
-            if ((genTypeSize(indir) == genTypeSize(varDsc)) && (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)))
-            {
-                // TODO-ADDR: enable this optimization for all users and all targets.
-                if (user->OperIs(GT_RETURN) && (genTypeSize(indir) <= TARGET_POINTER_SIZE))
+                if ((genTypeSize(indir) == genTypeSize(varDsc)) && (genTypeSize(indir) <= TARGET_POINTER_SIZE) &&
+                    (varTypeIsFloating(indir) || varTypeIsFloating(varDsc)))
                 {
                     return IndirTransform::BitCast;
                 }

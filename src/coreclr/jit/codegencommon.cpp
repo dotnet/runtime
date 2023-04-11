@@ -9377,6 +9377,7 @@ void CodeGen::genBitCast(var_types targetType, regNumber targetReg, var_types sr
 //
 void CodeGen::genCodeForBitCast(GenTreeOp* treeNode)
 {
+    assert(treeNode->TypeGet() == genActualType(treeNode));
     regNumber targetReg  = treeNode->GetRegNum();
     var_types targetType = treeNode->TypeGet();
     GenTree*  op1        = treeNode->gtGetOp1();
@@ -9384,21 +9385,10 @@ void CodeGen::genCodeForBitCast(GenTreeOp* treeNode)
 
     if (op1->isContained())
     {
-        assert(op1->IsLocal() || op1->isIndir());
-        if (genIsRegCandidateLocal(op1))
-        {
-            unsigned lclNum = op1->AsLclVar()->GetLclNum();
-            GetEmitter()->emitIns_R_S(ins_Load(treeNode->TypeGet(), compiler->isSIMDTypeLocalAligned(lclNum)),
-                                      emitTypeSize(treeNode), targetReg, lclNum, 0);
-        }
-        else
-        {
-            op1->gtType = treeNode->TypeGet();
-            op1->SetRegNum(targetReg);
-            op1->ClearContained();
-            JITDUMP("Changing type of BITCAST source to load directly.\n");
-            genCodeForTreeNode(op1);
-        }
+        assert(op1->OperIs(GT_LCL_VAR));
+        unsigned    lclNum  = op1->AsLclVarCommon()->GetLclNum();
+        instruction loadIns = ins_Load(targetType, compiler->isSIMDTypeLocalAligned(lclNum));
+        GetEmitter()->emitIns_R_S(loadIns, emitTypeSize(targetType), targetReg, lclNum, 0);
     }
     else
     {

@@ -5709,6 +5709,7 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Sta
         case GT_RSZ:
         case GT_NEG:
         case GT_CAST:
+        case GT_BITCAST:
         case GT_INTRINSIC:
 #ifdef FEATURE_HW_INTRINSICS
         case GT_HWINTRINSIC:

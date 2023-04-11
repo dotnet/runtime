@@ -524,11 +524,15 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerCast(node);
             break;
 
+        case GT_BITCAST:
+            ContainCheckBitCast(node);
+            break;
+
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         case GT_BOUNDS_CHECK:
             ContainCheckBoundsChk(node->AsBoundsChk());
             break;
-#endif // TARGET_XARCH
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
         case GT_ARR_ELEM:
             noway_assert(!comp->opts.compJitEarlyExpandMDArrays);
@@ -7659,6 +7663,12 @@ void Lowering::ContainCheckNode(GenTree* node)
 #endif
             ContainCheckShiftRotate(node->AsOp());
             break;
+        case GT_CAST:
+            ContainCheckCast(node->AsCast());
+            break;
+        case GT_BITCAST:
+            ContainCheckBitCast(node);
+            break;
         case GT_ARR_OFFSET:
             ContainCheckArrOffset(node->AsArrOffs());
             break;
@@ -7801,31 +7811,16 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 void Lowering::ContainCheckBitCast(GenTree* node)
 {
     GenTree* const op1 = node->AsOp()->gtOp1;
-    if (op1->isMemoryOp())
+    if (op1->OperIs(GT_LCL_VAR) && (genTypeSize(op1) == genTypeSize(node)))
     {
-        op1->SetContained();
-    }
-    else if (op1->OperIs(GT_LCL_VAR))
-    {
-        if (!m_lsra->willEnregisterLocalVars())
+        if (IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1))
         {
-            op1->SetContained();
+            MakeSrcContained(node, op1);
         }
-        const LclVarDsc* varDsc = comp->lvaGetDesc(op1->AsLclVar());
-        // TODO-Cleanup: we want to check if the local is already known not
-        // to be on reg, for example, because local enreg is disabled.
-        if (varDsc->lvDoNotEnregister)
+        else if (IsSafeToMarkRegOptional(node, op1))
         {
-            op1->SetContained();
+            MakeSrcRegOptional(node, op1);
         }
-        else
-        {
-            op1->SetRegOptional();
-        }
-    }
-    else if (op1->IsLocal())
-    {
-        op1->SetContained();
     }
 }
 
