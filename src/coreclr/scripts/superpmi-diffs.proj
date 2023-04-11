@@ -48,8 +48,8 @@
     <SuperPmiDiffType Condition=" '$(_SuperPmiDiffType)' == '' ">asmdiffs</SuperPmiDiffType>
     <SuperPmiDiffType Condition=" '$(_SuperPmiDiffType)' != '' ">$(_SuperPmiDiffType)</SuperPmiDiffType>
 
-    <SuperPmiBaseJitOptionsArg Condition="'$(_SuperPmiBaseJitOptions) != ''">-base_jit_options &quot;$(_SuperPmiBaseJitOptions)&quot;</SuperPmiBaseJitOptionsArg>
-    <SuperPmiDiffJitOptionsArg Condition="'$(_SuperPmiDiffJitOptions) != ''">-diff_jit_options &quot;$(_SuperPmiDiffJitOptions)&quot;</SuperPmiDiffJitOptionsArg>
+    <SuperPmiBaseJitOptionsArg Condition="'$(_SuperPmiBaseJitOptions)' != ''">-base_jit_options &quot;$(_SuperPmiBaseJitOptions)&quot;</SuperPmiBaseJitOptionsArg>
+    <SuperPmiDiffJitOptionsArg Condition="'$(_SuperPmiDiffJitOptions)' != ''">-diff_jit_options &quot;$(_SuperPmiDiffJitOptions)&quot;</SuperPmiDiffJitOptionsArg>
   </PropertyGroup>
 
   <PropertyGroup>
