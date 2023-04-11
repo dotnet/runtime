@@ -10620,8 +10620,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                         CORINFO_CLASS_HANDLE handle    = gtGetClassHandle(addr, &isExact, &isNonNull);
                         if (isExact && (handle != NO_CLASS_HANDLE))
                         {
-                            ValueNum handleVn = vnStore->VNForIntPtrCon((ssize_t)handle);
-                            tree->gtVNPair    = vnStore->VNPWithExc(ValueNumPair(handleVn, handleVn), addrXvnp);
+                            ValueNum handleVN = vnStore->VNForHandle((ssize_t)handle, GTF_ICON_CLASS_HDL);
+                            tree->gtVNPair    = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), addrXvnp);
                             returnsTypeHandle = true;
                         }
                         else
