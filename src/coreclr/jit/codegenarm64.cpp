@@ -4524,12 +4524,21 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
         }
         else if (op2->isContained())
         {
-            assert(op2->OperIs(GT_LSH, GT_RSH, GT_RSZ));
-            assert(op2->gtGetOp2()->IsCnsIntOrI());
-            assert(op2->gtGetOp2()->isContained());
+            if (op2->OperIs(GT_NEG))
+            {
+                assert(ins == INS_cmp);
+                ins = INS_cmn;
+                emit->emitIns_R_R(ins, cmpSize, op1->GetRegNum(), op2->gtGetOp1()->GetRegNum());
+            }
+            else
+            {
+                assert(op2->OperIs(GT_LSH, GT_RSH, GT_RSZ));
+                assert(op2->gtGetOp2()->IsCnsIntOrI());
+                assert(op2->gtGetOp2()->isContained());
 
-            emit->emitIns_R_R_I(ins, cmpSize, op1->GetRegNum(), op2->gtGetOp1()->GetRegNum(),
-                                op2->gtGetOp2()->AsIntConCommon()->IntegralValue(), ShiftOpToInsOpts(op2->gtOper));
+                emit->emitIns_R_R_I(ins, cmpSize, op1->GetRegNum(), op2->gtGetOp1()->GetRegNum(),
+                                    op2->gtGetOp2()->AsIntConCommon()->IntegralValue(), ShiftOpToInsOpts(op2->gtOper));
+            }
         }
         else
         {

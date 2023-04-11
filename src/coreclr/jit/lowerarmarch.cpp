@@ -282,6 +282,19 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
         return false;
     }
 
+    if (childNode->OperIs(GT_NEG))
+    {
+        if (parentNode->OperIs(GT_CMP))
+        {
+            if (IsInvariantInRange(childNode, parentNode))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     if (childNode->OperIs(GT_CAST))
     {
         // Find "a op cast(b)"
@@ -2271,7 +2284,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         return;
 
 #ifdef TARGET_ARM64
-    if (comp->opts.OptimizationEnabled() && cmp->OperIsCompare())
+    if (comp->opts.OptimizationEnabled() && (cmp->OperIsCompare() || cmp->OperIs(GT_CMP)))
     {
         if (IsContainableBinaryOp(cmp, op2))
         {
