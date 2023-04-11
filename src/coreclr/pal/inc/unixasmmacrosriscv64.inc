@@ -43,12 +43,10 @@ C_FUNC(\Name\()_End):
 
 .macro PROLOG_STACK_ALLOC Size
     addi sp, sp, -\Size
-    .cfi_def_cfa sp,\Size
 .endm
 
 .macro EPILOG_STACK_FREE Size
     addi sp, sp, \Size
-    .cfi_def_cfa sp,-\Size
 .endm
 
 .macro EPILOG_STACK_RESTORE
