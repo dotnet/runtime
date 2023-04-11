@@ -441,7 +441,7 @@ namespace System.Text.Unicode
             /// <param name="value">The span to write.</param>
             public bool AppendFormatted(scoped ReadOnlySpan<char> value)
             {
-                if (FromUtf16(value, _destination.Slice(_pos), out _, out int bytesWritten) == OperationStatus.Done)
+                if (Encoding.UTF8.TryGetBytes(value, _destination.Slice(_pos), out int bytesWritten))
                 {
                     _pos += bytesWritten;
                     return true;

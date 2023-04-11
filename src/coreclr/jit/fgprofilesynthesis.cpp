@@ -137,6 +137,7 @@ void ProfileSynthesis::AssignLikelihoods()
             case BBJ_THROW:
             case BBJ_RETURN:
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
                 // No successor cases
                 // (todo: finally ret may have succs)
                 break;
@@ -503,6 +504,7 @@ void ProfileSynthesis::RepairLikelihoods()
             case BBJ_THROW:
             case BBJ_RETURN:
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
                 // No successor cases
                 // Nothing to do.
                 break;
@@ -580,6 +582,7 @@ void ProfileSynthesis::BlendLikelihoods()
             case BBJ_THROW:
             case BBJ_RETURN:
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
                 // No successor cases
                 // Nothing to do.
                 break;

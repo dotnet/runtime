@@ -5,8 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Runtime.Serialization;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -2638,23 +2639,47 @@ namespace System.Tests
             DateTime dt = DateTime.UtcNow;
             string expected = dt.ToString(format);
 
-            // Just the right length, succeeds
-            Span<char> dest = new char[expected.Length];
-            Assert.True(dt.TryFormat(dest, out int charsWritten, format));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal<char>(expected.ToCharArray(), dest.ToArray());
+            // UTF16
+            {
+                // Just the right length, succeeds
+                Span<char> dest = new char[expected.Length];
+                Assert.True(dt.TryFormat(dest, out int charsWritten, format));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal<char>(expected.ToCharArray(), dest.ToArray());
 
-            // Too short, fails
-            dest = new char[expected.Length - 1];
-            Assert.False(dt.TryFormat(dest, out charsWritten, format));
-            Assert.Equal(0, charsWritten);
+                // Too short, fails
+                dest = new char[expected.Length - 1];
+                Assert.False(dt.TryFormat(dest, out charsWritten, format));
+                Assert.Equal(0, charsWritten);
 
-            // Longer than needed, succeeds
-            dest = new char[expected.Length + 1];
-            Assert.True(dt.TryFormat(dest, out charsWritten, format));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal<char>(expected.ToCharArray(), dest.Slice(0, expected.Length).ToArray());
-            Assert.Equal(0, dest[dest.Length - 1]);
+                // Longer than needed, succeeds
+                dest = new char[expected.Length + 1];
+                Assert.True(dt.TryFormat(dest, out charsWritten, format));
+                Assert.Equal(expected.Length, charsWritten);
+                Assert.Equal<char>(expected.ToCharArray(), dest.Slice(0, expected.Length).ToArray());
+                Assert.Equal(0, dest[dest.Length - 1]);
+            }
+
+            // UTF8
+            {
+                // Just the right length, succeeds
+                Span<byte> dest = new byte[expected.Length];
+                Assert.True(((IUtf8SpanFormattable)dt).TryFormat(dest, out int bytesWritten, format, null));
+                Assert.Equal(expected.Length, bytesWritten);
+                Assert.Equal(expected, Encoding.UTF8.GetString(dest));
+
+                // Too short, fails
+                dest = new byte[expected.Length - 1];
+                Assert.False(((IUtf8SpanFormattable)dt).TryFormat(dest, out bytesWritten, format, null));
+                Assert.Equal(0, bytesWritten);
+
+                // Longer than needed, succeeds
+                dest = new byte[expected.Length + 1];
+                Assert.True(((IUtf8SpanFormattable)dt).TryFormat(dest, out bytesWritten, format, null));
+                Assert.Equal(expected.Length, bytesWritten);
+                Assert.Equal(expected, Encoding.UTF8.GetString(dest.Slice(0, expected.Length)));
+                Assert.Equal(0, dest[dest.Length - 1]);
+            }
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
@@ -2662,13 +2687,27 @@ namespace System.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60562", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void TryFormat_MatchesExpected(DateTime dateTime, string format, IFormatProvider provider, string expected)
         {
-            var destination = new char[expected.Length];
+            // UTF16
+            {
+                var destination = new char[expected.Length];
 
-            Assert.False(dateTime.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
+                Assert.False(dateTime.TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
 
-            Assert.True(dateTime.TryFormat(destination, out int charsWritten, format, provider));
-            Assert.Equal(destination.Length, charsWritten);
-            Assert.Equal(expected, new string(destination));
+                Assert.True(dateTime.TryFormat(destination, out int charsWritten, format, provider));
+                Assert.Equal(destination.Length, charsWritten);
+                Assert.Equal(expected, new string(destination));
+            }
+
+            // UTF8
+            {
+                var destination = new byte[expected.Length];
+
+                Assert.False(((IUtf8SpanFormattable)dateTime).TryFormat(destination.AsSpan(0, destination.Length - 1), out _, format, provider));
+
+                Assert.True(((IUtf8SpanFormattable)dateTime).TryFormat(destination, out int byteWritten, format, provider));
+                Assert.Equal(destination.Length, byteWritten);
+                Assert.Equal(expected, Encoding.UTF8.GetString(destination));
+            }
         }
 
         [Fact]

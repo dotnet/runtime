@@ -106,6 +106,8 @@ namespace System.Net.WebSockets
         public WebSocketException(string? message, System.Exception? innerException) { }
         public override int ErrorCode { get { throw null; } }
         public System.Net.WebSockets.WebSocketError WebSocketErrorCode { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public enum WebSocketMessageType

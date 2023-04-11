@@ -91,6 +91,8 @@ BOOL bgc_heap_walk_for_etw_p = FALSE;
 
 #define UOH_ALLOCATION_RETRY_MAX_COUNT 2
 
+#define MAX_YP_SPIN_COUNT_UNIT 32768
+
 uint32_t yp_spin_count_unit = 0;
 uint32_t original_spin_count_unit = 0;
 size_t loh_size_threshold = LARGE_OBJECT_SIZE;
@@ -2423,6 +2425,7 @@ double      gc_heap::short_plugs_pad_ratio = 0;
 
 int         gc_heap::generation_skip_ratio_threshold = 0;
 int         gc_heap::conserve_mem_setting = 0;
+bool        gc_heap::spin_count_unit_config_p = false;
 
 uint64_t    gc_heap::suspended_start_time = 0;
 uint64_t    gc_heap::end_gc_time = 0;
@@ -13679,7 +13682,6 @@ void gc_heap::make_generation (int gen_num, heap_segment* seg, uint8_t* start)
 #endif //USE_REGIONS
     gen->allocation_segment = seg;
     gen->free_list_space = 0;
-    gen->pinned_allocated = 0;
     gen->free_list_allocated = 0;
     gen->end_seg_allocated = 0;
     gen->condemned_allocated = 0;
@@ -14098,6 +14100,15 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
 #else
     yp_spin_count_unit = 32 * g_num_processors;
 #endif //MULTIPLE_HEAPS
+
+    // Check if the values are valid for the spin count if provided by the user
+    // and if they are, set them as the yp_spin_count_unit and then ignore any updates made in SetYieldProcessorScalingFactor.
+    int64_t spin_count_unit_from_config = GCConfig::GetGCSpinCountUnit();
+    gc_heap::spin_count_unit_config_p = (spin_count_unit_from_config > 0) && (spin_count_unit_from_config <= MAX_YP_SPIN_COUNT_UNIT);
+    if (gc_heap::spin_count_unit_config_p)
+    {
+        yp_spin_count_unit = static_cast<int32_t>(spin_count_unit_from_config);
+    }
 
     original_spin_count_unit = yp_spin_count_unit;
 
@@ -21891,12 +21902,10 @@ void gc_heap::gc1()
         generation* gn = generation_of (gen_number);
         if (settings.compaction)
         {
-            generation_pinned_allocated (gn) += generation_pinned_allocation_compact_size (gn);
             generation_allocation_size (generation_of (gen_number)) += generation_pinned_allocation_compact_size (gn);
         }
         else
         {
-            generation_pinned_allocated (gn) += generation_pinned_allocation_sweep_size (gn);
             generation_allocation_size (generation_of (gen_number)) += generation_pinned_allocation_sweep_size (gn);
         }
         generation_pinned_allocation_sweep_size (gn) = 0;
@@ -31238,7 +31247,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
         generation_allocation_size (condemned_gen2) = 0;
         generation_condemned_allocated (condemned_gen2) = 0;
         generation_sweep_allocated (condemned_gen2) = 0;
-        generation_pinned_allocated (condemned_gen2) = 0;
         generation_free_list_allocated(condemned_gen2) = 0;
         generation_end_seg_allocated (condemned_gen2) = 0;
         generation_pinned_allocation_sweep_size (condemned_gen2) = 0;
@@ -47155,7 +47163,8 @@ HRESULT GCHeap::Initialize()
         }
         gc_heap::regions_range = align_on_page(gc_heap::regions_range);
     }
-    // TODO: Set config after config API is merged.
+
+    GCConfig::SetGCRegionRange(gc_heap::regions_range);
 #endif //USE_REGIONS
 
 #endif //HOST_64BIT
@@ -47627,14 +47636,17 @@ size_t GCHeap::GetPromotedBytes(int heap_index)
 
 void GCHeap::SetYieldProcessorScalingFactor (float scalingFactor)
 {
-    assert (yp_spin_count_unit != 0);
-    uint32_t saved_yp_spin_count_unit = yp_spin_count_unit;
-    yp_spin_count_unit = (uint32_t)((float)original_spin_count_unit * scalingFactor / (float)9);
-
-    // It's very suspicious if it becomes 0 and also, we don't want to spin too much.
-    if ((yp_spin_count_unit == 0) || (yp_spin_count_unit > 32768))
+    if (!gc_heap::spin_count_unit_config_p)
     {
-        yp_spin_count_unit = saved_yp_spin_count_unit;
+        assert (yp_spin_count_unit != 0);
+        uint32_t saved_yp_spin_count_unit = yp_spin_count_unit;
+        yp_spin_count_unit = (uint32_t)((float)original_spin_count_unit * scalingFactor / (float)9);
+
+        // It's very suspicious if it becomes 0 and also, we don't want to spin too much.
+        if ((yp_spin_count_unit == 0) || (yp_spin_count_unit > MAX_YP_SPIN_COUNT_UNIT))
+        {
+            yp_spin_count_unit = saved_yp_spin_count_unit;
+        }
     }
 }
 

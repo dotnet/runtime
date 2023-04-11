@@ -3929,12 +3929,6 @@ sgen_gc_unlock (void)
 }
 
 void
-sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
-{
-	sgen_major_collector.iterate_live_block_ranges (callback);
-}
-
-void
 sgen_major_collector_iterate_block_ranges (sgen_cardtable_block_callback callback)
 {
 	sgen_major_collector.iterate_block_ranges (callback);

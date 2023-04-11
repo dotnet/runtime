@@ -7,6 +7,7 @@
 **
 ===========================================================*/
 
+using System.ComponentModel;
 using System.Globalization;
 using System.Runtime.Serialization;
 
@@ -35,6 +36,8 @@ namespace System.Collections
             _compareInfo = (CompareInfo)info.GetValue("CompareInfo", typeof(CompareInfo))!;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             ArgumentNullException.ThrowIfNull(info);

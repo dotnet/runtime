@@ -17,6 +17,10 @@ namespace System.Net.Http
             this.HResult = ConvertErrorCodeToHR(error);
         }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public WinHttpException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
