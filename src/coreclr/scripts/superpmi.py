@@ -4320,6 +4320,11 @@ def setup_args(args):
                             lambda arch: arch == "x86" or arch == "x64",
                             "Throughput measurements not supported on platform {}".format(coreclr_args.arch))
 
+        coreclr_args.verify(determine_coredis_tools(coreclr_args),
+                            "coredistools_location",
+                            os.path.isfile,
+                            "Unable to find coredistools.")
+
         process_base_jit_path_arg(coreclr_args)
         download_clrjit_pintool(coreclr_args)
 
