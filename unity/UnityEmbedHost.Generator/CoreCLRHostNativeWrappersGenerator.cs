@@ -113,6 +113,7 @@ namespace Unity.CoreCLRHelpers;
         switch (typeSymbol.NativeWrapperTypeFor(providerAttributes))
         {
             case "MonoClass*":
+            case "MonoType*":
                 return "Type";
             case "MonoDomain*":
             case "MonoObject*":
@@ -144,6 +145,7 @@ namespace Unity.CoreCLRHelpers;
             case "MonoArray*":
                 return $"{parameterSymbol.Name}.ToNativeRepresentation()";
             case "MonoClass*":
+            case "MonoType*":
                 return $"{parameterSymbol.Name}.TypeHandleIntPtr()";
         }
 
