@@ -640,9 +640,9 @@ void emitter::emitIns_R_R_I(
         INS_flw == ins)
     {
         assert(isGeneralRegister(reg2));
-        code |= (reg1 & 0x1f) << 7;  // rd
-        code |= reg2 << 15;          // rs1
-        code |= imm << 20;           // imm
+        code |= (reg1 & 0x1f) << 7; // rd
+        code |= reg2 << 15;         // rs1
+        code |= imm << 20;          // imm
     }
     else if (INS_sd == ins || INS_sw == ins || INS_sh == ins || INS_sb == ins || INS_fsw == ins || INS_fsd == ins)
     {
