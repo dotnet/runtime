@@ -487,7 +487,7 @@ namespace System.Globalization
         private unsafe int CompareStringCore(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsCompareString(string1, string2, options) :
-#if TARGET_BROWSER || TARGET_WASI
+#if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
                 JsCompareString(string1, string2, options) :
 #endif
@@ -1425,7 +1425,7 @@ namespace System.Globalization
         private SortKey CreateSortKeyCore(string source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsCreateSortKey(source, options) :
-#if TARGET_BROWSER || TARGET_WASI
+#if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
 #endif
@@ -1468,7 +1468,7 @@ namespace System.Globalization
         private int GetSortKeyCore(ReadOnlySpan<char> source, Span<byte> destination, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsGetSortKey(source, destination, options) :
-#if TARGET_BROWSER || TARGET_WASI
+#if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
 #endif
@@ -1505,7 +1505,7 @@ namespace System.Globalization
         private int GetSortKeyLengthCore(ReadOnlySpan<char> source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
               NlsGetSortKeyLength(source, options) :
-#if TARGET_BROWSER || TARGET_WASI
+#if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("SortKey")) :
 #endif
@@ -1582,7 +1582,7 @@ namespace System.Globalization
         private unsafe int GetHashCodeOfStringCore(ReadOnlySpan<char> source, CompareOptions options) =>
             GlobalizationMode.UseNls ?
                 NlsGetHashCodeOfString(source, options) :
-#if TARGET_BROWSER || TARGET_WASI
+#if TARGET_BROWSER
             GlobalizationMode.Hybrid ?
                 throw new PlatformNotSupportedException(GetPNSEText("HashCode")) :
 #endif
@@ -1616,7 +1616,7 @@ namespace System.Globalization
 
         public int LCID => CultureInfo.GetCultureInfo(Name).LCID;
 
-#if TARGET_BROWSER || TARGET_WASI
+#if TARGET_BROWSER
         private static string GetPNSEText(string funcName) =>  $"{funcName} is not supported when HybridGlobalization=true. Disable it to load larger ICU bundle, then use this option.";
 #endif
     }
