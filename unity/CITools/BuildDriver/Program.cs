@@ -86,6 +86,26 @@ public class Program
             Description = "Produce zip artifacts. This is only used when building."
         };
 
+        var deployToPlayer= new Option<string>("--deploy-to-player")
+        {
+            DefaultValueFactory = (_) => string.Empty,
+            Description = "Copies the artifacts into a player build",
+        };
+        deployToPlayer.Validators.Add(result =>
+        {
+            string? val = result.GetValue(deployToPlayer);
+            if (val == null)
+                result.AddError($"Must specify a value for {deployToPlayer.Name}");
+            else
+            {
+                var valAsPath = val.ToNPath();
+                if (!valAsPath.DirectoryExists())
+                    result.AddError($"Directory does not exist {val}");
+                else if (!valAsPath.Combine("CoreCLR").DirectoryExists())
+                    result.AddError($"The directory does not appear to be a built player directory because {valAsPath.Combine("CoreCLR")} does not exist");
+            }
+        });
+
         RootCommand rootCommand = new RootCommand("Unity CoreCLR Builder")
         {
             buildOption,
@@ -93,7 +113,8 @@ public class Program
             architectureOption,
             configurationOption,
             verbosityOption,
-            zipOption
+            zipOption,
+            deployToPlayer
         };
         rootCommand.SetAction(Run);
 
@@ -106,8 +127,11 @@ public class Program
             TestTargets tTargets = context.ParseResult.GetValue(testOption);
             string? architecture = context.ParseResult.GetValue(architectureOption);
             string? configuration = context.ParseResult.GetValue(configurationOption);
-            if (bTargets == BuildTargets.None && tTargets == TestTargets.None)
+            string? deployToProjectPath = context.ParseResult.GetValue(deployToPlayer);
+
+            if (bTargets == BuildTargets.None && tTargets == TestTargets.None && string.IsNullOrEmpty(deployToProjectPath))
                 bTargets = BuildTargets.All;
+
             if (RunningOnYamato() && bTargets != BuildTargets.None)
             {
                 zipTask = SevenZip.DownloadAndUnzip7Zip();
@@ -132,7 +156,8 @@ public class Program
             //
             // Also when trying to run just the embedding managed tests, dotnet test will not always rebuild dependencies.  Having this build here is handy to ensure that
             // when the tests run that the embed host is up-to-date
-            EmbeddingHost.Build(gConfig);
+            if (bTargets != BuildTargets.None || tTargets != TestTargets.None)
+                EmbeddingHost.Build(gConfig);
 
             if (bTargets != BuildTargets.None)
             {
@@ -178,6 +203,9 @@ public class Program
                 Console.WriteLine("Unity: Tested CoreCLR successfully");
                 Console.WriteLine("******************************");
             }
+
+            if (!string.IsNullOrEmpty(deployToProjectPath))
+                Deploy.ToPlayer(gConfig, deployToProjectPath.ToNPath());
         }
     }
 
