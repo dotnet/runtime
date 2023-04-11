@@ -32,7 +32,7 @@
       UsesCustomRuntimeInitCallback="$(_UsesCustomRuntimeInitCallback)"
       UsesRuntimeInitCallback="$(_UsesRuntimeInitCallback)">
       <Output TaskParameter="OutputPath" PropertyName="LibraryOutputPath" />
-      <Output Condition="'$(_IsSharedLibrary)' != 'true'" TaskParameter="ExportedSymbols" ItemName="LibraryRuntimeExportedSymbols" />
+      <Output TaskParameter="ExportedSymbols" ItemName="LibraryRuntimeExportedSymbols" />
     </LibraryBuilderTask>
   </Target>
 

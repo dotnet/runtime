@@ -94,9 +94,7 @@ public class LibraryBuilderTask : AppBuilderTask
     public string OutputPath { get; set; } = ""!;
 
     /// <summary>
-    /// The set of export symbols that need to be understood when building for a static library
-    ///
-    /// Note, this does not apply when IsSharedLibrary == true.
+    /// The set of exported symbols identified by the aot compiler.
     /// </summary>
     [Output]
     public string[] ExportedSymbols { get; set; } = Array.Empty<string>();
@@ -213,16 +211,13 @@ public class LibraryBuilderTask : AppBuilderTask
                 WriteExportedSymbolsArg(MobileSymbolFileName, linkerArgs);
             }
         }
-        else
-        {
-            // static library, responsibility of enforcing exported symbols is external.
-            ExportedSymbols = exportedSymbols.ToArray();
-        }
 
         foreach (ITaskItem item in ExtraSources)
         {
             extraSources.AppendLine($"    {item.ItemSpec}");
         }
+
+        ExportedSymbols = exportedSymbols.ToArray();
     }
 
     private void GatherLinkerArgs(StringBuilder linkerArgs)
