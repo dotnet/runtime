@@ -11,7 +11,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
-using SourceGenerators.Tests;
 using Xunit;
 
 using StringMarshalling = Microsoft.Interop.StringMarshalling;

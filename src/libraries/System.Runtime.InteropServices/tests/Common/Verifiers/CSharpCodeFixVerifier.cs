@@ -120,7 +120,6 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                 TestState.AdditionalReferences.Add(TestUtils.GetAncillaryReference());
 
                 SolutionTransforms.Add(CSharpVerifierHelper.GetAllDiagonsticsEnabledTransform(GetDiagnosticAnalyzers()));
-                SolutionTransforms.Add(CSharpVerifierHelper.SetPreviewLanguageVersion);
             }
 
             protected override CompilationWithAnalyzers CreateCompilationWithAnalyzers(Compilation compilation, ImmutableArray<DiagnosticAnalyzer> analyzers, AnalyzerOptions options, CancellationToken cancellationToken)
@@ -148,6 +147,11 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                             }
                             return true;
                         }));
+            }
+
+            protected override ParseOptions CreateParseOptions()
+            {
+                return new CSharpParseOptions(LanguageVersion.Preview, DocumentationMode.Diagnose);
             }
         }
     }

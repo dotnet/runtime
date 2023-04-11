@@ -80,18 +80,22 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                 string tfmEditorConfig = targetFramework switch
                 {
                     TestTargetFramework.Framework => """
+                        is_global = true
                         build_property.TargetFrameworkIdentifier = .NETFramework
                         build_property.TargetFrameworkVersion = v4.8
                         """,
                     TestTargetFramework.Standard => """
+                        is_global = true
                         build_property.TargetFrameworkIdentifier = .NETStandard
                         build_property.TargetFrameworkVersion = v2.0
                         """,
                     TestTargetFramework.Core => """
+                        is_global = true
                         build_property.TargetFrameworkIdentifier = .NETCoreApp
                         build_property.TargetFrameworkVersion = v3.1
                         """,
                     TestTargetFramework.Net6 => """
+                        is_global = true
                         build_property.TargetFrameworkIdentifier = .NETCoreApp
                         build_property.TargetFrameworkVersion = v6.0
                         """,
@@ -107,11 +111,6 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                     SourceText.From(tfmEditorConfig, encoding: System.Text.Encoding.UTF8),
                     filePath: "/TargetFrameworkConfig.editorconfig");
             };
-        }
-        internal static Solution SetPreviewLanguageVersion(Solution solution, ProjectId projectId)
-        {
-            var project = solution.GetProject(projectId)!;
-            return solution.WithProjectParseOptions(projectId, ((CSharpParseOptions)project.ParseOptions!).WithLanguageVersion(LanguageVersion.Preview));
         }
     }
 }

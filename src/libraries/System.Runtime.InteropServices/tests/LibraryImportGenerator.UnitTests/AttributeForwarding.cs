@@ -3,17 +3,16 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Testing;
 using Microsoft.Interop;
 using Microsoft.Interop.UnitTests;
 using SourceGenerators.Tests;
 using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.LibraryImportGenerator>;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -53,19 +52,18 @@ namespace LibraryImportGenerator.UnitTests
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
-            Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
-            Assert.Empty(newComp.GetDiagnostics());
 
-            ITypeSymbol attributeType = newComp.GetTypeByMetadataName(attributeMetadataName)!;
+            await VerifySourceGeneratorAsync(
+                source,
+                (targetMethod, newComp) =>
+                {
+                    ITypeSymbol attributeType = newComp.GetTypeByMetadataName(attributeMetadataName)!;
+                    Assert.NotNull(attributeType);
 
-            Assert.NotNull(attributeType);
-
-            IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
-
-            Assert.Contains(
-                targetMethod.GetAttributes(),
-                attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType));
+                    Assert.Contains(
+                        targetMethod.GetAttributes(),
+                        attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType));
+                });
         }
 
         [Fact]
@@ -101,22 +99,21 @@ namespace LibraryImportGenerator.UnitTests
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
-            Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
-            Assert.Empty(newComp.GetDiagnostics());
 
-            ITypeSymbol attributeType = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.UnmanagedCallConvAttribute")!;
+            await VerifySourceGeneratorAsync(
+                source,
+                (targetMethod, newComp) =>
+                {
+                    ITypeSymbol attributeType = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.UnmanagedCallConvAttribute")!;
+                    Assert.NotNull(attributeType);
 
-            Assert.NotNull(attributeType);
-
-            IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
-
-            Assert.Contains(
-                targetMethod.GetAttributes(),
-                attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType)
-                    && attr.NamedArguments.Length == 1
-                    && attr.NamedArguments[0].Key == "CallConvs"
-                    && attr.NamedArguments[0].Value.Values.Length == 0);
+                    Assert.Contains(
+                        targetMethod.GetAttributes(),
+                        attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType)
+                            && attr.NamedArguments.Length == 1
+                            && attr.NamedArguments[0].Key == "CallConvs"
+                            && attr.NamedArguments[0].Value.Values.Length == 0);
+                });
         }
 
         [Fact]
@@ -151,26 +148,26 @@ namespace LibraryImportGenerator.UnitTests
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
-            Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
-            Assert.Empty(newComp.GetDiagnostics());
 
-            ITypeSymbol attributeType = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.UnmanagedCallConvAttribute")!;
-            ITypeSymbol callConvType = newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvStdcall")!;
+            await VerifySourceGeneratorAsync(
+                source,
+                (targetMethod, newComp) =>
+                {
+                    ITypeSymbol attributeType = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.UnmanagedCallConvAttribute")!;
+                    ITypeSymbol callConvType = newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvStdcall")!;
 
-            Assert.NotNull(attributeType);
+                    Assert.NotNull(attributeType);
 
-            IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
-
-            Assert.Contains(
-                targetMethod.GetAttributes(),
-                attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType)
-                    && attr.NamedArguments.Length == 1
-                    && attr.NamedArguments[0].Key == "CallConvs"
-                    && attr.NamedArguments[0].Value.Values.Length == 1
-                    && SymbolEqualityComparer.Default.Equals(
-                        (INamedTypeSymbol?)attr.NamedArguments[0].Value.Values[0].Value!,
-                        callConvType));
+                    Assert.Contains(
+                        targetMethod.GetAttributes(),
+                        attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType)
+                            && attr.NamedArguments.Length == 1
+                            && attr.NamedArguments[0].Key == "CallConvs"
+                            && attr.NamedArguments[0].Value.Values.Length == 1
+                            && SymbolEqualityComparer.Default.Equals(
+                                (INamedTypeSymbol?)attr.NamedArguments[0].Value.Values[0].Value!,
+                                callConvType));
+                });
         }
 
         [Fact]
@@ -205,30 +202,30 @@ namespace LibraryImportGenerator.UnitTests
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
-            Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
-            Assert.Empty(newComp.GetDiagnostics());
 
-            ITypeSymbol attributeType = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.UnmanagedCallConvAttribute")!;
-            ITypeSymbol callConvType = newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvStdcall")!;
-            ITypeSymbol callConvType2 = newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvSuppressGCTransition")!;
+            await VerifySourceGeneratorAsync(
+                source,
+                (targetMethod, newComp) =>
+                {
+                    ITypeSymbol attributeType = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.UnmanagedCallConvAttribute")!;
+                    ITypeSymbol callConvType = newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvStdcall")!;
+                    ITypeSymbol callConvType2 = newComp.GetTypeByMetadataName("System.Runtime.CompilerServices.CallConvSuppressGCTransition")!;
 
-            Assert.NotNull(attributeType);
+                    Assert.NotNull(attributeType);
 
-            IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
-
-            Assert.Contains(
-                targetMethod.GetAttributes(),
-                attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType)
-                    && attr.NamedArguments.Length == 1
-                    && attr.NamedArguments[0].Key == "CallConvs"
-                    && attr.NamedArguments[0].Value.Values.Length == 2
-                    && SymbolEqualityComparer.Default.Equals(
-                        (INamedTypeSymbol?)attr.NamedArguments[0].Value.Values[0].Value!,
-                        callConvType)
-                    && SymbolEqualityComparer.Default.Equals(
-                        (INamedTypeSymbol?)attr.NamedArguments[0].Value.Values[1].Value!,
-                        callConvType2));
+                    Assert.Contains(
+                        targetMethod.GetAttributes(),
+                        attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType)
+                            && attr.NamedArguments.Length == 1
+                            && attr.NamedArguments[0].Key == "CallConvs"
+                            && attr.NamedArguments[0].Value.Values.Length == 2
+                            && SymbolEqualityComparer.Default.Equals(
+                                (INamedTypeSymbol?)attr.NamedArguments[0].Value.Values[0].Value!,
+                                callConvType)
+                            && SymbolEqualityComparer.Default.Equals(
+                                (INamedTypeSymbol?)attr.NamedArguments[0].Value.Values[1].Value!,
+                                callConvType2));
+                });
         }
 
         [Fact]
@@ -263,23 +260,23 @@ namespace LibraryImportGenerator.UnitTests
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
-            Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
-            Assert.Empty(newComp.GetDiagnostics());
 
-            ITypeSymbol attributeType = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute")!;
+            await VerifySourceGeneratorAsync(
+                source,
+                (targetMethod, newComp) =>
+                {
+                    ITypeSymbol attributeType = newComp.GetTypeByMetadataName("System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute")!;
 
-            Assert.NotNull(attributeType);
+                    Assert.NotNull(attributeType);
 
-            IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
+                    DllImportSearchPath expected = DllImportSearchPath.System32 | DllImportSearchPath.UserDirectories;
 
-            DllImportSearchPath expected = DllImportSearchPath.System32 | DllImportSearchPath.UserDirectories;
-
-            Assert.Contains(
-                targetMethod.GetAttributes(),
-                attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType)
-                    && attr.ConstructorArguments.Length == 1
-                    && expected == (DllImportSearchPath)attr.ConstructorArguments[0].Value!);
+                    Assert.Contains(
+                        targetMethod.GetAttributes(),
+                        attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType)
+                            && attr.ConstructorArguments.Length == 1
+                            && expected == (DllImportSearchPath)attr.ConstructorArguments[0].Value!);
+                });
         }
 
         [Fact]
@@ -318,20 +315,20 @@ namespace LibraryImportGenerator.UnitTests
                     public static S ConvertToManaged(Native n) => default;
                 }
                 """;
-            Compilation origComp = await TestUtils.CreateCompilation(source);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
 
-            Assert.Empty(newComp.GetDiagnostics());
+            await VerifySourceGeneratorAsync(
+                source,
+                (targetMethod, newComp) =>
+                {
+                    ITypeSymbol attributeType = newComp.GetTypeByMetadataName("OtherAttribute")!;
 
-            ITypeSymbol attributeType = newComp.GetTypeByMetadataName("OtherAttribute")!;
+                    Assert.NotNull(attributeType);
 
-            Assert.NotNull(attributeType);
 
-            IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
-
-            Assert.DoesNotContain(
-                targetMethod.GetAttributes(),
-                attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType));
+                    Assert.DoesNotContain(
+                        targetMethod.GetAttributes(),
+                        attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, attributeType));
+                });
         }
 
         [Fact]
@@ -347,35 +344,33 @@ namespace LibraryImportGenerator.UnitTests
                 {
                     [LibraryImportAttribute("DoesNotExist")]
                     [return: MarshalAs(UnmanagedType.Bool)]
-                    public static partial bool Method1([In, Out] int a);
+                    public static partial bool Method1([In, Out] int {|SYSLIB1051:a|});
                 }
                 """ + CodeSnippets.LibraryImportAttributeDeclaration;
-            Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
-            Compilation newComp = TestUtils.RunGenerators(
-                origComp,
-                new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(TestTargetFramework.Standard)),
-                out _,
-                new Microsoft.Interop.LibraryImportGenerator());
 
-            IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
-
-            INamedTypeSymbol marshalAsAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute)!;
-            INamedTypeSymbol inAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_InAttribute)!;
-            INamedTypeSymbol outAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_OutAttribute)!;
-            Assert.Collection(targetMethod.Parameters,
-                param => Assert.Collection(param.GetAttributes(),
-                    attr =>
-                    {
-                        Assert.Equal(inAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
-                        Assert.Empty(attr.ConstructorArguments);
-                        Assert.Empty(attr.NamedArguments);
-                    },
-                    attr =>
-                    {
-                        Assert.Equal(outAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
-                        Assert.Empty(attr.ConstructorArguments);
-                        Assert.Empty(attr.NamedArguments);
-                    }));
+            await VerifySourceGeneratorAsync(
+                source,
+                (targetMethod, newComp) =>
+                {
+                    INamedTypeSymbol marshalAsAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute)!;
+                    INamedTypeSymbol inAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_InAttribute)!;
+                    INamedTypeSymbol outAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_OutAttribute)!;
+                    Assert.Collection(targetMethod.Parameters,
+                        param => Assert.Collection(param.GetAttributes(),
+                            attr =>
+                            {
+                                Assert.Equal(inAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
+                                Assert.Empty(attr.ConstructorArguments);
+                                Assert.Empty(attr.NamedArguments);
+                            },
+                            attr =>
+                            {
+                                Assert.Equal(outAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
+                                Assert.Empty(attr.ConstructorArguments);
+                                Assert.Empty(attr.NamedArguments);
+                            }));
+                },
+                TestTargetFramework.Standard);
         }
 
         [Fact]
@@ -392,38 +387,63 @@ namespace LibraryImportGenerator.UnitTests
                     public static partial bool Method1([MarshalAs(UnmanagedType.I2)] int a);
                 }
                 """ + CodeSnippets.LibraryImportAttributeDeclaration;
-            Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
-            Compilation newComp = TestUtils.RunGenerators(
-                origComp,
-                new GlobalOptionsOnlyProvider(new TargetFrameworkConfigOptions(TestTargetFramework.Standard)),
-                out _,
-                new Microsoft.Interop.LibraryImportGenerator());
 
-            IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
-
-            INamedTypeSymbol marshalAsAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute)!;
-            Assert.Collection(targetMethod.Parameters,
-                param => Assert.Collection(param.GetAttributes(),
-                    attr =>
-                    {
-                        Assert.Equal(marshalAsAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
-                        Assert.Equal(UnmanagedType.I2, (UnmanagedType)attr.ConstructorArguments[0].Value!);
-                        Assert.Empty(attr.NamedArguments);
-                    }));
+            await VerifySourceGeneratorAsync(
+                source,
+                (targetMethod, newComp) =>
+                {
+                    INamedTypeSymbol marshalAsAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute)!;
+                    Assert.Collection(targetMethod.Parameters,
+                        param => Assert.Collection(param.GetAttributes(),
+                            attr =>
+                            {
+                                Assert.Equal(marshalAsAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
+                                Assert.Equal(UnmanagedType.I2, (UnmanagedType)attr.ConstructorArguments[0].Value!);
+                                Assert.Empty(attr.NamedArguments);
+                            }));
+                },
+                TestTargetFramework.Standard);
         }
 
-        private static IMethodSymbol GetGeneratedPInvokeTargetFromCompilation(Compilation newComp)
+        private static Task VerifySourceGeneratorAsync(string source, Action<IMethodSymbol, Compilation> targetPInvokeAssertion, TestTargetFramework targetFramework = TestTargetFramework.Net)
         {
-            // The last syntax tree is the generated code
-            SyntaxTree generatedCode = newComp.SyntaxTrees.Last();
-            SemanticModel model = newComp.GetSemanticModel(generatedCode);
+            var test = new GeneratedTargetPInvokeTest(targetPInvokeAssertion, targetFramework)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
 
-            var localFunctions = generatedCode.GetRoot()
-                .DescendantNodes().OfType<LocalFunctionStatementSyntax>()
-                .ToList();
-            LocalFunctionStatementSyntax innerDllImport = Assert.Single(localFunctions);
-            IMethodSymbol targetMethod = (IMethodSymbol)model.GetDeclaredSymbol(innerDllImport)!;
-            return targetMethod;
+            return test.RunAsync();
+        }
+
+        class GeneratedTargetPInvokeTest : VerifyCS.Test
+        {
+            private readonly Action<IMethodSymbol, Compilation> _targetPInvokeAssertion;
+
+            public GeneratedTargetPInvokeTest(Action<IMethodSymbol, Compilation> targetPInvokeAssertion, TestTargetFramework targetFramework)
+                :base(targetFramework)
+            {
+                _targetPInvokeAssertion = targetPInvokeAssertion;
+            }
+
+            private static IMethodSymbol GetGeneratedPInvokeTargetFromCompilation(Compilation compilation)
+            {
+                // The last syntax tree is the generated code
+                SyntaxTree generatedCode = compilation.SyntaxTrees.Last();
+                SemanticModel model = compilation.GetSemanticModel(generatedCode);
+
+                var localFunctions = generatedCode.GetRoot()
+                    .DescendantNodes().OfType<LocalFunctionStatementSyntax>()
+                    .ToList();
+                LocalFunctionStatementSyntax innerDllImport = Assert.Single(localFunctions);
+                IMethodSymbol targetMethod = (IMethodSymbol)model.GetDeclaredSymbol(innerDllImport)!;
+                return targetMethod;
+            }
+
+            protected override void VerifyFinalCompilation(Compilation compilation)
+            {
+                _targetPInvokeAssertion(GetGeneratedPInvokeTargetFromCompilation(compilation), compilation);
+            }
         }
     }
 }

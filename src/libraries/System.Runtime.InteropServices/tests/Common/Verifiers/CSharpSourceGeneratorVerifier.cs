@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -40,14 +41,41 @@ namespace Microsoft.Interop.UnitTests.Verifiers
             return Diagnostic(descriptor).WithMessage(string.Format(descriptor.MessageFormat.ToString(), arguments)).WithArguments(arguments);
         }
 
-        /// <inheritdoc cref="SourceGeneratorVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifySourceGeneratorAsync(string, DiagnosticResult[])"/>
         public static async Task VerifySourceGeneratorAsync(string source, params DiagnosticResult[] expected)
+        {
+            var test = new Test(referenceAncillaryInterop: false)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
+
+            test.ExpectedDiagnostics.AddRange(expected);
+            await test.RunAsync(CancellationToken.None);
+        }
+
+        public static async Task VerifySourceGeneratorWithAncillaryInteropAsync(string source, params DiagnosticResult[] expected)
         {
             var test = new Test(referenceAncillaryInterop: true)
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
             };
+
+            test.ExpectedDiagnostics.AddRange(expected);
+            await test.RunAsync(CancellationToken.None);
+        }
+
+        public static async Task VerifySourceGeneratorAsync(string[] sources, params DiagnosticResult[] expected)
+        {
+            var test = new Test(referenceAncillaryInterop: true)
+            {
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
+            };
+
+            foreach (var source in sources)
+            {
+                test.TestState.Sources.Add(source);
+            }
 
             test.ExpectedDiagnostics.AddRange(expected);
             await test.RunAsync(CancellationToken.None);
@@ -86,7 +114,6 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                 }
 
                 SolutionTransforms.Add(CSharpVerifierHelper.GetAllDiagonsticsEnabledTransform(GetDiagnosticAnalyzers()));
-                SolutionTransforms.Add(CSharpVerifierHelper.SetPreviewLanguageVersion);
             }
 
             protected override CompilationWithAnalyzers CreateCompilationWithAnalyzers(Compilation compilation, ImmutableArray<DiagnosticAnalyzer> analyzers, AnalyzerOptions options, CancellationToken cancellationToken)
@@ -114,6 +141,29 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                             }
                             return true;
                         }));
+            }
+
+            protected override ParseOptions CreateParseOptions()
+            {
+                return new CSharpParseOptions(LanguageVersion.Preview, DocumentationMode.Diagnose);
+            }
+
+            protected async override Task<(Compilation compilation, ImmutableArray<Diagnostic> generatorDiagnostics)> GetProjectCompilationAsync(Project project, IVerifier verifier, CancellationToken cancellationToken)
+            {
+                var (compilation, diagnostics) = await base.GetProjectCompilationAsync(project, verifier, cancellationToken);
+                VerifyFinalCompilation(compilation);
+                return (compilation, diagnostics);
+            }
+
+            /// <summary>
+            /// Verify any expected invariants on the final compilation after the source generators have been applied.
+            /// </summary>
+            /// <param name="compilation">The compilation.</param>
+            /// <remarks>
+            /// This function is useful for basic semantic testing of the generated code and can be used instead of verification testing of an exact match to the expected source output.
+            /// </remarks>
+            protected virtual void VerifyFinalCompilation(Compilation compilation)
+            {
             }
         }
     }
