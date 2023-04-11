@@ -142,6 +142,9 @@ inline void FATAL_GC_ERROR()
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
 
+#define SPINLOCK_HISTORY
+#define RECORD_LOH_STATE
+
 #ifdef USE_REGIONS
 // Currently this -
 // + creates some pins on our own
@@ -1273,6 +1276,7 @@ struct spinlock_info
 {
     msl_enter_state enter_state;
     msl_take_state take_state;
+    allocation_state current_uoh_alloc_state;
     EEThreadId thread_id;
     bool loh_p;
 };
@@ -2226,7 +2230,8 @@ private:
     PER_HEAP_METHOD void add_saved_spinlock_info (
             bool loh_p,
             msl_enter_state enter_state,
-            msl_take_state take_state);
+            msl_take_state take_state,
+            enter_msl_status msl_status);
 
     PER_HEAP_METHOD enter_msl_status trigger_gc_for_alloc (int gen_number, gc_reason reason,
                                GCSpinLock* spin_lock, bool loh_p,
@@ -3917,16 +3922,22 @@ private:
 #endif //FEATURE_EVENT_TRACE
 
 #ifdef SPINLOCK_HISTORY
+    // NOTE!!!
+    // Currently only recording UOH msl usage!
+    // Since we split the msl between SOH and UOH we need 2 arrays. For now only recording UOH usage.
 #define max_saved_spinlock_info 48
     PER_HEAP_FIELD_DIAG_ONLY int spinlock_info_index;
-    PER_HEAP_FIELD_DIAG_ONLY spinlock_info last_spinlock_info[max_saved_spinlock_info + 8];
+    PER_HEAP_FIELD_DIAG_ONLY spinlock_info last_spinlock_info[max_saved_spinlock_info];
+    // record this so we can record this in the msl info.
+    PER_HEAP_FIELD_DIAG_ONLY allocation_state current_uoh_alloc_state;
 #endif //SPINLOCK_HISTORY
 
 #ifdef RECORD_LOH_STATE
-#define max_saved_loh_states 12
+#define max_saved_loh_states 48
     struct loh_state_info
     {
         allocation_state alloc_state;
+        size_t gc_index;
         EEThreadId thread_id;
     };
     PER_HEAP_FIELD_DIAG_ONLY int loh_state_index;
