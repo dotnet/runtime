@@ -4051,6 +4051,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_EXPANDED_EARLY          = 0x08000000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
     GTF_CALL_M_HAS_LATE_DEVIRT_INFO    = 0x10000000, // this call has late devirtualzation info
     GTF_CALL_M_LDVIRTFTN_INTERFACE     = 0x20000000, // ldvirtftn on an interface type
+    GTF_CALL_M_EXP_TLS_ACCESS          = 0x40000000, // this call is a helper for access TLS marked field
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -5389,6 +5390,21 @@ struct GenTreeCall final : public GenTree
     bool IsExpRuntimeLookup() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_EXP_RUNTIME_LOOKUP) != 0;
+    }
+
+    void SetExpTLSFieldAccess()
+    {
+        gtCallMoreFlags |= GTF_CALL_M_EXP_TLS_ACCESS;
+    }
+
+    void ClearExpTLSFieldAccess()
+    {
+        gtCallMoreFlags &= ~GTF_CALL_M_EXP_TLS_ACCESS;
+    }
+
+    bool IsExpTLSFieldAccess() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_EXP_TLS_ACCESS) != 0;
     }
 
     void SetExpandedEarly()

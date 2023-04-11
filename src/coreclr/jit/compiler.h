@@ -4834,7 +4834,7 @@ public:
 
     GenTree* fgInitThisClass();
 
-    GenTreeCall* fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper);
+    GenTreeCall* fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper, uint32_t typeIndex = 0);
 
     GenTreeCall* fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls);
 
@@ -5287,11 +5287,21 @@ public:
     PhaseStatus StressSplitTree();
     void SplitTreesRandomly();
     void SplitTreesRemoveCommas();
-    PhaseStatus fgExpandRuntimeLookups();
 
-    bool fgExpandStaticInitForBlock(BasicBlock* block);
-    bool fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+    template <bool (Compiler::*ExpansionFunction)(BasicBlock*, Statement*, GenTreeCall*)>
+    PhaseStatus fgExpandHelper(bool skipRarelyRunBlocks);
+
+    template <bool (Compiler::*ExpansionFunction)(BasicBlock*, Statement*, GenTreeCall*)>
+    bool fgExpandHelperForBlock(BasicBlock* block);
+
+    PhaseStatus fgExpandRuntimeLookups();
+    bool fgExpandRuntimeLookupsForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+
+    PhaseStatus fgExpandThreadLocalAccess();
+    bool fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
+
     PhaseStatus fgExpandStaticInit();
+    bool fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
@@ -7018,6 +7028,7 @@ public:
 #define OMF_HAS_MDNEWARRAY                     0x00002000 // Method contains 'new' of an MD array
 #define OMF_HAS_MDARRAYREF                     0x00004000 // Method contains multi-dimensional intrinsic array element loads or stores.
 #define OMF_HAS_STATIC_INIT                    0x00008000 // Method has static initializations we might want to partially inline
+#define OMF_HAS_TLS_FIELD                      0x00010000 // Method contains TLS field access
 
     // clang-format on
 
@@ -7066,6 +7077,16 @@ public:
     void setMethodHasGuardedDevirtualization()
     {
         optMethodFlags |= OMF_HAS_GUARDEDDEVIRT;
+    }
+
+    bool doesMethodHasTlsFieldAccess()
+    {
+        return (optMethodFlags & OMF_HAS_TLS_FIELD) != 0;
+    }
+
+    void setMethodHasTlsFieldAccess()
+    {
+        optMethodFlags |= OMF_HAS_TLS_FIELD;
     }
 
     void pickGDV(GenTreeCall*           call,
@@ -7769,6 +7790,7 @@ public:
     void eeGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                         CORINFO_ACCESS_FLAGS    flags,
                         CORINFO_FIELD_INFO*     pResult);
+    uint32_t eeGetThreadLocalFieldInfo(CORINFO_FIELD_HANDLE field);
 
     // Get the flags
 
