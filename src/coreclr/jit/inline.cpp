@@ -431,8 +431,8 @@ void InlineContext::Dump(bool verbose, unsigned indent)
         else
 #endif
         {
-            printf("%*s[%s%s%s%s%s] %s\n", indent, "", inlineResult, inlineReason, guarded, devirtualized, unboxed,
-                   calleeName);
+            printf("%*s[%s%s%s%s%s IL=%04d] %s\n", indent, "", inlineResult, inlineReason, guarded, devirtualized,
+                   unboxed, offs, calleeName);
         }
     }
 
