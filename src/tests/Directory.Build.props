@@ -205,7 +205,7 @@
     <ImportProjectExtensionTargets>false</ImportProjectExtensionTargets>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'iOS'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'ios' Or '$(TargetOS)' == 'tvos'">
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
     <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>

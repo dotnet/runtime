@@ -4096,7 +4096,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition=" $(TargetOS) == 'iOSSimulator' or (TargetOS) == 'iOS' " >
+    <ItemGroup Condition=" $(TargetOS) == 'iossimulator' or (TargetOS) == 'ios' " >
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/MAWSPITest/**">
             <Issue>missing assembly</Issue>
         </ExcludeList>
@@ -4335,12 +4335,6 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'iOSSimulator'" >
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/processinfo/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/processinfo2/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/**">
             <Issue>needs triage</Issue>
         </ExcludeList>

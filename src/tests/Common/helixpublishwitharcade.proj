@@ -23,7 +23,7 @@
 
   <PropertyGroup>
     <BUILD_SOURCESDIRECTORY>c:\gh\runtime</BUILD_SOURCESDIRECTORY>
-    <CorrelationPayloadDirectory>c:\bugs\spmicollect3\payload\correlation</CorrelationPayloadDirectory>
+    <CorrelationPayloadDirectory>c:\bugs\es\payload\correlation</CorrelationPayloadDirectory>
     <WorkItemDirectory>c:\bugs\es\payload\workitem</WorkItemDirectory>
     <_Scenarios>normal</_Scenarios>
     <_Creator></_Creator>
@@ -350,6 +350,7 @@
         <AdditionalProperties>Scenario=%(_Scenario.Identity);PayloadGroups=@(_MergedPayloadGroups);IsMergedTestWrapper=true</AdditionalProperties>
       </_ProjectsToBuild>
     </ItemGroup>
+
     <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateTestEnvFiles" StopOnFirstFailure="true" />
   </Target>
 
@@ -726,8 +727,8 @@
   <ItemGroup Condition=" '$(UsesHelixSdk)' == 'true' ">
     <HelixCorrelationPayload Include="$(CoreRootDirectory)" />
 
-    <!-- Browser-Wasm follows a very different workflow, which is currently out of scope of the Log Checker. -->
-    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(TargetsBrowser)' != 'true' and '$(TargetOS)' != 'iOS' and '$(TargetOS)' != 'iOSSimulator' and '$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'tvOSSimulator'" />
+    <!-- Browser-Wasm and iOS platforms follow a very different workflow, which is currently out of scope of the Log Checker. It's not useful on any platform that uses xharness. -->
+    <HelixCorrelationPayload Include="$(XUnitLogCheckerDirectory)" Condition="'$(TargetsBrowser)' != 'true' and '$(TargetsiOS)' != 'true' and '$(TargetsiOSSimulator)' != 'true' and '$(TargetstvOS)' != 'true' and '$(TargetstvOSSimulator)' != 'true'" />
     <HelixCorrelationPayload Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="dotnet-sos">
       <Destination>sos</Destination>
       <Uri>https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/flat2/dotnet-sos/$(DotnetSosVersion)/dotnet-sos.$(DotnetSosVersion).nupkg</Uri>
@@ -774,8 +775,6 @@
     <MergedPayloads Update="@(MergedPayloads)">
       <PayloadGroup>%(FileName)%(Extension)</PayloadGroup>
       <ApkPath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).apk</ApkPath>
-      <AppBundlePath>$(MergedPayloadsRootDirectory)%(FileName)%(Extension)/%(FileName)%(Extension).app</AppBundlePath>
-      <SigningFilePath>%(FileName)%(Extension)/%(FileName)%(Extension).app</SigningFilePath>
     </MergedPayloads>
   </ItemGroup>
 

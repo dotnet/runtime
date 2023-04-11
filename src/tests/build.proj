@@ -283,10 +283,10 @@
 
     <PropertyGroup>
       <AssemblyName>$(Category)</AssemblyName>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'iOSSimulator'" >iossimulator</RuntimePackOSSuffix>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'iOS'" >ios</RuntimePackOSSuffix>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvOSSimulator'" >tvossimulator</RuntimePackOSSuffix>
-      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvOS'" >tvos</RuntimePackOSSuffix>
+      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'iossimulator'" >iossimulator</RuntimePackOSSuffix>
+      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'ios'" >ios</RuntimePackOSSuffix>
+      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvossimulator'" >tvossimulator</RuntimePackOSSuffix>
+      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvos'" >tvos</RuntimePackOSSuffix>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimePackOSSuffix)-$(TargetArchitecture)/$(Configuration)/runtimes/$(RuntimePackOSSuffix)-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
       <MicrosoftNetCoreAppRuntimePackNativeDir>$(MicrosoftNetCoreAppRuntimePackDir)/native</MicrosoftNetCoreAppRuntimePackNativeDir>
     </PropertyGroup>
@@ -560,7 +560,7 @@
     <!-- We need to build group #1 manually as it doesn't have a _GroupStartsWith item associated with it, see the comment in Common\dirs.proj -->
     <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=1;__SkipRestorePackages=1" Condition="'$(RunWithiOS)' != 'true'" />
     <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=%(_GroupStartsWith.GroupNumber);__SkipRestorePackages=1" Condition="'$(RunWithiOS)' != 'true'" />
-    <!-- FIXME: Currently tracing/eventpipe tests work only with Mono Interpreter. It should be expanded to include all runtime tests. -->
+    <!-- FIXME: Currently tracing/eventpipe tests work only with Mono Interpreter. It should be expanded to include all runtime tests. Tracking issue: https://github.com/dotnet/runtime/issues/84254 -->
     <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=4;__SkipRestorePackages=1" Condition="'$(RunWithiOS)' == 'true'" />
   </Target>
 
@@ -589,7 +589,7 @@
       <GroupBuildCmd>$(GroupBuildCmd) "/p:__SkipRestorePackages=1"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /nodeReuse:false</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /maxcpucount</GroupBuildCmd>
-      <GroupBuildCmd Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">$(GroupBuildCmd) "/p:DevTeamProvisioning=-"</GroupBuildCmd>
+      <GroupBuildCmd Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">$(GroupBuildCmd) "/p:DevTeamProvisioning=-"</GroupBuildCmd>
       <GroupBuildCmd>$(GroupBuildCmd) /bl:$(ArtifactsDir)/log/$(Configuration)/InnerManagedTestBuild.$(__TestGroupToBuild).binlog</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(TestBuildMode)' == 'nativeaot'">$(GroupBuildCmd) "/p:DefaultBuildAllTarget=BuildNativeAot"</GroupBuildCmd>
       <GroupBuildCmd Condition="'$(IlcMultiModule)' == 'true'">$(GroupBuildCmd) "/p:IlcMultiModule=true"</GroupBuildCmd>

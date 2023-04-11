@@ -144,7 +144,7 @@ namespace Tracing.Tests.ProcessInfoValidation
             Logger.logger.Log($"commandLine: \"{commandLine}\"");
 
             // ActiveIssue https://github.com/dotnet/runtime/issues/62729
-            if (!OperatingSystem.IsAndroid() && !OperatingSystem.IsIOS())
+            if (!OperatingSystem.IsAndroid() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS())
             {
                 // The following logic is tailored to this specific test where the cmdline _should_ look like the following:
                 // /path/to/corerun /path/to/processinfo.dll
@@ -189,6 +189,10 @@ namespace Tracing.Tests.ProcessInfoValidation
             else if (OperatingSystem.IsIOS())
             {
                 expectedOSValue = "iOS";
+            }
+            else if (OperatingSystem.IsTvOS())
+            {
+                expectedOSValue = "tvOS";
             }
             else
             {
