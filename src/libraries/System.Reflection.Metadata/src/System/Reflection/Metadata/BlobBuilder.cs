@@ -319,26 +319,12 @@ namespace System.Reflection.Metadata
             return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref array);
         }
 
-        internal bool TryWriteTo(Span<byte> scratchBuffer, out ReadOnlySpan<byte> buffer)
+        internal bool TryGetSpan(out ReadOnlySpan<byte> buffer)
         {
             if (_nextOrPrevious == this)
             {
                 // If the blob builder has one chunk, we can just return it and avoid copies.
                 buffer = Span;
-                return true;
-            }
-
-            int count = Count;
-            if (scratchBuffer.Length <= count)
-            {
-                int i = 0;
-                foreach (var chunk in GetChunks())
-                {
-                    chunk.Span.CopyTo(scratchBuffer.Slice(i));
-                    i += chunk.Length;
-                }
-
-                buffer = scratchBuffer.Slice(0, count);
                 return true;
             }
 

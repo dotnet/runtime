@@ -191,7 +191,7 @@ namespace System.Reflection.Metadata.Ecma335
                 Throw.ArgumentNull(nameof(value));
             }
 
-            if (value.TryWriteTo(stackalloc byte[256], out ReadOnlySpan<byte> buffer))
+            if (value.TryGetSpan(out ReadOnlySpan<byte> buffer))
             {
                 return GetOrAddBlob(buffer);
             }
