@@ -25,6 +25,8 @@ parser.add_argument("-type", help="Type of diff (asmdiffs, tpdiff, all)")
 parser.add_argument("-platform", help="OS platform")
 parser.add_argument("-base_jit_directory", help="path to the directory containing base clrjit binaries")
 parser.add_argument("-diff_jit_directory", help="path to the directory containing diff clrjit binaries")
+parser.add_argument("-base_jit_options", help="Semicolon separated list of base jit options (in format A=B without DOTNET_ prefix)")
+parser.add_argument("-diff_jit_options", help="Semicolon separated list of diff jit options (in format A=B without DOTNET_ prefix)")
 parser.add_argument("-log_directory", help="path to the directory containing superpmi log files")
 
 def setup_args(args):
@@ -64,6 +66,16 @@ def setup_args(args):
                         "diff_jit_directory",
                         lambda jit_directory: os.path.isdir(jit_directory),
                         "diff_jit_directory doesn't exist")
+
+    coreclr_args.verify(args,
+                        "base_jit_options",
+                        lambda unused: True,
+                        "Unable to set base_jit_options")
+
+    coreclr_args.verify(args,
+                        "diff_jit_options",
+                        lambda unused: True,
+                        "Unable to set diff_jit_options")
 
     coreclr_args.verify(args,
                         "log_directory",
@@ -242,7 +254,7 @@ class Diff:
             "-spmi_location", self.spmi_location,
             "-error_limit", "100",
             "-log_level", "debug",
-            "-log_file", log_file])
+            "-log_file", log_file] + self.create_jit_options_args())
 
         if return_code != 0:
             print("Failed during asmdiffs. Log file: {}".format(log_file))
@@ -286,12 +298,23 @@ class Diff:
             "-spmi_location", self.spmi_location,
             "-error_limit", "100",
             "-log_level", "debug",
-            "-log_file", log_file])
+            "-log_file", log_file] + self.create_jit_options_args())
 
         if return_code != 0:
             print("Failed during tpdiff. Log file: {}".format(log_file))
             self.failed = True
 
+    def create_jit_options_args(self):
+        options = []
+        if self.coreclr_args.base_jit_options is not None:
+            for v in self.coreclr_args.base_jit_options.split(';'):
+                options += "-base_jit_option", v
+
+        if self.coreclr_args.diff_jit_options is not None:
+            for v in self.coreclr_args.diff_jit_options.split(';'):
+                options += "-diff_jit_option", v
+
+        return options
 
     def summarize(self):
         """ Summarize the diffs
