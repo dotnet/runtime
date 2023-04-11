@@ -68,6 +68,7 @@
 #cmakedefine01 HAVE_SCHED_SETAFFINITY
 #cmakedefine HAVE_UNW_GET_SAVE_LOC
 #cmakedefine HAVE_UNW_GET_ACCESSORS
+#cmakedefine HAVE_UNW_AARCH64_X19
 #cmakedefine01 HAVE_XSWDEV
 #cmakedefine01 HAVE_XSW_USAGE
 #cmakedefine01 HAVE_PUBLIC_XSTATE_STRUCT

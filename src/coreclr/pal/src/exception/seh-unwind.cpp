@@ -54,7 +54,7 @@ Abstract:
 
 #endif // HOST_UNIX
 
-#if defined(TARGET_OSX) && defined(TARGET_ARM64)
+#if defined(TARGET_OSX) && defined(TARGET_ARM64) && !defined(HAVE_UNW_AARCH64_X19)
 // MacOS uses ARM64 instead of AARCH64 to describe these registers
 // Create aliases to reuse more code
 enum

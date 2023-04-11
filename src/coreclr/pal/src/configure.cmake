@@ -1047,6 +1047,15 @@ int main(int argc, char **argv)
 check_symbol_exists(unw_get_save_loc libunwind.h HAVE_UNW_GET_SAVE_LOC)
 check_symbol_exists(unw_get_accessors libunwind.h HAVE_UNW_GET_ACCESSORS)
 
+check_cxx_source_compiles("
+#include <libunwind.h>
+
+int main(int argc, char **argv)
+{
+    int flag = (int)UNW_AARCH64_X19;
+    return 0;
+}" HAVE_UNW_AARCH64_X19)
+
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
   list(REMOVE_AT CMAKE_REQUIRED_INCLUDES 0 1)
 endif()
