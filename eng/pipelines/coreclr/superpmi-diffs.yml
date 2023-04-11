@@ -2,9 +2,11 @@ parameters:
 - name: spmi_jitoptions_base
   displayName: JIT options (base)
   type: string
+  default: ''
 - name: spmi_jitoptions_diff
   displayName: JIT options (diff)
   type: string
+  default: ''
 
 # This pipeline only runs on GitHub PRs, not on merges.
 trigger: none
