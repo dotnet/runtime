@@ -218,7 +218,7 @@ namespace System.Net
     {
         System.Net.NetworkCredential? GetCredential(string host, int port, string authenticationType);
     }
-    public partial class IPAddress : ISpanFormattable, ISpanParsable<IPAddress>
+    public partial class IPAddress : ISpanFormattable, ISpanParsable<IPAddress>, IUtf8SpanFormattable
     {
         public static readonly System.Net.IPAddress Any;
         public static readonly System.Net.IPAddress Broadcast;
@@ -262,6 +262,7 @@ namespace System.Net
         string IFormattable.ToString(string? format, IFormatProvider? formatProvider) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten) { throw null; }
         bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) { throw null; }
+        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> ipSpan, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPAddress? address) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? ipString, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPAddress? address) { throw null; }
         static bool ISpanParsable<IPAddress>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out IPAddress result) { throw null; }
@@ -287,7 +288,7 @@ namespace System.Net
         public static bool TryParse(System.ReadOnlySpan<char> s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPEndPoint? result) { throw null; }
         public static bool TryParse(string s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.IPEndPoint? result) { throw null; }
     }
-    public readonly partial struct IPNetwork : System.IEquatable<System.Net.IPNetwork>, System.IFormattable, System.IParsable<System.Net.IPNetwork>, System.ISpanFormattable, System.ISpanParsable<System.Net.IPNetwork>
+    public readonly partial struct IPNetwork : System.IEquatable<System.Net.IPNetwork>, System.IFormattable, System.IParsable<System.Net.IPNetwork>, System.ISpanFormattable, System.ISpanParsable<System.Net.IPNetwork>, System.IUtf8SpanFormattable
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
@@ -306,6 +307,7 @@ namespace System.Net
         static System.Net.IPNetwork System.IParsable<System.Net.IPNetwork>.Parse([System.Diagnostics.CodeAnalysis.NotNullAttribute] string s, System.IFormatProvider? provider) { throw null; }
         static bool System.IParsable<System.Net.IPNetwork>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Net.IPNetwork result) { throw null; }
         bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         static System.Net.IPNetwork System.ISpanParsable<System.Net.IPNetwork>.Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
         static bool System.ISpanParsable<System.Net.IPNetwork>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Net.IPNetwork result) { throw null; }
         public override string ToString() { throw null; }

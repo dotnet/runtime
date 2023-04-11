@@ -1858,15 +1858,14 @@ namespace System
     public abstract class TimeProvider
     {
         public static TimeProvider System { get; }
-        protected TimeProvider(long timestampFrequency) { throw null; }
-        public abstract System.DateTimeOffset UtcNow { get; }
-        public System.DateTimeOffset LocalNow  { get; }
-        public abstract System.TimeZoneInfo LocalTimeZone { get; }
-        public long TimestampFrequency { get; }
-        public static TimeProvider FromLocalTimeZone(System.TimeZoneInfo timeZone) { throw null; }
-        public abstract long GetTimestamp();
+        protected TimeProvider() { throw null; }
+        public virtual System.DateTimeOffset GetUtcNow() { throw null; }
+        public System.DateTimeOffset GetLocalNow() { throw null; }
+        public virtual System.TimeZoneInfo LocalTimeZone { get; }
+        public virtual long TimestampFrequency { get; }
+        public virtual long GetTimestamp() { throw null; }
         public TimeSpan GetElapsedTime(long startingTimestamp, long endingTimestamp) { throw null; }
-        public abstract System.Threading.ITimer CreateTimer(System.Threading.TimerCallback callback, object? state, System.TimeSpan dueTime, System.TimeSpan period);
+        public virtual System.Threading.ITimer CreateTimer(System.Threading.TimerCallback callback, object? state, System.TimeSpan dueTime, System.TimeSpan period) { throw null; }
     }
     public sealed partial class DBNull : System.IConvertible, System.Runtime.Serialization.ISerializable
     {
@@ -7059,7 +7058,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public override string? ToString() { throw null; }
     }
-    public sealed partial class Version : System.ICloneable, System.IComparable, System.IComparable<System.Version?>, System.IEquatable<System.Version?>, System.IFormattable, System.ISpanFormattable
+    public sealed partial class Version : System.ICloneable, System.IComparable, System.IComparable<System.Version?>, System.IEquatable<System.Version?>, System.IFormattable, System.ISpanFormattable, System.IUtf8SpanFormattable
     {
         public Version() { }
         public Version(int major, int minor) { }
@@ -7088,6 +7087,7 @@ namespace System
         public static System.Version Parse(string input) { throw null; }
         string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
         bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        bool System.IUtf8SpanFormattable.TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(int fieldCount) { throw null; }
         public bool TryFormat(System.Span<char> destination, int fieldCount, out int charsWritten) { throw null; }

@@ -299,9 +299,6 @@ protected:
 #endif
 
 public:
-    unsigned InferStructOpSizeAlign(GenTree* op, unsigned* alignmentWB);
-    unsigned InferOpSizeAlign(GenTree* op, unsigned* alignmentWB);
-
     // Methods to abstract target information
 
     bool validImmForInstr(instruction ins, target_ssize_t val, insFlags flags = INS_FLAGS_DONT_CARE);

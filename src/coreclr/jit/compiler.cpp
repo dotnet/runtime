@@ -9936,9 +9936,8 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
             }
             break;
 
-            case GT_OBJ:
             case GT_STORE_OBJ:
-                if (tree->AsObj()->GetLayout()->HasGCPtr())
+                if (tree->AsBlk()->GetLayout()->HasGCPtr())
                 {
                     chars += printf("[BLK_HASGCPTR]");
                 }
@@ -10315,7 +10314,7 @@ var_types Compiler::gtTypeForNullCheck(GenTree* tree)
 //
 void Compiler::gtChangeOperToNullCheck(GenTree* tree, BasicBlock* block)
 {
-    assert(tree->OperIs(GT_FIELD, GT_IND, GT_OBJ, GT_BLK));
+    assert(tree->OperIs(GT_FIELD, GT_IND, GT_BLK));
     tree->ChangeOper(GT_NULLCHECK);
     tree->ChangeType(gtTypeForNullCheck(tree));
     assert(fgAddrCouldBeNull(tree->gtGetOp1()));

@@ -301,11 +301,6 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                         JITDUMP(" Found Vector<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
 
                         size = getSIMDVectorRegisterByteLength();
-
-                        uint32_t handleIndex = static_cast<uint32_t>(simdBaseJitType - CORINFO_TYPE_BYTE);
-                        assert(handleIndex < SIMDHandlesCache::SupportedTypeCount);
-
-                        m_simdHandleCache->VectorTHandles[handleIndex] = typeHnd;
                         break;
                     }
 
@@ -347,11 +342,6 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                 }
 
                 JITDUMP(" Found Vector64<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
-
-                uint32_t handleIndex = static_cast<uint32_t>(simdBaseJitType - CORINFO_TYPE_BYTE);
-                assert(handleIndex < SIMDHandlesCache::SupportedTypeCount);
-
-                m_simdHandleCache->Vector64THandles[handleIndex] = typeHnd;
                 break;
             }
 #endif // TARGET_ARM64
@@ -372,11 +362,6 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                 }
 
                 JITDUMP(" Found Vector128<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
-
-                uint32_t handleIndex = static_cast<uint32_t>(simdBaseJitType - CORINFO_TYPE_BYTE);
-                assert(handleIndex < SIMDHandlesCache::SupportedTypeCount);
-
-                m_simdHandleCache->Vector128THandles[handleIndex] = typeHnd;
                 break;
             }
 
@@ -403,11 +388,6 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                 }
 
                 JITDUMP(" Found Vector256<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
-
-                uint32_t handleIndex = static_cast<uint32_t>(simdBaseJitType - CORINFO_TYPE_BYTE);
-                assert(handleIndex < SIMDHandlesCache::SupportedTypeCount);
-
-                m_simdHandleCache->Vector256THandles[handleIndex] = typeHnd;
                 break;
             }
 
@@ -433,11 +413,6 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                 }
 
                 JITDUMP(" Found Vector512<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
-
-                uint32_t handleIndex = static_cast<uint32_t>(simdBaseJitType - CORINFO_TYPE_BYTE);
-                assert(handleIndex < SIMDHandlesCache::SupportedTypeCount);
-
-                m_simdHandleCache->Vector512THandles[handleIndex] = typeHnd;
                 break;
             }
 #endif // TARGET_XARCH
@@ -459,34 +434,6 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
     {
         assert(size == info.compCompHnd->getClassSize(typeHnd));
         setUsesSIMDTypes(true);
-
-        CORINFO_CLASS_HANDLE* pCanonicalHnd = nullptr;
-
-        switch (size)
-        {
-            case 8:
-                pCanonicalHnd = &m_simdHandleCache->CanonicalSimd8Handle;
-                break;
-            case 12:
-                // There is no need for a canonical SIMD12 handle because it is always Vector3.
-                break;
-            case 16:
-                pCanonicalHnd = &m_simdHandleCache->CanonicalSimd16Handle;
-                break;
-            case 32:
-                pCanonicalHnd = &m_simdHandleCache->CanonicalSimd32Handle;
-                break;
-            case 64:
-                pCanonicalHnd = &m_simdHandleCache->CanonicalSimd64Handle;
-                break;
-            default:
-                unreached();
-        }
-
-        if ((pCanonicalHnd != nullptr) && (*pCanonicalHnd == NO_CLASS_HANDLE))
-        {
-            *pCanonicalHnd = typeHnd;
-        }
     }
 
     return simdBaseJitType;

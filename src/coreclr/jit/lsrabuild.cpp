@@ -927,7 +927,7 @@ regMaskTP LinearScan::getKillSetForBlockStore(GenTreeBlk* blkNode)
 
     if ((blkNode->OperGet() == GT_STORE_OBJ) && blkNode->OperIsCopyBlkOp())
     {
-        assert(blkNode->AsObj()->GetLayout()->HasGCPtr());
+        assert(blkNode->AsBlk()->GetLayout()->HasGCPtr());
         killMask = compiler->compHelperCallKillSet(CORINFO_HELP_ASSIGN_BYREF);
     }
     else
