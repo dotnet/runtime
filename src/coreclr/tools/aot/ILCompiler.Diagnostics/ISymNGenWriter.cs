@@ -43,8 +43,6 @@ namespace Microsoft.DiaSymReader
     [Guid("D682FD12-43dE-411C-811B-BE8404CEA126")]
     internal partial interface ISymNGenWriter
     {
-        public static readonly Guid IID = new Guid("D682FD12-43dE-411C-811B-BE8404CEA126");
-
         // Add a new public symbol to the NGEN PDB.
         void AddSymbol([MarshalAs(UnmanagedType.BStr)] string pSymbol,
                         ushort iSection,
@@ -117,8 +115,6 @@ namespace Microsoft.DiaSymReader
     [Guid("B029E51B-4C55-4fe2-B993-9F7BC1F10DB4")]
     internal partial interface ISymNGenWriter2 : ISymNGenWriter
     {
-        public readonly static new Guid IID = new Guid("B029E51B-4C55-4fe2-B993-9F7BC1F10DB4");
-
         void OpenModW([MarshalAs(UnmanagedType.LPWStr)] string wszModule,
                       [MarshalAs(UnmanagedType.LPWStr)] string wszObjFile,
                       out UIntPtr ppmod);
