@@ -2917,18 +2917,18 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
     //
     struct regArgElem
     {
-        unsigned varNum; // index into compiler->lvaTable[] for this register argument
-        var_types type;   // the Jit type of this regArgTab entry
-        unsigned trashBy; // index into this regArgTab[] table of the register that will be copied to this register.
-                          // That is, for regArgTab[x].trashBy = y, argument register number 'y' will be copied to
-                          // argument register number 'x'. Only used when circular = true.
-        char slot;        // 0 means the register is not used for a register argument
-                          // 1 means the first part of a register argument
-                          // 2, 3 or 4  means the second,third or fourth part of a multireg argument
-        bool stackArg;    // true if the argument gets homed to the stack
-        bool writeThru;   // true if the argument gets homed to both stack and register
-        bool processed;   // true after we've processed the argument (and it is in its final location)
-        bool circular;    // true if this register participates in a circular dependency loop.
+        unsigned  varNum;  // index into compiler->lvaTable[] for this register argument
+        var_types type;    // the Jit type of this regArgTab entry
+        unsigned  trashBy; // index into this regArgTab[] table of the register that will be copied to this register.
+                           // That is, for regArgTab[x].trashBy = y, argument register number 'y' will be copied to
+                           // argument register number 'x'. Only used when circular = true.
+        char slot;         // 0 means the register is not used for a register argument
+                           // 1 means the first part of a register argument
+                           // 2, 3 or 4  means the second,third or fourth part of a multireg argument
+        bool stackArg;     // true if the argument gets homed to the stack
+        bool writeThru;    // true if the argument gets homed to both stack and register
+        bool processed;    // true after we've processed the argument (and it is in its final location)
+        bool circular;     // true if this register participates in a circular dependency loop.
     } regArgTab[max(MAX_REG_ARG + 1, MAX_FLOAT_REG_ARG)] = {};
 
     unsigned   varNum;
@@ -4031,9 +4031,8 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                         {
                             int        nextArgNum  = argNum + i;
                             LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(varDsc->lvFieldLclStart + i);
-                            regNumber  nextRegNum =
-                                genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type);
-                            destRegNum = fieldVarDsc->GetRegNum();
+                            regNumber  nextRegNum  = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type);
+                            destRegNum             = fieldVarDsc->GetRegNum();
                             noway_assert(regArgTab[nextArgNum].varNum == varNum);
                             noway_assert(genIsValidFloatReg(nextRegNum));
                             noway_assert(genIsValidFloatReg(destRegNum));
@@ -4072,7 +4071,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 int nextArgNum = argNum + regSlot;
                 assert(!regArgTab[nextArgNum].processed);
                 regArgTab[nextArgNum].processed = true;
-                regNumber nextRegNum = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type);
+                regNumber nextRegNum            = genMapRegArgNumToRegNum(nextArgNum, regArgTab[nextArgNum].type);
                 regArgMaskLive &= ~genRegMask(nextRegNum);
             }
 #endif // FEATURE_MULTIREG_ARGS
