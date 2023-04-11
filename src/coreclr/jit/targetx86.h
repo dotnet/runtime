@@ -93,7 +93,7 @@
   #define RBM_ALLDOUBLE            RBM_ALLFLOAT
 
 #if !defined(UNIX_X86_ABI)
-  #define RBM_ALLMASK              REG_K1
+  #define RBM_ALLMASK              RBM_K1
 #else
   #define RBM_ALLMASK              (0)
 #endif

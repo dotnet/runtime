@@ -22,6 +22,7 @@ namespace System.Text
 #if SYSTEM_PRIVATE_CORELIB
 #pragma warning disable SA1001 // Commas should be spaced correctly
         , ISpanFormattable
+        , IUtf8SpanFormattable
 #pragma warning restore SA1001
 #endif
     {
@@ -914,6 +915,9 @@ namespace System.Text
 #if SYSTEM_PRIVATE_CORELIB
         bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
             TryEncodeToUtf16(destination, out charsWritten);
+
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            TryEncodeToUtf8(utf8Destination, out bytesWritten);
 
         string IFormattable.ToString(string? format, IFormatProvider? formatProvider) => ToString();
 #endif

@@ -5,7 +5,7 @@ FROM $SDK_BASE_IMAGE
 WORKDIR /msquic
 RUN apt-get update -y && \
     apt-get upgrade -y && \
-    apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev libnuma-dev && \
+    apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev && \
     gem install fpm
 RUN git clone --recursive https://github.com/dotnet/msquic
 RUN cd msquic/src/msquic && \

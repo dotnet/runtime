@@ -1604,11 +1604,13 @@ namespace System.Reflection
             if (!all && !s_pca.Contains(caType))
                 return;
 
+#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
             if (all || caType == typeof(SerializableAttribute))
             {
                 if ((type.Attributes & TypeAttributes.Serializable) != 0)
                     pcas.Add(new SerializableAttribute());
             }
+#pragma warning restore SYSLIB0050
             if (all || caType == typeof(ComImportAttribute))
             {
                 if ((type.Attributes & TypeAttributes.Import) != 0)
@@ -1621,11 +1623,13 @@ namespace System.Reflection
             if (!all && !s_pca.Contains(caType!))
                 return false;
 
+#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
             if (all || caType == typeof(SerializableAttribute))
             {
                 if ((type.Attributes & TypeAttributes.Serializable) != 0)
                     return true;
             }
+#pragma warning restore SYSLIB0050
             if (all || caType == typeof(ComImportAttribute))
             {
                 if ((type.Attributes & TypeAttributes.Import) != 0)
@@ -1752,11 +1756,13 @@ namespace System.Reflection
                 pca = GetFieldOffsetCustomAttribute(field);
                 if (pca is not null) pcas.Add(pca);
             }
+#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
             if (all || caType == typeof(NonSerializedAttribute))
             {
                 if ((field.Attributes & FieldAttributes.NotSerialized) != 0)
                     pcas.Add(new NonSerializedAttribute());
             }
+#pragma warning restore SYSLIB0050
         }
         internal static bool IsDefined(RuntimeFieldInfo field, RuntimeType? caType)
         {
@@ -1772,11 +1778,13 @@ namespace System.Reflection
             {
                 if (GetFieldOffsetCustomAttribute(field) is not null) return true;
             }
+#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
             if (all || caType == typeof(NonSerializedAttribute))
             {
                 if ((field.Attributes & FieldAttributes.NotSerialized) != 0)
                     return true;
             }
+#pragma warning restore SYSLIB0050
 
             return false;
         }

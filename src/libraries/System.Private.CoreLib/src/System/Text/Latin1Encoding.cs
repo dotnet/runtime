@@ -234,6 +234,29 @@ namespace System.Text
             }
         }
 
+        // TODO https://github.com/dotnet/runtime/issues/84425: Make this public.
+        /// <summary>Encodes into a span of bytes a set of characters from the specified read-only span if the destination is large enough.</summary>
+        /// <param name="chars">The span containing the set of characters to encode.</param>
+        /// <param name="bytes">The byte span to hold the encoded bytes.</param>
+        /// <param name="bytesWritten">Upon successful completion of the operation, the number of bytes encoded into <paramref name="bytes"/>.</param>
+        /// <returns><see langword="true"/> if all of the characters were encoded into the destination; <see langword="false"/> if the destination was too small to contain all the encoded bytes.</returns>
+        internal override unsafe bool TryGetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
+        {
+            fixed (char* charsPtr = &MemoryMarshal.GetReference(chars))
+            fixed (byte* bytesPtr = &MemoryMarshal.GetReference(bytes))
+            {
+                int written = GetBytesCommon(charsPtr, chars.Length, bytesPtr, bytes.Length, throwForDestinationOverflow: false);
+                if (written >= 0)
+                {
+                    bytesWritten = written;
+                    return true;
+                }
+
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
         public override unsafe int GetBytes(string s, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
             if (s is null || bytes is null)
@@ -269,7 +292,7 @@ namespace System.Text
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe int GetBytesCommon(char* pChars, int charCount, byte* pBytes, int byteCount)
+        private unsafe int GetBytesCommon(char* pChars, int charCount, byte* pBytes, int byteCount, bool throwForDestinationOverflow = true)
         {
             // Common helper method for all non-EncoderNLS entry points to GetBytes.
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
@@ -293,7 +316,7 @@ namespace System.Text
             {
                 // Simple narrowing conversion couldn't operate on entire buffer - invoke fallback.
 
-                return GetBytesWithFallback(pChars, charCount, pBytes, byteCount, charsConsumed, bytesWritten);
+                return GetBytesWithFallback(pChars, charCount, pBytes, byteCount, charsConsumed, bytesWritten, throwForDestinationOverflow);
             }
         }
 
