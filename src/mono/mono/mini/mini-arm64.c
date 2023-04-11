@@ -3828,7 +3828,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_INSERT_R4:
 		case OP_INSERT_R8: {
-			int t;
+			int t = 0;
 			switch (ins->inst_c1) {
 			case MONO_TYPE_R4:
 				t = SIZE_4;
@@ -3873,7 +3873,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_CREATE_SCALAR_FLOAT: {
-			int t;
+			int t = 0;
 			switch (ins->inst_c1) {
 			case MONO_TYPE_R4:
 				t = SIZE_4;
@@ -3882,7 +3882,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				t = SIZE_8;
 				break;
 			}
-			// Use a temp register for zero op, as sreg1 and dreg share the same resgister here
+			// Use a temp register for zero op, as sreg1 and dreg share the same register here
 			arm_neon_eor_16b (code, NEON_TMP_REG, NEON_TMP_REG, NEON_TMP_REG);
 			arm_neon_ins_e(code, t, NEON_TMP_REG, sreg1, 0, 0);
 			arm_neon_mov (code, dreg, NEON_TMP_REG);
@@ -3895,7 +3895,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_CREATE_SCALAR_UNSAFE_FLOAT: {
 			if (dreg != sreg1) {
-				int t;
+				int t = 0;
 				switch (ins->inst_c1) {
 				case MONO_TYPE_R4:
 					t = SIZE_4;
