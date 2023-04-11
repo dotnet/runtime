@@ -10606,23 +10606,40 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 assert(!isVolatile); // We don't expect both volatile and invariant
 
-                // Are we dereferencing the method table slot of some newly allocated object?
-                //
-                bool wasNewobj = false;
-                if ((oper == GT_IND) && (addr->TypeGet() == TYP_REF) && (tree->TypeGet() == TYP_I_IMPL))
+                bool returnsTypeHandle = false;
+                if ((oper == GT_IND) && addr->TypeIs(TYP_REF) && tree->TypeIs(TYP_I_IMPL))
                 {
-                    VNFuncApp  funcApp;
-                    const bool addrIsVNFunc = vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp);
-
-                    if (addrIsVNFunc && (funcApp.m_func == VNF_JitNew) && addrNvnp.BothEqual())
+                    GenTreeIndir* indir = tree->AsIndir();
+                    if (!indir->HasIndex() && (indir->Offset() == 0))
                     {
-                        tree->gtVNPair =
-                            vnStore->VNPWithExc(ValueNumPair(funcApp.m_args[0], funcApp.m_args[0]), addrXvnp);
-                        wasNewobj = true;
+                        // We try to access GC object's type, let's see if we know the exact type already
+                        // First, we're trying to do that via gtGetClassHandle.
+                        //
+                        bool                 isExact   = false;
+                        bool                 isNonNull = false;
+                        CORINFO_CLASS_HANDLE handle    = gtGetClassHandle(addr, &isExact, &isNonNull);
+                        if (isExact && (handle != NO_CLASS_HANDLE))
+                        {
+                            ValueNum handleVn = vnStore->VNForIntPtrCon((ssize_t)handle);
+                            tree->gtVNPair    = vnStore->VNPWithExc(ValueNumPair(handleVn, handleVn), addrXvnp);
+                            returnsTypeHandle = true;
+                        }
+                        else
+                        {
+                            // Then, let's see if we can find JitNew at least
+                            VNFuncApp  funcApp;
+                            const bool addrIsVNFunc = vnStore->GetVNFunc(addrNvnp.GetLiberal(), &funcApp);
+                            if (addrIsVNFunc && (funcApp.m_func == VNF_JitNew) && addrNvnp.BothEqual())
+                            {
+                                tree->gtVNPair =
+                                    vnStore->VNPWithExc(ValueNumPair(funcApp.m_args[0], funcApp.m_args[0]), addrXvnp);
+                                returnsTypeHandle = true;
+                            }
+                        }
                     }
                 }
 
-                if (!wasNewobj)
+                if (!returnsTypeHandle)
                 {
                     // Indirections off of addresses for boxed statics represent bases for
                     // the address of the static itself. Here we will use "nullptr" for the
