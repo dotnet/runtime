@@ -1303,14 +1303,12 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_SELECT:
-        case GT_CINC:
             assert(dstCount == 1);
-            srcCount = BuildConditional(tree->AsConditional());
+            srcCount = BuildSelect(tree->AsConditional());
             break;
         case GT_SELECTCC:
-        case GT_CINCCC:
             assert(dstCount == 1);
-            srcCount = BuildConditional(tree->AsOp());
+            srcCount = BuildSelect(tree->AsOp());
             break;
 
     } // end switch (tree->OperGet())

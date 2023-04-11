@@ -247,12 +247,12 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_SELECT:
             assert(dstCount == 1);
-            srcCount = BuildConditional(tree->AsConditional());
+            srcCount = BuildSelect(tree->AsConditional());
             break;
 
         case GT_SELECTCC:
             assert(dstCount == 1);
-            srcCount = BuildConditional(tree->AsOp());
+            srcCount = BuildSelect(tree->AsOp());
             break;
 
         case GT_JMP:
@@ -890,7 +890,7 @@ int LinearScan::BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskT
 }
 
 //------------------------------------------------------------------------
-// BuildConditional: Build RefPositions for a GT_SELECT/GT_SELECT_HI node.
+// BuildSelect: Build RefPositions for a GT_SELECT/GT_SELECT_HI node.
 //
 // Arguments:
 //    select - The GT_SELECT/GT_SELECT_HI node
@@ -898,7 +898,7 @@ int LinearScan::BuildRMWUses(GenTree* node, GenTree* op1, GenTree* op2, regMaskT
 // Return Value:
 //    The number of sources consumed by this node.
 //
-int LinearScan::BuildConditional(GenTreeOp* select)
+int LinearScan::BuildSelect(GenTreeOp* select)
 {
     int srcCount = 0;
 

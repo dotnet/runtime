@@ -4699,11 +4699,12 @@ void CodeGen::genCodeForCinc(GenTreeOp* cinc)
         genConsumeRegs(opcond);
     }
 
-    emitter* emit = GetEmitter();
-
+    emitter*  emit   = GetEmitter();
     var_types opType = genActualType(op->TypeGet());
     emitAttr  attr   = emitActualTypeSize(cinc->TypeGet());
+
     assert(!op->isUsedFromMemory());
+    genConsumeRegs(op);
 
     GenCondition cond;
 
@@ -4722,8 +4723,6 @@ void CodeGen::genCodeForCinc(GenTreeOp* cinc)
     const GenConditionDesc& prevDesc  = GenConditionDesc::Get(cond);
     regNumber               targetReg = cinc->GetRegNum();
     regNumber               srcReg;
-
-    genConsumeRegs(op);
 
     if (op->isContained())
     {

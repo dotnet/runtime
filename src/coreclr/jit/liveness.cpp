@@ -2198,11 +2198,7 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
                 return GenTree::VisitResult::Continue;
             });
 
-#ifdef TARGET_ARM64
-            if (node->OperIs(GT_SELECTCC, GT_SETCC, GT_CINC, GT_CINCCC))
-#else
-            if (node->OperIs(GT_SELECTCC, GT_SETCC))
-#endif
+            if (node->OperConsumesFlags())
             {
                 assert((node->gtPrev->gtFlags & GTF_SET_FLAGS) != 0);
                 node->gtPrev->gtFlags &= ~GTF_SET_FLAGS;
