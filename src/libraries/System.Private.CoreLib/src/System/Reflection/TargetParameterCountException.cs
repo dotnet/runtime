@@ -27,6 +27,7 @@ namespace System.Reflection
             HResult = HResults.COR_E_TARGETPARAMCOUNT;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private TargetParameterCountException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

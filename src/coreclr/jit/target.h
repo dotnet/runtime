@@ -58,6 +58,8 @@ inline bool compUnixX86Abi()
 #define TARGET_READABLE_NAME "ARM64"
 #elif defined(TARGET_LOONGARCH64)
 #define TARGET_READABLE_NAME "LOONGARCH64"
+#elif defined(TARGET_RISCV64)
+#define TARGET_READABLE_NAME "RISCV64"
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -85,6 +87,10 @@ inline bool compUnixX86Abi()
 #define REGMASK_BITS 64
 #define CSE_CONST_SHARED_LOW_BITS 12
 
+#elif defined(TARGET_RISCV64)
+#define REGMASK_BITS 64
+#define CSE_CONST_SHARED_LOW_BITS 12
+
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -100,7 +106,7 @@ inline bool compUnixX86Abi()
 //                       be assigned during register allocation.
 //    REG_NA           - Used to indicate that a register is either not yet assigned or not required.
 //
-#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
@@ -208,7 +214,7 @@ enum _regMask_enum : unsigned
 // In any case, we believe that is OK to freely cast between these types; no information will
 // be lost.
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 typedef unsigned __int64 regMaskTP;
 #else
 typedef unsigned       regMaskTP;
@@ -262,6 +268,8 @@ typedef unsigned char   regNumberSmall;
 #include "targetarm64.h"
 #elif defined(TARGET_LOONGARCH64)
 #include "targetloongarch64.h"
+#elif defined(TARGET_RISCV64)
+#include "targetriscv64.h"
 #else
   #error Unsupported or unset target architecture
 #endif
@@ -558,7 +566,8 @@ inline regMaskTP genRegMask(regNumber reg)
 
 inline regMaskTP genRegMaskFloat(regNumber reg ARM_ARG(var_types type /* = TYP_DOUBLE */))
 {
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64) ||            \
+    defined(TARGET_RISCV64)
     assert(genIsValidFloatReg(reg));
     assert((unsigned)reg < ArrLen(regMasks));
     return regMasks[reg];

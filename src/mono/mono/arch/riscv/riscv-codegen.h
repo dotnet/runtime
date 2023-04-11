@@ -614,6 +614,20 @@ enum {
 		                  ((funct5) << 27)); \
 	} while (0)
 
+static G_GNUC_UNUSED inline gboolean
+riscv_is_jal_disp (void *code, void *target)
+{
+	gint64 disp = ((char *)(target) - (char *)(code)) / 2;
+
+	return (disp > -(1 << 19)) && (disp < (1 << 19));
+}
+
+static G_GNUC_UNUSED inline gsize
+riscv_get_jal_disp (void *code, void *target)
+{
+	return ((char *)(target) - (char *)(code)) & 0xfffffffe;
+}
+
 /*
  * NOTE: When you add new codegen macros or change existing ones, you must
  * expand riscv-codegen-test.c to cover them, and update riscv-codegen.exp32

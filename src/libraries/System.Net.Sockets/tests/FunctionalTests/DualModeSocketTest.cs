@@ -1432,8 +1432,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Linux | TestPlatforms.OSX | TestPlatforms.MacCatalyst | TestPlatforms.iOS | TestPlatforms.tvOS, "Expected behavior is different on Apple platforms and Linux")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81946", TestPlatforms.Android)]
+        [PlatformSpecific(TestPlatforms.Windows)] // Expected behavior is different on Apple platforms and Linux
         public void BeginReceiveMessageFromV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1450,7 +1449,7 @@ namespace System.Net.Sockets.Tests
         //       an acceptable difference due to the extra state that would otherwise
         //       be necessary to emulate the Winsock behavior.
         [Fact]
-        [PlatformSpecific(TestPlatforms.Linux)]  // Read the comment above
+        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Android)] // Read the comment above
         public void BeginReceiveMessageFromV4BoundToSpecificV6_NotReceived_Linux()
         {
             AssertExtensions.Throws<ArgumentException>("remoteEP", () =>
@@ -1606,8 +1605,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Linux | TestPlatforms.OSX | TestPlatforms.MacCatalyst | TestPlatforms.iOS | TestPlatforms.tvOS, "Expected behavior is different on Apple platforms and Linux")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81946", TestPlatforms.Android)]
+        [PlatformSpecific(TestPlatforms.Windows)] // Expected behavior is different on Apple platforms and Linux
         public void ReceiveMessageFromAsyncV4BoundToSpecificV6_NotReceived()
         {
             Assert.Throws<TimeoutException>(() =>
@@ -1624,7 +1622,7 @@ namespace System.Net.Sockets.Tests
         //       an acceptable difference due to the extra state that would otherwise
         //       be necessary to emulate the Winsock behavior.
         [Fact]
-        [PlatformSpecific(TestPlatforms.Linux)]  // Read the comment above
+        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Android)]  // Read the comment above
         public void ReceiveMessageFromAsyncV4BoundToSpecificV6_NotReceived_Linux()
         {
             AssertExtensions.Throws<ArgumentException>("remoteEP", () =>

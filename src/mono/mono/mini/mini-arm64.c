@@ -3910,6 +3910,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_XZERO:
 			arm_neon_eor_16b (code, dreg, dreg, dreg);
 			break;
+		case OP_XONES:
+			arm_neon_eor_16b (code, dreg, dreg, dreg);
+			arm_neon_not_16b (code, dreg, dreg);
+			break;
 		case OP_XEXTRACT: 
 			code = emit_xextract (code, VREG_FULL, ins->inst_c0, dreg, sreg1);
 			break;

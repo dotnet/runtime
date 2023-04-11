@@ -18,6 +18,7 @@ namespace System.Reflection
 
         public bool IsInitOnly => (Attributes & FieldAttributes.InitOnly) != 0;
         public bool IsLiteral => (Attributes & FieldAttributes.Literal) != 0;
+        [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public bool IsNotSerialized => (Attributes & FieldAttributes.NotSerialized) != 0;
         public bool IsPinvokeImpl => (Attributes & FieldAttributes.PinvokeImpl) != 0;
         public bool IsSpecialName => (Attributes & FieldAttributes.SpecialName) != 0;

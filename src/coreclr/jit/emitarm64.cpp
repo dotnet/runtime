@@ -16220,6 +16220,16 @@ bool emitter::ReplaceLdrStrWithPairInstr(
         // Remove the last instruction written.
         emitRemoveLastInstruction();
 
+        // Combine two 32 bit stores of value zero into one 64 bit store
+        if (ins == INS_str && reg1 == REG_ZR && oldReg1 == REG_ZR && size == EA_4BYTE)
+        {
+
+            // The first register is at the lower offset for the ascending order
+            ssize_t offset = (optimizationOrder == eRO_ascending ? oldImm : imm) * size;
+            emitIns_R_R_I(INS_str, EA_8BYTE, REG_ZR, reg2, offset, INS_OPTS_NONE);
+            return true;
+        }
+
         // Emit the new instruction. Make sure to scale the immediate value by the operand size.
         if (optimizationOrder == eRO_ascending)
         {

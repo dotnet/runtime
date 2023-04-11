@@ -18,7 +18,8 @@ namespace System
           IComparable<DateOnly>,
           IEquatable<DateOnly>,
           ISpanFormattable,
-          ISpanParsable<DateOnly>
+          ISpanParsable<DateOnly>,
+          IUtf8SpanFormattable
     {
         private readonly int _dayNumber;
 
@@ -87,7 +88,7 @@ namespace System
         /// <summary>
         /// Gets the month component of the date represented by this instance.
         /// </summary>
-        public int Month  => GetEquivalentDateTime().Month;
+        public int Month => GetEquivalentDateTime().Month;
 
         /// <summary>
         /// Gets the day component of the date represented by this instance.
@@ -792,7 +793,14 @@ namespace System
         /// <param name="format">A span containing the characters that represent a standard or custom format string that defines the acceptable format for destination.</param>
         /// <param name="provider">An optional object that supplies culture-specific formatting information for destination.</param>
         /// <returns>true if the formatting was successful; otherwise, false.</returns>
-        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] ReadOnlySpan<char> format = default(ReadOnlySpan<char>), IFormatProvider? provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] ReadOnlySpan<char> format = default(ReadOnlySpan<char>), IFormatProvider? provider = null) =>
+            TryFormatCore(destination, out charsWritten, format, provider);
+
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            TryFormatCore(utf8Destination, out bytesWritten, format, provider);
+
+        private bool TryFormatCore<TChar>(Span<TChar> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.DateOnlyFormat)] ReadOnlySpan<char> format, IFormatProvider? provider = null)
+            where TChar : unmanaged, IBinaryInteger<TChar>
         {
             if (format.Length == 0)
             {

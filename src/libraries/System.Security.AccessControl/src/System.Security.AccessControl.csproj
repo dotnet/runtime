@@ -24,6 +24,8 @@
     <Compile Include="System\Security\Principal\Win32.cs" />
     <Compile Include="System\Security\Policy\Evidence.cs" />
     <Compile Include="System\Security\Policy\EvidenceBase.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <!-- PInvoke sources -->
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />

@@ -524,11 +524,15 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerCast(node);
             break;
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+        case GT_BITCAST:
+            ContainCheckBitCast(node);
+            break;
+
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         case GT_BOUNDS_CHECK:
             ContainCheckBoundsChk(node->AsBoundsChk());
             break;
-#endif // TARGET_XARCH
+#endif // defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
         case GT_ARR_ELEM:
             noway_assert(!comp->opts.compJitEarlyExpandMDArrays);
@@ -560,7 +564,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_LSH:
         case GT_RSH:
         case GT_RSZ:
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             LowerShift(node->AsOp());
 #else
             ContainCheckShiftRotate(node->AsOp());
@@ -580,7 +584,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_LCLHEAP:
-            ContainCheckLclHeap(node->AsOp());
+            LowerLclHeap(node);
             break;
 
 #ifdef TARGET_XARCH
@@ -633,7 +637,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerStoreLocCommon(node->AsLclVarCommon());
             break;
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         case GT_CMPXCHG:
             CheckImmedAndMakeContained(node, node->AsCmpXchg()->gtOpComparand);
             break;
@@ -1342,7 +1346,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
     // Struct can be split into register(s) and stack on ARM
     if (compFeatureArgSplit() && callArg->AbiInfo.IsSplit())
     {
-        assert(arg->OperIs(GT_OBJ, GT_FIELD_LIST) || arg->OperIsLocalRead());
+        assert(arg->OperIs(GT_BLK, GT_FIELD_LIST) || arg->OperIsLocalRead());
         // TODO: Need to check correctness for FastTailCall
         if (call->IsFastTailCall())
         {
@@ -1482,8 +1486,8 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
 #if defined(DEBUG) && defined(FEATURE_PUT_STRUCT_ARG_STK)
             if (callArg->AbiInfo.IsStruct)
             {
-                // We use GT_OBJ only for non-SIMD struct arguments.
-                if (arg->OperIs(GT_OBJ))
+                // We use GT_BLK only for non-SIMD struct arguments.
+                if (arg->OperIs(GT_BLK))
                 {
                     assert(!varTypeIsSIMD(arg));
                 }
@@ -1615,7 +1619,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
 #endif // !defined(TARGET_64BIT)
     {
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         if (call->IsVarargs() || comp->opts.compUseSoftFP)
         {
             // For vararg call or on armel, reg args should be all integer.
@@ -1626,7 +1630,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
                 type = newNode->TypeGet();
             }
         }
-#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
         GenTree* putArg = NewPutArg(call, arg, callArg, type);
 
@@ -1647,7 +1651,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
     }
 }
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 //------------------------------------------------------------------------
 // LowerFloatArg: Lower float call arguments on the arm/LoongArch64 platform.
 //
@@ -1829,9 +1833,9 @@ GenTree* Lowering::LowerCallMemmove(GenTreeCall* call)
                 GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, dstAddr, srcBlk, comp->typGetBlkLayout((unsigned)cnsSize));
             storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
 
-            // TODO-CQ: Use GenTreeObj::BlkOpKindUnroll here if srcAddr and dstAddr don't overlap, thus, we can
+            // TODO-CQ: Use GenTreeBlk::BlkOpKindUnroll here if srcAddr and dstAddr don't overlap, thus, we can
             // unroll this memmove as memcpy - it doesn't require lots of temp registers
-            storeBlk->gtBlkOpKind = GenTreeObj::BlkOpKindUnrollMemmove;
+            storeBlk->gtBlkOpKind = GenTreeBlk::BlkOpKindUnrollMemmove;
 
             BlockRange().InsertBefore(call, srcBlk);
             BlockRange().InsertBefore(call, storeBlk);
@@ -2192,6 +2196,13 @@ GenTree* Lowering::LowerCall(GenTree* node)
         // There is one side effect which is flipping the order of PME and control expression
         // since LowerFastTailCall calls InsertPInvokeMethodEpilog.
         LowerFastTailCall(call);
+    }
+    else
+    {
+        if (!call->IsHelperCall(comp, CORINFO_HELP_VALIDATE_INDIRECT_CALL))
+        {
+            RequireOutgoingArgSpace(call, call->gtArgs.OutgoingArgsStackSize());
+        }
     }
 
     if (varTypeIsStruct(call))
@@ -3639,7 +3650,7 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
     return cmp->gtNext;
 }
 
-#ifndef TARGET_LOONGARCH64
+#if !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
 //------------------------------------------------------------------------
 // Lowering::LowerJTrue: Lowers a JTRUE node.
 //
@@ -3720,7 +3731,7 @@ GenTree* Lowering::LowerJTrue(GenTreeOp* jtrue)
 
     return nullptr;
 }
-#endif
+#endif // !TARGET_LOONGARCH64 && !TARGET_RISCV64
 
 //----------------------------------------------------------------------------------------------
 // LowerSelect: Lower a GT_SELECT node.
@@ -4240,16 +4251,16 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         {
             convertToStoreObj = false;
         }
-        else if (src->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_LCL_FLD))
+        else if (src->OperIs(GT_IND, GT_BLK, GT_LCL_FLD))
         {
 #if !defined(TARGET_ARM64)
 
             if (src->TypeIs(TYP_STRUCT))
             {
                 src->ChangeType(lclRegType);
-                if (src->OperIs(GT_IND, GT_OBJ, GT_BLK))
+                if (src->OperIs(GT_IND, GT_BLK))
                 {
-                    if (src->OperIs(GT_OBJ, GT_BLK))
+                    if (src->OperIs(GT_BLK))
                     {
                         src->SetOper(GT_IND);
                     }
@@ -4291,7 +4302,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 
             // Create the assignment node.
             lclStore->ChangeOper(GT_STORE_OBJ);
-            GenTreeBlk* objStore = lclStore->AsObj();
+            GenTreeBlk* objStore = lclStore->AsBlk();
             objStore->gtFlags    = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
             objStore->Initialize(layout);
             objStore->SetAddr(addr);
@@ -4397,7 +4408,6 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         }
 
         case GT_BLK:
-        case GT_OBJ:
         case GT_IND:
         {
             // Spill to a local if sizes don't match so we can avoid the "load more than requested"
@@ -4637,7 +4647,7 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 
     if (regType != TYP_UNDEF)
     {
-#if defined(TARGET_LOONGARCH64)
+#if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         if (varTypeIsFloating(call->TypeGet()))
         {
             regType = call->TypeGet();
@@ -4659,7 +4669,7 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
         {
             store->SetOper(GT_STORE_BLK);
         }
-        store->gtBlkOpKind = GenTreeObj::BlkOpKindUnroll;
+        store->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 
         GenTreeLclVar* spilledCall = SpillStructCallResult(call);
         store->SetData(spilledCall);
@@ -6340,7 +6350,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
     }
 
 // TODO-ARM-CQ: Currently there's no GT_MULHI for ARM32
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     if (!comp->opts.MinOpts() && (divisorValue >= 3))
     {
         size_t magic;
@@ -6628,7 +6638,7 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
             return nullptr;
         }
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         ssize_t magic;
         int     shift;
 
@@ -6730,6 +6740,9 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
         return mulhi;
 #elif defined(TARGET_ARM)
         // Currently there's no GT_MULHI for ARM32
+        return nullptr;
+#elif defined(TARGET_RISCV64)
+        NYI_RISCV64("-----unimplemented on RISCV64 yet----");
         return nullptr;
 #else
 #error Unsupported or unset target architecture
@@ -7159,6 +7172,8 @@ PhaseStatus Lowering::DoPhase()
         comp->fgDispBasicBlocks(true);
     }
 #endif
+
+    FinalizeOutgoingArgSpace();
 
     // Recompute local var ref counts before potentially sorting for liveness.
     // Note this does minimal work in cases where we are not going to sort.
@@ -7648,6 +7663,12 @@ void Lowering::ContainCheckNode(GenTree* node)
 #endif
             ContainCheckShiftRotate(node->AsOp());
             break;
+        case GT_CAST:
+            ContainCheckCast(node->AsCast());
+            break;
+        case GT_BITCAST:
+            ContainCheckBitCast(node);
+            break;
         case GT_ARR_OFFSET:
             ContainCheckArrOffset(node->AsArrOffs());
             break;
@@ -7790,31 +7811,16 @@ void Lowering::ContainCheckRet(GenTreeUnOp* ret)
 void Lowering::ContainCheckBitCast(GenTree* node)
 {
     GenTree* const op1 = node->AsOp()->gtOp1;
-    if (op1->isMemoryOp())
+    if (op1->OperIs(GT_LCL_VAR) && (genTypeSize(op1) == genTypeSize(node)))
     {
-        op1->SetContained();
-    }
-    else if (op1->OperIs(GT_LCL_VAR))
-    {
-        if (!m_lsra->willEnregisterLocalVars())
+        if (IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1))
         {
-            op1->SetContained();
+            MakeSrcContained(node, op1);
         }
-        const LclVarDsc* varDsc = comp->lvaGetDesc(op1->AsLclVar());
-        // TODO-Cleanup: we want to check if the local is already known not
-        // to be on reg, for example, because local enreg is disabled.
-        if (varDsc->lvDoNotEnregister)
+        else if (IsSafeToMarkRegOptional(node, op1))
         {
-            op1->SetContained();
+            MakeSrcRegOptional(node, op1);
         }
-        else
-        {
-            op1->SetRegOptional();
-        }
-    }
-    else if (op1->IsLocal())
-    {
-        op1->SetContained();
     }
 }
 
@@ -7949,7 +7955,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     // For structs we conservatively lower it to BYTE. For 8-byte primitives we lower it to TYP_INT
     // on XARCH as an optimization.
     //
-    assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK, GT_OBJ));
+    assert(ind->OperIs(GT_NULLCHECK, GT_IND, GT_BLK));
 
     GenTree* const addr = ind->Addr();
     if (!comp->fgAddrCouldBeNull(addr))
@@ -7962,7 +7968,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 
     ind->ChangeType(comp->gtTypeForNullCheck(ind));
 
-#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     bool useNullCheck = true;
 #elif defined(TARGET_ARM)
     bool           useNullCheck          = false;
@@ -7984,6 +7990,70 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 }
 
 //------------------------------------------------------------------------
+// LowerLclHeap: a common logic to lower LCLHEAP.
+//
+// Arguments:
+//    blkNode - the LCLHEAP node we are lowering.
+//
+void Lowering::LowerLclHeap(GenTree* node)
+{
+    assert(node->OperIs(GT_LCLHEAP));
+
+#if defined(TARGET_XARCH)
+    if (node->gtGetOp1()->IsCnsIntOrI())
+    {
+        GenTreeIntCon* sizeNode = node->gtGetOp1()->AsIntCon();
+        ssize_t        size     = sizeNode->IconValue();
+
+        if (size == 0)
+        {
+            // Replace with null for LCLHEAP(0)
+            node->BashToZeroConst(TYP_I_IMPL);
+            BlockRange().Remove(sizeNode);
+            return;
+        }
+
+        if (comp->info.compInitMem)
+        {
+            ssize_t alignedSize = ALIGN_UP(size, STACK_ALIGN);
+            if ((size > UINT_MAX) || (alignedSize > UINT_MAX))
+            {
+                // Size is too big - don't mark sizeNode as contained
+                return;
+            }
+
+            LIR::Use use;
+            if (BlockRange().TryGetUse(node, &use))
+            {
+                // Align LCLHEAP size for more efficient zeroing via BLK
+                sizeNode->SetIconValue(alignedSize);
+
+                // Emit STORE_BLK to zero it
+                //
+                //  *  STORE_BLK struct<alignedSize> (init) (Unroll)
+                //  +--*  LCL_VAR   long   V01
+                //  \--*  CNS_INT   int    0
+                //
+                GenTree*    heapLcl  = comp->gtNewLclvNode(use.ReplaceWithLclVar(comp), TYP_I_IMPL);
+                GenTree*    zero     = comp->gtNewIconNode(0);
+                GenTreeBlk* storeBlk = new (comp, GT_STORE_BLK)
+                    GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, heapLcl, zero, comp->typGetBlkLayout((unsigned)alignedSize));
+                storeBlk->gtFlags |= (GTF_IND_UNALIGNED | GTF_ASG | GTF_EXCEPT | GTF_GLOB_REF);
+                BlockRange().InsertAfter(use.Def(), heapLcl, zero, storeBlk);
+                LowerNode(storeBlk);
+            }
+            else
+            {
+                // Value is unused and we don't mark the size node as contained
+                return;
+            }
+        }
+    }
+#endif
+    ContainCheckLclHeap(node->AsOp());
+}
+
+//------------------------------------------------------------------------
 // LowerBlockStoreCommon: a common logic to lower STORE_OBJ/BLK/DYN_BLK.
 //
 // Arguments:
@@ -7994,7 +8064,7 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
     assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK, GT_STORE_OBJ));
 
     // Lose the type information stored in the source - we no longer need it.
-    if (blkNode->Data()->OperIs(GT_OBJ, GT_BLK))
+    if (blkNode->Data()->OperIs(GT_BLK))
     {
         blkNode->Data()->SetOper(GT_IND);
         LowerIndir(blkNode->Data()->AsIndir());
@@ -8145,7 +8215,7 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
 
 #if defined(TARGET_XARCH) || defined(TARGET_ARM)
         bool shouldSwitchToInteger = true;
-#else // TARGET_ARM64 || TARGET_LOONGARCH64
+#else // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
         bool       shouldSwitchToInteger = FloatingPointUtils::isPositiveZero(dblCns);
 #endif
 
@@ -8269,3 +8339,79 @@ GenTree* Lowering::InsertNewSimdCreateScalarUnsafeNode(var_types   simdType,
     return result;
 }
 #endif // FEATURE_HW_INTRINSICS
+
+//----------------------------------------------------------------------------------------------
+// Lowering::RequireOutgoingArgSpace: Record that the compilation will require
+// outgoing arg space of at least the specified size.
+//
+//  Arguments:
+//    node - The node that is the reason for the requirement.
+//    size - The minimal required size of the outgoing arg space.
+//
+void Lowering::RequireOutgoingArgSpace(GenTree* node, unsigned size)
+{
+#if FEATURE_FIXED_OUT_ARGS
+    if (size <= m_outgoingArgSpaceSize)
+    {
+        return;
+    }
+
+    JITDUMP("Bumping outgoing arg space size from %u to %u for [%06u]\n", m_outgoingArgSpaceSize, size,
+            Compiler::dspTreeID(node));
+    m_outgoingArgSpaceSize = size;
+#endif
+}
+
+//----------------------------------------------------------------------------------------------
+// Lowering::FinalizeOutgoingArgSpace: Finalize and allocate the outgoing arg
+// space area.
+//
+void Lowering::FinalizeOutgoingArgSpace()
+{
+#if FEATURE_FIXED_OUT_ARGS
+    // Finish computing the outgoing args area size
+    //
+    // Need to make sure the MIN_ARG_AREA_FOR_CALL space is added to the frame if:
+    // 1. there are calls to THROW_HELPER methods.
+    // 2. we are generating profiling Enter/Leave/TailCall hooks. This will ensure
+    //    that even methods without any calls will have outgoing arg area space allocated.
+    // 3. We will be generating calls to PInvoke helpers. TODO: This shouldn't be required because
+    //    if there are any calls to PInvoke methods, there should be a call that we processed
+    //    above. However, we still generate calls to PInvoke prolog helpers even if we have dead code
+    //    eliminated all the calls.
+    // 4. We will be generating a stack cookie check. In this case we can call a helper to fail fast.
+    //
+    // An example for these two cases is Windows Amd64, where the ABI requires to have 4 slots for
+    // the outgoing arg space if the method makes any calls.
+    if (m_outgoingArgSpaceSize < MIN_ARG_AREA_FOR_CALL)
+    {
+        if (comp->compUsesThrowHelper || comp->compIsProfilerHookNeeded() ||
+            (comp->compMethodRequiresPInvokeFrame() && !comp->opts.ShouldUsePInvokeHelpers()) ||
+            comp->getNeedsGSSecurityCookie())
+        {
+            m_outgoingArgSpaceSize = MIN_ARG_AREA_FOR_CALL;
+            JITDUMP("Bumping outgoing arg space size to %u for possible helper or profile hook call",
+                    m_outgoingArgSpaceSize);
+        }
+    }
+
+    // If a function has localloc, we will need to move the outgoing arg space when the
+    // localloc happens. When we do this, we need to maintain stack alignment. To avoid
+    // leaving alignment-related holes when doing this move, make sure the outgoing
+    // argument space size is a multiple of the stack alignment by aligning up to the next
+    // stack alignment boundary.
+    if (comp->compLocallocUsed)
+    {
+        m_outgoingArgSpaceSize = roundUp(m_outgoingArgSpaceSize, STACK_ALIGN);
+        JITDUMP("Bumping outgoing arg space size to %u for localloc", m_outgoingArgSpaceSize);
+    }
+
+    assert((m_outgoingArgSpaceSize % TARGET_POINTER_SIZE) == 0);
+
+    // Publish the final value and mark it as read only so any update
+    // attempt later will cause an assert.
+    comp->lvaOutgoingArgSpaceSize = m_outgoingArgSpaceSize;
+    comp->lvaOutgoingArgSpaceSize.MarkAsReadOnly();
+    comp->lvaGetDesc(comp->lvaOutgoingArgSpaceVar)->GrowBlockLayout(comp->typGetBlkLayout(m_outgoingArgSpaceSize));
+#endif
+}

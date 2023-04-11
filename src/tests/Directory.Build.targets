@@ -122,6 +122,19 @@
     <SkipImportILTargets Condition="'$(CLRTestBuildAllTargets)' != '' And '$(CLRTestNeedTarget)' != '$(CLRTestBuildAllTargets)'">true</SkipImportILTargets>
   </PropertyGroup>
 
+  <!-- If a test in a merged test directory (e.g., under JIT\Directed where Directed_1.csproj and siblings -->
+  <!-- represent the groups) has OutputType==Exe set, then it will end up being skipped because the merged -->
+  <!-- groups are supposed to cover all of the tests. The merged groups themselves should be Exes, as      -->
+  <!-- should any test marked RequiresProcessIsolation or BuildAsStandalone. -->
+  <Target Name="CheckForTestOutsideOfGroup" BeforeTargets="Build">
+    <Error Condition="'$(InMergedTestDirectory)' == 'true'
+      and '$(OutputType)' == 'Exe'
+      and '$(RequiresProcessIsolation)' != 'true'
+      and '$(BuildAsStandalone)' != 'true'
+      and '$(IsMergedTestRunnerAssembly)' != 'true'"
+      Text="Tests in merged test directories should not set OutputType to Exe unless they are RequiresProcessIsolation, BuildAsStandalone, or IsMergedTestRunnerAssembly." />
+  </Target>
+
   <Target Name="CopyNativeProjectBinaries" Condition="'$(_CopyNativeProjectBinaries)' == 'true'">
     <ItemGroup Condition="'$(UseVisualStudioNativeBinariesLayout)' == 'true'">
       <NativeProjectBinaries Include="$(NativeProjectOutputFolder)\*.*" />
