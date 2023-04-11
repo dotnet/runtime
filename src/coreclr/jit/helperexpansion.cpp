@@ -571,8 +571,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
                                                     gtNewIconNode(TARGET_POINTER_SIZE, TYP_INT));
     GenTree* typeThreadStaticBlockRef =
         gtNewOperNode(GT_ADD, TYP_I_IMPL, threadStaticBlocksValue, typeThreadStaticBlockIndexValue);
-    GenTree* typeThreadStaticBlockValue =
-        gtNewIndir(TYP_I_IMPL, typeThreadStaticBlockRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+    GenTree* typeThreadStaticBlockValue = gtNewIndir(TYP_I_IMPL, typeThreadStaticBlockRef, GTF_IND_NONFAULTING);
 
     // Cache the threadStaticBlock value
     unsigned threadStaticBlockBaseLclNum         = lvaGrabTemp(true DEBUGARG("ThreadStaticBlockBase access"));
@@ -590,12 +589,12 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
     // prevBb (BBJ_NONE):                                               [weight: 1.0]
     //      ...
     //
-    // maxThreadStaticBlocksCondBB (BBJ_COND):                          [weight: 0.99]
+    // maxThreadStaticBlocksCondBB (BBJ_COND):                          [weight: 1.0]
     //      asgTlsValue = tls_access_code
     //      if (maxThreadStaticBlocks < typeIndex)
     //          goto fallbackBb;
     //
-    // threadStaticBlockNullCondBB (BBJ_COND):                          [weight: 0.98]
+    // threadStaticBlockNullCondBB (BBJ_COND):                          [weight: 1.0]
     //      fastPathValue = t_threadStaticBlocks[typeIndex]
     //      if (fastPathValue != nullptr)
     //          goto fastPathBb;
@@ -604,7 +603,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock* block, Statement* st
     //      threadStaticBlockBase = HelperCall();
     //      goto block;
     //
-    // fastPathBb(BBJ_ALWAYS):                                          [weight: 0.97]
+    // fastPathBb(BBJ_ALWAYS):                                          [weight: 1.0]
     //      threadStaticBlockBase = fastPathValue;
     //
     // block (...):                                                     [weight: 1.0]
