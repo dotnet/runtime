@@ -52,3 +52,9 @@ jobs:
           ## Testing
 
           ## Risk
+
+          **IMPORTANT**: If this backport is for a servicing release, please verify that:
+
+          - The PR target branch is `release/X.0-staging`, not `release/X.0`.
+
+          - If the change touches code that ships in a NuGet package, you have added the necessary [package authoring](https://github.com/dotnet/runtime/blob/release/7.0/docs/project/library-servicing.md) and gotten it explicitly reviewed.
