@@ -8,13 +8,17 @@ template <class T>
 class ArrayStack
 {
 public:
-    static const int builtinSize = 8;
+    // `builtinSize` is the number of elements of `T` that are stored on internally (it is intended
+    // that an `ArrayStack` is a local variable on the stack, such that the internal storage is on
+    // the stack).
+    static const size_t builtinSize = 8;
 
-    explicit ArrayStack(CompAllocator alloc, int initialCapacity = builtinSize) : m_alloc(alloc)
+    explicit ArrayStack(CompAllocator alloc, size_t initialCapacity = builtinSize) : m_alloc(alloc)
     {
         if (initialCapacity > builtinSize)
         {
-            maxIndex = initialCapacity;
+            assert(initialCapacity < INT_MAX);
+            maxIndex = (int)initialCapacity;
             data     = m_alloc.allocate<T>(initialCapacity);
         }
         else
