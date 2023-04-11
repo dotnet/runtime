@@ -3821,11 +3821,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_INSERT_I1:
 		case OP_INSERT_I2:
 		case OP_INSERT_I4:
-		case OP_INSERT_I8:
-		case OP_INSERT_R4:
-		case OP_INSERT_R8: {
+		case OP_INSERT_I8: {
 			const int t = get_type_size_macro (ins->inst_c1);
 			arm_neon_ins_g(code, t, dreg, sreg1, ins->inst_c0);
+			break;
+		}
+		case OP_INSERT_R4:
+		case OP_INSERT_R8: {
+			int t;
+			switch (ins->inst_c1) {
+			case MONO_TYPE_R4:
+				t = SIZE_4;
+				break;
+			case MONO_TYPE_R8:
+				t = SIZE_8;
+				break;
+			}
+			arm_neon_ins_e(code, t, dreg, sreg1, ins->inst_c0, 0);
 			break;
 		}
 		case OP_ARM64_XADDV: {
@@ -3854,8 +3866,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
-		case OP_CREATE_SCALAR: {
-			int t = get_type_size_macro (ins->inst_c1);
+		case OP_CREATE_SCALAR_INT: {
+			const int t = get_type_size_macro (ins->inst_c1);
+			arm_neon_eor_16b (code, dreg, dreg, dreg);
+			arm_neon_ins_g(code, t, dreg, sreg1, 0);
+			break;
+		}
+		case OP_CREATE_SCALAR_FLOAT: {
+			int t;
 			switch (ins->inst_c1) {
 			case MONO_TYPE_R4:
 				t = SIZE_4;
@@ -3864,20 +3882,30 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				t = SIZE_8;
 				break;
 			}
-			if (is_type_float_macro (ins->inst_c1)) {
-				// ins expects an integer register
-				arm_fmov_double_to_rx(code, NEON_TMP_REG, sreg1);
-				arm_neon_eor_16b (code, dreg, dreg, dreg);
-				arm_neon_ins_g(code, t, dreg, NEON_TMP_REG, 0);
-			} else {
-				arm_neon_eor_16b (code, dreg, dreg, dreg);
-				arm_neon_ins_g(code, t, dreg, sreg1, 0);
-			}
+			// Use a temp register for zero op, as sreg1 and dreg share the same resgister here
+			arm_neon_eor_16b (code, NEON_TMP_REG, NEON_TMP_REG, NEON_TMP_REG);
+			arm_neon_ins_e(code, t, NEON_TMP_REG, sreg1, 0, 0);
+			arm_neon_mov (code, dreg, NEON_TMP_REG);
 			break;
 		}
-		case OP_CREATE_SCALAR_UNSAFE: {
+		case OP_CREATE_SCALAR_UNSAFE_INT: {
 			const int t = get_type_size_macro (ins->inst_c1);
 			arm_neon_ins_g(code, t, dreg, sreg1, 0);
+			break;
+		}
+		case OP_CREATE_SCALAR_UNSAFE_FLOAT: {
+			if (dreg != sreg1) {
+				int t;
+				switch (ins->inst_c1) {
+				case MONO_TYPE_R4:
+					t = SIZE_4;
+					break;
+				case MONO_TYPE_R8:
+					t = SIZE_8;
+					break;
+				}
+				arm_neon_ins_e(code, t, dreg, sreg1, 0, 0);
+			}
 			break;
 		}
 		// Enable this when adding support for Narrow and enable support for Create at the same time

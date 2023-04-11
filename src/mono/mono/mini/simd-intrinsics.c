@@ -843,9 +843,9 @@ type_to_expand_op (MonoTypeEnum type)
 }
 
 static int
-type_to_insert_op (MonoType *type)
+type_to_insert_op (MonoTypeEnum type)
 {
-	switch (type->type) {
+	switch (type) {
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1:
 		return OP_INSERT_I1;
@@ -992,14 +992,15 @@ support_probe_complete:
 static MonoInst *
 emit_vector_create_elementwise (
 	MonoCompile *cfg, MonoMethodSignature *fsig, MonoType *vtype,
-	MonoType *etype, MonoInst **args)
+	MonoTypeEnum type, MonoInst **args)
 {
-	int op = type_to_insert_op (etype);
+	int op = type_to_insert_op (type);
 	MonoClass *vklass = mono_class_from_mono_type_internal (vtype);
 	MonoInst *ins = emit_xzero (cfg, vklass);
 	for (int i = 0; i < fsig->param_count; ++i) {
 		ins = emit_simd_ins (cfg, vklass, op, ins->dreg, args [i]->dreg);
 		ins->inst_c0 = i;
+		ins->inst_c1 = type;
 	}
 	return ins;
 }
@@ -1433,20 +1434,37 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		} else if (is_create_from_half_vectors_overload (fsig))
 			return emit_simd_ins (cfg, klass, OP_XCONCAT, args [0]->dreg, args [1]->dreg);
 		else if (is_elementwise_create_overload (fsig, etype))
-			return emit_vector_create_elementwise (cfg, fsig, fsig->ret, etype, args);
+			return emit_vector_create_elementwise (cfg, fsig, fsig->ret, arg0_type, args);
 		break;
 	}
 	case SN_CreateScalar: {
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
 		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
-		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR, -1, arg0_type, fsig, args);
+		if (COMPILE_LLVM (cfg))
+			return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR, -1, arg0_type, fsig, args);
+		else {
+			if (type_enum_is_float (arg0_type)) {
+				return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_FLOAT, -1, arg0_type, fsig, args);
+			} else {
+				return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_INT, -1, arg0_type, fsig, args);
+			}
+		}
+
 	}
 	case SN_CreateScalarUnsafe: {
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
 		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
-		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
+		if (COMPILE_LLVM (cfg))
+			return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
+		else {
+			if (type_enum_is_float (arg0_type)) {
+				return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE_FLOAT, -1, arg0_type, fsig, args);
+			} else {
+				return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE_INT, -1, arg0_type, fsig, args);
+			}
+		}
 	}
 	case SN_Dot: {
 		if (!is_element_type_primitive (fsig->params [0]))
