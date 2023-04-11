@@ -110,13 +110,22 @@ public class NativeLibraryTest
             if (TestLibrary.Utilities.IsWindows &&
                 File.Exists(Path.Combine(Environment.SystemDirectory, libName)))
             {
-                // Calls on a valid library from System32 directory
+                // Library should be found in the system directory
                 success &= EXPECT(LoadLibraryAdvanced(libName, assembly, DllImportSearchPath.System32));
                 success &= EXPECT(TryLoadLibraryAdvanced(libName, assembly, DllImportSearchPath.System32));
 
-                // Calls on a valid library from application directory
+                // Library should not be found in the assembly directory and should be found in the system directory
+                success &= EXPECT(LoadLibraryAdvanced(libName, assembly, DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32));
+                success &= EXPECT(TryLoadLibraryAdvanced(libName, assembly, DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32));
+
+                // Library should not be found in the assembly directory, but should fall back to the default OS search which includes CWD on Windows
+                success &= EXPECT(LoadLibraryAdvanced(libName, assembly, DllImportSearchPath.AssemblyDirectory));
+                success &= EXPECT(TryLoadLibraryAdvanced(libName, assembly, DllImportSearchPath.AssemblyDirectory));
+
+                // Library should not be found in application directory
                 success &= EXPECT(LoadLibraryAdvanced(libName, assembly, DllImportSearchPath.ApplicationDirectory), TestResult.DllNotFound);
                 success &= EXPECT(TryLoadLibraryAdvanced(libName, assembly, DllImportSearchPath.ApplicationDirectory), TestResult.ReturnFailure);
+
             }
 
             // Calls with null libName input
@@ -133,6 +142,35 @@ public class NativeLibraryTest
             libName = Path.Combine(testBinDir, Path.Combine("lib", NativeLibraryToLoad.Name));
             success &= EXPECT(LoadLibraryAdvanced(libName, assembly, DllImportSearchPath.AssemblyDirectory), TestResult.DllNotFound);
             success &= EXPECT(TryLoadLibraryAdvanced(libName, assembly, DllImportSearchPath.AssemblyDirectory), TestResult.ReturnFailure);
+
+            string suffix = "-in-subdirectory";
+            libName = $"{NativeLibraryToLoad.Name}{suffix}";
+            string subdirectory = Path.Combine(testBinDir, "subdirectory");
+
+            if (!TestLibrary.Utilities.IsMonoLLVMFULLAOT)
+            {
+                // Library should be found in the assembly directory
+                Assembly assemblyInSubdirectory = Assembly.LoadFile(Path.Combine(subdirectory, $"{Path.GetFileNameWithoutExtension(assembly.Location)}{suffix}.dll"));
+                EXPECT(LoadLibraryAdvanced(libName, assemblyInSubdirectory, DllImportSearchPath.AssemblyDirectory));
+                EXPECT(TryLoadLibraryAdvanced(libName, assemblyInSubdirectory, DllImportSearchPath.AssemblyDirectory));
+            }
+
+            if (OperatingSystem.IsWindows())
+            {
+                string currentDirectory = Environment.CurrentDirectory;
+                try
+                {
+                    Environment.CurrentDirectory = subdirectory;
+
+                    // Library should not be found in the assembly directory, but should fall back to the default OS search which includes CWD on Windows
+                    EXPECT(LoadLibraryAdvanced(libName, assembly, DllImportSearchPath.AssemblyDirectory));
+                    EXPECT(TryLoadLibraryAdvanced(libName, assembly, DllImportSearchPath.AssemblyDirectory));
+                }
+                finally
+                {
+                    Environment.CurrentDirectory = currentDirectory;
+                }
+            }
 
             // -----------------------------------------------
             //         FreeLibrary Tests
