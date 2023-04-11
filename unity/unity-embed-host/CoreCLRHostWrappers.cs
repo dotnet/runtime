@@ -3,7 +3,7 @@
 
 namespace Unity.CoreCLRHelpers;
 
-static partial class CoreCLRHostWrappers
+partial class CoreCLRHostWrappers : ICoreCLRHostWrapper
 {
     // Most contents are source generated.  However, manually implemented methods can be added here
 }

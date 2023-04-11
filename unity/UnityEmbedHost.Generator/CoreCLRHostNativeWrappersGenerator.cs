@@ -16,6 +16,7 @@ public class CoreCLRHostNativeWrappersGenerator
     {
         WriteCoreCLRHostNativeWrappers(context, callbackMethods);
         WriteCoreCLRHostWrappers(context, callbackMethods);
+        WriteICoreCLRHostAdapter(context, callbackMethods);
     }
 
     static void WriteCoreCLRHostNativeWrappers(GeneratorExecutionContext context, IMethodSymbol[] callbackMethods)
@@ -36,6 +37,35 @@ public class CoreCLRHostNativeWrappersGenerator
             useNativeName: false);
     }
 
+    static void WriteICoreCLRHostAdapter(GeneratorExecutionContext context, IMethodSymbol[] callbackMethods)
+    {
+        string sourceBegin = @"
+// Auto-generated code
+using System;
+
+namespace Unity.CoreCLRHelpers;
+";
+
+        const string className = "ICoreCLRHostWrapper";
+
+        var sb = new StringBuilder();
+
+        sb.Append(sourceBegin);
+        sb.AppendLine($"unsafe partial interface {className}");
+        sb.AppendLine("{");
+
+        foreach (var methodSymbol in MethodsToGenerateWrappersFor(callbackMethods))
+        {
+            string signature = FormatMethodParametersForManagedWrapperMethodSignature(methodSymbol);
+            sb.AppendLine($"    {ManagedWrapperType(methodSymbol.ReturnType, methodSymbol.GetReturnTypeAttributes())} {methodSymbol.Name}({signature});");
+            sb.AppendLine();
+        }
+
+        sb.Append("}");
+        context.AddSource($"Generated{className}.gen.cs",
+            SourceText.From(sb.ToString(), Encoding.UTF8));
+    }
+
     static void WriteCoreCLRHostNativeWrappers(GeneratorExecutionContext context, IMethodSymbol[] callbackMethods, string thisClassName, string apiClassName, string generatedFileName,
         bool useNativeName)
     {
@@ -49,17 +79,14 @@ namespace Unity.CoreCLRHelpers;
         var sb = new StringBuilder();
 
         sb.Append(sourceBegin);
-        sb.AppendLine($"static unsafe partial class {thisClassName}");
+        sb.AppendLine($"unsafe partial class {thisClassName}");
         sb.AppendLine("{");
 
-        foreach (var methodSymbol in callbackMethods)
+        foreach (var methodSymbol in MethodsToGenerateWrappersFor(callbackMethods))
         {
-            if (methodSymbol.HasAttribute(NoManagedWrapperAttributeName))
-                continue;
-
             var apiName = useNativeName ? methodSymbol.NativeWrapperName() : methodSymbol.Name;
             string signature = FormatMethodParametersForManagedWrapperMethodSignature(methodSymbol);
-            sb.AppendLine($"    public unsafe static {ManagedWrapperType(methodSymbol.ReturnType, methodSymbol.GetReturnTypeAttributes())} {methodSymbol.Name}({signature})");
+            sb.AppendLine($"    public {ManagedWrapperType(methodSymbol.ReturnType, methodSymbol.GetReturnTypeAttributes())} {methodSymbol.Name}({signature})");
             sb.AppendLine($"        => {FormatManagedCast(methodSymbol)}{apiClassName}.{apiName}({FormatMethodParametersNamesForNiceManaged(methodSymbol)}){FormatToManagedRepresentation(methodSymbol)};");
             sb.AppendLine();
         }
@@ -68,6 +95,9 @@ namespace Unity.CoreCLRHelpers;
         context.AddSource(generatedFileName,
             SourceText.From(sb.ToString(), Encoding.UTF8));
     }
+
+    static IEnumerable<IMethodSymbol> MethodsToGenerateWrappersFor(IMethodSymbol[] callbackMethods)
+        => callbackMethods.Where(m => !m.HasAttribute(NoManagedWrapperAttributeName));
 
     static string FormatMethodParametersForManagedWrapperMethodSignature(IMethodSymbol methodSymbol) =>
         methodSymbol.Parameters
