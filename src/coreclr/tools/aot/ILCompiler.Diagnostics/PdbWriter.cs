@@ -74,7 +74,7 @@ namespace ILCompiler.Diagnostics
         }
     }
 
-    public class PdbWriter
+    public partial class PdbWriter
     {
         private const string DiaSymReaderLibrary = "Microsoft.DiaSymReader.Native";
 
@@ -113,10 +113,10 @@ namespace ILCompiler.Diagnostics
         }
 
         [DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.SafeDirectories)]
-        [DllImport(DiaSymReaderLibrary, PreserveSig = false)]
-        private extern static void CreateNGenPdbWriter(
-            [MarshalAs(UnmanagedType.LPWStr)] string ngenImagePath,
-            [MarshalAs(UnmanagedType.LPWStr)] string pdbPath,
+        [LibraryImport(DiaSymReaderLibrary, StringMarshalling = StringMarshalling.Utf16)]
+        private static partial void CreateNGenPdbWriter(
+            string ngenImagePath,
+            string pdbPath,
             out IntPtr ngenPdbWriterPtr);
 
         public PdbWriter(string pdbPath, PDBExtraData pdbExtraData, TargetDetails target)
@@ -216,16 +216,14 @@ namespace ILCompiler.Diagnostics
                 // PDB file is now created. Get its path and update _pdbFilePath so the PDB file
                 // can be deleted if we don't make it successfully to the end.
                 const int capacity = 1024;
-                var pdbFilePathBuilder = new ushort[capacity];
+                var pdbFilePathBuilder = new char[capacity];
                 _ngenWriter.QueryPDBNameExW(pdbFilePathBuilder, new IntPtr(capacity - 1) /* remove 1 byte for null */);
-                var chars = new char[capacity];
                 int length = 0;
                 while (length < pdbFilePathBuilder.Length && pdbFilePathBuilder[length] != '\0')
                 {
-                    chars[length] = Convert.ToChar(pdbFilePathBuilder[length]);
                     length++;
                 }
-                _pdbFilePath = new string(chars, 0, length);
+                _pdbFilePath = new string(pdbFilePathBuilder, 0, length);
             }
 
             _ngenWriter.OpenModW(originalDllPath, Path.GetFileName(originalDllPath), out _pdbMod);

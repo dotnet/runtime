@@ -134,7 +134,7 @@ namespace Microsoft.DiaSymReader
 
         void QueryPDBNameExW(
             [MarshalUsing(CountElementName = nameof(cchMax))]
-            ushort[] pdb,
+            char[] pdb,
             IntPtr cchMax);
     }
 }
