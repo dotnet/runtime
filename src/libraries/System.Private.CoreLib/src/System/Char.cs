@@ -1994,8 +1994,6 @@ namespace System
 
         static bool IBinaryIntegerParseAndFormatInfo<char>.IsSigned => false;
 
-        static bool IBinaryIntegerParseAndFormatInfo<char>.IsUnsigned => true;
-
         static int IBinaryIntegerParseAndFormatInfo<char>.MaxDigitCount => 5; // 65_535
 
         static int IBinaryIntegerParseAndFormatInfo<char>.MaxHexDigitCount => 4; // 0xFFFF

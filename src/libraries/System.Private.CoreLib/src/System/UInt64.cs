@@ -147,12 +147,14 @@ namespace System
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out ulong result)
         {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+
             if (s is null)
             {
                 result = 0;
                 return false;
             }
-            return TryParse(s.AsSpan(), style, provider, out result);
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out ulong result)
@@ -1208,8 +1210,6 @@ namespace System
         //
 
         static bool IBinaryIntegerParseAndFormatInfo<ulong>.IsSigned => false;
-
-        static bool IBinaryIntegerParseAndFormatInfo<ulong>.IsUnsigned => true;
 
         static int IBinaryIntegerParseAndFormatInfo<ulong>.MaxDigitCount => 20; // 18_446_744_073_709_551_615
 

@@ -726,41 +726,41 @@ namespace System
             switch (InternalGetCorElementType(rt))
             {
                 case CorElementType.ELEMENT_TYPE_I1:
-                    parsed = TryParseBinaryIntegerByValueOrName<sbyte, byte>(rt, value, ignoreCase, throwOnFailure, out *(sbyte*)&longScratch);
+                    parsed = TryParseByValueOrName<sbyte, byte>(rt, value, ignoreCase, throwOnFailure, out *(sbyte*)&longScratch);
                     longScratch = *(sbyte*)&longScratch;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_U1:
-                    parsed = TryParseBinaryIntegerByValueOrName<byte, byte>(rt, value, ignoreCase, throwOnFailure, out *(byte*)&longScratch);
+                    parsed = TryParseByValueOrName<byte, byte>(rt, value, ignoreCase, throwOnFailure, out *(byte*)&longScratch);
                     longScratch = *(byte*)&longScratch;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_I2:
-                    parsed = TryParseBinaryIntegerByValueOrName<short, ushort>(rt, value, ignoreCase, throwOnFailure, out *(short*)&longScratch);
+                    parsed = TryParseByValueOrName<short, ushort>(rt, value, ignoreCase, throwOnFailure, out *(short*)&longScratch);
                     longScratch = *(short*)&longScratch;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_U2:
-                    parsed = TryParseBinaryIntegerByValueOrName<ushort, ushort>(rt, value, ignoreCase, throwOnFailure, out *(ushort*)&longScratch);
+                    parsed = TryParseByValueOrName<ushort, ushort>(rt, value, ignoreCase, throwOnFailure, out *(ushort*)&longScratch);
                     longScratch = *(ushort*)&longScratch;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_I4:
-                    parsed = TryParseBinaryIntegerByValueOrName<int, uint>(rt, value, ignoreCase, throwOnFailure, out *(int*)&longScratch);
+                    parsed = TryParseByValueOrName<int, uint>(rt, value, ignoreCase, throwOnFailure, out *(int*)&longScratch);
                     longScratch = *(int*)&longScratch;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_U4:
-                    parsed = TryParseBinaryIntegerByValueOrName<uint, uint>(rt, value, ignoreCase, throwOnFailure, out *(uint*)&longScratch);
+                    parsed = TryParseByValueOrName<uint, uint>(rt, value, ignoreCase, throwOnFailure, out *(uint*)&longScratch);
                     longScratch = *(uint*)&longScratch;
                     break;
 
                 case CorElementType.ELEMENT_TYPE_I8:
-                    parsed = TryParseBinaryIntegerByValueOrName<long, ulong>(rt, value, ignoreCase, throwOnFailure, out longScratch);
+                    parsed = TryParseByValueOrName<long, ulong>(rt, value, ignoreCase, throwOnFailure, out longScratch);
                     break;
 
                 case CorElementType.ELEMENT_TYPE_U8:
-                    parsed = TryParseBinaryIntegerByValueOrName<ulong, ulong>(rt, value, ignoreCase, throwOnFailure, out *(ulong*)&longScratch);
+                    parsed = TryParseByValueOrName<ulong, ulong>(rt, value, ignoreCase, throwOnFailure, out *(ulong*)&longScratch);
                     break;
 
                 default:
@@ -892,14 +892,14 @@ namespace System
             RuntimeType rt = (RuntimeType)typeof(TEnum);
             Type underlyingType = typeof(TEnum).GetEnumUnderlyingType();
 
-            if (underlyingType == typeof(sbyte)) return TryParseBinaryIntegerByValueOrName<sbyte, byte>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, sbyte>(ref result));
-            if (underlyingType == typeof(byte)) return TryParseBinaryIntegerByValueOrName<byte, byte>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, byte>(ref result));
-            if (underlyingType == typeof(short)) return TryParseBinaryIntegerByValueOrName<short, ushort>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, short>(ref result));
-            if (underlyingType == typeof(ushort)) return TryParseBinaryIntegerByValueOrName<ushort, ushort>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, ushort>(ref result));
-            if (underlyingType == typeof(int)) return TryParseBinaryIntegerByValueOrName<int, uint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, int>(ref result));
-            if (underlyingType == typeof(uint)) return TryParseBinaryIntegerByValueOrName<uint, uint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, uint>(ref result));
-            if (underlyingType == typeof(long)) return TryParseBinaryIntegerByValueOrName<long, ulong>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, long>(ref result));
-            if (underlyingType == typeof(ulong)) return TryParseBinaryIntegerByValueOrName<ulong, ulong>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, ulong>(ref result));
+            if (underlyingType == typeof(sbyte)) return TryParseByValueOrName<sbyte, byte>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, sbyte>(ref result));
+            if (underlyingType == typeof(byte)) return TryParseByValueOrName<byte, byte>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, byte>(ref result));
+            if (underlyingType == typeof(short)) return TryParseByValueOrName<short, ushort>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, short>(ref result));
+            if (underlyingType == typeof(ushort)) return TryParseByValueOrName<ushort, ushort>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, ushort>(ref result));
+            if (underlyingType == typeof(int)) return TryParseByValueOrName<int, uint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, int>(ref result));
+            if (underlyingType == typeof(uint)) return TryParseByValueOrName<uint, uint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, uint>(ref result));
+            if (underlyingType == typeof(long)) return TryParseByValueOrName<long, ulong>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, long>(ref result));
+            if (underlyingType == typeof(ulong)) return TryParseByValueOrName<ulong, ulong>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, ulong>(ref result));
 #if RARE_ENUMS
             if (underlyingType == typeof(nint)) return TryParseRareTypeByValueOrName<nint, nuint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, nint>(ref result));
             if (underlyingType == typeof(nuint)) return TryParseRareTypeByValueOrName<nuint, nuint>(rt, value, ignoreCase, throwOnFailure, out Unsafe.As<TEnum, nuint>(ref result));
@@ -912,7 +912,7 @@ namespace System
         }
 
         /// <summary>Core implementation for all {Try}Parse methods, both generic and non-generic, parsing either by value or by name.</summary>
-        private static unsafe bool TryParseBinaryIntegerByValueOrName<TUnderlying, TStorage>(
+        private static unsafe bool TryParseByValueOrName<TUnderlying, TStorage>(
             RuntimeType enumType, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, out TUnderlying result)
             where TUnderlying : unmanaged, IBinaryIntegerParseAndFormatInfo<TUnderlying>
             where TStorage : unmanaged, IBinaryIntegerParseAndFormatInfo<TStorage>

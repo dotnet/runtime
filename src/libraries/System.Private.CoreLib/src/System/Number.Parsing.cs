@@ -26,11 +26,9 @@ namespace System
     // NaNs or Infinities.
 
     internal interface IBinaryIntegerParseAndFormatInfo<TSelf> : IBinaryInteger<TSelf>, IMinMaxValue<TSelf>
-            where TSelf : unmanaged, IBinaryIntegerParseAndFormatInfo<TSelf>
+        where TSelf : unmanaged, IBinaryIntegerParseAndFormatInfo<TSelf>
     {
         static abstract bool IsSigned { get; }
-
-        static abstract bool IsUnsigned { get; }
 
         static abstract int MaxDigitCount { get; }
 
@@ -75,7 +73,7 @@ namespace System
 
             int i = number.Scale;
 
-            if ((i > TInteger.MaxDigitCount) || (i < number.DigitsCount) || (TInteger.IsUnsigned && number.IsNegative))
+            if ((i > TInteger.MaxDigitCount) || (i < number.DigitsCount) || (!TInteger.IsSigned && number.IsNegative))
             {
                 return false;
             }
@@ -98,7 +96,7 @@ namespace System
                 {
                     TInteger newN = n + TInteger.CreateTruncating(*p++ - '0');
 
-                    if (TInteger.IsUnsigned && (newN < n))
+                    if (!TInteger.IsSigned && (newN < n))
                     {
                         return false;
                     }
@@ -514,7 +512,7 @@ namespace System
                 }
             }
 
-            bool overflow = TInteger.IsUnsigned && isNegative;
+            bool overflow = !TInteger.IsSigned && isNegative;
             TInteger answer = TInteger.Zero;
 
             if (IsDigit(num))
@@ -532,7 +530,7 @@ namespace System
 
                     if (!IsDigit(num))
                     {
-                        if (TInteger.IsUnsigned)
+                        if (!TInteger.IsSigned)
                         {
                             overflow = false;
                         }
@@ -547,7 +545,7 @@ namespace System
                 {
                     if ((uint)index >= (uint)value.Length)
                     {
-                        if (TInteger.IsUnsigned)
+                        if (!TInteger.IsSigned)
                             goto DoneAtEndButPotentialOverflow;
                         else
                             goto DoneAtEnd;
@@ -562,7 +560,7 @@ namespace System
 
                 if ((uint)index >= (uint)value.Length)
                 {
-                    if (TInteger.IsUnsigned)
+                    if (!TInteger.IsSigned)
                         goto DoneAtEndButPotentialOverflow;
                     else
                         goto DoneAtEnd;
@@ -572,7 +570,7 @@ namespace System
                     goto HasTrailingChars;
                 index++;
                 // Potential overflow now processing the MaxDigitCount digit.
-                if (TInteger.IsUnsigned)
+                if (!TInteger.IsSigned)
                 {
                     overflow |= (answer > TInteger.MaxValueDiv10) || (answer == TInteger.MaxValueDiv10) && (num > '5');
                 }
@@ -610,7 +608,7 @@ namespace System
                 goto OverflowExit;
             }
         DoneAtEnd:
-            if (TInteger.IsUnsigned)
+            if (!TInteger.IsSigned)
             {
                 result = answer;
             }

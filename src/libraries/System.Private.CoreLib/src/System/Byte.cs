@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -116,12 +115,14 @@ namespace System
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out byte result)
         {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+
             if (s is null)
             {
                 result = 0;
                 return false;
             }
-            return TryParse(s.AsSpan(), style, provider, out result);
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out byte result)
@@ -1147,8 +1148,6 @@ namespace System
         //
 
         static bool IBinaryIntegerParseAndFormatInfo<byte>.IsSigned => false;
-
-        static bool IBinaryIntegerParseAndFormatInfo<byte>.IsUnsigned => true;
 
         static int IBinaryIntegerParseAndFormatInfo<byte>.MaxDigitCount => 3; // 255
 

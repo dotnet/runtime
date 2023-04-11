@@ -143,12 +143,14 @@ namespace System
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out short result)
         {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+
             if (s is null)
             {
                 result = 0;
                 return false;
             }
-            return TryParse(s.AsSpan(), style, provider, out result);
+            return Number.TryParseBinaryInteger(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out short result)
@@ -1361,8 +1363,6 @@ namespace System
         //
 
         static bool IBinaryIntegerParseAndFormatInfo<short>.IsSigned => true;
-
-        static bool IBinaryIntegerParseAndFormatInfo<short>.IsUnsigned => false;
 
         static int IBinaryIntegerParseAndFormatInfo<short>.MaxDigitCount => 5; // 32_767
 
