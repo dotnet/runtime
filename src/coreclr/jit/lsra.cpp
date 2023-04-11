@@ -655,7 +655,7 @@ LinearScan::LinearScan(Compiler* theCompiler)
     firstColdLoc = MaxLocation;
 
 #ifdef DEBUG
-    maxNodeLocation   = 0;
+    maxNodeLocation              = 0;
     consecutiveRegistersLocation = 0;
 
     activeRefPosition = nullptr;
@@ -11696,8 +11696,8 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
         Interval*    assignedInterval        = spillCandidateRegRecord->assignedInterval;
         RefPosition* recentRefPosition = assignedInterval != nullptr ? assignedInterval->recentRefPosition : nullptr;
 
-// Can and should the interval in this register be spilled for this one,
-// if we don't find a better alternative?
+        // Can and should the interval in this register be spilled for this one,
+        // if we don't find a better alternative?
 
         weight_t currentSpillWeight = 0;
 #ifdef TARGET_ARM64
@@ -12072,7 +12072,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         // If a method has consecutive registers and we are assigning to refPositions that are not part
         // of consecutive registers, but are live at same location, skip the limit stress for them, because
         // there are high chances that many registers are busy for consecutive requirements and we don't
-        // have enough remaining for other refpositions (like operands). 
+        // have enough remaining for other refpositions (like operands).
     }
     else
 #endif
@@ -12340,7 +12340,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
                 // is the number of consecutive registers needed.
                 // Remove the `inUseOrBusyRegsMask` from the original candidates list and find one
                 // such range that is consecutive. Next, append that range to the `candidates`.
-                //                
+                //
                 regMaskTP limitCandidatesForConsecutive = refPosition->registerAssignment & inUseOrBusyRegsMask;
                 regMaskTP overallLimitCandidates;
                 regMaskTP limitConsecutiveResult =
