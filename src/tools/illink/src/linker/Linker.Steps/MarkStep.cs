@@ -1777,7 +1777,9 @@ namespace Mono.Linker.Steps
 
 			switch (dependencyKind) {
 			// Marked through things like descriptor - don't want to warn as it's intentional choice
+			case DependencyKind.AlreadyMarked:
 			case DependencyKind.TypePreserve:
+			case DependencyKind.PreservedMethod:
 				return;
 
 			case DependencyKind.DynamicallyAccessedMemberOnType:

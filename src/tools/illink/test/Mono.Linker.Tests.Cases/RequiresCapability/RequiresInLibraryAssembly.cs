@@ -47,6 +47,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	{
 		public static int Field;
 
+		internal static int InternalField;
+
+		private static int PrivateField;
+
 		public static void Method () { }
 
 		public void InstanceMethod () { }
