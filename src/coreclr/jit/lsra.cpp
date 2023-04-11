@@ -12242,7 +12242,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         candidates &= ~busyRegs;
 
 #ifdef DEBUG
-        inUseOrBusyRegsMask |= ~busyRegs;
+        inUseOrBusyRegsMask |= busyRegs;
 #endif
 
         // Also eliminate as busy any register with a conflicting fixed reference at this or
@@ -12261,7 +12261,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
             {
                 candidates &= ~checkConflictBit;
 #ifdef DEBUG
-                inUseOrBusyRegsMask |= ~checkConflictBit;
+                inUseOrBusyRegsMask |= checkConflictBit;
 #endif
             }
         }
@@ -12341,7 +12341,7 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
                 // Remove the `inUseOrBusyRegsMask` from the original candidates list and find one
                 // such range that is consecutive. Next, append that range to the `candidates`.
                 //
-                regMaskTP limitCandidatesForConsecutive = refPosition->registerAssignment & inUseOrBusyRegsMask;
+                regMaskTP limitCandidatesForConsecutive = refPosition->registerAssignment & ~inUseOrBusyRegsMask;
                 regMaskTP overallLimitCandidates;
                 regMaskTP limitConsecutiveResult =
                     linearScan->filterConsecutiveCandidates(limitCandidatesForConsecutive, refPosition->regCount,
