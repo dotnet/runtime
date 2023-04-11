@@ -60,6 +60,7 @@ namespace Microsoft.Extensions.Hosting
             Assert.Equal(0, status.win32ExitCode);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/84562")]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPrivilegedProcess))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework is missing the fix from https://github.com/dotnet/corefx/commit/3e68d791066ad0fdc6e0b81828afbd9df00dd7f8")]
         public void ExceptionOnStartIsPropagated()
