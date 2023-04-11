@@ -1328,7 +1328,6 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
 
         case GT_COMMA:
         {
-            // The second thing could either be a block node or a GT_FIELD or a GT_COMMA node.
             GenTree* blockNode = structVal->AsOp()->gtOp2;
             assert(blockNode->gtType == structType);
 
@@ -1345,16 +1344,8 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
                 } while (blockNode->OperGet() == GT_COMMA);
             }
 
-#ifdef FEATURE_SIMD
-            if (blockNode->OperIsHWIntrinsic() || blockNode->IsCnsVec())
+            if (blockNode->OperIsBlk() || blockNode->OperIs(GT_FIELD))
             {
-                parent->AsOp()->gtOp2 = impNormStructVal(blockNode, structHnd, curLevel);
-            }
-            else
-#endif
-            {
-                noway_assert(blockNode->OperIsBlk() || blockNode->OperIs(GT_FIELD));
-
                 // Sink the GT_COMMA below the blockNode addr.
                 // That is GT_COMMA(op1, op2=blockNode) is transformed into
                 // blockNode(GT_COMMA(TYP_BYREF, op1, op2's op1)).
@@ -1367,6 +1358,7 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
                 commaNode->gtType        = blockNodeAddr->gtType;
                 commaNode->AsOp()->gtOp2 = blockNodeAddr;
                 blockNode->AsOp()->gtOp1 = commaNode;
+                blockNode->AddAllEffectsFlags(commaNode);
                 if (parent == structVal)
                 {
                     structVal = blockNode;
