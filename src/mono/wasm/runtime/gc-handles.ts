@@ -132,8 +132,3 @@ export function _lookup_js_owned_object(gc_handle: GCHandle): any {
     return null;
 }
 
-/// Called from the C# threadpool worker loop to find out if there are any
-/// unsettled JS promises that need to keep the worker alive
-export function mono_wasm_eventloop_has_unsettled_interop_promises(): boolean {
-    return _js_owned_object_table.size > 0;
-}
