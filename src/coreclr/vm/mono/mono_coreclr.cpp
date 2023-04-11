@@ -2402,7 +2402,9 @@ extern "C" EXPORT_API MonoClass* EXPORT_CC mono_object_get_class(MonoObject* obj
 
 extern "C" EXPORT_API guint32 EXPORT_CC mono_object_get_size(MonoObject *obj)
 {
-    return (guint32)reinterpret_cast<MonoObject_clr*>(obj)->GetSize();
+    // We are not going to implement for now.  This is hard to implement in managed code as the information is intentionally hidden.
+    ASSERT_NOT_IMPLEMENTED;
+    return 0;
 }
 
 extern "C" EXPORT_API MonoMethod* EXPORT_CC mono_object_get_virtual_method(MonoObject *obj, MonoMethod *method)
