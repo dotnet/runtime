@@ -29,12 +29,12 @@ namespace System.Globalization.Tests
         protected static CompareInfo s_japaneseCompare = new CultureInfo("ja-JP").CompareInfo;
         protected static CompareInfo s_slovakCompare = new CultureInfo("sk-SK").CompareInfo;
         protected static CompareOptions supportedIgnoreNonSpaceOption =
-            PlatformDetection.IsHybridGlobalizationOnWasm ?
+            PlatformDetection.IsHybridGlobalizationOnBrowser ?
             CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType :
             CompareOptions.IgnoreNonSpace;
 
         protected static CompareOptions supportedIgnoreCaseIgnoreNonSpaceOptions =
-            PlatformDetection.IsHybridGlobalizationOnWasm ?
+            PlatformDetection.IsHybridGlobalizationOnBrowser ?
             CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType :
             CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace;
 
@@ -43,6 +43,6 @@ namespace System.Globalization.Tests
                                                               PlatformDetection.IsIcuGlobalization ||
                                                               s_invariantCompare.Compare("\u3060", "\uFF80\uFF9E", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase) == 0;
 
-        protected static bool IsNotWindowsKanaRegressedVersionAndNotHybridGlobalizationOnWasm() => !PlatformDetection.IsHybridGlobalizationOnWasm && IsNotWindowsKanaRegressedVersion();
+        protected static bool IsNotWindowsKanaRegressedVersionAndNotHybridGlobalizationOnWasm() => !PlatformDetection.IsHybridGlobalizationOnBrowser && IsNotWindowsKanaRegressedVersion();
     }
 }
