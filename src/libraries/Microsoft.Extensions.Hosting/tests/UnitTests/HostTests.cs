@@ -62,9 +62,10 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             for (int i = 0; i < hostedServiceCount; i++)
             {
-                var service = new DelegateHostedService(() => { events[i, 0] = true; }, () => { events[i, 1] = true; } , () => { });
+                var index = i;
+                var service = new DelegateHostedService(() => { events[index, 0] = true; }, () => { events[index, 1] = true; } , () => { });
 
-                hostedServices[i] = service;
+                hostedServices[index] = service;
             }
 
             using var host = Host.CreateDefaultBuilder().ConfigureHostConfiguration(configBuilder =>
