@@ -2736,17 +2736,16 @@ mono_riscv_emit_imm (guint8 *code, int rd, gsize imm)
 		gint32 Lo = RISCV_BITS (imm, 0, 12);
 
 		// Lo is in signed num
-		// if Lo > 0x800
+		// if Lo >= 0x800
 		// convert into ((Hi + 1) << 20) -  (0x1000 - Lo)
 		if (Lo >= 0x800) {
-			Hi += 1;
+			if (imm > 0)
+				Hi += 1;
 			Lo = Lo - 0x1000;
 		}
 
-		// if Hi is 0 or overflow, skip
-		if (Hi < 0xfffff) {
-			riscv_lui (code, rd, Hi);
-		}
+		g_assert(Hi <= 0xfffff);
+		riscv_lui (code, rd, Hi);
 		riscv_addiw (code, rd, rd, Lo);
 		return code;
 	}
@@ -3323,7 +3322,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 		// save fp value, here is T0
 		stack_size += sizeof (target_mgreg_t);
-		code = mono_riscv_emit_store (code, RISCV_T0, RISCV_FP, stack_size, 0);
+		code = mono_riscv_emit_store (code, RISCV_T0, RISCV_FP, -stack_size, 0);
 
 		// save stack size into T0
 		code = mono_riscv_emit_imm (code, RISCV_T0, cfg->stack_offset);
