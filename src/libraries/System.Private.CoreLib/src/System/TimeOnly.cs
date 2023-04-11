@@ -17,7 +17,8 @@ namespace System
           IComparable<TimeOnly>,
           IEquatable<TimeOnly>,
           ISpanFormattable,
-          ISpanParsable<TimeOnly>
+          ISpanParsable<TimeOnly>,
+          IUtf8SpanFormattable
     {
         // represent the number of ticks map to the time of the day. 1 ticks = 100-nanosecond in time measurements.
         private readonly long _ticks;
@@ -964,7 +965,13 @@ namespace System
         /// <param name="provider">An optional object that supplies culture-specific formatting information for destination.</param>
         /// <returns>true if the formatting was successful; otherwise, false.</returns>
         /// <remarks>The accepted standard formats are 'r', 'R', 'o', 'O', 't' and 'T'. </remarks>
-        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.TimeOnlyFormat)] ReadOnlySpan<char> format = default(ReadOnlySpan<char>), IFormatProvider? provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.TimeOnlyFormat)] ReadOnlySpan<char> format = default(ReadOnlySpan<char>), IFormatProvider? provider = null) =>
+            TryFormatCore(destination, out charsWritten, format, provider);
+
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.TimeOnlyFormat)] ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            TryFormatCore(utf8Destination, out bytesWritten, format, provider);
+
+        private bool TryFormatCore<TChar>(Span<TChar> destination, out int written, [StringSyntax(StringSyntaxAttribute.TimeOnlyFormat)] ReadOnlySpan<char> format, IFormatProvider? provider) where TChar : unmanaged, IBinaryInteger<TChar>
         {
             if (format.Length == 0)
             {
@@ -979,25 +986,25 @@ namespace System
                     case 'O':
                         if (!DateTimeFormat.TryFormatTimeOnlyO(Hour, Minute, Second, _ticks % TimeSpan.TicksPerSecond, destination))
                         {
-                            charsWritten = 0;
+                            written = 0;
                             return false;
                         }
-                        charsWritten = 16;
+                        written = 16;
                         return true;
 
                     case 'r':
                     case 'R':
                         if (!DateTimeFormat.TryFormatTimeOnlyR(Hour, Minute, Second, destination))
                         {
-                            charsWritten = 0;
+                            written = 0;
                             return false;
                         }
-                        charsWritten = 8;
+                        written = 8;
                         return true;
 
                     case 't':
                     case 'T':
-                        return DateTimeFormat.TryFormat(ToDateTime(), destination, out charsWritten, format, provider);
+                        return DateTimeFormat.TryFormat(ToDateTime(), destination, out written, format, provider);
 
                     default:
                         throw new FormatException(SR.Argument_BadFormatSpecifier);
@@ -1009,7 +1016,7 @@ namespace System
                 throw new FormatException(SR.Format(SR.Format_DateTimeOnlyContainsNoneDateParts, format.ToString(), nameof(TimeOnly)));
             }
 
-            return DateTimeFormat.TryFormat(ToDateTime(), destination, out charsWritten, format, provider);
+            return DateTimeFormat.TryFormat(ToDateTime(), destination, out written, format, provider);
         }
 
         //

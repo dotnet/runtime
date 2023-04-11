@@ -172,6 +172,21 @@ unsafe class Validate
 
         [UnscopedRef]
         public ref (object o, short s) this[int i] => ref Unsafe.Add(ref element, i);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static ObjShortArr CreateArray(int recCount) {
+            if (recCount > 0) {
+                return CreateArray(recCount-1);
+            } else {
+                var arr = new ObjShortArr();
+                for (short i = 0; i < ObjShortArr.Length; i++)
+                {
+                    arr[i].o = i;
+                    arr[i].s = (short)(i + 1);
+                }
+                return arr;
+            }
+        }
     }
 
     [Fact]
@@ -363,5 +378,56 @@ unsafe class Validate
         }
 
         BoxedMethodArg(arr);
+    }
+
+    // ====================== GCDescOpt ==========================================================
+
+    [Fact]
+    [SkipOnMono("CoreCLR and NativeAOT-specific implementation details.")]
+    public static void GCDescOpt()
+    {
+        Console.WriteLine($"{nameof(GCDescOpt)}...");
+
+        MyArray<object>[] arr = new MyArray<object>[5];
+
+        fixed (void* arrPtr = arr)
+        {
+            nint* mtPtr = (nint*)arrPtr - 2;
+            nint* gcSeriesPtr = (nint*)*mtPtr - 1;
+
+            // optimized gc info should have exactly 1 gc series.
+            Assert.Equal(1, *gcSeriesPtr);
+        }
+    }
+
+     // ====================== MonoGCDesc ==========================================================
+
+    class Holder {
+        public ObjShortArr arr;
+    }
+
+    static Holder CreateArray() {
+        var arr = ObjShortArr.CreateArray(100);
+        var holder = new Holder();
+        holder.arr = arr;
+        return holder;
+    }
+
+    [Fact]
+    public static void MonoGCDescOpt()
+    {
+        Console.WriteLine($"{nameof(MonoGCDescOpt)}...");
+
+        var holder = CreateArray();
+
+        GC.Collect(2, GCCollectionMode.Forced, true, true);
+
+        MakeGarbage();
+
+        for (short i = 0; i < ObjShortArr.Length; i++)
+        {
+            Assert.Equal(i, holder.arr[i].o);
+            Assert.Equal(i + 1, holder.arr[i].s);
+        }
     }
 }

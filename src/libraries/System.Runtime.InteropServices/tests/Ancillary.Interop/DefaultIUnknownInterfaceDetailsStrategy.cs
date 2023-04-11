@@ -7,9 +7,14 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         public static readonly IIUnknownInterfaceDetailsStrategy Instance = new DefaultIUnknownInterfaceDetailsStrategy();
 
-        public IUnknownDerivedDetails? GetIUnknownDerivedDetails(RuntimeTypeHandle type)
+        public IComExposedDetails? GetComExposedTypeDetails(RuntimeTypeHandle type)
         {
-            return IUnknownDerivedDetails.GetFromAttribute(type);
+            return IComExposedDetails.GetFromAttribute(type);
+        }
+
+        public IIUnknownDerivedDetails? GetIUnknownDerivedDetails(RuntimeTypeHandle type)
+        {
+            return IIUnknownDerivedDetails.GetFromAttribute(type);
         }
     }
 }

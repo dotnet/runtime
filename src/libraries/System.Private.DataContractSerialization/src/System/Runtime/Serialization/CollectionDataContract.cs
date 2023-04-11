@@ -913,10 +913,12 @@ namespace System.Runtime.Serialization.DataContracts
             {
                 return this;
             }
+#pragma warning disable SYSLIB0050 // Type.IsSerializable is obsolete
             if (type.IsSerializable || type.IsDefined(Globals.TypeOfDataContractAttribute, false))
             {
                 return new ClassDataContract(type);
             }
+#pragma warning restore SYSLIB0050
             return null;
         }
 
@@ -1023,7 +1025,9 @@ namespace System.Runtime.Serialization.DataContracts
                 && baseType != Globals.TypeOfValueType && baseType != Globals.TypeOfUri) ? IsCollection(baseType) : false;
 
             // Avoid creating an invalid collection contract for Serializable types since we can create a ClassDataContract instead
+#pragma warning disable SYSLIB0050 // Type.IsSerializable is obsolete
             bool createContractWithException = isBaseTypeCollection && !type.IsSerializable;
+#pragma warning restore SYSLIB0050
 
             if (type.IsDefined(Globals.TypeOfDataContractAttribute, false))
             {
@@ -1105,11 +1109,13 @@ namespace System.Runtime.Serialization.DataContracts
                     // All collection types could be considered read-only collections except collection types that are marked [Serializable].
                     // Collection types marked [Serializable] cannot be read-only collections for backward compatibility reasons.
                     // DataContract types and POCO types cannot be collection types, so they don't need to be factored in
+#pragma warning disable SYSLIB0050 // Type.IsSerializable is obsolete
                     if (type.IsSerializable)
                     {
                         return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, createContractWithException,
                             SR.CollectionTypeDoesNotHaveDefaultCtor, null, ref dataContract);
                     }
+#pragma warning restore SYSLIB0050
                     else
                     {
                         isReadOnlyContract = true;
@@ -1167,11 +1173,13 @@ namespace System.Runtime.Serialization.DataContracts
                     // All collection types could be considered read-only collections except collection types that are marked [Serializable].
                     // Collection types marked [Serializable] cannot be read-only collections for backward compatibility reasons.
                     // DataContract types and POCO types cannot be collection types, so they don't need to be factored in.
+#pragma warning disable SYSLIB0050 // Type.IsSerializable is obsolete
                     if (type.IsSerializable || skipIfReadOnlyContract)
                     {
                         return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, createContractWithException && !skipIfReadOnlyContract,
                             SR.CollectionTypeDoesNotHaveAddMethod, DataContract.GetClrTypeFullName(itemType), ref dataContract);
                     }
+#pragma warning restore SYSLIB0050
                     else
                     {
                         isReadOnlyContract = true;

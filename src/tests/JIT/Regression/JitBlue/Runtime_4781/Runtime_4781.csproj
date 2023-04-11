@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-  </PropertyGroup>
-  <PropertyGroup>
+    <!-- Needed for GC.WaitForPendingFinalizers -->
+    <!-- See https://github.com/dotnet/runtime/issues/68529 -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
   </PropertyGroup>

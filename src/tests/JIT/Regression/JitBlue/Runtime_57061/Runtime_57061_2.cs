@@ -7,6 +7,7 @@
 // Reduced from 260.9 KiB to 0.8 KiB in 00:20:16
 // Crashes the runtime
 using System.Runtime.CompilerServices;
+using Xunit;
 
 struct S0
 {
@@ -19,7 +20,8 @@ public class Runtime_57061_2
     static uint[] s_13;
     static sbyte[][] s_110;
     static int[] s_111;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         s_2 = s_2;
         return Foo();

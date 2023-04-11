@@ -130,6 +130,7 @@ RegisterOrder IsOptimizableLdrStrWithPair(
     instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
 bool ReplaceLdrStrWithPairInstr(
     instruction ins, emitAttr reg1Attr, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
+bool IsOptimizableLdrToMov(instruction ins, regNumber reg1, regNumber reg2, ssize_t imm, emitAttr size, insFormat fmt);
 
 // Try to optimize a Ldr or Str with an alternative instruction.
 inline bool OptimizeLdrStr(instruction ins,
@@ -145,7 +146,7 @@ inline bool OptimizeLdrStr(instruction ins,
 {
     assert(ins == INS_ldr || ins == INS_str);
 
-    if (!emitCanPeepholeLastIns())
+    if (!emitCanPeepholeLastIns() || (emitLastIns->idIns() != ins))
     {
         return false;
     }
@@ -156,11 +157,33 @@ inline bool OptimizeLdrStr(instruction ins,
         return true;
     }
 
+    // Register 2 needs conversion to unencoded value for following optimisation checks.
+    reg2 = encodingZRtoSP(reg2);
+
     // If the previous instruction was a matching load/store, then try to replace it instead of emitting.
-    // Don't do this if either instruction had a local variable.
-    if ((emitLastIns->idIns() == ins) && !localVar && !emitLastIns->idIsLclVar() &&
-        ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt))
+    //
+    bool canReplaceWithPair = true;
+    if (ins == INS_str)
     {
+        // For INS_str, don't do this if either instruction had a local GC variable.
+        // For INS_ldr, it is fine to perform this optimization because the output code already handles the code of
+        // updating the gc refs. We do not need offset tracking for load cases.
+        if ((localVar && EA_IS_GCREF_OR_BYREF(reg1Attr)) ||
+            (emitLastIns->idIsLclVar() && (emitLastIns->idGCref() != GCT_NONE)))
+        {
+            canReplaceWithPair = false;
+        }
+    }
+
+    if (canReplaceWithPair && ReplaceLdrStrWithPairInstr(ins, reg1Attr, reg1, reg2, imm, size, fmt))
+    {
+        return true;
+    }
+
+    // If we have a second LDR instruction from the same source, then try to replace it with a MOV.
+    if (IsOptimizableLdrToMov(ins, reg1, reg2, imm, size, fmt))
+    {
+        emitIns_Mov(INS_mov, reg1Attr, reg1, emitLastIns->idReg1(), true);
         return true;
     }
 

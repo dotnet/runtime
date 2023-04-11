@@ -18,7 +18,7 @@
     </ItemGroup>
 
     <LibraryBuilderTask
-      Assemblies="@(AppAssembliesInternal)"
+      Assemblies="@(_AssembliesToBundleInternal)"
       AssembliesLocation="$(AssembliesLocation)"
       ExtraLinkerArguments="@(_ExtraLinkerArgs)"
       ExtraSources="@(_ExtraLibrarySources)"

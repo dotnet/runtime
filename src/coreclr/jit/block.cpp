@@ -571,7 +571,7 @@ void BasicBlock::dspSuccs(Compiler* compiler)
     {
         // Create a set with all the successors. Don't use BlockSet, so we don't need to worry
         // about the BlockSet epoch.
-        unsigned     bbNumMax = compiler->impInlineRoot()->fgBBNumMax;
+        unsigned     bbNumMax = compiler->fgBBNumMax;
         BitVecTraits bitVecTraits(bbNumMax + 1, compiler);
         BitVec       uniqueSuccBlocks(BitVecOps::MakeEmpty(&bitVecTraits));
         for (BasicBlock* const bTarget : SwitchTargets())
@@ -607,6 +607,10 @@ void BasicBlock::dspJumpKind()
     {
         case BBJ_EHFINALLYRET:
             printf(" (finret)");
+            break;
+
+        case BBJ_EHFAULTRET:
+            printf(" (falret)");
             break;
 
         case BBJ_EHFILTERRET:
@@ -1023,6 +1027,7 @@ bool BasicBlock::bbFallsThrough() const
     {
         case BBJ_THROW:
         case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
         case BBJ_EHCATCHRET:
         case BBJ_RETURN:
@@ -1060,6 +1065,7 @@ unsigned BasicBlock::NumSucc() const
         case BBJ_THROW:
         case BBJ_RETURN:
         case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
             return 0;
 
@@ -1147,23 +1153,17 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
     {
         case BBJ_THROW:
         case BBJ_RETURN:
+        case BBJ_EHFAULTRET:
             return 0;
 
         case BBJ_EHFINALLYRET:
-        {
-            // The first block of the handler is labelled with the catch type.
-            BasicBlock* hndBeg = comp->fgFirstBlockOfHandler(this);
-            if (hndBeg->bbCatchTyp == BBCT_FINALLY)
+            // We may call this method before we realize we have invalid IL. Tolerate.
+            //
+            if (!hasHndIndex())
             {
-                return comp->fgNSuccsOfFinallyRet(this);
-            }
-            else
-            {
-                assert(hndBeg->bbCatchTyp == BBCT_FAULT); // We can only BBJ_EHFINALLYRET from FINALLY and FAULT.
-                // A FAULT block has no successors.
                 return 0;
             }
-        }
+            return comp->fgNSuccsOfFinallyRet(this);
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
@@ -1431,16 +1431,7 @@ BasicBlock* Compiler::bbNewBasicBlock(BBjumpKinds jumpKind)
     /* Give the block a number, set the ancestor count and weight */
 
     ++fgBBcount;
-
-    if (compIsForInlining())
-    {
-        block->bbNum = ++impInlineInfo->InlinerCompiler->fgBBNumMax;
-        fgBBNumMax   = block->bbNum;
-    }
-    else
-    {
-        block->bbNum = ++fgBBNumMax;
-    }
+    block->bbNum = ++fgBBNumMax;
 
     if (compRationalIRForm)
     {
@@ -1617,16 +1608,7 @@ bool BasicBlock::hasEHBoundaryIn() const
 //
 bool BasicBlock::hasEHBoundaryOut() const
 {
-    bool returnVal = false;
-    if (bbJumpKind == BBJ_EHFILTERRET)
-    {
-        returnVal = true;
-    }
-
-    if (bbJumpKind == BBJ_EHFINALLYRET)
-    {
-        returnVal = true;
-    }
+    bool returnVal = KindIs(BBJ_EHFILTERRET, BBJ_EHFINALLYRET, BBJ_EHFAULTRET);
 
 #if FEATURE_EH_FUNCLETS
     if (bbJumpKind == BBJ_EHCATCHRET)

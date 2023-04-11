@@ -893,52 +893,114 @@ public:
 #define NUM_GEN_POWER2 (20)
 #define BASE_GEN_SIZE (1*512)
 
-// group the frequently used ones together (need intrumentation on accessors)
+// A generation is a per heap concept, ie, each heap has its own gen0/1/2/loh/poh.
 class generation
 {
 public:
-    // Don't move these first two fields without adjusting the references
-    // from the __asm in jitinterface.cpp.
+    // A generation's alloc context is only used during a GC. At the end of a GC, the alloc_ptr and alloc_limit
+    // of the alloc_context of condemned generations and the old generation (if we are doing an ephemeral GC) are
+    // always reset to 0 - this allows them to be re-initialized correctly in the next GC that needs this
+    // alloc context.
     alloc_context   allocation_context;
+
+    // This is the first region on the list of regions this generation includes and is maintained across GCs.
+    // For gen2 this might be an ro region - so far we've always put all ro regions at the beginning of heap#0's
+    // gen2 region list. So if there are any ro regions, it means start_segment will be ro and tail_ro_region will be
+    // non NULL. Otherwise all other regions are rw which are considered normal GC regions.
+    //
+    // For all generations we are condemning, this region might change (and very likely will). For generations
+    // we are not condemning this will remain the same during that GC but we might be adding more regions onto
+    // the list. For example, during a gen1 GC, we might thread some gen1 regions onto the gen2's region list
+    // so now they are part of gen2.
+    //
+    // If we rearrange regions between heaps, we need to make sure this is updated accordingly.
     PTR_heap_segment start_segment;
 #ifndef USE_REGIONS
     uint8_t*        allocation_start;
 #endif //!USE_REGIONS
+
+    // For all the condemned generations, this is re-inited at the beginning of the plan phase. For the other
+    // SOH generations, this is maintained across GCs because we don't want to always start at the first region
+    // in allocate_in_older_generation.
+    //
+    // If we rearrange regions between heaps for generations we are not condemning, we should just reset this to the
+    // first region.
     heap_segment*   allocation_segment;
+
+    // This is only used during a GC - it's updated when we update the alloc_ptr of an alloc context.
     uint8_t*        allocation_context_start_region;
 #ifdef USE_REGIONS
+    // This is the last region on the list of regions this generation includes and is maintained across GCs.
+    //
+    // If we rearrange regions between heaps, we need to make sure this is updated accordingly.
     heap_segment*   tail_region;
+
+    // Only used during a GC for generations are being condemned.
     heap_segment*   plan_start_segment;
-    // only max_generation could have ro regions; for other generations
-    // this will be 0.
+    // As mentioned above, only max_generation could have ro regions, and only on heap#0; for other generations
+    // this will always be 0.
     heap_segment*   tail_ro_region;
 #endif //USE_REGIONS
+
+    // This is the free list for this generation and maintained across GCs. When we condemn a generation, the free list
+    // is rebuilt for that generation. For the non condemned generations this is maintained, for example, when we are
+    // doing a gen1 GC we will be using gen2's free list.
+    //
+    // If we rearrange regions between heaps, we'll need to make sure that the items on the free list are threaded
+    // into the generation for the new heap, if the region that contains these items are moved to that heap. For example,
+    // if we move region r0 in gen2 from heap#3 to heap#5, all the items in r0 will need to be taken off of the heap#3's
+    // gen2 FL and threaded into heap#5's gen2 FL. If we merge multiple heaps into one, we could simply thread all heap's
+    // FL together (for bucketed ones thread the list from each bucket together).
     allocator       free_list_allocator;
+
+    // The following fields are maintained in the older generation we allocate into, and they are only for diagnostics
+    // except free_list_allocated which is currently used in generation_allocator_efficiency.
+    //
+    // If we rearrange regions between heaps, we will no longer have valid values for these fields unless we just merge
+    // regions from multiple heaps into one, in which case we can simply combine the values from all heaps.
     size_t          free_list_allocated;
     size_t          end_seg_allocated;
-    BOOL            allocate_end_seg_p;
     size_t          condemned_allocated;
     size_t          sweep_allocated;
+
+    // This is only used in a single GC's plan phase.
+    BOOL            allocate_end_seg_p;
+
+    // When a generation is condemned, these are re-calculated. For older generations these are maintained across GCs as
+    // younger generation GCs allocate into this generation's FL.
+    //
+    // If we rearrange regions between heaps, we need to adjust these values accordingly. free_list_space can be adjusted 
+    // when we adjust the FL. However, since we don't actually maintain free_obj_space per region and walking an entire
+    // region just to get free_obj_space is not really worth it, we might just have to live with inaccurate value till
+    // the next GC that condemns this generation which is okay since this is usually a small value anyway.
     size_t          free_list_space;
     size_t          free_obj_space;
+
+    // This tracks how much is allocated in this generation so we know when the budget is exceeeded. So it's maintained
+    // across GCs. Since this only affects when the next GC for this generation is triggered, this doesn't need to be an
+    // accurate value. So if we split one heap into multiple, we can decide how soon we want the next GC to be triggered by
+    // estimating and adjusting this value, along with the budget for this generation.
     size_t          allocation_size;
+
 #ifndef USE_REGIONS
     uint8_t*        plan_allocation_start;
     size_t          plan_allocation_start_size;
 #endif //!USE_REGIONS
 
-    // this is the pinned plugs that got allocated into this gen.
-    size_t          pinned_allocated;
+    // this is the pinned plugs that got allocated into this gen. Only used in a single GC.
     size_t          pinned_allocation_compact_size;
     size_t          pinned_allocation_sweep_size;
+
     int             gen_num;
 
 #ifdef DOUBLY_LINKED_FL
+    // These are only used in a single GC and only for gen2.
     BOOL            set_bgc_mark_bit_p;
     uint8_t*        last_free_list_allocated;
 #endif //DOUBLY_LINKED_FL
 
 #ifdef FREE_USAGE_STATS
+    // Only for diagnostics and not defined by default. We could record these into different buckets from what free_list_allocator maintains.
     size_t          gen_free_spaces[NUM_GEN_POWER2];
     // these are non pinned plugs only
     size_t          gen_plugs[NUM_GEN_POWER2];
@@ -965,6 +1027,8 @@ struct static_data
     size_t gc_clock; // number of gcs after which to collect generation
 };
 
+// dynamic data is maintained per generation, so we have total_generation_count number of them.
+// 
 // The dynamic data fields are grouped into 3 categories:
 //
 // calculated logical data (like desired_allocation)
@@ -973,11 +1037,21 @@ struct static_data
 class dynamic_data
 {
 public:
+    // Updated if the generation (the dynamic data is for) is condemned or if there's anything
+    // allocated into this generation.
+    // If the generation is condemned, we will calculate its new desired_allocation and re-init this field with that value.
+    // If there's anything allocated into this generation, it will be updated, ie, decreased by
+    // the amount that was allocated into this generation.
     ptrdiff_t new_allocation;
-    ptrdiff_t gc_new_allocation; // new allocation at beginning of gc
+
+    //
+    // The next group of fields are updated during a GC if that GC condemns this generation.
+    // 
+    // Same as new_allocation but only updated during a GC if the generation is condemned.
+    // We should really just get rid of this.
+    ptrdiff_t gc_new_allocation;
     float     surv;
     size_t    desired_allocation;
-
     // # of bytes taken by objects (ie, not free space) at the beginning
     // of the GC.
     size_t    begin_data_size;
@@ -987,7 +1061,6 @@ public:
     size_t    pinned_survived_size;
     size_t    artificial_pinned_survived_size;
     size_t    added_pinned_size;
-
 #ifdef SHORT_PLUGS
     size_t    padding_size;
 #endif //SHORT_PLUGS
@@ -1000,14 +1073,28 @@ public:
     size_t    collection_count;
     size_t    promoted_size;
     size_t    freach_previous_promotion;
-    size_t    fragmentation;    //fragmentation when we don't compact
-    size_t    gc_clock;         //gc# when last GC happened
-    uint64_t  time_clock;       //time when last gc started
+
+    // Updated in each GC. For a generation that's not condemned during that GC, its free list could be used so
+    // we also update this.
+    size_t    fragmentation;
+
+    //
+    // The following 3 fields are updated at the beginning of each GC, if that GC condemns this generation.
+    //
+    // The number of GC that condemned this generation. The only difference between this
+    // and collection_count is just that collection_count is maintained for all physical generations
+    // (currently there are 5) whereas this is only updated for logical generations (there are 3).
+    size_t    gc_clock;
+    uint64_t  time_clock;       //time when this gc started
     uint64_t  previous_time_clock; // time when previous gc started
+
+    // Updated at the end of a GC, if that GC condemns this generation.
     size_t    gc_elapsed_time;  // Time it took for the gc to complete
 
+    //
+    // The following fields (and fields in sdata) are initialized during GC init time and do not change.
+    //
     size_t    min_size;
-
     static_data* sdata;
 };
 
@@ -2284,7 +2371,7 @@ private:
 
 #ifdef FEATURE_BASICFREEZE
     PER_HEAP_METHOD void seg_set_mark_array_bits_soh (heap_segment* seg);
-    PER_HEAP_METHOD void clear_mark_array (uint8_t* from, uint8_t* end, BOOL read_only=FALSE);
+    PER_HEAP_METHOD void clear_mark_array (uint8_t* from, uint8_t* end);
     PER_HEAP_METHOD void seg_clear_mark_array_bits_soh (heap_segment* seg);
 #endif // FEATURE_BASICFREEZE
 
@@ -4010,6 +4097,8 @@ private:
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY int generation_skip_ratio_threshold;
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY int conserve_mem_setting;
 
+    PER_HEAP_ISOLATED_FIELD_INIT_ONLY bool spin_count_unit_config_p;
+
     // For SOH we always allocate segments of the same
     // size unless no_gc_region requires larger ones.
     PER_HEAP_ISOLATED_FIELD_INIT_ONLY size_t soh_segment_size;
@@ -4654,12 +4743,6 @@ size_t& generation_allocation_size (generation* inst)
 {
   return inst->allocation_size;
 }
-
-inline
-size_t& generation_pinned_allocated (generation* inst)
-{
-    return inst->pinned_allocated;
-}
 inline
 size_t& generation_pinned_allocation_sweep_size (generation* inst)
 {
@@ -4849,9 +4932,6 @@ struct generation_region_info
 };
 #endif //USE_REGIONS
 
-//need to be careful to keep enough pad items to fit a relocation node
-//padded to QuadWord before the plug_skew
-
 class heap_segment
 {
 public:
@@ -4951,7 +5031,6 @@ public:
 // Disable this warning - we intentionally want __declspec(align()) to insert padding for us
 #pragma warning(disable:4324)  // structure was padded due to __declspec(align())
 #endif
-    // REGIONS TODO: we don't need this for regions - to be removed.
     aligned_plug_and_gap padandplug;
 #ifdef _MSC_VER
 #pragma warning(default:4324)  // structure was padded due to __declspec(align())
@@ -5007,14 +5086,14 @@ typedef bool (*region_allocator_callback_fn)(uint8_t*);
 //
 // For each region we encode the info with a busy block in the map. This block has the
 // same # of uints as the # of units this region occupies. And we store the # in
-// the starting uint. These uints can be converted to bytes since we have multiple units
-// for larger regions anyway. I haven't done that since this will need to be changed in
-// the near future based on more optimal allocation strategies.
+// the first and last uint. These uints can be converted to bytes since we have multiple
+// units for larger regions anyway. I haven't done that since this will need to be changed
+// in the near future based on more optimal allocation strategies.
 //
-// When we allocate, we search forward to find contiguous free units >= num_units
-// We do take the opportunity to coalesce free blocks but we do not coalesce busy blocks.
-// When we decommit a region, we simply mark its block free. Free blocks are coalesced
-// opportunistically when we need to walk them.
+// When we allocate, if we knew there could be free blocks that fits, we search forward to find
+// contiguous free units >= num_units. Otherwise we simply allocate at the end. We coalesce
+// free blocks but we do not coalesce busy blocks. When we delete a region, we mark the block
+// free and coalesced them with its free neighbors if any.
 //
 // TODO: to accommodate 32-bit processes, we reserve in segment sizes and divide each seg
 // into regions.
@@ -5039,6 +5118,9 @@ private:
 
     uint32_t* region_map_right_start;
     uint32_t* region_map_right_end;
+
+    uint32_t num_left_used_free_units;
+    uint32_t num_right_used_free_units;
 
     uint8_t* region_address_of (uint32_t* map_index);
     uint32_t* region_map_index_of (uint8_t* address);
