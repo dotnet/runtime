@@ -1076,7 +1076,7 @@ inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
     GenTreeIndir* index;
     if (varTypeIsStruct(indexAddr->gtElemType))
     {
-        index = gtNewObjNode(indexAddr->gtStructElemClass, indexAddr);
+        index = gtNewBlkIndir(typGetObjLayout(indexAddr->gtStructElemClass), indexAddr);
     }
     else
     {
@@ -1177,16 +1177,58 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
     return arrOp;
 }
 
-//------------------------------------------------------------------------------
-// gtNewIndir : Helper to create an indirection node.
+//------------------------------------------------------------------------
+// gtNewBlkIndir: Create a struct indirection node.
 //
 // Arguments:
-//    typ   -  Type of the node
-//    addr  -  Address of the indirection
+//    layout     - The struct layout
+//    addr       - Address of the indirection
+//    indirFlags - Indirection flags
 //
 // Return Value:
-//    New GT_IND node
+//    The created GT_BLK node.
+//
+inline GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
+{
+    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
 
+    GenTreeBlk* blkNode = new (this, GT_BLK) GenTreeBlk(GT_BLK, layout->GetType(), addr, layout);
+    blkNode->gtFlags |= indirFlags;
+    blkNode->SetIndirExceptionFlags(this);
+
+    // TODO-Bug: this method does not have enough information to make this determination.
+    // The local may end up (or already is) address-exposed.
+    if (addr->OperIs(GT_LCL_ADDR))
+    {
+        if (lvaIsImplicitByRefLocal(addr->AsLclVarCommon()->GetLclNum()))
+        {
+            blkNode->gtFlags |= GTF_GLOB_REF;
+        }
+    }
+    else
+    {
+        blkNode->gtFlags |= GTF_GLOB_REF;
+    }
+
+    if ((indirFlags & GTF_IND_VOLATILE) != 0)
+    {
+        blkNode->gtFlags |= GTF_ORDER_SIDEEFF;
+    }
+
+    return blkNode;
+}
+
+//------------------------------------------------------------------------------
+// gtNewIndir : Create an indirection node.
+//
+// Arguments:
+//    typ        - Type of the node
+//    addr       - Address of the indirection
+//    indirFlags - Indirection flags
+//
+// Return Value:
+//    The created GT_IND node.
+//
 inline GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags)
 {
     assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
@@ -4128,7 +4170,6 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CKFINITE:
         case GT_LCLHEAP:
         case GT_IND:
-        case GT_OBJ:
         case GT_BLK:
         case GT_BOX:
         case GT_ALLOCOBJ:
