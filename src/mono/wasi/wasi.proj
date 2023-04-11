@@ -91,9 +91,7 @@
       ClangExecutable="$(WasiClang)"
       BundleName="timezones"
       BundleFile="$(_WasmTimezonesBundleObjectFile)"
-      RegistrationCallbackFunctionName="mono_wasm_add_bundled_file"
-      >
-    </EmitBundleObjectFiles>
+      />
     <ItemGroup>
       <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasiObjDir), %(_WasmBundleTimezonesWithHashes.DestinationFile)).Replace('\','/'))" />
       <WasmBundleTimezonesObjects Include="$([MSBuild]::MakeRelative($(WasiObjDir), $(_WasmTimezonesBundleObjectFile)).Replace('\','/'))" />

@@ -108,7 +108,6 @@
       FilesToBundle="@(_WasmBundleTimezonesWithHashes)"
       BundleName="timezones"
       BundleFile="$(WasmObjDir)\wasm-bundled-timezones.c"
-      RegistrationCallbackFunctionName="mono_wasm_add_bundled_file"
       />
 
     <ItemGroup>

@@ -27,9 +27,6 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
     [Required]
     public string BundleFile { get; set; } = default!;
 
-    [Required]
-    public string RegistrationCallbackFunctionName { get; set; } = default!;
-
     public override bool Execute()
     {
         // The DestinationFile (output filename) already includes a content hash. Grouping by this filename therefore
@@ -108,7 +105,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
         return Emit(BundleFile, (inputStream) =>
         {
             using var outputUtf8Writer = new StreamWriter(inputStream, Utf8NoBom);
-            GenerateRegisteredBundledObjects($"mono_register_{BundleName}_bundle", RegistrationCallbackFunctionName, files, outputUtf8Writer);
+            GenerateRegisteredBundledObjects($"mono_register_{BundleName}_bundle", files, outputUtf8Writer);
         }) && !Log.HasLoggedErrors;
     }
 
@@ -149,10 +146,10 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
     public abstract bool Emit(string destinationFile, Action<Stream> inputProvider);
 
-    public static void GenerateRegisteredBundledObjects(string newFunctionName, string callbackFunctionName, ICollection<(string registeredName, string symbol, string type)> files, StreamWriter outputUtf8Writer)
+    public static void GenerateRegisteredBundledObjects(string newFunctionName, ICollection<(string registeredName, string symbol, string type)> files, StreamWriter outputUtf8Writer)
     {
         outputUtf8Writer.WriteLine("typedef enum {\n    BUNDLED_BLOB,\n    BUNDLED_ASSEMBLY,\n    BUNDLED_SATELLITE_ASSEMBLY,\n    BUNDLED_BINARY,\n    BUNDLED_RESOURCE_COUNT,\n} BundledResourceType;");
-        outputUtf8Writer.WriteLine($"int {callbackFunctionName}(const char *name, const char *culture, const unsigned char *data, unsigned int size, BundledResourceType type);");
+        outputUtf8Writer.WriteLine($"void mono_add_bundled_resource(const char *name, const char *culture, const unsigned char *data, unsigned int size, BundledResourceType type);");
         outputUtf8Writer.WriteLine($"void mono_register_bundled_resources (void);");
         outputUtf8Writer.WriteLine();
 
@@ -167,7 +164,7 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
         foreach (var tuple in files)
         {
-            outputUtf8Writer.WriteLine($"  {callbackFunctionName} (\"{tuple.registeredName}\", 0, {tuple.symbol}, {tuple.symbol}_len, {tuple.type});");
+            outputUtf8Writer.WriteLine($"  mono_add_bundled_resource (\"{tuple.registeredName}\", 0, {tuple.symbol}, {tuple.symbol}_len, {tuple.type});");
         }
 
         outputUtf8Writer.WriteLine($"  mono_register_bundled_resources ();");

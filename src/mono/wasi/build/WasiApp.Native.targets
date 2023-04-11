@@ -362,7 +362,6 @@
       ClangExecutable="$(WasiClang)"
       BundleName="assemblies"
       BundleFile="$(_WasmAssembliesBundleObjectFile)"
-      RegistrationCallbackFunctionName="mono_wasm_add_assembly"
       />
 
     <ItemGroup>

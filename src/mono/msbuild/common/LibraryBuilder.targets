@@ -71,7 +71,6 @@
       FilesToBundle="@(_ResourcesToBundleWithHashes)"
       BundleName="resources"
       BundleFile="$(_ResourcesToBundleSourceFile)"
-      RegistrationCallbackFunctionName="mono_add_bundled_resource"
       />
   </Target>
 
