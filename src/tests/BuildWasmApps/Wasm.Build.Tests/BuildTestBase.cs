@@ -29,6 +29,7 @@ namespace Wasm.Build.Tests
     {
         public const string DefaultTargetFramework = "net7.0";
         public static readonly string NuGetConfigFileNameForDefaultFramework = $"nuget7.config";
+        protected static readonly char s_unicodeChar = '\u7149';
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
         protected string? _projectDir;

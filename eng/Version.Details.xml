@@ -4,9 +4,9 @@
       <Uri>https://github.com/dotnet/icu</Uri>
       <Sha>8f5f53bc4ac6f86aa1f4044a5ec0095cfb231713</Sha>
     </Dependency>
-    <Dependency Name="System.Net.MsQuic.Transport" Version="7.0.0-alpha.1.22406.1">
+    <Dependency Name="System.Net.MsQuic.Transport" Version="7.0.0-alpha.1.22459.1">
       <Uri>https://github.com/dotnet/msquic</Uri>
-      <Sha>dc012a715ceb9b5d5258f2fda77520586af5a36a</Sha>
+      <Sha>b1a2104c42648101a2373a1278bcf4ef897ad840</Sha>
     </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
       <Uri>https://github.com/dotnet/wcf</Uri>
@@ -242,9 +242,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>e680411c22e33f45821f4ae64365a2970b2430a6</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22423.4">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.23207.1">
       <Uri>https://github.com/dotnet/linker</Uri>
-      <Sha>313671b195b1b36d56a8888a9a0e12edaac52c57</Sha>
+      <Sha>08a09f27f664fb84368aa4b9eb862b13bf808579</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="1.0.0-prerelease.22411.1">
       <Uri>https://github.com/dotnet/xharness</Uri>

@@ -1,4 +1,9 @@
 <Project>
+  <PropertyGroup>
+    <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == '' and '$(GenerateAppBundle)' != ''">$(GenerateAppBundle)</AndroidGenerateAppBundle>
+    <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == ''">true</AndroidGenerateAppBundle>
+  </PropertyGroup>
+
   <UsingTask TaskName="AndroidAppBuilderTask" 
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
 

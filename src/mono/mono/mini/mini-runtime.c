@@ -41,6 +41,7 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-config.h>
+#include <mono/metadata/marshal-ilgen.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/gc-internals.h>
@@ -4466,6 +4467,22 @@ mini_init (const char *filename)
 	};
 
 	mono_component_event_pipe_100ns_ticks_start ();
+
+
+#ifdef ENABLE_ILGEN
+	mono_marshal_lightweight_init ();
+  	mono_marshal_ilgen_init_internal ();
+#else
+	if (mono_marshal_is_ilgen_requested ())
+  	{
+		mono_marshal_lightweight_init ();
+  		mono_marshal_ilgen_init_internal ();
+ 	}
+	else{
+		mono_marshal_noilgen_init_lightweight();
+		mono_marshal_noilgen_init_heavyweight ();
+	}
+#endif
 
 	MONO_VES_INIT_BEGIN ();
 
