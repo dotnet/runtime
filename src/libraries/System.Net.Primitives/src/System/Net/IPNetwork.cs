@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Text.Unicode;
 
 #pragma warning disable SA1648 // TODO: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3595
 
@@ -20,7 +21,7 @@ namespace System.Net
     /// In other words, <see cref="BaseAddress"/> is always the first usable address of the network.
     /// The constructor and the parsing methods will throw in case there are non-zero bits after the prefix.
     /// </remarks>
-    public readonly struct IPNetwork : IEquatable<IPNetwork>, ISpanFormattable, ISpanParsable<IPNetwork>
+    public readonly struct IPNetwork : IEquatable<IPNetwork>, ISpanFormattable, ISpanParsable<IPNetwork>, IUtf8SpanFormattable
     {
         private readonly IPAddress? _baseAddress;
 
@@ -298,6 +299,10 @@ namespace System.Net
         /// <inheritdoc />
         bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
             TryFormat(destination, out charsWritten);
+
+        /// <inheritdoc />
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            Utf8.TryWrite(utf8Destination, CultureInfo.InvariantCulture, $"{BaseAddress}/{(uint)PrefixLength}", out bytesWritten);
 
         /// <inheritdoc />
         static IPNetwork IParsable<IPNetwork>.Parse([NotNull] string s, IFormatProvider? provider) => Parse(s);
