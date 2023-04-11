@@ -1227,35 +1227,8 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
         }
 
         case GT_COMMA:
-        {
-            Statement* oldLastStmt   = impLastStmt;
-            structVal->AsOp()->gtOp2 = impGetStructAddr(structVal->AsOp()->gtOp2, structHnd, curLevel, willDeref);
-            structVal->gtType        = TYP_BYREF;
-
-            if (oldLastStmt != impLastStmt)
-            {
-                // Some temp assignment statement was placed on the statement list
-                // for Op2, but that would be out of order with op1, so we need to
-                // spill op1 onto the statement list after whatever was last
-                // before we recursed on Op2 (i.e. before whatever Op2 appended).
-                Statement* beforeStmt;
-                if (oldLastStmt == nullptr)
-                {
-                    // The op1 stmt should be the first in the list.
-                    beforeStmt = impStmtList;
-                }
-                else
-                {
-                    // Insert after the oldLastStmt before the first inserted for op2.
-                    beforeStmt = oldLastStmt->GetNextStmt();
-                }
-
-                impInsertTreeBefore(structVal->AsOp()->gtOp1, impCurStmtDI, beforeStmt);
-                structVal->AsOp()->gtOp1 = gtNewNothingNode();
-            }
-
-            return structVal;
-        }
+            impAppendTree(structVal->AsOp()->gtGetOp1(), curLevel, impCurStmtDI);
+            return impGetStructAddr(structVal->AsOp()->gtGetOp2(), structHnd, curLevel, willDeref);
 
         default:
             break;
