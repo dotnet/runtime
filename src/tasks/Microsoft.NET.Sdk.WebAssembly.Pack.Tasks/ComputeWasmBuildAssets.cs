@@ -105,20 +105,30 @@ namespace Microsoft.NET.Sdk.WebAssembly
                         continue;
                     }
 
-                    if (candidate.GetMetadata("FileName") == "dotnet" && candidate.GetMetadata("Extension") == ".js" && FingerprintDotNetJs)
+                    if (candidate.GetMetadata("FileName") == "dotnet" && candidate.GetMetadata("Extension") == ".js")
                     {
-                        var itemHash = FileHasher.GetFileHash(candidate.ItemSpec);
-                        var cacheBustedDotNetJSFileName = $"dotnet.{candidate.GetMetadata("NuGetPackageVersion")}.{itemHash}.js";
+                        string newDotnetJSFileName = null;
+                        string newDotNetJSFullPath = null;
+                        if (FingerprintDotNetJs)
+                        {
+                            var itemHash = FileHasher.GetFileHash(candidate.ItemSpec);
+                            newDotnetJSFileName = $"dotnet.{candidate.GetMetadata("NuGetPackageVersion")}.{itemHash}.js";
 
-                        var originalFileFullPath = Path.GetFullPath(candidate.ItemSpec);
-                        var originalFileDirectory = Path.GetDirectoryName(originalFileFullPath);
+                            var originalFileFullPath = Path.GetFullPath(candidate.ItemSpec);
+                            var originalFileDirectory = Path.GetDirectoryName(originalFileFullPath);
 
-                        var cacheBustedDotNetJSFullPath = Path.Combine(originalFileDirectory, cacheBustedDotNetJSFileName);
+                            newDotNetJSFullPath = Path.Combine(originalFileDirectory, newDotnetJSFileName);
+                        }
+                        else
+                        {
+                            newDotNetJSFullPath = candidate.ItemSpec;
+                            newDotnetJSFileName = Path.GetFileName(newDotNetJSFullPath);
+                        }
 
-                        var newDotNetJs = new TaskItem(cacheBustedDotNetJSFullPath, candidate.CloneCustomMetadata());
+                        var newDotNetJs = new TaskItem(newDotNetJSFullPath, candidate.CloneCustomMetadata());
                         newDotNetJs.SetMetadata("OriginalItemSpec", candidate.ItemSpec);
 
-                        var newRelativePath = $"_framework/{cacheBustedDotNetJSFileName}";
+                        var newRelativePath = $"_framework/{newDotnetJSFileName}";
                         newDotNetJs.SetMetadata("RelativePath", newRelativePath);
 
                         newDotNetJs.SetMetadata("AssetTraitName", "WasmResource");
