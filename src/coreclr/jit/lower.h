@@ -169,7 +169,7 @@ private:
     void ReplaceArgWithPutArgOrBitcast(GenTree** ppChild, GenTree* newNode);
     GenTree* NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, var_types type);
     void LowerArg(GenTreeCall* call, CallArg* callArg, bool late);
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     GenTree* LowerFloatArg(GenTree** pArg, CallArg* callArg);
     GenTree* LowerFloatArgReg(GenTree* arg, regNumber regNum);
 #endif
@@ -315,6 +315,7 @@ private:
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void LowerBlockStore(GenTreeBlk* blkNode);
     void LowerBlockStoreCommon(GenTreeBlk* blkNode);
+    void LowerLclHeap(GenTree* node);
     void ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
     void LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode);
 #ifdef TARGET_XARCH
@@ -542,10 +543,17 @@ private:
         }
     }
 
+    void RequireOutgoingArgSpace(GenTree* node, unsigned numBytes);
+    void FinalizeOutgoingArgSpace();
+
     LinearScan*           m_lsra;
     unsigned              vtableCallTemp;       // local variable we use as a temp for vtable calls
     mutable SideEffectSet m_scratchSideEffects; // SideEffectSet used for IsSafeToContainMem and isRMWIndirCandidate
     BasicBlock*           m_block;
+
+#ifdef FEATURE_FIXED_OUT_ARGS
+    unsigned m_outgoingArgSpaceSize = 0;
+#endif
 };
 
 #endif // _LOWER_H_

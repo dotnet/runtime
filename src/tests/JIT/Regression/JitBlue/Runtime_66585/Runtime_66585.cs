@@ -7,17 +7,19 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 public unsafe class Runtime_66585
 {
-    public static unsafe int Main()
+    [Fact]
+    public static unsafe int TestEntryPoint()
     {
         GetCaller()(0, 1, 2, 3);
         return 100;
     }
 
     private static SLarge s_s;
-    public static void Caller(int r0, int r1, int r2, int r3)
+    internal static void Caller(int r0, int r1, int r2, int r3)
     {
         SLarge s = s_s;
         Consume(s);
@@ -25,7 +27,7 @@ public unsafe class Runtime_66585
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Callee(int r0, int r1, int r2, int r3)
+    internal static void Callee(int r0, int r1, int r2, int r3)
     {
     }
 

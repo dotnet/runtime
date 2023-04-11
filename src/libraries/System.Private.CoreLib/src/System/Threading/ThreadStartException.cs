@@ -21,6 +21,7 @@ namespace System.Threading
             HResult = HResults.COR_E_THREADSTART;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private ThreadStartException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

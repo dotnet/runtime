@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_70790
 {
     private static readonly nint s_intType = typeof(int).TypeHandle.Value;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         RuntimeHelpers.RunClassConstructor(typeof(Runtime_70790).TypeHandle);
 
@@ -36,5 +38,5 @@ public class Runtime_70790
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void JitUse<T>(T arg) { }
+    internal static void JitUse<T>(T arg) { }
 }

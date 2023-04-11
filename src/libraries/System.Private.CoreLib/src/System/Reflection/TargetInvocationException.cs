@@ -21,6 +21,7 @@ namespace System.Reflection
             HResult = HResults.COR_E_TARGETINVOCATION;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         private TargetInvocationException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {

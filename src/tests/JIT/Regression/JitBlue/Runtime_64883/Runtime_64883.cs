@@ -13,11 +13,13 @@
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
+using Xunit;
 
 public class Runtime_64883
 {
     public static uint s_29;
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         // This needs an ALC because the "static access" helper is different in ALCs.
         CollectibleALC alc = new CollectibleALC();
@@ -27,12 +29,15 @@ public class Runtime_64883
         return 100;
     }
 
+// Allow reflection lookup on public method
+#pragma warning disable xUnit1013
     public static void MainT()
     {
         long vr7 = 4447329742151181917L;
         vr7 /= (vr7 ^ s_29);
         uint vr6 = s_29;
     }
+#pragma warning restore xUnit1013
     
     private class CollectibleALC : AssemblyLoadContext
     {

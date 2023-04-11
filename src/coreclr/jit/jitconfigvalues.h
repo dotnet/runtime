@@ -431,6 +431,7 @@ CONFIG_STRING(JitEnableVNBasedDeadStoreRemovalRange, W("JitEnableVNBasedDeadStor
 CONFIG_STRING(JitEnableEarlyLivenessRange, W("JitEnableEarlyLivenessRange"))
 CONFIG_STRING(JitOnlyOptimizeRange,
               W("JitOnlyOptimizeRange")) // If set, all methods that do _not_ match are forced into MinOpts
+CONFIG_STRING(JitEnablePhysicalPromotionRange, W("JitEnablePhysicalPromotionRange"))
 
 CONFIG_INTEGER(JitDoSsa, W("JitDoSsa"), 1) // Perform Static Single Assignment (SSA) numbering on the variables
 CONFIG_INTEGER(JitDoValueNumber, W("JitDoValueNumber"), 1) // Perform value numbering on method expressions
@@ -569,6 +570,7 @@ CONFIG_STRING(JitEnablePatchpointRange, W("JitEnablePatchpointRange"))
 
 // Profile instrumentation options
 CONFIG_INTEGER(JitInterlockedProfiling, W("JitInterlockedProfiling"), 0)
+CONFIG_INTEGER(JitScalableProfiling, W("JitScalableProfiling"), 1)
 CONFIG_INTEGER(JitMinimalJitProfiling, W("JitMinimalJitProfiling"), 1)
 CONFIG_INTEGER(JitMinimalPrejitProfiling, W("JitMinimalPrejitProfiling"), 0)
 

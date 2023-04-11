@@ -7,6 +7,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class GitHub_5556
 {
@@ -33,7 +34,8 @@ public class GitHub_5556
         return value;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         long[] a = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
         Span<long> mySpan = new Span<long>(a);

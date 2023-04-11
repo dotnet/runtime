@@ -758,9 +758,6 @@ handle_branch (TransformData *td, int long_op, int offset)
 		}
 	}
 
-	if (long_op == MINT_LEAVE || long_op == MINT_LEAVE_CHECK)
-		target_bb->eh_block = TRUE;
-
 	fixup_newbb_stack_locals (td, target_bb);
 	if (offset > 0)
 		init_bb_stack_state (td, target_bb);
@@ -7279,8 +7276,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				/* LEAVE instructions in catch clauses need to check for abort exceptions */
 				handle_branch (td, MINT_LEAVE_CHECK, target_offset);
 			} else {
-				handle_branch (td, MINT_LEAVE, target_offset);
+				handle_branch (td, MINT_BR, target_offset);
 			}
+			td->last_ins->info.target_bb->eh_block = TRUE;
 
 			if (*td->ip == CEE_LEAVE)
 				td->ip += 5;
@@ -8124,8 +8122,6 @@ get_short_brop (int opcode)
 	if (MINT_IS_UNCONDITIONAL_BRANCH (opcode)) {
 		if (opcode == MINT_BR)
 			return MINT_BR_S;
-		else if (opcode == MINT_LEAVE)
-			return MINT_LEAVE_S;
 		else if (opcode == MINT_LEAVE_CHECK)
 			return MINT_LEAVE_S_CHECK;
 		else if (opcode == MINT_CALL_HANDLER)
@@ -8434,6 +8430,17 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 			if (ins->opcode == MINT_TIER_PATCHPOINT_DATA) {
 				int native_offset = (int)(ip - td->new_code);
 				patchpoint_data_index = add_patchpoint_data (td, patchpoint_data_index, native_offset, -ins->data [0]);
+#if HOST_BROWSER
+			} else if (rtm->contains_traces && (
+				(ins->opcode == MINT_CALL_HANDLER_S) || (ins->opcode == MINT_CALL_HANDLER)
+			)) {
+				// While this formally isn't a backward branch target, we want to record
+				//  the offset of its following instruction so that the jiterpreter knows
+				//  to generate the necessary dispatch code to enable branching back to it.
+				ip = emit_compacted_instruction (td, ip, ins);
+				if (backward_branch_offsets_count < BACKWARD_BRANCH_OFFSETS_SIZE)
+					backward_branch_offsets[backward_branch_offsets_count++] = ip - td->new_code;
+#endif
 			} else {
 				ip = emit_compacted_instruction (td, ip, ins);
 			}
@@ -8563,6 +8570,8 @@ interp_reorder_bblocks (TransformData *td)
 {
 	InterpBasicBlock *bb;
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+		if (bb->eh_block)
+			continue;
 		InterpInst *first = interp_first_ins (bb);
 		if (!first)
 			continue;

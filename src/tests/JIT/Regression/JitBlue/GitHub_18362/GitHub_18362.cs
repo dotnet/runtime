@@ -4,6 +4,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // This is a struct that will be passed as a split struct
 struct S
@@ -84,7 +85,7 @@ public static class GitHub_18362
         }
     }
 
-    public static void Conjugate(double real, double imaginary)
+    internal static void Conjugate(double real, double imaginary)
     {
         int returnVal = 100;
 
@@ -96,7 +97,8 @@ public static class GitHub_18362
     }
 
     [MethodImpl(MethodImplOptions.NoOptimization)]
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {
