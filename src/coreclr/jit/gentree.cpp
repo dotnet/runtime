@@ -24249,10 +24249,10 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore() const
 }
 
 //------------------------------------------------------------------------
-// OperIsMemoryLoadOrStore: Does this HWI node have memory load or store semantics?
+// OperIsMemoryStoreOrBarrier: Does this HWI node have memory store or barrier semantics?
 //
 // Return Value:
-//    Whether "this" is "OperIsMemoryLoad" or "OperIsMemoryStore".
+//    Whether "this" is a store or memory barrier.
 //
 bool GenTreeHWIntrinsic::OperIsMemoryStoreOrBarrier() const
 {

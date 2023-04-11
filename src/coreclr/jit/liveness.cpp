@@ -344,9 +344,10 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsic)
 
     // We can't call fgMutateGcHeap unless the block has recorded a MemoryDef
     //
-    if (hwintrinsic->OperIsMemoryStore())
+    if (hwintrinsic->OperIsMemoryStoreOrBarrier())
     {
-        // We currently handle this like a Volatile store, so it counts as a definition of GcHeap/ByrefExposed
+        // We currently handle this like a Volatile store or GT_MEMORYBARRIER
+        // so it counts as a definition of GcHeap/ByrefExposed
         fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
     }
     else if (hwintrinsic->OperIsMemoryLoad())
@@ -354,30 +355,6 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsic)
         // This instruction loads from memory and we need to record this information
         fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
     }
-#if defined(TARGET_XARCH)
-    else if (HWIntrinsicInfo::HasSpecialSideEffect(intrinsicId))
-    {
-        switch (intrinsicId)
-        {
-            case NI_SSE_StoreFence:
-            case NI_SSE2_LoadFence:
-            case NI_SSE2_MemoryFence:
-            case NI_X86Serialize_Serialize:
-            {
-                // While these don't technically do an assignment, they are modeled the same as
-                // GT_MEMORYBARRIER which tracks itself as a definition of GcHeap/ByrefExposed
-
-                fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
-                break;
-            }
-
-            default:
-            {
-                break;
-            }
-        }
-    }
-#endif // TARGET_XARCH
 }
 #endif // FEATURE_HW_INTRINSICS
 
