@@ -10318,11 +10318,11 @@ insCond CodeGen::JumpKindToInsCond(emitJumpKind condition)
 // ShiftOpToInsOpts: Convert a shift-op to a insOpts.
 //
 // Arguments:
-//    shiftOp - the shift-op tree.
+//    shiftOp - the shift-op.
 //
-insOpts CodeGen::ShiftOpToInsOpts(genTreeOps op)
+insOpts CodeGen::ShiftOpToInsOpts(genTreeOps shiftOp)
 {
-    switch (op)
+    switch (shiftOp)
     {
         case GT_LSH:
             return INS_OPTS_LSL;
