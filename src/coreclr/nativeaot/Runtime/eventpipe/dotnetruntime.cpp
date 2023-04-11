@@ -181,8 +181,8 @@ BOOL EventPipeEventEnabledExceptionThrown_V1(void)
 }
 
 ULONG EventPipeWriteEventExceptionThrown_V1(
-    wchar_t* ExceptionType,
-    wchar_t* ExceptionMessage,
+    const wchar_t* ExceptionType,
+    const wchar_t* ExceptionMessage,
     const void* ExceptionEIP,
     const unsigned int ExceptionHRESULT,
     const unsigned short ExceptionFlags,
@@ -200,8 +200,8 @@ ULONG EventPipeWriteEventExceptionThrown_V1(
     bool fixedBuffer = true;
     bool success = true;
 
-    if (!ExceptionType) { wcscpy(ExceptionType, L"NULL"); }
-    if (!ExceptionMessage) { wcscpy(ExceptionMessage, L"NULL"); }
+    if (!ExceptionType) { ExceptionType = L"NULL"; }
+    if (!ExceptionMessage) { ExceptionMessage = L"NULL"; }
     success &= WriteToBuffer(ExceptionType, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(ExceptionMessage, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(ExceptionEIP, buffer, offset, size, fixedBuffer);
@@ -278,7 +278,7 @@ ULONG EventPipeWriteEventGCAllocationTick_V2(
     const unsigned short ClrInstanceID,
     const unsigned __int64 AllocationAmount64,
     const void* TypeID,
-    wchar_t* TypeName,
+    const wchar_t* TypeName,
     const unsigned int HeapIndex,
     const GUID * ActivityId,
     const GUID * RelatedActivityId)
@@ -293,7 +293,7 @@ ULONG EventPipeWriteEventGCAllocationTick_V2(
     bool fixedBuffer = true;
     bool success = true;
 
-    if (!TypeName) { wcscpy(TypeName, L"NULL"); }
+    if (!TypeName) { TypeName = L"NULL"; }
     success &= WriteToBuffer(AllocationAmount, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(AllocationKind, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
@@ -329,7 +329,7 @@ ULONG EventPipeWriteEventGCAllocationTick_V3(
     const unsigned short ClrInstanceID,
     const unsigned __int64 AllocationAmount64,
     const void* TypeID,
-    wchar_t* TypeName,
+    const wchar_t* TypeName,
     const unsigned int HeapIndex,
     const void* Address,
     const GUID * ActivityId,
@@ -345,7 +345,7 @@ ULONG EventPipeWriteEventGCAllocationTick_V3(
     bool fixedBuffer = true;
     bool success = true;
 
-    if (!TypeName) { wcscpy(TypeName, L"NULL"); }
+    if (!TypeName) { TypeName = L"NULL"; }
     success &= WriteToBuffer(AllocationAmount, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(AllocationKind, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(ClrInstanceID, buffer, offset, size, fixedBuffer);
@@ -1462,15 +1462,15 @@ ULONG EventPipeWriteEventModuleLoad_V2(
     const unsigned __int64 AssemblyID,
     const unsigned int ModuleFlags,
     const unsigned int Reserved1,
-    wchar_t* ModuleILPath,
-    wchar_t* ModuleNativePath,
+    const wchar_t* ModuleILPath,
+    const wchar_t* ModuleNativePath,
     const unsigned short ClrInstanceID,
     const GUID* ManagedPdbSignature,
     const unsigned int ManagedPdbAge,
-    wchar_t* ManagedPdbBuildPath,
+    const wchar_t* ManagedPdbBuildPath,
     const GUID* NativePdbSignature,
     const unsigned int NativePdbAge,
-    wchar_t* NativePdbBuildPath,
+    const wchar_t* NativePdbBuildPath,
     const GUID * ActivityId,
     const GUID * RelatedActivityId)
 {
@@ -1484,10 +1484,10 @@ ULONG EventPipeWriteEventModuleLoad_V2(
     bool fixedBuffer = true;
     bool success = true;
 
-    if (!ModuleILPath) { wcscpy(ModuleILPath, L"NULL"); }
-    if (!ModuleNativePath) { wcscpy(ModuleNativePath, L"NULL"); }
-    if (!ManagedPdbBuildPath) { wcscpy(ManagedPdbBuildPath, L"NULL"); }
-    if (!NativePdbBuildPath) { wcscpy(NativePdbBuildPath, L"NULL"); }
+    if (!ModuleILPath) { ModuleILPath = L"NULL"; }
+    if (!ModuleNativePath) { ModuleNativePath = L"NULL"; }
+    if (!ManagedPdbBuildPath) { ManagedPdbBuildPath = L"NULL"; }
+    if (!NativePdbBuildPath) { NativePdbBuildPath = L"NULL"; }
     success &= WriteToBuffer(ModuleID, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(AssemblyID, buffer, offset, size, fixedBuffer);
     success &= WriteToBuffer(ModuleFlags, buffer, offset, size, fixedBuffer);

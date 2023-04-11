@@ -3900,7 +3900,7 @@ void ETW::ExceptionLog::ExceptionThrown(CrawlFrame* pCf, BOOL bIsReThrownExcepti
         gc.exceptionMessageRef = ((EXCEPTIONREF)gc.exceptionObj)->GetMessage();
         TypeHandle exceptionTypeHandle = (gc.exceptionObj)->GetTypeHandle();
         exceptionTypeHandle.GetName(exceptionType);
-        WCHAR* exceptionTypeName = (WCHAR*)exceptionType.GetUnicode();
+        WCHAR* exceptionTypeName = exceptionType.GetUnicode();
 
         if (gc.exceptionMessageRef != NULL)
         {

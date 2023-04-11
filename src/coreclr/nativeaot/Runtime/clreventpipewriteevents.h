@@ -15,8 +15,8 @@ ULONG EventPipeWriteEventDestroyGCHandle(
 );
 BOOL EventPipeEventEnabledExceptionThrown_V1(void);
 ULONG EventPipeWriteEventExceptionThrown_V1(
-    wchar_t* ExceptionType,
-    wchar_t* ExceptionMessage,
+    const wchar_t* ExceptionType,
+    const wchar_t* ExceptionMessage,
     const void*  ExceptionEIP,
     const unsigned int  ExceptionHRESULT,
     const unsigned short  ExceptionFlags,
@@ -39,7 +39,7 @@ ULONG EventPipeWriteEventGCAllocationTick_V2(
     const unsigned short  ClrInstanceID,
     const unsigned __int64  AllocationAmount64,
     const void*  TypeID,
-    wchar_t*  TypeName,
+    const wchar_t*  TypeName,
     const unsigned int  HeapIndex,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
@@ -51,7 +51,7 @@ ULONG EventPipeWriteEventGCAllocationTick_V3(
     const unsigned short  ClrInstanceID,
     const unsigned __int64  AllocationAmount64,
     const void*  TypeID,
-    wchar_t*  TypeName,
+    const wchar_t*  TypeName,
     const unsigned int  HeapIndex,
     const void*  Address,
     const GUID * ActivityId = nullptr,
@@ -296,15 +296,15 @@ ULONG EventPipeWriteEventModuleLoad_V2(
     const unsigned __int64  AssemblyID,
     const unsigned int  ModuleFlags,
     const unsigned int  Reserved1,
-    wchar_t*  ModuleILPath,
-    wchar_t*  ModuleNativePath,
+    const wchar_t*  ModuleILPath,
+    const wchar_t*  ModuleNativePath,
     const unsigned short  ClrInstanceID,
     const GUID* ManagedPdbSignature,
     const unsigned int  ManagedPdbAge,
-    wchar_t*  ManagedPdbBuildPath,
+    const wchar_t*  ManagedPdbBuildPath,
     const GUID* NativePdbSignature,
     const unsigned int  NativePdbAge,
-    wchar_t*  NativePdbBuildPath,
+    const wchar_t*  NativePdbBuildPath,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
 );
