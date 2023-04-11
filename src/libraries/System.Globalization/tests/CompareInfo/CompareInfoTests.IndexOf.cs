@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class CompareInfoIndexOfTests : CompareInfoTestBase
+    public class CompareInfoIndexOfTests : CompareInfoTestsBase
     {
         public static IEnumerable<object[]> IndexOf_TestData()
         {

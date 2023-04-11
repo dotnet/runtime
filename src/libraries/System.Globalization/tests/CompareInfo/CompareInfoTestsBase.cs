@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class CompareInfoTestBase
+    public class CompareInfoTestsBase
     {
         // On Windows's NLS, hiragana characters sort after katakana.
         // On ICU, it is the opposite

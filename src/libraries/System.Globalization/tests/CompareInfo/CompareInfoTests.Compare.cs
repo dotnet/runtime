@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class CompareInfoCompareTests : CompareInfoTestBase
+    public class CompareInfoCompareTests : CompareInfoTestsBase
     {
         private const string SoftHyphen = "\u00AD";
 

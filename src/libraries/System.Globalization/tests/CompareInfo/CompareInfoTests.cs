@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class CompareInfoTests : CompareInfoTestBase
+    public class CompareInfoTests : CompareInfoTestsBase
     {
         [Theory]
         [InlineData("")]
