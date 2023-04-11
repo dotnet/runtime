@@ -1177,60 +1177,6 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
     return arrOp;
 }
 
-//------------------------------------------------------------------------
-// gtNewBlkIndir: Create a struct indirection node.
-//
-// Arguments:
-//    layout     - The struct layout
-//    addr       - Address of the indirection
-//    indirFlags - Indirection flags
-//
-// Return Value:
-//    The created GT_BLK node.
-//
-inline GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
-{
-    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
-
-    GenTreeBlk* blkNode = new (this, GT_BLK) GenTreeBlk(GT_BLK, layout->GetType(), addr, layout);
-    blkNode->gtFlags |= indirFlags;
-    blkNode->SetIndirExceptionFlags(this);
-
-    if ((indirFlags & GTF_IND_INVARIANT) == 0)
-    {
-        blkNode->gtFlags |= GTF_GLOB_REF;
-    }
-
-    if ((indirFlags & GTF_IND_VOLATILE) != 0)
-    {
-        blkNode->gtFlags |= GTF_ORDER_SIDEEFF;
-    }
-
-    return blkNode;
-}
-
-//------------------------------------------------------------------------------
-// gtNewIndir : Create an indirection node.
-//
-// Arguments:
-//    typ        - Type of the node
-//    addr       - Address of the indirection
-//    indirFlags - Indirection flags
-//
-// Return Value:
-//    The created GT_IND node.
-//
-inline GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags)
-{
-    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
-
-    GenTree* indir = gtNewOperNode(GT_IND, typ, addr);
-    indir->gtFlags |= indirFlags;
-    indir->SetIndirExceptionFlags(this);
-
-    return indir->AsIndir();
-}
-
 //------------------------------------------------------------------------------
 // gtNewNullCheck : Helper to create a null check node.
 //

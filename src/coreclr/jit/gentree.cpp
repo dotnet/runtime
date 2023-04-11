@@ -7798,6 +7798,90 @@ GenTreeField* Compiler::gtNewFieldAddrNode(var_types type, CORINFO_FIELD_HANDLE 
     return fieldNode;
 }
 
+//------------------------------------------------------------------------
+// gtNewStructVal: Return a node that represents a struct or block value
+//
+// Arguments:
+//    layout     - The struct's layout
+//    addr       - The struct's address
+//    indirFlags - Indirection flags
+//
+// Return Value:
+//    A "BLK" node, or "LCL_VAR" node if "addr" points to a local with a
+//    layout compatible with "layout".
+//
+GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
+{
+    assert((indirFlags & ~GTF_IND_FLAGS) == 0);
+
+    if (((indirFlags & GTF_IND_VOLATILE) == 0) && addr->IsLclVarAddr())
+    {
+        unsigned   lclNum = addr->AsLclFld()->GetLclNum();
+        LclVarDsc* varDsc = lvaGetDesc(lclNum);
+        if (!lvaIsImplicitByRefLocal(lclNum) && varTypeIsStruct(varDsc) &&
+            ClassLayout::AreCompatible(layout, varDsc->GetLayout()))
+        {
+            return gtNewLclvNode(lclNum, varDsc->TypeGet());
+        }
+    }
+
+    return gtNewBlkIndir(layout, addr, indirFlags);
+}
+
+//------------------------------------------------------------------------
+// gtNewBlkIndir: Create a struct indirection node.
+//
+// Arguments:
+//    layout     - The struct layout
+//    addr       - Address of the indirection
+//    indirFlags - Indirection flags
+//
+// Return Value:
+//    The created GT_BLK node.
+//
+GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
+{
+    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
+
+    GenTreeBlk* blkNode = new (this, GT_BLK) GenTreeBlk(GT_BLK, layout->GetType(), addr, layout);
+    blkNode->gtFlags |= indirFlags;
+    blkNode->SetIndirExceptionFlags(this);
+
+    if ((indirFlags & GTF_IND_INVARIANT) == 0)
+    {
+        blkNode->gtFlags |= GTF_GLOB_REF;
+    }
+
+    if ((indirFlags & GTF_IND_VOLATILE) != 0)
+    {
+        blkNode->gtFlags |= GTF_ORDER_SIDEEFF;
+    }
+
+    return blkNode;
+}
+
+//------------------------------------------------------------------------------
+// gtNewIndir : Create an indirection node.
+//
+// Arguments:
+//    typ        - Type of the node
+//    addr       - Address of the indirection
+//    indirFlags - Indirection flags
+//
+// Return Value:
+//    The created GT_IND node.
+//
+GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags)
+{
+    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
+
+    GenTree* indir = gtNewOperNode(GT_IND, typ, addr);
+    indir->gtFlags |= indirFlags;
+    indir->SetIndirExceptionFlags(this);
+
+    return indir->AsIndir();
+}
+
 /*****************************************************************************
  *
  *  Create a node that will assign 'src' to 'dst'.
@@ -7842,36 +7926,6 @@ GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
     asg->gtFlags |= GTF_ASG;
 
     return asg;
-}
-
-//------------------------------------------------------------------------
-// gtNewStructVal: Return a node that represents a struct or block value
-//
-// Arguments:
-//    layout     - The struct's layout
-//    addr       - The struct's address
-//    indirFlags - Indirection flags
-//
-// Return Value:
-//    An "OBJ/BLK" node, or "LCL_VAR" node if "addr" points to a local
-//    with a layout compatible with "layout".
-//
-GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
-{
-    assert((indirFlags & ~GTF_IND_FLAGS) == 0);
-
-    if (((indirFlags & GTF_IND_VOLATILE) == 0) && addr->IsLclVarAddr())
-    {
-        unsigned   lclNum = addr->AsLclFld()->GetLclNum();
-        LclVarDsc* varDsc = lvaGetDesc(lclNum);
-        if (!lvaIsImplicitByRefLocal(lclNum) && varTypeIsStruct(varDsc) &&
-            ClassLayout::AreCompatible(layout, varDsc->GetLayout()))
-        {
-            return gtNewLclvNode(lclNum, varDsc->TypeGet());
-        }
-    }
-
-    return gtNewBlkIndir(layout, addr, indirFlags);
 }
 
 //------------------------------------------------------------------------

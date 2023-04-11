@@ -2516,8 +2516,6 @@ public:
     GenTree* gtNewBitCastNode(var_types type, GenTree* arg);
 
 public:
-    GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
-
     GenTreeCall* gtNewCallNode(gtCallTypes           callType,
                                CORINFO_METHOD_HANDLE handle,
                                var_types             type,
@@ -2832,6 +2830,8 @@ public:
     GenTreeBlk* gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
+
+    GenTree* gtNewStructVal(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTree* gtNewNullCheck(GenTree* addr, BasicBlock* basicBlock);
 
