@@ -4,6 +4,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace N
 {
@@ -34,7 +35,8 @@ namespace N
             return s;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int result = Test();
 

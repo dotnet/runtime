@@ -446,7 +446,9 @@ namespace System.Threading
                 }
             }
 
-            timer.Change(TimeSpan.FromMilliseconds(millisecondsDelay), Timeout.InfiniteTimeSpan);
+            timer.Change(
+                millisecondsDelay == Timeout.UnsignedInfinite ? Timeout.InfiniteTimeSpan : TimeSpan.FromMilliseconds(millisecondsDelay),
+                Timeout.InfiniteTimeSpan);
         }
 
         /// <summary>

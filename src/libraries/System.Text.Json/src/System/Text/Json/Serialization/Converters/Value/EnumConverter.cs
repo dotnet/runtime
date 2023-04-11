@@ -5,7 +5,6 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
 
 namespace System.Text.Json.Serialization.Converters
@@ -482,6 +481,10 @@ namespace System.Text.Json.Serialization.Converters
             if (!value.Contains(ValueSeparator))
             {
                 converted = namingPolicy.ConvertName(value);
+                if (converted == null)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(namingPolicy);
+                }
             }
             else
             {

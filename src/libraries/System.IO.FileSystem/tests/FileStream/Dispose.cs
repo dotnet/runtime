@@ -213,6 +213,14 @@ namespace System.IO.Tests
             }
         }
 
+        [Fact]
+        public void DerivedFileStream_PropertiesDontThrow_OnDispose()
+        {
+            var fs = new DerivedFileStreamAccessingPropertiesOnDispose(GetTestFilePath(), FileMode.Create);
+            fs.Dispose();
+            fs.VerifyAfterDispose();
+        }
+
         public class DerivedFileStreamWithFinalizer : FileStream
         {
             public static int DisposeTrueCalled = 0;
@@ -286,6 +294,54 @@ namespace System.IO.Tests
                 }
 
                 base.Dispose(disposing);
+            }
+        }
+
+        public sealed class DerivedFileStreamAccessingPropertiesOnDispose : FileStream
+        {
+            private readonly string _name;
+            private bool _disposed;
+
+            public DerivedFileStreamAccessingPropertiesOnDispose(string path, FileMode mode) : base(path, mode, FileAccess.ReadWrite)
+            {
+                _name = path;
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (!_disposed)
+                {
+                    Assert.Equal(_name, Name);
+                    Assert.False(IsAsync);
+                    Assert.True(CanRead);
+                    Assert.True(CanSeek);
+                    Assert.True(CanWrite);
+                    Assert.False(CanTimeout);
+                    Assert.Equal(0, Length);
+                    Assert.Equal(0, Position);
+#pragma warning disable CS0618 // Type or member is obsolete
+                    Assert.NotEqual(nint.Zero, Handle);
+#pragma warning restore CS0618 // Type or member is obsolete
+                    Assert.NotNull(SafeFileHandle);
+                    _disposed = true;
+                }
+
+                base.Dispose(disposing);
+            }
+
+            public void VerifyAfterDispose()
+            {
+                Assert.True(_disposed, "This method must be called only after the object has been disposed.");
+                Assert.Throws<ObjectDisposedException>(() => Length);
+                Assert.Throws<ObjectDisposedException>(() => Position);
+#pragma warning disable CS0618 // Type or member is obsolete
+                Assert.Throws<ObjectDisposedException>(() => Handle);
+#pragma warning restore CS0618 // Type or member is obsolete
+                Assert.Throws<ObjectDisposedException>(() => SafeFileHandle);
+                Assert.False(CanRead);
+                Assert.False(CanSeek);
+                Assert.False(CanWrite);
+                Assert.False(CanTimeout);
             }
         }
 

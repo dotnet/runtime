@@ -25,7 +25,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="ptr">Pointer to the instance to query</param>
         /// <param name="info">A <see cref="TableInfo"/> instance</param>
         /// <returns>True if success, otherwise false.</returns>
-        TableInfo ConstructTableInfo(RuntimeTypeHandle handle, IUnknownDerivedDetails interfaceDetails, void* ptr);
+        TableInfo ConstructTableInfo(RuntimeTypeHandle handle, IIUnknownDerivedDetails interfaceDetails, void* ptr);
 
         /// <summary>
         /// Get associated <see cref="TableInfo"/>.

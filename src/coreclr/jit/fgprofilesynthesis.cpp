@@ -64,6 +64,10 @@ void ProfileSynthesis::Run(ProfileSynthesisOption option)
             RandomizeLikelihoods();
             break;
 
+        case ProfileSynthesisOption::RepairLikelihoods:
+            RepairLikelihoods();
+            break;
+
         default:
             assert(!"unexpected profile synthesis option");
             break;
@@ -133,6 +137,7 @@ void ProfileSynthesis::AssignLikelihoods()
             case BBJ_THROW:
             case BBJ_RETURN:
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
                 // No successor cases
                 // (todo: finally ret may have succs)
                 break;
@@ -499,6 +504,7 @@ void ProfileSynthesis::RepairLikelihoods()
             case BBJ_THROW:
             case BBJ_RETURN:
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
                 // No successor cases
                 // Nothing to do.
                 break;
@@ -576,6 +582,7 @@ void ProfileSynthesis::BlendLikelihoods()
             case BBJ_THROW:
             case BBJ_RETURN:
             case BBJ_EHFINALLYRET:
+            case BBJ_EHFAULTRET:
                 // No successor cases
                 // Nothing to do.
                 break;
@@ -763,7 +770,6 @@ void ProfileSynthesis::RandomizeLikelihoods()
 void ProfileSynthesis::BuildReversePostorder()
 {
     m_comp->EnsureBasicBlockEpoch();
-    m_comp->fgBBReversePostorder = new (m_comp, CMK_Pgo) BasicBlock*[m_comp->fgBBNumMax + 1]{};
     m_comp->fgComputeEnterBlocksSet();
     m_comp->fgDfsReversePostorder();
 

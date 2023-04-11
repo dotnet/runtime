@@ -5,7 +5,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 
 namespace System
 {
@@ -32,7 +31,8 @@ namespace System
           IComparable<TimeSpan>,
           IEquatable<TimeSpan>,
           ISpanFormattable,
-          ISpanParsable<TimeSpan>
+          ISpanParsable<TimeSpan>,
+          IUtf8SpanFormattable
     {
         /// <summary>
         /// Represents the number of nanoseconds per tick. This field is constant.
@@ -561,10 +561,12 @@ namespace System
             return TimeSpanFormat.Format(this, format, formatProvider);
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.TimeSpanFormat)] ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null)
-        {
-            return TimeSpanFormat.TryFormat(this, destination, out charsWritten, format, formatProvider);
-        }
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.TimeSpanFormat)] ReadOnlySpan<char> format = default, IFormatProvider? formatProvider = null) =>
+            TimeSpanFormat.TryFormat(this, destination, out charsWritten, format, formatProvider);
+
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.TimeSpanFormat)] ReadOnlySpan<char> format, IFormatProvider? formatProvider) =>
+            TimeSpanFormat.TryFormat(this, utf8Destination, out bytesWritten, format, formatProvider);
+
         #endregion
 
         public static TimeSpan operator -(TimeSpan t)

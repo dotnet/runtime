@@ -609,6 +609,10 @@ void BasicBlock::dspJumpKind()
             printf(" (finret)");
             break;
 
+        case BBJ_EHFAULTRET:
+            printf(" (falret)");
+            break;
+
         case BBJ_EHFILTERRET:
             printf(" (fltret)");
             break;
@@ -1023,6 +1027,7 @@ bool BasicBlock::bbFallsThrough() const
     {
         case BBJ_THROW:
         case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
         case BBJ_EHCATCHRET:
         case BBJ_RETURN:
@@ -1060,6 +1065,7 @@ unsigned BasicBlock::NumSucc() const
         case BBJ_THROW:
         case BBJ_RETURN:
         case BBJ_EHFINALLYRET:
+        case BBJ_EHFAULTRET:
         case BBJ_EHFILTERRET:
             return 0;
 
@@ -1147,30 +1153,17 @@ unsigned BasicBlock::NumSucc(Compiler* comp)
     {
         case BBJ_THROW:
         case BBJ_RETURN:
+        case BBJ_EHFAULTRET:
             return 0;
 
         case BBJ_EHFINALLYRET:
-        {
             // We may call this method before we realize we have invalid IL. Tolerate.
             //
             if (!hasHndIndex())
             {
                 return 0;
             }
-
-            // The first block of the handler is labelled with the catch type.
-            BasicBlock* hndBeg = comp->fgFirstBlockOfHandler(this);
-            if (hndBeg->bbCatchTyp == BBCT_FINALLY)
-            {
-                return comp->fgNSuccsOfFinallyRet(this);
-            }
-            else
-            {
-                assert(hndBeg->bbCatchTyp == BBCT_FAULT); // We can only BBJ_EHFINALLYRET from FINALLY and FAULT.
-                // A FAULT block has no successors.
-                return 0;
-            }
-        }
+            return comp->fgNSuccsOfFinallyRet(this);
 
         case BBJ_CALLFINALLY:
         case BBJ_ALWAYS:
@@ -1615,16 +1608,7 @@ bool BasicBlock::hasEHBoundaryIn() const
 //
 bool BasicBlock::hasEHBoundaryOut() const
 {
-    bool returnVal = false;
-    if (bbJumpKind == BBJ_EHFILTERRET)
-    {
-        returnVal = true;
-    }
-
-    if (bbJumpKind == BBJ_EHFINALLYRET)
-    {
-        returnVal = true;
-    }
+    bool returnVal = KindIs(BBJ_EHFILTERRET, BBJ_EHFINALLYRET, BBJ_EHFAULTRET);
 
 #if FEATURE_EH_FUNCLETS
     if (bbJumpKind == BBJ_EHCATCHRET)

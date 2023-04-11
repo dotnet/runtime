@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Needed for CLRTestBatchEnvironmentVariable -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <OutputType>Exe</OutputType>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>None</DebugType>
