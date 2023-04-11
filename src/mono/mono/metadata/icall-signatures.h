@@ -275,6 +275,7 @@ ICALL_SIG (6, (ptr, ptr, ptr, ptr, ptr, ptr))	\
 ICALL_SIG (7, (int32, ptr, ptr, ptr, ptr, ptr, int32))	\
 ICALL_SIG (7, (void, ptr, ptr, ptr, ptr, ptr, ptr))	\
 ICALL_SIG (7, (ptr, ptr, ptr, ptr, ptr, ptr, ptr))	\
+ICALL_SIG (7, (object, ptr, ptr, ptr, ptr, ptr, ptr)) \
 ICALL_SIG (8, (void, ptr, ptr, int32, ptr, ptrref, ptr, ptrref)) 	\
 
 // ICALL_SIG_NAME: mono_icall_sig pasted with its parameters with underscores between each.

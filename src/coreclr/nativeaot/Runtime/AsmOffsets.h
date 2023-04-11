@@ -52,7 +52,6 @@ ASM_OFFSET(   48,    80, Thread, m_pExInfoStackHead)
 ASM_OFFSET(   4c,    88, Thread, m_threadAbortException)
 
 ASM_OFFSET(   50,    90, Thread, m_pThreadLocalModuleStatics)
-ASM_OFFSET(   54,    98, Thread, m_numThreadLocalModuleStatics)
 
 ASM_SIZEOF(   14,    20, EHEnum)
 
@@ -61,7 +60,7 @@ ASM_OFFSET(    4,     8, gc_alloc_context, alloc_limit)
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
 ASM_OFFSET(    4,     8, InterfaceDispatchCell, m_pCache)
-#ifndef HOST_64BIT
+#ifdef INTERFACE_DISPATCH_CACHE_HAS_CELL_BACKPOINTER
 ASM_OFFSET(    8,     0, InterfaceDispatchCache, m_pCell)
 #endif
 ASM_OFFSET(   10,    20, InterfaceDispatchCache, m_rgEntries)

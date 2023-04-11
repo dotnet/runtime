@@ -156,18 +156,18 @@ namespace System.Runtime.InteropServices
                 }
                 catch (AmbiguousMatchException)
                 {
-                    throw new ApplicationException($"Custom marshaler '{type.FullName}' implements multiple static GetInstance methods that take a single string parameter.");
+                    throw new ApplicationException(SR.Format(SR.CustomMarshaler_MultipleGetInstanceMethods, type.FullName));
                 }
 
                 if ((getInstanceMethod == null) ||
                     (getInstanceMethod.ReturnType != typeof(ICustomMarshaler)))
                 {
-                    throw new ApplicationException($"Custom marshaler '{type.FullName}' does not implement a static GetInstance method that takes a single string parameter and returns an ICustomMarshaler.");
+                    throw new ApplicationException(SR.Format(SR.CustomMarshaler_NoGetInstanceMethod, type.FullName));
                 }
 
                 if (getInstanceMethod.ContainsGenericParameters)
                 {
-                    throw new System.TypeLoadException($"Custom marshaler '{type.FullName}' contains unassigned generic type parameter(s).");
+                    throw new System.TypeLoadException(SR.Format(SR.CustomMarshaler_UnassignedGenericParams, type.FullName));
                 }
 
                 Exception? exc;
@@ -193,7 +193,7 @@ namespace System.Runtime.InteropServices
                 }
 
                 if (result == null)
-                    throw new ApplicationException($"A call to GetInstance() for custom marshaler '{type.FullName}' returned null, which is not allowed.");
+                    throw new ApplicationException(SR.Format(SR.CustomMarshaler_NullReturnForGetInstance, type.FullName));
 
                 lock (cache)
                     cache[key] = result;

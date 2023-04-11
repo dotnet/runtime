@@ -39,7 +39,7 @@ public partial class Program
     private static Vector256<byte> s_v256i_3;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static void init()
+    static void init()
     {
         Random random = new Random(100);
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -17,7 +18,8 @@ namespace Test
         {
             return null;
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             return (int)BB.Method1(__arglist()) + 100;
         }

@@ -16,15 +16,6 @@ namespace System.Text.Unicode
         internal const int MaxBytesPerScalar = 4;
 
         /// <summary>
-        /// The UTF-8 representation of <see cref="UnicodeUtility.ReplacementChar"/>.
-        /// </summary>
-#if (!NETSTANDARD2_0 && !NETFRAMEWORK)
-        private static ReadOnlySpan<byte> ReplacementCharSequence => new byte[] { 0xEF, 0xBF, 0xBD };
-#else
-        private static readonly byte[] ReplacementCharSequence = new byte[] { 0xEF, 0xBF, 0xBD };
-#endif
-
-        /// <summary>
         /// Returns the byte index in <paramref name="utf8Data"/> where the first invalid UTF-8 sequence begins,
         /// or -1 if the buffer contains no invalid sequences. Also outs the <paramref name="isAscii"/> parameter
         /// stating whether all data observed (up to the first invalid sequence or the end of the buffer, whichever
@@ -42,7 +33,6 @@ namespace System.Text.Unicode
                 return (index < utf8Data.Length) ? index : -1;
             }
         }
-
 
         /// <summary>
         /// Returns true iff the UInt32 represents four ASCII UTF-8 characters in machine endianness.

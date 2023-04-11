@@ -14,12 +14,11 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.Cecil" Version="$(MicrosoftDotNetCecilVersion)" PrivateAssets="All" Publish="True" />
-    <PackageReference Include="Microsoft.DotNet.Cecil.Pdb" Version="$(MicrosoftDotNetCecilPdbVersion)" PrivateAssets="All" Publish="True" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisVersion)" />
     <ProjectReference Include="$(RepoRoot)\src\coreclr\tools\ILVerification\ILVerification.csproj" />
     <PackageReference Include="nunit" Version="$(NUnitVersion)" />
     <PackageReference Include="NUnit3TestAdapter" Version="$(NUnitTestAdapterVersion)" />
-    <!-- This reference is purely so that the linker can resolve this
+    <!-- This reference is purely so that the ILLink can resolve this
          dependency of mscorlib. It is not actually required to build
          the tests. -->
     <PackageReference Include="System.Threading.AccessControl" Version="$(SystemThreadingAccessControlVersion)" />
@@ -59,9 +58,6 @@
     </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.LinkerTestDir">
       <Value>$(LinkerTestDir)</Value>
-    </RuntimeHostConfigurationOption>
-    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.TargetArchitecture">
-      <Value>$(TargetArchitecture)</Value>
     </RuntimeHostConfigurationOption>
   </ItemGroup>
 

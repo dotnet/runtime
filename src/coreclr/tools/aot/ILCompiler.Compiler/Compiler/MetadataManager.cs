@@ -257,9 +257,6 @@ namespace ILCompiler
             if (dictionaryNode != null)
             {
                 _genericDictionariesGenerated.Add(dictionaryNode);
-
-                if (dictionaryNode.OwningEntity is MethodDesc method && AllMethodsCanBeReflectable)
-                    _reflectableMethods.Add(method);
             }
 
             if (obj is InterfaceDispatchCellNode dispatchCell)
@@ -449,7 +446,7 @@ namespace ILCompiler
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to generated EETypes.
         /// </summary>
-        public void GetDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public virtual void GetDependenciesDueToEETypePresence(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
         {
             MetadataCategory category = GetMetadataCategory(type);
 
@@ -526,13 +523,9 @@ namespace ILCompiler
                 ExactMethodInstantiationsNode.GetExactMethodInstantiationDependenciesForMethod(ref dependencies, factory, method);
             }
 
-            GetDependenciesDueToMethodCodePresenceInternal(ref dependencies, factory, method, methodIL);
-        }
+            InlineableStringsResourceNode.AddDependenciesDueToResourceStringUse(ref dependencies, factory, method);
 
-        public virtual void GetConditionalDependenciesDueToMethodGenericDictionary(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc method)
-        {
-            // MetadataManagers can override this to provide additional dependencies caused by the presence of
-            // method generic dictionary.
+            GetDependenciesDueToMethodCodePresenceInternal(ref dependencies, factory, method, methodIL);
         }
 
         public virtual void GetConditionalDependenciesDueToMethodCodePresence(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc method)
@@ -839,9 +832,17 @@ namespace ILCompiler
             return _blockingPolicy.IsBlocked(typicalMethodDefinition);
         }
 
-        public bool IsManifestResourceBlocked(ModuleDesc module, string resourceName)
+        public bool IsManifestResourceBlocked(NodeFactory factory, Internal.TypeSystem.Ecma.EcmaModule module, string resourceName)
         {
-            return _resourceBlockingPolicy.IsManifestResourceBlocked(module, resourceName);
+            if (_resourceBlockingPolicy.IsManifestResourceBlocked(module, resourceName))
+                return true;
+
+            // If this is a resource strings resource but we don't actually need it, block it.
+            if (InlineableStringsResourceNode.IsInlineableStringsResource(module, resourceName)
+                && !factory.InlineableStringResource(module).Marked)
+                return true;
+
+            return false;
         }
 
         public bool CanGenerateMetadata(MetadataType type)
@@ -891,14 +892,6 @@ namespace ILCompiler
         public virtual DependencyList GetDependenciesForCustomAttribute(NodeFactory factory, MethodDesc attributeCtor, CustomAttributeValue decodedValue, TypeSystemEntity parent)
         {
             return null;
-        }
-
-        public virtual void GetDependenciesForGenericDictionary(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
-        {
-        }
-
-        public virtual void GetDependenciesForGenericDictionary(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
-        {
         }
 
         public virtual void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)

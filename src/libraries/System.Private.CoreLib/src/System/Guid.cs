@@ -9,6 +9,8 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
 namespace System
@@ -142,6 +144,22 @@ namespace System
             AllButOverflow = 2
         }
 
+        private enum ParseFailure
+        {
+            Format_ExtraJunkAtEnd,
+            Format_GuidBraceAfterLastNumber,
+            Format_GuidBrace,
+            Format_GuidComma,
+            Format_GuidDashes,
+            Format_GuidEndBrace,
+            Format_GuidHexPrefix,
+            Format_GuidInvalidChar,
+            Format_GuidInvLen,
+            Format_GuidUnrecognized,
+            Overflow_Byte,
+            Overflow_UInt32,
+        }
+
         // This will store the result of the parsing. And it will eventually be used to construct a Guid instance.
         // We'll eventually reinterpret_cast<> a GuidResult as a Guid, so we need to give it a sequential
         // layout and ensure that its early fields match the layout of Guid exactly.
@@ -175,24 +193,31 @@ namespace System
                 _throwStyle = canThrow;
             }
 
-            internal readonly void SetFailure(bool overflow, string failureMessageID)
+            internal readonly void SetFailure(ParseFailure failureKind)
             {
                 if (_throwStyle == GuidParseThrowStyle.None)
                 {
                     return;
                 }
 
-                if (overflow)
+                if (failureKind == ParseFailure.Overflow_UInt32 && _throwStyle == GuidParseThrowStyle.All)
                 {
-                    if (_throwStyle == GuidParseThrowStyle.All)
-                    {
-                        throw new OverflowException(SR.GetResourceString(failureMessageID));
-                    }
-
-                    throw new FormatException(SR.Format_GuidUnrecognized);
+                    throw new OverflowException(SR.Overflow_UInt32);
                 }
 
-                throw new FormatException(SR.GetResourceString(failureMessageID));
+                throw new FormatException(failureKind switch
+                {
+                    ParseFailure.Format_ExtraJunkAtEnd => SR.Format_ExtraJunkAtEnd,
+                    ParseFailure.Format_GuidBraceAfterLastNumber => SR.Format_GuidBraceAfterLastNumber,
+                    ParseFailure.Format_GuidBrace => SR.Format_GuidBrace,
+                    ParseFailure.Format_GuidComma => SR.Format_GuidComma,
+                    ParseFailure.Format_GuidDashes => SR.Format_GuidDashes,
+                    ParseFailure.Format_GuidEndBrace=> SR.Format_GuidEndBrace,
+                    ParseFailure.Format_GuidHexPrefix => SR.Format_GuidHexPrefix,
+                    ParseFailure.Format_GuidInvalidChar => SR.Format_GuidInvalidChar,
+                    ParseFailure.Format_GuidInvLen => SR.Format_GuidInvLen,
+                    _ => SR.Format_GuidUnrecognized
+                });
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -313,7 +338,7 @@ namespace System
 
         public static bool TryParseExact(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format, out Guid result)
         {
-            if (format.Length != 1)
+            if (format.Length != 1 || input.Length < 32) // Minimal length we can parse ('N' format)
             {
                 result = default;
                 return false;
@@ -362,19 +387,19 @@ namespace System
         {
             guidString = guidString.Trim(); // Remove whitespace from beginning and end
 
-            if (guidString.Length == 0)
+            if (guidString.Length < 32) // Minimal length we can parse ('N' format)
             {
-                result.SetFailure(overflow: false, nameof(SR.Format_GuidUnrecognized));
+                result.SetFailure(ParseFailure.Format_GuidUnrecognized);
                 return false;
             }
 
             return (guidString[0]) switch
             {
                 '(' => TryParseExactP(guidString, ref result),
-                '{' => guidString.Contains('-') ?
+                '{' => guidString[9] == '-' ?
                         TryParseExactB(guidString, ref result) :
                         TryParseExactX(guidString, ref result),
-                _ => guidString.Contains('-') ?
+                _ => guidString[8] == '-' ?
                         TryParseExactD(guidString, ref result) :
                         TryParseExactN(guidString, ref result),
             };
@@ -386,7 +411,7 @@ namespace System
 
             if (guidString.Length != 38 || guidString[0] != '{' || guidString[37] != '}')
             {
-                result.SetFailure(overflow: false, nameof(SR.Format_GuidInvLen));
+                result.SetFailure(ParseFailure.Format_GuidInvLen);
                 return false;
             }
 
@@ -399,7 +424,7 @@ namespace System
 
             if (guidString.Length != 36 || guidString[8] != '-' || guidString[13] != '-' || guidString[18] != '-' || guidString[23] != '-')
             {
-                result.SetFailure(overflow: false, guidString.Length != 36 ? nameof(SR.Format_GuidInvLen) : nameof(SR.Format_GuidDashes));
+                result.SetFailure(guidString.Length != 36 ? ParseFailure.Format_GuidInvLen : ParseFailure.Format_GuidDashes);
                 return false;
             }
 
@@ -445,7 +470,7 @@ namespace System
                 return true;
             }
 
-            result.SetFailure(overflow: false, nameof(SR.Format_GuidInvalidChar));
+            result.SetFailure(ParseFailure.Format_GuidInvalidChar);
             return false;
 
             static bool TryCompatParsing(ReadOnlySpan<char> guidString, ref GuidResult result)
@@ -485,7 +510,7 @@ namespace System
 
             if (guidString.Length != 32)
             {
-                result.SetFailure(overflow: false, nameof(SR.Format_GuidInvLen));
+                result.SetFailure(ParseFailure.Format_GuidInvLen);
                 return false;
             }
 
@@ -518,7 +543,7 @@ namespace System
                 return true;
             }
 
-            result.SetFailure(overflow: false, nameof(SR.Format_GuidInvalidChar));
+            result.SetFailure(ParseFailure.Format_GuidInvalidChar);
             return false;
         }
 
@@ -528,7 +553,7 @@ namespace System
 
             if (guidString.Length != 38 || guidString[0] != '(' || guidString[37] != ')')
             {
-                result.SetFailure(overflow: false, nameof(SR.Format_GuidInvLen));
+                result.SetFailure(ParseFailure.Format_GuidInvLen);
                 return false;
             }
 
@@ -555,14 +580,14 @@ namespace System
             // Check for leading '{'
             if (guidString.Length == 0 || guidString[0] != '{')
             {
-                result.SetFailure(overflow: false, nameof(SR.Format_GuidBrace));
+                result.SetFailure(ParseFailure.Format_GuidBrace);
                 return false;
             }
 
             // Check for '0x'
             if (!IsHexPrefix(guidString, 1))
             {
-                result.SetFailure(overflow: false, nameof(SR.Format_GuidHexPrefix));
+                result.SetFailure(ParseFailure.Format_GuidHexPrefix);
                 return false;
             }
 
@@ -571,21 +596,21 @@ namespace System
             int numLen = guidString.Slice(numStart).IndexOf(',');
             if (numLen <= 0)
             {
-                result.SetFailure(overflow: false, nameof(SR.Format_GuidComma));
+                result.SetFailure(ParseFailure.Format_GuidComma);
                 return false;
             }
 
             bool overflow = false;
             if (!TryParseHex(guidString.Slice(numStart, numLen), out result._a, ref overflow) || overflow)
             {
-                result.SetFailure(overflow, overflow ? nameof(SR.Overflow_UInt32) : nameof(SR.Format_GuidInvalidChar));
+                result.SetFailure(overflow ? ParseFailure.Overflow_UInt32 : ParseFailure.Format_GuidInvalidChar);
                 return false;
             }
 
             // Check for '0x'
             if (!IsHexPrefix(guidString, numStart + numLen + 1))
             {
-                result.SetFailure(overflow: false, nameof(SR.Format_GuidHexPrefix));
+                result.SetFailure(ParseFailure.Format_GuidHexPrefix);
                 return false;
             }
             // +3 to get by ',0x'
@@ -593,21 +618,21 @@ namespace System
             numLen = guidString.Slice(numStart).IndexOf(',');
             if (numLen <= 0)
             {
-                result.SetFailure(overflow: false, nameof(SR.Format_GuidComma));
+                result.SetFailure(ParseFailure.Format_GuidComma);
                 return false;
             }
 
             // Read in the number
             if (!TryParseHex(guidString.Slice(numStart, numLen), out result._b, ref overflow) || overflow)
             {
-                result.SetFailure(overflow, overflow ? nameof(SR.Overflow_UInt32) : nameof(SR.Format_GuidInvalidChar));
+                result.SetFailure(overflow ? ParseFailure.Overflow_UInt32: ParseFailure.Format_GuidInvalidChar);
                 return false;
             }
 
             // Check for '0x'
             if (!IsHexPrefix(guidString, numStart + numLen + 1))
             {
-                result.SetFailure(overflow: false, nameof(SR.Format_GuidHexPrefix));
+                result.SetFailure(ParseFailure.Format_GuidHexPrefix);
                 return false;
             }
             // +3 to get by ',0x'
@@ -615,21 +640,21 @@ namespace System
             numLen = guidString.Slice(numStart).IndexOf(',');
             if (numLen <= 0)
             {
-                result.SetFailure(overflow: false, nameof(SR.Format_GuidComma));
+                result.SetFailure(ParseFailure.Format_GuidComma);
                 return false;
             }
 
             // Read in the number
             if (!TryParseHex(guidString.Slice(numStart, numLen), out result._c, ref overflow) || overflow)
             {
-                result.SetFailure(overflow, overflow ? nameof(SR.Overflow_UInt32) : nameof(SR.Format_GuidInvalidChar));
+                result.SetFailure(overflow ? ParseFailure.Overflow_UInt32 : ParseFailure.Format_GuidInvalidChar);
                 return false;
             }
 
             // Check for '{'
             if ((uint)guidString.Length <= (uint)(numStart + numLen + 1) || guidString[numStart + numLen + 1] != '{')
             {
-                result.SetFailure(overflow: false, nameof(SR.Format_GuidBrace));
+                result.SetFailure(ParseFailure.Format_GuidBrace);
                 return false;
             }
 
@@ -640,7 +665,7 @@ namespace System
                 // Check for '0x'
                 if (!IsHexPrefix(guidString, numStart + numLen + 1))
                 {
-                    result.SetFailure(overflow: false, nameof(SR.Format_GuidHexPrefix));
+                    result.SetFailure(ParseFailure.Format_GuidHexPrefix);
                     return false;
                 }
 
@@ -653,7 +678,7 @@ namespace System
                     numLen = guidString.Slice(numStart).IndexOf(',');
                     if (numLen <= 0)
                     {
-                        result.SetFailure(overflow: false, nameof(SR.Format_GuidComma));
+                        result.SetFailure(ParseFailure.Format_GuidComma);
                         return false;
                     }
                 }
@@ -662,7 +687,7 @@ namespace System
                     numLen = guidString.Slice(numStart).IndexOf('}');
                     if (numLen <= 0)
                     {
-                        result.SetFailure(overflow: false, nameof(SR.Format_GuidBraceAfterLastNumber));
+                        result.SetFailure(ParseFailure.Format_GuidBraceAfterLastNumber);
                         return false;
                     }
                 }
@@ -674,10 +699,10 @@ namespace System
                     // The byte values in the X format are treated as integers with regards to overflow, so
                     // a "byte" value like 0xddd in Guid's ctor results in a FormatException but 0xddddddddd results
                     // in OverflowException.
-                    result.SetFailure(overflow,
-                        overflow ? nameof(SR.Overflow_UInt32) :
-                        byteVal > byte.MaxValue ? nameof(SR.Overflow_Byte) :
-                        nameof(SR.Format_GuidInvalidChar));
+                    result.SetFailure(
+                        overflow ? ParseFailure.Overflow_UInt32 :
+                        byteVal > byte.MaxValue ? ParseFailure.Overflow_Byte :
+                        ParseFailure.Format_GuidInvalidChar);
                     return false;
                 }
                 Unsafe.Add(ref result._d, i) = (byte)byteVal;
@@ -686,14 +711,14 @@ namespace System
             // Check for last '}'
             if (numStart + numLen + 1 >= guidString.Length || guidString[numStart + numLen + 1] != '}')
             {
-                result.SetFailure(overflow: false, nameof(SR.Format_GuidEndBrace));
+                result.SetFailure(ParseFailure.Format_GuidEndBrace);
                 return false;
             }
 
             // Check if we have extra characters at the end
             if (numStart + numLen + 1 != guidString.Length - 1)
             {
-                result.SetFailure(overflow: false, nameof(SR.Format_ExtraJunkAtEnd));
+                result.SetFailure(ParseFailure.Format_ExtraJunkAtEnd);
                 return false;
             }
 
@@ -1203,8 +1228,49 @@ namespace System
                         p += HexsToCharsHexOutput(p, _j, _k);
                         *p++ = '}';
                     }
+                    else if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian)
+                    {
+                        // Vectorized implementation for D, N, P and B formats:
+                        // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
+                        (Vector128<byte> vecX, Vector128<byte> vecY, Vector128<byte> vecZ) =
+                            Buffers.Text.Utf8Formatter.FormatGuidVector128Utf8(this, dash);
+
+                        // Expand to UTF-16
+                        (Vector128<ushort> x0, Vector128<ushort> x1) = Vector128.Widen(vecX);
+                        (Vector128<ushort> y0, Vector128<ushort> y1) = Vector128.Widen(vecY);
+                        ushort* pChar = (ushort*)p;
+                        if (dash)
+                        {
+                            (Vector128<ushort> z0, Vector128<ushort> z1) = Vector128.Widen(vecZ);
+
+                            // We need to merge these vectors in this order:
+                            // xxxxxxxxxxxxxxxx
+                            //                     yyyyyyyyyyyyyyyy
+                            //         zzzzzzzzzzzzzzzz
+                            x0.Store(pChar + 0);
+                            y0.Store(pChar + 20);
+                            y1.Store(pChar + 28);
+                            z0.Store(pChar + 8); // overlaps x1
+                            z1.Store(pChar + 16);
+                            p += 36;
+                        }
+                        else
+                        {
+                            // xxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyy
+                            x0.Store(pChar + 0);
+                            x1.Store(pChar + 8);
+                            y0.Store(pChar + 16);
+                            y1.Store(pChar + 24);
+                            p += 32;
+                        }
+                        if (braces != 0)
+                            *p = (char)(braces >> 16);
+                        charsWritten = guidSize;
+                        return true;
+                    }
                     else
                     {
+                        // Non-vectorized fallback for D, N, P and B formats:
                         // [{|(]dddddddd[-]dddd[-]dddd[-]dddd[-]dddddddddddd[}|)]
                         p += HexsToChars(p, _a >> 24, _a >> 16);
                         p += HexsToChars(p, _a >> 8, _a);

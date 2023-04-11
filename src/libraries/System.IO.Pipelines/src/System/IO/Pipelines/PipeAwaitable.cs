@@ -45,8 +45,6 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void BeginOperation(CancellationToken cancellationToken, Action<object?> callback, object? state)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             // Don't register if already completed, we would immediately unregistered in ObserveCancellation
             if (cancellationToken.CanBeCanceled && !IsCompleted)
             {

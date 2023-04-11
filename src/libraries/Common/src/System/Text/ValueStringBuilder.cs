@@ -6,6 +6,8 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+#nullable enable
+
 namespace System.Text
 {
     internal ref partial struct ValueStringBuilder
@@ -170,9 +172,10 @@ namespace System.Text
         public void Append(char c)
         {
             int pos = _pos;
-            if ((uint)pos < (uint)_chars.Length)
+            Span<char> chars = _chars;
+            if ((uint)pos < (uint)chars.Length)
             {
-                _chars[pos] = c;
+                chars[pos] = c;
                 _pos = pos + 1;
             }
             else

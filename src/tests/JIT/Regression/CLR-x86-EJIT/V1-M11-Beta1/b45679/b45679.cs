@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace JitTest
 {
     using System;
 
     public class Test
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             ulong a = 0x0000000000000020;
             ulong b = 0xa697fcbfd6d232d1;

@@ -21,10 +21,10 @@ namespace Microsoft.Interop
         public const string BStrStringMarshaller = "System.Runtime.InteropServices.Marshalling.BStrStringMarshaller";
         public const string Utf16StringMarshaller = "System.Runtime.InteropServices.Marshalling.Utf16StringMarshaller";
         public const string Utf8StringMarshaller = "System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller";
-        public const string SwallowExceptionMarshaller = "System.Runtime.InteropServices.Marshalling.SwallowExceptionMarshaller";
-        public const string ExceptionHResultMarshaller = "System.Runtime.InteropServices.Marshalling.ExceptionHResultMarshaller";
-        public const string ExceptionNaNMarshaller = "System.Runtime.InteropServices.Marshalling.ExceptionNaNMarshaller";
-        public const string ExceptionDefaultMarshaller = "System.Runtime.InteropServices.Marshalling.ExceptionDefaultMarshaller";
+        public const string ExceptionAsVoidMarshaller = "System.Runtime.InteropServices.Marshalling.ExceptionAsVoidMarshaller";
+        public const string ExceptionAsHResultMarshaller = "System.Runtime.InteropServices.Marshalling.ExceptionAsHResultMarshaller";
+        public const string ExceptionAsNaNMarshaller = "System.Runtime.InteropServices.Marshalling.ExceptionAsNaNMarshaller";
+        public const string ExceptionAsDefaultMarshaller = "System.Runtime.InteropServices.Marshalling.ExceptionAsDefaultMarshaller";
 
         public const string LCIDConversionAttribute = "System.Runtime.InteropServices.LCIDConversionAttribute";
 
@@ -36,9 +36,9 @@ namespace Microsoft.Interop
 
         public const string VirtualMethodIndexAttribute = "System.Runtime.InteropServices.Marshalling.VirtualMethodIndexAttribute";
 
-        public const string IUnmanagedVirtualMethodTableProvider = "System.Runtime.InteropServices.IUnmanagedVirtualMethodTableProvider";
+        public const string IUnmanagedVirtualMethodTableProvider = "System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider";
 
-        public const string IUnmanagedInterfaceType_Metadata = "System.Runtime.InteropServices.IUnmanagedInterfaceType`1";
+        public const string IUnmanagedInterfaceType_Metadata = "System.Runtime.InteropServices.Marshalling.IUnmanagedInterfaceType";
 
         public const string System_Span_Metadata = "System.Span`1";
         public const string System_Span = "System.Span";
@@ -101,9 +101,40 @@ namespace Microsoft.Interop
 
         public const string System_Runtime_InteropServices_DynamicInterfaceCastableImplementationAttribute = "System.Runtime.InteropServices.DynamicInterfaceCastableImplementationAttribute";
 
+        public const string System_Guid = "System.Guid";
+
+        public const string System_Runtime_CompilerServices_RuntimeHelpers = "System.Runtime.CompilerServices.RuntimeHelpers";
+
         public const string GeneratedComInterfaceAttribute = "System.Runtime.InteropServices.Marshalling.GeneratedComInterfaceAttribute";
+
         public const string InterfaceTypeAttribute = "System.Runtime.InteropServices.InterfaceTypeAttribute";
+
         public const string ComInterfaceTypeAttribute = "System.Runtime.InteropServices.ComInterfaceType";
+
+        public const string System_Runtime_InteropServices_GuidAttribute = "System.Runtime.InteropServices.GuidAttribute";
+
+        public const string System_Runtime_InteropServices_ComWrappers = "System.Runtime.InteropServices.ComWrappers";
+
         public const string System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch = "System.Runtime.InteropServices.ComWrappers.ComInterfaceDispatch";
+
+        public const string System_Runtime_InteropServices_ComWrappers_ComInterfaceEntry = "System.Runtime.InteropServices.ComWrappers.ComInterfaceEntry";
+
+        public const string System_Runtime_InteropServices_NativeMemory = "System.Runtime.InteropServices.NativeMemory";
+
+        public const string StrategyBasedComWrappers = "System.Runtime.InteropServices.Marshalling.StrategyBasedComWrappers";
+
+        public const string IIUnknownInterfaceType = "System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceType";
+        public const string IUnknownDerivedAttribute = "System.Runtime.InteropServices.Marshalling.IUnknownDerivedAttribute";
+        public const string IIUnknownDerivedDetails = "System.Runtime.InteropServices.Marshalling.IIUnknownDerivedDetails";
+
+        public const string ComWrappersUnwrapper = "System.Runtime.InteropServices.Marshalling.ComWrappersUnwrapper";
+        public const string UnmanagedObjectUnwrapperAttribute = "System.Runtime.InteropServices.Marshalling.UnmanagedObjectUnwrapperAttribute`1";
+
+        public const string IUnmanagedObjectUnwrapper = "System.Runtime.InteropServices.Marshalling.IUnmanagedObjectUnwrapper";
+        public const string UnmanagedObjectUnwrapper = "System.Runtime.InteropServices.Marshalling.UnmanagedObjectUnwrapper";
+
+        public const string GeneratedComClassAttribute = "System.Runtime.InteropServices.Marshalling.GeneratedComClassAttribute";
+        public const string ComExposedClassAttribute = "System.Runtime.InteropServices.Marshalling.ComExposedClassAttribute";
+        public const string IComExposedClass = "System.Runtime.InteropServices.Marshalling.IComExposedClass";
     }
 }

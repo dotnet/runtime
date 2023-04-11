@@ -19,8 +19,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 
 		public KeptOverrideAttribute (Type typeWithOverriddenMethod)
 		{
-			if (typeWithOverriddenMethod == null)
-				throw new ArgumentNullException (nameof (typeWithOverriddenMethod));
+			ArgumentNullException.ThrowIfNull (typeWithOverriddenMethod);
 			TypeWithOverriddenMethodDeclaration = typeWithOverriddenMethod;
 		}
 	}

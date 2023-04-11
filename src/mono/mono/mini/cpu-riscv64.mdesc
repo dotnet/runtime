@@ -26,3 +26,160 @@
 #
 #     a    a0
 #     c    all caller-saved registers
+
+nop: len:4
+not_reached: len:0
+not_null: src1:i len:0
+dummy_use: src1:i len:0
+il_seq_point: len:0
+seq_point: len:0
+
+check_this: src1:b len:4
+get_ex_obj: dest:i len:4
+gc_safe_point: src1:i len:12 clob:c
+start_handler: len:8 clob:c
+call_handler: len:4 clob:c
+endfinally: len:32
+localloc: dest:i src1:i len:52
+localloc_imm: dest:i len:28
+generic_class_init: src1:a len:12 clob:c
+
+throw: src1:i len:4
+rethrow: src1:i len:4
+
+br: len:4
+br_reg: src1:i len:4
+jump_table: dest:i len:16
+call: dest:a len:4 clob:c
+call_reg: dest:a src1:i len:4 clob:c
+call_membase: dest:a src1:b len:8 clob:c
+voidcall: len:4 clob:c
+voidcall_reg: src1:i len:4 clob:c
+voidcall_membase: src1:b len:8 clob:c
+vcall2: len:16 clob:c
+vcall2_membase: src1:b len:20 clob:c
+fcall: dest:f len:8 clob:c
+
+# Note: in RV32, it shoule be 
+# lcall: dest:l ...
+lcall: dest:a len:16 clob:c
+lcall_membase: dest:a src1:b len:8 clob:c
+
+store_membase_reg: dest:b src1:i len:4
+storei1_membase_reg: dest:b src1:i len:4
+storei2_membase_reg: dest:b src1:i len:4
+storei4_membase_reg: dest:b src1:i len:4
+storei8_membase_reg: dest:b src1:i len:4
+storer4_membase_reg: dest:b src1:f len:4
+storer8_membase_reg: dest:b src1:f len:4
+
+load_membase: dest:i src1:b len:24
+loadu1_membase: dest:i src1:b len:16
+loadi1_membase: dest:i src1:b len:16
+loadu2_membase: dest:i src1:b len:16
+loadi2_membase: dest:i src1:b len:16
+loadu4_membase: dest:i src1:b len:16
+loadi4_membase: dest:i src1:b len:16
+loadi8_membase: dest:i src1:b len:16
+loadr4_membase: dest:f src1:b len:16
+loadr8_membase: dest:f src1:b len:16
+
+memory_barrier: len:4
+atomic_add_i4: dest:i src1:i src2:i len:4
+atomic_store_u1: dest:b src1:i len:8
+atomic_store_i4: dest:b src1:i len:8
+atomic_store_u8: dest:b src1:i len:8
+atomic_load_i4: dest:b src1:i len:12
+atomic_load_i8: dest:b src1:i len:12
+atomic_load_u8: dest:b src1:i len:12
+atomic_cas_i4: dest:i src1:i src2:i src3:i len:24
+atomic_cas_i8: dest:i src1:i src2:i src3:i len:24
+atomic_exchange_i4: dest:i src1:i src2:i len:4
+atomic_exchange_i8: dest:i src1:i src2:i len:4
+
+move: dest:i src1:i len:4
+lmove: dest:i src1:i len:4
+fmove: dest:f src1:f len:4
+rmove: dest:f src1:f len:4
+
+iconst: dest:i len:16
+i8const: dest:i len:16
+int_add: dest:i src1:i src2:i len:4
+long_add: dest:i src1:i src2:i len:4
+int_sub: dest:i src1:i src2:i len:4
+long_sub: dest:i src1:i src2:i len:4
+int_mul: dest:i src1:i src2:i len:4
+r4_mul: dest:f src1:f src2:f len:4
+float_mul: dest:f src1:f src2:f len:4
+long_div: dest:i src1:i src2:i len:32
+long_div_un: dest:i src1:i src2:i len:32
+r4_div: dest:f src1:f src2:f len:36
+int_rem: dest:i src1:i src2:i len:32
+long_rem: dest:i src1:i src2:i len:32
+int_rem_un: dest:i src1:i src2:i len:32
+long_rem_un: dest:i src1:i src2:i len:32
+
+r4const: dest:f len:16
+r8const: dest:f len:16
+int_conv_to_r4: dest:f src1:i len:4
+int_conv_to_r8: dest:f src1:i len:4
+r4_conv_to_r8: dest:f src1:f len:4
+r4_conv_to_i4: dest:i src1:f len:4
+float_conv_to_i4: dest:i src1:f len:4
+float_conv_to_r4: dest:f src1:f len:4
+float_ceq: dest:i src1:f src2:f len:4
+float_clt: dest:i src1:f src2:f len:4
+float_clt_un: dest:i src1:f src2:f len:4
+r4_clt: dest:i src1:f src2:f len:4
+
+add_imm: dest:i src1:i len:4
+int_add_imm: dest:i src1:i len:4
+long_add_imm: dest:i src1:i len:4
+
+and_imm: dest:i src1:i len:4
+xor_imm: dest:i src1:i len:4
+shl_imm: dest:i src1:i len:4
+shr_imm: dest:i src1:i len:4
+shr_un_imm: dest:i src1:i len:4
+
+int_and: dest:i src1:i src2:i len:4
+int_and_imm: dest:i src1:i len:4
+int_or: dest:i src1:i src2:i len:4
+int_or_imm: dest:i src1:i len:4
+int_xor: dest:i src1:i src2:i len:4
+int_xor_imm: dest:i src1:i len:4
+int_shl: dest:i src1:i src2:i len:4
+int_shl_imm: dest:i src1:i len:4
+int_shr_un: dest:i src1:i src2:i len:4
+int_shr_imm: dest:i src1:i len:4
+int_shr_un_imm: dest:i src1:i len:4
+
+long_and: dest:i src1:i src2:i len:4
+long_and_imm: dest:i src1:i len:4
+long_or: dest:i src1:i src2:i len:4
+long_xor: dest:i src1:i src2:i len:4
+long_or_imm: dest:i src1:i len:4
+long_shl_imm: dest:i src1:i len:4
+long_shr_un: dest:i src1:i src2:i len:4
+long_shr_imm: dest:i src1:i len:4
+long_shr_un_imm: dest:i src1:i len:4
+
+
+riscv_setfreg_r4: dest:f src1:f len:4
+
+riscv_beq: src1:i src2:i len:8
+riscv_bne: src1:i src2:i len:8
+riscv_bge: src1:i src2:i len:8
+riscv_bgeu: src1:i src2:i len:8
+riscv_blt: src1:i src2:i len:8
+riscv_bltu: src1:i src2:i len:8
+riscv_exc_beq: src1:i src2:i len:32
+riscv_exc_bne: src1:i src2:i len:32
+riscv_exc_bgeu: src1:i src2:i len:32
+riscv_exc_blt: src1:i src2:i len:32
+riscv_exc_bltu: src1:i src2:i len:32
+riscv_slt: dest:i src1:i src2:i len:4
+riscv_sltu: dest:i src1:i src2:i len:4
+riscv_slti: dest:i src1:i len:4
+riscv_sltiu: dest:i src1:i len:4
+riscv_addiw: dest:i src1:i len:4

@@ -26,7 +26,10 @@ namespace Microsoft.Workload.Build.Tasks
         public ITaskItem[]    InstallTargets     { get; set; } = Array.Empty<ITaskItem>();
 
         [Required, NotNull]
-        public string?        VersionBand        { get; set; }
+        public string?        VersionBandForSdkManifestsDir        { get; set; }
+
+        [Required, NotNull]
+        public string?        VersionBandForManifestPackages       { get; set; }
 
         [Required, NotNull]
         public string?        LocalNuGetsPath    { get; set; }
@@ -61,11 +64,15 @@ namespace Microsoft.Workload.Build.Tasks
                     throw new LogAsErrorException($"Cannot find {nameof(LocalNuGetsPath)}={LocalNuGetsPath} . " +
                                                     "Set it to the Shipping packages directory in artifacts.");
 
+                ExecuteHackForRenamedManifest();
                 if (!InstallAllManifests())
                     return false;
 
                 if (OnlyUpdateManifests)
                     return !Log.HasLoggedErrors;
+
+                if (InstallTargets.Length == 0)
+                    throw new LogAsErrorException($"No install targets specified.");
 
                 InstallWorkloadRequest[] selectedRequests = InstallTargets
                     .SelectMany(workloadToInstall =>
@@ -145,6 +152,29 @@ namespace Microsoft.Workload.Build.Tasks
             UpdateAppRef(req.TargetPath, req.Version);
 
             return !Log.HasLoggedErrors;
+        }
+
+        private void ExecuteHackForRenamedManifest()
+        {
+            // HACK - Because the microsoft.net.workload.mono.toolchain is being renamed to microsoft.net.workload.mono.toolchain.current
+            // but the sdk doesn't have the change yet.
+            string? txtPath = Directory.EnumerateFiles(Path.Combine(SdkWithNoWorkloadInstalledPath, "sdk"), "IncludedWorkloadManifests.txt",
+                                            new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 2})
+                                .FirstOrDefault();
+            if (txtPath is null)
+                throw new LogAsErrorException($"Could not find IncludedWorkloadManifests.txt in {SdkWithNoWorkloadInstalledPath}");
+
+            string stampPath = Path.Combine(Path.GetDirectoryName(txtPath)!, ".stamp");
+            if (File.Exists(stampPath))
+                return;
+
+            var lines = File.ReadAllLines(txtPath)
+                            .Select(line => line == "microsoft.net.workload.mono.toolchain"
+                                                ? "microsoft.net.workload.mono.toolchain.current"
+                                                : line);
+            File.WriteAllLines(txtPath, lines);
+
+            File.WriteAllText(stampPath, "");
         }
 
         private bool InstallAllManifests()
@@ -277,7 +307,7 @@ namespace Microsoft.Workload.Build.Tasks
             // Multiple directories for a manifest, differing only in case causes
             // workload install to fail due to duplicate manifests!
             // This is applicable only on case-sensitive filesystems
-            string manifestVersionBandDir = Path.Combine(sdkDir, "sdk-manifests", VersionBand);
+            string manifestVersionBandDir = Path.Combine(sdkDir, "sdk-manifests", VersionBandForSdkManifestsDir);
             if (!Directory.Exists(manifestVersionBandDir))
             {
                 Log.LogMessage(MessageImportance.Low, $"    Could not find {manifestVersionBandDir}. Creating it..");
@@ -286,7 +316,7 @@ namespace Microsoft.Workload.Build.Tasks
 
             string outputDir = FindSubDirIgnoringCase(manifestVersionBandDir, name);
 
-            PackageReference pkgRef = new(Name: $"{name}.Manifest-{VersionBand}",
+            PackageReference pkgRef = new(Name: $"{name}.Manifest-{VersionBandForManifestPackages}",
                                           Version: version,
                                           OutputDir: outputDir,
                                           relativeSourceDir: "data");

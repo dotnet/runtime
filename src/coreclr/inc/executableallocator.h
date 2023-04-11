@@ -80,7 +80,7 @@ class ExecutableAllocator
     static BYTE* g_preferredRangeMin;
     static BYTE* g_preferredRangeMax;
 
-    // Caches the COMPlus_EnableWXORX setting
+    // Caches the DOTNET_EnableWXORX setting
     static bool g_isWXorXEnabled;
 
     // Head of the linked list of all RX blocks that were allocated by this allocator
@@ -113,6 +113,9 @@ class ExecutableAllocator
     // in the cache, it keeps it cached. Otherwise it destroys the currently cached one
     // and replaces it by the passed in one.
     void UpdateCachedMapping(BlockRW *pBlock);
+
+    // Remove the cached mapping
+    void RemoveCachedMapping();
 
     // Find existing RW block that maps the whole specified range of RX memory.
     // Return NULL if no such block exists.

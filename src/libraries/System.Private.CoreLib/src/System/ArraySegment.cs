@@ -261,12 +261,18 @@ namespace System
 
         #region IEnumerable<T>
 
-        IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+        {
+            ThrowInvalidOperationIfDefault();
+            return
+                Count == 0 ? SZGenericArrayEnumerator<T>.Empty :
+                new Enumerator(this);
+        }
         #endregion
 
         #region IEnumerable
 
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<T>)this).GetEnumerator();
         #endregion
 
         private void ThrowInvalidOperationIfDefault()

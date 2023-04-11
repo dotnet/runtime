@@ -2,68 +2,62 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Frozen
 {
-    /// <summary>Provides a frozen set optimized for ordinal (case-sensitive or case-insensitive) lookup of strings.</summary>
-    internal sealed class OrdinalStringFrozenSet : FrozenSetInternalBase<string, OrdinalStringFrozenSet.GSW>
+    /// <summary>The base class for the specialized frozen string sets.</summary>
+    internal abstract class OrdinalStringFrozenSet : FrozenSetInternalBase<string, OrdinalStringFrozenSet.GSW>
     {
         private readonly FrozenHashTable _hashTable;
         private readonly string[] _items;
-        private readonly StringComparerBase _partialComparer;
         private readonly int _minimumLength;
         private readonly int _maximumLengthDiff;
 
-        internal OrdinalStringFrozenSet(HashSet<string> source, IEqualityComparer<string> comparer) :
-            base(comparer)
+        internal OrdinalStringFrozenSet(
+            string[] entries,
+            IEqualityComparer<string> comparer,
+            int minimumLength,
+            int maximumLengthDiff,
+            int hashIndex = -1,
+            int hashCount = -1)
+            : base(comparer)
         {
-            Debug.Assert(source.Count != 0);
-            Debug.Assert(comparer == EqualityComparer<string>.Default || comparer == StringComparer.Ordinal || comparer == StringComparer.OrdinalIgnoreCase);
-
-            string[] entries = new string[source.Count];
-            source.CopyTo(entries);
-
             _items = new string[entries.Length];
+            _minimumLength = minimumLength;
+            _maximumLengthDiff = maximumLengthDiff;
 
-            _partialComparer = ComparerPicker.Pick(
-                entries,
-                ignoreCase: ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase),
-                out _minimumLength,
-                out _maximumLengthDiff);
+            HashIndex = hashIndex;
+            HashCount = hashCount;
 
             _hashTable = FrozenHashTable.Create(
-                entries,
-                _partialComparer.GetHashCode,
-                (index, item) => _items[index] = item);
+                entries.Length,
+                index => GetHashCode(entries[index]),
+                (destIndex, srcIndex) => _items[destIndex] = entries[srcIndex]);
         }
 
-        /// <inheritdoc />
+        private protected int HashIndex { get; }
+        private protected int HashCount { get; }
+        private protected abstract bool Equals(string? x, string? y);
+        private protected abstract int GetHashCode(string s);
         private protected override string[] ItemsCore => _items;
-
-        /// <inheritdoc />
         private protected override Enumerator GetEnumeratorCore() => new Enumerator(_items);
-
-        /// <inheritdoc />
         private protected override int CountCore => _hashTable.Count;
 
-        /// <inheritdoc />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private protected override int FindItemIndex(string item)
         {
             if (item is not null && // this implementation won't be used for null values
                 (uint)(item.Length - _minimumLength) <= (uint)_maximumLengthDiff)
             {
-                StringComparerBase partialComparer = _partialComparer;
-
-                int hashCode = partialComparer.GetHashCode(item);
+                int hashCode = GetHashCode(item);
                 _hashTable.FindMatchingEntries(hashCode, out int index, out int endIndex);
 
                 while (index <= endIndex)
                 {
                     if (hashCode == _hashTable.HashCodes[index])
                     {
-                        if (partialComparer.Equals(item, _items[index])) // partialComparer.Equals always compares the full input (EqualsPartial/GetHashCode don't)
+                        if (Equals(item, _items[index]))
                         {
                             return index;
                         }

@@ -3170,7 +3170,6 @@ private:
 
     // Support for Wait/Notify
     BOOL        Block(INT32 timeOut, PendingSync *syncInfo);
-    void        Wake(SyncBlock *psb);
     DWORD       Wait(HANDLE *objs, int cntObjs, INT32 timeOut, PendingSync *syncInfo);
     DWORD       Wait(CLREvent* pEvent, INT32 timeOut, PendingSync *syncInfo);
 

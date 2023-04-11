@@ -15,9 +15,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
     {
         private static readonly Mutex id_mutex = new Mutex();
 
-        // MultilevelDirectory is %TEST_ARTIFACTS%\dotnetMultilevelSharedFxLookup\id.
-        // We must locate the first non existing id.
-        public static string CalculateUniqueTestDirectory(string baseDir)
+        // Locate the first non-existent directory of the form <basePath>-<count>
+        public static string CalculateUniqueTestDirectory(string basePath)
         {
             id_mutex.WaitOne();
 
@@ -26,7 +25,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             do
             {
-                dir = Path.Combine(baseDir, count.ToString());
+                dir = $"{basePath}-{count}";
                 count++;
             } while (Directory.Exists(dir));
 

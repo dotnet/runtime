@@ -1080,7 +1080,7 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             }
         }
 
-        oldMethodVarsSortedBase = new  (nothrow) ICorDebugInfo::NativeVarInfo[oldNumVars];
+        oldMethodVarsSortedBase = new (nothrow) ICorDebugInfo::NativeVarInfo[oldNumVars];
         if (!oldMethodVarsSortedBase)
         {
             hr = E_FAIL;
@@ -1108,7 +1108,8 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             if (pOldVar->startOffset <= oldMethodOffset &&
                 pOldVar->endOffset   >  oldMethodOffset)
             {
-                oldMethodVarsSorted[(int)varNumber] = *pOldVar;
+                // Indexing should be performed with a signed value - could be negative.
+                oldMethodVarsSorted[(int32_t)varNumber] = *pOldVar;
             }
         }
 
@@ -1160,7 +1161,8 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
             if (pNewVar->startOffset <= newMethodOffset &&
                 pNewVar->endOffset   >  newMethodOffset)
             {
-                newMethodVarsSorted[(int)varNumber] = *pNewVar;
+                // Indexing should be performed with a signed valued - could be negative.
+                newMethodVarsSorted[(int32_t)varNumber] = *pNewVar;
             }
         }
 
@@ -1190,8 +1192,9 @@ HRESULT EECodeManager::FixContextForEnC(PCONTEXT         pCtx,
         memset(rgVal1, 0, sizeof(SIZE_T) * newNumVars);
         memset(rgVal2, 0, sizeof(SIZE_T) * newNumVars);
 
-        unsigned varsToGet = (oldNumVars > newNumVars) ? newNumVars
-                                                                 : oldNumVars;
+        unsigned varsToGet = (oldNumVars > newNumVars)
+                ? newNumVars
+                : oldNumVars;
 
          //  2) Get all the info about current variables, registers, etc.
 

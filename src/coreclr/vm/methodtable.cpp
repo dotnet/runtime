@@ -1451,6 +1451,9 @@ BOOL MethodTable::CanCastToInterface(MethodTable *pTargetMT, TypeHandlePairList 
         if (CanCastByVarianceToInterfaceOrDelegate(pTargetMT, pVisited))
             return TRUE;
 
+        if (pTargetMT->IsSpecialMarkerTypeForGenericCasting())
+            return FALSE; // The special marker types cannot be cast to (at this time, they are the open generic types, so they are however, valid input to this method).
+
         InterfaceMapIterator it = IterateInterfaceMap();
         while (it.Next())
         {
@@ -1758,6 +1761,25 @@ BOOL MethodTable::CanShareVtableChunksFrom(MethodTable *pTargetMT, Module *pCurr
     return pTargetMT->GetLoaderModule() == pCurrentLoaderModule;
 }
 
+BOOL MethodTable::IsAllGCPointers()
+{
+    if (this->ContainsPointers())
+    {
+        // check for canonical GC encoding for all-pointer types
+        CGCDesc* pDesc = CGCDesc::GetCGCDescFromMT(this);
+        if (pDesc->GetNumSeries() != 1)
+            return false;
+
+        int offsetToData = IsArray() ? ArrayBase::GetDataPtrOffset(this) : sizeof(size_t);
+        CGCDescSeries* pSeries = pDesc->GetHighestSeries();
+        return ((int)pSeries->GetSeriesOffset() == offsetToData) &&
+            ((SSIZE_T)pSeries->GetSeriesSize() == -(SSIZE_T)(offsetToData + sizeof(size_t)));
+    }
+
+    return false;
+}
+
+
 #ifdef _DEBUG
 
 void
@@ -1959,6 +1981,10 @@ MethodTable::Debug_DumpDispatchMap()
 NOINLINE BOOL MethodTable::ImplementsInterface(MethodTable *pInterface)
 {
     WRAPPER_NO_CONTRACT;
+
+    if (pInterface->IsSpecialMarkerTypeForGenericCasting())
+        return FALSE; // The special marker types cannot be cast to (at this time, they are the open generic types, so they are however, valid input to this method).
+
     return ImplementsInterfaceInline(pInterface);
 }
 
@@ -1972,6 +1998,9 @@ BOOL MethodTable::ImplementsEquivalentInterface(MethodTable *pInterface)
         PRECONDITION(pInterface->IsInterface()); // class we are looking up should be an interface
     }
     CONTRACTL_END;
+
+    if (pInterface->IsSpecialMarkerTypeForGenericCasting())
+        return FALSE; // The special marker types cannot be cast to (at this time, they are the open generic types, so they are however, valid input to this method).
 
     // look for exact match first (optimize for success)
     if (ImplementsInterfaceInline(pInterface))
@@ -2148,15 +2177,16 @@ const char* GetSystemVClassificationTypeName(SystemVClassificationType t)
 #endif // _DEBUG && LOGGING
 
 // Returns 'true' if the struct is passed in registers, 'false' otherwise.
-bool MethodTable::ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool useNativeLayout)
+bool MethodTable::ClassifyEightBytes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool useNativeLayout, MethodTable** pByValueClassCache)
 {
     if (useNativeLayout)
     {
+        _ASSERTE(pByValueClassCache == NULL);
         return ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel, startOffsetOfStruct, GetNativeLayoutInfo());
     }
     else
     {
-        return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, useNativeLayout);
+        return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, useNativeLayout, pByValueClassCache);
     }
 }
 
@@ -2209,11 +2239,21 @@ static SystemVClassificationType ReClassifyField(SystemVClassificationType origi
     }
 }
 
+static MethodTable* ByValueClassCacheLookup(MethodTable** pByValueClassCache, unsigned index)
+{
+    LIMITED_METHOD_CONTRACT;
+    if (pByValueClassCache == NULL)
+        return NULL;
+    else
+        return pByValueClassCache[index];
+}
+
 // Returns 'true' if the struct is passed in registers, 'false' otherwise.
 bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassingHelperPtr helperPtr,
                                                      unsigned int nestingLevel,
                                                      unsigned int startOffsetOfStruct,
-                                                     bool useNativeLayout)
+                                                     bool useNativeLayout,
+                                                     MethodTable** pByValueClassCache)
 {
     CONTRACTL
     {
@@ -2279,22 +2319,24 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
                                     || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
                                 && (pFieldStart->GetOffset() == 0)
                                 && HasLayout()
-                                && (GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+                                && (GetNumInstanceFieldBytes() % pFieldStart->GetSize(ByValueClassCacheLookup(pByValueClassCache, 0)) == 0);
 
     if (isFixedBuffer)
     {
-        numIntroducedFields = GetNumInstanceFieldBytes() / pFieldStart->GetSize();
+        numIntroducedFields = GetNumInstanceFieldBytes() / pFieldStart->GetSize(ByValueClassCacheLookup(pByValueClassCache, 0));
     }
 
     for (unsigned int fieldIndex = 0; fieldIndex < numIntroducedFields; fieldIndex++)
     {
         FieldDesc* pField;
         DWORD fieldOffset;
+        unsigned int fieldIndexForSize = fieldIndex;
 
         if (isFixedBuffer)
         {
             pField = pFieldStart;
-            fieldOffset = fieldIndex * pField->GetSize();
+            fieldIndexForSize = 0;
+            fieldOffset = fieldIndex * pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForSize));
         }
         else
         {
@@ -2304,7 +2346,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
         unsigned int normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
 
-        unsigned int fieldSize = pField->GetSize();
+        unsigned int fieldSize = pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForSize));
         _ASSERTE(fieldSize != (unsigned int)-1);
 
         // The field can't span past the end of the struct.
@@ -2323,7 +2365,11 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 #endif // _DEBUG
         if (fieldClassificationType == SystemVClassificationTypeStruct)
         {
-            TypeHandle th = pField->GetApproxFieldTypeHandleThrowing();
+            TypeHandle th;
+            if (pByValueClassCache != NULL)
+                th = TypeHandle(pByValueClassCache[fieldIndex]);
+            else
+                th = pField->GetApproxFieldTypeHandleThrowing();
             _ASSERTE(!th.IsNull());
             MethodTable* pFieldMT = th.GetMethodTable();
 
@@ -2339,7 +2385,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
             }
             else
             {
-                structRet = pFieldMT->ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel + 1, normalizedFieldOffset, useNativeLayout);
+                structRet = pFieldMT->ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel + 1, normalizedFieldOffset, useNativeLayout, NULL);
             }
 
             helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
@@ -2450,7 +2496,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
     if (!HasLayout())
     {
         // If there is no native layout for this struct use the managed layout instead.
-        return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, true);
+        return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, true, NULL);
     }
 
     const NativeFieldDescriptor *pNativeFieldDescs = pNativeLayoutInfo->GetNativeFieldDescriptors();
@@ -3531,7 +3577,8 @@ void MethodTable::AllocateRegularStaticBox(FieldDesc* pField, Object** boxedStat
         if (VolatileLoad(boxedStaticHandle) == nullptr)
         {
             LOG((LF_CLASSLOADER, LL_INFO10000, "\tInstantiating static of type %s\n", pFieldMT->GetDebugClassName()));
-            OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, NULL, false);
+            const bool canBeFrozen = !pFieldMT->ContainsPointers() && !Collectible();
+            OBJECTREF obj = AllocateStaticBox(pFieldMT, hasFixedAddr, NULL, canBeFrozen);
             SetObjectReference((OBJECTREF*)(boxedStaticHandle), obj);
         }
     }
@@ -5827,7 +5874,7 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
             MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMapFrom(dwParentInterfaces);
             while (!it.Finished())
             {
-                MethodTable *pCurMT = it.GetInterface(pMT);
+                MethodTable *pCurMT = it.GetInterface(pMT, level);
 
                 MethodDesc *pCurMD = NULL;
                 if (TryGetCandidateImplementation(pCurMT, pInterfaceMD, pInterfaceMT, allowVariance, &pCurMD, level))
@@ -8258,23 +8305,24 @@ MethodTable::ResolveVirtualStaticMethod(
                         }
                     }
                 }
+            }
 
-                BOOL haveUniqueDefaultImplementation = pMT->FindDefaultInterfaceImplementation(
-                    pInterfaceMD,
-                    pInterfaceType,
-                    &pMD,
-                    /* allowVariance */ allowVariantMatches,
-                    /* throwOnConflict */ uniqueResolution == nullptr,
-                    level);
-                if (haveUniqueDefaultImplementation || (pMD != nullptr && (verifyImplemented || uniqueResolution != nullptr)))
+            MethodDesc *pMDDefaultImpl = nullptr;
+            BOOL haveUniqueDefaultImplementation = FindDefaultInterfaceImplementation(
+                pInterfaceMD,
+                pInterfaceType,
+                &pMDDefaultImpl,
+                /* allowVariance */ allowVariantMatches,
+                /* throwOnConflict */ uniqueResolution == nullptr,
+                level);
+            if (haveUniqueDefaultImplementation || (pMDDefaultImpl != nullptr && (verifyImplemented || uniqueResolution != nullptr)))
+            {
+                // We tolerate conflicts upon verification of implemented SVMs so that they only blow up when actually called at execution time.
+                if (uniqueResolution != nullptr)
                 {
-                    // We tolerate conflicts upon verification of implemented SVMs so that they only blow up when actually called at execution time.
-                    if (uniqueResolution != nullptr)
-                    {
-                        *uniqueResolution = haveUniqueDefaultImplementation;
-                    }
-                    return pMD;
+                    *uniqueResolution = haveUniqueDefaultImplementation;
                 }
+                return pMDDefaultImpl;
             }
         }
 
@@ -8512,6 +8560,7 @@ MethodTable::TryResolveConstraintMethodApprox(
             &uniqueResolution);
         if (result == NULL || !uniqueResolution)
         {
+            _ASSERTE(pfForceUseRuntimeLookup != NULL);
             *pfForceUseRuntimeLookup = TRUE;
             result = NULL;
         }

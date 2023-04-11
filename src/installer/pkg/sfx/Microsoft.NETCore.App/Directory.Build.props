@@ -165,6 +165,7 @@
     <PlatformManifestFileEntry Include="API-MS-Win-core-xstate-l2-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="ucrtbase.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="msquic.dll" IsNative="true" FallbackFileVersion="$(MsQuicFileVersion)" />
+    <PlatformManifestFileEntry Include="libmsquic.dylib" IsNative="true" FallbackFileVersion="$(MsQuicFileVersion)" Condition="'$(Configuration)' == 'Debug' or '$(LibrariesConfiguration)' == 'Debug'"/>
     <PlatformManifestFileEntry Include="System.IO.Compression.Native.dll" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump.exe" IsNative="true" />
     <PlatformManifestFileEntry Include="createdump" IsNative="true" />
@@ -221,13 +222,13 @@
     <PlatformManifestFileEntry Include="libmono-profiler-browser.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-js.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libmono-wasm-eh-wasm.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="wasm-bundled-timezones.a" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.worker.js" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.js.symbols" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.d.ts" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet-legacy.d.ts" IsNative="true" />
     <PlatformManifestFileEntry Include="dotnet.wasm" IsNative="true" />
-    <PlatformManifestFileEntry Include="dotnet.timezones.blat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_no_CJK.dat" IsNative="true" />
     <PlatformManifestFileEntry Include="icudt_CJK.dat" IsNative="true" />
@@ -252,6 +253,12 @@
     <PlatformManifestFileEntry Include="emcc-props.json" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.WasmIntrinsics.xml" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.NoWasmIntrinsics.xml" IsNative="true" />
+    <PlatformManifestFileEntry Include="ILLink.Descriptors.LegacyJsInterop.xml" IsNative="true" />
+    <!-- wasi specific -->
+    <PlatformManifestFileEntry Include="main.c" IsNative="true" />
+    <PlatformManifestFileEntry Include="driver.h" IsNative="true" />
+    <PlatformManifestFileEntry Include="stubs.c" IsNative="true" />
+    <PlatformManifestFileEntry Include="synthetic-pthread.c" IsNative="true" />
     <!-- ICU-specific files -->
     <PlatformManifestFileEntry Include="libicudata.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libicui18n.a" IsNative="true" />

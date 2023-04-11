@@ -2102,15 +2102,8 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
 #endif // FEATURE_COMINTEROP
             {
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
-                // pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_NDIRECT_TARGET, 1, 1);
 
-#ifdef _DEBUG // There are five more pointer values for _DEBUG
-                _ASSERTE(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData) == sizeof(void*) * 8 + 8);
-                pcsEmit->EmitLDC(TARGET_POINTER_SIZE * 8 + 8); // offsetof(NDirectMethodDesc, ndirect.m_pWriteableData)
-#else // _DEBUG
-                _ASSERTE(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData) == sizeof(void*) * 3 + 8);
-                pcsEmit->EmitLDC(TARGET_POINTER_SIZE * 3 + 8); // offsetof(NDirectMethodDesc, ndirect.m_pWriteableData)
-#endif // _DEBUG
+                pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
                 pcsEmit->EmitADD();
 
                 pcsEmit->EmitLDIND_I();
@@ -4532,7 +4525,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
     // Retrieve the type
     //
     TypeHandle stubClassType;
-    stubClassType = TypeName::GetTypeUsingCASearchRules(typeName.GetUnicode(), pTargetMT->GetAssembly());
+    stubClassType = TypeName::GetTypeReferencedByCustomAttribute(typeName.GetUnicode(), pTargetMT->GetAssembly());
 
     MethodTable *pStubClassMT = stubClassType.AsMethodTable();
 
@@ -5282,6 +5275,14 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
     }
     CONTRACT_END;
 
+    LoaderAllocator* pLoaderAllocator = pMT->GetLoaderAllocator();
+
+    EEMarshalingData* pMarshallingData = pLoaderAllocator->GetMarshalingData();
+
+    MethodDesc* pCachedStubMD = pMarshallingData->LookupStructILStub(pMT);
+    if (pCachedStubMD != NULL)
+        RETURN pCachedStubMD;
+
     DWORD dwStubFlags = NDIRECTSTUB_FL_STRUCT_MARSHAL;
 
     BOOL bestFit, throwOnUnmappableChar;
@@ -5340,7 +5341,7 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
     sigBuilder.NewArg(&cleanupWorkList);
 
     DWORD cbMetaSigSize = sigBuilder.GetSigSize();
-    AllocMemHolder<BYTE> szMetaSig(pMT->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbMetaSigSize)));
+    AllocMemHolder<BYTE> szMetaSig(pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbMetaSigSize)));
     sigBuilder.GetSig(szMetaSig, cbMetaSigSize);
 
     StubSigDesc sigDesc(pMT, Signature(szMetaSig, cbMetaSigSize), pMT->GetModule());
@@ -5372,6 +5373,11 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
     {
         szMetaSig.SuppressRelease();
     }
+
+    // The CreateInteropILStub() handles only creating a single stub.
+    // The stub returned will be okay to return even if the call below loses
+    // the race to insert into the cache.
+    pMarshallingData->CacheStructILStub(pMT, pStubMD);
 
     RETURN pStubMD;
 }
@@ -5784,17 +5790,7 @@ void MarshalStructViaILStub(MethodDesc* pStubMD, void* pManagedData, void* pNati
     }
     CONTRACTL_END;
 
-    ARG_SLOT args[] =
-    {
-        PtrToArgSlot(pManagedData),
-        PtrToArgSlot(pNativeData),
-        (ARG_SLOT)operation,
-        PtrToArgSlot(ppCleanupWorkList)
-    };
-
-    MethodDescCallSite callSite(pStubMD);
-
-    callSite.Call(args);
+    MarshalStructViaILStubCode(pStubMD->GetSingleCallableAddrOfCode(), pManagedData, pNativeData, operation, ppCleanupWorkList);
 }
 
 void MarshalStructViaILStubCode(PCODE pStubCode, void* pManagedData, void* pNativeData, StructMarshalStubs::MarshalOperation operation, void** ppCleanupWorkList /* = nullptr */)

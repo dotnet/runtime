@@ -66,7 +66,8 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             // DEFAULT value handler for CertReq.
             {
-                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);
+                const int AsnBoolDerEncodeSize = 3;
+                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnBoolDerEncodeSize);
                 tmp.WriteBoolean(CertReq);
 
                 if (!tmp.EncodedValueEquals(DefaultCertReq))

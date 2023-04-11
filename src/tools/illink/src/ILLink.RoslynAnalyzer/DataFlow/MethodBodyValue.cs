@@ -30,5 +30,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			Debug.Assert (ControlFlowGraph == other.ControlFlowGraph);
 			return true;
 		}
+
+		public override bool Equals (object obj)
+			=> obj is MethodBodyValue inst && Equals (inst);
+
+		public override int GetHashCode () => SymbolEqualityComparer.Default.GetHashCode (Method);
 	}
 }

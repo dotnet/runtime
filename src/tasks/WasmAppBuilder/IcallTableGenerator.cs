@@ -34,7 +34,7 @@ internal sealed class IcallTableGenerator
     // The runtime icall table should be generated using
     // mono --print-icall-table
     //
-    public IEnumerable<string> Generate(string? runtimeIcallTableFile, string[] assemblies, string? outputPath)
+    public IEnumerable<string> Generate(string? runtimeIcallTableFile, IEnumerable<string> assemblies, string? outputPath)
     {
         _icalls.Clear();
         _signatures.Clear();
@@ -44,9 +44,13 @@ internal sealed class IcallTableGenerator
 
         var resolver = new PathAssemblyResolver(assemblies);
         using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
-        foreach (var aname in assemblies)
+        foreach (var asmPath in assemblies)
         {
-            var a = mlc.LoadFromAssemblyPath(aname);
+            if (!File.Exists(asmPath))
+                throw new LogAsErrorException($"Cannot find assembly {asmPath}");
+
+            Log.LogMessage(MessageImportance.Low, $"Loading {asmPath} to scan for icalls");
+            var a = mlc.LoadFromAssemblyPath(asmPath);
             foreach (var type in a.GetTypes())
                 ProcessType(type);
         }
@@ -173,12 +177,13 @@ internal sealed class IcallTableGenerator
             if (icall == null)
             {
                 string? methodSig = BuildSignature(method, className);
-                if (methodSig != null && icallClass.Icalls.ContainsKey(methodSig))
-                    icall = icallClass.Icalls[methodSig];
+                if (methodSig != null)
+                    icallClass.Icalls.TryGetValue(methodSig, out icall);
+
+                if (icall == null)
+                    // Registered at runtime
+                    continue;
             }
-            if (icall == null)
-                // Registered at runtime
-                continue;
 
             icall.Method = method;
             icall.TokenIndex = (int)method.MetadataToken & 0xffffff;

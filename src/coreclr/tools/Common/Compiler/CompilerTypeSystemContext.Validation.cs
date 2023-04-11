@@ -149,8 +149,7 @@ namespace ILCompiler
                     if (typeArg.IsByRef
                         || typeArg.IsPointer
                         || typeArg.IsFunctionPointer
-                        || typeArg.IsVoid
-                        || typeArg.IsByRefLike)
+                        || typeArg.IsVoid)
                     {
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
                     }

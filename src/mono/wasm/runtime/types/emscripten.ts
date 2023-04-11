@@ -26,6 +26,7 @@ export declare interface EmscriptenModule {
     HEAP8: Int8Array,
     HEAP16: Int16Array;
     HEAP32: Int32Array;
+    HEAP64: BigInt64Array;
     HEAPU8: Uint8Array;
     HEAPU16: Uint16Array;
     HEAPU32: Uint32Array;
@@ -37,8 +38,8 @@ export declare interface EmscriptenModule {
     _free(ptr: VoidPtr): void;
 
     // this should match emcc -s EXPORTED_RUNTIME_METHODS
-    print(message: string): void;
-    printErr(message: string): void;
+    out(message: string): void;
+    err(message: string): void;
     ccall<T>(ident: string, returnType?: string | null, argTypes?: string[], args?: any[], opts?: any): T;
     cwrap<T extends Function>(ident: string, returnType: string, argTypes?: string[], opts?: any): T;
     cwrap<T extends Function>(ident: string, ...args: any[]): T;
@@ -49,17 +50,12 @@ export declare interface EmscriptenModule {
     UTF8ArrayToString(u8Array: Uint8Array, idx?: number, maxBytesToRead?: number): string;
     FS_createPath(parent: string, path: string, canRead?: boolean, canWrite?: boolean): string;
     FS_createDataFile(parent: string, name: string, data: TypedArray, canRead: boolean, canWrite: boolean, canOwn?: boolean): string;
-    FS_readFile(filename: string, opts: any): any;
-    removeRunDependency(id: string): void;
-    addRunDependency(id: string): void;
     addFunction(fn: Function, signature: string): number;
-    getWasmTableEntry(index: number): any;
     stackSave(): VoidPtr;
     stackRestore(stack: VoidPtr): void;
     stackAlloc(size: number): VoidPtr;
 
 
-    ready: Promise<unknown>;
     instantiateWasm?: InstantiateWasmCallBack;
     preInit?: (() => any)[] | (() => any);
     preRun?: (() => any)[] | (() => any);
@@ -68,7 +64,21 @@ export declare interface EmscriptenModule {
     onAbort?: { (error: any): void };
 }
 
-export type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module) => void;
+export declare interface EmscriptenModuleInternal {
+    __locateFile?: (path: string, prefix?: string) => string;
+    locateFile?: (path: string, prefix?: string) => string;
+    mainScriptUrlOrBlob?: string;
+    wasmModule: WebAssembly.Instance | null;
+    ready: Promise<unknown>;
+    asm: { memory?: WebAssembly.Memory };
+    wasmMemory?: WebAssembly.Memory;
+    getWasmTableEntry(index: number): any;
+    removeRunDependency(id: string): void;
+    addRunDependency(id: string): void;
+}
+
+
+export type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => void;
 export type InstantiateWasmCallBack = (imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any;
 
 export declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;

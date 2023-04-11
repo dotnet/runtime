@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Sdk;
@@ -240,6 +241,30 @@ namespace System
             else
             {
                 action();
+            }
+        }
+
+        public static void Canceled(CancellationToken cancellationToken, Action testCode)
+        {
+            OperationCanceledException oce = Assert.ThrowsAny<OperationCanceledException>(testCode);
+            if (cancellationToken.CanBeCanceled)
+            {
+                Assert.Equal(cancellationToken, oce.CancellationToken);
+            }
+        }
+
+        public static Task CanceledAsync(CancellationToken cancellationToken, Task task)
+        {
+            Assert.NotNull(task);
+            return CanceledAsync(cancellationToken, () => task);
+        }
+
+        public static async Task CanceledAsync(CancellationToken cancellationToken, Func<Task> testCode)
+        {
+            OperationCanceledException oce = await Assert.ThrowsAnyAsync<OperationCanceledException>(testCode);
+            if (cancellationToken.CanBeCanceled)
+            {
+                Assert.Equal(cancellationToken, oce.CancellationToken);
             }
         }
 

@@ -15,10 +15,15 @@ namespace Internal.TypeSystem
         Windows,
         Linux,
         OSX,
+        MacCatalyst,
+        iOS,
+        iOSSimulator,
+        tvOS,
+        tvOSSimulator,
         FreeBSD,
         NetBSD,
         SunOS,
-        WebAssembly,
+        WebAssembly
     }
 
     public enum TargetAbi
@@ -303,13 +308,19 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Returns True if compiling for OSX
+        /// Returns True if compiling for OSX family of operating systems.
+        /// Currently including OSX, MacCatalyst, iOS, iOSSimulator, tvOS and tvOSSimulator
         /// </summary>
-        public bool IsOSX
+        public bool IsOSXLike
         {
             get
             {
-                return OperatingSystem == TargetOS.OSX;
+                return OperatingSystem == TargetOS.OSX ||
+                    OperatingSystem == TargetOS.MacCatalyst ||
+                    OperatingSystem == TargetOS.iOS ||
+                    OperatingSystem == TargetOS.iOSSimulator ||
+                    OperatingSystem == TargetOS.tvOS ||
+                    OperatingSystem == TargetOS.tvOSSimulator;
             }
         }
 

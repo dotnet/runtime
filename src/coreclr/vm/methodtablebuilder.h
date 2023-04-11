@@ -73,22 +73,7 @@ public:
           m_pAllocMemTracker(pAllocMemTracker)
     {
         LIMITED_METHOD_CONTRACT;
-        SetBMTData(
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL,
-            NULL);
+        SetBMTData();
     }
 public:
     //==========================================================================
@@ -233,7 +218,6 @@ private:
     // we create the EEClass object, and thus set the flags immediately at the point
     // we create that object.</NICE>
     void SetUnsafeValueClass() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetUnsafeValueClass(); }
-    void SetCannotBeBlittedByObjectCloner() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetCannotBeBlittedByObjectCloner(); }
     void SetHasFieldsWhichMustBeInited() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasFieldsWhichMustBeInited(); }
     void SetHasNonPublicFields() { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetHasNonPublicFields(); }
     void SetModuleDynamicID(DWORD x) { WRAPPER_NO_CONTRACT; GetHalfBakedClass()->SetModuleDynamicID(x); }
@@ -2026,7 +2010,9 @@ private:
         DWORD NumInstanceGCPointerFields;   // does not include inherited pointer fields
         DWORD NumGCPointerSeries;
         DWORD NumInstanceFieldBytes;
+        DWORD NumInlineArrayElements;
 
+        bool  fIsAllGCPointers;
         bool  fIsByRefLikeType;
         bool  fHasFixedAddressValueTypes;
         bool  fHasSelfReferencingStaticValueTypeField_WithRVA;
@@ -2226,21 +2212,21 @@ private:
     bmtEnumFieldInfo *bmtEnumFields;
 
     void SetBMTData(
-        LoaderAllocator *bmtAllocator,
-        bmtErrorInfo *bmtError,
-        bmtProperties *bmtProp,
-        bmtVtable *bmtVT,
-        bmtParentInfo *bmtParent,
-        bmtInterfaceInfo *bmtInterface,
-        bmtMetaDataInfo *bmtMetaData,
-        bmtMethodInfo *bmtMethod,
-        bmtMethAndFieldDescs *bmtMFDescs,
-        bmtFieldPlacement *bmtFP,
-        bmtInternalInfo *bmtInternal,
-        bmtGCSeriesInfo *bmtGCSeries,
-        bmtMethodImplInfo *bmtMethodImpl,
-        const bmtGenericsInfo *bmtGenerics,
-        bmtEnumFieldInfo *bmtEnumFields);
+        LoaderAllocator *bmtAllocator = NULL,
+        bmtErrorInfo *bmtError = NULL,
+        bmtProperties *bmtProp = NULL,
+        bmtVtable *bmtVT = NULL,
+        bmtParentInfo *bmtParent = NULL,
+        bmtInterfaceInfo *bmtInterface = NULL,
+        bmtMetaDataInfo *bmtMetaData = NULL,
+        bmtMethodInfo *bmtMethod = NULL,
+        bmtMethAndFieldDescs *bmtMFDescs = NULL,
+        bmtFieldPlacement *bmtFP = NULL,
+        bmtInternalInfo *bmtInternal = NULL,
+        bmtGCSeriesInfo *bmtGCSeries = NULL,
+        bmtMethodImplInfo *bmtMethodImpl = NULL,
+        const bmtGenericsInfo *bmtGenerics = NULL,
+        bmtEnumFieldInfo *bmtEnumFields = NULL);
 
     // --------------------------------------------------------------------------------------------
     // Returns the parent bmtRTType pointer. Can be null if no parent exists.
@@ -2939,7 +2925,7 @@ private:
 
 #ifdef UNIX_AMD64_ABI
     // checks whether the struct is enregisterable.
-    void SystemVAmd64CheckForPassStructInRegister();
+    void SystemVAmd64CheckForPassStructInRegister(MethodTable** pByValueClassCache);
     // Store the eightbyte classification into the EEClass
     void StoreEightByteClassification(SystemVStructRegisterPassingHelper* helper);
 

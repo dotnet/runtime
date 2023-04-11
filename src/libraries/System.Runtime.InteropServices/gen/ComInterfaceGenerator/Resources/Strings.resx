@@ -207,4 +207,34 @@
   <data name="InterfaceTypeNotSupportedMessage" xml:space="preserve">
     <value>Using 'GeneratedComInterfaceAttribute' and 'InterfaceTypeAttribute' is not supported with 'ComInterfaceType' value '{0}'.</value>
   </data>
+  <data name="InvalidAttributedMethodContainingTypeMissingUnmanagedObjectUnwrapperAttributeMessage" xml:space="preserve">
+    <value>Containing type of method with VirtualMethodIndexAttribute does not have a UnmanagedObjectUnwrapperAttribute. </value>
+  </data>
+  <data name="MethodNotDeclaredInAttributedInterfaceDescription" xml:space="preserve">
+    <value>All methods must be declared in the same partial definition of a 'GeneratedComInterface'-attributed interface type to ensure reliable calculation for virtual method table offsets.</value>
+  </data>
+  <data name="MethodNotDeclaredInAttributedInterfaceMessage" xml:space="preserve">
+    <value>The method '{0}' is declared on a different partial definition of the interface '{1}' than the definition that has the 'GeneratedComInterface' attribute</value>
+  </data>
+  <data name="MethodNotDeclaredInAttributedInterfaceTitle" xml:space="preserve">
+    <value>Method is declared in different partial declaration than the 'GeneratedComInterface' attribute.</value>
+  </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageDescription" xml:space="preserve">
+    <value>Interfaces attributed with 'GeneratedComInterfaceAttribute' must be partial and must specify a GUID with 'System.Runtime.InteropServices.GuidAttribute'.</value>
+  </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageMissingGuidAttribute" xml:space="preserve">
+    <value>Interface '{0}' is attributed with 'GeneratedComInterfaceAttribute' but is missing 'System.Runtime.InteropServices.GuidAttribute'.</value>
+  </data>
+  <data name="InvalidGeneratedComInterfaceAttributeUsageTitle" xml:space="preserve">
+    <value>Invalid 'GeneratedComInterfaceAttribute' usage.</value>
+  </data>
+  <data name="MultipleComInterfaceBaseTypesDescription" xml:space="preserve">
+    <value>A 'GeneratedComInterfaceAttribute'-attributed interface can only derive from at most one other 'GeneratedComInterfaceAttribute'-attributed interface.</value>
+  </data>
+  <data name="MultipleComInterfaceBaseTypesMessage" xml:space="preserve">
+    <value>Interface '{0}' is derived from two or more interfaces attributed with 'GeneratedComInterfaceAttribute'.</value>
+  </data>
+  <data name="MultipleComInterfaceBaseTypesTitle" xml:space="preserve">
+    <value>Specified interface derives from two or more 'GeneratedComInterfaceAttribute'-attributed interfaces.</value>
+  </data>
 </root>

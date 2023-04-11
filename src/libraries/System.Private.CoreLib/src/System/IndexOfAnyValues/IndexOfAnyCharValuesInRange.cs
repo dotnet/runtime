@@ -9,7 +9,8 @@ namespace System.Buffers
     internal sealed class IndexOfAnyCharValuesInRange<TShouldUsePacked> : IndexOfAnyValues<char>
         where TShouldUsePacked : struct, IndexOfAnyValues.IRuntimeConst
     {
-        private char _lowInclusive, _rangeInclusive, _highInclusive;
+        private readonly char _rangeInclusive;
+        private char _lowInclusive, _highInclusive;
         private readonly uint _lowUint, _highMinusLow;
 
         public IndexOfAnyCharValuesInRange(char lowInclusive, char highInclusive)

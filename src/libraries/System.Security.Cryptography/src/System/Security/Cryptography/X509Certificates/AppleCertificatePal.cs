@@ -100,8 +100,6 @@ namespace System.Security.Cryptography.X509Certificates
 
             _certHandle = null!;
             _identityHandle = null;
-
-            DisposeTempKeychain();
         }
 
         internal SafeSecCertificateHandle CertificateHandle => _certHandle;

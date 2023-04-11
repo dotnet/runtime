@@ -2,11 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern legacy library mscorlib {}
+.assembly extern xunit.core {}
 
 .assembly 'jmp'{
 }
 
+.class public auto ansi _jmp {
 .method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .locals	()
 .maxstack	2
@@ -14,6 +19,7 @@
 	newarr		[mscorlib]System.String
 	call		int32 _jmp::jmpTest1(class [mscorlib]System.String[])
 	ret
+}
 }
 
 

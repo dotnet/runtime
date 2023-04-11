@@ -25,8 +25,7 @@ GTNODE(LCL_VAR          , GenTreeLclVar      ,0,GTK_LEAF)             // local v
 GTNODE(LCL_FLD          , GenTreeLclFld      ,0,GTK_LEAF)             // field in a non-primitive variable
 GTNODE(STORE_LCL_VAR    , GenTreeLclVar      ,0,GTK_UNOP|GTK_NOVALUE) // store to local variable
 GTNODE(STORE_LCL_FLD    , GenTreeLclFld      ,0,GTK_UNOP|GTK_NOVALUE) // store to a part of the variable
-GTNODE(LCL_VAR_ADDR     , GenTreeLclVar      ,0,GTK_LEAF)             // address of local variable
-GTNODE(LCL_FLD_ADDR     , GenTreeLclFld      ,0,GTK_LEAF)             // address of field in a non-primitive variable
+GTNODE(LCL_ADDR         , GenTreeLclFld      ,0,GTK_LEAF)             // local address
 
 //-----------------------------------------------------------------------------
 //  Leaf nodes (i.e. these nodes have no sub-operands):
@@ -77,16 +76,13 @@ GTNODE(BITCAST          , GenTreeOp          ,0,GTK_UNOP)               // reint
 GTNODE(CKFINITE         , GenTreeOp          ,0,GTK_UNOP|DBK_NOCONTAIN) // Check for NaN
 GTNODE(LCLHEAP          , GenTreeOp          ,0,GTK_UNOP|DBK_NOCONTAIN) // alloca()
 
-GTNODE(ADDR             , GenTreeOp          ,0,GTK_UNOP|DBK_NOTLIR)    // address of
-
 GTNODE(BOUNDS_CHECK     , GenTreeBoundsChk   ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // a bounds check - for arrays/spans/SIMDs/HWINTRINSICs
 
 GTNODE(IND              , GenTreeIndir       ,0,GTK_UNOP)                       // Load indirection
 GTNODE(STOREIND         , GenTreeStoreInd    ,0,GTK_BINOP|GTK_NOVALUE)          // Store indirection
-GTNODE(OBJ              , GenTreeObj         ,0,GTK_UNOP|GTK_EXOP)              // Object that MAY have gc pointers, and thus includes the relevant gc layout info.
-GTNODE(STORE_OBJ        , GenTreeObj         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // Object that MAY have gc pointers, and thus includes the relevant gc layout info.
-GTNODE(BLK              , GenTreeBlk         ,0,GTK_UNOP|GTK_EXOP)              // Block/object with no gc pointers, and with a known size (e.g. a struct with no gc fields)
-GTNODE(STORE_BLK        , GenTreeBlk         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // Block/object with no gc pointers, and with a known size (e.g. a struct with no gc fields)
+GTNODE(STORE_OBJ        , GenTreeBlk         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // Store for struct objects with GC pointers
+GTNODE(BLK              , GenTreeBlk         ,0,GTK_UNOP|GTK_EXOP)              // Block/struct object
+GTNODE(STORE_BLK        , GenTreeBlk         ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // Block/struct object store
 GTNODE(STORE_DYN_BLK    , GenTreeStoreDynBlk ,0,GTK_SPECIAL|GTK_NOVALUE)        // Dynamically sized block store, with native uint size
 GTNODE(NULLCHECK        , GenTreeIndir       ,0,GTK_UNOP|GTK_NOVALUE)           // Null checks the source
 
@@ -137,15 +133,15 @@ GTNODE(LE               , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(GE               , GenTreeOp          ,0,GTK_BINOP)
 GTNODE(GT               , GenTreeOp          ,0,GTK_BINOP)
 
-// These are similar to GT_EQ/GT_NE but they generate "test" instead of "cmp" instructions.
-// Currently these are generated during lowering for code like ((x & y) eq|ne 0) only on
-// XArch but ARM could too use these for the same purpose as there is a "tst" instruction.
-// Note that the general case of comparing a register against 0 is handled directly by
-// codegen which emits a "test reg, reg" instruction, that would be more difficult to do
-// during lowering because the source operand is used twice so it has to be a lclvar.
-// Because of this there is no need to also add GT_TEST_LT/LE/GE/GT opers.
+// These implement EQ/NE(AND(x, y), 0). They always produce a value (GT_TEST is the version that does not).
 GTNODE(TEST_EQ          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(TEST_NE          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
+
+#ifdef TARGET_XARCH
+// BITTEST_EQ/NE(a, n) == EQ/NE(AND(a, LSH(1, n)), 0), but only used in xarch that has the BT instruction
+GTNODE(BITTEST_EQ       , GenTreeOp          ,0,(GTK_BINOP|DBK_NOTHIR))
+GTNODE(BITTEST_NE       , GenTreeOp          ,0,(GTK_BINOP|DBK_NOTHIR))
+#endif
 
 // Conditional select with 3 operands: condition, true value, false value
 GTNODE(SELECT           , GenTreeConditional ,0,GTK_SPECIAL)
@@ -185,8 +181,6 @@ GTNODE(SUB_HI           , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(LSH_HI           , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 GTNODE(RSH_LO           , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 
-// Variant of SELECT that reuses flags computed by a previous SELECT.
-GTNODE(SELECT_HI        , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 #endif // !defined(TARGET_64BIT)
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -232,16 +226,27 @@ GTNODE(CNEG_LT          , GenTreeOp          ,0,GTK_UNOP|DBK_NOTHIR)  // Conditi
 
 // Sets the condition flags according to the compare result. N.B. Not a relop, it does not produce a value and it cannot be reversed.
 GTNODE(CMP              , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+// Generate a test instruction; sets the CPU flags according to (a & b) and does not produce a value.
+GTNODE(TEST             , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
+#ifdef TARGET_XARCH
+// The XARCH BT instruction. Like CMP, this sets the condition flags (CF to be precise) and does not produce a value.
+GTNODE(BT               , GenTreeOp          ,0,(GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR))
+#endif
 // Makes a comparison and jump if the condition specified.  Does not set flags.
 GTNODE(JCMP             , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
 // Checks the condition flags and branch if the condition specified by GenTreeCC::gtCondition is true.
 GTNODE(JCC              , GenTreeCC          ,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)
 // Checks the condition flags and produces 1 if the condition specified by GenTreeCC::gtCondition is true and 0 otherwise.
 GTNODE(SETCC            , GenTreeCC          ,0,GTK_LEAF|DBK_NOTHIR)
-#ifdef TARGET_XARCH
-// The XARCH BT instruction. Like CMP, this sets the condition flags (CF to be precise) and does not produce a value.
-GTNODE(BT               , GenTreeOp          ,0,(GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR))
+// Variant of SELECT that reuses flags computed by a previous node with the specified condition.
+GTNODE(SELECTCC         , GenTreeOpCC        ,0,GTK_BINOP|DBK_NOTHIR)
+#ifdef TARGET_ARM64
+// The arm64 ccmp instruction. If the specified condition is true, compares two
+// operands and sets the condition flags according to the result. Otherwise
+// sets the condition flags to the specified immediate value.
+GTNODE(CCMP             , GenTreeCCMP        ,0,GTK_BINOP|GTK_NOVALUE|DBK_NOTHIR)
 #endif
+
 
 //-----------------------------------------------------------------------------
 //  Other nodes that look like unary/binary operators:

@@ -428,14 +428,7 @@ namespace System
 
             public string[] GetTimeZoneIds()
             {
-                int numTimeZoneIDs = 0;
-                for (int i = 0; i < _ids.Length; i++)
-                {
-                    if (!_isBackwards[i])
-                    {
-                        numTimeZoneIDs++;
-                    }
-                }
+                int numTimeZoneIDs = _isBackwards.AsSpan(0, _ids.Length).Count(false);
                 string[] nonBackwardsTZIDs = new string[numTimeZoneIDs];
                 var index = 0;
                 for (int i = 0; i < _ids.Length; i++)

@@ -9,9 +9,9 @@ namespace System.Text.Json
     /// </summary>
     internal sealed class Arguments<TArg0, TArg1, TArg2, TArg3>
     {
-        public TArg0 Arg0 = default!;
-        public TArg1 Arg1 = default!;
-        public TArg2 Arg2 = default!;
-        public TArg3 Arg3 = default!;
+        public TArg0? Arg0;
+        public TArg1? Arg1;
+        public TArg2? Arg2;
+        public TArg3? Arg3;
     }
 }

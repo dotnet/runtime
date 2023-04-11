@@ -13,16 +13,16 @@ namespace System.Reflection
     internal sealed unsafe class RuntimePropertyInfo : PropertyInfo
     {
         #region Private Data Members
-        private int m_token;
+        private readonly int m_token;
         private string? m_name;
-        private void* m_utf8name;
-        private PropertyAttributes m_flags;
-        private RuntimeTypeCache m_reflectedTypeCache;
-        private RuntimeMethodInfo? m_getterMethod;
-        private RuntimeMethodInfo? m_setterMethod;
-        private MethodInfo[]? m_otherMethod;
-        private RuntimeType m_declaringType;
-        private BindingFlags m_bindingFlags;
+        private readonly void* m_utf8name;
+        private readonly PropertyAttributes m_flags;
+        private readonly RuntimeTypeCache m_reflectedTypeCache;
+        private readonly RuntimeMethodInfo? m_getterMethod;
+        private readonly RuntimeMethodInfo? m_setterMethod;
+        private readonly MethodInfo[]? m_otherMethod;
+        private readonly RuntimeType m_declaringType;
+        private readonly BindingFlags m_bindingFlags;
         private Signature? m_signature;
         private ParameterInfo[]? m_parameters;
         #endregion
@@ -79,7 +79,7 @@ namespace System.Reflection
         {
             // @Asymmetry - Legacy policy is to remove duplicate properties, including hidden properties.
             //             The comparison is done by name and by sig. The EqualsSig comparison is expensive
-            //             but forutnetly it is only called when an inherited property is hidden by name or
+            //             but fortunately it is only called when an inherited property is hidden by name or
             //             when an interfaces declare properies with the same signature.
             //             Note that we intentionally don't resolve generic arguments so that we don't treat
             //             signatures that only match in certain instantiations as duplicates. This has the
@@ -204,6 +204,8 @@ namespace System.Reflection
         {
             return Signature.GetCustomModifiers(0, false);
         }
+
+        public override Type GetModifiedPropertyType() => ModifiedType.Create(PropertyType, Signature);
 
         internal object GetConstantValue(bool raw)
         {

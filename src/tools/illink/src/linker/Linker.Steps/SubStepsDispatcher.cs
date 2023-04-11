@@ -20,7 +20,7 @@ namespace Mono.Linker.Steps
 	}
 
 	//
-	// Generic steps dispatcher is intended to by used by custom linker step which
+	// Generic steps dispatcher is intended to by used by custom ILLink step which
 	// consist of multiple steps. It simplifies their implementation as well as the
 	// way how to hook them into the pipeline of existing steps.
 	//

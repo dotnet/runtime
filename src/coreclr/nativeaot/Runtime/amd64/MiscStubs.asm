@@ -3,149 +3,7 @@
 
 include AsmMacros.inc
 
-EXTERN memcpy                       : PROC
-EXTERN memcpyGCRefs                 : PROC
-EXTERN memcpyGCRefsWithWriteBarrier : PROC
-EXTERN memcpyAnyWithWriteBarrier    : PROC
 EXTERN RhpGetThreadStaticBaseForTypeSlow : PROC
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; void* RhpCopyMultibyteNoGCRefs(void*, void*, size_t)
-;;
-;; The purpose of this wrapper is to hoist the potential null reference exceptions of copying memory up to a place where
-;; the stack unwinder and exception dispatch can properly transform the exception into a managed exception and dispatch
-;; it to managed code.
-;;
-LEAF_ENTRY RhpCopyMultibyteNoGCRefs, _TEXT
-
-        ; rcx       dest
-        ; rdx       src
-        ; r8        count
-
-        test        r8, r8              ; check for a zero-length copy
-        jz          NothingToCopy
-
-        ; Now check the dest and src pointers.  If they AV, the EH subsystem will recognize the address of the AV,
-        ; unwind the frame, and fixup the stack to make it look like the (managed) caller AV'ed, which will be
-        ; translated to a managed exception as usual.
-ALTERNATE_ENTRY RhpCopyMultibyteNoGCRefsDestAVLocation
-        cmp         byte ptr [rcx], 0
-ALTERNATE_ENTRY RhpCopyMultibyteNoGCRefsSrcAVLocation
-        cmp         byte ptr [rdx], 0
-
-        ; tail-call to plain-old-memcpy
-        jmp         memcpy
-
-NothingToCopy:
-        mov         rax, rcx            ; return dest
-        ret
-
-LEAF_END RhpCopyMultibyteNoGCRefs, _TEXT
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; void* RhpCopyMultibyte(void*, void*, size_t)
-;;
-;; The purpose of this wrapper is to hoist the potential null reference exceptions of copying memory up to a place where
-;; the stack unwinder and exception dispatch can properly transform the exception into a managed exception and dispatch
-;; it to managed code.
-;;
-LEAF_ENTRY RhpCopyMultibyte, _TEXT
-
-        ; rcx       dest
-        ; rdx       src
-        ; r8        count
-
-        test        r8, r8              ; check for a zero-length copy
-        jz          NothingToCopy
-
-        ; Now check the dest and src pointers.  If they AV, the EH subsystem will recognize the address of the AV,
-        ; unwind the frame, and fixup the stack to make it look like the (managed) caller AV'ed, which will be
-        ; translated to a managed exception as usual.
-ALTERNATE_ENTRY RhpCopyMultibyteDestAVLocation
-        cmp         byte ptr [rcx], 0
-ALTERNATE_ENTRY RhpCopyMultibyteSrcAVLocation
-        cmp         byte ptr [rdx], 0
-
-        ; tail-call to the GC-safe memcpy implementation
-        jmp         memcpyGCRefs
-
-NothingToCopy:
-        mov         rax, rcx            ; return dest
-        ret
-
-LEAF_END RhpCopyMultibyte, _TEXT
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; void* RhpCopyMultibyteWithWriteBarrier(void*, void*, size_t)
-;;
-;; The purpose of this wrapper is to hoist the potential null reference exceptions of copying memory up to a place where
-;; the stack unwinder and exception dispatch can properly transform the exception into a managed exception and dispatch
-;; it to managed code.
-;; Runs a card table update via RhpBulkWriteBarrier after the copy
-;;
-LEAF_ENTRY RhpCopyMultibyteWithWriteBarrier, _TEXT
-
-        ; rcx       dest
-        ; rdx       src
-        ; r8        count
-
-        test        r8, r8              ; check for a zero-length copy
-        jz          NothingToCopy
-
-        ; Now check the dest and src pointers.  If they AV, the EH subsystem will recognize the address of the AV,
-        ; unwind the frame, and fixup the stack to make it look like the (managed) caller AV'ed, which will be
-        ; translated to a managed exception as usual.
-ALTERNATE_ENTRY RhpCopyMultibyteWithWriteBarrierDestAVLocation
-        cmp         byte ptr [rcx], 0
-ALTERNATE_ENTRY RhpCopyMultibyteWithWriteBarrierSrcAVLocation
-        cmp         byte ptr [rdx], 0
-
-        ; tail-call to the GC-safe memcpy implementation
-        jmp         memcpyGCRefsWithWriteBarrier
-
-NothingToCopy:
-        mov         rax, rcx            ; return dest
-        ret
-
-LEAF_END RhpCopyMultibyteWithWriteBarrier, _TEXT
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; void* RhpCopyAnyWithWriteBarrier(void*, void*, size_t)
-;;
-;; The purpose of this wrapper is to hoist the potential null reference exceptions of copying memory up to a place where
-;; the stack unwinder and exception dispatch can properly transform the exception into a managed exception and dispatch
-;; it to managed code.
-;; Runs a card table update via RhpBulkWriteBarrier after the copy if the copy may contain GC pointers
-;;
-LEAF_ENTRY RhpCopyAnyWithWriteBarrier, _TEXT
-
-        ; rcx       dest
-        ; rdx       src
-        ; r8        count
-
-        test        r8, r8              ; check for a zero-length copy
-        jz          NothingToCopy
-
-        ; Now check the dest and src pointers.  If they AV, the EH subsystem will recognize the address of the AV,
-        ; unwind the frame, and fixup the stack to make it look like the (managed) caller AV'ed, which will be
-        ; translated to a managed exception as usual.
-ALTERNATE_ENTRY RhpCopyAnyWithWriteBarrierDestAVLocation
-        cmp         byte ptr [rcx], 0
-ALTERNATE_ENTRY RhpCopyAnyWithWriteBarrierSrcAVLocation
-        cmp         byte ptr [rdx], 0
-
-        ; tail-call to the GC-safe memcpy implementation
-        jmp         memcpyAnyWithWriteBarrier
-
-NothingToCopy:
-        mov         rax, rcx            ; return dest
-        ret
-
-LEAF_END RhpCopyAnyWithWriteBarrier, _TEXT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; The following helper will access ("probe") a word on each page of the stack
@@ -192,28 +50,29 @@ LEAF_ENTRY RhpGetThreadStaticBaseForType, _TEXT
         INLINE_GETTHREAD rax, r8
 
         mov     r8d, [rcx + 8]         ; Get ModuleIndex out of the TypeManagerSlot
-        cmp     r8d, [rax + OFFSETOF__Thread__m_numThreadLocalModuleStatics]
-        jae     RhpGetThreadStaticBaseForType_RarePath
 
-        mov     r9, [rax + OFFSETOF__Thread__m_pThreadLocalModuleStatics]
-        mov     rax, [r9 + r8 * 8]     ; Index into the array of modules
+        ;; get per-thread storage
+        mov     rax, [rax + OFFSETOF__Thread__m_pThreadLocalModuleStatics]
+
+        ;; get per-module storage
         test    rax, rax
-        jz      RhpGetThreadStaticBaseForType_RarePath
+        jz      RhpGetThreadStaticBaseForTypeSlow
+        cmp     r8d, [rax + OFFSETOF__Array__m_Length]
+        jae     RhpGetThreadStaticBaseForTypeSlow
+        mov     rax, [rax + r8 * 8 + 10h]
 
-        mov     r8, [rax]              ; Get the managed array from the handle
-        cmp     edx, [r8 + OFFSETOF__Array__m_Length]
-        jae     RhpGetThreadStaticBaseForType_RarePath
-        mov     rax, [r8 + rdx * 8 + 10h]
-
+        ;; get the actual per-type storage
         test    rax, rax
-        jz      RhpGetThreadStaticBaseForType_RarePath
+        jz      RhpGetThreadStaticBaseForTypeSlow
+        cmp     edx, [rax + OFFSETOF__Array__m_Length]
+        jae     RhpGetThreadStaticBaseForTypeSlow
+        mov     rax, [rax + rdx * 8 + 10h]
+
+        ;; if have storage, return it
+        test    rax, rax
+        jz      RhpGetThreadStaticBaseForTypeSlow
 
         ret
-
-RhpGetThreadStaticBaseForType_RarePath:
-        ;; We kept the arguments in their appropriate registers
-        ;; and we can tailcall right away.
-        jmp     RhpGetThreadStaticBaseForTypeSlow
 
 LEAF_END RhpGetThreadStaticBaseForType, _TEXT
 

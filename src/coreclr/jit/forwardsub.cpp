@@ -675,10 +675,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Next statement seems suitable.
     // See if we can forward sub without changing semantics.
     //
-    // Bail if types disagree.
-    // Might be able to tolerate these by retyping.
-    //
-    if (fsv.GetNode()->TypeGet() != fwdSubNode->TypeGet())
+    if (genActualType(fsv.GetNode()) != genActualType(fwdSubNode))
     {
         JITDUMP(" mismatched types (substitution)\n");
         return false;
@@ -746,7 +743,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Don't substitute nodes args morphing doesn't handle into struct args.
     //
     if (fsv.IsCallArg() && fsv.GetNode()->TypeIs(TYP_STRUCT) &&
-        !fwdSubNode->OperIs(GT_OBJ, GT_FIELD, GT_LCL_VAR, GT_LCL_FLD, GT_MKREFANY))
+        !fwdSubNode->OperIs(GT_BLK, GT_FIELD, GT_LCL_VAR, GT_LCL_FLD, GT_MKREFANY))
     {
         JITDUMP(" use is a struct arg; fwd sub node is not OBJ/LCL_VAR/LCL_FLD/MKREFANY\n");
         return false;
@@ -845,12 +842,12 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         }
     }
 
-    // If the initial has truncate on store semantics, we need to replicate
-    // that here with a cast.
+    // If the value is being roundtripped through a small-typed local then we
+    // may need to insert an explicit cast to emulate normalize-on-load/store.
     //
-    if (varDsc->lvNormalizeOnStore() && fgCastNeeded(fwdSubNode, varDsc->TypeGet()))
+    if (varTypeIsSmall(varDsc) && fgCastNeeded(fwdSubNode, varDsc->TypeGet()))
     {
-        JITDUMP(" [adding cast for normalize on store]");
+        JITDUMP(" [adding cast for small-typed local]");
         fwdSubNode = gtNewCastNode(TYP_INT, fwdSubNode, false, varDsc->TypeGet());
     }
 
@@ -912,33 +909,49 @@ void Compiler::fgForwardSubUpdateLiveness(GenTree* newSubListFirst, GenTree* new
 {
     for (GenTree* node = newSubListFirst->gtPrev; node != nullptr; node = node->gtPrev)
     {
-        if ((node->gtFlags & GTF_VAR_DEATH) == 0)
+        if ((node->gtFlags & GTF_VAR_DEATH_MASK) == 0)
         {
             continue;
         }
 
         unsigned   lclNum = node->AsLclVarCommon()->GetLclNum();
         LclVarDsc* dsc    = lvaGetDesc(lclNum);
-        // Last-use copy omission does not work for promoted structs today, so
-        // we can always unmark these which saves us from having to update the
-        // promoted struct death vars map.
-        if (dsc->lvPromoted)
-        {
-            node->gtFlags &= ~GTF_VAR_DEATH;
-            continue;
-        }
 
         unsigned parentLclNum = dsc->lvIsStructField ? dsc->lvParentLcl : BAD_VAR_NUM;
 
         GenTree* candidate = newSubListFirst;
-        // See if a new instance of this local or its parent appeared.
         while (true)
         {
             unsigned newUseLclNum = candidate->AsLclVarCommon()->GetLclNum();
-            if ((newUseLclNum == lclNum) || (newUseLclNum == parentLclNum))
+            if (dsc->lvPromoted)
             {
-                node->gtFlags &= ~GTF_VAR_DEATH;
-                break;
+                // Is the parent struct being used?
+                if (newUseLclNum == lclNum)
+                {
+                    // Then all fields are not dying.
+                    node->gtFlags &= ~GTF_VAR_DEATH_MASK;
+                    break;
+                }
+
+                // Otherwise, is one single field being used?
+                if ((newUseLclNum >= dsc->lvFieldLclStart) && (newUseLclNum < dsc->lvFieldLclStart + dsc->lvFieldCnt))
+                {
+                    node->ClearLastUse(newUseLclNum - dsc->lvFieldLclStart);
+
+                    if ((node->gtFlags & GTF_VAR_DEATH_MASK) == 0)
+                    {
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                // See if a new instance of this local or its parent appeared.
+                if ((newUseLclNum == lclNum) || (newUseLclNum == parentLclNum))
+                {
+                    node->gtFlags &= ~GTF_VAR_DEATH;
+                    break;
+                }
             }
 
             if (candidate == newSubListLast)

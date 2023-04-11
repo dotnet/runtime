@@ -1079,8 +1079,6 @@ typedef struct _DISPATCHER_CONTEXT {
 
 #endif
 
-// #endif // !defined(TARGET_OSX)
-
 typedef DISPATCHER_CONTEXT *PDISPATCHER_CONTEXT;
 
 #define ExceptionContinueSearch     EXCEPTION_CONTINUE_SEARCH

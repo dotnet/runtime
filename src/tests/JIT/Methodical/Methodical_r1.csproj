@@ -1,13 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <IsMergedTestRunnerAssembly>true</IsMergedTestRunnerAssembly>
-  </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="a*/**/*_r.??proj" />
     <MergedWrapperProjectReference Include="b*/**/*_r.??proj" />
     <MergedWrapperProjectReference Include="c*/**/*_r.??proj" />
     <MergedWrapperProjectReference Include="d*/**/*_r.??proj" />
     <MergedWrapperProjectReference Include="e*/**/*_r.??proj" />
-    <ProjectReference Include="@(MergedWrapperProjectReference)" />
   </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
 </Project>

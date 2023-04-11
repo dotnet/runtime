@@ -196,7 +196,6 @@ namespace System.IO.Hashing
             return current;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ulong HashLength0To16(byte* source, uint length, ulong seed)
         {
             if (length > 8)

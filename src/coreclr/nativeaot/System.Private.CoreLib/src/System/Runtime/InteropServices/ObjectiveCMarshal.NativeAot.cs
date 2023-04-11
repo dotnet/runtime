@@ -82,6 +82,28 @@ namespace System.Runtime.InteropServices.ObjectiveC
             return s_OnEnteredFinalizerQueueCallback;
         }
 
+        [RuntimeExport("ObjectiveCMarshalGetUnhandledExceptionPropagationHandler")]
+#pragma warning disable IDE0060
+        static IntPtr ObjectiveCMarshalGetUnhandledExceptionPropagationHandler(object exceptionObj, IntPtr ip, out IntPtr context)
+#pragma warning restore IDE0060
+        {
+            if (s_unhandledExceptionPropagationHandler == null)
+            {
+                context = IntPtr.Zero;
+                return IntPtr.Zero;
+            }
+
+            Exception? ex = exceptionObj as Exception;
+            if (ex == null)
+                Environment.FailFast("Exceptions must derive from the System.Exception class");
+
+            // TODO: convert IP to RuntimeMethodHandle.
+            // https://github.com/dotnet/runtime/issues/80985
+            RuntimeMethodHandle lastMethod = default;
+
+            return (IntPtr)s_unhandledExceptionPropagationHandler(ex, lastMethod, out context);
+        }
+
         private static bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,

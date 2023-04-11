@@ -94,7 +94,7 @@ namespace System.Reflection.Emit
             m_methodBuilder = methodBuilder;
 
             // initialize local signature
-            MethodBuilder? mb = m_methodBuilder as MethodBuilder;
+            RuntimeMethodBuilder? mb = m_methodBuilder as RuntimeMethodBuilder;
             m_localSignature = SignatureHelper.GetLocalVarSigHelper(mb?.GetTypeBuilder().Module);
         }
 
@@ -168,7 +168,7 @@ namespace System.Reflection.Emit
 
         private int GetMethodToken(MethodBase method, Type[]? optionalParameterTypes, bool useMethodDef)
         {
-            return ((ModuleBuilder)m_methodBuilder.Module).GetMethodTokenInternal(method, optionalParameterTypes, useMethodDef);
+            return ((RuntimeModuleBuilder)m_methodBuilder.Module).GetMethodTokenInternal(method, optionalParameterTypes, useMethodDef);
         }
 
         internal SignatureHelper GetMemberRefSignature(
@@ -188,7 +188,7 @@ namespace System.Reflection.Emit
         private SignatureHelper GetMemberRefSignature(CallingConventions call, Type? returnType,
             Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers, Type[]? optionalParameterTypes, int cGenericParameters)
         {
-            return ((ModuleBuilder)m_methodBuilder.Module).GetMemberRefSignature(call, returnType, parameterTypes, requiredCustomModifiers, optionalCustomModifiers, optionalParameterTypes, cGenericParameters);
+            return ((RuntimeModuleBuilder)m_methodBuilder.Module).GetMemberRefSignature(call, returnType, parameterTypes, requiredCustomModifiers, optionalCustomModifiers, optionalParameterTypes, cGenericParameters);
         }
 
         internal byte[]? BakeByteArray()
@@ -570,7 +570,7 @@ namespace System.Reflection.Emit
             UpdateStackSize(OpCodes.Calli, stackchange);
 
             RecordTokenFixup();
-            PutInteger4(modBuilder.GetSignatureToken(sig));
+            PutInteger4(modBuilder.GetSignatureMetadataToken(sig));
         }
 
         public virtual void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes)
@@ -613,7 +613,7 @@ namespace System.Reflection.Emit
             EnsureCapacity(7);
             Emit(OpCodes.Calli);
             RecordTokenFixup();
-            PutInteger4(modBuilder.GetSignatureToken(sig));
+            PutInteger4(modBuilder.GetSignatureMetadataToken(sig));
         }
 
         public virtual void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
@@ -656,7 +656,7 @@ namespace System.Reflection.Emit
 
             int stackchange = 0;
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
-            int sig = modBuilder.GetSignatureToken(signature);
+            int sig = modBuilder.GetSignatureMetadataToken(signature);
 
             int tempVal = sig;
 
@@ -729,19 +729,9 @@ namespace System.Reflection.Emit
             // by cls.  The location of cls is recorded so that the token can be
             // patched if necessary when persisting the module to a PE.
 
-            int tempVal;
-            ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
-            if (opcode == OpCodes.Ldtoken && cls != null && cls.IsGenericTypeDefinition)
-            {
-                // This gets the token for the generic type definition if cls is one.
-                tempVal = modBuilder.GetTypeToken(cls);
-            }
-            else
-            {
-                // This gets the token for the generic type instantiated on the formal parameters
-                // if cls is a generic type definition.
-                tempVal = modBuilder.GetTypeTokenInternal(cls!);
-            }
+            RuntimeModuleBuilder modBuilder = (RuntimeModuleBuilder)m_methodBuilder.Module;
+            bool getGenericDefinition = (opcode == OpCodes.Ldtoken && cls != null && cls.IsGenericTypeDefinition);
+            int tempVal = modBuilder.GetTypeTokenInternal(cls!, getGenericDefinition);
 
             EnsureCapacity(7);
             InternalEmit(opcode);
@@ -824,7 +814,7 @@ namespace System.Reflection.Emit
         public virtual void Emit(OpCode opcode, FieldInfo field)
         {
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
-            int tempVal = modBuilder.GetFieldToken(field);
+            int tempVal = modBuilder.GetFieldMetadataToken(field);
             EnsureCapacity(7);
             InternalEmit(opcode);
             RecordTokenFixup();
@@ -838,7 +828,7 @@ namespace System.Reflection.Emit
             // fixups if the module is persisted to a PE.
 
             ModuleBuilder modBuilder = (ModuleBuilder)m_methodBuilder.Module;
-            int tempVal = modBuilder.GetStringConstant(str);
+            int tempVal = modBuilder.GetStringMetadataToken(str);
             EnsureCapacity(7);
             InternalEmit(opcode);
             PutInteger4(tempVal);
@@ -1199,12 +1189,12 @@ namespace System.Reflection.Emit
 
             if (!excType.IsSubclassOf(typeof(Exception)) && excType != typeof(Exception))
             {
-                throw new ArgumentException(SR.Argument_NotExceptionType);
+                throw new ArgumentException(SR.Argument_NotExceptionType, nameof(excType));
             }
             ConstructorInfo? con = excType.GetConstructor(Type.EmptyTypes);
             if (con == null)
             {
-                throw new ArgumentException(SR.Argument_MissingDefaultConstructor);
+                throw new ArgumentException(SR.Arg_NoDefCTorWithoutTypeName, nameof(excType));
             }
             Emit(OpCodes.Newobj, con);
             Emit(OpCodes.Throw);
@@ -1307,8 +1297,7 @@ namespace System.Reflection.Emit
             // Declare a local of type "local". The current active lexical scope
             // will be the scope that local will live.
 
-            MethodBuilder? methodBuilder = m_methodBuilder as MethodBuilder;
-            if (methodBuilder == null)
+            if (m_methodBuilder is not RuntimeMethodBuilder methodBuilder)
                 throw new NotSupportedException();
 
             if (methodBuilder.IsTypeCreated())
@@ -1337,8 +1326,7 @@ namespace System.Reflection.Emit
 
             ArgumentException.ThrowIfNullOrEmpty(usingNamespace);
 
-            MethodBuilder? methodBuilder = m_methodBuilder as MethodBuilder;
-            if (methodBuilder == null)
+            if (m_methodBuilder is not RuntimeMethodBuilder methodBuilder)
                 throw new NotSupportedException();
 
             int index = methodBuilder.GetILGenerator().m_ScopeTree.GetCurrentActiveScopeIndex();

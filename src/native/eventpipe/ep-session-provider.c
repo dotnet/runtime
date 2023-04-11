@@ -13,7 +13,15 @@
 
 static
 void
+DN_CALLBACK_CALLTYPE
 session_provider_free_func (void *session_provider);
+
+static
+bool
+DN_CALLBACK_CALLTYPE
+session_provider_compare_name_func (
+	const void *a,
+	const void *b);
 
 /*
  * EventPipeSessionProvider.
@@ -21,9 +29,20 @@ session_provider_free_func (void *session_provider);
 
 static
 void
+DN_CALLBACK_CALLTYPE
 session_provider_free_func (void *session_provider)
 {
 	ep_session_provider_free ((EventPipeSessionProvider *)session_provider);
+}
+
+static
+bool
+DN_CALLBACK_CALLTYPE
+session_provider_compare_name_func (
+	const void *a,
+	const void *b)
+{
+	return (a) ? !ep_rt_utf8_string_compare (ep_session_provider_get_provider_name ((EventPipeSessionProvider *)a), (const ep_char8_t *)b) : false;
 }
 
 EventPipeSessionProvider *
@@ -82,8 +101,8 @@ ep_session_provider_list_alloc (
 	EventPipeSessionProviderList *instance = ep_rt_object_alloc (EventPipeSessionProviderList);
 	ep_raise_error_if_nok (instance != NULL);
 
-	ep_rt_session_provider_list_alloc (&instance->providers);
-	ep_raise_error_if_nok (ep_rt_session_provider_list_is_valid (&instance->providers));
+	instance->providers = dn_list_alloc ();
+	ep_raise_error_if_nok (instance->providers != NULL);
 
 	instance->catch_all_provider = NULL;
 
@@ -104,7 +123,7 @@ ep_session_provider_list_alloc (
 				ep_provider_config_get_keywords (config),
 				ep_provider_config_get_logging_level (config),
 				ep_provider_config_get_filter_data (config));
-			ep_raise_error_if_nok (ep_rt_session_provider_list_append (&instance->providers, session_provider));
+			ep_raise_error_if_nok (dn_list_push_back (instance->providers, session_provider));
 		}
 	}
 
@@ -122,7 +141,7 @@ ep_session_provider_list_free (EventPipeSessionProviderList *session_provider_li
 {
 	ep_return_void_if_nok (session_provider_list != NULL);
 
-	ep_rt_session_provider_list_free (&session_provider_list->providers, session_provider_free_func);
+	dn_list_custom_free (session_provider_list->providers, session_provider_free_func);
 	ep_session_provider_free (session_provider_list->catch_all_provider);
 	ep_rt_object_free (session_provider_list);
 }
@@ -131,14 +150,14 @@ void
 ep_session_provider_list_clear (EventPipeSessionProviderList *session_provider_list)
 {
 	EP_ASSERT (session_provider_list != NULL);
-	ep_rt_session_provider_list_clear (&session_provider_list->providers, session_provider_free_func);
+	dn_list_custom_clear (session_provider_list->providers, session_provider_free_func);
 }
 
 bool
 ep_session_provider_list_is_empty (const EventPipeSessionProviderList *session_provider_list)
 {
 	EP_ASSERT (session_provider_list != NULL);
-	return (ep_rt_session_provider_list_is_empty (&session_provider_list->providers) && session_provider_list->catch_all_provider == NULL);
+	return (dn_list_empty (session_provider_list->providers) && session_provider_list->catch_all_provider == NULL);
 }
 
 bool
@@ -149,7 +168,16 @@ ep_session_provider_list_add_session_provider (
 	EP_ASSERT (session_provider_list != NULL);
 	EP_ASSERT (session_provider != NULL);
 
-	return ep_rt_session_provider_list_append (&session_provider_list->providers, session_provider);
+	return dn_list_push_back (session_provider_list->providers, session_provider);
+}
+
+EventPipeSessionProvider *
+ep_session_provider_list_find_by_name (
+	dn_list_t *list,
+	const ep_char8_t *name)
+{
+	dn_list_it_t found = dn_list_custom_find (list, name, session_provider_compare_name_func);
+	return (!dn_list_it_end (found)) ? *dn_list_it_data_t(found, EventPipeSessionProvider *) : NULL;
 }
 
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
