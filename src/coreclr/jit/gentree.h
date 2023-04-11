@@ -6185,6 +6185,10 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsMemoryLoad(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryStore(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryLoadOrStore() const;
+    bool OperIsMemoryStoreOrBarrier() const;
+
+    bool OperRequiresAsgFlag() const;
+    bool OperRequiresCallFlag() const;
 
     unsigned GetResultOpNumForFMA(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
 
@@ -6279,23 +6283,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 private:
     void SetHWIntrinsicId(NamedIntrinsic intrinsicId);
 
-    void Initialize(NamedIntrinsic intrinsicId)
-    {
-        SetHWIntrinsicId(intrinsicId);
-
-        bool isStore = OperIsMemoryStore();
-        bool isLoad  = OperIsMemoryLoad();
-
-        if (isStore || isLoad)
-        {
-            gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
-
-            if (isStore)
-            {
-                gtFlags |= GTF_ASG;
-            }
-        }
-    }
+    void Initialize(NamedIntrinsic intrinsicId);
 };
 #endif // FEATURE_HW_INTRINSICS
 

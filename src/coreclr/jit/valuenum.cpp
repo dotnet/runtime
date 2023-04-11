@@ -11227,6 +11227,13 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
     {
         fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - MemoryStore"));
     }
+#if defined(TARGET_XARCH)
+    else if (HWIntrinsicInfo::HasSpecialSideEffect_Barrier(intrinsicId))
+    {
+        // This is modeled the same as GT_MEMORYBARRIER
+        fgMutateGcHeap(tree DEBUGARG("HWIntrinsic - Barrier"));
+    }
+#endif // TARGET_XARCH
 
     ValueNumPair excSetPair = ValueNumStore::VNPForEmptyExcSet();
     ValueNumPair normalPair = ValueNumPair();
