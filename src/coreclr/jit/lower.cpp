@@ -3851,6 +3851,16 @@ bool Lowering::TryLowerConditionToFlagsNode(GenTree* parent, GenTree* condition,
             BlockRange().Remove(relop);
             BlockRange().Remove(relopOp2);
         }
+#ifdef TARGET_ARM64
+        else if (optimizing && relop->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT) &&
+                 (IsContainableBinaryOp(relop, relop->gtGetOp1()) || IsContainableBinaryOp(relop, relop->gtGetOp2())))
+        {
+            ContainCheckCompare(relop);
+            relop->SetOper(GT_CMP);
+            relop->gtType = TYP_VOID;
+            relop->gtFlags |= GTF_SET_FLAGS;
+        }
+#endif // TARGET_ARM64
         else
         {
             relop->gtType = TYP_VOID;
