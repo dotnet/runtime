@@ -4974,9 +4974,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
                 addrNode = source->AsOp()->gtOp1;
 
-                // addrNode can either be a GT_LCL_ADDR or an address expression
+                // addrNode can either be a GT_LCL_ADDR<0> or an address expression
                 //
-                if (addrNode->OperGet() == GT_LCL_ADDR)
+                if (addrNode->IsLclVarAddr())
                 {
                     // We have a GT_BLK(GT_LCL_ADDR<0>)
                     //
@@ -5221,7 +5221,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
     else
     {
         var_types targetType = source->TypeGet();
-        assert(source->OperGet() == GT_OBJ);
+        assert(source->OperGet() == GT_BLK);
         assert(varTypeIsStruct(targetType));
 
         regNumber baseReg = treeNode->ExtractTempReg();
@@ -5232,15 +5232,15 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
         addrNode = source->AsOp()->gtOp1;
 
-        // addrNode can either be a GT_LCL_VAR_ADDR or an address expression
+        // addrNode can either be a GT_LCL_ADDR<0> or an address expression
         //
-        if (addrNode->OperGet() == GT_LCL_VAR_ADDR)
+        if (addrNode->IsLclVarAddr())
         {
-            // We have a GT_OBJ(GT_LCL_VAR_ADDR)
+            // We have a GT_BLK(GT_LCL_ADDR<0>)
             //
             // We will treat this case the same as above
             // (i.e if we just had this GT_LCL_VAR directly as the source)
-            // so update 'source' to point this GT_LCL_VAR_ADDR node
+            // so update 'source' to point this GT_LCL_ADDR node
             // and continue to the codegen for the LCL_VAR node below
             //
             varNode  = addrNode->AsLclVarCommon();
@@ -5273,12 +5273,9 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             // Because the candidate mask for the internal baseReg does not include any of the target register,
             // we can ensure that baseReg, addrReg, and the last target register are not all same.
             assert(baseReg != addrReg);
-
-            // We don't split HFA struct
-            assert(!compiler->IsHfa(source->AsObj()->GetLayout()->GetClassHandle()));
         }
 
-        ClassLayout* layout = source->AsObj()->GetLayout();
+        ClassLayout* layout = source->AsBlk()->GetLayout();
 
         // Put on stack first
         unsigned structOffset  = treeNode->gtNumRegs * TARGET_POINTER_SIZE;
