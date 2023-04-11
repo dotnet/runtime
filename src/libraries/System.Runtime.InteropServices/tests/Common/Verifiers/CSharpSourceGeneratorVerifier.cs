@@ -75,6 +75,7 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                         _ => ReferenceAssemblies.Default
                     };
                 }
+                SolutionTransforms.Add(CSharpVerifierHelper.GetTargetFrameworkAnalyzerOptionsProviderTransform(targetFramework));
             }
             public Test(bool referenceAncillaryInterop)
                 :this(TestTargetFramework.Net)
