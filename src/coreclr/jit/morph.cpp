@@ -1136,15 +1136,14 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                 }
             }
 
-            // We are only able to expand certain "OBJ"s into field lists, so here we spill all the
+            // We are only able to expand certain "BLK"s into field lists, so here we spill all the
             // "mis-sized" ones. We could in theory support them directly with some arithmetic and
             // shifts, but these cases are rare enough that it is probably not worth the complexity.
-            // No need to do this for stack args as they are directly supported by codegen. Likewise
-            // for "local" "OBJ"s - we can safely load "too much" for them.
+            // No need to do this for stack args as they are directly supported by codegen.
             //
-            if (argx->OperIs(GT_OBJ) && (arg.AbiInfo.GetRegNum() != REG_STK))
+            if (argx->OperIs(GT_BLK) && (arg.AbiInfo.GetRegNum() != REG_STK))
             {
-                GenTreeObj* argObj       = argx->AsObj();
+                GenTreeBlk* argObj       = argx->AsBlk();
                 unsigned    structSize   = argObj->Size();
                 unsigned    lastLoadSize = structSize % TARGET_POINTER_SIZE;
 
@@ -3186,7 +3185,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             unsigned originalSize;
             if (argObj->TypeGet() == TYP_STRUCT)
             {
-                assert(argObj->OperIs(GT_OBJ, GT_LCL_VAR, GT_LCL_FLD));
+                assert(argObj->OperIs(GT_BLK, GT_LCL_VAR, GT_LCL_FLD));
                 originalSize = argObj->GetLayout(this)->GetSize();
             }
             else
@@ -3210,7 +3209,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 unsigned structSize  = originalSize;
                 unsigned passingSize = originalSize;
 
-                // Check to see if we can transform this struct load (GT_OBJ) into a GT_IND of the appropriate size.
+                // Check to see if we can transform this struct load (GT_BLK) into a GT_IND of the appropriate size.
                 // When it can do this is platform-dependent:
                 // - In general, it can be done for power of 2 structs that fit in a single register.
                 // - For ARM and ARM64 it must also be a non-HFA struct, or have a single field.
@@ -3259,7 +3258,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     // actually passed in registers.
                     if (arg.AbiInfo.IsPassedInRegisters())
                     {
-                        if (argObj->OperIs(GT_OBJ))
+                        if (argObj->OperIs(GT_BLK))
                         {
                             if (passingSize != structSize)
                             {
@@ -3562,7 +3561,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 //     arg        - The argument containing a struct node.
 //
 // Notes:
-//    The arg node must be a GT_OBJ or GT_LCL_VAR or GT_LCL_FLD of TYP_STRUCT.
+//    The arg node must be a GT_BLK or GT_LCL_VAR or GT_LCL_FLD of TYP_STRUCT.
 //    If arg node is a lclVar passed on the stack, we will ensure that any lclVars that must be on the
 //    stack are marked as doNotEnregister, and then we return.
 //
@@ -3575,7 +3574,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 //    If we have a GT_LCL_VAR that isn't struct promoted or doesn't meet the requirements
 //    we will use a set of GT_LCL_FLDs nodes to access the various portions of the struct
 //    this also forces the struct to be stack allocated into the local frame.
-//    For the GT_OBJ case will clone the address expression and generate two (or more)
+//    For the GT_BLK case will clone the address expression and generate two (or more)
 //    indirections.
 //
 GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
@@ -3693,7 +3692,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
         //
         if (!argNode->OperIs(GT_LCL_VAR, GT_LCL_FLD))
         {
-            assert(argNode->OperIs(GT_OBJ));
+            assert(argNode->OperIs(GT_BLK));
 
             unsigned lastElemExactSize = structSize - lastElem.Offset;
 
@@ -5106,7 +5105,7 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
             We want to make it like this (when fldOffset is <= MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT):
 
                                   +--------------------+
-                                  |   GT_IND/GT_OBJ    |   tree (for FIELD)
+                                  |   GT_IND/GT_BLK    |   tree (for FIELD)
                                   +---------+----------+
                                             |
                                             |
@@ -5127,7 +5126,7 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
 
 
                                   +--------------------+
-                                  |   GT_IND/GT_OBJ    |   tree (for FIELD)
+                                  |   GT_IND/GT_BLK    |   tree (for FIELD)
                                   +----------+---------+
                                              |
                                   +----------+---------+
@@ -5270,7 +5269,7 @@ GenTree* Compiler::fgMorphExpandInstanceField(GenTree* tree, MorphAddrContext* m
         if (tree->TypeIs(TYP_STRUCT))
         {
             ClassLayout* layout = tree->GetLayout(this);
-            tree->SetOper(GT_OBJ);
+            tree->SetOper(GT_BLK);
             tree->AsBlk()->Initialize(layout);
         }
         else
@@ -9801,7 +9800,6 @@ DONE_MORPHING_CHILDREN:
             fgSetRngChkTarget(tree);
             break;
 
-        case GT_OBJ:
         case GT_BLK:
         case GT_IND:
         {
@@ -15030,9 +15028,9 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                     // LHS is a simple reference to the temp.
                     fgEnsureFirstBBisScratch();
                     GenTree* lhs = gtNewLclvNode(newLclNum, varDsc->lvType);
-                    // RHS is an indirection (using GT_OBJ) off the parameter.
+                    // RHS is an indirection (using GT_BLK) off the parameter.
                     GenTree* addr = gtNewLclvNode(lclNum, TYP_BYREF);
-                    GenTree* rhs  = (varDsc->TypeGet() == TYP_STRUCT) ? gtNewObjNode(varDsc->GetLayout(), addr)
+                    GenTree* rhs  = (varDsc->TypeGet() == TYP_STRUCT) ? gtNewBlkIndir(varDsc->GetLayout(), addr)
                                                                      : gtNewIndir(varDsc->TypeGet(), addr);
                     GenTree* assign = gtNewAssignNode(lhs, rhs);
                     fgNewStmtAtBeg(fgFirstBB, assign);
