@@ -7,32 +7,8 @@ using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class CompareInfoCompareTests
+    public class CompareInfoCompareTests : CompareInfoTestBase
     {
-        private static CompareInfo s_invariantCompare = CultureInfo.InvariantCulture.CompareInfo;
-        private static CompareInfo s_currentCompare = CultureInfo.CurrentCulture.CompareInfo;
-        private static CompareInfo s_hungarianCompare = new CultureInfo("hu-HU").CompareInfo;
-        private static CompareInfo s_turkishCompare = new CultureInfo("tr-TR").CompareInfo;
-        private static CompareInfo s_japaneseCompare = new CultureInfo("ja-JP").CompareInfo;
-        private static CompareOptions supportedIgnoreNonSpaceOption =
-            PlatformDetection.IsHybridGlobalizationOnWasm ?
-            CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType :
-            CompareOptions.IgnoreNonSpace;
-
-        private static CompareOptions supportedIgnoreCaseIgnoreNonSpaceOptions =
-            PlatformDetection.IsHybridGlobalizationOnWasm ?
-            CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType :
-            CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace;
-
-        // On Windows, hiragana characters sort after katakana.
-        // On ICU, it is the opposite
-        private static int s_expectedHiraganaToKatakanaCompare = PlatformDetection.IsNlsGlobalization ? 1 : -1;
-
-        // On Windows, all halfwidth characters sort before fullwidth characters.
-        // On ICU, half and fullwidth characters that aren't in the "Halfwidth and fullwidth forms" block U+FF00-U+FFEF
-        // sort before the corresponding characters that are in the block U+FF00-U+FFEF
-        private static int s_expectedHalfToFullFormsComparison = PlatformDetection.IsNlsGlobalization ? -1 : 1;
-
         private const string SoftHyphen = "\u00AD";
 
         public static IEnumerable<object[]> Compare_Kana_TestData()
@@ -40,7 +16,7 @@ namespace System.Globalization.Tests
             // HybridGlobalization does not support IgnoreWidth
             if (!PlatformDetection.IsHybridGlobalizationOnWasm)
             {
-                CompareOptions ignoreKanaIgnoreWidthIgnoreCase = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;                
+                CompareOptions ignoreKanaIgnoreWidthIgnoreCase = CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
                 yield return new object[] { s_invariantCompare, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", ignoreKanaIgnoreWidthIgnoreCase, 0 };
                 yield return new object[] { s_invariantCompare, "\u30D0\u30D3\u3076\u30D9\uFF8E\uFF9E", "\u3070\u3073\uFF8C\uFF9E\uFF8D\uFF9E\u307C", ignoreKanaIgnoreWidthIgnoreCase, 0 };
                 yield return new object[] { s_invariantCompare, "\u3060", "\uFF80\uFF9E", ignoreKanaIgnoreWidthIgnoreCase, 0 };
@@ -69,7 +45,7 @@ namespace System.Globalization.Tests
             CompareOptions ignoredOptions = PlatformDetection.IsHybridGlobalizationOnWasm ?
                 CompareOptions.IgnoreKanaType | CompareOptions.IgnoreCase :
                 CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase;
-            
+
             yield return new object[] { s_invariantCompare, "\u3042", "\u30A2", ignoredOptions, 0 };
             yield return new object[] { s_invariantCompare, "\u3042", "\uFF71", ignoredOptions, 0 };
 
@@ -84,9 +60,9 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "ABCDE", "\uFF21\uFF22\uFF23D\uFF25", ignoredOptions, 0 }; // as above
             yield return new object[] { s_invariantCompare, "ABCDE", "a\uFF22\uFF23D\uFF25", ignoredOptions, 0 }; // as above
             yield return new object[] { s_invariantCompare, "ABCDE", "\uFF41\uFF42\uFF23D\uFF25", ignoredOptions, 0 }; // as above
-                
+
             yield return new object[] { s_invariantCompare, "\u6FA4", "\u6CA2", ignoredOptions, 1 };
-                
+
             yield return new object[] { s_invariantCompare, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u30D6\u30D9\u30DC", ignoredOptions, 0 };
             yield return new object[] { s_invariantCompare, "\u3070\u3073\u3076\u3079\u307C", "\u30D0\u30D3\u3076\u30D9\u30DC", ignoredOptions, 0 };
             yield return new object[] { s_invariantCompare, "\u3070\u3073\uFF8C\uFF9E\uFF8D\uFF9E\u307C", "\uFF8E\uFF9E", ignoredOptions, -1 };
@@ -97,7 +73,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "\u3070\u30DC\uFF8C\uFF9E\uFF8D\uFF9E\u307C", "\u3070\uFF8E\uFF9E\u30D6", ignoredOptions, 1 }; // known exception for hg: should be -1
             yield return new object[] { s_invariantCompare, "\u3070\u30DC\uFF8C\uFF9E\uFF8D\uFF9E\u307C\u3079\u307C", "\u3079\uFF8E\uFF9E", ignoredOptions, -1 };
             yield return new object[] { s_invariantCompare, "\u3070\uFF8C\uFF9E\uFF8D\uFF9E\u307C", "\u30D6", ignoredOptions, -1 };
-                
+
             yield return new object[] { s_invariantCompare, "ABDDE", "D", ignoredOptions, -1 };
             yield return new object[] { s_invariantCompare, "ABCDE", "\uFF43D", ignoredOptions, -1 };
             yield return new object[] { s_invariantCompare, "ABCDE", "c", ignoredOptions, -1 };
@@ -118,7 +94,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "10", "1\uFF10", ignoredOptions, 0 }; // as above
             yield return new object[] { s_invariantCompare, "9999\uFF1910", "1\uFF10", ignoredOptions, 1 };
             yield return new object[] { s_invariantCompare, "9999\uFF191010", "1\uFF10", ignoredOptions, 1 };
-                
+
             yield return new object[] { s_invariantCompare, "'\u3000'", "' '", ignoredOptions, 0 };
             yield return new object[] { s_invariantCompare, "\uFF1B", ";", ignoredOptions, 0 }; // known exception for hg: should be 1
             yield return new object[] { s_invariantCompare, "\uFF08", "(", ignoredOptions, 0 }; // known exception for hg: should be 1
@@ -328,11 +304,6 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "abcdefg\uDBFF", "abcdefg\uD800\uDC00", CompareOptions.OrdinalIgnoreCase, useNls ? 1 : -1};
             yield return new object[] { s_invariantCompare, "\U00010400", "\U00010428", CompareOptions.OrdinalIgnoreCase, useNls ? -1 : 0};
         }
-
-        // There is a regression in Windows 190xx version with the Kana comparison. Avoid running this test there.
-        public static bool IsNotWindowsKanaRegressedVersion() => !PlatformDetection.IsWindows10Version1903OrGreater ||
-                                                              PlatformDetection.IsIcuGlobalization ||
-                                                              s_invariantCompare.Compare("\u3060", "\uFF80\uFF9E", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase) == 0;
 
         [Fact]
         public void CompareWithUnassignedChars()

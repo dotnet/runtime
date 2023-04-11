@@ -10,6 +10,15 @@ Hybrid mode does not use ICU data for some functions connected with globalizatio
 
 For WebAssembly, both on Browser and WASI, we are using Web API instead of some ICU data.
 
+**SortKey**
+
+Affected public APIs:
+- CompareInfo.GetSortKey
+- CompareInfo.GetSortKeyLength
+- CompareInfo.GetHashCode
+
+Web API does not have an equivalent, so they throw `PlatformNotSupportedException`.
+
 **Case change**
 
 Affected public APIs:
