@@ -23,8 +23,8 @@ namespace System.Runtime.InteropServices.Marshalling
         /// Construct a <see cref="TableInfo"/> instance.
         /// </summary>
         /// <param name="handle">RuntimeTypeHandle instance</param>
-        /// <param name="ptr">Pointer to the instance to query</param>
         /// <param name="interfaceDetails">An <see cref="IIUnknownDerivedDetails"/> instance</param>
+        /// <param name="ptr">Pointer to the instance to query</param>
         /// <returns>The constructed <see cref="TableInfo"/> instance for the provided information.</returns>
         TableInfo ConstructTableInfo(RuntimeTypeHandle handle, IIUnknownDerivedDetails interfaceDetails, void* ptr);
 
