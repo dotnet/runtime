@@ -269,7 +269,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
             return false;
         }
 
-        if (parentNode->OperIs(GT_CMP, GT_OR, GT_XOR))
+        if (parentNode->OperIs(GT_CMP, GT_OR, GT_XOR) || parentNode->OperIsCompare())
         {
             if (IsInvariantInRange(childNode, parentNode))
             {
@@ -2264,27 +2264,67 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
 //
 void Lowering::ContainCheckCompare(GenTreeOp* cmp)
 {
-    CheckImmedAndMakeContained(cmp, cmp->gtOp2);
+    GenTree* op1 = cmp->gtGetOp1();
+    GenTree* op2 = cmp->gtGetOp2();
+
+    if (CheckImmedAndMakeContained(cmp, op2))
+        return;
 
 #ifdef TARGET_ARM64
-    if (comp->opts.OptimizationEnabled() && cmp->gtGetOp2()->OperIs(GT_LSH, GT_RSH, GT_RSZ))
+    if (comp->opts.OptimizationEnabled())
     {
-        auto isValidImmForShift = [](ssize_t imm, var_types type)
-        { return emitter::isValidImmShift(imm, EA_ATTR(genTypeSize(type))); };
-
-        GenTree* op2 = cmp->gtGetOp2();
-
-        if (op2->gtGetOp2()->IsCnsIntOrI() &&
-            isValidImmForShift(op2->gtGetOp2()->AsIntConCommon()->IntegralValue(), cmp->TypeGet()))
+        if (IsContainableBinaryOp(cmp, op2))
         {
-            op2->ClearContained();
-            op2->gtGetOp1()->ClearContained();
-
-            MakeSrcContained(op2, op2->gtGetOp2());
             MakeSrcContained(cmp, op2);
+            return;
+        }
+
+        if (cmp->OperIs(GT_EQ, GT_NE) && IsContainableBinaryOp(cmp, op1))
+        {
+            MakeSrcContained(cmp, op1);
+
+            std::swap(cmp->gtOp1, cmp->gtOp2);
+            return;
         }
     }
-#endif // TARGET_ARM64
+#endif
+
+//#ifdef TARGET_ARM64
+//    if (comp->opts.OptimizationEnabled() && cmp->gtGetOp2()->OperIs(GT_LSH, GT_RSH, GT_RSZ))
+//    {
+//        auto isValidImmForShift = [](ssize_t imm, var_types type)
+//        { return emitter::isValidImmShift(imm, EA_ATTR(genTypeSize(type))); };
+//
+//        GenTree* op2 = cmp->gtGetOp2();
+//
+//        if (op2->gtGetOp2()->IsCnsIntOrI() &&
+//            isValidImmForShift(op2->gtGetOp2()->AsIntConCommon()->IntegralValue(), cmp->TypeGet()) &&
+//            IsContainableBinaryOp(cmp, cmp->gtGetOp2()))
+//        {
+//            op2->ClearContained();
+//            op2->gtGetOp1()->ClearContained();
+//
+//            MakeSrcContained(op2, op2->gtGetOp2());
+//            MakeSrcContained(cmp, op2);
+//        }
+//        else if (cmp->OperIsCommutative() && IsContainableBinaryOp(cmp, cmp->gtGetOp1()))
+//        {
+//        }
+//
+//        //        if (node->OperIsCommutative() && IsContainableBinaryOp(node, op1))
+//        //{
+//        //    if (op1->OperIs(GT_CAST))
+//        //    {
+//        //        // We want to prefer the combined op here over containment of the cast op
+//        //        op1->AsCast()->CastOp()->ClearContained();
+//        //    }
+//        //    MakeSrcContained(node, op1);
+//
+//        //    std::swap(node->gtOp1, node->gtOp2);
+//        //    return;
+//        //}
+//    }
+//#endif // TARGET_ARM64
 }
 
 #ifdef TARGET_ARM64
