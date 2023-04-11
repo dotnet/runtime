@@ -118,6 +118,8 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
     <Compile Include="System\Data\Odbc\OdbcUtils.cs" />
     <Compile Include="$(CommonPath)System\NotImplemented.cs"
              Link="Common\System\NotImplemented.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
     <Compile Include="Common\System\HResults.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\MultipartIdentifier.cs"
              Link="Common\System\Data\Common\MultipartIdentifier.cs" />

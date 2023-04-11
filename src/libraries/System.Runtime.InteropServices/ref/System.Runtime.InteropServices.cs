@@ -345,6 +345,8 @@ namespace System
     public partial class DllNotFoundException : System.TypeLoadException
     {
         public DllNotFoundException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected DllNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public DllNotFoundException(string? message) { }
         public DllNotFoundException(string? message, System.Exception? inner) { }
@@ -510,6 +512,8 @@ namespace System.Runtime.InteropServices
     public partial class COMException : System.Runtime.InteropServices.ExternalException
     {
         public COMException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected COMException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public COMException(string? message) { }
         public COMException(string? message, System.Exception? inner) { }
@@ -748,6 +752,8 @@ namespace System.Runtime.InteropServices
     public partial class InvalidComObjectException : System.SystemException
     {
         public InvalidComObjectException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected InvalidComObjectException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public InvalidComObjectException(string? message) { }
         public InvalidComObjectException(string? message, System.Exception? inner) { }
@@ -755,6 +761,8 @@ namespace System.Runtime.InteropServices
     public partial class InvalidOleVariantTypeException : System.SystemException
     {
         public InvalidOleVariantTypeException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected InvalidOleVariantTypeException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public InvalidOleVariantTypeException(string? message) { }
         public InvalidOleVariantTypeException(string? message, System.Exception? inner) { }
@@ -1054,6 +1062,8 @@ namespace System.Runtime.InteropServices
     public partial class MarshalDirectiveException : System.SystemException
     {
         public MarshalDirectiveException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected MarshalDirectiveException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public MarshalDirectiveException(string? message) { }
         public MarshalDirectiveException(string? message, System.Exception? inner) { }
@@ -1393,6 +1403,8 @@ namespace System.Runtime.InteropServices
     public partial class SafeArrayRankMismatchException : System.SystemException
     {
         public SafeArrayRankMismatchException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected SafeArrayRankMismatchException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SafeArrayRankMismatchException(string? message) { }
         public SafeArrayRankMismatchException(string? message, System.Exception? inner) { }
@@ -1400,6 +1412,8 @@ namespace System.Runtime.InteropServices
     public partial class SafeArrayTypeMismatchException : System.SystemException
     {
         public SafeArrayTypeMismatchException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected SafeArrayTypeMismatchException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SafeArrayTypeMismatchException(string? message) { }
         public SafeArrayTypeMismatchException(string? message, System.Exception? inner) { }
@@ -1407,6 +1421,8 @@ namespace System.Runtime.InteropServices
     public partial class SEHException : System.Runtime.InteropServices.ExternalException
     {
         public SEHException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected SEHException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SEHException(string? message) { }
         public SEHException(string? message, System.Exception? inner) { }
