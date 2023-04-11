@@ -7384,9 +7384,9 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
 #ifdef FEATURE_SIMD
     if (varTypeIsSIMD(type))
     {
-        GenTreeVecCon* vecCon = gtNewVconNode(type);
-        vecCon->gtSimdVal     = simd_t::Zero();
-        return vecCon;
+        GenTreeVecCon* allBitsSet = gtNewVconNode(type);
+        allBitsSet->gtSimdVal     = simd_t::Zero();
+        return allBitsSet;
     }
 #endif // FEATURE_SIMD
 
