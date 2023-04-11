@@ -1296,53 +1296,35 @@ var_types Compiler::impNormStructType(CORINFO_CLASS_HANDLE structHnd, CorInfoTyp
 }
 
 //------------------------------------------------------------------------
-//  Compiler::impNormStructVal: Normalize a struct value
+// impNormStructVal: Normalize a struct call argument
 //
-//  Arguments:
-//     structVal          - the node we are going to normalize
-//     structHnd          - the class handle for the node
-//     curLevel           - the current stack level
+// Spills call-like STRUCT arguments to temporaries. "Unwraps" commas.
 //
-// Notes:
-//     Given struct value 'structVal', make sure it is 'canonical', that is
-//     it is either:
-//     - a known struct type (non-TYP_STRUCT, e.g. TYP_SIMD8)
-//     - a BLK or a MKREFANY node, or
-//     - a node (e.g. GT_FIELD) that will be morphed.
-//    If the node is a CALL or RET_EXPR, a copy will be made to a new temp.
+// Arguments:
+//    structVal - The node to normalize
+//    structHnd - The struct type
+//    curLevel  - The current stack level
+//
+// Return Value:
+//    The normalized "structVal".
 //
 GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE structHnd, unsigned curLevel)
 {
     assert(varTypeIsStruct(structVal));
-    assert(structHnd != NO_CLASS_HANDLE);
     var_types structType = structVal->TypeGet();
-    bool      makeTemp   = false;
-    if (structType == TYP_STRUCT)
-    {
-        structType = impNormStructType(structHnd);
-    }
-    GenTreeLclVarCommon* structLcl = nullptr;
 
     switch (structVal->OperGet())
     {
         case GT_CALL:
         case GT_RET_EXPR:
-            makeTemp = true;
-            break;
+        {
+            unsigned lclNum = lvaGrabTemp(true DEBUGARG("spilled call-like call argument"));
+            impAssignTempGen(lclNum, structVal, curLevel);
 
-        case GT_LCL_VAR:
-        case GT_LCL_FLD:
-        case GT_IND:
-        case GT_BLK:
-        case GT_FIELD:
-        case GT_CNS_VEC:
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HWINTRINSIC:
-#endif
-        case GT_MKREFANY:
-            // These should already have the appropriate type.
-            assert(structVal->TypeGet() == structType);
-            break;
+            // The structVal is now the temp itself
+            structVal = gtNewLclvNode(lclNum, structType);
+        }
+        break;
 
         case GT_COMMA:
         {
@@ -1394,36 +1376,9 @@ GenTree* Compiler::impNormStructVal(GenTree* structVal, CORINFO_CLASS_HANDLE str
         break;
 
         default:
-            noway_assert(!"Unexpected node in impNormStructVal()");
             break;
     }
 
-    if (makeTemp)
-    {
-        unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
-
-        impAssignTempGen(tmpNum, structVal, structHnd, curLevel);
-
-        // The structVal is now the temp itself
-
-        structLcl = gtNewLclvNode(tmpNum, structType)->AsLclVarCommon();
-        structVal = structLcl;
-    }
-
-    if (structLcl != nullptr)
-    {
-        // A BLK on a ADDR(LCL_VAR) can never raise an exception
-        // so we don't set GTF_EXCEPT here.
-        if (!lvaIsImplicitByRefLocal(structLcl->GetLclNum()))
-        {
-            structVal->gtFlags &= ~GTF_GLOB_REF;
-        }
-    }
-    else if (structVal->OperIsBlk())
-    {
-        // In general a BLK is an indirection and could raise an exception.
-        structVal->gtFlags |= GTF_EXCEPT;
-    }
     return structVal;
 }
 
