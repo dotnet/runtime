@@ -1698,6 +1698,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsic(LIR::Use& use)
     {
         case NI_Vector128_GetElement:
         case NI_Vector256_GetElement:
+        case NI_Vector512_GetElement:
             return DecomposeHWIntrinsicGetElement(use, hwintrinsicTree);
 
         default:
@@ -1738,7 +1739,8 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
     assert(node == use.Def());
     assert(varTypeIsLong(node));
     assert((node->GetHWIntrinsicId() == NI_Vector128_GetElement) ||
-           (node->GetHWIntrinsicId() == NI_Vector256_GetElement));
+           (node->GetHWIntrinsicId() == NI_Vector256_GetElement) ||
+           (node->GetHWIntrinsicId() == NI_Vector512_GetElement));
 
     GenTree*  op1          = node->Op(1);
     GenTree*  op2          = node->Op(2);
