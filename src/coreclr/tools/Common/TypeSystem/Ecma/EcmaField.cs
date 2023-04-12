@@ -147,8 +147,10 @@ namespace Internal.TypeSystem.Ecma
                 if ((fieldAttributes & FieldAttributes.HasFieldRVA) != 0)
                     flags |= FieldFlags.HasRva;
 
+#pragma warning disable SYSLIB0050 // Legacy serialization infrastructure is obsolete
                 if ((fieldAttributes & FieldAttributes.NotSerialized) != 0)
                     flags |= FieldFlags.NotSerialized;
+#pragma warning restore SYSLIB0050
 
                 flags |= FieldFlags.BasicMetadataCache;
             }
