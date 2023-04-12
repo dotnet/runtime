@@ -2198,9 +2198,8 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
                 return GenTree::VisitResult::Continue;
             });
 
-            if (node->OperConsumesFlags())
+            if (node->OperConsumesFlags() && node->gtPrev->gtSetFlags())
             {
-                assert((node->gtPrev->gtFlags & GTF_SET_FLAGS) != 0);
                 node->gtPrev->gtFlags &= ~GTF_SET_FLAGS;
             }
 
