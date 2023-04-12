@@ -5,24 +5,31 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal record TypeSpec
+    internal abstract record TypeSpec
     {
+        private static readonly SymbolDisplayFormat s_minimalDisplayFormat = new SymbolDisplayFormat(
+            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
+            genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+            miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
+
         public TypeSpec(ITypeSymbol type)
         {
-            DisplayString = type.ToDisplayString();
-            SpecialType = type.SpecialType;
+            FullyQualifiedDisplayString = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            MinimalDisplayString = type.ToDisplayString(s_minimalDisplayFormat);
+            Namespace = type.ContainingNamespace?.ToDisplayString();
             IsValueType = type.IsValueType;
         }
 
-        public string DisplayString { get; }
+        public string FullyQualifiedDisplayString { get; }
 
-        public SpecialType SpecialType { get; }
+        public string MinimalDisplayString { get; }
+
+        public string? Namespace { get; }
 
         public bool IsValueType { get; }
 
-        public bool PassToBindCoreByRef => IsValueType || SpecKind == TypeSpecKind.Array;
-
-        public virtual TypeSpecKind SpecKind { get; init; }
+        public abstract TypeSpecKind SpecKind { get; }
 
         public virtual ConstructionStrategy ConstructionStrategy { get; init; }
 

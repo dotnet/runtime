@@ -116,6 +116,18 @@
     <PmiArguments></PmiArguments>
   </PropertyGroup>
 
+  <!-- Settings for Run collections -->
+
+  <PropertyGroup Condition=" '$(CollectionType)' == 'run_tiered' ">
+    <RunArguments>--tiered_compilation</RunArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(CollectionType)' == 'run_pgo' ">
+    <RunArguments>--tiered_pgo</RunArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(CollectionType)' != 'run_tiered' and '$(CollectionType)' != 'run_pgo' ">
+    <RunArguments></RunArguments>
+  </PropertyGroup>
+
   <!-- Define the Helix work item command and timeout for each collection type -->
 
   <PropertyGroup Condition="'$(CollectionName)' != 'benchmarks'">
@@ -124,7 +136,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(CollectionName)' == 'benchmarks'">
-    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_benchmarks.py -performance_directory $(PerformanceDirectory) -superpmi_directory $(SuperPMIDirectory) -core_root $(SuperPMIDirectory) -arch $(Architecture)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(SuperPMIDirectory)$(FileSeparatorChar)superpmi_benchmarks.py -performance_directory $(PerformanceDirectory) -superpmi_directory $(SuperPMIDirectory) -core_root $(SuperPMIDirectory) -arch $(Architecture) $(RunArguments)</WorkItemCommand>
     <WorkItemTimeout>3:00</WorkItemTimeout>
   </PropertyGroup>
 

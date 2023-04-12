@@ -255,18 +255,19 @@ inline regMaskTP genFindLowestReg(regMaskTP value)
  *  A rather simple routine that counts the number of bits in a given number.
  */
 
-template <typename T>
-inline unsigned genCountBits(T bits)
+inline unsigned genCountBits(uint64_t bits)
 {
-    unsigned cnt = 0;
+    return BitOperations::PopCount(bits);
+}
 
-    while (bits)
-    {
-        cnt++;
-        bits -= genFindLowestBit(bits);
-    }
+/*****************************************************************************
+ *
+ *  A rather simple routine that counts the number of bits in a given number.
+ */
 
-    return cnt;
+inline unsigned genCountBits(uint32_t bits)
+{
+    return BitOperations::PopCount(bits);
 }
 
 /*****************************************************************************
@@ -606,7 +607,7 @@ inline bool isRegParamType(var_types type)
 #endif // !TARGET_X86
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 /*****************************************************************************/
 // Returns true if 'type' is a struct that can be enregistered for call args
 //                         or can be returned by value in multiple registers.
@@ -664,7 +665,7 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                typ
 
     return result;
 }
-#endif // TARGET_AMD64 || TARGET_ARMARCH || TARGET_LOONGARCH64
+#endif // TARGET_AMD64 || TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 /*****************************************************************************/
 
@@ -843,38 +844,6 @@ inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree
     assert((GenTree::OperKind(oper) & GTK_EXOP) ==
            0); // Can't use this to construct any types that extend unary/binary operator.
     assert(op1 != nullptr || oper == GT_RETFILT || oper == GT_NOP || (oper == GT_RETURN && type == TYP_VOID));
-
-    if (oper == GT_ADDR)
-    {
-        switch (op1->OperGet())
-        {
-            case GT_LCL_VAR:
-                return gtNewLclVarAddrNode(op1->AsLclVar()->GetLclNum(), type);
-
-            case GT_LCL_FLD:
-                return gtNewLclFldAddrNode(op1->AsLclFld()->GetLclNum(), op1->AsLclFld()->GetLclOffs(), type);
-
-            case GT_BLK:
-            case GT_OBJ:
-            case GT_IND:
-                return op1->AsIndir()->Addr();
-
-            case GT_FIELD:
-            {
-                GenTreeField* fieldAddr =
-                    new (this, GT_FIELD_ADDR) GenTreeField(GT_FIELD_ADDR, type, op1->AsField()->GetFldObj(),
-                                                           op1->AsField()->gtFldHnd, op1->AsField()->gtFldOffset);
-                fieldAddr->gtFldMayOverlap = op1->AsField()->gtFldMayOverlap;
-#ifdef FEATURE_READYTORUN
-                fieldAddr->gtFieldLookup = op1->AsField()->gtFieldLookup;
-#endif
-                return fieldAddr;
-            }
-
-            default:
-                unreached();
-        }
-    }
 
     GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
 
@@ -1107,7 +1076,7 @@ inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
     GenTreeIndir* index;
     if (varTypeIsStruct(indexAddr->gtElemType))
     {
-        index = gtNewObjNode(indexAddr->gtStructElemClass, indexAddr);
+        index = gtNewBlkIndir(typGetObjLayout(indexAddr->gtStructElemClass), indexAddr);
     }
     else
     {
@@ -1208,16 +1177,58 @@ inline GenTreeMDArr* Compiler::gtNewMDArrLowerBound(GenTree* arrayOp, unsigned d
     return arrOp;
 }
 
-//------------------------------------------------------------------------------
-// gtNewIndir : Helper to create an indirection node.
+//------------------------------------------------------------------------
+// gtNewBlkIndir: Create a struct indirection node.
 //
 // Arguments:
-//    typ   -  Type of the node
-//    addr  -  Address of the indirection
+//    layout     - The struct layout
+//    addr       - Address of the indirection
+//    indirFlags - Indirection flags
 //
 // Return Value:
-//    New GT_IND node
+//    The created GT_BLK node.
+//
+inline GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeFlags indirFlags)
+{
+    assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
 
+    GenTreeBlk* blkNode = new (this, GT_BLK) GenTreeBlk(GT_BLK, layout->GetType(), addr, layout);
+    blkNode->gtFlags |= indirFlags;
+    blkNode->SetIndirExceptionFlags(this);
+
+    // TODO-Bug: this method does not have enough information to make this determination.
+    // The local may end up (or already is) address-exposed.
+    if (addr->OperIs(GT_LCL_ADDR))
+    {
+        if (lvaIsImplicitByRefLocal(addr->AsLclVarCommon()->GetLclNum()))
+        {
+            blkNode->gtFlags |= GTF_GLOB_REF;
+        }
+    }
+    else
+    {
+        blkNode->gtFlags |= GTF_GLOB_REF;
+    }
+
+    if ((indirFlags & GTF_IND_VOLATILE) != 0)
+    {
+        blkNode->gtFlags |= GTF_ORDER_SIDEEFF;
+    }
+
+    return blkNode;
+}
+
+//------------------------------------------------------------------------------
+// gtNewIndir : Create an indirection node.
+//
+// Arguments:
+//    typ        - Type of the node
+//    addr       - Address of the indirection
+//    indirFlags - Indirection flags
+//
+// Return Value:
+//    The created GT_IND node.
+//
 inline GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags)
 {
     assert((indirFlags & ~GTF_IND_FLAGS) == GTF_EMPTY);
@@ -1376,6 +1387,10 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 #endif
         case GT_LCL_FLD:
             AsLclFld()->SetLclOffs(0);
+            AsLclFld()->SetLayout(nullptr);
+            break;
+
+        case GT_LCL_ADDR:
             AsLclFld()->SetLayout(nullptr);
             break;
 
@@ -3046,6 +3061,8 @@ inline unsigned genMapFloatRegNumToRegArgNum(regNumber regNum)
     return regNum - REG_F0;
 #elif defined(TARGET_LOONGARCH64)
     return regNum - REG_F0;
+#elif defined(TARGET_RISCV64)
+    return regNum - REG_FLTARG_0;
 #elif defined(TARGET_ARM64)
     return regNum - REG_V0;
 #elif defined(UNIX_AMD64_ABI)
@@ -3578,6 +3595,57 @@ inline CorInfoHelpFunc Compiler::eeGetHelperNum(CORINFO_METHOD_HANDLE method)
     return ((CorInfoHelpFunc)(((size_t)method) >> 2));
 }
 
+//------------------------------------------------------------------------
+// IsStaticHelperEligibleForExpansion: Determine whether this node is a static init
+//    helper eligible for late expansion
+//
+// Arguments:
+//    tree       - tree node
+//    isGC       - [OUT] whether the helper returns GCStaticBase or NonGCStaticBase
+//    retValKind - [OUT] describes its return value
+//
+// Return Value:
+//    Returns true if eligible for late expansion
+//
+inline bool Compiler::IsStaticHelperEligibleForExpansion(GenTree* tree, bool* isGc, StaticHelperReturnValue* retValKind)
+{
+    if (!tree->IsHelperCall())
+    {
+        return false;
+    }
+
+    bool                    gc     = false;
+    bool                    result = false;
+    StaticHelperReturnValue retVal = {};
+    switch (eeGetHelperNum(tree->AsCall()->gtCallMethHnd))
+    {
+        case CORINFO_HELP_READYTORUN_GCSTATIC_BASE:
+        case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
+            result = true;
+            gc     = true;
+            retVal = SHRV_STATIC_BASE_PTR;
+            break;
+        case CORINFO_HELP_READYTORUN_NONGCSTATIC_BASE:
+        case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
+            result = true;
+            gc     = false;
+            retVal = SHRV_STATIC_BASE_PTR;
+            break;
+        // TODO: other helpers
+        default:
+            break;
+    }
+    if (isGc != nullptr)
+    {
+        *isGc = gc;
+    }
+    if (retValKind != nullptr)
+    {
+        *retValKind = retVal;
+    }
+    return result;
+}
+
 //  TODO-Cleanup: Replace calls to IsSharedStaticHelper with new HelperCallProperties
 //
 
@@ -3609,6 +3677,7 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
         helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE ||
         helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR ||
         helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR ||
+        helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED ||
         helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS ||
         helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS ||
 #ifdef FEATURE_READYTORUN
@@ -3658,12 +3727,12 @@ inline bool Compiler::IsGcSafePoint(GenTreeCall* call)
 // Note that we want to have two special FIELD_HANDLES that will both
 // be considered non-Data Offset handles
 //
-// The special values that we use are FLD_GLOBAL_DS and FLD_GLOBAL_FS
+// The special values that we use are FLD_GLOBAL_DS, FLD_GLOBAL_FS or FLD_GLOBAL_GS.
 //
 
 inline bool jitStaticFldIsGlobAddr(CORINFO_FIELD_HANDLE fldHnd)
 {
-    return (fldHnd == FLD_GLOBAL_DS || fldHnd == FLD_GLOBAL_FS);
+    return (fldHnd == FLD_GLOBAL_DS || fldHnd == FLD_GLOBAL_FS || fldHnd == FLD_GLOBAL_GS);
 }
 
 /*
@@ -4039,8 +4108,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         // Leaf nodes
         case GT_LCL_VAR:
         case GT_LCL_FLD:
-        case GT_LCL_VAR_ADDR:
-        case GT_LCL_FLD_ADDR:
+        case GT_LCL_ADDR:
         case GT_CATCH_ARG:
         case GT_LABEL:
         case GT_FTN_ADDR:
@@ -4086,6 +4154,7 @@ void GenTree::VisitOperands(TVisitor visitor)
 // Standard unary operators
 #ifdef TARGET_ARM64
         case GT_CNEG_LT:
+        case GT_CINCCC:
 #endif // TARGET_ARM64
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
@@ -4103,7 +4172,6 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CKFINITE:
         case GT_LCLHEAP:
         case GT_IND:
-        case GT_OBJ:
         case GT_BLK:
         case GT_BOX:
         case GT_ALLOCOBJ:

@@ -68,7 +68,7 @@ int LinearScan::BuildNode(GenTree* tree)
     }
 
     // floating type generates AVX instruction (vmovss etc.), set the flag
-    if (varTypeUsesFloatReg(tree->TypeGet()))
+    if (!varTypeUsesIntReg(tree->TypeGet()))
     {
         SetContainsAVXFlags();
     }
@@ -484,7 +484,6 @@ int LinearScan::BuildNode(GenTree* tree)
             }
             break;
 
-        case GT_OBJ:
         case GT_BLK:
             // These should all be eliminated prior to Lowering.
             assert(!"Non-store block node in Lowering");
@@ -1218,13 +1217,18 @@ int LinearScan::BuildCall(GenTreeCall* call)
         dstCandidates                     = RBM_FLOATRET;
 #endif // !TARGET_X86
     }
-    else if (registerType == TYP_LONG)
-    {
-        dstCandidates = RBM_LNGRET;
-    }
     else
     {
-        dstCandidates = RBM_INTRET;
+        assert(varTypeUsesIntReg(registerType));
+
+        if (registerType == TYP_LONG)
+        {
+            dstCandidates = RBM_LNGRET;
+        }
+        else
+        {
+            dstCandidates = RBM_INTRET;
+        }
     }
 
     // number of args to a call =
@@ -1296,12 +1300,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
             // If the node is TYP_STRUCT and it is put on stack with
             // putarg_stk operation, we consume and produce no registers.
-            // In this case the embedded Obj node should not produce
+            // In this case the embedded Blk node should not produce
             // registers too since it is contained.
             // Note that if it is a SIMD type the argument will be in a register.
             if (argNode->TypeGet() == TYP_STRUCT)
             {
-                assert(argNode->gtGetOp1() != nullptr && argNode->gtGetOp1()->OperGet() == GT_OBJ);
+                assert(argNode->gtGetOp1() != nullptr && argNode->gtGetOp1()->OperGet() == GT_BLK);
                 assert(argNode->gtGetOp1()->isContained());
             }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
@@ -1508,6 +1512,66 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                         SetContainsAVXFlags(size);
                     }
                     break;
+
+                case GenTreeBlk::BlkOpKindUnrollMemmove:
+                {
+                    // Prepare SIMD/GPR registers needed to perform an unrolled memmove. The idea that
+                    // we can ignore the fact that src and dst might overlap if we save the whole src
+                    // to temp regs in advance, e.g. for memmove(dst: rcx, src: rax, len: 120):
+                    //
+                    //       vmovdqu  ymm0, ymmword ptr[rax +  0]
+                    //       vmovdqu  ymm1, ymmword ptr[rax + 32]
+                    //       vmovdqu  ymm2, ymmword ptr[rax + 64]
+                    //       vmovdqu  ymm3, ymmword ptr[rax + 88]
+                    //       vmovdqu  ymmword ptr[rcx +  0], ymm0
+                    //       vmovdqu  ymmword ptr[rcx + 32], ymm1
+                    //       vmovdqu  ymmword ptr[rcx + 64], ymm2
+                    //       vmovdqu  ymmword ptr[rcx + 88], ymm3
+                    //
+
+                    // Not yet finished for x86
+                    assert(TARGET_POINTER_SIZE == 8);
+
+                    // Lowering was expected to get rid of memmove in case of zero
+                    assert(size > 0);
+
+                    unsigned simdSize = compiler->roundDownSIMDSize(size);
+                    if (size <= ZMM_RECOMMENDED_THRESHOLD)
+                    {
+                        // Only use ZMM for large data due to possible CPU throttle issues
+                        simdSize = min(YMM_REGSIZE_BYTES, compiler->roundDownSIMDSize(size));
+                    }
+
+                    if ((size >= simdSize) && (simdSize > 0))
+                    {
+                        unsigned simdRegs = size / simdSize;
+                        if ((size % simdSize) != 0)
+                        {
+                            // TODO-CQ: Consider using GPR load/store here if the reminder is 1,2,4 or 8
+                            // especially if we enable AVX-512
+                            simdRegs++;
+                        }
+                        for (unsigned i = 0; i < simdRegs; i++)
+                        {
+                            // It's too late to revert the unrolling so we hope we'll have enough SIMD regs
+                            // no more than MaxInternalCount. Currently, it's controlled by getUnrollThreshold(memmove)
+                            buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                        }
+                        SetContainsAVXFlags();
+                    }
+                    else if (isPow2(size))
+                    {
+                        // Single GPR for 1,2,4,8
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                    }
+                    else
+                    {
+                        // Any size from 3 to 15 can be handled via two GPRs
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                        buildInternalIntRegisterDefForNode(blkNode, availableIntRegs);
+                    }
+                }
+                break;
 
                 case GenTreeBlk::BlkOpKindRepInstr:
                     dstAddrRegMask = RBM_RDI;
@@ -1779,59 +1843,16 @@ int LinearScan::BuildLclHeap(GenTree* tree)
 {
     int srcCount = 1;
 
-    // Need a variable number of temp regs (see genLclHeap() in codegenamd64.cpp):
-    // Here '-' means don't care.
-    //
-    //     Size?                    Init Memory?         # temp regs
-    //      0                            -                  0 (returns 0)
-    //      const and <=6 reg words      -                  0 (pushes '0')
-    //      const and >6 reg words       Yes                0 (pushes '0')
-    //      const and <PageSize          No                 0 (amd64) 1 (x86)
-    //
-    //      const and >=PageSize         No                 1 (regCnt)
-    //      Non-const                    Yes                0 (regCnt=targetReg and pushes '0')
-    //      Non-const                    No                 1 (regCnt)
-    //
-    // Note: Here we don't need internal register to be different from targetReg.
-    // Rather, require it to be different from operand's reg.
-
     GenTree* size = tree->gtGetOp1();
-    if (size->IsCnsIntOrI())
+    if (size->IsCnsIntOrI() && size->isContained())
     {
-        assert(size->isContained());
         srcCount       = 0;
-        size_t sizeVal = size->AsIntCon()->gtIconVal;
+        size_t sizeVal = AlignUp((size_t)size->AsIntCon()->gtIconVal, STACK_ALIGN);
 
-        if (sizeVal == 0)
+        // Explicitly zeroed LCLHEAP also needs a regCnt in case of x86 or large page
+        if ((TARGET_POINTER_SIZE == 4) || (sizeVal >= compiler->eeGetPageSize()))
         {
-            // For regCnt
             buildInternalIntRegisterDefForNode(tree);
-        }
-        else
-        {
-            // Compute the amount of memory to properly STACK_ALIGN.
-            // Note: The Gentree node is not updated here as it is cheap to recompute stack aligned size.
-            // This should also help in debugging as we can examine the original size specified with localloc.
-            sizeVal = AlignUp(sizeVal, STACK_ALIGN);
-
-            // For small allocations up to 6 pointer sized words (i.e. 48 bytes of localloc)
-            // we will generate 'push 0'.
-            assert((sizeVal % REGSIZE_BYTES) == 0);
-
-            if (!compiler->info.compInitMem)
-            {
-#ifdef TARGET_X86
-                // x86 always needs regCnt.
-                // For regCnt
-                buildInternalIntRegisterDefForNode(tree);
-#else  // !TARGET_X86
-                if (sizeVal >= compiler->eeGetPageSize())
-                {
-                    // For regCnt
-                    buildInternalIntRegisterDefForNode(tree);
-                }
-#endif // !TARGET_X86
-            }
         }
     }
     else
@@ -1841,7 +1862,7 @@ int LinearScan::BuildLclHeap(GenTree* tree)
             // For regCnt
             buildInternalIntRegisterDefForNode(tree);
         }
-        BuildUse(size);
+        BuildUse(size); // could be a non-contained constant
     }
     buildInternalRegisterUses();
     BuildDef(tree);
@@ -2172,9 +2193,13 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_Vector128_AsVector2:
             case NI_Vector128_AsVector3:
             case NI_Vector128_ToVector256:
+            case NI_Vector128_ToVector512:
+            case NI_Vector256_ToVector512:
             case NI_Vector128_ToVector256Unsafe:
             case NI_Vector256_ToVector512Unsafe:
             case NI_Vector256_GetLower:
+            case NI_Vector512_GetLower:
+            case NI_Vector512_GetLower128:
             {
                 assert(numArgs == 1);
 

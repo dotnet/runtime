@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 [StructLayout(LayoutKind.Sequential)]
 class RECT
@@ -41,7 +42,8 @@ class CSwarm
 
 public class MainClass
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         CSwarm swarm = new CSwarm();
         return (100);

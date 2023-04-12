@@ -265,14 +265,14 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
     {
         // Apply ASCII-only ToLowerCase mask (bitwise OR 0x20 for all a-Z chars)
         assert((toLowerVec1 != nullptr) && (toLowerVec2 != nullptr));
-        vec1 = gtNewSimdBinOpNode(GT_OR, simdType, vec1, toLowerVec1, baseType, simdSize, false);
-        vec2 = gtNewSimdBinOpNode(GT_OR, simdType, vec2, toLowerVec2, baseType, simdSize, false);
+        vec1 = gtNewSimdBinOpNode(GT_OR, simdType, vec1, toLowerVec1, baseType, simdSize);
+        vec2 = gtNewSimdBinOpNode(GT_OR, simdType, vec2, toLowerVec2, baseType, simdSize);
     }
 
     // ((v1 ^ cns1) | (v2 ^ cns2)) == zero
-    GenTree* xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, baseType, simdSize, false);
-    GenTree* xor2 = gtNewSimdBinOpNode(GT_XOR, simdType, vec2, cnsVec2, baseType, simdSize, false);
-    GenTree* orr  = gtNewSimdBinOpNode(GT_OR, simdType, xor1, xor2, baseType, simdSize, false);
+    GenTree* xor1 = gtNewSimdBinOpNode(GT_XOR, simdType, vec1, cnsVec1, baseType, simdSize);
+    GenTree* xor2 = gtNewSimdBinOpNode(GT_XOR, simdType, vec2, cnsVec2, baseType, simdSize);
+    GenTree* orr  = gtNewSimdBinOpNode(GT_OR, simdType, xor1, xor2, baseType, simdSize);
     return gtNewSimdHWIntrinsicNode(TYP_BOOL, useSingleVector ? xor1 : orr, zero, niEquals, baseType, simdSize);
 }
 #endif // defined(FEATURE_HW_INTRINSICS)
@@ -865,7 +865,8 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
         JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%ws\")...\n", str)
     }
 
-    CORINFO_CLASS_HANDLE spanCls      = gtGetStructHandle(spanObj);
+    CORINFO_CLASS_HANDLE spanCls;
+    info.compCompHnd->getArgType(sig, sig->args, &spanCls);
     CORINFO_FIELD_HANDLE pointerHnd   = info.compCompHnd->getFieldInClass(spanCls, 0);
     CORINFO_FIELD_HANDLE lengthHnd    = info.compCompHnd->getFieldInClass(spanCls, 1);
     const unsigned       lengthOffset = info.compCompHnd->getFieldOffset(lengthHnd);

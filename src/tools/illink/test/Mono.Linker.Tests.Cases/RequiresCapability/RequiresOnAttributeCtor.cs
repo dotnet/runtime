@@ -4,20 +4,20 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
+using Mono.Linker.Tests.Cases.Expectations.Helpers;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.RequiresCapability.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability
 {
-	[IgnoreTestCase ("Ignore in NativeAOT, see https://github.com/dotnet/runtime/issues/82447", IgnoredBy = Tool.NativeAot)]
 	[SetupLinkerAction ("link", "test.exe")]
 	[SetupCompileBefore ("RequiresOnAttributeCtor.dll", new[] { "Dependencies/RequiresOnAttributeCtorAttribute.cs" })]
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
 	public class RequiresOnAttributeCtor
 	{
-		[ExpectedWarning ("IL2026", "RUC on MethodAnnotatedWithRequires")]
-		[ExpectedWarning ("IL2026", "RUC on TestTypeWithRequires")]
+		// Simple way to suppress all warnings in Main
+		[RequiresUnreferencedCode ("main")]
 		public static void Main ()
 		{
 			var type = new Type ();
@@ -31,6 +31,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			Type.Interface annotatedInterface = new Type.NestedType ();
 
 			TestTypeWithRequires ();
+
+			typeof (RequiresOnAttributeCtor).RequiresAll ();
 		}
 
 		[RequiresUnreferencedCode ("RUC on TestTypeWithRequires")]

@@ -300,7 +300,7 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         add     r10, [rax]
         PREPARE_EXTERNAL_VAR g_GCShadowEnd, rax
         cmp     r10, [rax]
-        ja      NoShadow_ByRefWriteBarrier
+        jnb     NoShadow_ByRefWriteBarrier
 
         // Write ref into real GC
         mov     [rdi], rcx

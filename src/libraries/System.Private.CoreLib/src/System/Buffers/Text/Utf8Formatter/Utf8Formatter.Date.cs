@@ -39,9 +39,9 @@ namespace System.Buffers.Text
 
             return symbol switch
             {
-                'R' => TryFormatDateTimeR(value.UtcDateTime, destination, out bytesWritten),
+                'R' => DateTimeFormat.TryFormatR(value.UtcDateTime, new TimeSpan(DateTimeFormat.NullOffset), destination, out bytesWritten),
                 'l' => TryFormatDateTimeL(value.UtcDateTime, destination, out bytesWritten),
-                'O' => TryFormatDateTimeO(value.DateTime, value.Offset, destination, out bytesWritten),
+                'O' => DateTimeFormat.TryFormatO(value.DateTime, value.Offset, destination, out bytesWritten),
                 'G' => TryFormatDateTimeG(value.DateTime, offset, destination, out bytesWritten),
                 _ => FormattingHelpers.TryFormatThrowFormatException(out bytesWritten),
             };
@@ -74,9 +74,9 @@ namespace System.Buffers.Text
 
             return symbol switch
             {
-                'R' => TryFormatDateTimeR(value, destination, out bytesWritten),
+                'R' => DateTimeFormat.TryFormatR(value, new TimeSpan(DateTimeFormat.NullOffset), destination, out bytesWritten),
                 'l' => TryFormatDateTimeL(value, destination, out bytesWritten),
-                'O' => TryFormatDateTimeO(value, Utf8Constants.NullUtcOffset, destination, out bytesWritten),
+                'O' => DateTimeFormat.TryFormatO(value, Utf8Constants.NullUtcOffset, destination, out bytesWritten),
                 'G' => TryFormatDateTimeG(value, Utf8Constants.NullUtcOffset, destination, out bytesWritten),
                 _ => FormattingHelpers.TryFormatThrowFormatException(out bytesWritten),
             };

@@ -50,6 +50,8 @@ export const enum BailoutReason {
     CallDelegate,
     Debugging,
     Icall,
+    UnexpectedRetIp,
+    LeaveCheck,
 }
 
 export const BailoutReasonNames = [
@@ -78,6 +80,8 @@ export const BailoutReasonNames = [
     "CallDelegate",
     "Debugging",
     "Icall",
+    "UnexpectedRetIp",
+    "LeaveCheck",
 ];
 
 type FunctionType = [
@@ -151,11 +155,13 @@ export class WasmBuilder {
     argumentCount!: number;
     activeBlocks!: number;
     base!: MintOpcodePtr;
+    frame: NativePointer = <any>0;
     traceBuf: Array<string> = [];
     branchTargets = new Set<MintOpcodePtr>();
     options!: JiterpreterOptions;
     constantSlots: Array<number> = [];
     backBranchOffsets: Array<MintOpcodePtr> = [];
+    callHandlerReturnAddresses: Array<MintOpcodePtr> = [];
     nextConstantSlot = 0;
 
     compressImportNames = false;
@@ -201,6 +207,7 @@ export class WasmBuilder {
         for (let i = 0; i < this.constantSlots.length; i++)
             this.constantSlots[i] = 0;
         this.backBranchOffsets.length = 0;
+        this.callHandlerReturnAddresses.length = 0;
 
         this.allowNullCheckOptimization = this.options.eliminateNullChecks;
     }
@@ -1006,14 +1013,16 @@ class Cfg {
     overheadBytes = 0;
     entryBlob!: CfgBlob;
     blockStack: Array<MintOpcodePtr> = [];
+    backDispatchOffsets: Array<MintOpcodePtr> = [];
     dispatchTable = new Map<MintOpcodePtr, number>();
-    trace = false;
+    observedBranchTargets = new Set<MintOpcodePtr>();
+    trace = 0;
 
     constructor (builder: WasmBuilder) {
         this.builder = builder;
     }
 
-    initialize (startOfBody: MintOpcodePtr, backBranchTargets: Uint16Array | null, trace: boolean) {
+    initialize (startOfBody: MintOpcodePtr, backBranchTargets: Uint16Array | null, trace: number) {
         this.segments.length = 0;
         this.blockStack.length = 0;
         this.startOfBody = startOfBody;
@@ -1023,7 +1032,9 @@ class Cfg {
         this.lastSegmentEnd = 0;
         this.overheadBytes = 10; // epilogue
         this.dispatchTable.clear();
+        this.observedBranchTargets.clear();
         this.trace = trace;
+        this.backDispatchOffsets.length = 0;
     }
 
     // We have a header containing the table of locals and we need to preserve it
@@ -1034,9 +1045,11 @@ class Cfg {
         mono_assert(this.segments[0].type === "blob", "expected blob");
         this.entryBlob = <CfgBlob>this.segments[0];
         this.segments.length = 0;
-        this.overheadBytes += 9; // entry eip init + block + optional loop
-        if (this.backBranchTargets)
-            this.overheadBytes += 24; // some extra padding for the dispatch br_table
+        this.overheadBytes += 9; // entry disp init + block + optional loop
+        if (this.backBranchTargets) {
+            this.overheadBytes += 20; // some extra padding for the dispatch br_table
+            this.overheadBytes += this.backBranchTargets.length; // one byte for each target in the table
+        }
     }
 
     appendBlob () {
@@ -1051,6 +1064,8 @@ class Cfg {
         });
         this.lastSegmentStartIp = this.ip;
         this.lastSegmentEnd = this.builder.current.size;
+        // each segment generates a block
+        this.overheadBytes += 2;
     }
 
     startBranchBlock (ip: MintOpcodePtr, isBackBranchTarget: boolean) {
@@ -1060,12 +1075,11 @@ class Cfg {
             ip,
             isBackBranchTarget,
         });
-        this.overheadBytes += 3; // each branch block just costs us a block (2 bytes) and an end
-        if (this.backBranchTargets)
-            this.overheadBytes += 3; // size of the br_table entry for this branch target
+        this.overheadBytes += 1; // each branch block just costs us an end
     }
 
     branch (target: MintOpcodePtr, isBackward: boolean, isConditional: boolean) {
+        this.observedBranchTargets.add(target);
         this.appendBlob();
         this.segments.push({
             type: "branch",
@@ -1074,9 +1088,17 @@ class Cfg {
             isBackward,
             isConditional,
         });
-        this.overheadBytes += 3; // forward branches are a constant br + depth (optimally 2 bytes)
-        if (isBackward)
-            this.overheadBytes += 4; // back branches are more complex
+        // some branches will generate bailouts instead so we allocate 4 bytes per branch
+        //  to try and balance this out and avoid underestimating too much
+        this.overheadBytes += 4; // forward branches are a constant br + depth (optimally 2 bytes)
+        if (isBackward) {
+            // get_local <cinfo>
+            // i32_const 1
+            // i32_store 0 0
+            // i32.const <n>
+            // set_local <disp>
+            this.overheadBytes += 11;
+        }
     }
 
     emitBlob (segment: CfgBlob, source: Uint8Array) {
@@ -1124,33 +1146,72 @@ class Cfg {
 
         const dispatchIp = <MintOpcodePtr><any>0;
         if (this.backBranchTargets) {
-            // the loop needs to start with a br_table that performs dispatch based on the current value
-            //  of the dispatch index local
-            // br_table has to be surrounded by a block in order for a depth of 0 to be fallthrough
-            // We wrap it in an additional block so we can have a trap for unexpected disp values
-            this.builder.block(WasmValtype.void);
-            this.builder.block(WasmValtype.void);
-            this.builder.local("disp");
-            this.builder.appendU8(WasmOpcode.br_table);
-            // br_table <number of values starting from 0> <labels for values starting from 0> <default>
-            // we have to assign disp==0 to fallthrough so that we start at the top of the fn body, then
-            //  assign disp values starting from 1 to branch targets
-            this.builder.appendULeb(this.blockStack.length + 1);
-            this.builder.appendULeb(1); // br depth of 1 = skip the unreachable and fall through to the start
-            for (let i = 0; i < this.blockStack.length; i++) {
-                this.dispatchTable.set(this.blockStack[i], i + 1);
-                this.builder.appendULeb(i + 2); // add 2 to the depth because of the double block around it
+            this.backDispatchOffsets.length = 0;
+            // First scan the back branch target table and union it with the block stack
+            // This filters down to back branch targets that are reachable inside this trace
+            // Further filter it down by only including targets we have observed a branch to
+            //  this helps for cases where the branch opcodes targeting the location were not
+            //  compiled due to an abort or some other reason
+            for (let i = 0; i < this.backBranchTargets.length; i++) {
+                const offset = (this.backBranchTargets[i] * 2) + <any>this.startOfBody;
+                const breakDepth = this.blockStack.indexOf(offset);
+                if (breakDepth < 0)
+                    continue;
+                if (!this.observedBranchTargets.has(offset))
+                    continue;
+
+                this.dispatchTable.set(offset, this.backDispatchOffsets.length + 1);
+                this.backDispatchOffsets.push(offset);
             }
-            this.builder.appendULeb(0); // for unrecognized value we br 0, which causes us to trap
-            this.builder.endBlock();
-            this.builder.appendU8(WasmOpcode.unreachable);
-            this.builder.endBlock();
-            // We put a dummy IP at the end of the block stack to represent the dispatch loop
-            // We will use this dummy IP to find the appropriate br depth when restarting the loop later
-            this.blockStack.push(dispatchIp);
+
+            if (this.backDispatchOffsets.length === 0) {
+                if (this.trace > 0)
+                    console.log("No back branch targets were reachable after filtering");
+            } else if (this.backDispatchOffsets.length === 1) {
+                if (this.trace > 0) {
+                    if (this.backDispatchOffsets[0] === this.entryIp)
+                        console.log(`Exactly one back dispatch offset and it was the entry point 0x${(<any>this.entryIp).toString(16)}`);
+                    else
+                        console.log(`Exactly one back dispatch offset and it was 0x${(<any>this.backDispatchOffsets[0]).toString(16)}`);
+                }
+
+                // if (disp) goto back_branch_target else fallthrough
+                this.builder.local("disp");
+                this.builder.appendU8(WasmOpcode.br_if);
+                this.builder.appendULeb(this.blockStack.indexOf(this.backDispatchOffsets[0]));
+            } else {
+                // the loop needs to start with a br_table that performs dispatch based on the current value
+                //  of the dispatch index local
+                // br_table has to be surrounded by a block in order for a depth of 0 to be fallthrough
+                // We wrap it in an additional block so we can have a trap for unexpected disp values
+                this.builder.block(WasmValtype.void);
+                this.builder.block(WasmValtype.void);
+                this.builder.local("disp");
+                this.builder.appendU8(WasmOpcode.br_table);
+
+                // br_table <number of values starting from 0> <labels for values starting from 0> <default>
+                // we have to assign disp==0 to fallthrough so that we start at the top of the fn body, then
+                //  assign disp values starting from 1 to branch targets
+                this.builder.appendULeb(this.backDispatchOffsets.length + 1);
+                this.builder.appendULeb(1); // br depth of 1 = skip the unreachable and fall through to the start
+                for (let i = 0; i < this.backDispatchOffsets.length; i++) {
+                    // add 2 to the depth because of the double block around it
+                    this.builder.appendULeb(this.blockStack.indexOf(this.backDispatchOffsets[i]) + 2);
+                }
+                this.builder.appendULeb(0); // for unrecognized value we br 0, which causes us to trap
+                this.builder.endBlock();
+                this.builder.appendU8(WasmOpcode.unreachable);
+                this.builder.endBlock();
+            }
+
+            if (this.backDispatchOffsets.length > 0) {
+                // We put a dummy IP at the end of the block stack to represent the dispatch loop
+                // We will use this dummy IP to find the appropriate br depth when restarting the loop later
+                this.blockStack.push(dispatchIp);
+            }
         }
 
-        if (this.trace)
+        if (this.trace > 1)
             console.log(`blockStack=${this.blockStack}`);
 
         for (let i = 0; i < this.segments.length; i++) {
@@ -1173,34 +1234,47 @@ class Cfg {
                 }
                 case "branch": {
                     const lookupTarget = segment.isBackward ? dispatchIp : segment.target;
-                    let indexInStack = this.blockStack.indexOf(lookupTarget);
+                    let indexInStack = this.blockStack.indexOf(lookupTarget),
+                        successfulBackBranch = false;
 
                     // Back branches will target the dispatcher loop so we need to update the dispatch index
                     //  which will be used by the loop dispatch br_table to jump to the correct location
-                    if (segment.isBackward && (indexInStack >= 0)) {
+                    if (segment.isBackward) {
                         if (this.dispatchTable.has(segment.target)) {
                             const disp = this.dispatchTable.get(segment.target)!;
-                            if (this.trace)
+                            if (this.trace > 1)
                                 console.log(`backward br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)}: disp=${disp}`);
+
+                            // Set the back branch taken flag local so it will get flushed on monitoring exit
+                            this.builder.i32_const(1);
+                            this.builder.local("backbranched", WasmOpcode.set_local);
+
+                            // set the dispatch index for the br_table
                             this.builder.i32_const(disp);
                             this.builder.local("disp", WasmOpcode.set_local);
+                            successfulBackBranch = true;
                         } else {
-                            if (this.trace)
+                            if (this.trace > 0)
                                 console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed: back branch target not in dispatch table`);
                             indexInStack = -1;
                         }
                     }
 
-                    if (indexInStack >= 0) {
+                    if ((indexInStack >= 0) || successfulBackBranch) {
                         // Conditional branches are nested in an extra block, so the depth is +1
                         const offset = segment.isConditional ? 1 : 0;
                         this.builder.appendU8(WasmOpcode.br);
                         this.builder.appendULeb(offset + indexInStack);
-                        if (this.trace)
+                        if (this.trace > 1)
                             console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} breaking out ${offset + indexInStack + 1} level(s)`);
                     } else {
-                        if (this.trace)
-                            console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed`);
+                        if (this.trace > 0) {
+                            const base = <any>this.base;
+                            if ((segment.target >= base) && (segment.target < this.exitIp))
+                                console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed (inside of trace!)`);
+                            else if (this.trace > 1)
+                                console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed (outside of trace 0x${base.toString(16)} - 0x${(<any>this.exitIp).toString(16)})`);
+                        }
                         append_bailout(this.builder, segment.target, BailoutReason.Branch);
                     }
                     break;
@@ -1212,8 +1286,11 @@ class Cfg {
 
         // Close the dispatch loop
         if (this.backBranchTargets) {
-            mono_assert(this.blockStack[0] === <any>0, "expected one zero entry on the block stack for the dispatch loop");
-            this.blockStack.shift();
+            // This is no longer true due to filtering
+            // mono_assert(this.blockStack[0] === <any>0, "expected one zero entry on the block stack for the dispatch loop");
+            mono_assert(this.blockStack.length <= 1, "expected one or zero entries in the block stack at the end");
+            if (this.blockStack.length)
+                this.blockStack.shift();
             this.builder.endBlock();
         }
 
@@ -1267,6 +1344,31 @@ export const _now = (globalThis.performance && globalThis.performance.now)
 let scratchBuffer : NativePointer = <any>0;
 
 export function append_bailout (builder: WasmBuilder, ip: MintOpcodePtr, reason: BailoutReason) {
+    builder.ip_const(ip);
+    if (builder.options.countBailouts) {
+        builder.i32_const(builder.base);
+        builder.i32_const(reason);
+        builder.callImport("bailout");
+    }
+    builder.appendU8(WasmOpcode.return_);
+}
+
+// generate a bailout that is recorded for the monitoring phase as a possible early exit.
+export function append_exit (builder: WasmBuilder, ip: MintOpcodePtr, opcodeCounter: number, reason: BailoutReason) {
+    if (opcodeCounter <= (builder.options.monitoringLongDistance + 2)) {
+        builder.local("cinfo");
+        builder.i32_const(opcodeCounter);
+        builder.appendU8(WasmOpcode.i32_store);
+        builder.appendMemarg(4, 0); // bailout_opcode_count
+        // flush the backward branch taken flag into the cinfo so that the monitoring phase
+        //  knows we took a backward branch. this is unfortunate but unavoidable overhead
+        // we just make it a flag instead of an increment to reduce the cost
+        builder.local("cinfo");
+        builder.local("backbranched");
+        builder.appendU8(WasmOpcode.i32_store);
+        builder.appendMemarg(0, 0); // JiterpreterCallInfo.backward_branch_taken
+    }
+
     builder.ip_const(ip);
     if (builder.options.countBailouts) {
         builder.i32_const(builder.base);
@@ -1551,6 +1653,11 @@ export type JiterpreterOptions = {
     eliminateNullChecks: boolean;
     minimumTraceLength: number;
     minimumTraceHitCount: number;
+    monitoringPeriod: number;
+    monitoringShortDistance: number;
+    monitoringLongDistance: number;
+    monitoringMaxAveragePenalty: number;
+    backBranchBoost: number;
     jitCallHitCount: number;
     jitCallFlushThreshold: number;
     interpEntryHitCount: number;
@@ -1577,6 +1684,11 @@ const optionNames : { [jsName: string] : string } = {
     "directJitCalls": "jiterpreter-direct-jit-calls",
     "minimumTraceLength": "jiterpreter-minimum-trace-length",
     "minimumTraceHitCount": "jiterpreter-minimum-trace-hit-count",
+    "monitoringPeriod": "jiterpreter-trace-monitoring-period",
+    "monitoringShortDistance": "jiterpreter-trace-monitoring-short-distance",
+    "monitoringLongDistance": "jiterpreter-trace-monitoring-long-distance",
+    "monitoringMaxAveragePenalty": "jiterpreter-trace-monitoring-max-average-penalty",
+    "backBranchBoost": "jiterpreter-back-branch-boost",
     "jitCallHitCount": "jiterpreter-jit-call-hit-count",
     "jitCallFlushThreshold": "jiterpreter-jit-call-queue-flush-threshold",
     "interpEntryHitCount": "jiterpreter-interp-entry-hit-count",

@@ -102,6 +102,7 @@ namespace System.Security.Cryptography.Xml
             return referenceElement;
         }
 
+        [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
         public virtual void LoadXml(XmlElement value)
         {
             if (value is null)

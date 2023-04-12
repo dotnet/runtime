@@ -142,8 +142,6 @@ namespace System
                                                          null, // use default binder
                                                          Type.EmptyTypes, // parameters
                                                          null); // no parameter modifiers
-
-            bool wrongSignature = false;
             if (initializeMethod == null)
             {
                 // There weren't any static methods without
@@ -153,33 +151,24 @@ namespace System
                 {
                     // This could find zero, one, or multiple methods
                     // with the correct name.
-                    initializeMethod = type.GetMethod(InitializeMethodName,
+                    MethodInfo? wrongSigMethod = type.GetMethod(InitializeMethodName,
                                                       BindingFlags.Public | BindingFlags.NonPublic |
                                                       BindingFlags.Static | BindingFlags.Instance);
+                    // Didn't find any
+                    if (wrongSigMethod == null)
+                    {
+                        throw new MissingMethodException(StartupHookTypeName, InitializeMethodName);
+                    }
                 }
                 catch (AmbiguousMatchException)
                 {
                     // Found multiple. Will throw below due to initializeMethod being null.
                     Debug.Assert(initializeMethod == null);
                 }
-
-                if (initializeMethod != null)
-                {
-                    // Found one
-                    wrongSignature = true;
-                }
-                else
-                {
-                    // Didn't find any
-                    throw new MissingMethodException(StartupHookTypeName, InitializeMethodName);
-                }
-            }
-            else if (initializeMethod.ReturnType != typeof(void))
-            {
-                wrongSignature = true;
             }
 
-            if (wrongSignature)
+            // Found Initialize method(s) with non-conforming signatures
+            if (initializeMethod == null || initializeMethod.ReturnType != typeof(void))
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidStartupHookSignature,
                                                       StartupHookTypeName + Type.Delimiter + InitializeMethodName,

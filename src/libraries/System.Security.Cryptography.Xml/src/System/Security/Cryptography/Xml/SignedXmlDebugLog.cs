@@ -684,7 +684,7 @@ namespace System.Security.Cryptography.Xml
 
             if (VerboseLoggingEnabled)
             {
-                HashAlgorithm? hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
+                HashAlgorithm? hashAlgorithm = CryptoHelpers.CreateNonTransformFromName<HashAlgorithm>(reference.DigestMethod);
                 string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                   SR.Log_SigningReference,
@@ -819,7 +819,7 @@ namespace System.Security.Cryptography.Xml
 
             if (VerboseLoggingEnabled)
             {
-                HashAlgorithm? hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
+                HashAlgorithm? hashAlgorithm = CryptoHelpers.CreateNonTransformFromName<HashAlgorithm>(reference.DigestMethod);
                 string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                   SR.Log_ReferenceHash,
@@ -1033,7 +1033,7 @@ namespace System.Security.Cryptography.Xml
 
             if (InformationLoggingEnabled)
             {
-                HashAlgorithm? hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
+                HashAlgorithm? hashAlgorithm = CryptoHelpers.CreateNonTransformFromName<HashAlgorithm>(reference.DigestMethod);
                 string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                     SR.Log_SignedXmlRecursionLimit,

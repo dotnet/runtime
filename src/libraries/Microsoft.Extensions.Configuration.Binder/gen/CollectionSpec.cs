@@ -22,11 +22,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public CollectionSpec? ConcreteType { get; init; }
     }
 
+    internal sealed record ArraySpec : CollectionSpec
+    {
+        public ArraySpec(ITypeSymbol type) : base(type) { }
+
+        public override TypeSpecKind SpecKind => TypeSpecKind.Array;
+    }
+
     internal sealed record EnumerableSpec : CollectionSpec
     {
         public EnumerableSpec(ITypeSymbol type) : base(type) { }
 
-        public override TypeSpecKind SpecKind { get; init; } = TypeSpecKind.Enumerable;
+        public override TypeSpecKind SpecKind => TypeSpecKind.Enumerable;
     }
 
     internal sealed record DictionarySpec : CollectionSpec
@@ -35,6 +42,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public override TypeSpecKind SpecKind => TypeSpecKind.Dictionary;
 
-        public required TypeSpec KeyType { get; init; }
+        public required ParsableFromStringTypeSpec KeyType { get; init; }
     }
 }

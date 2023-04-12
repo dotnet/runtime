@@ -772,48 +772,6 @@ get_block:
 	return (GCObject *)obj;
 }
 
-/*
- * We're not freeing the block if it's empty.  We leave that work for
- * the next major collection.
- *
- * This is just called from the domain clearing code, which runs in a
- * single thread and has the GC lock, so we don't need an extra lock.
- */
-static void
-free_object (GCObject *obj, size_t size, gboolean pinned)
-{
-	MSBlockInfo *block = MS_BLOCK_FOR_OBJ (obj);
-	int word, bit;
-	gboolean in_free_list;
-
-	SGEN_ASSERT (9, sweep_state == SWEEP_STATE_SWEPT, "Should have waited for sweep to free objects.");
-
-	ensure_can_access_block_free_list (block);
-	SGEN_ASSERT (9, (pinned && block->pinned) || (!pinned && !block->pinned), "free-object pinning mixup object %p pinned %d block %p pinned %d", obj, pinned, block, block->pinned);
-	SGEN_ASSERT (9, MS_OBJ_ALLOCED (obj, block), "object %p is already free", obj);
-	MS_CALC_MARK_BIT (word, bit, obj);
-	SGEN_ASSERT (9, !MS_MARK_BIT (block, word, bit), "object %p has mark bit set", obj);
-
-	memset (obj, 0, size);
-
-	in_free_list = !!block->free_list;
-	*(void**)obj = block->free_list;
-	block->free_list = (void**)obj;
-
-	if (!in_free_list) {
-		MSBlockInfo * volatile *free_blocks = FREE_BLOCKS (pinned, block->has_references);
-		int size_index = MS_BLOCK_OBJ_SIZE_INDEX (size);
-		SGEN_ASSERT (9, !block->next_free, "block %p doesn't have a free-list of object but belongs to a free-list of blocks", block);
-		add_free_block (free_blocks, size_index, block);
-	}
-}
-
-static void
-major_free_non_pinned_object (GCObject *obj, size_t size)
-{
-	free_object (obj, size, FALSE);
-}
-
 /* size is a multiple of SGEN_ALLOC_ALIGN */
 static GCObject*
 major_alloc_small_pinned_obj (GCVTable vtable, size_t size, gboolean has_references)
@@ -829,12 +787,6 @@ major_alloc_small_pinned_obj (GCVTable vtable, size_t size, gboolean has_referen
 		res = alloc_obj (vtable, size, TRUE, has_references);
 	 }
 	 return (GCObject *)res;
-}
-
-static void
-free_pinned_object (GCObject *obj, size_t size)
-{
-	free_object (obj, size, TRUE);
 }
 
 /*
@@ -2481,19 +2433,6 @@ major_iterate_block_ranges_in_parallel (sgen_cardtable_block_callback callback, 
 	} END_FOREACH_BLOCK_RANGE_NO_LOCK;
 }
 
-static void
-major_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
-{
-	MSBlockInfo *block;
-	gboolean has_references;
-
-	major_finish_sweep_checking ();
-	FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK (block, has_references) {
-		if (has_references)
-			callback ((mword)MS_BLOCK_FOR_BLOCK_INFO (block), ms_block_size);
-	} END_FOREACH_BLOCK_NO_LOCK;
-}
-
 #ifdef HEAVY_STATISTICS
 extern guint64 marked_cards;
 extern guint64 scanned_cards;
@@ -2922,13 +2861,10 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 #ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 	collector->alloc_object_par = major_alloc_object_par;
 #endif
-	collector->free_pinned_object = free_pinned_object;
 	collector->iterate_objects = major_iterate_objects;
-	collector->free_non_pinned_object = major_free_non_pinned_object;
 	collector->pin_objects = major_pin_objects;
 	collector->pin_major_object = pin_major_object;
 	collector->scan_card_table = major_scan_card_table;
-	collector->iterate_live_block_ranges = major_iterate_live_block_ranges;
 	collector->iterate_block_ranges = major_iterate_block_ranges;
 	collector->iterate_block_ranges_in_parallel = major_iterate_block_ranges_in_parallel;
 #ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC

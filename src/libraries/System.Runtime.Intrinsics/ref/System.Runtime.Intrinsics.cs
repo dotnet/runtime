@@ -2856,8 +2856,20 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Runtime.Intrinsics.Vector128<ulong> SubtractWideningUpper(System.Runtime.Intrinsics.Vector128<ulong> left, System.Runtime.Intrinsics.Vector128<uint> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<byte> VectorTableLookup(System.Runtime.Intrinsics.Vector128<byte> table, System.Runtime.Intrinsics.Vector64<byte> byteIndexes) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<sbyte> VectorTableLookup(System.Runtime.Intrinsics.Vector128<sbyte> table, System.Runtime.Intrinsics.Vector64<sbyte> byteIndexes) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>) table, Vector64<byte> byteIndexes) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>) table, Vector64<sbyte> byteIndexes) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector64<byte> byteIndexes) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector64<sbyte> byteIndexes) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector64<byte> byteIndexes) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector64<sbyte> byteIndexes) { throw null; }       
         public static System.Runtime.Intrinsics.Vector64<byte> VectorTableLookupExtension(System.Runtime.Intrinsics.Vector64<byte> defaultValues, System.Runtime.Intrinsics.Vector128<byte> table, System.Runtime.Intrinsics.Vector64<byte> byteIndexes) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<sbyte> VectorTableLookupExtension(System.Runtime.Intrinsics.Vector64<sbyte> defaultValues, System.Runtime.Intrinsics.Vector128<sbyte> table, System.Runtime.Intrinsics.Vector64<sbyte> byteIndexes) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> VectorTableLookupExtension(System.Runtime.Intrinsics.Vector64<byte> defaultValues, (Vector128<byte>, Vector128<byte>) table, Vector64<byte> byteIndexes) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> VectorTableLookupExtension(System.Runtime.Intrinsics.Vector64<sbyte> defaultValues, (Vector128<sbyte>, Vector128<sbyte>) table, Vector64<sbyte> byteIndexes) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> VectorTableLookupExtension(System.Runtime.Intrinsics.Vector64<byte> defaultValues, (Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector64<byte> byteIndexes) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> VectorTableLookupExtension(System.Runtime.Intrinsics.Vector64<sbyte> defaultValues, (Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector64<sbyte> byteIndexes) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> VectorTableLookupExtension(System.Runtime.Intrinsics.Vector64<byte> defaultValues, (Vector128<byte>, Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector64<byte> byteIndexes) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<sbyte> VectorTableLookupExtension(System.Runtime.Intrinsics.Vector64<sbyte> defaultValues, (Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector64<sbyte> byteIndexes) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> Xor(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<double> Xor(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<short> Xor(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
@@ -3493,8 +3505,20 @@ namespace System.Runtime.Intrinsics.Arm
             public static System.Runtime.Intrinsics.Vector64<uint> UnzipOdd(System.Runtime.Intrinsics.Vector64<uint> left, System.Runtime.Intrinsics.Vector64<uint> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<byte> VectorTableLookup(System.Runtime.Intrinsics.Vector128<byte> table, System.Runtime.Intrinsics.Vector128<byte> byteIndexes) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<sbyte> VectorTableLookup(System.Runtime.Intrinsics.Vector128<sbyte> table, System.Runtime.Intrinsics.Vector128<sbyte> byteIndexes) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> VectorTableLookup((Vector128<byte>, Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> VectorTableLookup((Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) { throw null; }         
             public static System.Runtime.Intrinsics.Vector128<byte> VectorTableLookupExtension(System.Runtime.Intrinsics.Vector128<byte> defaultValues, System.Runtime.Intrinsics.Vector128<byte> table, System.Runtime.Intrinsics.Vector128<byte> byteIndexes) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<sbyte> VectorTableLookupExtension(System.Runtime.Intrinsics.Vector128<sbyte> defaultValues, System.Runtime.Intrinsics.Vector128<sbyte> table, System.Runtime.Intrinsics.Vector128<sbyte> byteIndexes) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> VectorTableLookupExtension(Vector128<byte> defaultValues, (Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> VectorTableLookupExtension(Vector128<sbyte> defaultValues, (Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> VectorTableLookupExtension(Vector128<byte> defaultValues, (Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> VectorTableLookupExtension(Vector128<sbyte> defaultValues, (Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<byte> VectorTableLookupExtension(Vector128<byte> defaultValues, (Vector128<byte>, Vector128<byte>, Vector128<byte>, Vector128<byte>) table, Vector128<byte> byteIndexes) { throw null; }
+            public static System.Runtime.Intrinsics.Vector128<sbyte> VectorTableLookupExtension(Vector128<sbyte> defaultValues, (Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>, Vector128<sbyte>) table, Vector128<sbyte> byteIndexes) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<byte> ZipHigh(System.Runtime.Intrinsics.Vector128<byte> left, System.Runtime.Intrinsics.Vector128<byte> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> ZipHigh(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<short> ZipHigh(System.Runtime.Intrinsics.Vector128<short> left, System.Runtime.Intrinsics.Vector128<short> right) { throw null; }
@@ -5490,6 +5514,36 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<ulong>  Negate(Vector128<ulong>  value) { throw null; }
         public static Vector128<nint>   Negate(Vector128<nint>   value) { throw null; }
         public static Vector128<nuint>  Negate(Vector128<nuint>  value) { throw null; }
+        public static Vector128<sbyte>  ShiftLeft(Vector128<sbyte>  value, int count) { throw null; }
+        public static Vector128<byte>   ShiftLeft(Vector128<byte>   value, int count) { throw null; }
+        public static Vector128<short>  ShiftLeft(Vector128<short>  value, int count) { throw null; }
+        public static Vector128<ushort> ShiftLeft(Vector128<ushort> value, int count) { throw null; }
+        public static Vector128<int>    ShiftLeft(Vector128<int>    value, int count) { throw null; }
+        public static Vector128<uint>   ShiftLeft(Vector128<uint>   value, int count) { throw null; }
+        public static Vector128<long>   ShiftLeft(Vector128<long>   value, int count) { throw null; }
+        public static Vector128<ulong>  ShiftLeft(Vector128<ulong>  value, int count) { throw null; }
+        public static Vector128<nint>   ShiftLeft(Vector128<nint>   value, int count) { throw null; }
+        public static Vector128<nuint>  ShiftLeft(Vector128<nuint>  value, int count) { throw null; }
+        public static Vector128<sbyte>  ShiftRightArithmetic(Vector128<sbyte>  value, int count) { throw null; }
+        public static Vector128<byte>   ShiftRightArithmetic(Vector128<byte>   value, int count) { throw null; }
+        public static Vector128<short>  ShiftRightArithmetic(Vector128<short>  value, int count) { throw null; }
+        public static Vector128<ushort> ShiftRightArithmetic(Vector128<ushort> value, int count) { throw null; }
+        public static Vector128<int>    ShiftRightArithmetic(Vector128<int>    value, int count) { throw null; }
+        public static Vector128<uint>   ShiftRightArithmetic(Vector128<uint>   value, int count) { throw null; }
+        public static Vector128<long>   ShiftRightArithmetic(Vector128<long>   value, int count) { throw null; }
+        public static Vector128<ulong>  ShiftRightArithmetic(Vector128<ulong>  value, int count) { throw null; }
+        public static Vector128<nint>   ShiftRightArithmetic(Vector128<nint>   value, int count) { throw null; }
+        public static Vector128<nuint>  ShiftRightArithmetic(Vector128<nuint>  value, int count) { throw null; }
+        public static Vector128<sbyte>  ShiftRightLogical(Vector128<sbyte>  value, int count) { throw null; }
+        public static Vector128<byte>   ShiftRightLogical(Vector128<byte>   value, int count) { throw null; }
+        public static Vector128<short>  ShiftRightLogical(Vector128<short>  value, int count) { throw null; }
+        public static Vector128<ushort> ShiftRightLogical(Vector128<ushort> value, int count) { throw null; }
+        public static Vector128<int>    ShiftRightLogical(Vector128<int>    value, int count) { throw null; }
+        public static Vector128<uint>   ShiftRightLogical(Vector128<uint>   value, int count) { throw null; }
+        public static Vector128<long>   ShiftRightLogical(Vector128<long>   value, int count) { throw null; }
+        public static Vector128<ulong>  ShiftRightLogical(Vector128<ulong>  value, int count) { throw null; }
+        public static Vector128<nint>   ShiftRightLogical(Vector128<nint>   value, int count) { throw null; }
+        public static Vector128<nuint>  ShiftRightLogical(Vector128<nuint>  value, int count) { throw null; }
         public static Vector128<sbyte>  And(Vector128<sbyte>  left, Vector128<sbyte>  right) { throw null; }
         public static Vector128<byte>   And(Vector128<byte>   left, Vector128<byte>   right) { throw null; }
         public static Vector128<short>  And(Vector128<short>  left, Vector128<short>  right) { throw null; }
