@@ -174,18 +174,17 @@ namespace System.Reflection.Emit
             def_value = defaultValue;
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             RejectIfCreated();
             CustomAttributeBuilder customBuilder = new CustomAttributeBuilder(con, binaryAttribute);
             string? attrname = con.ReflectedType!.FullName;
             if (attrname == "System.Runtime.InteropServices.FieldOffsetAttribute")
             {
-                byte[] data = binaryAttribute;
-                offset = (int)data[2];
-                offset |= ((int)data[3]) << 8;
-                offset |= ((int)data[4]) << 16;
-                offset |= ((int)data[5]) << 24;
+                offset = (int)binaryAttribute[2];
+                offset |= ((int)binaryAttribute[3]) << 8;
+                offset |= ((int)binaryAttribute[4]) << 16;
+                offset |= ((int)binaryAttribute[5]) << 24;
                 return;
             }
 #pragma warning disable SYSLIB0050 // FieldAttributes.NotSerialized is obsolete

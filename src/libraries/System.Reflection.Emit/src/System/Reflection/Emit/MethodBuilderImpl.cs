@@ -50,7 +50,7 @@ namespace System.Reflection.Emit
         protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names) => throw new NotImplementedException();
         protected override ParameterBuilder DefineParameterCore(int position, ParameterAttributes attributes, string? strParamName) => throw new NotImplementedException();
         protected override ILGenerator GetILGeneratorCore(int size) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             if (!IsPseudoCustomAttribute(con.ReflectedType!.FullName!, con, binaryAttribute))
             {
@@ -58,7 +58,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private bool IsPseudoCustomAttribute(string attributeName, ConstructorInfo con, byte[] data)
+        private bool IsPseudoCustomAttribute(string attributeName, ConstructorInfo con, ReadOnlySpan<byte> data)
         {
             switch (attributeName)
             {

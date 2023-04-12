@@ -215,7 +215,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Protected Members Overrides
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             m_type.SetGenParamCustomAttribute(con, binaryAttribute);
         }

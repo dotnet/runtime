@@ -74,7 +74,7 @@ namespace System.Reflection.Emit
         protected override ConstructorBuilder DefineTypeInitializerCore() => throw new NotImplementedException();
         protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
         protected override bool IsCreatedCore() => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             if (!IsPseudoCustomAttribute(con.ReflectedType!.FullName!, con, binaryAttribute))
             {
@@ -82,7 +82,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private bool IsPseudoCustomAttribute(string attributeName, ConstructorInfo con, byte[] data)
+        private bool IsPseudoCustomAttribute(string attributeName, ConstructorInfo con, ReadOnlySpan<byte> data)
         {
             switch (attributeName)
             {
@@ -93,7 +93,9 @@ namespace System.Reflection.Emit
                     _attributes |= TypeAttributes.SpecialName;
                     break;
                 case "System.SerializableAttribute":
+#pragma warning disable SYSLIB0050 // 'TypeAttributes.Serializable' is obsolete: 'Formatter-based serialization is obsolete and should not be used'.
                     _attributes |= TypeAttributes.Serializable;
+#pragma warning restore SYSLIB0050
                     break;
                 case "System.Runtime.InteropServices.ComImportAttribute":
                     _attributes |= TypeAttributes.Import;
@@ -106,7 +108,7 @@ namespace System.Reflection.Emit
             return true;
         }
 
-        private void ParseStructLayoutAttribute(ConstructorInfo con, byte[] data)
+        private void ParseStructLayoutAttribute(ConstructorInfo con, ReadOnlySpan<byte> data)
         {
             CustomAttributeInfo attributeInfo = CustomAttributeInfo.DecodeCustomAttribute(con, data);
             LayoutKind layoutKind = (LayoutKind)attributeInfo._ctorArgs[0]!;

@@ -447,7 +447,7 @@ namespace System.Reflection.Emit
             return SymbolType.FormCompoundType("*", this, 0)!;
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             _tb.SetCustomAttribute(con, binaryAttribute);
         }

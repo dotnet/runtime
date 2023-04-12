@@ -106,7 +106,7 @@ namespace System.Reflection.Emit
             remove_method = mdBuilder;
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             RejectIfCreated();
             string? attrname = con.ReflectedType!.FullName;

@@ -10,10 +10,10 @@ namespace System.Reflection.Emit
         internal ConstructorInfo constructorInfo;
         internal byte[] binaryAttribute;
 
-        public CustomAttributeWrapper(ConstructorInfo constructorInfo, byte[] binaryAttribute)
+        public CustomAttributeWrapper(ConstructorInfo constructorInfo, ReadOnlySpan<byte> binaryAttribute)
         {
             this.constructorInfo = constructorInfo;
-            this.binaryAttribute = binaryAttribute;
+            this.binaryAttribute = binaryAttribute.ToArray();
         }
     }
 
@@ -28,7 +28,7 @@ namespace System.Reflection.Emit
             Justification = "The 'enumTypeName' only available at runtime")]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicFields', 'DynamicallyAccessedMemberTypes.NonPublicFields' in call to 'System.Type.GetField(String, BindingFlags)'",
             Justification = "Could not propagate attribute into 'ctor.DeclaringType' only available at runtime")]
-        internal static CustomAttributeInfo DecodeCustomAttribute(ConstructorInfo ctor, byte[] data)
+        internal static CustomAttributeInfo DecodeCustomAttribute(ConstructorInfo ctor, ReadOnlySpan<byte> data)
         {
             int pos;
             CustomAttributeInfo info = default;
@@ -92,12 +92,12 @@ namespace System.Reflection.Emit
             return info;
         }
 
-        private static string StringFromBytes(byte[] data, int pos, int len)
+        private static string StringFromBytes(ReadOnlySpan<byte> data, int pos, int len)
         {
-            return Text.Encoding.UTF8.GetString(data, pos, len);
+            return Text.Encoding.UTF8.GetString(data.Slice(pos, len));
         }
 
-        private static int DecodeLen(byte[] data, int pos, out int rpos)
+        private static int DecodeLen(ReadOnlySpan<byte> data, int pos, out int rpos)
         {
             int len;
             if ((data[pos] & 0x80) == 0)
@@ -118,7 +118,7 @@ namespace System.Reflection.Emit
             return len;
         }
 
-        private static object? DecodeCustomAttributeValue(Type t, byte[] data, int pos, out int rpos)
+        private static object? DecodeCustomAttributeValue(Type t, ReadOnlySpan<byte> data, int pos, out int rpos)
         {
             switch (Type.GetTypeCode(t))
             {

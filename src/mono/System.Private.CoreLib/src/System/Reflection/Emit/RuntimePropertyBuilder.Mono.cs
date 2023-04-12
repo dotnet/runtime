@@ -159,7 +159,7 @@ namespace System.Reflection.Emit
             def_value = defaultValue;
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             typeb.check_not_created();
             string? attrname = con.ReflectedType!.FullName;

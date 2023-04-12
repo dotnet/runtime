@@ -32,7 +32,7 @@ namespace System.Reflection.Emit
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Types are preserved via s_coreTypes")]
-         internal Type GetTypeFromCoreAssembly(CoreTypeId typeId)
+        internal Type GetTypeFromCoreAssembly(CoreTypeId typeId)
         {
             if (_coreTypes == null)
             {
@@ -210,7 +210,7 @@ namespace System.Reflection.Emit
         }
         protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
         protected override MethodInfo GetArrayMethodCore(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             _customAttributes.Add(new CustomAttributeWrapper(con, binaryAttribute));
         }

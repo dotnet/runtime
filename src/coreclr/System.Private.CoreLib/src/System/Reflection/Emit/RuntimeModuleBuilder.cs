@@ -1289,7 +1289,7 @@ namespace System.Reflection.Emit
 
         #region Other
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             RuntimeTypeBuilder.DefineCustomAttribute(
                 this,

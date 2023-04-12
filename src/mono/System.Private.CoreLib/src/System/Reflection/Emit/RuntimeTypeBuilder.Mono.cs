@@ -1411,15 +1411,19 @@ namespace System.Reflection.Emit
             }
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        internal void SetCustomAttribute(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
+        {
+            SetCustomAttributeCore(con, binaryAttribute);
+        }
+
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             string? attrname = con.ReflectedType!.FullName;
             if (attrname == "System.Runtime.InteropServices.StructLayoutAttribute")
             {
-                byte[] data = binaryAttribute;
                 int layout_kind; /* the (stupid) ctor takes a short or an int ... */
-                layout_kind = (int)data[2];
-                layout_kind |= ((int)data[3]) << 8;
+                layout_kind = (int)binaryAttribute[2];
+                layout_kind |= ((int)binaryAttribute[3]) << 8;
                 attrs &= ~TypeAttributes.LayoutMask;
                 attrs |= ((LayoutKind)layout_kind) switch
                 {
@@ -1433,34 +1437,34 @@ namespace System.Reflection.Emit
                 int pos = 6;
                 if (ctor_type.FullName == "System.Int16")
                     pos = 4;
-                int nnamed = (int)data[pos++];
-                nnamed |= ((int)data[pos++]) << 8;
+                int nnamed = (int)binaryAttribute[pos++];
+                nnamed |= ((int)binaryAttribute[pos++]) << 8;
                 for (int i = 0; i < nnamed; ++i)
                 {
                     //byte named_type = data [pos++];
                     pos++;
-                    byte type = data[pos++];
+                    byte type = binaryAttribute[pos++];
                     int len;
                     string named_name;
 
                     if (type == 0x55)
                     {
-                        len = CustomAttributeBuilder.decode_len(data, pos, out pos);
+                        len = CustomAttributeBuilder.decode_len(binaryAttribute, pos, out pos);
                         //string named_typename =
-                        CustomAttributeBuilder.string_from_bytes(data, pos, len);
+                        CustomAttributeBuilder.string_from_bytes(binaryAttribute, pos, len);
                         pos += len;
                         // FIXME: Check that 'named_type' and 'named_typename' match, etc.
                         //        See related code/FIXME in mono/mono/metadata/reflection.c
                     }
 
-                    len = CustomAttributeBuilder.decode_len(data, pos, out pos);
-                    named_name = CustomAttributeBuilder.string_from_bytes(data, pos, len);
+                    len = CustomAttributeBuilder.decode_len(binaryAttribute, pos, out pos);
+                    named_name = CustomAttributeBuilder.string_from_bytes(binaryAttribute, pos, len);
                     pos += len;
                     /* all the fields are integers in StructLayout */
-                    int value = (int)data[pos++];
-                    value |= ((int)data[pos++]) << 8;
-                    value |= ((int)data[pos++]) << 16;
-                    value |= ((int)data[pos++]) << 24;
+                    int value = (int)binaryAttribute[pos++];
+                    value |= ((int)binaryAttribute[pos++]) << 8;
+                    value |= ((int)binaryAttribute[pos++]) << 16;
+                    value |= ((int)binaryAttribute[pos++]) << 24;
                     switch (named_name)
                     {
                         case "CharSet":

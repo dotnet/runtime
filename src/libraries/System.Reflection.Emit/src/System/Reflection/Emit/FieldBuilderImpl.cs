@@ -24,7 +24,7 @@ namespace System.Reflection.Emit
         }
 
         protected override void SetConstantCore(object? defaultValue) => throw new NotImplementedException();
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             if (!IsPseudoAttribute(con.ReflectedType!.FullName!))
             {
@@ -45,7 +45,9 @@ namespace System.Reflection.Emit
                         offset |= ((int)data[5]) << 24;*/
                     break;
                 case "System.NonSerializedAttribute":
+#pragma warning disable SYSLIB0050 // 'FieldAttributes.NotSerialized' is obsolete: 'Formatter-based serialization is obsolete and should not be used'.
                     _attributes |= FieldAttributes.NotSerialized;
+#pragma warning restore SYSLIB0050
                     break;
                 case "System.Runtime.CompilerServices.SpecialNameAttribute":
                     _attributes |= FieldAttributes.SpecialName;

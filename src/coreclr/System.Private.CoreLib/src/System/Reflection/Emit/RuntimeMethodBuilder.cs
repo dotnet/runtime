@@ -695,7 +695,7 @@ namespace System.Reflection.Emit
             return GetModuleBuilder();
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             ThrowIfGeneric();
             RuntimeTypeBuilder.DefineCustomAttribute(m_module, MetadataToken,

@@ -381,15 +381,14 @@ namespace System.Reflection.Emit
             }
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             switch (con.ReflectedType!.FullName)
             {
                 case "System.Runtime.CompilerServices.MethodImplAttribute":
-                    byte[] data = binaryAttribute;
                     int impla; // the (stupid) ctor takes a short or an int ...
-                    impla = (int)data[2];
-                    impla |= ((int)data[3]) << 8;
+                    impla = (int)binaryAttribute[2];
+                    impla |= ((int)binaryAttribute[3]) << 8;
                     iattrs |= (MethodImplAttributes)impla;
                     return;
 
