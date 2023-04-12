@@ -18,12 +18,12 @@ namespace System.Globalization.Tests
         private static CompareInfo s_slovakCompare = new CultureInfo("sk-SK").CompareInfo;
 
         private static CompareOptions supportedIgnoreNonSpaceOption =
-            PlatformDetection.IsHybridGlobalizationOnWasm ?
+            PlatformDetection.IsHybridGlobalizationOnBrowser ?
             CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType :
             CompareOptions.IgnoreNonSpace;
 
         private static CompareOptions supportedIgnoreCaseIgnoreNonSpaceOptions =
-            PlatformDetection.IsHybridGlobalizationOnWasm ?
+            PlatformDetection.IsHybridGlobalizationOnBrowser ?
             CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace | CompareOptions.IgnoreKanaType :
             CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace;
 
@@ -51,7 +51,7 @@ namespace System.Globalization.Tests
 
             // Slovak
             // HybridGlobalization on WASM treats "ch" in Slovak like 2 separate letters
-            if (PlatformDetection.IsHybridGlobalizationOnWasm)
+            if (PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
                 yield return new object[] { s_slovakCompare, "ch", "h", 0, 2, CompareOptions.None, 1, 1 };
                 yield return new object[] { s_slovakCompare, "chh", "h", 0, 3, CompareOptions.None, 1, 1 };
@@ -64,7 +64,7 @@ namespace System.Globalization.Tests
             // Android has its own ICU, which doesn't work well with slovak
             if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
-                if (PlatformDetection.IsHybridGlobalizationOnWasm)
+                if (PlatformDetection.IsHybridGlobalizationOnBrowser)
                 {
                     yield return new object[] { s_slovakCompare, "chodit hore", "HO", 0, 11, CompareOptions.IgnoreCase, 1, 2 };
                 }
@@ -98,7 +98,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", 0, 6, CompareOptions.Ordinal, -1, 0 };
             yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 0, 11, supportedIgnoreNonSpaceOption, 4, 7 };
             yield return new object[] { s_invariantCompare, "o\u0308", "o", 0, 2, CompareOptions.None, -1, 0 };
-            if (PlatformDetection.IsHybridGlobalizationOnWasm)
+            if (PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
                 yield return new object[] { s_invariantCompare, "\r\n", "\n", 0, 2, CompareOptions.None, -1, 0 };
             }
@@ -112,7 +112,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "hello", "\u200d", 1, 3, CompareOptions.IgnoreCase, 1, 0 };
 
             // Ignore symbols is not supported with HybridGlobalization on WASM
-            if (!PlatformDetection.IsHybridGlobalizationOnWasm)
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
                 yield return new object[] { s_invariantCompare, "More Test's", "Tests", 0, 11, CompareOptions.IgnoreSymbols, 5, 6 };
             yield return new object[] { s_invariantCompare, "More Test's", "Tests", 0, 11, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "cbabababdbaba", "ab", 0, 13, CompareOptions.None, 2, 2 };
@@ -168,7 +168,7 @@ namespace System.Globalization.Tests
             }
 
             // Inputs where matched length does not equal value string length
-            if (PlatformDetection.IsHybridGlobalizationOnWasm)
+            if (PlatformDetection.IsHybridGlobalizationOnBrowser)
             {
                 yield return new object[] { s_invariantCompare, "abcdzxyz", "\u01F3", 0, 8, supportedIgnoreNonSpaceOption, -1, 0 };
                 yield return new object[] { s_invariantCompare, "abc\u01F3xyz", "dz", 0, 7, supportedIgnoreNonSpaceOption, -1, 0 };
