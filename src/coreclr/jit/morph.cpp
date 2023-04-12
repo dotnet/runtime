@@ -9853,7 +9853,7 @@ DONE_MORPHING_CHILDREN:
                 CORINFO_CLASS_HANDLE handle    = gtGetClassHandle(op1, &isExact, &isNonNull);
                 if (isExact && (handle != NO_CLASS_HANDLE))
                 {
-                    GenTree* result      = gtNewIconNode((ssize_t)handle, TYP_I_IMPL);
+                    GenTree* result      = gtNewIconHandleNode((size_t)handle, GTF_ICON_CLASS_HDL);
                     GenTree* sideEffects = nullptr;
                     gtExtractSideEffList(tree, &sideEffects, GTF_ALL_EFFECT);
                     if (sideEffects != nullptr)
