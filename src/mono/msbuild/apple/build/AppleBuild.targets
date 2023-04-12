@@ -258,7 +258,8 @@
       ProjectName="$(AssemblyName)"
       RuntimeComponents="$(RuntimeComponents)"
       TargetOS="$(TargetOS)"
-      UseConsoleUITemplate="True">
+      UseConsoleUITemplate="True"
+      EnableRuntimeLogging="True">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>

@@ -526,7 +526,7 @@ mono_aot_mode_is_hybrid (MonoAotOptions *opts)
 }
 
 static void
-mono_aot_dedup_change_phase (MonoAotCompile *acfg, int next_phase)
+dedup_change_phase (MonoAotCompile *acfg, int next_phase)
 {
 	acfg->dedup_phase = next_phase;
 }
@@ -14728,11 +14728,11 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 	memcpy (&acfg->aot_opts, aot_options, sizeof (MonoAotOptions));
 	if (acfg->aot_opts.dedup_skip || acfg->aot_opts.dedup_include) {
 		if (acfg->aot_opts.dedup_skip)
-			mono_aot_dedup_change_phase (acfg, DEDUP_SKIP);
+			dedup_change_phase (acfg, DEDUP_SKIP);
 		else if (acfg->aot_opts.dedup_include && ass != dedup_assembly)
-			mono_aot_dedup_change_phase (acfg, DEDUP_COLLECT);
+			dedup_change_phase (acfg, DEDUP_COLLECT);
 		else
-			mono_aot_dedup_change_phase (acfg, DEDUP_EMIT);
+			dedup_change_phase (acfg, DEDUP_EMIT);
 	}
 
 	if (acfg->aot_opts.logfile) {
