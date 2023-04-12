@@ -298,4 +298,7 @@
     <_hostArch>amd64</_hostArch>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <WorkloadTasksAssemblyPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'WorkloadBuildTasks.dll'))</WorkloadTasksAssemblyPath>
+  </PropertyGroup>
 </Project>
