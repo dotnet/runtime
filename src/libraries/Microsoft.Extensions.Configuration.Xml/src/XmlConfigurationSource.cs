@@ -9,6 +9,7 @@ namespace Microsoft.Extensions.Configuration.Xml
     /// An XML file based <see cref="FileConfigurationSource"/>.
     /// </summary>
     [RequiresDynamicCode(XmlDocumentDecryptor.RequiresDynamicCodeMessage)]
+    [RequiresUnreferencedCode(XmlDocumentDecryptor.RequiresUnreferencedCodeMessage)]
     public class XmlConfigurationSource : FileConfigurationSource
     {
         /// <summary>

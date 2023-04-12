@@ -88,12 +88,14 @@ namespace System.Security.Cryptography.Xml
         //
 
         [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public SignedXml()
         {
             Initialize(null);
         }
 
         [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public SignedXml(XmlDocument document)
         {
             if (document is null)
@@ -105,6 +107,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         public SignedXml(XmlElement elem)
         {
             if (elem is null)
@@ -118,6 +121,7 @@ namespace System.Security.Cryptography.Xml
         [MemberNotNull(nameof(m_signature))]
         [MemberNotNull(nameof(_safeCanonicalizationMethods))]
         [RequiresDynamicCode(CryptoHelpers.XsltRequiresDynamicCodeMessage)]
+        [RequiresUnreferencedCode(CryptoHelpers.CreateFromNameUnreferencedCodeMessage)]
         private void Initialize(XmlElement? element)
         {
             _containingDocument = element?.OwnerDocument;
@@ -178,6 +182,7 @@ namespace System.Security.Cryptography.Xml
         public EncryptedXml EncryptedXml
         {
             [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
+            [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
             get => _exml ??= new EncryptedXml(_containingDocument!); // default processing rules
             set => _exml = value;
         }
@@ -223,6 +228,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode", Justification = "ctors are marked as RDC")]
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RUC")]
         public void LoadXml(XmlElement value)
         {
             if (value is null)
@@ -380,6 +386,7 @@ namespace System.Security.Cryptography.Xml
             return true;
         }
 
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RDC")]
         public void ComputeSignature()
         {
             SignedXmlDebugLog.LogBeginSignatureComputation(this, _context!);
@@ -636,6 +643,7 @@ namespace System.Security.Cryptography.Xml
 
         // Validation function to see if the current signature is signed with a truncated HMAC - one which
         // has a signature length of fewer bits than the whole HMAC output.
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RDC")]
         private bool DoesSignatureUseTruncatedHmac()
         {
             // If we're not using the SignatureLength property, then we're not truncating the signature length
@@ -780,6 +788,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RDC")]
         private byte[] GetC14NDigest(HashAlgorithm hash)
         {
             bool isKeyedHashAlgorithm = hash is KeyedHashAlgorithm;
@@ -879,6 +888,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RDC")]
         private void BuildDigestedReferences()
         {
             // Default the DigestMethod and Canonicalization
@@ -916,6 +926,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RDC")]
         private bool CheckDigestedReferences()
         {
             ArrayList references = m_signature.SignedInfo!.References;
@@ -1004,6 +1015,8 @@ namespace System.Security.Cryptography.Xml
             return formatValid;
         }
 
+        [UnconditionalSuppressMessage("ILLink", "IL2026:RequiresUnreferencedCode", Justification = "ctors are marked as RDC")]
+        [UnconditionalSuppressMessage("ILLink", "IL2057:UnrecognizedReflectionPattern", Justification = "ctors are marked as RDC")]
         private bool CheckSignedInfo(AsymmetricAlgorithm key)
         {
             if (key is null)
