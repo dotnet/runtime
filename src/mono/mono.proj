@@ -562,10 +562,13 @@
       <_MonoCFLAGS Include="-Wl,--build-id=sha1" />
       <_MonoCFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
       <_MonoCXXFLAGS Include="-Wl,--build-id=sha1" />
+      <_MonoCXXFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
     </ItemGroup>
     <ItemGroup Condition="'$(RealTargetOS)' == 'linux'">
       <_MonoAOTCFLAGS Include="-Wl,--build-id=sha1" />
+      <_MonoAOTCFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
       <_MonoAOTCXXFLAGS Include="-Wl,--build-id=sha1" />
+      <_MonoAOTCXXFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
     </ItemGroup>
 
     <!-- Devloop features -->
