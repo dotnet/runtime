@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 class B
 {
@@ -27,7 +28,8 @@ public class X
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     static B G() => p ? GD() : GB();
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         p = false;
         // After inlining G(), the jit must not update

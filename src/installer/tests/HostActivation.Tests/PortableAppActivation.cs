@@ -82,108 +82,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining("Hello World");
         }
 
-        // https://github.com/dotnet/runtime/issues/3654
-        [Fact(Skip = "The 3.0 SDK copies NuGet references to the output by default now for executable projects, so this no longer fails.")]
-        public void Muxer_Exec_activation_of_Build_Output_Portable_DLL_with_DepsJson_Local_and_RuntimeConfig_Remote_Without_AdditionalProbingPath_Fails()
-        {
-            var fixture = sharedTestState.PortableAppFixture_Built
-                .Copy();
-
-            var runtimeConfig = MoveRuntimeConfigToSubdirectory(fixture);
-
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-
-            dotnet.Exec("exec", "--runtimeconfig", runtimeConfig, appDll)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute(expectedToFail: true)
-                .Should().Fail();
-        }
-
-        // https://github.com/dotnet/runtime/issues/3654
-        [Fact(Skip = "The 3.0 SDK copies NuGet references to the output by default now for executable projects, so this no longer fails.")]
-        public void Muxer_Exec_activation_of_Build_Output_Portable_DLL_with_DepsJson_Local_and_RuntimeConfig_Remote_With_AdditionalProbingPath_Succeeds()
-        {
-            var fixture = sharedTestState.PortableAppFixture_Built
-                .Copy();
-
-            var runtimeConfig = MoveRuntimeConfigToSubdirectory(fixture);
-
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-            var additionalProbingPath = sharedTestState.RepoDirectories.NugetPackages;
-
-            dotnet.Exec(
-                    "exec",
-                    "--runtimeconfig", runtimeConfig,
-                    "--additionalprobingpath", additionalProbingPath,
-                    appDll)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("Hello World");
-        }
-
-        // https://github.com/dotnet/runtime/issues/3654
-        [Fact(Skip = "The 3.0 SDK copies NuGet references to the output by default now for executable projects, so the additional probing path is no longer needed.")]
-        public void Muxer_Activation_With_Templated_AdditionalProbingPath_Succeeds()
-        {
-            var fixture = sharedTestState.PortableAppFixture_Built
-                .Copy();
-
-            var store_path = CreateAStore(fixture);
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-
-            var destRuntimeDevConfig = fixture.TestProject.RuntimeDevConfigJson;
-            if (File.Exists(destRuntimeDevConfig))
-            {
-                File.Delete(destRuntimeDevConfig);
-            }
-
-            var additionalProbingPath = store_path + "/|arch|/|tfm|";
-
-            dotnet.Exec(
-                    "exec",
-                    "--additionalprobingpath", additionalProbingPath,
-                    appDll)
-                .EnableTracingAndCaptureOutputs()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining($"Adding tpa entry: {Path.Combine(store_path, fixture.RepoDirProvider.BuildArchitecture, fixture.Framework)}");
-        }
-
-        [Fact]
-        public void Muxer_Exec_activation_of_Build_Output_Portable_DLL_with_DepsJson_Remote_and_RuntimeConfig_Local_Succeeds()
-        {
-            var fixture = sharedTestState.PortableAppFixture_Built
-                .Copy();
-
-            // Move the .deps.json to a subdirectory, note that in this case we have to move all of the app's dependencies
-            // along with it - in this case Newtonsoft.Json.dll
-            // For framework dependent apps (dotnet build produces those) the probing directories are:
-            // - The directory where the .deps.json is
-            // - Any framework directory
-            var depsJson = MoveDepsJsonToSubdirectory(fixture);
-            File.Move(
-                Path.Combine(Path.GetDirectoryName(fixture.TestProject.AppDll), "Newtonsoft.Json.dll"),
-                Path.Combine(Path.GetDirectoryName(depsJson), "Newtonsoft.Json.dll"));
-
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-
-            dotnet.Exec("exec", "--depsfile", depsJson, appDll)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("Hello World");
-
-        }
-
         [Fact]
         public void Muxer_activation_of_Publish_Output_Portable_DLL_with_DepsJson_and_RuntimeConfig_Local_Succeeds()
         {
@@ -226,24 +124,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
-        }
-
-        [Fact]
-        public void Muxer_Exec_activation_of_Publish_Output_Portable_DLL_with_DepsJson_Remote_and_RuntimeConfig_Local_Fails()
-        {
-            var fixture = sharedTestState.PortableAppFixture_Published
-                .Copy();
-
-            var depsJson = MoveDepsJsonToSubdirectory(fixture);
-
-            var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll;
-
-            dotnet.Exec("exec", "--depsfile", depsJson, appDll)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute(expectedToFail: true)
-                .Should().Fail();
         }
 
         [Fact]
@@ -322,7 +202,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")
-                    .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
+                    .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion)
+                    .And.NotHaveStdErr();
 
                 // Verify running from within the working directory
                 Command.Create(appExe)
@@ -336,7 +217,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")
-                    .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
+                    .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion)
+                    .And.NotHaveStdErr();
             }
         }
 
@@ -639,25 +521,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
         }
 
-        private string MoveDepsJsonToSubdirectory(TestProjectFixture testProjectFixture)
-        {
-            var subdirectory = Path.Combine(testProjectFixture.TestProject.ProjectDirectory, "d");
-            if (!Directory.Exists(subdirectory))
-            {
-                Directory.CreateDirectory(subdirectory);
-            }
-
-            var destDepsJson = Path.Combine(subdirectory, Path.GetFileName(testProjectFixture.TestProject.DepsJson));
-
-            if (File.Exists(destDepsJson))
-            {
-                File.Delete(destDepsJson);
-            }
-            File.Move(testProjectFixture.TestProject.DepsJson, destDepsJson);
-
-            return destDepsJson;
-        }
-
         private string MoveRuntimeConfigToSubdirectory(TestProjectFixture testProjectFixture)
         {
             var subdirectory = Path.Combine(testProjectFixture.TestProject.ProjectDirectory, "r");
@@ -675,19 +538,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             File.Move(testProjectFixture.TestProject.RuntimeConfigJson, destRuntimeConfig);
 
             return destRuntimeConfig;
-        }
-
-        private string CreateAStore(TestProjectFixture testProjectFixture)
-        {
-            var storeoutputDirectory = Path.Combine(testProjectFixture.TestProject.ProjectDirectory, "store");
-            if (!Directory.Exists(storeoutputDirectory))
-            {
-                Directory.CreateDirectory(storeoutputDirectory);
-            }
-
-            testProjectFixture.StoreProject(outputDirectory: storeoutputDirectory);
-
-            return storeoutputDirectory;
         }
 
         public class SharedTestState : IDisposable

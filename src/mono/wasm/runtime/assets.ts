@@ -4,6 +4,7 @@
 import cwraps from "./cwraps";
 import { mono_wasm_load_icu_data } from "./icu";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, Module, runtimeHelpers } from "./imports";
+import { parseSymbolMapFile } from "./logging";
 import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { createPromiseController, PromiseAndController } from "./promise-controller";
@@ -36,6 +37,7 @@ const skipBufferByAssetTypes: {
     [k: string]: boolean
 } = {
     "dotnetwasm": true,
+    "symbols": true,
 };
 
 const containedInSnapshotByAssetTypes: {
@@ -57,6 +59,7 @@ const skipInstantiateByAssetTypes: {
 } = {
     "js-module-threads": true,
     "dotnetwasm": true,
+    "symbols": true,
 };
 
 export function shouldLoadIcuAsset(asset: AssetEntryInternal): boolean {
@@ -119,9 +122,7 @@ export async function mono_download_assets(): Promise<void> {
                 countAndStartDownload(asset);
             } else {
                 // Otherwise cleanup in case we were given pending download. It would be even better if we could abort the download.
-                asset.pendingDownloadInternal = null as any; // GC
-                asset.pendingDownload = null as any; // GC
-                asset.buffer = null as any; // GC
+                cleanupAsset(asset);
                 // tell the debugger it is loaded
                 if (asset.behavior == "resource" || asset.behavior == "assembly" || asset.behavior == "pdb") {
                     const url = resolve_path(asset, "");
@@ -144,14 +145,16 @@ export async function mono_download_assets(): Promise<void> {
                         const url = asset.pendingDownloadInternal!.url;
                         mono_assert(asset.buffer && typeof asset.buffer === "object", "asset buffer must be array or buffer like");
                         const data = new Uint8Array(asset.buffer!);
-                        asset.pendingDownloadInternal = null as any; // GC
-                        asset.pendingDownload = null as any; // GC
-                        asset.buffer = null as any; // GC
+                        cleanupAsset(asset);
 
                         // wait till after onRuntimeInitialized and after memory snapshot is loaded or skipped
                         await memorySnapshotSkippedOrDone.promise;
                         await beforeOnRuntimeInitialized.promise;
                         _instantiate_asset(asset, url, data);
+                    }
+                    if (asset.behavior === "symbols") {
+                        await instantiate_symbols_asset(asset);
+                        cleanupAsset(asset);
                     }
                 } else {
                     const headersOnly = skipBufferByAssetTypes[asset.behavior];
@@ -415,6 +418,7 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
     switch (asset.behavior) {
         case "dotnetwasm":
         case "js-module-threads":
+        case "symbols":
             // do nothing
             break;
         case "resource":
@@ -516,6 +520,18 @@ export async function instantiate_wasm_asset(
     successCallback(compiledInstance, compiledModule);
 }
 
+export async function instantiate_symbols_asset(
+    pendingAsset: AssetEntryInternal,
+): Promise<void> {
+    try {
+        const response = await pendingAsset.pendingDownloadInternal!.response;
+        const text = await response.text();
+        parseSymbolMapFile(text);
+    } catch (error: any) {
+        console.log(`MONO_WASM: Error loading symbol file ${pendingAsset.name}: ${JSON.stringify(error)}`);
+    }
+}
+
 // used from Blazor
 export function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): boolean {
     if (data.length < 8)
@@ -579,4 +595,11 @@ export async function wait_for_all_assets() {
 // Used by the debugger to enumerate loaded dlls and pdbs
 export function mono_wasm_get_loaded_files(): string[] {
     return runtimeHelpers.loadedFiles;
+}
+
+export function cleanupAsset(asset: AssetEntryInternal) {
+    // give GC chance to collect resources
+    asset.pendingDownloadInternal = null as any; // GC
+    asset.pendingDownload = null as any; // GC
+    asset.buffer = null as any; // GC
 }

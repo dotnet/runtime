@@ -35,8 +35,11 @@ int main(const int argc, const char *argv[])
         return EXIT_FAILURE;
     }
 
-    const long timeout_sec = strtol(argv[1], nullptr, 10);
-    int exit_code = run_timed_process(timeout_sec * 1000L, argc-2, &argv[2]);
+    // Due to how Helix test environment variables are set, we have to receive
+    // the raw timeout value in minutes. Then we convert it to milliseconds when
+    // calling run_timed_process().
+    const long timeout_mins = strtol(argv[1], nullptr, 10);
+    int exit_code = run_timed_process(timeout_mins * 60000L, argc-2, &argv[2]);
 
     printf("App Exit Code: %d\n", exit_code);
     return exit_code;

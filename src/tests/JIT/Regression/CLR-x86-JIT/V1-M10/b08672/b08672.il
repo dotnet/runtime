@@ -4,6 +4,7 @@
 .assembly b08672
 {
 }
+.assembly extern xunit.core {}
 .assembly extern mscorlib{}
 .class	public stelem_i {
 
@@ -78,6 +79,9 @@ END:
 // Entry point - Main     -
 //-------------------------
 .method public static int32 main() {
+.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+    01 00 00 00
+)
 .entrypoint
 .maxstack	10
 .locals init (int32)

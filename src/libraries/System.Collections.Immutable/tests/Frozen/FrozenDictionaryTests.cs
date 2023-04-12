@@ -17,20 +17,21 @@ namespace System.Collections.Frozen.Tests
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
         protected override Type ICollection_Generic_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
 
-        protected override IDictionary<TKey, TValue> GenericIDictionaryFactory(int count) =>
-            GenericIDictionaryFactory(count, optimizeForReading: true);
+        public virtual bool OptimizeForReading => true;
 
         protected virtual bool AllowVeryLargeSizes => true;
 
-        protected virtual IDictionary<TKey, TValue> GenericIDictionaryFactory(int count, bool optimizeForReading)
+        public virtual TKey GetEqualKey(TKey key) => key;
+
+        protected override IDictionary<TKey, TValue> GenericIDictionaryFactory(int count)
         {
             var d = new Dictionary<TKey, TValue>();
             for (int i = 0; i < count; i++)
             {
                 d.Add(CreateTKey(i), CreateTValue(i));
             }
-            return optimizeForReading ?
-                d.ToFrozenDictionary(GetKeyIEqualityComparer(), true) :
+            return OptimizeForReading ?
+                d.ToFrozenDictionary(GetKeyIEqualityComparer(), optimizeForReading: true) :
                 d.ToFrozenDictionary(GetKeyIEqualityComparer());
         }
 
@@ -46,13 +47,12 @@ namespace System.Collections.Frozen.Tests
         protected override EnumerableOrder Order => EnumerableOrder.Unspecified;
 
         [Theory]
-        [InlineData(100_000, false)]
-        [InlineData(100_000, true)]
-        public virtual void CreateVeryLargeDictionary_Success(int largeCount, bool optimizeForReading)
+        [InlineData(100_000)]
+        public virtual void CreateVeryLargeDictionary_Success(int largeCount)
         {
             if (AllowVeryLargeSizes)
             {
-                GenericIDictionaryFactory(largeCount, optimizeForReading);
+                GenericIDictionaryFactory(largeCount);
             }
         }
 
@@ -87,26 +87,22 @@ namespace System.Collections.Frozen.Tests
                 Assert.Same(FrozenDictionary<TKey, TValue>.Empty, Enumerable.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer));
                 Assert.Same(FrozenDictionary<TKey, TValue>.Empty, Array.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer));
                 Assert.Same(FrozenDictionary<TKey, TValue>.Empty, new List<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer));
-                foreach (bool optimizeForReading in new[] { false, true })
-                {
-                    Assert.Same(FrozenDictionary<TKey, TValue>.Empty, new Dictionary<TKey, TValue>().ToFrozenDictionary(comparer, optimizeForReading));
-                    Assert.Same(FrozenDictionary<TKey, TValue>.Empty, Enumerable.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer));
-                    Assert.Same(FrozenDictionary<TKey, TValue>.Empty, Array.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer));
-                    Assert.Same(FrozenDictionary<TKey, TValue>.Empty, new List<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer));
-                }
+
+                Assert.Same(FrozenDictionary<TKey, TValue>.Empty, new Dictionary<TKey, TValue>().ToFrozenDictionary(comparer, OptimizeForReading));
+                Assert.Same(FrozenDictionary<TKey, TValue>.Empty, Enumerable.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer, OptimizeForReading));
+                Assert.Same(FrozenDictionary<TKey, TValue>.Empty, Array.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer, OptimizeForReading));
+                Assert.Same(FrozenDictionary<TKey, TValue>.Empty, new List<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(comparer, OptimizeForReading));
             }
 
             Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, new Dictionary<TKey, TValue>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance));
             Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, Enumerable.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance));
             Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, Array.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance));
             Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, new List<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance));
-            foreach (bool optimizeForReading in new[] { false, true })
-            {
-                Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, new Dictionary<TKey, TValue>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance, optimizeForReading));
-                Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, Enumerable.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance, optimizeForReading));
-                Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, Array.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance, optimizeForReading));
-                Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, new List<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance, optimizeForReading));
-            }
+
+            Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, new Dictionary<TKey, TValue>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance, OptimizeForReading));
+            Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, Enumerable.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance, OptimizeForReading));
+            Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, Array.Empty<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance, OptimizeForReading));
+            Assert.NotSame(FrozenDictionary<TKey, TValue>.Empty, new List<KeyValuePair<TKey, TValue>>().ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance, OptimizeForReading));
         }
 
         [Fact]
@@ -170,14 +166,12 @@ namespace System.Collections.Frozen.Tests
             Assert.NotSame(frozen, frozen.ToFrozenDictionary(NonDefaultEqualityComparer<TKey>.Instance));
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void ToFrozenDictionary_BoolArg_UsesDefaultComparer(bool optimizeForReading)
+        [Fact]
+        public void ToFrozenDictionary_BoolArg_UsesDefaultComparer()
         {
             Dictionary<TKey, TValue> source = Enumerable.Range(0, 4).ToDictionary(CreateTKey, CreateTValue);
 
-            FrozenDictionary<TKey, TValue> frozen1 = source.ToFrozenDictionary(optimizeForReading);
+            FrozenDictionary<TKey, TValue> frozen1 = source.ToFrozenDictionary(OptimizeForReading);
 
             Assert.Same(EqualityComparer<TKey>.Default, frozen1.Comparer);
         }
@@ -215,12 +209,11 @@ namespace System.Collections.Frozen.Tests
             from size in new[] { 0, 1, 2, 10, 999, 1024 }
             from comparer in new IEqualityComparer<TKey>[] { null, EqualityComparer<TKey>.Default, NonDefaultEqualityComparer<TKey>.Instance }
             from specifySameComparer in new[] { false, true }
-            from optimizeForReading in new[] { false, true }
-            select new object[] { size, comparer, specifySameComparer, optimizeForReading };
+            select new object[] { size, comparer, specifySameComparer };
 
         [Theory]
         [MemberData(nameof(LookupItems_AllItemsFoundAsExpected_MemberData))]
-        public void LookupItems_AllItemsFoundAsExpected(int size, IEqualityComparer<TKey> comparer, bool specifySameComparer, bool optimizeForReading)
+        public void LookupItems_AllItemsFoundAsExpected(int size, IEqualityComparer<TKey> comparer, bool specifySameComparer)
         {
             Dictionary<TKey, TValue> original =
                 Enumerable.Range(0, size)
@@ -228,7 +221,7 @@ namespace System.Collections.Frozen.Tests
                 .ToDictionary(p => p.Key, p => p.Value, comparer);
             KeyValuePair<TKey, TValue>[] originalPairs = original.ToArray();
 
-            FrozenDictionary<TKey, TValue> frozen = (specifySameComparer, optimizeForReading) switch
+            FrozenDictionary<TKey, TValue> frozen = (specifySameComparer, OptimizeForReading) switch
             {
                 (false, false) => original.ToFrozenDictionary(),
                 (false, true) => original.ToFrozenDictionary(null, true),
@@ -275,6 +268,31 @@ namespace System.Collections.Frozen.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void EqualButPossiblyDifferentKeys_Found(bool fromDictionary)
+        {
+            Dictionary<TKey, TValue> original =
+                Enumerable.Range(0, 50)
+                .Select(i => new KeyValuePair<TKey, TValue>(CreateTKey(i), CreateTValue(i)))
+                .ToDictionary(p => p.Key, p => p.Value, GetKeyIEqualityComparer());
+
+            FrozenDictionary<TKey, TValue> frozen = fromDictionary ?
+                original.ToFrozenDictionary(GetKeyIEqualityComparer()) :
+                original.Select(k => k).ToFrozenDictionary(GetKeyIEqualityComparer());
+
+            foreach (TKey key in original.Keys)
+            {
+                Assert.True(original.ContainsKey(key));
+                Assert.True(frozen.ContainsKey(key));
+
+                TKey equalKey = GetEqualKey(key);
+                Assert.True(original.ContainsKey(equalKey));
+                Assert.True(frozen.ContainsKey(equalKey));
+            }
+        }
+
         [Fact]
         public void MultipleValuesSameKey_LastInSourceWins()
         {
@@ -301,15 +319,12 @@ namespace System.Collections.Frozen.Tests
         }
 
         [Theory]
-        [InlineData(0, false)]
-        [InlineData(1, false)]
-        [InlineData(75, false)]
-        [InlineData(0, true)]
-        [InlineData(1, true)]
-        [InlineData(75, true)]
-        public void IReadOnlyDictionary_Generic_Keys_ContainsAllCorrectKeys(int count, bool optimizeForReading)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(75)]
+        public void IReadOnlyDictionary_Generic_Keys_ContainsAllCorrectKeys(int count)
         {
-            IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count, optimizeForReading);
+            IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             IEnumerable<TKey> expected = dictionary.Select((pair) => pair.Key);
 
             IReadOnlyDictionary<TKey, TValue> rod = (IReadOnlyDictionary<TKey, TValue>)dictionary;
@@ -318,15 +333,12 @@ namespace System.Collections.Frozen.Tests
         }
 
         [Theory]
-        [InlineData(0, false)]
-        [InlineData(1, false)]
-        [InlineData(75, false)]
-        [InlineData(0, true)]
-        [InlineData(1, true)]
-        [InlineData(75, true)]
-        public void IReadOnlyDictionary_Generic_Values_ContainsAllCorrectValues(int count, bool optimizeForReading)
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(75)]
+        public void IReadOnlyDictionary_Generic_Values_ContainsAllCorrectValues(int count)
         {
-            IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count, optimizeForReading);
+            IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             IEnumerable<TValue> expected = dictionary.Select((pair) => pair.Value);
 
             IReadOnlyDictionary<TKey, TValue> rod = (IReadOnlyDictionary<TKey, TValue>)dictionary;
@@ -347,10 +359,8 @@ namespace System.Collections.Frozen.Tests
 
     public abstract class FrozenDictionary_Generic_Tests_string_string : FrozenDictionary_Generic_Tests<string, string>
     {
-        protected override KeyValuePair<string, string> CreateT(int seed)
-        {
-            return new KeyValuePair<string, string>(CreateTKey(seed), CreateTKey(seed + 500));
-        }
+        protected override KeyValuePair<string, string> CreateT(int seed) =>
+            new KeyValuePair<string, string>(CreateTKey(seed), CreateTKey(seed + 500));
 
         protected override string CreateTKey(int seed)
         {
@@ -374,9 +384,16 @@ namespace System.Collections.Frozen.Tests
         public override IEqualityComparer<string> GetKeyIEqualityComparer() => StringComparer.Ordinal;
     }
 
+    public class FrozenDictionary_Generic_Tests_string_string_OrdinalIgnoreCase_ReadingUnoptimized : FrozenDictionary_Generic_Tests_string_string_OrdinalIgnoreCase
+    {
+        public override bool OptimizeForReading => false;
+    }
+
     public class FrozenDictionary_Generic_Tests_string_string_OrdinalIgnoreCase : FrozenDictionary_Generic_Tests_string_string
     {
         public override IEqualityComparer<string> GetKeyIEqualityComparer() => StringComparer.OrdinalIgnoreCase;
+
+        public override string GetEqualKey(string key) => key.ToLowerInvariant();
     }
 
     public class FrozenDictionary_Generic_Tests_string_string_NonDefault : FrozenDictionary_Generic_Tests_string_string
@@ -407,13 +424,12 @@ namespace System.Collections.Frozen.Tests
 
         [OuterLoop("Takes several seconds")]
         [Theory]
-        [InlineData(8_000_000, false)]
-        [InlineData(8_000_000, true)]
-        public void CreateHugeDictionary_Success(int largeCount, bool optimizeForReading)
+        [InlineData(8_000_000)]
+        public void CreateHugeDictionary_Success(int largeCount)
         {
             if (AllowVeryLargeSizes)
             {
-                GenericIDictionaryFactory(largeCount, optimizeForReading);
+                GenericIDictionaryFactory(largeCount);
             }
         }
     }
@@ -433,12 +449,15 @@ namespace System.Collections.Frozen.Tests
         protected override int CreateTValue(int seed) => CreateTKey(seed);
     }
 
+    public class FrozenDictionary_Generic_Tests_int_int_ReadingUnoptimized : FrozenDictionary_Generic_Tests_int_int
+    {
+        public override bool OptimizeForReading => false;
+    }
+
     public class FrozenDictionary_Generic_Tests_SimpleClass_SimpleClass : FrozenDictionary_Generic_Tests<SimpleClass, SimpleClass>
     {
-        protected override KeyValuePair<SimpleClass, SimpleClass> CreateT(int seed)
-        {
-            return new KeyValuePair<SimpleClass, SimpleClass>(CreateTKey(seed), CreateTValue(seed + 500));
-        }
+        protected override KeyValuePair<SimpleClass, SimpleClass> CreateT(int seed) =>
+            new KeyValuePair<SimpleClass, SimpleClass>(CreateTKey(seed), CreateTValue(seed + 500));
 
         protected override SimpleClass CreateTKey(int seed)
         {
@@ -463,12 +482,41 @@ namespace System.Collections.Frozen.Tests
 
     public class FrozenDictionary_Generic_Tests_SimpleStruct_int : FrozenDictionary_Generic_Tests<SimpleStruct, int>
     {
-        protected override KeyValuePair<SimpleStruct, int> CreateT(int seed)
-        {
-            return new KeyValuePair<SimpleStruct, int>(CreateTKey(seed), CreateTValue(seed + 500));
-        }
+        protected override KeyValuePair<SimpleStruct, int> CreateT(int seed) =>
+            new KeyValuePair<SimpleStruct, int>(CreateTKey(seed), CreateTValue(seed + 500));
 
         protected override SimpleStruct CreateTKey(int seed) => new SimpleStruct { Value = seed + 1 };
+
+        protected override int CreateTValue(int seed) => seed;
+
+        protected override bool DefaultValueAllowed => true;
+
+        protected override bool AllowVeryLargeSizes => false; // hash code contention leads to longer running times
+    }
+
+    public class FrozenDictionary_Generic_Tests_SimpleNonComparableStruct_int : FrozenDictionary_Generic_Tests<SimpleNonComparableStruct, int>
+    {
+        protected override KeyValuePair<SimpleNonComparableStruct, int> CreateT(int seed) =>
+            new KeyValuePair<SimpleNonComparableStruct, int>(CreateTKey(seed), CreateTValue(seed + 500));
+
+        protected override SimpleNonComparableStruct CreateTKey(int seed) => new SimpleNonComparableStruct { Value = seed + 1 };
+
+        protected override int CreateTValue(int seed) => seed;
+
+        protected override bool DefaultValueAllowed => true;
+
+        protected override bool AllowVeryLargeSizes => false; // hash code contention leads to longer running times
+    }
+
+    public class FrozenDictionary_Generic_Tests_ValueTupleSimpleNonComparableStruct_int : FrozenDictionary_Generic_Tests<ValueTuple<SimpleNonComparableStruct,SimpleNonComparableStruct>, int>
+    {
+        protected override KeyValuePair<ValueTuple<SimpleNonComparableStruct, SimpleNonComparableStruct>, int> CreateT(int seed) =>
+            new KeyValuePair<ValueTuple<SimpleNonComparableStruct, SimpleNonComparableStruct>, int>(CreateTKey(seed), CreateTValue(seed + 500));
+
+        protected override ValueTuple<SimpleNonComparableStruct, SimpleNonComparableStruct> CreateTKey(int seed) =>
+            new ValueTuple<SimpleNonComparableStruct, SimpleNonComparableStruct>(
+                new SimpleNonComparableStruct { Value = seed + 1 },
+                new SimpleNonComparableStruct { Value = seed + 1 });
 
         protected override int CreateTValue(int seed) => seed;
 
@@ -489,6 +537,18 @@ namespace System.Collections.Frozen.Tests
 
         public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is SimpleStruct other && Equals(other);
+    }
+
+    public struct SimpleNonComparableStruct : IEquatable<SimpleNonComparableStruct>
+    {
+        public int Value { get; set; }
+
+        public bool Equals(SimpleNonComparableStruct other) => Value == other.Value;
+
+        public override int GetHashCode() => 0; // to force hashcode contention in implementation
+
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is SimpleNonComparableStruct other && Equals(other);
     }
 
     public sealed class NonDefaultEqualityComparer<TKey> : IEqualityComparer<TKey>

@@ -1221,7 +1221,24 @@ public:
 private:
     TypeIDMap m_typeIDMap;
 
+#ifdef HOST_WINDOWS
+    // MethodTable to `typeIndex` map. `typeIndex` is embedded in the code during codegen.
+    // During execution corresponding thread static data blocks are stored in `t_threadStaticBlocks`
+    // array at the `typeIndex`.
+    TypeIDMap m_threadStaticBlockTypeIDMap;
+
+#endif // HOST_WINDOWS
+
 public:
+
+#ifdef HOST_WINDOWS
+    void InitThreadStaticBlockTypeMap();
+
+    UINT32 GetThreadStaticTypeIndex(PTR_MethodTable pMT);
+
+    PTR_MethodTable LookupThreadStaticBlockType(UINT32 id);
+#endif
+
     UINT32 GetTypeID(PTR_MethodTable pMT);
     UINT32 LookupTypeID(PTR_MethodTable pMT);
     PTR_MethodTable LookupType(UINT32 id);

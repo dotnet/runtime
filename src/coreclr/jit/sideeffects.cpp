@@ -184,9 +184,13 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         isWrite = true;
     }
 #ifdef FEATURE_HW_INTRINSICS
-    else if (node->OperIsHWIntrinsic() && node->AsHWIntrinsic()->OperIsMemoryStore())
+    else if (node->OperIsHWIntrinsic())
     {
-        isWrite = true;
+        if (node->AsHWIntrinsic()->OperIsMemoryStoreOrBarrier())
+        {
+            // For barriers, we model the behavior after GT_MEMORYBARRIER
+            isWrite = true;
+        }
     }
 #endif // FEATURE_HW_INTRINSICS
 
@@ -203,7 +207,7 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         // If the indirection targets a lclVar, we can be more precise with regards to aliasing by treating the
         // indirection as a lclVar access.
         GenTree* address = node->AsIndir()->Addr();
-        if (address->OperIsLocalAddr())
+        if (address->OperIs(GT_LCL_ADDR))
         {
             isLclVarAccess = true;
             lclNum         = address->AsLclVarCommon()->GetLclNum();

@@ -56,6 +56,11 @@ enum instruction : unsigned
     #include "instrs.h"
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
+#elif defined(TARGET_RISCV64)
+    #define INST(id, nm, ldst, e1) INS_##id,
+    #include "instrs.h"
+
+    INS_lea,   // Not a real instruction. It is used for load the address of stack locals
 #else
 #error Unsupported target architecture
 #endif
@@ -119,46 +124,67 @@ enum insFlags : uint64_t
     // Resets
     Resets_OF = 1ULL << 12,
     Resets_SF = 1ULL << 13,
-    Resets_AF = 1ULL << 14,
-    Resets_PF = 1ULL << 15,
-    Resets_CF = 1ULL << 16,
+    Resets_ZF = 1ULL << 14,
+    Resets_AF = 1ULL << 15,
+    Resets_PF = 1ULL << 16,
+    Resets_CF = 1ULL << 17,
 
     // Undefined
-    Undefined_OF = 1ULL << 17,
-    Undefined_SF = 1ULL << 18,
-    Undefined_ZF = 1ULL << 19,
-    Undefined_AF = 1ULL << 20,
-    Undefined_PF = 1ULL << 21,
-    Undefined_CF = 1ULL << 22,
+    Undefined_OF = 1ULL << 18,
+    Undefined_SF = 1ULL << 19,
+    Undefined_ZF = 1ULL << 20,
+    Undefined_AF = 1ULL << 21,
+    Undefined_PF = 1ULL << 22,
+    Undefined_CF = 1ULL << 23,
 
     // Restore
-    Restore_SF_ZF_AF_PF_CF = 1ULL << 23,
+    Restore_SF_ZF_AF_PF_CF = 1ULL << 24,
 
     // x87 instruction
-    INS_FLAGS_x87Instr = 1ULL << 24,
+    INS_FLAGS_x87Instr = 1ULL << 25,
 
     // Avx
-    INS_Flags_IsDstDstSrcAVXInstruction = 1ULL << 25,
-    INS_Flags_IsDstSrcSrcAVXInstruction = 1ULL << 26,
+    INS_Flags_IsDstDstSrcAVXInstruction = 1ULL << 26,
+    INS_Flags_IsDstSrcSrcAVXInstruction = 1ULL << 27,
+    INS_Flags_IsMskSrcSrcEvexInstruction = 1ULL << 28,
+    INS_Flags_Is3OperandInstructionMask = (INS_Flags_IsDstDstSrcAVXInstruction | INS_Flags_IsDstSrcSrcAVXInstruction | INS_Flags_IsMskSrcSrcEvexInstruction),
 
     // w and s bits
-    INS_FLAGS_Has_Wbit = 1ULL << 27,
-    INS_FLAGS_Has_Sbit = 1ULL << 28,
+    INS_FLAGS_Has_Wbit = 1ULL << 29,
+    INS_FLAGS_Has_Sbit = 1ULL << 30,
 
     // instruction input size
     // if not input size is set, instruction defaults to using
     // the emitAttr for size
-    Input_8Bit  = 1ULL << 29,
-    Input_16Bit = 1ULL << 30,
-    Input_32Bit = 1ULL << 31,
-    Input_64Bit = 1ULL << 32,
-    Input_Mask = (0xFULL) << 29,
+    Input_8Bit  = 1ULL << 31,
+    Input_16Bit = 1ULL << 32,
+    Input_32Bit = 1ULL << 33,
+    Input_64Bit = 1ULL << 34,
+    Input_Mask = (0xFULL) << 31,
+
+    // encoding of the REX.W-bit
+    REX_W0  = 1ULL << 35,
+    REX_W1  = 1ULL << 36,
+    REX_WX  = 1ULL << 37,
+
+    // encoding of the REX.W-bit is considered for EVEX only and W0 or WIG otherwise
+    REX_W0_EVEX = REX_W0,
+    REX_W1_EVEX = 1ULL << 38,
+
+    // encoding of the REX.W-bit is ignored
+    REX_WIG     = REX_W0,
+
+    // whether VEX or EVEX encodings are directly supported
+    Encoding_VEX   = 1ULL << 39,
+    Encoding_EVEX  = 1ULL << 40,
+
+    KInstruction = 1ULL << 41,
 
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
 };
 
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 // TODO-Cleanup: Move 'insFlags' under TARGET_ARM
 enum insFlags: unsigned
 {
@@ -314,6 +340,26 @@ enum insBarrier : unsigned
     INS_BARRIER_REL   =  INS_BARRIER_FULL,//18,
     INS_BARRIER_RMB   =  INS_BARRIER_FULL,//19,
 };
+#elif defined(TARGET_RISCV64)
+enum insOpts : unsigned
+{
+    INS_OPTS_NONE,
+
+    INS_OPTS_RC,     // see ::emitIns_R_C().
+    INS_OPTS_RL,     // see ::emitIns_R_L().
+    INS_OPTS_JALR,   // see ::emitIns_J_R().
+    INS_OPTS_J,      // see ::emitIns_J().
+    INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
+    INS_OPTS_I,      // see ::emitIns_I_la().
+    INS_OPTS_C,      // see ::emitIns_Call().
+    INS_OPTS_RELOC,  // see ::emitIns_R_AI().
+};
+
+enum insBarrier : unsigned
+{
+    INS_BARRIER_FULL  =  0x33,
+};
+
 #endif
 
 #if defined(TARGET_XARCH)

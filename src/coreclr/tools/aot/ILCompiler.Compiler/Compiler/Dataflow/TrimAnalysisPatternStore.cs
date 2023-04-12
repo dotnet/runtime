@@ -17,6 +17,7 @@ namespace ILCompiler.Dataflow
         private readonly Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern> MethodCallPatterns;
         private readonly Dictionary<(MessageOrigin, TypeSystemEntity), TrimAnalysisReflectionAccessPattern> ReflectionAccessPatterns;
         private readonly Dictionary<(MessageOrigin, TypeSystemEntity), TrimAnalysisGenericInstantiationAccessPattern> GenericInstantiations;
+        private readonly Dictionary<(MessageOrigin, FieldDesc), TrimAnalysisFieldAccessPattern> FieldAccessPatterns;
         private readonly ValueSetLattice<SingleValue> Lattice;
         private readonly Logger _logger;
 
@@ -26,6 +27,7 @@ namespace ILCompiler.Dataflow
             MethodCallPatterns = new Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern>();
             ReflectionAccessPatterns = new Dictionary<(MessageOrigin, TypeSystemEntity), TrimAnalysisReflectionAccessPattern>();
             GenericInstantiations = new Dictionary<(MessageOrigin, TypeSystemEntity), TrimAnalysisGenericInstantiationAccessPattern>();
+            FieldAccessPatterns = new Dictionary<(MessageOrigin, FieldDesc), TrimAnalysisFieldAccessPattern>();
             Lattice = lattice;
             _logger = logger;
         }
@@ -74,6 +76,14 @@ namespace ILCompiler.Dataflow
             // and there's only one way to "access" a generic instantiation.
         }
 
+        public void Add(TrimAnalysisFieldAccessPattern pattern)
+        {
+            FieldAccessPatterns.TryAdd((pattern.Origin, pattern.Field), pattern);
+
+            // No Merge - there's nothing to merge since this pattern is uniquely identified by both the origin and the entity
+            // and there's only one way to "access" a field.
+        }
+
         public void MarkAndProduceDiagnostics(ReflectionMarker reflectionMarker)
         {
             foreach (var pattern in AssignmentPatterns.Values)
@@ -86,6 +96,9 @@ namespace ILCompiler.Dataflow
                 pattern.MarkAndProduceDiagnostics(reflectionMarker, _logger);
 
             foreach (var pattern in GenericInstantiations.Values)
+                pattern.MarkAndProduceDiagnostics(reflectionMarker, _logger);
+
+            foreach (var pattern in FieldAccessPatterns.Values)
                 pattern.MarkAndProduceDiagnostics(reflectionMarker, _logger);
         }
     }

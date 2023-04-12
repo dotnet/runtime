@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace DefaultNamespace
 {
     //@BEGINRENAME; Verify this renames
@@ -11,7 +12,8 @@ namespace DefaultNamespace
     public class DateTimeCompare
     {
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Object v1 = new DateTime(1952, 2, 19);
             Object v2 = new DateTime(1968, 12, 8);

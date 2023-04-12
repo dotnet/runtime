@@ -3560,6 +3560,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_CAST:
+        case GT_BITCAST:
             return true; // CSE these Unary Operators
 
         case GT_SUB:
@@ -3645,7 +3646,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         case GT_INTRINSIC:
             return true; // allow Intrinsics to be CSE-ed
 
-        case GT_OBJ:
+        case GT_BLK:
         case GT_LCL_FLD:
             // TODO-1stClassStructs: support CSE for enregisterable TYP_STRUCTs.
             return varTypeIsEnregisterable(type);
