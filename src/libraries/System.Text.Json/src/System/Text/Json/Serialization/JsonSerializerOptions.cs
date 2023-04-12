@@ -696,6 +696,21 @@ namespace System.Text.Json
                     case JsonSerializerContext ctx when AppContextSwitchHelper.IsSourceGenReflectionFallbackEnabled:
                         // .NET 6 compatibility mode: enable fallback to reflection metadata for JsonSerializerContext
                         _effectiveJsonTypeInfoResolver = JsonTypeInfoResolver.Combine(ctx, defaultResolver);
+
+                        if (_cachingContext is { } cachingContext)
+                        {
+                            // A cache has already been created by the source generator.
+                            // Repeat the same configuration routine for that options instance, if different.
+                            // Invalidate any cache entries that have already been stored.
+                            if (cachingContext.Options != this)
+                            {
+                                cachingContext.Options.ConfigureForJsonSerializer();
+                            }
+                            else
+                            {
+                                cachingContext.Clear();
+                            }
+                        }
                         break;
                 }
             }
