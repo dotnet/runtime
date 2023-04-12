@@ -79,6 +79,7 @@ namespace System.Security.Cryptography.Xml
             }
         }
 
+        [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
         [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCodeAttribute",
             Justification = "Only XmlDsigXsltTransform requires dynamic code. This method asserts that T is not a Transform.")]
         public static T? CreateNonTransformFromName<T>(string? name) where T : class

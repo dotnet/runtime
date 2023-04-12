@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Configuration.Xml
     public class XmlDocumentDecryptor
     {
         internal const string RequiresDynamicCodeMessage = "Microsoft.Extensions.Configuration.Xml can use EncryptedXml which may contain XSLTs in the xml. XSLTs require dynamic code.";
-        internal const string RequiresUnreferencedCodeMessage = "Microsoft.Extensions.Configuration.Xml can use EncryptedXml. The algorithm implementations referenced in the XML payload might be removed. Ensure the required algorithm implementations are preserved in your application.";
+        internal const string RequiresUnreferencedCodeMessage = "Microsoft.Extensions.Configuration.Xml can use EncryptedXml. If you use encrypted XML files, your application might not have the algorithm implementations it needs. To avoid this problem, one option you can use is a DynamicDependency attribute to keep the algorithm implementations in your application.";
 
         /// <summary>
         /// Accesses the singleton decryptor instance.
