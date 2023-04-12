@@ -160,30 +160,52 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, reso
         // See https://github.com/dotnet/aspnetcore/issues/37357#issuecomment-941237000
         environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = resourceLoader.bootConfig.aspnetCoreBrowserTools;
     }
+
+    if (resourceLoader.bootConfig.startupMemoryCache !== undefined) {
+        moduleConfig.startupMemoryCache = resourceLoader.bootConfig.startupMemoryCache;
+    }
+
+    if (resourceLoader.bootConfig.runtimeOptions) {
+        moduleConfig.runtimeOptions = [...(moduleConfig.runtimeOptions || []), ...(resourceLoader.bootConfig.runtimeOptions || [])];
+    }
 }
 
 function getICUResourceName(bootConfig: BootJsonData, culture: string | undefined): string {
+    if (bootConfig.icuDataMode === ICUDataMode.Custom) {
+        const icuFiles = Object
+            .keys(bootConfig.resources.runtime)
+            .filter(n => n.startsWith("icudt") && n.endsWith(".dat"));
+        if (icuFiles.length === 1) {
+            const customIcuFile = icuFiles[0];
+            return customIcuFile;
+        }
+    }
+
     const combinedICUResourceName = "icudt.dat";
     if (!culture || bootConfig.icuDataMode === ICUDataMode.All) {
         return combinedICUResourceName;
     }
 
     const prefix = culture.split("-")[0];
-    if ([
-        "en",
-        "fr",
-        "it",
-        "de",
-        "es",
-    ].includes(prefix)) {
+    if (prefix === "en" ||
+        [
+            "fr",
+            "fr-FR",
+            "it",
+            "it-IT",
+            "de",
+            "de-DE",
+            "es",
+            "es-ES",
+        ].includes(culture)) {
         return "icudt_EFIGS.dat";
-    } else if ([
+    }
+    if ([
         "zh",
         "ko",
         "ja",
     ].includes(prefix)) {
         return "icudt_CJK.dat";
-    } else {
-        return "icudt_no_CJK.dat";
     }
+    return "icudt_no_CJK.dat";
 }

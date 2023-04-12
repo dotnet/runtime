@@ -26,6 +26,8 @@ export class BootConfigResult {
 
         // While we can expect an ASP.NET Core hosted application to include the environment, other
         // hosts may not. Assume 'Production' in the absence of any specified value.
+
+        // TODO MF: Hook applicationEnvironment
         const applicationEnvironment = environment || bootConfigResponse.headers.get("Blazor-Environment") || "Production";
         const bootConfig: BootJsonData = await bootConfigResponse.json();
         bootConfig.modifiableAssemblies = bootConfigResponse.headers.get("DOTNET-MODIFIABLE-ASSEMBLIES");
@@ -53,8 +55,8 @@ export interface BootJsonData {
     readonly cacheBootResources: boolean;
     readonly config: string[];
     readonly icuDataMode: ICUDataMode;
-    readonly startupMemoryCache: boolean | null;
-    readonly runtimeOptions: string[] | null;
+    readonly startupMemoryCache: boolean | undefined;
+    readonly runtimeOptions: string[] | undefined;
 
     // These properties are tacked on, and not found in the boot.json file
     modifiableAssemblies: string | null;
@@ -85,5 +87,6 @@ export type ExtendedResourceList = {
 export enum ICUDataMode {
     Sharded,
     All,
-    Invariant
+    Invariant,
+    Custom
 }

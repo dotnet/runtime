@@ -187,7 +187,7 @@ async function getCacheToUseIfEnabled(bootConfig: BootJsonData): Promise<Cache |
     // to purge from the cache anything we're not using and don't let it keep growing,
     // since we don't want to be worst offenders for space usage.
     const relativeBaseHref = document.baseURI.substring(document.location.origin.length);
-    const cacheName = `blazor-resources-${relativeBaseHref}`;
+    const cacheName = `dotnet-resources-${relativeBaseHref}`;
 
     try {
         // There's a Chromium bug we need to be aware of here: the CacheStorage APIs say that when
