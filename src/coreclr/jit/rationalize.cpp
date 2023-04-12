@@ -40,11 +40,7 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
 
     if (varTypeIsSIMD(indir))
     {
-        if (indir->OperIs(GT_BLK))
-        {
-            indir->SetOper(GT_IND);
-        }
-
+        assert(indir->OperIs(GT_IND));
         RewriteSIMDIndir(use);
     }
 }
