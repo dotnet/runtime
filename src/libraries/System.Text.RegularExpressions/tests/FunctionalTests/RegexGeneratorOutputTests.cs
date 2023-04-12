@@ -355,7 +355,7 @@ namespace System.Text.RegularExpressions.Tests
                         internal static bool IsWordChar(char ch)
                         {
                             // Mask of Unicode categories that combine to form [\w]
-                            const int WordCategories =
+                            const int WordCategoriesMask =
                                 1 << (int)UnicodeCategory.UppercaseLetter |
                                 1 << (int)UnicodeCategory.LowercaseLetter |
                                 1 << (int)UnicodeCategory.TitlecaseLetter |
@@ -364,19 +364,19 @@ namespace System.Text.RegularExpressions.Tests
                                 1 << (int)UnicodeCategory.NonSpacingMark |
                                 1 << (int)UnicodeCategory.DecimalDigitNumber |
                                 1 << (int)UnicodeCategory.ConnectorPunctuation;
-                            
+
                             // Bitmap for whether each character 0 through 127 is in [\w]
                             ReadOnlySpan<byte> ascii = new byte[]
                             {
                                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x03,
                                 0xFE, 0xFF, 0xFF, 0x87, 0xFE, 0xFF, 0xFF, 0x07
                             };
-                            
+
                             // If the char is ASCII, look it up in the bitmap. Otherwise, query its Unicode category.
                             int chDiv8 = ch >> 3;
                             return (uint)chDiv8 < (uint)ascii.Length ?
                                 (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :
-                                (WordCategories & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;
+                                (WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;
                         }
 
                         /// <summary>Pushes 2 values onto the backtracking stack.</summary>

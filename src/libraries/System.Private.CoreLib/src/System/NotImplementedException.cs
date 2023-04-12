@@ -11,6 +11,7 @@
 **
 =============================================================================*/
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System
@@ -35,6 +36,8 @@ namespace System
             HResult = HResults.E_NOTIMPL;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected NotImplementedException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

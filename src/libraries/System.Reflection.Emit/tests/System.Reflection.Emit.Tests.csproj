@@ -62,6 +62,8 @@
     <Compile Include="ModuleBuilder\ModuleBuilderGetArrayMethod.cs" />
     <Compile Include="ModuleBuilder\ModuleBuilderSetCustomAttribute.cs" />
     <Compile Include="ParameterBuilder\ParameterBuilderSetConstant.cs" />
+    <Compile Include="PersistableAssemblyBuilder\AssemblySaveTestsWithVariousTypes.cs" />
+    <Compile Include="PersistableAssemblyBuilder\AssemblyTools.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderAddOtherMethod.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderAttributes.cs" />
     <Compile Include="PropertyBuilder\PropertyBuilderCanRead.cs" />
@@ -114,5 +116,10 @@
     <Compile Include="TypeBuilder\TypeBuilderSize.cs" />
     <Compile Include="TypeBuilder\TypeBuilderToString.cs" />
     <Compile Include="Utilities.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\TempFile.cs" Link="Common\System\IO\TempFile.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Reflection.Emit.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Reflection.MetadataLoadContext\src\System.Reflection.MetadataLoadContext.csproj" />
   </ItemGroup>
 </Project>

@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 interface I
 {
@@ -30,7 +31,8 @@ public class Runtime_53549 : I
         return G(i.F()) ? 100 : -1;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Runtime_53549 x = new Runtime_53549();
         x.z = 100M;

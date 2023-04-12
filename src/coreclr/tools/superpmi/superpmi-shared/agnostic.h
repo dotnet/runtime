@@ -463,6 +463,19 @@ struct Agnostic_GetClassModuleIdForStatics
     DWORDLONG result;
 };
 
+struct Agnostic_GetIsClassInitedFlagAddress
+{
+    Agnostic_CORINFO_CONST_LOOKUP addr;
+    DWORD                         offset;
+    DWORD                         result;
+};
+
+struct Agnostic_GetStaticBaseAddress
+{
+    Agnostic_CORINFO_CONST_LOOKUP addr;
+    DWORD                         result;
+};
+
 struct Agnostic_IsCompatibleDelegate
 {
     DWORDLONG objCls;
@@ -503,6 +516,19 @@ struct Agnostic_GetProfilingHandle
     DWORD     bHookFunction;
     DWORDLONG ProfilerHandle;
     DWORD     bIndirectedHandles;
+};
+
+struct Agnostic_GetThreadLocalStaticBlocksInfo
+{
+    Agnostic_CORINFO_CONST_LOOKUP tlsIndex;
+    UINT                          offsetOfThreadLocalStoragePointer;
+    UINT                          offsetOfMaxThreadStaticBlocks;
+    UINT                          offsetOfThreadStaticBlocks;
+};
+
+struct Agnostic_GetThreadLocalFieldInfo
+{
+    DWORD staticBlockIndex;
 };
 
 struct Agnostic_GetTailCallHelpers

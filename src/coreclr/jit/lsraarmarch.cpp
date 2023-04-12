@@ -448,11 +448,11 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
 
             assert(src->isContained());
 
-            if (src->OperIs(GT_OBJ))
+            if (src->OperIs(GT_BLK))
             {
                 // Build uses for the address to load from.
                 //
-                srcCount = BuildOperandUses(src->AsObj()->Addr());
+                srcCount = BuildOperandUses(src->AsBlk()->Addr());
             }
             else
             {
@@ -558,7 +558,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     {
         assert(src->TypeIs(TYP_STRUCT) && src->isContained());
 
-        if (src->OperIs(GT_OBJ))
+        if (src->OperIs(GT_BLK))
         {
             // If the PUTARG_SPLIT clobbers only one register we may need an
             // extra internal register in case there is a conflict between the
@@ -570,7 +570,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
             }
 
             // We will generate code that loads from the OBJ's address, which must be in a register.
-            srcCount = BuildOperandUses(src->AsObj()->Addr());
+            srcCount = BuildOperandUses(src->AsBlk()->Addr());
         }
         else
         {
@@ -699,8 +699,8 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     }
 
                     const bool isSrcAddrLocal = src->OperIs(GT_LCL_VAR, GT_LCL_FLD) ||
-                                                ((srcAddrOrFill != nullptr) && srcAddrOrFill->OperIsLocalAddr());
-                    const bool isDstAddrLocal = dstAddr->OperIsLocalAddr();
+                                                ((srcAddrOrFill != nullptr) && srcAddrOrFill->OperIs(GT_LCL_ADDR));
+                    const bool isDstAddrLocal = dstAddr->OperIs(GT_LCL_ADDR);
 
                     // CodeGen can use 16-byte SIMD ldp/stp for larger block sizes.
                     // This is the case, when both registers are either sp or fp.

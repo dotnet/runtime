@@ -15,7 +15,7 @@ namespace WbemUtilities_v1 { }
 namespace System.Management
 {
     #region FreeThreadedInterfaces
-    internal sealed class IWbemClassObjectFreeThreaded : IDisposable, ISerializable
+    internal sealed class IWbemClassObjectFreeThreaded : IDisposable
     {
         //
         // This is to force load wminet_utils.dll as a COM component. Since wminet_utils.dll
@@ -42,16 +42,6 @@ namespace System.Management
             if (null == wbemClassObject)
                 return IntPtr.Zero;
             return wbemClassObject.pWbemClassObject;
-        }
-
-        public IWbemClassObjectFreeThreaded(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
         }
 
         public void Dispose()

@@ -35,6 +35,10 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new[] { ID(), codeSnippets.SpecifiedMethodIndexNoExplicitParametersNoImplicitThis };
             yield return new[] { ID(), codeSnippets.SpecifiedMethodIndexNoExplicitParametersCallConvWithCallingConventions };
 
+            // Use different method modifiers
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers("int", "public") };
+            yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers("int", "internal") };
+
             // Basic marshalling validation
             yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<byte>() };
             yield return new[] { ID(), codeSnippets.BasicParametersAndModifiers<sbyte>() };
@@ -319,9 +323,16 @@ namespace ComInterfaceGenerator.Unit.Tests
             TestUtils.AssertPostSourceGeneratorCompilation(newComp, "CS0105");
         }
 
+        public static IEnumerable<object[]> ComInterfaceSnippetsToCompile()
+        {
+            CodeSnippets codeSnippets = new(new GeneratedComInterfaceAttributeProvider());
+            yield return new object[] { ID(), codeSnippets.DerivedComInterfaceType };
+        }
+
         [Theory]
         [MemberData(nameof(CodeSnippetsToCompile), GeneratorKind.ComInterfaceGenerator)]
         [MemberData(nameof(CustomCollections), GeneratorKind.ComInterfaceGenerator)]
+        [MemberData(nameof(ComInterfaceSnippetsToCompile))]
         public async Task ValidateComInterfaceSnippets(string id, string source)
         {
             _ = id;
@@ -353,7 +364,7 @@ namespace ComInterfaceGenerator.Unit.Tests
                     // Cannot use 'ref', 'in', or 'out' in the signature of a method attributed with 'UnmanagedCallersOnly'.
                     "CS8977",
                     // The type 'SafeFileHandle' must be a non-nullable value type, along with all fields at any level of nesting,
-                    // in order to use it as parameter 'T' in the generic type or method 'ExceptionDefaultMarshaller<T>'
+                    // in order to use it as parameter 'T' in the generic type or method 'ExceptionAsDefaultMarshaller<T>'
                     "CS8377",
                     // Argument N may not be passed with the 'in' keyword
                     "CS1615"
