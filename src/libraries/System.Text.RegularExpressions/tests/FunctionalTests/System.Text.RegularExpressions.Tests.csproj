@@ -39,7 +39,7 @@
     <Compile Include="RegexPcreTests.cs" />
     <Compile Include="RegexRustTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkCurrent)'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="..\..\src\System\Text\RegularExpressions\RegexParseError.cs" Link="System\Text\RegularExpressions\RegexParseError.cs" />
     <Compile Include="RegexAssert.netfx.cs" />
     <Compile Include="RegexParserTests.netfx.cs" />
