@@ -3840,7 +3840,7 @@ protected:
                                         CORINFO_ACCESS_FLAGS    access,
                                         CORINFO_FIELD_INFO*     pFieldInfo,
                                         var_types               lclTyp,
-                                        bool* /*OUT*/           pIsHoistable);
+                                        /* OUT */ bool*         pIsHoistable = nullptr);
 
     static void impBashVarAddrsToI(GenTree* tree1, GenTree* tree2 = nullptr);
 
@@ -4826,7 +4826,9 @@ public:
 
     GenTree* fgInitThisClass();
 
-    GenTreeCall* fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper);
+    GenTreeCall* fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls,
+                                         CorInfoHelpFunc      helper,
+                                         /* OUT */ bool*      pIsHoistable = nullptr);
 
     GenTreeCall* fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls);
 

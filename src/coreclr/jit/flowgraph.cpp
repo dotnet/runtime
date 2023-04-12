@@ -694,10 +694,12 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
     return false;
 }
 
-GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper)
+GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls,
+                                               CorInfoHelpFunc      helper,
+                                               /* OUT */ bool*      pIsHoistable)
 {
-    bool         bNeedClassID = true;
-    GenTreeFlags callFlags    = GTF_EMPTY;
+    bool bNeedClassID = true;
+    bool isHoistable  = false;
 
     var_types type = TYP_BYREF;
 
@@ -710,7 +712,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR:
-            callFlags |= GTF_CALL_HOISTABLE;
+            isHoistable = true;
             FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_GCSTATIC_BASE:
@@ -727,7 +729,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR:
-            callFlags |= GTF_CALL_HOISTABLE;
+            isHoistable = true;
             FALLTHROUGH;
 
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE:
@@ -754,13 +756,8 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
     moduleID = info.compCompHnd->getClassModuleIdForStatics(cls, nullptr, &pmoduleID);
 
-    if (!(callFlags & GTF_CALL_HOISTABLE))
-    {
-        if (info.compCompHnd->getClassAttribs(cls) & CORINFO_FLG_BEFOREFIELDINIT)
-        {
-            callFlags |= GTF_CALL_HOISTABLE;
-        }
-    }
+    isHoistable = isHoistable ||
+        (info.compCompHnd->getClassAttribs(cls) & CORINFO_FLG_BEFOREFIELDINIT);
 
     if (pmoduleID)
     {
@@ -790,7 +787,11 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         result = gtNewHelperCallNode(helper, type, opModuleIDArg);
     }
 
-    result->gtFlags |= callFlags;
+    if (isHoistable)
+    {
+        result->gtFlags |= GTF_CALL_HOISTABLE;
+        *pIsHoistable = isHoistable;
+    }
 
     // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
     // intrinsics, flag the helper call. Later during inlining, we can
