@@ -3015,8 +3015,8 @@ init_backend (MonoBackend *backend)
 #ifdef MONO_ARCH_HAVE_OPTIMIZED_DIV
 	backend->optimized_div = 1;
 #endif
-#ifdef MONO_ARCH_FORCE_FLOAT32
-	backend->force_float32 = 1;
+#ifdef MONO_ARCH_HAVE_INIT_MRGCTX
+	backend->have_init_mrgctx = 1;
 #endif
 }
 
@@ -3133,12 +3133,15 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	try_llvm = mono_use_llvm || llvm;
 #endif
 
-#ifndef MONO_ARCH_FLOAT32_SUPPORTED
+#ifdef MONO_ARCH_FLOAT32_SUPPORTED
+	/* Force float32 mode on platforms where its supported */
+	opts |= MONO_OPT_FLOAT32;
+#else
 	opts &= ~MONO_OPT_FLOAT32;
+#ifdef ENABLE_LLVM
+	g_assert (!llvm);
 #endif
-	if (current_backend->force_float32)
-		/* Force float32 mode on newer platforms */
-		opts |= MONO_OPT_FLOAT32;
+#endif
 
  restart_compile:
 	if (method_is_gshared) {
@@ -3214,10 +3217,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		cfg->explicit_null_checks = FALSE;
 	}
 
-	/*
-	if (!mono_debug_count ())
-		cfg->opt &= ~MONO_OPT_FLOAT32;
-	*/
 	if (!is_simd_supported (cfg))
 		cfg->opt &= ~MONO_OPT_SIMD;
 	cfg->r4fp = (cfg->opt & MONO_OPT_FLOAT32) ? 1 : 0;

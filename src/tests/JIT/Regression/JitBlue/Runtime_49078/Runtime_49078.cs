@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // Regression test for GitHub issue 49078: https://github.com/dotnet/runtime/issues/49078
 //
@@ -84,7 +85,8 @@ namespace GitHub_49078
 
     public class Program
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Test t = new Test();
             S16 s = t.Caller(4);

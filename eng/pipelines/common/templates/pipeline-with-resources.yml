@@ -5,7 +5,7 @@ parameters:
 resources:
   containers:
     - container: linux_arm
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm-20230410173854-290f679
       env:
         ROOTFS_DIR: /crossrootfs/arm
 
@@ -14,21 +14,29 @@ resources:
       env:
         ROOTFS_DIR: /crossrootfs/armv6
 
-    - container: linux_arm64
+    # Use old build images until we can avoid a clang-12 crash: https://github.com/dotnet/runtime/issues/84503
+    - container: mono_linux_arm64
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-20.04-cross-arm64
       env:
         ROOTFS_DIR: /crossrootfs/arm64
 
+    - container: linux_arm64
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64-20230410173854-2288685
+      env:
+        ROOTFS_DIR: /crossrootfs/arm64
+
     - container: linux_musl_x64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-WithNode
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64-alpine-20230410173854-2288685
+      env:
+        ROOTFS_DIR: /crossrootfs/x64
 
     - container: linux_musl_arm
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-arm-alpine
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm-alpine-20230410173854-290f679
       env:
         ROOTFS_DIR: /crossrootfs/arm
 
     - container: linux_musl_arm64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04-cross-arm64-alpine
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64-alpine-20230410173854-2288685
       env:
         ROOTFS_DIR: /crossrootfs/arm64
     # This container contains all required toolsets to build for Android and for Linux with bionic libc.
@@ -37,10 +45,12 @@ resources:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-android
 
     - container: linux_x64
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64-20230410173854-2288685
+      env:
+        ROOTFS_DIR: /crossrootfs/x64
 
     - container: linux_x86
-      image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-x86-linux
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-x86-20230410173854-2288685
       env:
         ROOTFS_DIR: /crossrootfs/x86
 
@@ -58,6 +68,12 @@ resources:
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-ppc64le
       env:
         ROOTFS_DIR: /crossrootfs/ppc64le
+
+    - container: debian-11-gcc12-amd64
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-gcc12-amd64
+
+    - container: linux_x64_llvmaot
+      image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7
 
     - container: browser_wasm
       image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-webassembly-net8-20230322221728-80fdceb

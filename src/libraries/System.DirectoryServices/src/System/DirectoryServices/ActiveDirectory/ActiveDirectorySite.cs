@@ -1298,9 +1298,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 Debug.Assert(handle != (IntPtr)0);
 
-                IntPtr info = (IntPtr)0;
+                void* pDomains = null;
                 // call DsReplicaSyncAllW
-                var dsListDomainsInSiteW = (delegate* unmanaged<IntPtr, char*, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsListDomainsInSiteW");
+                var dsListDomainsInSiteW = (delegate* unmanaged<IntPtr, char*, void**, int>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsListDomainsInSiteW");
                 if (dsListDomainsInSiteW == null)
                 {
                     throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
@@ -1308,7 +1308,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 fixed (char* distinguishedName = (string)PropertyManager.GetPropertyValue(context, cachedEntry, PropertyManager.DistinguishedName)!)
                 {
-                    int result = dsListDomainsInSiteW(handle, distinguishedName, &info);
+                    int result = dsListDomainsInSiteW(handle, distinguishedName, &pDomains);
                     if (result != 0)
                         throw ExceptionHelper.GetExceptionFromErrorCode(result, serverName);
                 }
@@ -1316,7 +1316,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 try
                 {
                     DS_NAME_RESULT names = new DS_NAME_RESULT();
-                    Marshal.PtrToStructure(info, names);
+                    Marshal.PtrToStructure((IntPtr)pDomains, names);
                     int count = names.cItems;
                     IntPtr val = names.rItems;
                     if (count > 0)
@@ -1344,13 +1344,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 finally
                 {
                     // call DsFreeNameResultW
-                    var dsFreeNameResultW = (delegate* unmanaged<IntPtr, void>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
+                    var dsFreeNameResultW = (delegate* unmanaged<void*, void>)global::Interop.Kernel32.GetProcAddress(DirectoryContext.ADHandle, "DsFreeNameResultW");
                     if (dsFreeNameResultW == null)
                     {
                         throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
                     }
 
-                    dsFreeNameResultW(info);
+                    dsFreeNameResultW(pDomains);
                 }
             }
         }

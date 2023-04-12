@@ -35,6 +35,7 @@ namespace System.Xml.Xsl
     //      results, resultsFile        - cannot be null
     //----------------------------------------------------------------------------------------------------
 
+    [RequiresDynamicCode("XslCompiledTransform requires dynamic code because it generates IL at runtime.")]
     public sealed class XslCompiledTransform
     {
         // Version for GeneratedCodeAttribute

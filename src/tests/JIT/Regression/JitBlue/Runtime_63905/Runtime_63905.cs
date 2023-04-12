@@ -3,10 +3,12 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Runtime_63905
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         C c = GetNull();
         int i = GetOne();
