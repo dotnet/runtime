@@ -581,6 +581,14 @@
     </ItemGroup>
     <ItemGroup>
       <_MonoCMakeArgs Include="-DMONO_COMPONENTS_RID=$(TargetOS)-$(TargetArchitecture)" />
+
+      <!--
+        The common infra (eng/native) uses two dimensions for platform definition: host and target
+        For reasons, mono works with three dimensions: host, target and build
+        Here, we are mapping mono's three dimensions to two-dimensional system to be able to use common infra (by setting CLR_CMAKE_XXX).
+
+        See this post for understanding of cross-compilation terminologies in details: https://stackoverflow.com/a/15901574
+      -->
       <_MonoCMakeArgs Condition="'$(TargetArchitecture)' == 'wasm'" Include="-DCLR_CMAKE_HOST_ARCH=$(BuildArchitecture)" />
       <_MonoCMakeArgs Condition="'$(TargetArchitecture)' != 'wasm'" Include="-DCLR_CMAKE_HOST_ARCH=$(TargetArchitecture)" />
     </ItemGroup>
@@ -691,7 +699,9 @@
     <!-- macOS host specific options -->
     <ItemGroup Condition="'$(RealTargetOS)' == 'osx' or $([MSBuild]::IsOSPlatform('OSX'))">
       <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'x64'" Include="-DCMAKE_OSX_ARCHITECTURES=x86_64" />
-      <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' != 'x64'" Include="-DCMAKE_OSX_ARCHITECTURES=$(_MonoLLVMTargetArchitecture)" />
+      <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'x86'" Include="-DCMAKE_OSX_ARCHITECTURES=i386" />
+      <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'arm'" Include="&quot;-DCMAKE_OSX_ARCHITECTURES=armv7%3Barmv7s&quot;" />
+      <MonoAOTCMakeArgs Condition="'$(MonoAOTCMakeArgs)' == ''" Include="-DCMAKE_OSX_ARCHITECTURES=$(_MonoLLVMTargetArchitecture)" />
       <MonoAOTCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(macOSVersionMin)" />
       <MonoAOTCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <_MonoAOTCFLAGS Condition="'$(RealTargetArchitecture)' == 'arm64'" Include="-arch arm64" />
