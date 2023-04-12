@@ -13,7 +13,7 @@
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Archives" Version="$(MicrosoftDotNetBuildTasksArchivesVersion)" />
   </ItemGroup>
 
-  <UsingTask TaskName="GenerateFileFromTemplate" AssemblyFile="$(WorkloadBuildTasksAssemblyPath)" />
+  <UsingTask TaskName="GenerateFileFromTemplate" AssemblyFile="$(WorkloadTasksAssemblyPath)" />
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
 </Project>

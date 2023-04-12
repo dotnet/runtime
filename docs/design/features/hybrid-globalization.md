@@ -8,7 +8,7 @@ Hybrid mode does not use ICU data for some functions connected with globalizatio
 
 ### WASM
 
-For WebAssembly, both on Browser and WASI, we are using Web API instead of some ICU data.
+For WebAssembly in Browser we are using Web API instead of some ICU data.
 
 **Case change**
 
