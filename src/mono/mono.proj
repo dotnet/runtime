@@ -700,8 +700,8 @@
     <ItemGroup Condition="'$(RealTargetOS)' == 'osx' or $([MSBuild]::IsOSPlatform('OSX'))">
       <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'x64'" Include="-DCMAKE_OSX_ARCHITECTURES=x86_64" />
       <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'x86'" Include="-DCMAKE_OSX_ARCHITECTURES=i386" />
+      <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'arm64'" Include="-DCMAKE_OSX_ARCHITECTURES=arm64" />
       <MonoAOTCMakeArgs Condition="'$(_MonoLLVMTargetArchitecture)' == 'arm'" Include="&quot;-DCMAKE_OSX_ARCHITECTURES=armv7%3Barmv7s&quot;" />
-      <MonoAOTCMakeArgs Condition="'$(MonoAOTCMakeArgs)' == ''" Include="-DCMAKE_OSX_ARCHITECTURES=$(_MonoLLVMTargetArchitecture)" />
       <MonoAOTCMakeArgs Include="-DCMAKE_OSX_DEPLOYMENT_TARGET=$(macOSVersionMin)" />
       <MonoAOTCMakeArgs Include="-DENABLE_ICALL_EXPORT=1"/>
       <_MonoAOTCFLAGS Condition="'$(RealTargetArchitecture)' == 'arm64'" Include="-arch arm64" />
