@@ -184,9 +184,13 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
         isWrite = true;
     }
 #ifdef FEATURE_HW_INTRINSICS
-    else if (node->OperIsHWIntrinsic() && node->AsHWIntrinsic()->OperIsMemoryStore())
+    else if (node->OperIsHWIntrinsic())
     {
-        isWrite = true;
+        if (node->AsHWIntrinsic()->OperIsMemoryStoreOrBarrier())
+        {
+            // For barriers, we model the behavior after GT_MEMORYBARRIER
+            isWrite = true;
+        }
     }
 #endif // FEATURE_HW_INTRINSICS
 

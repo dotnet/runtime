@@ -5850,7 +5850,8 @@ handle_ctor_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 
 	/* Avoid virtual calls to ctors if possible */
 	if (!context_used && !rgctx_arg) {
-		INLINE_FAILURE ("inline failure");
+		if (!m_method_is_aggressive_inlining (cfg->current_method) && !m_method_is_aggressive_inlining (cmethod))
+			INLINE_FAILURE ("ctor call");
 		// FIXME-VT: Clean this up
 		if (cfg->gsharedvt && mini_is_gsharedvt_signature (fsig))
 			GSHAREDVT_FAILURE(*ip);
@@ -12159,21 +12160,21 @@ mono_ldptr:
 
 mono_error_exit:
 	if (cfg->verbose_level > 3)
-		g_print ("exiting due to error");
+		g_print ("exiting due to error\n");
 
 	g_assert (!is_ok (cfg->error));
 	goto cleanup;
 
  exception_exit:
 	if (cfg->verbose_level > 3)
-		g_print ("exiting due to exception");
+		g_print ("exiting due to exception\n");
 
 	g_assert (cfg->exception_type != MONO_EXCEPTION_NONE);
 	goto cleanup;
 
  unverified:
 	if (cfg->verbose_level > 3)
-		g_print ("exiting due to invalid il");
+		g_print ("exiting due to invalid il\n");
 
 	set_exception_type_from_invalid_il (cfg, method, ip);
 	goto cleanup;
