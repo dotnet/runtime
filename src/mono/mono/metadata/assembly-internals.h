@@ -142,22 +142,22 @@ void
 mono_set_assemblies_path_direct (char **path);
 
 typedef enum {
-	BUNDLED_DATA,
-	BUNDLED_ASSEMBLY,
-	BUNDLED_SATELLITE_ASSEMBLY,
-	BUNDLED_PDB,
-	BUNDLED_RESOURCE_COUNT,
-} BundledResourceType;
+	MONO_BUNDLED_DATA,
+	MONO_BUNDLED_ASSEMBLY,
+	MONO_BUNDLED_SATELLITE_ASSEMBLY,
+	MONO_BUNDLED_PDB,
+	MONO_BUNDLED_RESOURCE_COUNT,
+} MonoBundledResourceType;
 
 typedef struct BundledResource {
 	const char *culture; // Satellite assemblies
 	const unsigned char *data;
 	unsigned int size;
-	BundledResourceType type;
+	MonoBundledResourceType type;
 } BundledResource;
 
 void
-mono_add_bundled_resource (const char *name, const char *culture, const unsigned char *data, unsigned int size, BundledResourceType type);
+mono_add_bundled_resource (const char *name, const char *culture, const unsigned char *data, unsigned int size, MonoBundledResourceType type);
 
 void
 mono_get_bundled_resource_data (const char *name, const unsigned char **out_data, unsigned int *out_size);

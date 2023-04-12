@@ -44,10 +44,10 @@
 #endif // Platform specific native functions
 
 void register_aot_modules (void);
-#if defined(BUNDLED_ASSEMBLIES)
+#if defined(BUNDLED_RESOURCES)
 void mono_get_bundled_resource_data (const char *name, const unsigned char **out_data, unsigned int *out_size);
 void mono_register_resources_bundle (void);
-#endif // BUNDLED_ASSEMBLIES
+#endif // BUNDLED_RESOURCES
 void preload_assemblies_with_exported_symbols ();
 typedef void (*MonoRuntimeInitCallback) (void);
 void mono_set_runtime_init_callback (MonoRuntimeInitCallback callback);

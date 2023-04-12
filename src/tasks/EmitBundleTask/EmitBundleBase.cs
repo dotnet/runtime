@@ -148,8 +148,8 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
 
     public static void GenerateRegisteredBundledObjects(string newFunctionName, ICollection<(string registeredName, string symbol, string type)> files, StreamWriter outputUtf8Writer)
     {
-        outputUtf8Writer.WriteLine("typedef enum {\n    BUNDLED_DATA,\n    BUNDLED_ASSEMBLY,\n    BUNDLED_SATELLITE_ASSEMBLY,\n    BUNDLED_PDB,\n    BUNDLED_RESOURCE_COUNT,\n} BundledResourceType;");
-        outputUtf8Writer.WriteLine($"void mono_add_bundled_resource(const char *name, const char *culture, const unsigned char *data, unsigned int size, BundledResourceType type);");
+        outputUtf8Writer.WriteLine("typedef enum {\n    MONO_BUNDLED_DATA,\n    MONO_BUNDLED_ASSEMBLY,\n    MONO_BUNDLED_SATELLITE_ASSEMBLY,\n    MONO_BUNDLED_PDB,\n    MONO_BUNDLED_RESOURCE_COUNT,\n} MonoBundledResourceType;");
+        outputUtf8Writer.WriteLine($"void mono_add_bundled_resource(const char *name, const char *culture, const unsigned char *data, unsigned int size, MonoBundledResourceType type);");
         outputUtf8Writer.WriteLine($"void mono_register_bundled_resources (void);");
         outputUtf8Writer.WriteLine();
 
@@ -233,17 +233,17 @@ public abstract class EmitBundleBase : Microsoft.Build.Utilities.Task, ICancelab
     {
         if (destinationFileName.EndsWith(".resources.dll"))
         {
-            return "BUNDLED_SATELLITE_ASSEMBLY";
+            return "MONO_BUNDLED_SATELLITE_ASSEMBLY";
         }
         if (destinationFileName.EndsWith(".dll"))
         {
-            return "BUNDLED_ASSEMBLY";
+            return "MONO_BUNDLED_ASSEMBLY";
         }
         if (destinationFileName.EndsWith(".pdb"))
         {
-            return "BUNDLED_PDB";
+            return "MONO_BUNDLED_PDB";
         }
-        return "BUNDLED_DATA";
+        return "MONO_BUNDLED_DATA";
     }
 
     // Equivalent to "isalnum"

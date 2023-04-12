@@ -3231,7 +3231,7 @@ mono_free_bundled_resources ()
 // mono_add_bundled_resource handles bundling of many types of resources to circumvent
 // needing to find or have those resources on disk. The BundledResource struct models
 // the union of information carried by all supported types of resources which are
-// enumerated in BundledResourceType.
+// enumerated in MonoBundledResourceType.
 //
 // bundled_resources:
 // A single hash table will hold all resources being bundled with the understanding
@@ -3253,9 +3253,9 @@ mono_free_bundled_resources ()
 //
 
 void
-mono_add_bundled_resource (const char *name, const char *culture, const unsigned char *data, unsigned int size, BundledResourceType type)
+mono_add_bundled_resource (const char *name, const char *culture, const unsigned char *data, unsigned int size, MonoBundledResourceType type)
 {
-	if (type == BUNDLED_PDB)
+	if (type == MONO_BUNDLED_PDB)
 	{
 		mono_register_symfile_for_assembly (name, data, size);
 		return;
@@ -3265,7 +3265,7 @@ mono_add_bundled_resource (const char *name, const char *culture, const unsigned
 		bundled_resources = g_hash_table_new (g_str_hash, g_str_equal);
 
 	if (!resources_bundled_counts)
-		resources_bundled_counts = g_malloc0 (BUNDLED_RESOURCE_COUNT * sizeof (int));
+		resources_bundled_counts = g_malloc0 (MONO_BUNDLED_RESOURCE_COUNT * sizeof (int));
 
 	g_assert (!g_hash_table_contains (bundled_resources, name));
 
@@ -3316,12 +3316,12 @@ populate_bundled_assemblies (gpointer key, gpointer value, gpointer user_data)
 {
 	MonoBundledAssembly **bundle = (MonoBundledAssembly **)user_data;
 	BundledResource *bundled_resource = (BundledResource *)value;
-	if (!bundle || !bundled_resource || bundled_resource->type != BUNDLED_ASSEMBLY)
+	if (!bundle || !bundled_resource || bundled_resource->type != MONO_BUNDLED_ASSEMBLY)
 		return;
 
 	MonoBundledAssembly *bundled_assembly = mono_create_new_bundled_assembly ((const char *)key, bundled_resource->data, bundled_resource->size);
 
-	g_assert (num_bundled_resources_to_register < resources_bundled_counts[BUNDLED_ASSEMBLY]);
+	g_assert (num_bundled_resources_to_register < resources_bundled_counts[MONO_BUNDLED_ASSEMBLY]);
 	bundle [num_bundled_resources_to_register++] = bundled_assembly;
 }
 
@@ -3336,19 +3336,19 @@ populate_bundled_satellite_assemblies (gpointer key, gpointer value, gpointer us
 {
 	MonoBundledSatelliteAssembly **bundle = (MonoBundledSatelliteAssembly **)user_data;
 	BundledResource *bundled_resource = (BundledResource *)value;
-	if (!bundle || !bundled_resource || bundled_resource->type != BUNDLED_SATELLITE_ASSEMBLY)
+	if (!bundle || !bundled_resource || bundled_resource->type != MONO_BUNDLED_SATELLITE_ASSEMBLY)
 		return;
 
 	MonoBundledSatelliteAssembly *bundled_satellite_assembly = mono_create_new_bundled_satellite_assembly ((const char *)key, bundled_resource->culture, bundled_resource->data, bundled_resource->size);
 
-	g_assert (num_bundled_resources_to_register < resources_bundled_counts[BUNDLED_SATELLITE_ASSEMBLY]);
+	g_assert (num_bundled_resources_to_register < resources_bundled_counts[MONO_BUNDLED_SATELLITE_ASSEMBLY]);
 	bundle [num_bundled_resources_to_register++] = bundled_satellite_assembly;
 }
 
 //---------------------------------------------------------------------------------------
 //
 // mono_register_bundled_resources registers resources added by mono_add_bundled_resource.
-// Out of the supported resource types in BundledResourceType, assemblies and satellite
+// Out of the supported resource types in MonoBundledResourceType, assemblies and satellite
 // assemblies are registered.
 //
 // To appropriately allocate memory for the MonoBundledAssembly array and
@@ -3364,23 +3364,23 @@ mono_register_bundled_resources (void)
 		return;
 
 	// register assemblies
-	if (resources_bundled_counts [BUNDLED_ASSEMBLY] != 0)
+	if (resources_bundled_counts [MONO_BUNDLED_ASSEMBLY] != 0)
 	{
-		MonoBundledAssembly **assembly_bundle = g_new0 (MonoBundledAssembly*, resources_bundled_counts[BUNDLED_ASSEMBLY] + 1);
+		MonoBundledAssembly **assembly_bundle = g_new0 (MonoBundledAssembly*, resources_bundled_counts[MONO_BUNDLED_ASSEMBLY] + 1);
 		num_bundled_resources_to_register = 0;
 		g_hash_table_foreach (bundled_resources, populate_bundled_assemblies, assembly_bundle);
-		g_assert (num_bundled_resources_to_register == resources_bundled_counts[BUNDLED_ASSEMBLY]);
+		g_assert (num_bundled_resources_to_register == resources_bundled_counts[MONO_BUNDLED_ASSEMBLY]);
 
 		mono_register_bundled_assemblies ((const MonoBundledAssembly **)assembly_bundle);
 	}
 
 	// register satellite assemblies
-	if (resources_bundled_counts [BUNDLED_SATELLITE_ASSEMBLY] != 0)
+	if (resources_bundled_counts [MONO_BUNDLED_SATELLITE_ASSEMBLY] != 0)
 	{
-		MonoBundledSatelliteAssembly **satellite_assembly_bundle = g_new0 (MonoBundledSatelliteAssembly *, resources_bundled_counts[BUNDLED_SATELLITE_ASSEMBLY] + 1);
+		MonoBundledSatelliteAssembly **satellite_assembly_bundle = g_new0 (MonoBundledSatelliteAssembly *, resources_bundled_counts[MONO_BUNDLED_SATELLITE_ASSEMBLY] + 1);
 		num_bundled_resources_to_register = 0;
 		g_hash_table_foreach (bundled_resources, populate_bundled_satellite_assemblies, satellite_assembly_bundle);
-		g_assert (num_bundled_resources_to_register == resources_bundled_counts[BUNDLED_SATELLITE_ASSEMBLY]);
+		g_assert (num_bundled_resources_to_register == resources_bundled_counts[MONO_BUNDLED_SATELLITE_ASSEMBLY]);
 
 		mono_register_bundled_satellite_assemblies ((const MonoBundledSatelliteAssembly **)satellite_assembly_bundle);
 	}
